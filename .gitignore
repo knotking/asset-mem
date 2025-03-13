@@ -174,3 +174,4 @@ python/model/results
 
 python/.venv
 python/venv/
+.DS_Store
