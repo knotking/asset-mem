@@ -13,10 +13,11 @@ Engineering world, handles large amounts of data safely.
 
 ## Installation
 
-### Running n8n using Docker Compose
+- ### For Mac / Apple Silicon users
 
 ```
-docker compose up -d
+docker compose pull
+docker compose create && docker compose up -d
 ```
 
 ##### For Mac users running OLLAMA locally
@@ -37,28 +38,19 @@ Additionally, after you see "Editor is now accessible via: <http://localhost:567
 2. Click on "Local Ollama service"
 3. Change the base URL to "http://host.docker.internal:11434/"
 
-## ⚡️ Quick start and usage
+## Quick start and usage
 
-The core of the kit is a Docker Compose file, pre-configured with network and storage settings, minimizing the need for additional installations.
 After completing the installation steps above, simply follow the steps below to get started.
 
-1. Open <http://localhost:5678/> in your browser to set up n8n. You’ll only
-   have to do this once.
+1. Open <http://localhost:5678/> in your browser to set up n8n.
 2. Open the included workflow:
-   <http://localhost:5678/workflow/8f3fe282-8810-49d3-9fde-f5cd85fbf22a>
+   <http://localhost:5678/workflow/KOVfWXXl1byYtlCh>
 3. Click the **Test Workflow** button at the bottom of the canvas, to start running the workflow.
-
-To open n8n at any time, visit <http://localhost:5678/> in your browser.
-
-- ### For Mac / Apple Silicon users
-
-```
-docker compose pull
-docker compose create && docker compose up -d
-```
 
 ## Tips & tricks
 
 .env - Contains secrets that are injected into the docker container
+
 Qdrant - Dashboard http://localhost:6333/dashboard#/console
+
 Postgres - Install pgAdmin. Connect using the credentials in .env
