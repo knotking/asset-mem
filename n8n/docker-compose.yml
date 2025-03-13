@@ -1,0 +1,116 @@
+volumes:
+  n8n_storage:
+  postgres_storage:
+  qdrant_storage:
+
+networks:
+  homeama:
+
+x-n8n: &service-n8n
+  image: n8nio/n8n:latest
+  networks: ["homeama"]
+  environment:
+    - DB_TYPE=postgresdb
+    - DB_POSTGRESDB_HOST=postgres
+    - DB_POSTGRESDB_USER=${POSTGRES_USER}
+    - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+    - N8N_DIAGNOSTICS_ENABLED=false
+    - N8N_PERSONALIZATION_ENABLED=false
+    - N8N_ENCRYPTION_KEY
+    - N8N_USER_MANAGEMENT_JWT_SECRET
+    - WEBHOOK_URL=https://funky-frankly-stingray.ngrok-free.app
+
+x-postgres: &service-postgres
+  image: postgres:16-alpine
+  networks: ["homeama"]
+  hostname: postgres
+  environment:
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
+    - POSTGRES_DB
+x-qdrant: &service-qdrant
+  image: qdrant/qdrant
+  hostname: qdrant
+  networks: ["homeama"]
+services:
+  postgres:
+    <<: *service-postgres
+    restart: unless-stopped
+    volumes:
+      - postgres_storage:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  postgres-init:
+    <<: *service-postgres
+    hostname: postgres-init
+    container_name: postgres-init
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "PGPASSWORD=${POSTGRES_PASSWORD} psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /backup/postgres/10-create-user-tables.sql"
+    volumes:
+      - ./n8n/backup:/backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+  n8n-import:
+    <<: *service-n8n
+    hostname: n8n-import
+    container_name: n8n-import
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - |
+        n8n import:credentials --separate --input=/backup/credentials \
+        && n8n import:workflow --separate --input=/backup/workflows
+    volumes:
+      - ./n8n/backup:/backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+  n8n:
+    <<: *service-n8n
+    hostname: n8n
+    container_name: HomeAMA
+    restart: unless-stopped
+    ports:
+      - 5678:5678
+    volumes:
+      - n8n_storage:/home/node/.n8n
+      - ./n8n/backup:/backup
+      - ./shared:/data/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      n8n-import:
+        condition: service_completed_successfully
+
+  qdrant:
+    <<: *service-qdrant
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - 6333:6333
+    volumes:
+      - qdrant_storage:/qdrant/storage
+  qdrant-init:
+    image: curlimages/curl
+    networks: ["homeama"]
+    container_name: qdrant-init
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "/backup/qdrant/10-create-collections.sh"
+    volumes:
+      - ./n8n/backup:/backup
+    depends_on:
+      - qdrant
