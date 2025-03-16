@@ -171,7 +171,8 @@ cython_debug/
 .pypirc
 python/model/trained_models/*
 python/model/results
-
+python/uploaded_videos
+python/frames
 python/.venv
 python/venv/
 **/.DS_Store
