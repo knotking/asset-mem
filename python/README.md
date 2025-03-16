@@ -41,3 +41,13 @@ python run_training.py
 ```
 uvicorn api.app:app --reload
 ```
+
+## Curl commands to test
+
+```
+curl -X POST "http://localhost:8000/annotate_image" \
+-H "accept: application/json" \
+-H "Content-Type: multipart/form-data" \
+-F "file=@/Users/prakashbaskaran/projects/test.png" \
+-F 'metadata={"coordinates": [{"x1": 10, "y1": 10, "x2": 50, "y2": 50}]}' > annotated.png
+```

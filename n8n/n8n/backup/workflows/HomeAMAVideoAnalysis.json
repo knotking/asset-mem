@@ -1,0 +1,523 @@
+{
+  "name": "HomeAMAVideoAnalysis",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4040,
+        600
+      ],
+      "id": "6b831f1c-5af3-45b3-bc85-8c3d6b2faf4a",
+      "name": "Telegram Trigger",
+      "webhookId": "38c4409c-40bc-438a-9593-bf4000e99244",
+      "credentials": {
+        "telegramApi": {
+          "id": "hQFrHggBhkgjDG1s",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Processing your file. Please wait...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -3380,
+        300
+      ],
+      "id": "9e0c810d-e2b3-4787-b6c5-26e1ddac23e0",
+      "name": "Telegram1",
+      "webhookId": "dee1d160-5f99-4b62-b5e0-040683f6d1ac",
+      "credentials": {
+        "telegramApi": {
+          "id": "hQFrHggBhkgjDG1s",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4c516f30-2b3a-4aed-8655-40fe98afd514",
+              "leftValue": "={{ $binary.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3840,
+        600
+      ],
+      "id": "b7cefdc2-9d84-4718-a6e8-979c6fdfee95",
+      "name": "If file"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please extract the details of the image below",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary",
+              "imageDetail": "low"
+            },
+            {
+              "message": "You are an expert in home inspections. \n\nThe response should be structured in JSON format and include the following sections:\n\nProblem Areas Identified\n\nList and describe visible issues in the image (e.g., cracks, leaks, stains).\nIssue Classification\n\nClassify the issue into one of the following categories:\nCivil/Structural (cracks, foundation problems, wall damage)\nElectrical (exposed wires, burnt outlets, panel issues)\nPlumbing (leaks, water stains, pipe damage)\nOther (describe if different from the above).\nEstimated Measurements\n\nApproximate dimensions of the affected area (length, width, depth).\nSeverity rating (Minor, Moderate, Severe).\nRepair Cost Estimate\n\nProvide a low-end and high-end cost estimate for repairing the issue.\nBreak down costs into minor and major repairs (if applicable).\nBounding Box Coordinates\n\nReturn JSON coordinates for drawing rectangles around the affected areas using (x1, y1, x2, y2) format, where:\nx1, y1 = Top-left corner\nx2, y2 = Bottom-right corner\nAll coordinates should be in pixel values relative to the image size."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -2460,
+        580
+      ],
+      "id": "e83a63de-f3fa-4840-8ebb-48fe09392adc",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2480,
+        740
+      ],
+      "id": "ac0358dd-a2dd-4e8b-a160-8408f4d7adef",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GyDAChOVoEdQMzp2",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        360
+      ],
+      "id": "f8be8b1a-28d1-4d34-8cb3-3d520b175b03",
+      "name": "Telegram",
+      "webhookId": "8b2abd4d-fc07-4ab4-ab88-1a7693e99ab1",
+      "credentials": {
+        "telegramApi": {
+          "id": "hQFrHggBhkgjDG1s",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"Problem Areas Identified\": [\n        {\n            \"description\": \"Visible water stains and possible mold growth on the wall.\",\n            \"issue_classification\": \"Plumbing\",\n            \"location\": \"area to the top\"\n        }\n    ],\n    \"Estimated Measurements\": {\n        \"length\": \"1.5 meters\",\n        \"width\": \"0.5 meters\",\n        \"depth\": \"N/A\"\n    },\n    \"Severity Rating\": \"Moderate\",\n    \"Repair Cost Estimate\": {\n        \"low_end\": \"$200\",\n        \"high_end\": \"$800\"\n    },\n    \"Bounding Box Coordinates\": [\n        {\n            \"x1\": 100,\n            \"y1\": 50,\n            \"x2\": 350,\n            \"y2\": 200\n        }\n    ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -2260,
+        760
+      ],
+      "id": "4f3e8aca-8858-4639-bc37-59ffc214dc6c",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/annotate_image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "metadata",
+              "value": "={{JSON.stringify($('Basic LLM Chain1').first().json.output) }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1700,
+        360
+      ],
+      "id": "f2f24a3c-ba2a-4edc-a5cb-db9711040bdf",
+      "name": "Annotate Image"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2060,
+        360
+      ],
+      "id": "96ee96c8-2de6-4ce8-a75b-50bcab036285",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/extract_frames",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3340,
+        580
+      ],
+      "id": "539290fb-257e-4a33-a5ea-c576309ec483",
+      "name": "Extract Frames"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "images",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2860,
+        580
+      ],
+      "id": "32a43fbe-f05b-49ca-9ab6-868c6075119a",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "images",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -3060,
+        580
+      ],
+      "id": "ea63c7cb-41b7-40b3-a513-00fb6d7da345",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "function formatInspectionReport(jsonData) {\n    const output = jsonData\n    \n    let report = \"Inspection Report:\\n\\n\";\n    \n    // Problem Areas\n    report += \"Problem Areas Identified:\\n\";\n    output[\"Problem Areas Identified\"].forEach((area, index) => {\n        report += `${index + 1}. ${area.description} (Location: ${area.location})\\n`;\n          // Issue Classification\n        report += `\\nIssue Classification: ${area[\"issue_classification\"]}\\n`;\n    });\n    \n\n    report += `\\nSeverity: ${output[\"Severity Rating\"]}\\n`;\n    \n    // Estimated Measurements\n    report += \"\\nEstimated Measurements:\\n\";\n    Object.entries(output[\"Estimated Measurements\"]).forEach(([key, value]) => {\n        report += `  - ${key}: ${value}\\n`;\n    });\n    \n    // Repair Cost Estimate\n    report += \"\\nRepair Cost Estimate:\\n\";\n    report += `  - Low-end: ${output[\"Repair Cost Estimate\"][\"low_end\"]}\\n`;\n    report += `  - High-end: ${output[\"Repair Cost Estimate\"][\"high_end\"]}\\n\\n\\n`;\n    \n    return report;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.report = formatInspectionReport($('Basic LLM Chain1').first().json.output)  \n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1480,
+        360
+      ],
+      "id": "0d68cc2d-6bb2-4ecc-b19d-eaf2f73d5cb2",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3dbca8a7-0bba-42bf-bfe3-506a7365ea96"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        0,
+        -520
+      ],
+      "id": "41ef41a1-034b-446c-a3e6-8b7b89e540e4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $('Code').item.json.report }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -940,
+        360
+      ],
+      "id": "e0329d05-0ee5-4e0a-890b-a6030d24343c",
+      "name": "Telegram3",
+      "webhookId": "8b2abd4d-fc07-4ab4-ab88-1a7693e99ab1",
+      "credentials": {
+        "telegramApi": {
+          "id": "hQFrHggBhkgjDG1s",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        []
+      ]
+    },
+    "If file": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract Frames",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Annotate Image": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Annotate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Frames": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a28d6226-7e5a-4cd4-b648-2ea55da95beb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "MbW5sTTXdK8J6FEc",
+  "tags": [
+    {
+      "createdAt": "2025-03-07T03:39:57.151Z",
+      "updatedAt": "2025-03-07T03:39:57.151Z",
+      "id": "MakSQzhr9UccflxI",
+      "name": "v2"
+    }
+  ]
+}
