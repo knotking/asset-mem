@@ -86,30 +86,6 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
-        "text": "={{ $('Code1').item.json.report }}",
-        "additionalFields": {
-          "appendAttribution": false
-        }
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        -1000,
-        600
-      ],
-      "id": "4f11c5e6-1521-478a-8bb8-2500ff891e29",
-      "name": "Telegram3",
-      "webhookId": "8b2abd4d-fc07-4ab4-ab88-1a7693e99ab1",
-      "credentials": {
-        "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "promptType": "define",
         "text": "=Please extract the details of the image below",
         "hasOutputParser": true,
@@ -165,7 +141,9 @@
         "operation": "sendPhoto",
         "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
         "binaryData": true,
-        "additionalFields": {}
+        "additionalFields": {
+          "caption": "={{ $('Code1').item.json.report }}"
+        }
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -245,7 +223,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function formatInspectionReport(jsonData) {\n    const output = jsonData\n    \n    let report = \"Inspection Report:\\n\\n\";\n    \n    // Problem Areas\n    report += \"Problem Areas Identified:\\n\";\n    output[\"Problem Areas Identified\"].forEach((area, index) => {\n        report += `${index + 1}. ${area.description} (Location: ${area.location})\\n`;\n          // Issue Classification\n        report += `\\nIssue Classification: ${area[\"issue_classification\"]}\\n`;\n    });\n    \n\n    report += `\\nSeverity: ${output[\"Severity Rating\"]}\\n`;\n    \n    // Estimated Measurements\n    report += \"\\nEstimated Measurements:\\n\";\n    Object.entries(output[\"Estimated Measurements\"]).forEach(([key, value]) => {\n        report += `  - ${key}: ${value}\\n`;\n    });\n    \n    // Repair Cost Estimate\n    report += \"\\nRepair Cost Estimate:\\n\";\n    report += `  - Low-end: ${output[\"Repair Cost Estimate\"][\"low_end\"]}\\n`;\n    report += `  - High-end: ${output[\"Repair Cost Estimate\"][\"high_end\"]}\\n\\n\\n`;\n    \n    return report;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.report = formatInspectionReport($('Basic LLM Chain').first().json.output)  \n}\n\nreturn $input.all();"
+        "jsCode": "function formatInspectionReport(jsonData) {\n    const output = jsonData\n    \n    let report = \"Inspection Report:\\n\\n\";\n    \n    // Problem Areas\n    report += \"Problem Areas Identified:\\n\";\n    output[\"Problem Areas Identified\"].forEach((area, index) => {\n        report += `${index + 1}. ${area.description} (Location: ${area.location})\\n`;\n          // Issue Classification\n        report += `\\nIssue Classification: ${area[\"issue_classification\"]}\\n`;\n    });\n    \n\n    report += `\\nSeverity: ${output[\"Severity Rating\"]}\\n`;\n    \n    // Estimated Measurements\n    report += \"\\nEstimated Measurements:\\n\";\n    Object.entries(output[\"Estimated Measurements\"]).forEach(([key, value]) => {\n        report += `  - ${key}: ${value}\\n`;\n    });\n    \n    // Repair Cost Estimate\n    report += \"\\nRepair Cost Estimate:\\n\";\n    report += `  - Low-end: ${output[\"Repair Cost Estimate\"][\"low_end\"]}\\n`;\n    report += `  - High-end: ${output[\"Repair Cost Estimate\"][\"high_end\"]}\\n\\n\\n`;\n    \n    return report;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const [index,item] of $input.all().entries()) {\n  item.json.report = formatInspectionReport($('Basic LLM Chain').all()[index].json.output)  \n}\n\nreturn $input.all();"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -321,13 +299,7 @@
     },
     "Telegram2": {
       "main": [
-        [
-          {
-            "node": "Telegram3",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Structured Output Parser": {
@@ -379,7 +351,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "31b73b7d-a6cf-4b93-995d-d8571792f368",
+  "versionId": "83e57e87-500b-42bd-aaea-f2d5f427d273",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
