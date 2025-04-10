@@ -31,9 +31,9 @@ class ImageAnalyzer:
             edges = cv2.Canny(blurred, 50, 150)
             contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
-            for area in problem_areas:
-                x1, y1, x2, y2 = area["x1"], area["y1"], area["x2"], area["y2"]
-                cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            # for area in problem_areas:
+            #     x1, y1, x2, y2 = area["x1"], area["y1"], area["x2"], area["y2"]
+            #     cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
             
             # Overlay OpenCV-detected problem areas
             cv2.drawContours(cv_image, contours, -1, (255, 0, 0), 2)
