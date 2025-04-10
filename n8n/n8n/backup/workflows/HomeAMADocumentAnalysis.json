@@ -1,0 +1,1689 @@
+{
+  "name": "HomeAMADocumentAnalysis",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "homegeek",
+          "mode": "list",
+          "cachedResultName": "homegeek"
+        },
+        "options": {
+          "collectionConfig": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1,
+      "position": [
+        -1780,
+        -500
+      ],
+      "id": "7d405044-873a-4cfd-b123-d55bac6e4c84",
+      "name": "Qdrant Vector Store",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "splitPages": false,
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "message",
+                "value": "={{ $json.message }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        -300
+      ],
+      "id": "8223de58-8e5e-4c81-9dec-22831ab0dcc3",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 3000,
+        "chunkOverlap": 300,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        -140
+      ],
+      "id": "74f5bc23-a478-4985-bce4-687752479690",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        1720
+      ],
+      "id": "28681a67-e631-4e2d-af7f-ecc2b6dc7fc9",
+      "name": "Telegram",
+      "webhookId": "8a8d3b8c-9763-4e98-92d5-d673cb9e4a10",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/homeama/points/delete",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "qdrantApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.message.from.id\",\n        \"match\": {\n          \"value\":{{ $('Telegram Trigger').item.json.message.from.id }}\n        }\n      },\n      {\n        \"key\": \"metadata.message.document.file_name\",\n        \"match\": {\n          \"value\":\"{{ $('Telegram Trigger').item.json.message.document.file_name }}\"\n        }\n      }\n  \n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2280,
+        -280
+      ],
+      "id": "b0594325-74c0-400e-93d3-83d547d70bbf",
+      "name": "Delete Existing Store Entries",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2120,
+        -500
+      ],
+      "id": "423d9483-1152-470e-9dc2-c4ed80c638ce",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3460,
+        580
+      ],
+      "id": "60eed9ff-5144-4a5e-bb03-92f43633601d",
+      "name": "Telegram Trigger",
+      "webhookId": "30849c53-65ca-4637-969c-8dc22a0fff9c",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Processing your file. Please wait...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2280,
+        -660
+      ],
+      "id": "98651570-bee4-40de-8386-5754439fa01b",
+      "name": "Telegram1",
+      "webhookId": "94970973-a0fc-4cdd-b87d-a61da39a469e",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "=Risk Assessment: {{ $('Get Reports').item.json.report.riskAssessment }}. Details in the attached file",
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        680
+      ],
+      "id": "0ec0161c-02e2-4a75-b316-dd116aabc1f5",
+      "name": "Telegram2",
+      "webhookId": "c6c7be75-c280-44d5-8a7c-51d505580fa9",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyse issues",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=\nYou are an AI specialized in analyzing home inspection reports.\n\nYou will receive a **partial section** of a home inspection document as input.\n\n---\n\nYour task:\nExtract **only the actual observed issues** from the text and organize them under the following categories:\n\n- **Structure** (e.g., foundation cracks, water damage)  \n- **Electrical** (e.g., faulty wiring, corroded panels)  \n- **Plumbing** (e.g., leaks, drainage issues)  \n- **HVAC** (e.g., AC or heating failures)  \n- **Pest** (e.g., termite damage, rodent infestation)  \n\n---\n\nIgnore the following:\n- Checklist items (e.g., “Check if GFCI outlets work.”)  \n- Recommendations (e.g., “Consider upgrading your insulation.”)  \n- Maintenance tips or general advice  \n- Statements that do not describe a defect, damage, or risk  \n\n---\n\nFor each valid issue, include:\n- A **brief description** (`source`)  \n- A **severity level** from **1 to 6**:\n  - **1 (Severe):** Critical issue requiring urgent repair\n  - **2 (Major):** Affects home safety  \n  - **3 (Moderate):** Needs attention soon\n  - **4 (Minor):** Needs maintenance\n  - **5 (Cosmetic):** Minor wear and tear\n  - **6 (Observation):** No issue found\n\n---\n\nOutput format (strict):\nReturn **only** a **valid JSON object** — no extra text, comments, or formatting.\n\n{\n  \"issues\": [\n    {\n      \"category\": \"Structure\",\n      \"source\": \"Foundation crack near the garage wall\",\n      \"severity\": 5\n    },\n    {\n      \"category\": \"Plumbing\",\n      \"source\": \"Leak observed under kitchen sink\",\n      \"severity\": 3\n    }\n  ]\n}\n\n---\n\nInput:  \nThe given inspection text is:  \n{{ $json.pageContent }}\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -1020,
+        -500
+      ],
+      "id": "50a73acd-7ba8-4a4d-8896-a336f423aee5",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "mergedIssues",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -500
+      ],
+      "id": "d896d308-db90-451c-9b2b-78474e957f16",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "maxItems": 30,
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -1340,
+        -500
+      ],
+      "id": "34383125-8144-44cd-a886-cf6afa11bc04",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.entities[0].type }}",
+                    "rightValue": "bot_command",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "9f78bd97-16e5-46fd-8b0a-3a19a1b5ae9b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Analyse"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2420,
+        800
+      ],
+      "id": "d217006d-6409-42b1-8097-9fbd37e103de",
+      "name": "Switch on bot command"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1eac1233-4044-4ad4-a887-d1a13cada197",
+              "name": "botCommand",
+              "value": "={{ $('Switch on bot command').item.json.message.text.slice(1) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2240,
+        700
+      ],
+      "id": "bf3c911d-2277-4b78-a37d-984377d09b19",
+      "name": "Extract Bot Command"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.value }}",
+                    "rightValue": "risk_assessment_chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9aad83b2-7290-4e12-ae3e-0a4a2f17de0b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Risk Assessment"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1780,
+        1140
+      ],
+      "id": "3da8707a-c944-4804-be7b-bb5eaf2fd7f0",
+      "name": "Switch on Chat Mode"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n const severityMap = new Map();\n  let mergedIssues = []\n  try {\n  mergedIssues = item.json.mergedIssues.flatMap(issue => JSON.parse(issue.text).issues || []);  \n  } catch(err) {}\n  \n\nfor (const issue of mergedIssues) {\n  severityMap.set(issue?.severity, (severityMap.get(issue?.severity) || 0) + 1);\n}\n\nconst severityEnum = { Critical: 6, Major: 5 };\nconst riskEnum = { High: \"High\", Medium: \"Medium\", Low: \"Low\" };\n\nconst criticalCount = severityMap.get(severityEnum.Critical) || 0;\nconst majorCount = severityMap.get(severityEnum.Major) || 0;\n\nconst riskAssessment = criticalCount > 1 ? riskEnum.High : majorCount > 1 ? riskEnum.Medium : riskEnum.Low;\n\nitem.json.finalAssessment = { riskAssessment, issues: mergedIssues }\nitem.json.mergedIssues = {}\n}\n\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        -500
+      ],
+      "id": "8017f718-91fd-4590-af94-5877c5678448",
+      "name": "Report JSON Formatter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dfd00de8-c345-4519-b3b1-140a1396ed15",
+              "name": "response.text",
+              "value": "={{ $json.finalAssessment }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -260,
+        -500
+      ],
+      "id": "a3dcf3ca-5b95-4b79-83fc-f5b851263dd7",
+      "name": "Report JSON Mapper"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_reports",
+          "mode": "list",
+          "cachedResultName": "user_reports"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+            "file_name": "={{ $('Telegram Trigger').item.json.message.document.file_name }}",
+            "report": "={{ $('Report JSON Mapper').item.json.response.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "report",
+              "displayName": "report",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "user_id",
+            "file_name",
+            "report"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        80,
+        -500
+      ],
+      "id": "a3b44a88-0df1-4c32-9607-17330a4f1031",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "=RiskAssessment_{{$now.format('yyyy-MM-dd')  }}.csv"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -760,
+        680
+      ],
+      "id": "0f0c8b8f-37a5-4167-a230-151ed3f27095",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "report.issues",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        680
+      ],
+      "id": "e35017cc-69b1-421b-bccd-fecafad300b5",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -440,
+        1000
+      ],
+      "id": "d1c508ed-00c1-4a34-88a2-4f73f2b6f9e5",
+      "name": "Telegram5",
+      "webhookId": "114cafa6-4867-4d95-b540-8e082e59eb66",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## General Chat with the uploaded home inspection report",
+        "height": 940,
+        "width": 1540,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        1620
+      ],
+      "id": "f98968d8-f52a-4174-b707-685dd4f742ab",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Chat with risk assessment report",
+        "height": 600,
+        "width": 1520,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        920
+      ],
+      "id": "d7a6e18a-8b75-4cea-8907-bd86c4023255",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Send the risk assessment report as csv file",
+        "height": 380,
+        "width": 1520,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        500
+      ],
+      "id": "e0505b08-140c-4fd9-97e3-e6dcfe480c3f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Generate risk assessment report and store in postgres database\n",
+        "height": 600,
+        "width": 1520,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1060,
+        -600
+      ],
+      "id": "64c0493b-0b96-4bea-a303-6c07a07cbe8d",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Preprocess file ",
+        "height": 1080,
+        "width": 1320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2520,
+        -740
+      ],
+      "id": "835b64ad-fb2f-42f3-a68f-cb865fe99611",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4c516f30-2b3a-4aed-8655-40fe98afd514",
+              "leftValue": "={{ $binary.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3200,
+        580
+      ],
+      "id": "97890479-db3e-4bf9-b962-67a8888c5c26",
+      "name": "If file"
+    },
+    {
+      "parameters": {
+        "content": "## Preprocess Bot Command or Chat\n",
+        "height": 780,
+        "width": 1360,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2520,
+        620
+      ],
+      "id": "609d7a74-ac9a-4163-a0e8-5506d6337813",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Processing complete. Please use the bot commands to chat",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        -500
+      ],
+      "id": "a6f75ca1-89e9-42d7-9ac7-e9c5e1b52162",
+      "name": "Telegram3",
+      "webhookId": "4e8db7c7-d109-4e8c-a2da-a9e752ded4ea",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "70142064-dcbe-44de-846c-d0761cf2eb86",
+              "name": "systemPrompt",
+              "value": "You are an AI assistant specializing in analyzing home inspection reports. Follow these instructions carefully:\nYou have access to a tool to assist getting the details of the inspection reports.\nThe following tool is available\n** Fetch Inspection Reports ***\n1) This gets you the details of the inspection reports\n\n\nImportant:\n1) Do not simulate or make up your answers. If you don't have an answer respond back saying that you could not find the answer\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -940,
+        1720
+      ],
+      "id": "51ab7875-56f9-411c-9d38-7a93e4c94790",
+      "name": "Set System Prompt"
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_reports",
+          "mode": "list",
+          "cachedResultName": "user_reports"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "user_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -100,
+        -500
+      ],
+      "id": "8c3fee2d-fef7-4918-b324-325016ea70b4",
+      "name": "Delete Rows",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1860,
+        -280
+      ],
+      "id": "ca6c6e8b-9963-42a1-8383-9563562088c3",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "xTmY18oTuFYGfOX3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "responseFormat": "json_object",
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -980,
+        -280
+      ],
+      "id": "3dbafb29-f1dc-48ce-8863-45635c677fa5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "xTmY18oTuFYGfOX3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -920,
+        1240
+      ],
+      "id": "de202909-e35b-4882-bab9-89c1231b8f34",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xTmY18oTuFYGfOX3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -860,
+        1940
+      ],
+      "id": "d7cf9ce2-16e0-4eab-a587-bfed6d5ad779",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "xTmY18oTuFYGfOX3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        2180
+      ],
+      "id": "a359781b-3b33-4530-adc0-957d77826f78",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xTmY18oTuFYGfOX3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ general-$('Telegram Trigger').item.json.message.from.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -700,
+        1960
+      ],
+      "id": "ef296785-6fbb-4e52-a397-932ca1a79b77",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "inspection_reports",
+        "toolDescription": "Use this tool to fetch parts of the inspection reports stored in the vector store. ",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "homegeek",
+          "mode": "list",
+          "cachedResultName": "homegeek"
+        },
+        "options": {
+          "searchFilterJson": "={\n  \"should\": [\n    {\n      \"key\": \"metadata.message.from.id\",\n      \"match\": {\n        \"value\": {{ $('Telegram Trigger').item.json.message.from.id }}\n      }\n    }\n  ]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        2000
+      ],
+      "id": "26993995-27b2-4c1d-b431-b456856390ad",
+      "name": "Fetch Inspection Reports",
+      "credentials": {
+        "qdrantApi": {
+          "id": "sFfERYppMeBnFNeA",
+          "name": "Local QdrantApi database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract Bot Command').item.json.botCommand }}",
+                    "rightValue": "risk_assessment_chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9aad83b2-7290-4e12-ae3e-0a4a2f17de0b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Risk Assessment"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1800,
+        700
+      ],
+      "id": "e41c84fc-2ddb-4d92-a5e6-24fd817b3833",
+      "name": "Switch on Chat Mode1"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_reports",
+          "mode": "list",
+          "cachedResultName": "user_reports"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "user_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1440,
+        680
+      ],
+      "id": "23d24b8f-8b26-4fb6-baf7-8579e79cf80a",
+      "name": "Get Reports",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "I can help you with understanding home inspection report. Do you have any specific questions?",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1440,
+        880
+      ],
+      "id": "39eb1912-331d-4eff-9b58-db331de347b0",
+      "name": "Telegram4",
+      "webhookId": "c6c7be75-c280-44d5-8a7c-51d505580fa9",
+      "credentials": {
+        "telegramApi": {
+          "id": "pQMWb7WjVoIlD1dY",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ risk-assessment-$('Telegram Trigger').item.json.message.from.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -780,
+        1260
+      ],
+      "id": "e122aea2-585e-4705-a4af-a0471e786f6a",
+      "name": "Window Buffer Memory1"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_reports",
+          "mode": "list",
+          "cachedResultName": "user_reports"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "user_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -640,
+        1260
+      ],
+      "id": "ad8461c8-462e-4a0c-a473-dec66df1c75a",
+      "name": "Fetch Reports",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Switch on bot command').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=You are an AI assistant specializing in analyzing home inspection reports. Follow these instructions carefully:\nYou have access to a tool to assist getting the details of the inspection reports issues.\nThe following tool is available\n** Fetch Issues ***\n1) This gets you the details of the issues identified from home inspection reports\n2) The format of the issues has the following JSON representation\n[\n  {\n    \"category\": \"...\",\n    \"source\": \"...\".\n    \"severity\": 2\n  }\n]\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -900,
+        1040
+      ],
+      "id": "77db4939-f15a-4deb-8e7c-57dae9501e2a",
+      "name": "Risk Assessment AI Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Switch on bot command').item.json.message.text }}",
+        "options": {
+          "systemMessage": "={{$json.systemPrompt}}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -720,
+        1720
+      ],
+      "id": "5f9b9944-6d51-4228-abb1-b2b5a81fa7fa",
+      "name": "Home Inspection AI Agent Assisstant"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_preferences",
+          "mode": "list",
+          "cachedResultName": "user_preferences"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "key": "chatMode",
+            "user_id": "={{ $('Switch on bot command').item.json.message.from.id }}",
+            "value": "={{ $json.botCommand }}"
+          },
+          "matchingColumns": [
+            "user_id",
+            "key"
+          ],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "key",
+              "displayName": "key",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "outputColumns": [
+            "value"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2020,
+        700
+      ],
+      "id": "6147fd69-d8ef-47aa-af6f-65c343439381",
+      "name": "Set Chat Mode In KV",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "user_preferences",
+          "mode": "list",
+          "cachedResultName": "user_preferences"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "user_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "column": "key",
+              "value": "chatMode"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "value"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2220,
+        1140
+      ],
+      "id": "d79be2a3-ba73-48ce-8f37-abad46d15cb3",
+      "name": "Get Chat Mode from KV",
+      "credentials": {
+        "postgres": {
+          "id": "hcCOMJ47EWfTWVCX",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Existing Store Entries": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        []
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        [
+          {
+            "node": "Report JSON Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on bot command": {
+      "main": [
+        [
+          {
+            "node": "Extract Bot Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Chat Mode from KV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Bot Command": {
+      "main": [
+        [
+          {
+            "node": "Set Chat Mode In KV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on Chat Mode": {
+      "main": [
+        [
+          {
+            "node": "Risk Assessment AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report JSON Formatter": {
+      "main": [
+        [
+          {
+            "node": "Report JSON Mapper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report JSON Mapper": {
+      "main": [
+        [
+          {
+            "node": "Delete Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If file": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Delete Existing Store Entries",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch on bot command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Home Inspection AI Agent Assisstant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Rows": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Risk Assessment AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Home Inspection AI Agent Assisstant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Fetch Inspection Reports",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Home Inspection AI Agent Assisstant",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Inspection Reports": {
+      "ai_tool": [
+        [
+          {
+            "node": "Home Inspection AI Agent Assisstant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch on Chat Mode1": {
+      "main": [
+        [
+          {
+            "node": "Get Reports",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Reports": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Risk Assessment AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Reports": {
+      "ai_tool": [
+        [
+          {
+            "node": "Risk Assessment AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Assessment AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Home Inspection AI Agent Assisstant": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Chat Mode In KV": {
+      "main": [
+        [
+          {
+            "node": "Switch on Chat Mode1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chat Mode from KV": {
+      "main": [
+        [
+          {
+            "node": "Switch on Chat Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "12d9dbac-3343-452c-8857-b0d4a33d96dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "XBDCK9Bdi6UtxZOC",
+  "tags": [
+    {
+      "createdAt": "2025-03-07T03:39:57.151Z",
+      "updatedAt": "2025-03-07T03:39:57.151Z",
+      "id": "MakSQzhr9UccflxI",
+      "name": "v2"
+    }
+  ]
+}
