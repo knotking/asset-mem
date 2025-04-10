@@ -21,7 +21,7 @@
       "webhookId": "3ae1d7df-5610-48bd-8078-83ae667d6283",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "pQMWb7WjVoIlD1dY",
           "name": "Telegram account"
         }
       }
@@ -45,7 +45,7 @@
       "webhookId": "7d2c6ecd-b0cb-44c9-8d5a-1b32446f0bae",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "pQMWb7WjVoIlD1dY",
           "name": "Telegram account"
         }
       }
@@ -131,7 +131,7 @@
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "GyDAChOVoEdQMzp2",
+          "id": "xTmY18oTuFYGfOX3",
           "name": "OpenAi account"
         }
       }
@@ -156,7 +156,7 @@
       "webhookId": "8b2abd4d-fc07-4ab4-ab88-1a7693e99ab1",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "pQMWb7WjVoIlD1dY",
           "name": "Telegram account"
         }
       }
