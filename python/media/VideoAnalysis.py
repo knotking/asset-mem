@@ -11,7 +11,7 @@ class VideoAnalyzer:
     def __init__(self, video_path, threshold=0.5):
         """Initialize the VideoAnalyzer with a binary video file and threshold."""
         self.threshold = threshold
-        self.saved_count = 0
+        self.saved_count = 1
         self.scene_changed = False
         print("Video file:", video_path)
         # Create a temporary file to store the binary video data
@@ -41,8 +41,14 @@ class VideoAnalyzer:
 
         # Compute SSIM between the two frames
         score, _ = ssim(gray1, gray2, full=True)
+        print("Score = ", score)
         return score < self.threshold  # Return True if the change is significant 
 
+    def frame_to_bytes(self, frame):
+        # Encode the current frame as a JPEG image in memory
+        _, buffer = cv2.imencode('.jpg', frame)
+        return buffer.tobytes()
+    
     def process_video(self):
         """Process the video to detect significant scene changes and return binary images as FastAPI JSON response."""
         
@@ -56,17 +62,18 @@ class VideoAnalyzer:
             exit()
 
         frames_data = []  # List to store binary image data
+        frames_data.append(self.frame_to_bytes(prev_frame))
         while cap.isOpened():
             ret, curr_frame = cap.read()
             if not ret:
                 break  # Stop if video ends
 
             # Check for significant scene change
+            print("Checking for significant_change:")
             if self.is_significant_change(prev_frame, curr_frame):
+                print("Scene Changed")
                 self.scene_changed = True  # At least one scene change detected
-                # Encode the current frame as a JPEG image in memory
-                _, buffer = cv2.imencode('.jpg', curr_frame)  # Encode frame to JPEG
-                frames_data.append(buffer.tobytes())  # Append binary data to the list
+                frames_data.append(self.frame_to_bytes(curr_frame))  # Append binary data to the list
                 self.saved_count += 1
 
             prev_frame = curr_frame
@@ -74,13 +81,13 @@ class VideoAnalyzer:
         cap.release()
         cv2.destroyAllWindows()
 
-        # If no scene change was detected, save only the first frame
-        if not self.scene_changed:
-            _, buffer = cv2.imencode('.jpg', prev_frame)  # Encode the single frame as JPEG
-            frames_data.append(buffer.tobytes())  # Append binary data to the list
-            print("Only one scene detected. Saved: single_scene.jpg")
-        else:
-            print(f"Total unique frames saved: {self.saved_count}")
+        # # If no scene change was detected, save only the first frame
+        # if not self.scene_changed:
+        #     _, buffer = cv2.imencode('.jpg', prev_frame)  # Encode the single frame as JPEG
+        #     frames_data.append(buffer.tobytes())  # Append binary data to the list
+        #     print("Only one scene detected. Saved: single_scene.jpg")
+        # else:
+        #     print(f"Total unique frames saved: {self.saved_count}")
 
         # Clean up the temporary video file
         os.remove(self.video_path)

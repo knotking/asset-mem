@@ -141,7 +141,9 @@
         "operation": "sendPhoto",
         "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
         "binaryData": true,
-        "additionalFields": {}
+        "additionalFields": {
+          "caption": "={{ $('Code').item.json.report }}"
+        }
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
@@ -276,12 +278,12 @@
     },
     {
       "parameters": {
-        "jsCode": "function formatInspectionReport(jsonData) {\n    const output = jsonData\n    \n    let report = \"Inspection Report:\\n\\n\";\n    \n    // Problem Areas\n    report += \"Problem Areas Identified:\\n\";\n    output[\"Problem Areas Identified\"].forEach((area, index) => {\n        report += `${index + 1}. ${area.description} (Location: ${area.location})\\n`;\n          // Issue Classification\n        report += `\\nIssue Classification: ${area[\"issue_classification\"]}\\n`;\n    });\n    \n\n    report += `\\nSeverity: ${output[\"Severity Rating\"]}\\n`;\n    \n    // Estimated Measurements\n    report += \"\\nEstimated Measurements:\\n\";\n    Object.entries(output[\"Estimated Measurements\"]).forEach(([key, value]) => {\n        report += `  - ${key}: ${value}\\n`;\n    });\n    \n    // Repair Cost Estimate\n    report += \"\\nRepair Cost Estimate:\\n\";\n    report += `  - Low-end: ${output[\"Repair Cost Estimate\"][\"low_end\"]}\\n`;\n    report += `  - High-end: ${output[\"Repair Cost Estimate\"][\"high_end\"]}\\n\\n\\n`;\n    \n    return report;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.report = formatInspectionReport($('Basic LLM Chain1').first().json.output)  \n}\n\nreturn $input.all();"
+        "jsCode": "function formatInspectionReport(jsonData) {\n    const output = jsonData\n    \n    let report = \"Inspection Report:\\n\\n\";\n    \n    // Problem Areas\n    report += \"Problem Areas Identified:\\n\";\n    output[\"Problem Areas Identified\"].forEach((area, index) => {\n        report += `${index + 1}. ${area.description} (Location: ${area.location})\\n`;\n          // Issue Classification\n        report += `\\nIssue Classification: ${area[\"issue_classification\"]}\\n`;\n    });\n    \n\n    report += `\\nSeverity: ${output[\"Severity Rating\"]}\\n`;\n    \n    // Estimated Measurements\n    report += \"\\nEstimated Measurements:\\n\";\n    Object.entries(output[\"Estimated Measurements\"]).forEach(([key, value]) => {\n        report += `  - ${key}: ${value}\\n`;\n    });\n    \n    // Repair Cost Estimate\n    report += \"\\nRepair Cost Estimate:\\n\";\n    report += `  - Low-end: ${output[\"Repair Cost Estimate\"][\"low_end\"]}\\n`;\n    report += `  - High-end: ${output[\"Repair Cost Estimate\"][\"high_end\"]}\\n\\n\\n`;\n    \n    return report;\n}\n// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const [index, item] of $input.all().entries()) {\n  console.log(\"Index, item\", index, item, )\n  item.json.report = formatInspectionReport($('Basic LLM Chain1').all()[index].json.output)  \n}\n\nreturn $input.all();"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1480,
+        -1440,
         360
       ],
       "id": "0d68cc2d-6bb2-4ecc-b19d-eaf2f73d5cb2",
@@ -325,30 +327,6 @@
       ],
       "id": "41ef41a1-034b-446c-a3e6-8b7b89e540e4",
       "name": "Switch"
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
-        "text": "={{ $('Code').item.json.report }}",
-        "additionalFields": {
-          "appendAttribution": false
-        }
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        -940,
-        360
-      ],
-      "id": "e0329d05-0ee5-4e0a-890b-a6030d24343c",
-      "name": "Telegram3",
-      "webhookId": "8b2abd4d-fc07-4ab4-ab88-1a7693e99ab1",
-      "credentials": {
-        "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
-          "name": "Telegram account"
-        }
-      }
     }
   ],
   "pinData": {},
@@ -492,13 +470,7 @@
     },
     "Telegram": {
       "main": [
-        [
-          {
-            "node": "Telegram3",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
@@ -506,7 +478,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "a28d6226-7e5a-4cd4-b648-2ea55da95beb",
+  "versionId": "b52fc621-d7e2-468a-9a27-f24499da9d70",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
