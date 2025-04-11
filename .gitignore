@@ -176,3 +176,4 @@ python/frames
 python/.venv
 python/venv/
 **/.DS_Store
+deployment/terraform/.terraform

@@ -1,0 +1,151 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 10,
+  "lineage": "dc1f02fc-46dd-d1e5-bd3b-cc86c3faae1b",
+  "outputs": {
+    "instance_ip": {
+      "value": null,
+      "type": "string"
+    },
+    "instance_name": {
+      "value": null,
+      "type": "string"
+    },
+    "instance_zone": {
+      "value": null,
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "google_compute_firewall",
+      "name": "allow_ports",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "index_key": "5432",
+          "schema_version": 1,
+          "attributes": {
+            "allow": [
+              {
+                "ports": [
+                  "5432"
+                ],
+                "protocol": "tcp"
+              }
+            ],
+            "creation_timestamp": "2025-04-11T01:39:18.478-07:00",
+            "deny": [],
+            "description": "Allow port 5432",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/homegeekdemo/global/firewalls/allow-port-5432",
+            "log_config": [],
+            "name": "allow-port-5432",
+            "network": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/networks/default",
+            "priority": 1000,
+            "project": "homegeekdemo",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/firewalls/allow-port-5432",
+            "source_ranges": [
+              "0.0.0.0/0"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [
+              "homegeek-demo"
+            ],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9"
+        },
+        {
+          "index_key": "5678",
+          "schema_version": 1,
+          "attributes": {
+            "allow": [
+              {
+                "ports": [
+                  "5678"
+                ],
+                "protocol": "tcp"
+              }
+            ],
+            "creation_timestamp": "2025-04-11T01:39:12.567-07:00",
+            "deny": [],
+            "description": "Allow port 5678",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/homegeekdemo/global/firewalls/allow-port-5678",
+            "log_config": [],
+            "name": "allow-port-5678",
+            "network": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/networks/default",
+            "priority": 1000,
+            "project": "homegeekdemo",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/firewalls/allow-port-5678",
+            "source_ranges": [
+              "0.0.0.0/0"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [
+              "homegeek-demo"
+            ],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9"
+        },
+        {
+          "index_key": "6333",
+          "schema_version": 1,
+          "attributes": {
+            "allow": [
+              {
+                "ports": [
+                  "5678"
+                ],
+                "protocol": "tcp"
+              }
+            ],
+            "creation_timestamp": "2025-04-11T01:39:12.567-07:00",
+            "deny": [],
+            "description": "Allow port 5678",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/homegeekdemo/global/firewalls/allow-port-5678",
+            "log_config": [],
+            "name": "allow-port-5678",
+            "network": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/networks/default",
+            "priority": 1000,
+            "project": "homegeekdemo",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/homegeekdemo/global/firewalls/allow-port-5678",
+            "source_ranges": [
+              "0.0.0.0/0"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [
+              "homegeek-demo"
+            ],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9"
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
