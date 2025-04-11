@@ -2,6 +2,7 @@ volumes:
   n8n_storage:
   postgres_storage:
   qdrant_storage:
+  api_storage:
 
 networks:
   homeama:
@@ -114,3 +115,23 @@ services:
       - ./n8n/backup:/backup
     depends_on:
       - qdrant
+
+  api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+    networks: ["homeama"]
+    working_dir: /app
+    volumes:
+      - api_storage:/home/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    # command: ["tail", "-f", "/dev/null"]

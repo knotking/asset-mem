@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, Form
 from pydantic import BaseModel
-from model.Model import ModelHandler  # Now Python can find the model package
 from media.ImageAnalysis import ImageAnalyzer
 from media.VideoAnalysis import VideoAnalyzer
 # Initialize FastAPI app
@@ -13,15 +12,6 @@ class TextRequest(BaseModel):
     text: str
     model: str
 
-
-# Define API endpoint
-@app.post("/classify")
-async def classify(request: TextRequest):
-    # Initialize model handler
-    print('REQUEST:', request)
-    model_handler = ModelHandler(request.model)
-    result = model_handler.classify_document(request.text)
-    return result
 
 @app.post("/annotate_image")
 async def annotate_image(file: UploadFile, metadata: str = Form(...)):
