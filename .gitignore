@@ -169,11 +169,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-python/model/trained_models/*
-python/model/results
-python/uploaded_videos
-python/frames
-python/.venv
-python/venv/
+server/model/trained_models/*
+server/model/results
+server/uploaded_videos
+server/frames
+server/.venv
+server/venv/
 **/.DS_Store
 deployment/terraform/.terraform
