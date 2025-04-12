@@ -24,3 +24,15 @@ gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:321433914812-compute@developer.gserviceaccount.com" \
   --role="roles/compute.instanceAdmin.v1"
 ```
+
+### Github action
+```
+Google Cloud Service Account:
+
+Create a service account in Google Cloud with the necessary permissions (e.g., roles/compute.admin, roles/storage.admin).
+Generate a JSON key for the service account and add it as a GitHub secret (GCP_SERVICE_ACCOUNT_KEY).
+GitHub Secrets:
+
+GCP_PROJECT_ID: The Google Cloud project ID.
+GCP_SERVICE_ACCOUNT_KEY: The JSON key for the service account.
+```
