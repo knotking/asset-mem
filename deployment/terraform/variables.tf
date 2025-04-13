@@ -53,3 +53,8 @@ variable "gcs_bucket_name" {
   description = "GCS bucket name for backups"
   default     = "homegeekdemo"
 }
+
+variable "static_ip" {
+  description = "The static IP address to assign to the VM instance"
+  default     = "demo"
+}
