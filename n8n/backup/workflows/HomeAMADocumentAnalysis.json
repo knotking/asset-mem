@@ -90,7 +90,7 @@
       "webhookId": "8a8d3b8c-9763-4e98-92d5-d673cb9e4a10",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -154,7 +154,7 @@
       "webhookId": "30849c53-65ca-4637-969c-8dc22a0fff9c",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -178,7 +178,7 @@
       "webhookId": "94970973-a0fc-4cdd-b87d-a61da39a469e",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -204,7 +204,7 @@
       "webhookId": "c6c7be75-c280-44d5-8a7c-51d505580fa9",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -477,7 +477,7 @@
       "name": "Postgres",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -531,7 +531,7 @@
       "webhookId": "114cafa6-4867-4d95-b540-8e082e59eb66",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -685,7 +685,7 @@
       "webhookId": "4e8db7c7-d109-4e8c-a2da-a9e752ded4ea",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -749,7 +749,7 @@
       "name": "Delete Rows",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -768,7 +768,7 @@
       "name": "Embeddings OpenAI",
       "credentials": {
         "openAiApi": {
-          "id": "xTmY18oTuFYGfOX3",
+          "id": "5BULu0MwOIYgKp8C",
           "name": "OpenAi account"
         }
       }
@@ -796,7 +796,7 @@
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
-          "id": "xTmY18oTuFYGfOX3",
+          "id": "5BULu0MwOIYgKp8C",
           "name": "OpenAi account"
         }
       }
@@ -820,7 +820,7 @@
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "xTmY18oTuFYGfOX3",
+          "id": "5BULu0MwOIYgKp8C",
           "name": "OpenAi account"
         }
       }
@@ -845,7 +845,7 @@
       "name": "OpenAI Chat Model2",
       "credentials": {
         "openAiApi": {
-          "id": "xTmY18oTuFYGfOX3",
+          "id": "5BULu0MwOIYgKp8C",
           "name": "OpenAi account"
         }
       }
@@ -864,7 +864,7 @@
       "name": "Embeddings OpenAI1",
       "credentials": {
         "openAiApi": {
-          "id": "xTmY18oTuFYGfOX3",
+          "id": "5BULu0MwOIYgKp8C",
           "name": "OpenAi account"
         }
       }
@@ -991,7 +991,7 @@
       "name": "Get Reports",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -1016,7 +1016,7 @@
       "webhookId": "c6c7be75-c280-44d5-8a7c-51d505580fa9",
       "credentials": {
         "telegramApi": {
-          "id": "pQMWb7WjVoIlD1dY",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -1069,7 +1069,7 @@
       "name": "Fetch Reports",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -1183,7 +1183,7 @@
       "name": "Set Chat Mode In KV",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -1231,7 +1231,7 @@
       "name": "Get Chat Mode from KV",
       "credentials": {
         "postgres": {
-          "id": "hcCOMJ47EWfTWVCX",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -1672,7 +1672,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "12d9dbac-3343-452c-8857-b0d4a33d96dc",
+  "versionId": "4a165b15-f1c9-4430-93a7-7e9dd7307646",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"

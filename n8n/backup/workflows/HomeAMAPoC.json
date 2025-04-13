@@ -89,7 +89,7 @@
       "webhookId": "35d54583-5f56-4717-a2e5-28810144215a",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -153,7 +153,7 @@
       "webhookId": "33c74d0c-46c9-4eb2-b657-9d69983e80b0",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -229,7 +229,7 @@
       "webhookId": "e861f183-05c0-45c3-b553-e4720783b605",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -255,7 +255,7 @@
       "webhookId": "7d3b7417-b483-4365-bee3-db66980878fa",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -688,7 +688,7 @@
       "name": "Postgres",
       "credentials": {
         "postgres": {
-          "id": "f6dHMI0OaWj8m6GY",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -728,7 +728,7 @@
       "name": "Postgres1",
       "credentials": {
         "postgres": {
-          "id": "f6dHMI0OaWj8m6GY",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
@@ -803,7 +803,7 @@
       "webhookId": "35d54583-5f56-4717-a2e5-28810144215a",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -1009,7 +1009,7 @@
       "webhookId": "e861f183-05c0-45c3-b553-e4720783b605",
       "credentials": {
         "telegramApi": {
-          "id": "hQFrHggBhkgjDG1s",
+          "id": "UdpKoSsKlBeV3f7F",
           "name": "Telegram account"
         }
       }
@@ -1073,7 +1073,7 @@
       "name": "Delete Rows",
       "credentials": {
         "postgres": {
-          "id": "f6dHMI0OaWj8m6GY",
+          "id": "4UhXr0BPseYnogo5",
           "name": "Postgres account"
         }
       }
