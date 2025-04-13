@@ -5,7 +5,7 @@ until curl -f http://qdrant:6333/readyz; do sleep 5; done;
         -H 'Content-Type: application/json' \
         -d '{
             "vectors": {
-            "size": 3072,
+            "size": 1536,
             "distance": "Cosine"
             }
         }'    
