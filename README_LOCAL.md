@@ -10,14 +10,7 @@
 
 ✅ Python FastAPI Server for CV processing 
 
-## Installation
 
-- ### For Mac / Apple Silicon users
-
-```
-docker compose pull
-docker compose create && docker compose up -d
-```
 
 ## Tips & tricks
 
