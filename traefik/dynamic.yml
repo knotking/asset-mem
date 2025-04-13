@@ -1,0 +1,36 @@
+http:
+  routers:
+    n8n:
+      rule: "Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)"
+      entryPoints:
+        - web
+        - websecure
+      service: n8n
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - n8n
+        - n8n-ratelimit
+
+  services:
+    n8n:
+      loadBalancer:
+        servers:
+          - url: "http://n8n:5678"
+
+  middlewares:
+    n8n:
+      headers:
+        sslRedirect: true
+        stsSeconds: 315360000
+        browserXSSFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        sslHost: "${DOMAIN_NAME}"
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    n8n-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 50
