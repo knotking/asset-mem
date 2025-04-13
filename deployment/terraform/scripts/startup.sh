@@ -61,6 +61,8 @@ POSTGRES_DB=n8n
 
 N8N_ENCRYPTION_KEY=super-secret-key
 N8N_USER_MANAGEMENT_JWT_SECRET=even-more-secret
+N8N_DOMAIN=homegeek.ai
+N8N_SUB_DOMAIN=demo
 EOL
 if [ $? -eq 0 ]; then
   echo ".env file created successfully." >> $LOG_FILE
