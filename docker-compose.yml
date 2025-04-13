@@ -5,11 +5,11 @@ volumes:
   api_storage:
 
 networks:
-  homeama:
+  homegeek:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
-  networks: ["homeama"]
+  networks: ["homegeek"]
   environment:
     - DB_TYPE=postgresdb
     - DB_POSTGRESDB_HOST=postgres
@@ -19,11 +19,13 @@ x-n8n: &service-n8n
     - N8N_PERSONALIZATION_ENABLED=false
     - N8N_ENCRYPTION_KEY
     - N8N_USER_MANAGEMENT_JWT_SECRET
+    - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    - N8N_RUNNERS_ENABLED=true
     - WEBHOOK_URL=https://funky-frankly-stingray.ngrok-free.app
 
 x-postgres: &service-postgres
   image: postgres:16-alpine
-  networks: ["homeama"]
+  networks: ["homegeek"]
   hostname: postgres
   environment:
     - POSTGRES_USER
@@ -32,7 +34,7 @@ x-postgres: &service-postgres
 x-qdrant: &service-qdrant
   image: qdrant/qdrant
   hostname: qdrant
-  networks: ["homeama"]
+  networks: ["homegeek"]
 services:
   postgres:
     <<: *service-postgres
@@ -81,7 +83,7 @@ services:
   n8n:
     <<: *service-n8n
     hostname: n8n
-    container_name: HomeAMA
+    container_name: n8n
     restart: unless-stopped
     ports:
       - 5678:5678
@@ -105,7 +107,7 @@ services:
       - qdrant_storage:/qdrant/storage
   qdrant-init:
     image: curlimages/curl
-    networks: ["homeama"]
+    networks: ["homegeek"]
     container_name: qdrant-init
     entrypoint: /bin/sh
     command:
@@ -118,13 +120,13 @@ services:
 
   api:
     build:
-      context: ../server
+      context: ./server
       dockerfile: Dockerfile
     container_name: api
     restart: unless-stopped
     ports:
       - 8000:8000
-    networks: ["homeama"]
+    networks: ["homegeek"]
     working_dir: /app
     volumes:
       - api_storage:/home/app

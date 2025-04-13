@@ -49,10 +49,11 @@ else
 fi
 
 # Navigate to n8n directory
-cd HomeAMA/n8n >> $LOG_FILE 2>&1
+cd HomeAMA/deployment >> $LOG_FILE 2>&1
 
 # Create .env file
 echo "Creating .env file..." >> $LOG_FILE
+rm -f .env
 cat > .env <<EOL
 POSTGRES_USER=n8n
 POSTGRES_PASSWORD=password

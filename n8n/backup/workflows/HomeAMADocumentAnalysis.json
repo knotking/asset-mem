@@ -98,7 +98,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://qdrant:6333/collections/homeama/points/delete",
+        "url": "http://qdrant:6333/collections/homegeek/points/delete",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "qdrantApi",
         "sendBody": true,
