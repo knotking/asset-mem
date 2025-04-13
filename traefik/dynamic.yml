@@ -1,7 +1,7 @@
 http:
   routers:
     n8n:
-      rule: "Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)"
+      rule: "Host(`${N8N_SUB_DOMAIN}.${N8N_DOMAIN_NAME}`)"
       entryPoints:
         - web
         - websecure
@@ -26,7 +26,7 @@ http:
         browserXSSFilter: true
         contentTypeNosniff: true
         forceSTSHeader: true
-        sslHost: "${DOMAIN_NAME}"
+        sslHost: "${N8N_DOMAIN_NAME}"
         stsIncludeSubdomains: true
         stsPreload: true
 
