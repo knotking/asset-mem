@@ -27,7 +27,7 @@ else
 fi
 
 # Add user to Docker group
-echo "Adding user to Docker group..." >> $LOG_FILE
+echo "Adding user $(whoami) to Docker group..." >> $LOG_FILE
 usermod -aG docker $(whoami) >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
   echo "User added to Docker group successfully." >> $LOG_FILE
