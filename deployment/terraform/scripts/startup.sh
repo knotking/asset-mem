@@ -46,43 +46,38 @@ else
   exit 1
 fi
 REPO_NAME="HomeAMA"
-# Clone repository as deploy user
-echo "Cloning repository as deploy user..." >> $LOG_FILE
-sudo -u deploy bash -c "
-  GITHUB_TOKEN=$GITHUB_TOKEN
-  cd /home/deploy &&
-  git clone https://$GITHUB_TOKEN@github.com/prakashbask/$REPO_NAME.git
-" >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
-  echo "Repository cloned successfully as deploy user." >> $LOG_FILE
-else
-  echo "Failed to clone repository as deploy user." >> $LOG_FILE
-  exit 1
-fi
 
-sudo -u deploy bash -c "
-  GITHUB_TOKEN=$GITHUB_TOKEN
-  cd /home/deploy/$REPO_NAME &&
-  cp .env.$ENVIRONMENT .env
-" >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
-  echo ".env file copied successfully." >> $LOG_FILE
-else
-  echo "Failed to copy .env file." >> $LOG_FILE
-  exit 1
-fi
+# Execute commands as deploy user
+echo "Executing commands as deploy user..." >> $LOG_FILE
+sudo -u deploy bash <<EOF >> $LOG_FILE 2>&1
+set -e
 
+# Clone repository
+echo "Cloning repository..."
+GITHUB_TOKEN=$GITHUB_TOKEN
+cd /home/deploy
+git clone https://$GITHUB_TOKEN@github.com/prakashbask/$REPO_NAME.git
 
-# Start Docker Compose as deploy user
-echo "Starting Docker Compose as deploy user..." >> $LOG_FILE
-sudo -u deploy bash -c "
-  cd /home/deploy/$REPO_NAME &&
-  docker-compose up -d
-" >> $LOG_FILE 2>&1
+# Copy environment file
+echo "Copying environment file..."
+cd /home/deploy/$REPO_NAME
+cp .env.$ENVIRONMENT .env
+
+# Change permissions for acme.json
+echo "Changing permissions for acme.json..."
+cd /home/deploy/$REPO_NAME/traefik
+chmod 600 acme.json
+
+# Start Docker Compose
+echo "Starting Docker Compose..."
+cd /home/deploy/$REPO_NAME
+docker-compose up -d
+EOF
+
 if [ $? -eq 0 ]; then
-  echo "Docker Compose started successfully as deploy user." >> $LOG_FILE
+  echo "All commands executed successfully as deploy user." >> $LOG_FILE
 else
-  echo "Failed to start Docker Compose as deploy user." >> $LOG_FILE
+  echo "Failed to execute commands as deploy user." >> $LOG_FILE
   exit 1
 fi
 
