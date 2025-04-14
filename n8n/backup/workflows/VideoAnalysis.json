@@ -177,7 +177,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/annotate_image",
+        "url": "http://api:8000/annotate_image",
         "sendBody": true,
         "contentType": "multipart-form-data",
         "bodyParameters": {
@@ -224,7 +224,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/extract_frames",
+        "url": "http://api:8000/extract_frames",
         "sendBody": true,
         "contentType": "multipart-form-data",
         "bodyParameters": {
