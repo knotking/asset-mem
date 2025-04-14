@@ -34,5 +34,5 @@ jobs:
 
       - name: Deploy App via SSH
         run: |
-          gcloud compute ssh '${{secrets.GCP_PROJECT_ID}}${{ github.event.inputs.environment }}' \
+          gcloud compute ssh 'homegeek${{ github.event.inputs.environment }}' \
             --command="cd HomeAMA && cp .env.${{ github.event.inputs.environment }} .env && git pull origin main && docker-compose down && docker compose up -d"
