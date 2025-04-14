@@ -52,7 +52,7 @@ sudo -u deploy bash -c "
   GITHUB_TOKEN=$GITHUB_TOKEN
   cd /home/deploy &&
   git clone https://$GITHUB_TOKEN@github.com/prakashbask/$REPO_NAME.git
-"
+" >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
   echo "Repository cloned successfully as deploy user." >> $LOG_FILE
 else
@@ -64,7 +64,7 @@ sudo -u deploy bash -c "
   GITHUB_TOKEN=$GITHUB_TOKEN
   cd /home/deploy/$REPO_NAME &&
   cp .env.$ENVIRONMENT .env
-"
+" >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
   echo ".env file copied successfully." >> $LOG_FILE
 else
@@ -78,7 +78,7 @@ echo "Starting Docker Compose as deploy user..." >> $LOG_FILE
 sudo -u deploy bash -c "
   cd /home/deploy/$REPO_NAME &&
   docker-compose up -d
-"
+" >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
   echo "Docker Compose started successfully as deploy user." >> $LOG_FILE
 else
