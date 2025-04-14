@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Set Environment
         id: set-env
-        run: echo "::set-output name=environment::${{ github.event.inputs.environment || 'demo' }}"
+        run: echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
 
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ needs.setup.outputs.environment }}"
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}"
 
       - name: Terraform Validate
         run: terraform validate
@@ -86,7 +86,7 @@ jobs:
 
     steps:
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ needs.setup.outputs.environment }}"
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}"
 
       - name: Request Manual Approval Before Destroy
         uses: actions/github-script@v6
