@@ -49,29 +49,9 @@ else
   exit 1
 fi
 
-# Navigate to n8n directory
-cd "$REPO_NAME/deployment" >> $LOG_FILE 2>&1
-
-# Create .env file
-echo "Creating .env file..." >> $LOG_FILE
-rm -f .env
-cat > .env <<EOL
-POSTGRES_USER=n8n
-POSTGRES_PASSWORD=password
-POSTGRES_DB=n8n
-
-N8N_ENCRYPTION_KEY=super-secret-key
-N8N_USER_MANAGEMENT_JWT_SECRET=even-more-secret
-N8N_DOMAIN=homegeek.ai
-N8N_SUB_DOMAIN=demo
-EOL
-if [ $? -eq 0 ]; then
-  echo ".env file created successfully." >> $LOG_FILE
-else
-  echo "Failed to create .env file." >> $LOG_FILE
-  exit 1
-fi
-
+cd $REPO_NAME
+# Copy ENV file
+cp ".env.$ENVIRONMENT" .env >> $LOG_FILE 2>&1
 # Start Docker Compose
 echo "Starting Docker Compose..." >> $LOG_FILE
 docker-compose up -d >> $LOG_FILE 2>&1

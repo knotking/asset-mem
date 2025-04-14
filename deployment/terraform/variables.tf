@@ -54,7 +54,7 @@ variable "gcs_bucket_name" {
   default     = "homegeekdemo"
 }
 
-variable "static_ip" {
-  description = "The static IP address to assign to the VM instance"
-  default     = "demo"
+
+variable "environment" {
+  description = "The static IP address to assign to the VM instance."
 }

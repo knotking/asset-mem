@@ -1,13 +1,16 @@
+terraform {
+  required_version = "= 1.9.0"
+  backend "gcs" {}
+}
 provider "google" {
   project = var.project_id
   region  = var.region
   zone    = var.zone
 }
 
-resource "google_compute_address" "static_ip" {
-  name     = var.static_ip  # Name of the reserved IP
-  region   =  var.region   # The region where the IP is reserved
-  address_type = "EXTERNAL" # For External IP addresses
+data "google_compute_address" "static_ip" {
+  name   = var.environment # Replace with the name of your static IP
+  region = var.region
 }
 
 # VM Instance
@@ -25,7 +28,7 @@ resource "google_compute_instance" "homegeek_demo" {
   network_interface {
     network = "default"
     access_config {
-      nat_ip = google_compute_address.static_ip.address
+      nat_ip = data.google_compute_address.static_ip.address
     }
   }
 
@@ -34,6 +37,7 @@ resource "google_compute_instance" "homegeek_demo" {
   #startup script
   metadata = {
     startup-script = file("./scripts/startup.sh")
+    environment    = var.environment
   }
 
   service_account {
