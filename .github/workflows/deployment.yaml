@@ -14,27 +14,41 @@ on:
         description: 'Deployment environment (demo, staging, prod)'
         required: true
         default: 'demo'
+        type: choice
+        options:
+          - demo
+          - staging
+          - prod
 
 jobs:
-  setup:
-    name: Setup Environment
+  terraform:
+    name: Deploy with Terraform
     runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
+    defaults:
+      run:
+        working-directory: deployment/terraform
+
     steps:
-      - name: Set Environment
-        id: set-env
-        run: echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
+      # Common Setup Steps
+      - name: Validate Environment
+        id: validate-env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
+            echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
+          else
+            echo "Invalid environment: ${{ github.event.inputs.environment }}"
+            exit 1
+          fi
 
       - name: Checkout Code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: List Files in Workspace
         run: ls -R
 
       - name: Print Terraform Files
         run: cat deployment/terraform/main.tf
-        
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -42,26 +56,18 @@ jobs:
           export_environment_variables: true
 
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
         with:
           install_components: 'beta'
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.5.0
+          terraform_version: 1.9.0
 
-  terraform:
-    name: Deploy with Terraform
-    needs: setup
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: deployment/terraform
-
-    steps:
+      # Terraform-Specific Steps
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}"
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
 
       - name: Terraform Validate
         run: terraform validate
@@ -69,37 +75,98 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -out=tfplan
 
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ env.environment }}
+          path: deployment/terraform/tfplan
+          retention-days: 7
+
       - name: Request Manual Approval Before Apply
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/github-script@v6
+        uses: trstringer/manual-approval@v1
         with:
-          script: |
-            const core = require('@actions/core');
-            core.notice('Please approve the workflow to proceed.');
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
 
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
         run: terraform apply -auto-approve tfplan
 
+      # - name: Notify on Failure
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@v1
+      #   with:
+      #     slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+      #     channel-id: 'deployments'
+      #     text: 'Terraform Apply failed for ${{ env.environment }} environment!'
+      #   env:
+      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
   destroy:
     name: Terraform Destroy
-    needs: setup
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: deployment/terraform
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.destroy == 'true'
 
     steps:
+      - name: Validate Environment
+        id: validate-env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
+            echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
+          else
+            echo "Invalid environment: ${{ github.event.inputs.environment }}"
+            exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: List Files in Workspace
+        run: ls -R
+
+      - name: Print Terraform Files
+        run: cat deployment/terraform/main.tf
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+          export_environment_variables: true
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'beta'
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}"
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
 
       - name: Request Manual Approval Before Destroy
-        uses: actions/github-script@v6
+        uses: trstringer/manual-approval@v1
         with:
-          script: |
-            const core = require('@actions/core');
-            core.notice('Please approve the workflow to proceed.');
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
+
+      # - name: Notify on Failure
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@v1
+      #   with:
+      #     slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+      #     channel-id: 'deployments'
+      #     text: 'Terraform Destroy failed for ${{ env.environment }} environment!'
+      #   env:
+      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
