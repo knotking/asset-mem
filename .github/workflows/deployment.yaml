@@ -1,13 +1,6 @@
 name: Terraform Deployment
 
 on:
-  push:
-    branches:
-      - main
-      - fix_github_action
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -81,14 +74,6 @@ jobs:
           name: terraform-plan-${{ env.environment }}
           path: deployment/terraform/tfplan
           retention-days: 7
-
-      - name: Request Manual Approval Before Apply
-        if: github.event_name == 'workflow_dispatch'
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ${{ github.actor }}
-          minimum-approvals: 1
 
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
