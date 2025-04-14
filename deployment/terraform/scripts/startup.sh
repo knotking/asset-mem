@@ -38,7 +38,8 @@ fi
 
 # Clone repository
 echo "Cloning repository..." >> $LOG_FILE
-REPO="prakashbask/HomeAMA"
+REPO_NAME="HomeAMA"
+REPO="prakashbask/$REPO_NAME"
 REPO_URL="https://$GITHUB_TOKEN@github.com/$REPO.git"
 git clone "$REPO_URL" >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
@@ -49,7 +50,7 @@ else
 fi
 
 # Navigate to n8n directory
-cd HomeAMA/deployment >> $LOG_FILE 2>&1
+cd "$REPO_NAME/deployment" >> $LOG_FILE 2>&1
 
 # Create .env file
 echo "Creating .env file..." >> $LOG_FILE

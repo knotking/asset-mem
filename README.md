@@ -45,7 +45,7 @@ docker compose up -d
 ```
 ## Step 3
 
-Go to http://localhost:5678. Click on the workflow HomeAMADocumentAnalysis
+Go to http://localhost:5678. Click on the workflow HomeGeekDocumentAnalysis
 
 For the following nodes in n8n, configure credentials on the node
 
