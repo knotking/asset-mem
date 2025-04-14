@@ -41,7 +41,7 @@ variable "tags" {
 variable "exposed_ports" {
   description = "Ports to expose"
   type        = list(number)
-  default     = [5678, 5432, 6333, 8000]
+  default     = [80, 443]
 }
 
 variable "service_account_email" {
