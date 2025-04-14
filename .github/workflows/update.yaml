@@ -35,4 +35,4 @@ jobs:
       - name: Deploy App via SSH
         run: |
           gcloud compute ssh 'homegeek${{ github.event.inputs.environment }}' \
-            --command="cd /HomeAMA && git pull origin main && docker-compose down && docker compose up -d"
+            --command="git config --global --add safe.directory /HomeAMA && cd /HomeAMA && git pull origin main && docker-compose down && docker compose up -d"
