@@ -54,10 +54,6 @@ resource "google_compute_firewall" "allow_ports" {
     ports    = [each.value]
   }
 
-  lifecycle {
-    ignore_changes = [name]
-  }
-
   target_tags = [var.tags]
   direction   = "INGRESS"
   priority    = 1000

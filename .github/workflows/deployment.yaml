@@ -5,12 +5,24 @@ on:
     branches:
       - main
       - fix_github_action
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment (demo, staging, prod)'
+        required: true
+        default: 'demo'
 
 jobs:
   terraform:
     name: Deploy with Terraform
     runs-on: ubuntu-latest
+
+    environment:
+      name: ${{ github.event.inputs.environment || 'demo' }}
+      url: https://console.cloud.google.com
 
     steps:
       - name: Checkout Code
@@ -25,15 +37,15 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          install_components: 'beta' # Only this is needed if auth is done
+          install_components: 'beta'
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0
 
-      - name: Terraform Init
-        run: terraform init
+      - name: Terraform Init with Backend
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ github.event.inputs.environment }}"
         working-directory: deployment/terraform
 
       - name: Terraform Validate
@@ -44,7 +56,55 @@ jobs:
         run: terraform plan -out=tfplan
         working-directory: deployment/terraform
 
+      - name: Request Manual Approval Before Apply
+        if: github.event_name == 'workflow_dispatch'
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
+
+  destroy:
+    name: Terraform Destroy (manual only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: deployment/terraform
+
+    environment:
+      name: ${{ github.event.inputs.environment || 'demo' }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+          export_environment_variables: true
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init with Backend
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ github.event.inputs.environment }}"
+
+      - name: Request Manual Approval Before Destroy
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve

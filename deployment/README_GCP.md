@@ -12,6 +12,7 @@ Admin GCP - Console ->
 ```
 
 ```
+gcloud storage buckets create gs://homegeek-terraform-state --location=US
 gcloud secrets create github-token --data-file=<(echo "your_github_pat_token")
 gcloud secrets add-iam-policy-binding github-token \
   --project=homegeekdemo \
@@ -26,6 +27,9 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.networkAdmin"
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin"
 ```
 
 
@@ -39,4 +43,5 @@ GitHub Secrets:
 
 GCP_PROJECT_ID: The Google Cloud project ID.
 GCP_SERVICE_ACCOUNT_KEY: The JSON key for the service account.
+GCS_BACKEND_BUCKET: The Google Cloud bucket name to store terraform state
 ```
