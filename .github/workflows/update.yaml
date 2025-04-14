@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Deployment environment (e.g., demo, staging, prod)"
+        description: 'Deployment environment (demo, staging, prod)'
         required: true
-        default: "demo"
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+          - staging
+          - prod
       zone:
         description: "GCP zone where the VM is located (e.g., us-central1-a)"
         required: true
