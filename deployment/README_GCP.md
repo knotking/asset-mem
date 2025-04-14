@@ -30,6 +30,11 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/storage.objectAdmin"
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/compute.osLogin"
+
+  
 ```
 
 

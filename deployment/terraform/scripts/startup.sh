@@ -5,6 +5,16 @@ set -e
 LOG_FILE="/var/log/startup_script.log"
 echo "Startup script execution started at $(date)" >> $LOG_FILE
 
+# Fetch the environment variable from metadata
+echo "Fetching environment variable from metadata..." >> $LOG_FILE
+ENVIRONMENT=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/environment" -H "Metadata-Flavor: Google")
+if [ $? -eq 0 ]; then
+  echo "Environment variable fetched successfully: $ENVIRONMENT" >> $LOG_FILE
+else
+  echo "Failed to fetch environment variable." >> $LOG_FILE
+  exit 1
+fi
+
 # Install Docker and Docker Compose
 echo "Installing Docker and Docker Compose..." >> $LOG_FILE
 apt-get update >> $LOG_FILE 2>&1
