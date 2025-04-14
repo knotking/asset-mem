@@ -56,7 +56,5 @@ variable "gcs_bucket_name" {
 
 
 variable "environment" {
-  description = "The static IP address to assign to the VM instance"
-  default     = "dev"
-  type        = "string"
+  description = "The static IP address to assign to the VM instance."
 }
