@@ -16,6 +16,10 @@ on:
         description: 'Set to true to destroy resources'
         required: false
         default: 'false'
+        type: choice
+        options:
+          - false
+          - true
 
 jobs:
   terraform:
