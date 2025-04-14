@@ -25,7 +25,8 @@ jobs:
   terraform:
     name: Deploy with Terraform
     runs-on: ubuntu-latest
-
+    if: github.event.inputs.destroy == 'false' # Only run if destroy is false
+    
     steps:
       # Common Setup Steps
       - name: Validate Environment
