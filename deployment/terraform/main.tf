@@ -37,6 +37,7 @@ resource "google_compute_instance" "homegeek_demo" {
   #startup script
   metadata = {
     startup-script = file("./scripts/startup.sh")
+    environment    = var.environment
   }
 
   service_account {
