@@ -33,12 +33,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: List Files in Workspace
-        run: ls -R
-
-      - name: Print Terraform Files
-        run: cat deployment/terraform/main.tf
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -65,6 +59,8 @@ jobs:
         working-directory: deployment/terraform
 
       - name: Terraform Plan
+        env:
+          TF_VAR_environment: ${{ env.environment }}
         run: terraform plan -out=tfplan
         working-directory: deployment/terraform
 
@@ -77,6 +73,8 @@ jobs:
 
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
+        env:
+          TF_VAR_environment: ${{ env.environment }}
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
 
@@ -99,12 +97,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: List Files in Workspace
-        run: ls -R
-
-      - name: Print Terraform Files
-        run: cat deployment/terraform/main.tf
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -125,13 +117,8 @@ jobs:
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
 
-      - name: Request Manual Approval Before Destroy
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: ${{ github.actor }}
-          minimum-approvals: 1
-
       - name: Terraform Destroy
+        env:
+          TF_VAR_environment: ${{ env.environment }}
         run: terraform destroy -auto-approve
         working-directory: deployment/terraform

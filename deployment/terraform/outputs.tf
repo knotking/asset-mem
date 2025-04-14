@@ -12,3 +12,8 @@ output "instance_zone" {
   description = "The zone where the VM instance is running"
   value       = google_compute_instance.homegeek_demo.zone
 }
+
+output "environment" {
+  description = "The environment type of this VM instance"
+  value = var.environment
+}
