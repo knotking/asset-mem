@@ -27,8 +27,8 @@ else
 fi
 
 # Create deploy user and add to Docker group
-useradd -m -s /bin/bash deploy
-usermod -aG docker deploy
+useradd -m -s /bin/bash deploy >> $LOG_FILE 2>&1
+usermod -aG docker deploy >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
   echo "Deploy user created and added to Docker group successfully." >> $LOG_FILE
 else
