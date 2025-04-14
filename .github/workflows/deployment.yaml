@@ -24,9 +24,6 @@ jobs:
   terraform:
     name: Deploy with Terraform
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: deployment/terraform
 
     steps:
       # Common Setup Steps
@@ -68,12 +65,15 @@ jobs:
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+        working-directory: deployment/terraform
 
       - name: Terraform Validate
         run: terraform validate
+        working-directory: deployment/terraform
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
+        working-directory: deployment/terraform
 
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
@@ -93,23 +93,11 @@ jobs:
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
         run: terraform apply -auto-approve tfplan
-
-      # - name: Notify on Failure
-      #   if: failure()
-      #   uses: slackapi/slack-github-action@v1
-      #   with:
-      #     slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-      #     channel-id: 'deployments'
-      #     text: 'Terraform Apply failed for ${{ env.environment }} environment!'
-      #   env:
-      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        working-directory: deployment/terraform
 
   destroy:
     name: Terraform Destroy
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: deployment/terraform
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.destroy == 'true'
 
     steps:
@@ -150,6 +138,7 @@ jobs:
 
       - name: Terraform Init with Backend
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+        working-directory: deployment/terraform
 
       - name: Request Manual Approval Before Destroy
         uses: trstringer/manual-approval@v1
@@ -160,13 +149,4 @@ jobs:
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
-
-      # - name: Notify on Failure
-      #   if: failure()
-      #   uses: slackapi/slack-github-action@v1
-      #   with:
-      #     slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-      #     channel-id: 'deployments'
-      #     text: 'Terraform Destroy failed for ${{ env.environment }} environment!'
-      #   env:
-      #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        working-directory: deployment/terraform
