@@ -23,21 +23,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
-          export_environment_variables: true
+      - name: Create credentials.json
+        run: echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > ${{ github.workspace }}/credentials.json
 
-      - name: Update VM
+      - name: Authenticate with gcloud
         run: |
-          gcloud compute ssh 'homegeek${{ github.event.inputs.environment }}' \
-            --zone "${{ github.event.inputs.zone }}" \
-            --project '${{ secrets.GCP_PROJECT_ID }}' \
-            --command "
-              cd HomeAMA &&
-              cp .env.${{ github.event.inputs.environment }} .env &&
-              git pull origin main &&
-              docker-compose down &&
-              docker-compose up -d
-            "
+          gcloud auth activate-service-account --key-file=${{ github.workspace }}/credentials.json
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          gcloud config set compute/zone us-central1-a
+
+      - name: Deploy App via SSH
+        run: |
+          gcloud compute ssh '${{secrets.GCP_PROJECT_ID}}${{ github.event.inputs.environment }}' \
+            --command="cd HomeAMA && cp .env.${{ github.event.inputs.environment }} .env && git pull origin main && docker-compose down && docker compose up -d"
