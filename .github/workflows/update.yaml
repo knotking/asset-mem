@@ -33,6 +33,7 @@ jobs:
         run: |
           gcloud compute ssh 'homegeek${{ github.event.inputs.environment }}' \
             --zone "${{ github.event.inputs.zone }}" \
+            --project '${{ secrets.GCP_PROJECT_ID }}' \
             --command "
               cd HomeAMA &&
               cp .env.${{ github.event.inputs.environment }} .env &&
