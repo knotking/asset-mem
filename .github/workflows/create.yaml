@@ -12,6 +12,10 @@ on:
           - demo
           - staging
           - prod
+      destroy:
+        description: 'Set to true to destroy resources'
+        required: false
+        default: 'false'
 
 jobs:
   terraform:
