@@ -16,15 +16,16 @@ on:
         default: 'demo'
 
 jobs:
-  terraform:
-    name: Deploy with Terraform
+  setup:
+    name: Setup Environment
     runs-on: ubuntu-latest
-
-    environment:
-      name: ${{ github.event.inputs.environment || 'demo' }}
-      url: https://console.cloud.google.com
-
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
     steps:
+      - name: Set Environment
+        id: set-env
+        run: echo "::set-output name=environment::${{ github.event.inputs.environment || 'demo' }}"
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -44,67 +45,55 @@ jobs:
         with:
           terraform_version: 1.5.0
 
-      - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ github.event.inputs.environment }}"
+  terraform:
+    name: Deploy with Terraform
+    needs: setup
+    runs-on: ubuntu-latest
+    defaults:
+      run:
         working-directory: deployment/terraform
+
+    steps:
+      - name: Terraform Init with Backend
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ needs.setup.outputs.environment }}"
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: deployment/terraform
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
-        working-directory: deployment/terraform
 
       - name: Request Manual Approval Before Apply
         if: github.event_name == 'workflow_dispatch'
-        uses: hmarr/auto-approve-action@v3
+        uses: actions/github-script@v6
         with:
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
+          script: |
+            const core = require('@actions/core');
+            core.notice('Please approve the workflow to proceed.');
 
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
         run: terraform apply -auto-approve tfplan
-        working-directory: deployment/terraform
 
   destroy:
-    name: Terraform Destroy (manual only)
+    name: Terraform Destroy
+    needs: setup
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: deployment/terraform
 
-    environment:
-      name: ${{ github.event.inputs.environment || 'demo' }}
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
-          export_environment_variables: true
-
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
-
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ github.event.inputs.environment }}"
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ needs.setup.outputs.environment }}"
 
       - name: Request Manual Approval Before Destroy
-        uses: hmarr/auto-approve-action@v3
+        uses: actions/github-script@v6
         with:
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
+          script: |
+            const core = require('@actions/core');
+            core.notice('Please approve the workflow to proceed.');
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
