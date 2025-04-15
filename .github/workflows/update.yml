@@ -23,10 +23,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
       # Authenticate with Google Cloud using service account key
       - name: Authenticate to Google Cloud
         run: |
@@ -34,19 +30,34 @@ jobs:
           gcloud auth activate-service-account --key-file=${{ github.workspace }}/key.json
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
-      # Ensure update.sh is executable
-      - name: Make update.sh Executable
-        run: chmod +x .github/workflows/scripts/update.sh
-
-      # Update repository and restart Docker Compose
-      - name: Update Repository and Restart Docker
-        id: update
+      # Create and run update.sh in a single command as deploy user
+      - name: Create and Run update.sh on Instance as Deploy User
         run: |
-          gcloud compute scp .github/workflows/scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
-            --zone=${{ github.event.inputs.zone }}
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
-            --command "bash /tmp/update.sh ${{ github.event.inputs.environment }}"
+            --command "sudo -u deploy bash -c '
+              set -e
+              LOG_FILE=\"/home/deploy/update.log\"
+              ENVIRONMENT=\"${{ github.event.inputs.environment }}\"
+
+              echo \"Update script execution started at \$(date)\" >> \"\$LOG_FILE\"
+              echo \"Checking for updates...\" >> \"\$LOG_FILE\"
+              cd /home/deploy/HomeAMA
+              git fetch origin main >> \"\$LOG_FILE\" 2>&1
+              if git diff origin/main --quiet; then
+                echo \"Repository is already up-to-date. No action needed.\" >> \"\$LOG_FILE\"
+                echo \"Update script execution completed at \$(date)\" >> \"\$LOG_FILE\"
+                exit 0
+              fi
+              echo \"Pulling latest changes from repository...\" >> \"\$LOG_FILE\"
+              rm -f .env
+              git pull origin main >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to update repository.\" >> \"\$LOG_FILE\"; exit 1; }
+              cp \".env.\$ENVIRONMENT\" .env || { echo \"Failed to copy .env file.\" >> \"\$LOG_FILE\"; exit 1; }
+              echo \"Restarting Docker Compose...\" >> \"\$LOG_FILE\"
+              docker-compose down >> \"\$LOG_FILE\" 2>&1
+              docker-compose up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart Docker Compose.\" >> \"\$LOG_FILE\"; exit 1; }
+              echo \"Update script execution completed at \$(date)\" >> \"\$LOG_FILE\"
+            '"
 
       # Retrieve and display logs (Logging)
       - name: Retrieve Update Log
