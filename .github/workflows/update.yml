@@ -26,10 +26,6 @@ jobs:
       # Authenticate with Google Cloud using service account key
       - name: Authenticate to Google Cloud
         run: |
-          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
-            echo "Error: GCP_SERVICE_ACCOUNT_KEY is empty"
-            exit 1
-          fi
           echo '${{ secrets.GCP_SA_KEY }}' > ${{ github.workspace }}/key.json
           gcloud auth activate-service-account --key-file=${{ github.workspace }}/key.json
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
