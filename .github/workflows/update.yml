@@ -38,10 +38,10 @@ jobs:
             --zone=${{ github.event.inputs.zone }} \
             --command "bash -c '
               set -e
-              LOG_FILE=\"/home/deploy/update.log\"
               # Switch to deploy user
               sudo -u deploy bash -c \"
                 set -e
+                LOG_FILE=\"/home/deploy/update.log\"
                 echo \"Update script execution started at \$(date)\" >> \$LOG_FILE
                 cd /home/deploy/HomeAMA
 
