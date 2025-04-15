@@ -1,0 +1,6 @@
+# used only in local testing
+services:
+  traefik: null
+  n8n:
+    # Remove all traefik labels only
+    labels: []

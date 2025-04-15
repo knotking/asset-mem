@@ -1,16 +1,28 @@
-# N8N self host
 
-### What’s included
+## Step 1
 
-✅ [**Self-hosted n8n**](https://n8n.io/) 
+```
+brew install ngrok
+Got to https://dashboard.ngrok.com/domains. Create a default domain.
+Update .env.dev to point the N8N domain and subdomain as given by ngrok
+This configuration will be used for Telegram Bot Setup.
+Run ngrok so that it points the messages to n8n instance.
+For example: ngrok http --url=https://funky-frankly-stingray.ngrok-free.app 5678
+```
 
-✅ [**Qdrant**](https://qdrant.tech/) 
-
-✅ [**PostgreSQL**](https://www.postgresql.org/) 
-
-✅ Python FastAPI Server for CV processing 
-
-
+## Step 2
+```
+1) cp .env.dev .env
+2) Create docker-compose.override.local.yml if not available
+$ touch docker-compose.override.local.yml
+Add the following lines to disable the looking up letsencrypt
+# used only in local testing
+services:
+  traefik: []
+  n8n:
+    # Remove all traefik labels only
+    labels: []
+```
 
 ## Tips & tricks
 
