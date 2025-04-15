@@ -18,6 +18,7 @@ resource "google_compute_instance" "homegeek_demo" {
   name         = var.instance_name
   machine_type = var.machine_type
   zone         = var.zone
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
