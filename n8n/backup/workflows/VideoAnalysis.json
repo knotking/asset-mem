@@ -3,31 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "updates": [
-          "message"
-        ],
-        "additionalFields": {
-          "download": true
-        }
-      },
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -4040,
-        600
-      ],
-      "id": "6b831f1c-5af3-45b3-bc85-8c3d6b2faf4a",
-      "name": "Telegram Trigger",
-      "webhookId": "38c4409c-40bc-438a-9593-bf4000e99244",
-      "credentials": {
-        "telegramApi": {
-          "id": "UdpKoSsKlBeV3f7F",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
         "text": "Processing your file. Please wait...",
         "additionalFields": {
@@ -37,7 +12,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -3380,
+        -3160,
         300
       ],
       "id": "9e0c810d-e2b3-4787-b6c5-26e1ddac23e0",
@@ -78,7 +53,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3840,
+        -3620,
         600
       ],
       "id": "b7cefdc2-9d84-4718-a6e8-979c6fdfee95",
@@ -105,7 +80,7 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        -2460,
+        -2240,
         580
       ],
       "id": "e83a63de-f3fa-4840-8ebb-48fe09392adc",
@@ -124,7 +99,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -2480,
+        -2260,
         740
       ],
       "id": "ac0358dd-a2dd-4e8b-a160-8408f4d7adef",
@@ -148,7 +123,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -1200,
+        -980,
         360
       ],
       "id": "f8be8b1a-28d1-4d34-8cb3-3d520b175b03",
@@ -168,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        -2260,
+        -2040,
         760
       ],
       "id": "4f3e8aca-8858-4639-bc37-59ffc214dc6c",
@@ -202,7 +177,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1700,
+        -1480,
         360
       ],
       "id": "f2f24a3c-ba2a-4edc-a5cb-db9711040bdf",
@@ -215,7 +190,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -2060,
+        -1840,
         360
       ],
       "id": "96ee96c8-2de6-4ce8-a75b-50bcab036285",
@@ -241,7 +216,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3340,
+        -3120,
         580
       ],
       "id": "539290fb-257e-4a33-a5ea-c576309ec483",
@@ -256,7 +231,7 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        -2860,
+        -2640,
         580
       ],
       "id": "32a43fbe-f05b-49ca-9ab6-868c6075119a",
@@ -270,7 +245,7 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        -3060,
+        -2840,
         580
       ],
       "id": "ea63c7cb-41b7-40b3-a513-00fb6d7da345",
@@ -283,7 +258,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1440,
+        -1220,
         360
       ],
       "id": "0d68cc2d-6bb2-4ecc-b19d-eaf2f73d5cb2",
@@ -291,57 +266,34 @@
     },
     {
       "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "leftValue": "",
-                    "rightValue": "",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "id": "3dbca8a7-0bba-42bf-bfe3-506a7365ea96"
-                  }
-                ],
-                "combinator": "and"
-              }
-            }
-          ]
-        },
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4160,
+        600
+      ],
+      "id": "92286932-7c03-4a29-abc9-a596fd548ca7",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
         "options": {}
       },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        0,
-        -520
+        -3940,
+        600
       ],
-      "id": "41ef41a1-034b-446c-a3e6-8b7b89e540e4",
-      "name": "Switch"
+      "id": "e5ee95e3-6284-4198-a172-0dc44db0b0d6",
+      "name": "Telegram Trigger"
     }
   ],
   "pinData": {},
   "connections": {
-    "Telegram Trigger": {
-      "main": [
-        [
-          {
-            "node": "If file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Telegram1": {
       "main": [
         []
@@ -472,13 +424,35 @@
       "main": [
         []
       ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Telegram Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "b52fc621-d7e2-468a-9a27-f24499da9d70",
+  "versionId": "69c07831-0e37-434a-b3ad-3dc919180bb8",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"

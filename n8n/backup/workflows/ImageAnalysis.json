@@ -3,31 +3,6 @@
   "nodes": [
     {
       "parameters": {
-        "updates": [
-          "message"
-        ],
-        "additionalFields": {
-          "download": true
-        }
-      },
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -3460,
-        580
-      ],
-      "id": "ef19d688-4f20-4651-89ba-311024e8a86e",
-      "name": "Telegram Trigger",
-      "webhookId": "3ae1d7df-5610-48bd-8078-83ae667d6283",
-      "credentials": {
-        "telegramApi": {
-          "id": "UdpKoSsKlBeV3f7F",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
         "text": "Processing your file. Please wait...",
         "additionalFields": {
@@ -37,7 +12,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -2760,
+        -2540,
         280
       ],
       "id": "5828d806-2cd2-4a3c-a312-79970f7a9996",
@@ -78,7 +53,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3200,
+        -2980,
         580
       ],
       "id": "c244c60f-e60e-4c3a-a069-628edc93fbfc",
@@ -105,7 +80,7 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        -2700,
+        -2480,
         780
       ],
       "id": "f52fda13-6df6-4ab7-89eb-671dc1adb16e",
@@ -124,7 +99,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        -2700,
+        -2480,
         980
       ],
       "id": "32c18dd1-233c-420a-82d4-e5bffef36f63",
@@ -148,7 +123,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -1260,
+        -1040,
         600
       ],
       "id": "3068e23e-6029-478f-907b-3f10317eab85",
@@ -168,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        -2520,
+        -2300,
         1000
       ],
       "id": "6dc32092-3937-4d3f-9a48-e71ca652c0e5",
@@ -202,7 +177,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1760,
+        -1540,
         600
       ],
       "id": "2c6d6e7e-0c43-4a10-9367-211a30d5a673",
@@ -215,7 +190,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -2120,
+        -1900,
         600
       ],
       "id": "0e37aa4d-74d7-4ba1-a1cc-09de16c47acb",
@@ -228,26 +203,42 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1540,
+        -1320,
         600
       ],
       "id": "38568b24-8ade-4f65-bfc3-2c922f7a0761",
       "name": "Code1"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3480,
+        580
+      ],
+      "id": "f52921a2-cd54-4964-8d68-dee355923f59",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3260,
+        580
+      ],
+      "id": "9f107c80-40d3-473a-9610-591cddbabd17",
+      "name": "Telegram Trigger"
     }
   ],
   "pinData": {},
   "connections": {
-    "Telegram Trigger": {
-      "main": [
-        [
-          {
-            "node": "If file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Telegram1": {
       "main": [
         []
@@ -345,13 +336,35 @@
           }
         ]
       ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Telegram Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "83e57e87-500b-42bd-aaea-f2d5f427d273",
+  "versionId": "a3e6af82-79a5-4d19-955a-095835fc566e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
