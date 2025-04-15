@@ -26,13 +26,13 @@ else
   exit 1
 fi
 
-# Add user to Docker group
-echo "Adding user $(whoami) to Docker group..." >> $LOG_FILE
-usermod -aG docker $(whoami) >> $LOG_FILE 2>&1
+# Create deploy user and add to Docker group
+useradd -m -s /bin/bash deploy >> $LOG_FILE 2>&1
+usermod -aG docker deploy >> $LOG_FILE 2>&1
 if [ $? -eq 0 ]; then
-  echo "User added to Docker group successfully." >> $LOG_FILE
+  echo "Deploy user created and added to Docker group successfully." >> $LOG_FILE
 else
-  echo "Failed to add user to Docker group." >> $LOG_FILE
+  echo "Failed to create deploy user or add to Docker group." >> $LOG_FILE
   exit 1
 fi
 
@@ -45,30 +45,39 @@ else
   echo "Failed to fetch GitHub token." >> $LOG_FILE
   exit 1
 fi
+REPO_NAME="HomeAMA"
+
+# Execute commands as deploy user
+echo "Executing commands as deploy user..." >> $LOG_FILE
+sudo -u deploy bash <<EOF >> $LOG_FILE 2>&1
+set -e
 
 # Clone repository
-echo "Cloning repository..." >> $LOG_FILE
-REPO_NAME="HomeAMA"
-REPO="prakashbask/$REPO_NAME"
-REPO_URL="https://$GITHUB_TOKEN@github.com/$REPO.git"
-git clone "$REPO_URL" >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
-  echo "Repository cloned successfully." >> $LOG_FILE
-else
-  echo "Failed to clone repository." >> $LOG_FILE
-  exit 1
-fi
+echo "Cloning repository..."
+GITHUB_TOKEN=$GITHUB_TOKEN
+cd /home/deploy
+git clone https://$GITHUB_TOKEN@github.com/prakashbask/$REPO_NAME.git
 
-cd $REPO_NAME
-# Copy ENV file
-cp ".env.$ENVIRONMENT" .env >> $LOG_FILE 2>&1
+# Copy environment file
+echo "Copying environment file..."
+cd /home/deploy/$REPO_NAME
+cp .env.$ENVIRONMENT .env
+
+# Change permissions for acme.json
+echo "Changing permissions for acme.json..."
+cd /home/deploy/$REPO_NAME/traefik
+chmod 600 acme.json
+
 # Start Docker Compose
-echo "Starting Docker Compose..." >> $LOG_FILE
-docker-compose up -d >> $LOG_FILE 2>&1
+echo "Starting Docker Compose..."
+cd /home/deploy/$REPO_NAME
+docker-compose up -d
+EOF
+
 if [ $? -eq 0 ]; then
-  echo "Docker Compose started successfully." >> $LOG_FILE
+  echo "All commands executed successfully as deploy user." >> $LOG_FILE
 else
-  echo "Failed to start Docker Compose." >> $LOG_FILE
+  echo "Failed to execute commands as deploy user." >> $LOG_FILE
   exit 1
 fi
 

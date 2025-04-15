@@ -136,31 +136,6 @@
     },
     {
       "parameters": {
-        "updates": [
-          "message"
-        ],
-        "additionalFields": {
-          "download": true
-        }
-      },
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -3460,
-        580
-      ],
-      "id": "60eed9ff-5144-4a5e-bb03-92f43633601d",
-      "name": "Telegram Trigger",
-      "webhookId": "30849c53-65ca-4637-969c-8dc22a0fff9c",
-      "credentials": {
-        "telegramApi": {
-          "id": "UdpKoSsKlBeV3f7F",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "chatId": "={{$('Telegram Trigger').item.json.message.from.id }}",
         "text": "Processing your file. Please wait...",
         "additionalFields": {
@@ -274,7 +249,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $('Telegram Trigger').item.json.message.entities[0].type }}",
+                    "leftValue": "={{ $('If file').item.json.message.entities[0].type }}",
                     "rightValue": "bot_command",
                     "operator": {
                       "type": "string",
@@ -1235,6 +1210,33 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4020,
+        580
+      ],
+      "id": "c9a3db90-aff3-4322-95c1-87faa8c5c752",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3620,
+        580
+      ],
+      "id": "987655fd-a46d-4989-ab68-3ede9e73c441",
+      "name": "Telegram Trigger"
     }
   ],
   "pinData": {},
@@ -1288,17 +1290,6 @@
         [
           {
             "node": "Qdrant Vector Store",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Telegram Trigger": {
-      "main": [
-        [
-          {
-            "node": "If file",
             "type": "main",
             "index": 0
           }
@@ -1666,13 +1657,37 @@
           }
         ]
       ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Telegram Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "4a165b15-f1c9-4430-93a7-7e9dd7307646",
+  "versionId": "5d392f32-b9c9-4e66-8df9-8b8a57e51c2f",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
