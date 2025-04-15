@@ -18,10 +18,14 @@ $ touch docker-compose.override.local.yml
 Add the following lines to disable the looking up letsencrypt
 # used only in local testing
 services:
-  traefik: []
+  traefik:
+    profiles:
+      - disabled
   n8n:
-    # Remove all traefik labels only
-    labels: []
+    # Explicitly clear all labels for the n8n service
+    labels:
+       - "traefik.enable=false"
+       - "traefik.http.routers.n8n.tls.certresolver="
 ```
 
 ## Tips & tricks

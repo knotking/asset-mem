@@ -29,7 +29,7 @@ Configure the Bot to send messages to the webhook that was created with ngrok
 ```
 Make sure docker and docker-compose are installed
 Follow the instructions in README_LOCAL.md to run it locally.
-$ docker compose up -d
+$ docker compose -f docker-compose.yml -f docker-compose.override.local.yml up -d
 ```
 ## Step 3
 
