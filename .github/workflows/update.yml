@@ -32,7 +32,7 @@ jobs:
       # Update repository and restart Docker Compose
       - name: Update Repository and Restart Docker
         run: |
-          gcloud compute ssh homegeek${{ secrets.GCP_PROJECT_ID }} \
+          gcloud compute ssh homegeek${{  github.event.inputs.environment}} \
             --zone=${{ github.event.inputs.zone }} \
             --command "bash -c '
               set -e
