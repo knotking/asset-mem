@@ -39,11 +39,10 @@ jobs:
             --command "bash -c '
               set -e
               LOG_FILE=\"/home/deploy/update.log\"
-              echo \"Update script execution started at \$(date)\" >> \$LOG_FILE
-
               # Switch to deploy user
               sudo -u deploy bash -c \"
                 set -e
+                echo \"Update script execution started at \$(date)\" >> \$LOG_FILE
                 cd /home/deploy/HomeAMA
 
                 # Check if repository is up-to-date (Idempotency)
@@ -90,7 +89,13 @@ jobs:
         run: |
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
-            --command "cat /home/deploy/update.log" || echo "Failed to retrieve log file"
+            --command "bash -c '
+              set -e
+              # Switch to deploy user
+              sudo -u deploy bash -c \"
+                cat /home/deploy/update.log
+              \"
+            '" || echo "Failed to retrieve log file"
 
       # Clean up sensitive data (Cleanup)
       - name: Clean Up
