@@ -33,45 +33,12 @@ jobs:
       # Update repository and restart Docker Compose
       - name: Update Repository and Restart Docker
         id: update
-        run: |
+        |
+          gcloud compute scp scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
+            --zone=${{ github.event.inputs.zone }}
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
-            --command "bash -c '
-              set -e
-              LOG_FILE=\"/home/deploy/update.log\"
-
-              # Switch to deploy user
-              sudo -u deploy bash -c \"set -e; \
-                echo 'Update script execution started at \$(date)' >> \$LOG_FILE; \
-                echo 'Checking for updates...' >> \$LOG_FILE; \
-                cd /home/deploy/HomeAMA; \
-                git fetch origin main >> \$LOG_FILE 2>&1; \
-                if git diff origin/main --quiet; then \
-                  echo 'Repository is already up-to-date. No action needed.' >> \$LOG_FILE; \
-                  echo 'Update script execution completed at \$(date)' >> \$LOG_FILE; \
-                  exit 0; \
-                fi; \
-                echo 'Pulling latest changes from repository...' >> \$LOG_FILE; \
-                rm -f .env; \
-                git pull origin main >> \$LOG_FILE 2>&1; \
-                if [ \$? -eq 0 ]; then \
-                  echo 'Repository updated successfully.' >> \$LOG_FILE; \
-                else \
-                  echo 'Failed to update repository.' >> \$LOG_FILE; \
-                  exit 1; \
-                fi; \
-                cp .env.${{ github.event.inputs.environment }} .env; \
-                echo 'Restarting Docker Compose...' >> \$LOG_FILE; \
-                docker-compose down >> \$LOG_FILE 2>&1; \
-                docker-compose up -d >> \$LOG_FILE 2>&1; \
-                if [ \$? -eq 0 ]; then \
-                  echo 'Docker Compose restarted successfully.' >> \$LOG_FILE; \
-                else \
-                  echo 'Failed to restart Docker Compose.' >> \$LOG_FILE; \
-                  exit 1; \
-                fi; \
-                echo 'Update script execution completed at \$(date)' >> \$LOG_FILE;\"
-            '"
+            --command "bash /tmp/update.sh ${{ github.event.inputs.environment }}"
 
       # Retrieve and display logs (Logging)
       - name: Retrieve Update Log
