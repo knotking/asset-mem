@@ -39,10 +39,10 @@ jobs:
             --command "bash -c '
               set -e
               LOG_FILE=\"/home/deploy/update.log\"
-              echo \"Update script execution started at \$(date)\" >> \$LOG_FILE
 
               # Switch to deploy user
               sudo -u deploy bash -c \"set -e; \
+                echo 'Update script execution started at \$(date)' >> \$LOG_FILE; \
                 echo 'Checking for updates...' >> \$LOG_FILE; \
                 cd /home/deploy/HomeAMA; \
                 git fetch origin main >> \$LOG_FILE 2>&1; \
