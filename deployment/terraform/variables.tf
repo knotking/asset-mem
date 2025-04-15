@@ -20,7 +20,7 @@ variable "instance_name" {
 
 variable "machine_type" {
   description = "The machine type"
-  default     = "e2-medium"
+  default     = "e2-standard-2"
 }
 
 variable "image_family" {
@@ -41,7 +41,7 @@ variable "tags" {
 variable "exposed_ports" {
   description = "Ports to expose"
   type        = list(number)
-  default     = [80, 443, 5678]
+  default     = [80, 443]
 }
 
 variable "service_account_email" {

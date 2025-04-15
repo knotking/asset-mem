@@ -71,7 +71,7 @@ chmod 600 acme.json
 # Start Docker Compose
 echo "Starting Docker Compose..."
 cd /home/deploy/$REPO_NAME
-docker-compose up -d
+docker-compose -f docker-compose.yml up -d
 EOF
 
 if [ $? -eq 0 ]; then
