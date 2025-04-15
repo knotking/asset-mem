@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Authenticate with Google Cloud using service account key
        - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
