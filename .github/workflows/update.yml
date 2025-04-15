@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
       # Authenticate with Google Cloud using service account key
       - name: Authenticate to Google Cloud
         run: |
@@ -30,11 +34,15 @@ jobs:
           gcloud auth activate-service-account --key-file=${{ github.workspace }}/key.json
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
+      # Ensure update.sh is executable
+      - name: Make update.sh Executable
+        run: chmod +x .github/workflows/scripts/update.sh
+
       # Update repository and restart Docker Compose
       - name: Update Repository and Restart Docker
         id: update
         run: |
-          gcloud compute scp ./scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
+          gcloud compute scp .github/workflows/scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
             --zone=${{ github.event.inputs.zone }}
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
