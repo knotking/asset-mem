@@ -34,7 +34,7 @@ jobs:
       - name: Update Repository and Restart Docker
         id: update
         run: |
-          gcloud compute scp scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
+          gcloud compute scp ./scripts/update.sh homegeek${{ github.event.inputs.environment }}:/tmp/update.sh \
             --zone=${{ github.event.inputs.zone }}
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
