@@ -26,13 +26,22 @@ jobs:
       # Authenticate with Google Cloud using service account key
       - name: Authenticate to Google Cloud
         run: |
-          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > gcp-key.json
-          cat gcp-key.json | jq . > /dev/null || (echo "Invalid JSON in GCP_SERVICE_ACCOUNT_KEY" && exit 1)
+          if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
+            echo "Error: GCP_SERVICE_ACCOUNT_KEY is empty"
+            exit 1
+          fi
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | tr -d '\r\t' > gcp-key.json
+          echo "gcp-key.json starts with:"
+          head -c 20 gcp-key.json
+          echo "Control characters in gcp-key.json:"
+          cat gcp-key.json | od -c | tail -n 10
+          cat gcp-key.json | jq . > /dev/null || (echo "Invalid JSON in gcp-key.json:" && head -n 5 gcp-key.json && exit 1)
           gcloud auth activate-service-account --key-file=gcp-key.json
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
       # Update repository and restart Docker Compose
       - name: Update Repository and Restart Docker
+        id: update
         run: |
           gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
             --zone=${{ github.event.inputs.zone }} \
@@ -44,10 +53,19 @@ jobs:
               # Switch to deploy user
               sudo -u deploy bash -c \"
                 set -e
+                cd /home/deploy/HomeAMA
+
+                # Check if repository is up-to-date (Idempotency)
+                echo 'Checking for updates...' >> \$LOG_FILE
+                git fetch origin main >> \$LOG_FILE 2>&1
+                if git diff origin/main --quiet; then
+                  echo 'Repository is already up-to-date. No action needed.' >> \$LOG_FILE
+                  echo 'Update script execution completed at \$(date)' >> \$LOG_FILE
+                  exit 0
+                fi
 
                 # Pull the latest changes from the repository
                 echo 'Pulling latest changes from repository...' >> \$LOG_FILE
-                cd /home/deploy/HomeAMA
                 rm -f .env
                 git pull origin main >> \$LOG_FILE 2>&1
                 if [ \$? -eq 0 ]; then
@@ -74,3 +92,18 @@ jobs:
                 echo 'Update script execution completed at \$(date)' >> \$LOG_FILE
               \"
             '"
+
+      # Retrieve and display logs (Logging)
+      - name: Retrieve Update Log
+        if: always()
+        run: |
+          gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
+            --zone=${{ github.event.inputs.zone }} \
+            --command "cat /home/deploy/update.log" || echo "Failed to retrieve log file"
+
+      # Clean up sensitive data (Cleanup)
+      - name: Clean Up
+        if: always()
+        run: |
+          rm -f gcp-key.json
+          echo "Temporary service account key file removed."
