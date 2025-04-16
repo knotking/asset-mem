@@ -25,6 +25,7 @@ jobs:
         run: |
           if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
             echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+            echo "instance_name=${{ secrets.GCP_INSTANCE_ID_PREFIX }}${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
             echo "Invalid environment: ${{ github.event.inputs.environment }}"
             exit 1
@@ -49,7 +50,7 @@ jobs:
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
-          gcloud compute ssh ${{secrets.GCP_PROJECT_ID}}${{env.environment}} \
+          gcloud compute ssh ${{env.instance_name}} \
             --zone=${{secrets.GCP_ZONE}} \
             --command "sudo -u deploy bash -c '
               set -e
@@ -79,7 +80,7 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
-          gcloud compute ssh ${{secrets.GCP_PROJECT_ID}}${{env.environment}} \
+          gcloud compute ssh ${{ env.instance_name}} \
             --zone=${{secrets.GCP_ZONE}} \
             --command "bash -c '
               set -e

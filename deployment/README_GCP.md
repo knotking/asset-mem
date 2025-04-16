@@ -103,7 +103,9 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 ### 2. **GitHub Secrets**
 Add the following secrets to your GitHub repository:
 - **`GCP_PROJECT_ID`**: The Google Cloud project ID.
-- **`GCP_SERVICE_ACCOUNT_KEY`**: The JSON key for the service account.
+- **`GCP_SA_KEY_DEMO`**: The JSON key for the service account.
+- **`GCS_REGION_ID`**: GCP Region ID.
+- **`GCS_ZONE`**: GCP ZONE
 - **`GCS_BACKEND_BUCKET`**: The Google Cloud bucket name to store the Terraform state.
 
 ---
