@@ -29,14 +29,15 @@ jobs:
             echo "Invalid environment: ${{ github.event.inputs.environment }}"
             exit 1
           fi
-
+      - name: Set uppercase environment
+        run: echo "ENV_UPPER=$(echo ${{ github.event.inputs.environment }} | tr '[:lower:]' '[:upper:]')" >> $GITHUB_ENV
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets[format('GCP_SA_KEY_{0}', github.event.inputs.environment | upper)] }}
+          credentials_json: ${{ secrets[format('GCP_SA_KEY_{0}', env.ENV_UPPER)] }}
           export_environment_variables: true
 
       - name: Set up Google Cloud SDK
