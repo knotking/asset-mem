@@ -1,6 +1,5 @@
 terraform {
   required_version = "= 1.11.4"
-  backend "gcs" {}
 }
 provider "google" {
   project = var.project_id
