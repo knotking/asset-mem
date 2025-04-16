@@ -56,7 +56,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.0
+          terraform_version: 1.11.4
     # Restore Docker Volumes from GCS
       - name: Restore Docker Volumes
         run: |
@@ -123,7 +123,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.0
+          terraform_version: 1.11.4
     
       - name: Terraform Init with Backend
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
@@ -132,14 +132,14 @@ jobs:
       - name: Fetch Zone
         id: fetch-zone
         run: |
-          terraform output -raw zone > zone.txt
+          terraform output -raw instance_zone > zone.txt
           echo "zone=$(cat zone.txt)" >> $GITHUB_ENV
         working-directory: deployment/terraform
 
        # Backup Docker Volumes to GCS
       - name: Backup Docker Volumes
         run: |
-          gcloud compute ssh ${{ env.environment }}-vm --zone=${{ env.zone }} --command="sudo tar -czf /tmp/docker_volumes_backup.tar.gz /var/lib/docker/volumes && sudo gsutil cp /tmp/docker_volumes_backup.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz"
+          gcloud compute ssh ${{ env.environment }}-vm --zone=${{ env.instance_zone }} --command="sudo tar -czf /tmp/docker_volumes_backup.tar.gz /var/lib/docker/volumes && sudo gsutil cp /tmp/docker_volumes_backup.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz"
 
       # - name: Terraform Destroy
       #   env:

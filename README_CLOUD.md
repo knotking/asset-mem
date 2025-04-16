@@ -31,7 +31,7 @@ Before running the workflows or the `startup.sh` script, ensure the following:
    - Supported environments: `demo`, `staging`, `prod`.
 
 3. **Tools (Optional for Local Debugging)**:
-   - Terraform (`v1.9.0` or compatible).
+   - Terraform (`v1.11.4` or compatible).
    - Google Cloud SDK.
    - Docker and Docker Compose.
 

@@ -9,7 +9,8 @@ This document provides instructions for setting up and deploying the HomeAMA pro
 1. **Install Required Tools (Optional - Managed via github workflow)** :
    - Install Terraform:
      ```bash
-     brew install terraform
+     brew tap hashicorp/tap
+     brew install hashicorp/tap/terraform
      ```
    - Install Google Cloud SDK:
      ```bash
