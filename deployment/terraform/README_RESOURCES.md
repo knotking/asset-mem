@@ -7,7 +7,7 @@ This document provides an overview of the resources managed by Terraform for dep
 ## Prerequisites
 
 1. **Terraform**:
-   - Ensure Terraform is installed on your system. The required version is `1.9.0`.
+   - Ensure Terraform is installed on your system. The required version is `1.11.4`.
    - Download Terraform from [terraform.io](https://www.terraform.io/downloads).
 
 2. **Google Cloud SDK**:

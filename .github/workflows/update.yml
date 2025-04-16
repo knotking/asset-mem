@@ -12,33 +12,50 @@ on:
           - demo
           - staging
           - prod
-      zone:
-        description: "GCP zone where the instance is located"
-        required: true
-        default: "us-central1-a"
 
 jobs:
   update-repo:
     name: Update Repository and Restart Docker
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
-      # Authenticate with Google Cloud using service account key
-      - name: Authenticate to Google Cloud
+      - name: Validate Environment
+        id: validate-env
         run: |
-          echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > ${{ github.workspace }}/key.json
-          gcloud auth activate-service-account --key-file=${{ github.workspace }}/key.json
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+            echo "instance_name=${{ secrets.GCP_INSTANCE_ID_PREFIX }}${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          else
+            echo "Invalid environment: ${{ github.event.inputs.environment }}"
+            exit 1
+          fi
+      - name: Set uppercase environment
+        run: echo "ENV_UPPER=$(echo ${{ github.event.inputs.environment }} | tr '[:lower:]' '[:upper:]')" >> $GITHUB_ENV
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets[format('GCP_SA_KEY_{0}', env.ENV_UPPER)] }}
+          export_environment_variables: true
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'beta'
 
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
-          gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
-            --zone=${{ github.event.inputs.zone }} \
+          gcloud compute ssh ${{env.instance_name}} \
+            --zone=${{secrets.GCP_ZONE}} \
             --command "sudo -u deploy bash -c '
               set -e
               LOG_FILE=\"/home/deploy/update.log\"
-              ENVIRONMENT=\"${{ github.event.inputs.environment }}\"
+              ENVIRONMENT=\"${{ env.environment }}\"
 
               echo \"Update script execution started at \$(date)\" >> \"\$LOG_FILE\"
               echo \"Checking for updates...\" >> \"\$LOG_FILE\"
@@ -63,16 +80,9 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
-          gcloud compute ssh homegeek${{ github.event.inputs.environment }} \
-            --zone=${{ github.event.inputs.zone }} \
+          gcloud compute ssh ${{ env.instance_name}} \
+            --zone=${{secrets.GCP_ZONE}} \
             --command "bash -c '
               set -e
               sudo -u deploy bash -c \"cat /home/deploy/update.log\"
             '" || echo "Failed to retrieve log file"
-
-      # Clean up sensitive data (Cleanup)
-      - name: Clean Up
-        if: always()
-        run: |
-          rm -f ${{ github.workspace }}/key.json
-          echo "Temporary service account key file removed."

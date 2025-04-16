@@ -9,7 +9,8 @@ This document provides instructions for setting up and deploying the HomeAMA pro
 1. **Install Required Tools (Optional - Managed via github workflow)** :
    - Install Terraform:
      ```bash
-     brew install terraform
+     brew tap hashicorp/tap
+     brew install hashicorp/tap/terraform
      ```
    - Install Google Cloud SDK:
      ```bash
@@ -58,6 +59,14 @@ gcloud secrets add-iam-policy-binding github-token \
 ### 4. **IAM Roles for Service Account**
 Assign the necessary roles to the service account:
 ```bash
+gcloud iam service-accounts add-iam-policy-binding githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/compute.admin"
+
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.securityAdmin"
@@ -77,6 +86,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.osLogin"
+
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
 ```
 
 ---
@@ -90,7 +103,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 ### 2. **GitHub Secrets**
 Add the following secrets to your GitHub repository:
 - **`GCP_PROJECT_ID`**: The Google Cloud project ID.
-- **`GCP_SERVICE_ACCOUNT_KEY`**: The JSON key for the service account.
+- **`GCP_INSTANCE_ID_PREFIX`**: The Google Cloud instance name prefix.
+- **`GCP_SA_KEY_DEMO`**: The JSON key for the service account.
+- **`GCS_REGION`**: The Google Cloud Region name.
+- **`GCS_ZONE`**: The Google Cloud zone name
 - **`GCS_BACKEND_BUCKET`**: The Google Cloud bucket name to store the Terraform state.
 
 ---

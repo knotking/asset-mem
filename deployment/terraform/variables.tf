@@ -46,7 +46,7 @@ variable "exposed_ports" {
 
 variable "service_account_email" {
   description = "Service account email"
-  default     = "321433914812-compute@developer.gserviceaccount.com"
+  default     = "githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com"
 }
 
 variable "gcs_bucket_name" {
