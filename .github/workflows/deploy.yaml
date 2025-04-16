@@ -121,13 +121,20 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.0
-
-      - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+    
+      # Backup Docker Volumes to GCS
+      - name: Backup Docker Volumes
+        run: |
+          tar -czf docker_volumes_backup.tar.gz /var/lib/docker/volumes
+          gsutil cp docker_volumes_backup.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz
         working-directory: deployment/terraform
 
-      - name: Terraform Destroy
-        env:
-          TF_VAR_environment: ${{ env.environment }}
-        run: terraform destroy -auto-approve
-        working-directory: deployment/terraform
+      # - name: Terraform Init with Backend
+      #   run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+      #   working-directory: deployment/terraform
+
+      # - name: Terraform Destroy
+      #   env:
+      #     TF_VAR_environment: ${{ env.environment }}
+      #   run: terraform destroy -auto-approve
+      #   working-directory: deployment/terraform
