@@ -96,16 +96,18 @@ Add the following secrets to your GitHub repository:
 ---
 
 ## High-Level Description of Resources
-
-### 1. **Google Cloud Storage Bucket**
+### 1. ***Google Cloud Resource Manager API**
+- **Purpose**: Used for automated deployments by service account.
+- **Significane**: Github automated workflow for updating repository will require these permissions.
+### 2. **Google Cloud Storage Bucket**
 - **Purpose**: Stores the Terraform state file, which tracks the infrastructure's current state.
 - **Significance**: Ensures consistency and enables collaboration when managing infrastructure using Terraform.
 
-### 2. **Google Cloud Secret Manager**
+### 3. **Google Cloud Secret Manager**
 - **Purpose**: Securely stores sensitive information, such as the GitHub personal access token.
 - **Significance**: Protects secrets from being exposed in plaintext and provides controlled access.
 
-### 3. **IAM Roles**
+### 4. **IAM Roles**
 - **Roles Assigned**:
   - `roles/compute.securityAdmin`: Manages security configurations for Compute Engine.
   - `roles/compute.instanceAdmin.v1`: Administers Compute Engine instances.
@@ -114,7 +116,7 @@ Add the following secrets to your GitHub repository:
   - `roles/compute.osLogin`: Allows OS login for Compute Engine instances.
 - **Significance**: Ensures the service account has the necessary permissions to deploy and manage resources.
 
-### 4. **GitHub Secrets**
+### 5. **GitHub Secrets**
 - **Purpose**: Stores sensitive information required for GitHub Actions workflows.
 - **Significance**: Enables secure and automated deployment processes.
 

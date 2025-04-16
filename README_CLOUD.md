@@ -143,8 +143,8 @@ To destroy infrastructure in the `demo` environment:
    - The `deploy.yaml` workflow uploads the Terraform plan as an artifact for review.
 
 3. **Cloud Instance Logs**:
-   - The `update.yml` workflow retrieves and displays logs from the cloud instance for debugging.
-   - The `startup.sh` script generates an `/var/log/startup_script.log` file on the instance.
+   - The `update.yml` workflow retrieves and displays logs from the cloud instance for debugging. The logs are stored at `/home/deploy/update.log`
+   - The `startup.sh` script triggered from `deploy.yml` generates an `/var/log/startup_script.log` file on the instance.
 
 ---
 
