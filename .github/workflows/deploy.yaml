@@ -57,10 +57,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.11.4
-    # Restore Docker Volumes from GCS
-      - name: Restore Docker Volumes
-        run: |
-          gcloud compute ssh ${{ env.environment }}-vm --zone=${{ secrets.GCP_ZONE }} --command="sudo gsutil cp gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz /tmp/docker_volumes_backup.tar.gz && sudo tar -xzf /tmp/docker_volumes_backup.tar.gz -C /var/lib/docker/volumes"
+
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
@@ -149,9 +146,6 @@ jobs:
             done &&
             sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}/
           "      
-      
-          
-
       # - name: Terraform Destroy
       #   env:
       #     TF_VAR_environment: ${{ env.environment }}
