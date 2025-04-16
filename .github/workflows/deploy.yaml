@@ -60,9 +60,19 @@ jobs:
 
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
 
+          # Perform Terraform State Changes
+      - name: Terraform State Changes
+        env:
+          TF_VAR_environment: ${{ env.environment }}
+        run: |
+          # Replace a provider in the state file
+          terraform state replace-provider \
+            "google/321433914812-compute@developer.gserviceaccount.com" \
+            "githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com"
+        
       - name: Terraform Validate
         run: terraform validate
         working-directory: deployment/terraform
