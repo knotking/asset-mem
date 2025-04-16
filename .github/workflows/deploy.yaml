@@ -132,14 +132,13 @@ jobs:
       - name: Fetch Zone
         id: fetch-zone
         run: |
-          terraform output -raw instance_zone > zone.txt
-          echo "zone=$(cat zone.txt)" >> $GITHUB_ENV
+          terraform output >> $GITHUB_ENV
         working-directory: deployment/terraform
 
        # Backup Docker Volumes to GCS
       - name: Backup Docker Volumes
         run: |
-          gcloud compute ssh ${{ env.environment }}-vm --zone=${{ env.instance_zone }} --command="sudo tar -czf /tmp/docker_volumes_backup.tar.gz /var/lib/docker/volumes && sudo gsutil cp /tmp/docker_volumes_backup.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz"
+          gcloud compute ssh ${{ env.instance_name }}-vm --zone=${{ env.instance_zone }} --command="sudo tar -czf /tmp/docker_volumes_backup.tar.gz /var/lib/docker/volumes && sudo gsutil cp /tmp/docker_volumes_backup.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}.tar.gz"
 
       # - name: Terraform Destroy
       #   env:
