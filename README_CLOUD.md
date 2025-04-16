@@ -9,7 +9,7 @@ This guide provides instructions for deploying and updating the project in the c
 The project includes the following components for cloud deployment and updates:
 
 1. **GitHub Actions Workflows**:
-   - **`deploy.yaml`**: Automates the deployment of infrastructure using Terraform.
+   - **`deploy.yaml`**: Automates the deployment and destroy of infrastructure using Terraform.
    - **`update.yml`**: Updates the repository and restarts Docker services on a cloud instance.
 2. **`deployment/terraform/scripts/startup.sh` Script**:
    - A shell script executed on the cloud instance to install, clone the repo and initialize the application using docker.
@@ -93,6 +93,45 @@ To update the repository and restart Docker services in the `prod` environment:
 
 ---
 
+## Workflow 3: Terraform Destroy (`deploy.yaml`)
+
+### Purpose
+Automates the destruction of infrastructure using Terraform.
+
+### Trigger
+Manually triggered via `workflow_dispatch` with the following inputs:
+- `environment`: Specifies the deployment environment (e.g., `demo`, `staging`, `prod`).
+- `destroy`: Flag to enable destroy steps
+
+### Steps
+1. **Terraform Init**: Initializes Terraform with backend configuration.
+2. **Terraform Validate**: Validates the Terraform configuration.
+3. **Terraform Plan (Destroy)**: Generates a plan to destroy the infrastructure.
+4. **Terraform Destroy**: Executes the plan to remove all resources.
+
+### Example Trigger
+To destroy infrastructure in the `demo` environment:
+1. Go to the **Actions** tab in your GitHub repository.
+2. Select the `Terraform Destroy` workflow.
+3. Click **Run workflow** and provide the following input:
+   - `environment`: `demo`
+   - `destory`: `true`
+
+---
+
+## Important Notes on Terraform Destroy
+
+- **Resources Not Destroyed**:
+  - The following resources are not destroyed by the `Terraform Destroy` workflow:
+    - **Static IP Address**: The static IP address is pre-created and managed outside of Terraform.
+    - **Google Cloud Storage Bucket**: The bucket used for Terraform state storage is not deleted to preserve state files.
+    - **Service Account**: The service account used for deployment is not removed to ensure future workflows can run without interruption.
+    - **Google Cloud Secret Manager**: The github token used for github repo cloning is not removed.
+
+- **Manual Cleanup**:
+  - If you need to delete these resources, you must do so manually via the GCP Console or CLI.
+
+---
 
 ## Monitoring and Debugging
 
