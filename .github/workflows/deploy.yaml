@@ -60,12 +60,12 @@ jobs:
 
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
-        
-      # - name: Terraform Validate
-      #   run: terraform validate
-      #   working-directory: deployment/terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: deployment/terraform
 
       - name: Terraform Plan
         env:
@@ -84,7 +84,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           TF_VAR_environment: ${{ env.environment }}
-          TF_LOG: DEBUG
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
 
