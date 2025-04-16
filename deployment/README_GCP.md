@@ -62,7 +62,7 @@ Assign the necessary roles to the service account:
 gcloud iam service-accounts add-iam-policy-binding githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
-  
+
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.admin"
@@ -86,6 +86,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.osLogin"
+
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
 ```
 
 ---

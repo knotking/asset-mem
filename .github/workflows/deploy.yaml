@@ -146,8 +146,8 @@ jobs:
             done &&
             sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}/
           "      
-      # - name: Terraform Destroy
-      #   env:
-      #     TF_VAR_environment: ${{ env.environment }}
-      #   run: terraform destroy -auto-approve
-      #   working-directory: deployment/terraform
+      - name: Terraform Destroy
+        env:
+          TF_VAR_environment: ${{ env.environment }}
+        run: terraform destroy -auto-approve
+        working-directory: deployment/terraform
