@@ -974,7 +974,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
-        "text": "I can help you with understanding home inspection report. Do you have any specific questions?",
+        "text": "I can help you with understanding home inspection report. Please upload a report to get started.",
         "additionalFields": {
           "appendAttribution": false,
           "parse_mode": "HTML"
