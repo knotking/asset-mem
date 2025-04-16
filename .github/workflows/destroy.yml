@@ -1,4 +1,4 @@
-name: Terraform Deployment
+name: Terraform Destroy
 
 on:
   workflow_dispatch:
@@ -12,14 +12,13 @@ on:
           - demo
           - staging
           - prod
-
 jobs:
-  terraform:
-    name: Deploy with Terraform
+  destroy:
+    name: Terraform Destroy
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+
     steps:
-      # Common Setup Steps
       - name: Validate Environment
         id: validate-env
         run: |
@@ -48,33 +47,33 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.11.4
-
-      # Terraform-Specific Steps
+    
       - name: Terraform Init with Backend
         run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
-
-      - name: Terraform Validate
-        run: terraform validate
+        # Fetch Zone from Terraform Outputs
+      - name: Fetch Zone
+        id: fetch-zone
+        run: |
+          echo "instance_zone=$(terraform output -raw instance_zone)" >> $GITHUB_ENV
+          echo "instance_name=$(terraform output -raw instance_name)" >> $GITHUB_ENV
         working-directory: deployment/terraform
 
-      - name: Terraform Plan
-        env:
-          TF_VAR_environment: ${{ env.environment }}
-        run: terraform plan -out=tfplan
-        working-directory: deployment/terraform
-
-      - name: Upload Terraform Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-plan-${{ env.environment }}
-          path: deployment/terraform/tfplan
-          retention-days: 7
-
-      - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          TF_VAR_environment: ${{ env.environment }}
-        run: terraform apply -auto-approve tfplan
-        working-directory: deployment/terraform
-  
+      - name: Backup Docker Volumes
+        run: |
+          echo "The zone is: ${{ env.instance_zone }}, and the instance name is: ${{ env.instance_name }}"
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ env.instance_zone }} --command="
+            sudo -u deploy docker volume ls -q | while read volume; do
+              sudo -u deploy docker run --rm \
+                -v \$volume:/data \
+                -v /tmp:/backup \
+                ubuntu \
+                tar -czf /backup/\${volume}.tar.gz -C /data .
+            done &&
+            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}/
+          "      
+      # - name: Terraform Destroy
+      #   env:
+      #     TF_VAR_environment: ${{ env.environment }}
+      #   run: terraform destroy -auto-approve
+      #   working-directory: deployment/terraform
