@@ -144,7 +144,7 @@ To destroy infrastructure in the `demo` environment:
 
 3. **Cloud Instance Logs**:
    - The `update.yml` workflow retrieves and displays logs from the cloud instance for debugging.
-   - The `startup.sh` script generates an `update.log` file on the instance.
+   - The `startup.sh` script generates an `/var/log/startup_script.log` file on the instance.
 
 ---
 
@@ -157,6 +157,6 @@ To destroy infrastructure in the `demo` environment:
   - Terraform state is stored in a GCS bucket specified by the `GCS_BACKEND_BUCKET` secret.
 
 - **Docker Services**:
-  - The `update.yml` workflow and `startup.sh` script assume Docker Compose is used to manage services on the cloud instance.
+  - The `deploy.yml`, `update.yml` workflow and `startup.sh` script assume Docker Compose is used to manage services on the cloud instance.
 
 For further assistance, refer to the `.github/workflows` directory or contact the project maintainer.

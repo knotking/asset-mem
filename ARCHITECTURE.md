@@ -58,7 +58,7 @@ The HomeAMA project is designed to process user inputs (documents, images, and v
 - Vector database for storing embeddings (used in DocumentAnalysis).
 
 #### c. **Postgres**
-- Relational database for storing structured results (used in DocumentAnalysis).
+- Relational database for n8n users, credentials, workflows and storing AI generated structured results (used in DocumentAnalysis).
 
 ---
 
@@ -77,7 +77,7 @@ The HomeAMA project is designed to process user inputs (documents, images, and v
 ### 4. Backend Processing
 - The `python server/api/app.py` script provides additional processing capabilities, such as:
   - Image processing and annotation.
-  - Video processing and annotation.
+  - Video frame extraction and annotation.
   - Document classification using pretrained ML models (Not in use).
 
 ### 5. Response
@@ -89,9 +89,9 @@ The HomeAMA project is designed to process user inputs (documents, images, and v
 
 ### Infrastructure
 - **n8n**: Workflow automation tool for managing workflows.
-- **Postgres**: Database for storing structured results.
-- **Qdrant**: Vector database for embeddings.
-- **FastAPI (via `app.py`)**: API server for additional processing tasks.
+- **Postgres**: Database for n8n users, credentials, workflows and storing AI generated structured results.
+- **Qdrant**: Vector database for embeddings of home inspection reports.
+- **FastAPI (via `server/api/app.py`)**: API server for additional processing tasks.
 - **Docker**: Used to containerize and deploy services.
 
 ### Cloud Integration
@@ -134,7 +134,13 @@ The HomeAMA project is designed to process user inputs (documents, images, and v
 3. **Real-Time Notifications**:
    - Notify users about the progress of their requests.
 
-4. **Scalable Deployment**:
+4. **Cloud Vector Store**:
+   - Enable Cloud Vector Store (e.g Google VertexAI, Open AI, Qdrant, Weaviate, Pinecone, etc)
+
+5. **PostgreSQLDB**
+   - Enable Cloud PostgreSQLDB (e.g Google Cloud SQL, Supabase, etc)
+
+6. **Scalable Deployment**:
    - Use Kubernetes for managing and scaling services.
 
 ---
