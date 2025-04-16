@@ -24,7 +24,7 @@ jobs:
         id: validate-env
         run: |
           if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
-            echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
             echo "Invalid environment: ${{ github.event.inputs.environment }}"
             exit 1
@@ -36,7 +36,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+          credentials_json: '${{ secrets[format('GCP_SA_KEY_{0}', github.event.inputs.environment | upper)] }}'
           export_environment_variables: true
 
       - name: Set up Google Cloud SDK
@@ -51,7 +51,7 @@ jobs:
 
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=terraform/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
 
       - name: Terraform Validate
@@ -60,7 +60,11 @@ jobs:
 
       - name: Terraform Plan
         env:
-          TF_VAR_environment: ${{ env.environment }}
+          TF_VAR_ENVIRONMENT: ${{ env.environment }}
+          TF_VAR_INSTANCE_NAME: "${{secrets.GCP_PROJECT_ID}}${{ env.environment }}"
+          TF_VAR_ZONE: ${{secrets.GCP_ZONE}}
+          TF_VAR_PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          TF_VAR_REGION: ${{secrets.GCP_REGION}}
         run: terraform plan -out=tfplan
         working-directory: deployment/terraform
 
@@ -74,7 +78,11 @@ jobs:
       - name: Terraform Apply
         if: github.event_name == 'workflow_dispatch'
         env:
-          TF_VAR_environment: ${{ env.environment }}
+          TF_VAR_ENVIRONMENT: ${{ env.environment }}
+          TF_VAR_INSTANCE_NAME: "${{secrets.GCP_PROJECT_ID}}${{ env.environment }}"
+          TF_VAR_ZONE: ${{secrets.GCP_ZONE}}
+          TF_VAR_PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          TF_VAR_REGION: ${{secrets.GCP_REGION}}
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
   

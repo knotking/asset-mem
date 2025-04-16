@@ -23,7 +23,7 @@ jobs:
         id: validate-env
         run: |
           if [[ "${{ github.event.inputs.environment }}" =~ ^(demo|staging|prod)$ ]]; then
-            echo "environment=${{ github.event.inputs.environment || 'demo' }}" >> $GITHUB_ENV
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
             echo "Invalid environment: ${{ github.event.inputs.environment }}"
             exit 1
@@ -35,7 +35,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+          credentials_json: '${{ secrets[format('GCP_SA_KEY_{0}', github.event.inputs.environment | upper)] }}'
           export_environment_variables: true
 
       - name: Set up Google Cloud SDK
@@ -47,22 +47,15 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.11.4
-    
+        
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=terraform/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
-        # Fetch Zone from Terraform Outputs
-      - name: Fetch Zone
-        id: fetch-zone
-        run: |
-          echo "instance_zone=$(terraform output -raw instance_zone)" >> $GITHUB_ENV
-          echo "instance_name=$(terraform output -raw instance_name)" >> $GITHUB_ENV
-        working-directory: deployment/terraform
-
+    
       - name: Backup Docker Volumes
         run: |
-          echo "The zone is: ${{ env.instance_zone }}, and the instance name is: ${{ env.instance_name }}"
-          gcloud compute ssh ${{ env.instance_name }} --zone=${{ env.instance_zone }} --command="
+          echo "The zone is: ${{ secrets.GCP_ZONE }}"
+          gcloud compute ssh ${{ secrets.GCP_PROJECT_ID }}${{env.environment}} --zone=${{ secrets.GCP_ZONE }} --command="
             sudo -u deploy docker volume ls -q | while read volume; do
               sudo -u deploy docker run --rm \
                 -v \$volume:/data \
@@ -70,10 +63,14 @@ jobs:
                 ubuntu \
                 tar -czf /backup/\${volume}.tar.gz -C /data .
             done &&
-            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker_volumes_${{ env.environment }}/
+            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ secrets.GCS_BACKEND_BUCKET }}/docker/${{ env.environment }}/
           "      
-      # - name: Terraform Destroy
-      #   env:
-      #     TF_VAR_environment: ${{ env.environment }}
-      #   run: terraform destroy -auto-approve
-      #   working-directory: deployment/terraform
+      - name: Terraform Destroy
+        env:
+          TF_VAR_ENVIRONMENT: ${{ env.environment }}
+          TF_VAR_INSTANCE_NAME: "${{secrets.GCP_PROJECT_ID}}${{ env.environment }}"
+          TF_VAR_ZONE: ${{secrets.GCP_ZONE}}
+          TF_VAR_PROJECT_ID: ${{secrets.GCP_PROJECT_ID}}
+          TF_VAR_REGION: ${{secrets.GCP_REGION}}
+        run: terraform destroy -auto-approve
+        working-directory: deployment/terraform
