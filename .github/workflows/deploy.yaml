@@ -60,7 +60,7 @@ jobs:
 
       # Terraform-Specific Steps
       - name: Terraform Init with Backend
-        run: terraform init -backend-config="bucket=${{ secrets.GCS_BACKEND_BUCKET }}" -backend-config="prefix=tfstate/${{ env.environment }}" -lock=true
+        run: terraform init
         working-directory: deployment/terraform
 
       - name: Terraform Validate
