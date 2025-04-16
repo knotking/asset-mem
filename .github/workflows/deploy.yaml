@@ -84,6 +84,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           TF_VAR_environment: ${{ env.environment }}
+          TF_LOG: DEBUG
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
 

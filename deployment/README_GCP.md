@@ -59,6 +59,14 @@ gcloud secrets add-iam-policy-binding github-token \
 ### 4. **IAM Roles for Service Account**
 Assign the necessary roles to the service account:
 ```bash
+gcloud iam service-accounts add-iam-policy-binding githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+  
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/compute.admin"
+
 gcloud projects add-iam-policy-binding homegeekdemo \
   --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
   --role="roles/compute.securityAdmin"
