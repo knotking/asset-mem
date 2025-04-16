@@ -24,8 +24,9 @@ Before running the workflows or the `startup.sh` script, ensure the following:
    - Add the following secrets to your GitHub repository:
      - `GCP_SA_KEY_DEMO`: Service account key for Google Cloud authentication.
      - `GCP_PROJECT_ID`: Google Cloud project ID.
-     - `GCS_REGION_ID`: GCP Region ID.
-     - `GCS_ZONE`: GCP ZONE
+     - `GCS_REGION`: Google Cloud Region name.
+     - `GCS_INSTANCE_ID_PREFIX`: Google Cloud Instance name prefix.
+     - `GCS_ZONE`: GGoogle CloudCP zone name
      - `GCS_BACKEND_BUCKET`: GCS bucket for Terraform state storage.
      - Any other environment-specific secrets required for deployment.
 
