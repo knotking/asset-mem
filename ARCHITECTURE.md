@@ -1,12 +1,12 @@
-# HomeAMA Architecture
+# HomeApp Architecture
 
-This document provides an overview of the architecture for the HomeAMA project, detailing its components, workflows, and interactions.
+This document provides an overview of the architecture for the HomeApp project, detailing its components, workflows, and interactions.
 
 ---
 
 ## Overview
 
-The HomeAMA project is designed to process user inputs (documents, images, and videos) sent via Telegram, analyze them using AI models, and return structured results. The architecture is modular, scalable, and integrates multiple services for efficient processing.
+The HomeApp project is designed to process user inputs (documents, images, and videos) sent via Telegram, analyze them using AI models, and return structured results. The architecture is modular, scalable, and integrates multiple services for efficient processing.
 
 ---
 

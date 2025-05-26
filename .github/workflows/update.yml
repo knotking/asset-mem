@@ -59,7 +59,7 @@ jobs:
 
               echo \"Update script execution started at \$(date)\" >> \"\$LOG_FILE\"
               echo \"Checking for updates...\" >> \"\$LOG_FILE\"
-              cd /home/deploy/HomeAMA
+              cd /home/deploy/HomeApp
               git fetch origin main >> \"\$LOG_FILE\" 2>&1
               if git diff origin/main --quiet; then
                 echo \"Repository is already up-to-date. No action needed.\" >> \"\$LOG_FILE\"

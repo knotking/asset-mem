@@ -45,7 +45,7 @@ else
   echo "Failed to fetch GitHub token." >> $LOG_FILE
   exit 1
 fi
-REPO_NAME="HomeAMA"
+REPO_NAME="HomeApp"
 
 # Execute commands as deploy user
 echo "Executing commands as deploy user..." >> $LOG_FILE

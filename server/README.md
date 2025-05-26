@@ -1,4 +1,4 @@
-# HomeAMA API Server Guide
+# HomeApp API Server Guide
 
 This document provides instructions for setting up, training the model, running the API server, and testing it using curl commands. It also includes details on how to use Docker for containerized deployment.
 
@@ -74,14 +74,14 @@ The server will be available at `http://localhost:8000`.
 To containerize the API server, build a Docker image using the provided `Dockerfile`:
 
 ```bash
-docker build -t homeama-api .
+docker build -t homeapp-api .
 ```
 
 ### 2. **Run the Docker Container**
 Run the containerized API server:
 
 ```bash
-docker run -p 8000:8000 homeama-api
+docker run -p 8000:8000 homeapp-api
 ```
 
 The server will be accessible at `http://localhost:8000`.
