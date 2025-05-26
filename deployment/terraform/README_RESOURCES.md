@@ -1,6 +1,6 @@
-# Terraform Configuration for HomeAMA Deployment
+# Terraform Configuration for HomeApp Deployment
 
-This document provides an overview of the resources managed by Terraform for deploying the HomeAMA project on Google Cloud Platform (GCP).
+This document provides an overview of the resources managed by Terraform for deploying the HomeApp project on Google Cloud Platform (GCP).
 
 ---
 
@@ -27,7 +27,7 @@ This document provides an overview of the resources managed by Terraform for dep
 
 ### 1. **Google Compute Instance**
 - **Resource**: `google_compute_instance`
-- **Purpose**: Creates a virtual machine (VM) instance to host the HomeAMA application.
+- **Purpose**: Creates a virtual machine (VM) instance to host the HomeApp application.
 - **Key Attributes**:
   - **Name**: The name of the instance is defined by `var.instance_name`.
   - **Machine Type**: The machine type is specified by `var.machine_type` (e.g., `e2-medium`).

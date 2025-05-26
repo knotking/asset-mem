@@ -6,13 +6,13 @@ This document provides an overview of the `startup.sh` script, its purpose, and 
 
 ## Overview
 
-The `startup.sh` script is designed to automate the initialization and setup of a cloud instance for running the `HomeAMA` application. It performs the following tasks:
+The `startup.sh` script is designed to automate the initialization and setup of a cloud instance for running the `HomeApp` application. It performs the following tasks:
 
 1. Fetches the deployment environment from the instance metadata.
 2. Installs Docker and Docker Compose.
 3. Creates a `deploy` user and grants it Docker permissions.
 4. Fetches a GitHub token from Google Cloud Secret Manager.
-5. Clones the `HomeAMA` repository and sets up the environment.
+5. Clones the `HomeApp` repository and sets up the environment.
 6. Starts the application using Docker Compose.
 
 ---
@@ -31,7 +31,7 @@ Before running the script, ensure the following:
    - The script requires root privileges to install software and manage users.
 
 4. **Repository Configuration**:
-   - The `HomeAMA` repository must have environment-specific `.env` files (e.g., `.env.demo`, `.env.staging`, `.env.prod`).
+   - The `HomeApp` repository must have environment-specific `.env` files (e.g., `.env.demo`, `.env.staging`, `.env.prod`).
 
 ---
 
@@ -64,9 +64,9 @@ gcloud secrets versions access latest --secret=github-token
 ```
 
 ### 5. Clone Repository and Set Up Environment
-The script clones the `HomeAMA` repository and sets up the environment:
+The script clones the `HomeApp` repository and sets up the environment:
 ```bash
-git clone https://$GITHUB_TOKEN@github.com/prakashbask/HomeAMA.git
+git clone https://$GITHUB_TOKEN@github.com/HomeGeekAI/HomeApp.git
 cp .env.$ENVIRONMENT .env
 ```
 

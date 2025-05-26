@@ -1,6 +1,6 @@
 # Google Cloud Platform (GCP) Deployment Guide
 
-This document provides instructions for setting up and deploying the HomeAMA project on Google Cloud Platform (GCP). It includes details on configuring GCP resources, setting up GitHub Actions, and managing secrets.
+This document provides instructions for setting up and deploying the HomeApp project on Google Cloud Platform (GCP). It includes details on configuring GCP resources, setting up GitHub Actions, and managing secrets.
 
 ---
 
@@ -140,6 +140,6 @@ Add the following secrets to your GitHub repository:
 
 ## Summary
 
-This guide outlines the steps to configure GCP resources and GitHub Actions for deploying the HomeAMA project. By following these instructions, you can securely and efficiently manage your infrastructure and deployment workflows.
+This guide outlines the steps to configure GCP resources and GitHub Actions for deploying the HomeApp project. By following these instructions, you can securely and efficiently manage your infrastructure and deployment workflows.
 
 For further assistance, refer to the official documentation for [Google Cloud](https://cloud.google.com/docs) and [GitHub Actions](https://docs.github.com/en/actions).
