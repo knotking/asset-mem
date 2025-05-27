@@ -1204,6 +1204,7 @@
       ],
       "id": "d79be2a3-ba73-48ce-8f37-abad46d15cb3",
       "name": "Get Chat Mode from KV",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "4UhXr0BPseYnogo5",
