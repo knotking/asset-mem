@@ -56,7 +56,7 @@ set -e
 echo "Cloning repository..."
 GITHUB_TOKEN=$GITHUB_TOKEN
 cd /home/deploy
-git clone https://$GITHUB_TOKEN@github.com/prakashbask/$REPO_NAME.git
+git clone https://$GITHUB_TOKEN@github.com/HomeGeekAI/$REPO_NAME.git
 
 # Copy environment file
 echo "Copying environment file..."
