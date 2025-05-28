@@ -4,7 +4,7 @@ set -e
 # Log file for tracking installation
 LOG_FILE="/var/log/startup_script.log"
 echo "Startup script execution started at $(date)" >> $LOG_FILE
-
+chmod 777 $LOG_FILE
 # Fetch the environment variable from metadata
 echo "Fetching environment variable from metadata..." >> $LOG_FILE
 ENVIRONMENT=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/environment" -H "Metadata-Flavor: Google")

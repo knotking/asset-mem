@@ -58,22 +58,44 @@ jobs:
         run: |
           echo "The zone is: ${{ vars.GCP_ZONE }}"
           gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
+            # Create backup directory
+            sudo -u deploy mkdir -p /tmp/backups
+
             # Backup Docker volumes
+            VOLUMES_EXIST=false
             sudo -u deploy docker volume ls -q | while read volume; do
+              VOLUMES_EXIST=true
               sudo -u deploy docker run --rm \
                 -v \$volume:/data \
-                -v /tmp:/backup \
+                -v /tmp/backups:/backup \
                 ubuntu \
                 tar -czf /backup/\${volume}.tar.gz -C /data .
-            done &&
-            
-            # Backup acme.json
-            sudo -u deploy cp /home/deploy/HomeApp/traefik/acme.json /tmp/acme.json &&
-            sudo -u deploy chmod 644 /tmp/acme.json &&
-            
-            # Upload both volumes and acme.json to GCS
-            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/volumes/ &&
-            sudo -u deploy gsutil cp /tmp/acme.json gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/traefik/
+            done
+
+            # Backup acme.json if it exists
+            if [ -f /home/deploy/HomeApp/traefik/acme.json ]; then
+              sudo -u deploy cp /home/deploy/HomeApp/traefik/acme.json /tmp/backups/acme.json
+              sudo -u deploy chmod 644 /tmp/backups/acme.json
+            fi
+
+            # Upload backups to GCS if they exist
+            if [ -n \"\$(ls -A /tmp/backups/*.tar.gz 2>/dev/null)\" ]; then
+              echo 'Uploading volume backups to GCS...'
+              sudo -u deploy gsutil -m cp /tmp/backups/*.tar.gz gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/volumes/
+            else
+              echo 'No volume backups to upload'
+            fi
+
+            # Upload acme.json if it exists
+            if [ -f /tmp/backups/acme.json ]; then
+              echo 'Uploading acme.json to GCS...'
+              sudo -u deploy gsutil cp /tmp/backups/acme.json gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/traefik/
+            else
+              echo 'No acme.json to upload'
+            fi
+
+            # Cleanup
+            sudo -u deploy rm -rf /tmp/backups
           "      
       - name: Terraform Destroy
         env:
