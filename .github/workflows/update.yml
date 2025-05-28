@@ -18,7 +18,8 @@ jobs:
     name: Update Repository and Restart Docker
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-
+    env:
+      CLOUDSDK_COMPUTE_USE_OSLOGIN: 'True'
     steps:
       - name: Validate Environment
         id: validate-env
