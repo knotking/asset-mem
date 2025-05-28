@@ -57,17 +57,9 @@ jobs:
       - name: Set Log Path
         run: echo "STARTUP_LOG=/home/deploy/startup_script.log" >> $GITHUB_ENV
 
-      - name: Stream Startup Script Log
-        if: always()
+      - name: Copy Monitor Script
         run: |
-          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
-            echo '#!/bin/bash
-            while ! grep -q \"Startup script execution completed\" ${{ env.STARTUP_LOG }} 2>/dev/null; do
-              tail -n 20 ${{ env.STARTUP_LOG }} 2>/dev/null || echo \"Log not found yet\"
-              sleep 30
-            done
-            cat ${{ env.STARTUP_LOG }}' > /tmp/monitor_startup_log.sh
-            chmod +x /tmp/monitor_startup_log.sh
-            sudo -u deploy bash /tmp/monitor_startup_log.sh
-            rm /tmp/monitor_startup_log.sh
-          "
+          gcloud compute scp scripts/monitor_startup_log.sh ${{ env.instance_name }}:/tmp/monitor_startup_log.sh --zone=${{ vars.GCP_ZONE }}
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="chmod +x /tmp/monitor_startup_log.sh"
+
+      
