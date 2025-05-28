@@ -18,13 +18,6 @@ on:
           - demo
           - staging
           - prod
-  push:
-    branches:
-      - restore_docker_volumes
-    paths:
-      - 'deployment/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/**'
 
 jobs:
   backup-restore:
@@ -50,10 +43,13 @@ jobs:
           echo "instance_name=${{ vars.GCP_INSTANCE_ID_PREFIX }}${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           echo "ENV_UPPER=$(echo ${{ github.event.inputs.environment }} | tr '[:lower:]' '[:upper:]')" >> $GITHUB_ENV
 
+      - name: Checkout Code
+        uses: actions/checkout@v4
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets[format('GCP_SA_KEY_{0}', env.ENV_UPPER)] }}
+          export_environment_variables: true
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
