@@ -26,14 +26,20 @@ else
   exit 1
 fi
 
-# Create deploy user and add to Docker group
-useradd -m -s /bin/bash deploy >> $LOG_FILE 2>&1
-usermod -aG docker deploy >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
-  echo "Deploy user created and added to Docker group successfully." >> $LOG_FILE
+# Create deploy user and add to Docker group if not exists
+if ! id "deploy" &>/dev/null; then
+    echo "Creating deploy user..." >> $LOG_FILE
+    useradd -m -s /bin/bash deploy >> $LOG_FILE 2>&1
+    usermod -aG docker deploy >> $LOG_FILE 2>&1
+    if [ $? -eq 0 ]; then
+        echo "Deploy user created and added to Docker group successfully." >> $LOG_FILE
+    else
+        echo "Failed to create deploy user or add to Docker group." >> $LOG_FILE
+        exit 1
+    fi
 else
-  echo "Failed to create deploy user or add to Docker group." >> $LOG_FILE
-  exit 1
+    echo "Deploy user already exists, ensuring Docker group membership..." >> $LOG_FILE
+    usermod -aG docker deploy >> $LOG_FILE 2>&1
 fi
 
 # Get GitHub token from Secret Manager
