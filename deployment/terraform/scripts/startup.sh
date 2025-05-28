@@ -62,13 +62,14 @@ else
   exit 1
 fi
 
-# Define backup paths
+# Define backup paths and create with proper permissions
 BACKUP_DIR="/tmp/volume-backups"
 TRAEFIK_BACKUP_DIR="/tmp/traefik-backup"
-VOLUME_PATH="/var/lib/docker/volumes"  # Add the missing VOLUME_PATH variable
+VOLUME_PATH="/var/lib/docker/volumes"
 
-# Create backup directories
+# Create backup directories with proper permissions
 mkdir -p $BACKUP_DIR $TRAEFIK_BACKUP_DIR >> $LOG_FILE 2>&1
+chown deploy:deploy $BACKUP_DIR $TRAEFIK_BACKUP_DIR >> $LOG_FILE 2>&1
 
 # Download volume backups from GCS
 echo "Downloading volume backups from GCS..." >> $LOG_FILE
@@ -130,7 +131,11 @@ if [ -d "$BACKUP_DIR" ] && [ "\$(ls -A $BACKUP_DIR)" ]; then
     if [ -f "\$volume_backup" ]; then
       volume_name=\$(basename "\$volume_backup" .tar.gz)
       docker volume create "\$volume_name" >> $LOG_FILE 2>&1
-      tar xzf "\$volume_backup" -C $VOLUME_PATH >> $LOG_FILE 2>&1
+      # Use Docker to restore the volume instead of direct filesystem access
+      docker run --rm \
+        -v "\$volume_name":/restore \
+        -v "\$volume_backup":/backup.tar.gz \
+        ubuntu bash -c "cd /restore && tar xzf /backup.tar.gz" >> $LOG_FILE 2>&1
       echo "Restored volume: \$volume_name" >> $LOG_FILE
     fi
   done
