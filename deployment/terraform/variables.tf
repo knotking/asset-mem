@@ -49,11 +49,10 @@ variable "service_account_email" {
   default     = "githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com"
 }
 
-variable "gcs_bucket_name" {
-  description = "GCS bucket name for backups"
-  default     = "homegeekdemo"
+variable "GCS_BACKEND_BUCKET" {
+  description = "The GCS bucket used for backend and backups"
+  type        = string
 }
-
 
 variable "environment" {
   description = "The static IP address to assign to the VM instance."

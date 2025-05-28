@@ -54,10 +54,11 @@ jobs:
         run: terraform init -backend-config="bucket=${{ vars.GCS_BACKEND_BUCKET }}" -backend-config="prefix=terraform/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
     
-      - name: Backup Docker Volumes
+      - name: Backup Docker Volumes and Traefik Config
         run: |
           echo "The zone is: ${{ vars.GCP_ZONE }}"
           gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
+            # Backup Docker volumes
             sudo -u deploy docker volume ls -q | while read volume; do
               sudo -u deploy docker run --rm \
                 -v \$volume:/data \
@@ -65,7 +66,14 @@ jobs:
                 ubuntu \
                 tar -czf /backup/\${volume}.tar.gz -C /data .
             done &&
-            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ vars.GCS_BACKEND_BUCKET }}/docker/${{ env.environment }}/
+            
+            # Backup acme.json
+            sudo -u deploy cp /home/deploy/HomeApp/traefik/acme.json /tmp/acme.json &&
+            sudo -u deploy chmod 644 /tmp/acme.json &&
+            
+            # Upload both volumes and acme.json to GCS
+            sudo -u deploy gsutil cp /tmp/*.tar.gz gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/volumes/ &&
+            sudo -u deploy gsutil cp /tmp/acme.json gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/traefik/
           "      
       - name: Terraform Destroy
         env:

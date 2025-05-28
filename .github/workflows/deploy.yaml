@@ -68,6 +68,7 @@ jobs:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_region: ${{ vars.GCP_REGION }}
           TF_VAR_tags: ${{ env.instance_name}}
+          TF_VAR_GCS_BACKEND_BUCKET: ${{ vars.GCS_BACKEND_BUCKET }}
         run: terraform plan -out=tfplan
         working-directory: deployment/terraform
 
@@ -87,5 +88,6 @@ jobs:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_region: ${{ vars.GCP_REGION }}
           TF_VAR_tags: ${{ env.instance_name}}
+          TF_VAR_GCS_BACKEND_BUCKET: ${{ vars.GCS_BACKEND_BUCKET }}
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform

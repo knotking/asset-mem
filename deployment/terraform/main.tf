@@ -39,6 +39,7 @@ resource "google_compute_instance" "homegeek_demo" {
   metadata = {
     startup-script = file("./scripts/startup.sh")
     environment    = var.environment
+    backup-bucket  = var.GCS_BACKEND_BUCKET  # Add backup bucket to metadata
   }
 
   service_account {
