@@ -93,3 +93,11 @@ jobs:
         working-directory: deployment/terraform
 
       
+      - name: Set Log Path
+        run: echo "STARTUP_LOG=/home/deploy/startup_script.log" >> $GITHUB_ENV
+
+      - name: Wait and Show Last 10 Lines of Startup Log
+        run: |
+          sleep 60
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} \
+            --command="sudo tail -n 10 ${{ env.STARTUP_LOG }}"
