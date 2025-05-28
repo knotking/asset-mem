@@ -60,10 +60,14 @@ jobs:
       - name: Stream Startup Script Log
         if: always()
         run: |
-          # Create a simple one-line monitor command
-          MONITOR_CMD="while ! grep -q 'Startup script execution completed' ${{ env.STARTUP_LOG }}; do tail -n 20 ${{ env.STARTUP_LOG }}; sleep 30; done; cat ${{ env.STARTUP_LOG }}"
-          
-          # Execute the monitoring command directly
-          gcloud compute ssh ${{ env.instance_name }} \
-            --zone=${{ vars.GCP_ZONE }} \
-            --command="sudo -u deploy bash -c '$MONITOR_CMD'"
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
+            echo '#!/bin/bash
+            while ! grep -q \"Startup script execution completed\" ${{ env.STARTUP_LOG }} 2>/dev/null; do
+              tail -n 20 ${{ env.STARTUP_LOG }} 2>/dev/null || echo \"Log not found yet\"
+              sleep 30
+            done
+            cat ${{ env.STARTUP_LOG }}' > /tmp/monitor_startup_log.sh
+            chmod +x /tmp/monitor_startup_log.sh
+            sudo -u deploy bash /tmp/monitor_startup_log.sh
+            rm /tmp/monitor_startup_log.sh
+          "
