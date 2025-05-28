@@ -94,29 +94,19 @@ jobs:
 
       
       - name: Set Log Path
-        run: echo "STARTUP_LOG=/home/deploy/startup_script.log" >> $GITHUB_ENV
+        run: echo "STARTUP_LOG=/var/log/startup_script.log" >> $GITHUB_ENV
 
       - name: Stream Startup Script Log
         if: always()
         run: |
-          # Create a minimal monitoring script
-          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command='
-          cat << EOF > /tmp/monitor.sh
-          #!/bin/bash
-          log_file=$1
-          while ! grep "Startup script execution completed" $log_file &>/dev/null; do
-            tail -n 20 $log_file
-            sleep 30
-          done
-          cat $log_file
-          EOF
-          ' || exit 1
-
-          # Make script executable and run it
           gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
-          sudo chmod +x /tmp/monitor.sh && 
-          sudo -u deploy /tmp/monitor.sh ${{ env.STARTUP_LOG }} &&
-          sudo rm /tmp/monitor.sh"
+            LOG_FILE='${{ env.STARTUP_LOG }}'
+            while ! grep 'Startup script execution completed' \$LOG_FILE &>/dev/null; do
+              sudo tail -n 20 \$LOG_FILE || echo 'Log not found yet'
+              sleep 30
+            done
+            sudo cat \$LOG_FILE
+          "
 
       - name: Clean up OS Login SSH Keys
         if: always()

@@ -1,0 +1,55 @@
+name: Terraform Deployment On Push
+
+on:
+  push:
+    branches:
+      - restore_docker_volumes
+
+jobs:
+  terraform:
+    name: Test logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Environment Variables
+        run: |
+          echo "environment=demo" >> $GITHUB_ENV
+          echo "instance_name=${{ vars.GCP_INSTANCE_ID_PREFIX }}demo" >> $GITHUB_ENV
+          echo "ENV_UPPER=DEMO" >> $GITHUB_ENV
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_DEMO }}
+          export_environment_variables: true
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'beta'
+
+      
+      - name: Set Log Path
+        run: echo "STARTUP_LOG=/var/log/startup_script.log" >> $GITHUB_ENV
+
+      - name: Stream Startup Script Log
+        if: always()
+        run: |
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
+            LOG_FILE='${{ env.STARTUP_LOG }}'
+            while ! grep 'Startup script execution completed' \$LOG_FILE &>/dev/null; do
+              sudo tail -n 20 \$LOG_FILE || echo 'Log not found yet'
+              sleep 30
+            done
+            sudo cat \$LOG_FILE
+          "
+
+      - name: Clean up OS Login SSH Keys
+        if: always()
+        run: |
+          KEYS=$(gcloud compute os-login ssh-keys list --format="value(key)")
+          for KEY in $KEYS; do
+            gcloud compute os-login ssh-keys remove --key="$KEY" || true
+          done
