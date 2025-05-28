@@ -47,6 +47,19 @@ jobs:
         with:
           install_components: 'beta'
 
+      - name: Debug identity
+        run: |
+          echo "Service Account: $GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud auth list
+          gcloud config list account
+
+      - name: SSH into instance using OS Login
+        run: |
+          gcloud compute ssh ${{env.instance_name}} \
+            --zone=${{vars.GCP_ZONE}} \
+            --verbosity=debug \
+            --dry-run \
+            --command="echo SSH success"
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
