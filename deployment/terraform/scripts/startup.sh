@@ -54,7 +54,7 @@ fi
 REPO_NAME="HomeApp"
 
 # Fetch the backup bucket from metadata
-BACKUP_BUCKET=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/backup-bucket" -H "Metadata-Flavor: Google")
+BACKUP_BUCKET="gs://$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/backup-bucket" -H "Metadata-Flavor: Google")"
 if [ $? -eq 0 ]; then
   echo "Backup bucket fetched successfully: $BACKUP_BUCKET" >> $LOG_FILE
 else
@@ -72,20 +72,20 @@ mkdir -p $BACKUP_DIR $TRAEFIK_BACKUP_DIR >> $LOG_FILE 2>&1
 
 # Download volume backups from GCS
 echo "Downloading volume backups from GCS..." >> $LOG_FILE
-gsutil -m cp -r "${BACKUP_BUCKET}/${ENVIRONMENT}/volumes/*" $BACKUP_DIR/ >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
+if gsutil -q ls "${BACKUP_BUCKET}/${ENVIRONMENT}/volumes/" &>/dev/null; then
+  gsutil -m cp -r "${BACKUP_BUCKET}/${ENVIRONMENT}/volumes/$(echo $REPO_NAME | tr '[:upper:]' '[:lower:]')*" $BACKUP_DIR/ >> $LOG_FILE 2>&1
   echo "Volume backups downloaded successfully." >> $LOG_FILE
 else
-  echo "Warning: No volume backups found or download failed." >> $LOG_FILE
+  echo "No volume backups found in bucket ${BACKUP_BUCKET}/${ENVIRONMENT}/volumes/" >> $LOG_FILE
 fi
 
 # Download Traefik acme.json from GCS
 echo "Downloading Traefik acme.json from GCS..." >> $LOG_FILE
-gsutil cp "${BACKUP_BUCKET}/${ENVIRONMENT}/traefik/acme.json" $TRAEFIK_BACKUP_DIR/acme.json >> $LOG_FILE 2>&1
-if [ $? -eq 0 ]; then
+if gsutil -q ls "${BACKUP_BUCKET}/${ENVIRONMENT}/traefik/acme.json" &>/dev/null; then
+  gsutil cp "${BACKUP_BUCKET}/${ENVIRONMENT}/traefik/acme.json" $TRAEFIK_BACKUP_DIR/acme.json >> $LOG_FILE 2>&1
   echo "Traefik acme.json downloaded successfully." >> $LOG_FILE
 else
-  echo "Warning: No acme.json found or download failed." >> $LOG_FILE
+  echo "No acme.json found in bucket ${BACKUP_BUCKET}/${ENVIRONMENT}/traefik/" >> $LOG_FILE
 fi
 
 # Execute commands as deploy user
