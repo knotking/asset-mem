@@ -92,7 +92,21 @@ jobs:
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
 
-      
+      - name: Wait for Compute Instance to be RUNNING
+        run: |
+          for i in {1..20}; do
+            STATUS=$(gcloud compute instances describe ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --format='get(status)')
+            echo "Instance status: $STATUS"
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "Instance is running."
+              exit 0
+            fi
+            echo "Waiting for instance to be RUNNING..."
+            sleep 15
+          done
+          echo "Instance did not become RUNNING in time."
+          exit 1
+
       - name: Set Log Path
         run: echo "STARTUP_LOG=/var/log/startup_script.log" >> $GITHUB_ENV
 
