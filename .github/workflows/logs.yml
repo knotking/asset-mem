@@ -60,27 +60,21 @@ jobs:
       - name: Stream Startup Script Log
         if: always()
         run: |
-          echo "Waiting for startup script to complete..."
-          attempt=1
-          max_attempts=20
-          until gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="sudo grep 'Startup script execution completed' ${{ env.STARTUP_LOG }}" &>/dev/null || [ $attempt -gt $max_attempts ]; do
-            echo "Attempt $attempt of $max_attempts:"
-            gcloud compute ssh ${{ env.instance_name }} \
-              --zone=${{ vars.GCP_ZONE }} \
-              --command="sudo tail -n 20 ${{ env.STARTUP_LOG }}"
+          # Create a minimal monitoring script
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command='
+          cat << EOF > /tmp/monitor.sh
+          #!/bin/bash
+          log_file=$1
+          while ! grep "Startup script execution completed" $log_file &>/dev/null; do
+            tail -n 20 $log_file
             sleep 30
-            ((attempt++))
           done
+          cat $log_file
+          EOF
+          ' || exit 1
 
-          if [ $attempt -gt $max_attempts ]; then
-            echo "Timeout waiting for startup script to complete. Last few lines of log:"
-            gcloud compute ssh ${{ env.instance_name }} \
-              --zone=${{ vars.GCP_ZONE }} \
-              --command="sudo tail -n 50 ${{ env.STARTUP_LOG }}"
-            exit 1
-          else
-            echo "Startup script completed successfully. Full log:"
-            gcloud compute ssh ${{ env.instance_name }} \
-              --zone=${{ vars.GCP_ZONE }} \
-              --command="sudo cat ${{ env.STARTUP_LOG }}"
-          fi
+          # Make script executable and run it
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
+          sudo chmod +x /tmp/monitor.sh && 
+          sudo -u deploy /tmp/monitor.sh ${{ env.STARTUP_LOG }} &&
+          sudo rm /tmp/monitor.sh"
