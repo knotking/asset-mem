@@ -52,7 +52,6 @@ jobs:
         run: |
           gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
-            --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --command "sudo -u deploy bash -c '
               set -e
               LOG_FILE=\"/home/deploy/update.log\"
@@ -87,7 +86,6 @@ jobs:
         run: |
           gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
-            --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --command "bash -c '
               set -e
               sudo -u deploy bash -c \"cat /home/deploy/update.log\"
