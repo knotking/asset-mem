@@ -84,7 +84,7 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
-          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
+          gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --command "bash -c '
               set -e
