@@ -18,7 +18,7 @@ jobs:
     name: Update Repository and Restart Docker
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-
+    
     steps:
       - name: Validate Environment
         id: validate-env
@@ -58,6 +58,7 @@ jobs:
               ENVIRONMENT=\"${{ env.environment }}\"
 
               echo \"Update script execution started at \$(date)\" >> \"\$LOG_FILE\"
+              
               echo \"Checking for updates...\" >> \"\$LOG_FILE\"
               cd /home/deploy/HomeApp
               git fetch origin main >> \"\$LOG_FILE\" 2>&1
@@ -66,13 +67,16 @@ jobs:
                 echo \"Update script execution completed at \$(date)\" >> \"\$LOG_FILE\"
                 exit 0
               fi
+              
               echo \"Pulling latest changes from repository...\" >> \"\$LOG_FILE\"
               rm -f .env
               git pull origin main >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to update repository.\" >> \"\$LOG_FILE\"; exit 1; }
               cp \".env.\$ENVIRONMENT\" .env || { echo \"Failed to copy .env file.\" >> \"\$LOG_FILE\"; exit 1; }
+              
               echo \"Restarting Docker Compose...\" >> \"\$LOG_FILE\"
               docker-compose down >> \"\$LOG_FILE\" 2>&1
               docker-compose -f docker-compose.yml up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart Docker Compose.\" >> \"\$LOG_FILE\"; exit 1; }
+              
               echo \"Update script execution completed at \$(date)\" >> \"\$LOG_FILE\"
             '"
 
@@ -80,9 +84,18 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
-          gcloud compute ssh ${{ env.instance_name}} \
+          gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --command "bash -c '
               set -e
               sudo -u deploy bash -c \"cat /home/deploy/update.log\"
             '" || echo "Failed to retrieve log file"
+
+      - name: Clean up OS Login SSH Keys
+        if: always()
+        run: |
+          # List all SSH keys for the current account
+          KEYS=$(gcloud compute os-login ssh-keys list --format="value(key)")
+          for KEY in $KEYS; do
+            gcloud compute os-login ssh-keys remove --key="$KEY" || true
+          done
