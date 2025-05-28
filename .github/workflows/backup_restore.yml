@@ -108,7 +108,7 @@ jobs:
             
             # Restart Docker containers
             echo \"Restarting Docker containers...\" >> \"\$LOG_FILE\"
-            docker-compose up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart containers\" >> \"\$LOG_FILE\"; exit 1; }
+            docker-compose -f docker-compose.yml up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart containers\" >> \"\$LOG_FILE\"; exit 1; }
             
             echo \"Backup operation completed at \$(date)\" >> \"\$LOG_FILE\"
           '"
@@ -165,7 +165,7 @@ jobs:
             
             # Restart Docker containers
             echo \"Restarting Docker containers...\" >> \"\$LOG_FILE\"
-            docker-compose up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart containers\" >> \"\$LOG_FILE\"; exit 1; }
+            docker-compose -f docker-compose.yml up -d >> \"\$LOG_FILE\" 2>&1 || { echo \"Failed to restart containers\" >> \"\$LOG_FILE\"; exit 1; }
             
             echo \"Restore operation completed at \$(date)\" >> \"\$LOG_FILE\"
           '"
