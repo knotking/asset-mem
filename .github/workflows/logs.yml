@@ -43,7 +43,7 @@ jobs:
               sudo tail -n 20 \$LOG_FILE || echo 'Log not found yet'
               sleep 30
             done
-            sudo cat \$LOG_FILE
+            sudo tail -n 20 \$LOG_FILE
           "
 
       - name: Clean up OS Login SSH Keys
