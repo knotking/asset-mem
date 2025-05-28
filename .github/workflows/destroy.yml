@@ -54,14 +54,26 @@ jobs:
         run: terraform init -backend-config="bucket=${{ vars.GCS_BACKEND_BUCKET }}" -backend-config="prefix=terraform/${{ env.environment }}" -lock=true
         working-directory: deployment/terraform
     
-      - name: Copy and Execute Backup Script
+      - name: Execute Backup Script
         run: |
-          gcloud compute scp scripts/backup-volumes.sh ${{ env.instance_name }}:/tmp/backup-volumes.sh --zone=${{ vars.GCP_ZONE }}
-          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
-            sudo chmod +x /tmp/backup-volumes.sh
-            sudo -u deploy /tmp/backup-volumes.sh ${{ vars.GCS_BACKEND_BUCKET }} ${{ env.environment }}
-            sudo rm /tmp/backup-volumes.sh
-          "
+          gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command='
+          cat << EOF > /tmp/backup-volumes.sh
+          #!/bin/bash
+          set -e
+          for v in $(docker volume ls -q); do
+            docker run --rm -v $v:/data -v /tmp:/backup ubuntu tar czf /backup/$v.tar.gz -C /data .
+          done
+          if [ -f /home/deploy/HomeApp/traefik/acme.json ]; then
+            cp /home/deploy/HomeApp/traefik/acme.json /tmp/acme.json
+            chmod 644 /tmp/acme.json
+          fi
+          gsutil -m cp /tmp/*.tar.gz gs://$1/$2/volumes/ 2>/dev/null || true
+          gsutil cp /tmp/acme.json gs://$1/$2/traefik/ 2>/dev/null || true
+          rm -f /tmp/*.tar.gz /tmp/acme.json
+          EOF
+          sudo chmod +x /tmp/backup-volumes.sh
+          sudo -u deploy /tmp/backup-volumes.sh "${{ vars.GCS_BACKEND_BUCKET }}" "${{ env.environment }}"
+          sudo rm -f /tmp/backup-volumes.sh'
       
       - name: Terraform Destroy
         env:
