@@ -113,6 +113,7 @@ jobs:
       - name: Stream Startup Script Log
         if: always()
         run: |
+          sleep 30
           gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="
             LOG_FILE='${{ env.STARTUP_LOG }}'
             while ! grep 'Startup script execution completed' \$LOG_FILE &>/dev/null; do
