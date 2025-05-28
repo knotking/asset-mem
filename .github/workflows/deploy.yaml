@@ -101,6 +101,11 @@ jobs:
           sleep 60
           gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} \
             --command="sudo tail -n 10 ${{ env.STARTUP_LOG }}"
-      - name: Cleanup OS Login SSH Keys
+      - name: Clean up OS Login SSH Keys
         if: always()
-        uses: ./.github/workflows/cleanup-oslogin.yml
+        run: |
+          # List all SSH keys for the current account
+          KEYS=$(gcloud compute os-login ssh-keys list --format="value(key)")
+          for KEY in $KEYS; do
+            gcloud compute os-login ssh-keys remove --key="$KEY" || true
+          done
