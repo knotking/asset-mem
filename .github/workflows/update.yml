@@ -18,8 +18,7 @@ jobs:
     name: Update Repository and Restart Docker
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-    env:
-      CLOUDSDK_COMPUTE_USE_OSLOGIN: 'True'
+    
     steps:
       - name: Validate Environment
         id: validate-env
@@ -48,29 +47,10 @@ jobs:
         with:
           install_components: 'beta'
 
-      - name: Detect OS Login Username
-        id: detect-username
-        run: |
-          USERNAME=$(gcloud compute os-login describe-profile --format='value(posixAccounts[0].username)')
-          echo "OSLOGIN_USERNAME=$USERNAME" >> $GITHUB_ENV
-      
-      - name: Debug identity
-        run: |
-          echo "Service Account: $GOOGLE_APPLICATION_CREDENTIALS"
-          gcloud auth list
-          gcloud config list account
-
-      - name: SSH into instance using OS Login
-        run: |
-          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
-            --zone=${{vars.GCP_ZONE}} \
-            --verbosity=debug \
-            --dry-run \
-            --command="echo SSH success"
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
-          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
+          gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --command "sudo -u deploy bash -c '
@@ -112,3 +92,12 @@ jobs:
               set -e
               sudo -u deploy bash -c \"cat /home/deploy/update.log\"
             '" || echo "Failed to retrieve log file"
+
+      - name: Clean up OS Login SSH Keys
+        if: always()
+        run: |
+          # List all SSH keys for the current account
+          KEYS=$(gcloud compute os-login ssh-keys list --format="value(key)")
+          for KEY in $KEYS; do
+            gcloud compute os-login ssh-keys remove --key="$KEY" || true
+          done
