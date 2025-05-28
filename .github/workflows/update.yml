@@ -51,7 +51,7 @@ jobs:
       - name: Detect OS Login Username
         id: detect-username
         run: |
-          USERNAME=$(gcloud config get-value account)
+          USERNAME=$(gcloud compute os-login describe-profile --format='value(posixAccounts[0].username)')
           echo "OSLOGIN_USERNAME=$USERNAME" >> $GITHUB_ENV
       
       - name: Debug identity
@@ -62,18 +62,15 @@ jobs:
 
       - name: SSH into instance using OS Login
         run: |
-          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
-          gcloud compute ssh ${{env.instance_name}} \
+          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
-            --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --verbosity=debug \
             --dry-run \
             --command="echo SSH success"
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
-          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
-          gcloud compute ssh ${{env.instance_name}} \
+          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --command "sudo -u deploy bash -c '
@@ -108,8 +105,7 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
-          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
-          gcloud compute ssh ${{ env.instance_name}} \
+          gcloud compute ssh {{env.OSLOGIN_USERNAME}}@${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --ssh-flag="-l ${{ env.OSLOGIN_USERNAME }}" \
             --command "bash -c '
