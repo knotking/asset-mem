@@ -58,6 +58,37 @@ jobs:
               ENVIRONMENT=\"${{ env.environment }}\"
 
               echo \"Update script execution started at \$(date)\" >> \"\$LOG_FILE\"
+              
+              # Create backup directories
+              echo \"Creating backup directories...\" >> \"\$LOG_FILE\"
+              mkdir -p /tmp/volume-backups /tmp/traefik-backup
+              
+              # Backup Docker volumes
+              echo \"Backing up Docker volumes...\" >> \"\$LOG_FILE\"
+              docker volume ls -q | while read volume; do
+                echo \"Backing up volume: \$volume\" >> \"\$LOG_FILE\"
+                docker run --rm \
+                  -v \"\$volume\":/data \
+                  -v /tmp/volume-backups:/backup \
+                  ubuntu \
+                  tar -czf \"/backup/\${volume}.tar.gz\" -C /data .
+              done
+              
+              # Backup acme.json
+              echo \"Backing up acme.json...\" >> \"\$LOG_FILE\"
+              if [ -f \"/home/deploy/HomeApp/traefik/acme.json\" ]; then
+                cp /home/deploy/HomeApp/traefik/acme.json /tmp/traefik-backup/acme.json
+                chmod 644 /tmp/traefik-backup/acme.json
+              fi
+              
+              # Upload backups to GCS
+              echo \"Uploading backups to GCS...\" >> \"\$LOG_FILE\"
+              gsutil -m cp /tmp/volume-backups/*.tar.gz gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/volumes/ >> \"\$LOG_FILE\" 2>&1 || echo \"No volumes to backup\"
+              gsutil cp /tmp/traefik-backup/acme.json gs://${{ vars.GCS_BACKEND_BUCKET }}/${{ env.environment }}/traefik/ >> \"\$LOG_FILE\" 2>&1 || echo \"No acme.json to backup\"
+              
+              # Clean up backup files
+              rm -rf /tmp/volume-backups /tmp/traefik-backup
+              
               echo \"Checking for updates...\" >> \"\$LOG_FILE\"
               cd /home/deploy/HomeApp
               git fetch origin main >> \"\$LOG_FILE\" 2>&1
