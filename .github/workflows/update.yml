@@ -91,6 +91,6 @@ jobs:
               sudo -u deploy bash -c \"cat /home/deploy/update.log\"
             '" || echo "Failed to retrieve log file"
 
-      - name: Cleanup OS Login SSH Keys
-        if: always()
-        uses: ./.github/workflows/cleanup-oslogin.yml
+  cleanup-oslogin:
+    needs: update-repo
+    uses: ./.github/workflows/cleanup-oslogin.yml

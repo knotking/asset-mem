@@ -183,3 +183,7 @@ jobs:
                 cat /home/deploy/restore.log
               fi
             '" || echo "Failed to retrieve log file"
+
+      - name: Cleanup OS Login SSH Keys
+        if: always()
+        uses: ./.github/workflows/cleanup-oslogin.yml
