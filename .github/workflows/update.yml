@@ -56,6 +56,7 @@ jobs:
 
       - name: SSH into instance using OS Login
         run: |
+          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
           gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --verbosity=debug \
@@ -64,6 +65,7 @@ jobs:
       # Create and run update.sh in a single command as deploy user
       - name: Create and Run update.sh on Instance as Deploy User
         run: |
+          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
           gcloud compute ssh ${{env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --command "sudo -u deploy bash -c '
@@ -98,6 +100,7 @@ jobs:
       - name: Retrieve Update Log
         if: always()
         run: |
+          export CLOUDSDK_COMPUTE_USE_OSLOGIN=True
           gcloud compute ssh ${{ env.instance_name}} \
             --zone=${{vars.GCP_ZONE}} \
             --command "bash -c '
