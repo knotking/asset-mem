@@ -91,3 +91,34 @@ jobs:
           TF_VAR_GCS_BACKEND_BUCKET: ${{ vars.GCS_BACKEND_BUCKET }}
         run: terraform apply -auto-approve tfplan
         working-directory: deployment/terraform
+
+      - name: Set Log Path
+        run: echo "STARTUP_LOG=/var/log/startup_script.log" >> $GITHUB_ENV
+
+      - name: Stream Startup Script Log
+        if: always()
+        run: |
+          echo "Waiting for startup script to complete..."
+          attempt=1
+          max_attempts=20
+          until gcloud compute ssh ${{ env.instance_name }} --zone=${{ vars.GCP_ZONE }} --command="sudo grep 'Startup script execution completed' ${{ env.STARTUP_LOG }}" &>/dev/null || [ $attempt -gt $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts:"
+            gcloud compute ssh ${{ env.instance_name }} \
+              --zone=${{ vars.GCP_ZONE }} \
+              --command="sudo tail -n 20 ${{ env.STARTUP_LOG }}"
+            sleep 30
+            ((attempt++))
+          done
+
+          if [ $attempt -gt $max_attempts ]; then
+            echo "Timeout waiting for startup script to complete. Last few lines of log:"
+            gcloud compute ssh ${{ env.instance_name }} \
+              --zone=${{ vars.GCP_ZONE }} \
+              --command="sudo tail -n 50 ${{ env.STARTUP_LOG }}"
+            exit 1
+          else
+            echo "Startup script completed successfully. Full log:"
+            gcloud compute ssh ${{ env.instance_name }} \
+              --zone=${{ vars.GCP_ZONE }} \
+              --command="sudo cat ${{ env.STARTUP_LOG }}"
+          fi
