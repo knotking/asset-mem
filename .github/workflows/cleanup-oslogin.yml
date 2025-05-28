@@ -1,0 +1,15 @@
+name: Cleanup OS Login SSH Keys
+
+on:
+  workflow_call:
+
+jobs:
+  cleanup-oslogin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up OS Login SSH Keys
+        run: |
+          KEYS=$(gcloud compute os-login ssh-keys list --format="value(fingerprint)")
+          for KEY in $KEYS; do
+            gcloud compute os-login ssh-keys remove --fingerprint="$KEY" || true
+          done
