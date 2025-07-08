@@ -23,6 +23,7 @@ resource "google_compute_instance" "homegeek_demo" {
   boot_disk {
     initialize_params {
       image = "${var.image_project}/${var.image_family}"
+      size  = var.disk_size_gb
     }
   }
 

@@ -57,3 +57,9 @@ variable "GCS_BACKEND_BUCKET" {
 variable "environment" {
   description = "The static IP address to assign to the VM instance."
 }
+
+variable "disk_size_gb" {
+  description = "The size of the boot disk in GB"
+  type        = number
+  default     = 20
+}
