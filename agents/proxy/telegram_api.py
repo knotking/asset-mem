@@ -57,6 +57,8 @@ def escape_markdown(text: str) -> str:
     return re.sub(pattern, r'\\\1', text)
 
 def is_command(text: str) -> bool:
+    if not text:
+        return False
     return text.strip().startswith("/")
 
 def parse_command(text: str) -> str:
@@ -77,6 +79,28 @@ async def unknown_command(message: aio_types.Message):
     if command not in ["/start", "/help"]:
         await message.reply(escape_markdown(f"Unknown command: {command}\nType /help for available commands."))
 
+
+# --- Attachment Handler ---
+from google.cloud import storage
+import tempfile
+import aiohttp
+
+async def upload_file_to_gcs(file_url: str, bucket_name: str, destination_blob_name: str) -> str:
+    """Download file from Telegram and upload to GCS. Returns the GCS URL."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(file_url) as resp:
+            if resp.status != 200:
+                raise Exception(f"Failed to download file: {resp.status}")
+            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_file.write(await resp.read())
+                tmp_file.flush()
+                blob.upload_from_filename(tmp_file.name)
+    return f"gs://{bucket_name}/{destination_blob_name}"
+
 @router.message(F.content_type == aio_types.ContentType.TEXT)
 async def handle_text_message(message: aio_types.Message):
     chat_id = message.chat.id
@@ -84,12 +108,60 @@ async def handle_text_message(message: aio_types.Message):
 
     # 1. Send "Thinking..." message and chat action immediately
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)
-    thinking_message = await message.answer(escape_markdown("Thinking...🤔"))
-    # thinking_message = await message.bot.send_animation(chat_id=chat_id,animation='CAACAgIAAxkBAAJKSWiDeIjJhcfJAk3oys1q9QABQyAViQACbwUAAj-VzArANFJh3KtOyDYE')
+    thinking_message = await message.answer(escape_markdown("Searching...🔍"))
     agent_answer = get_agent_answer(chat_id, user_text) # This is where your AI logic runs
     logger.info(f"Agent answer: {agent_answer}")
     # 2. Edit the "Thinking..." message with the actual answer
     await thinking_message.edit_text(escape_markdown(agent_answer))
+
+
+# Handles documents, images, audio, video, etc.
+@router.message(
+    (F.content_type == aio_types.ContentType.DOCUMENT) |
+    (F.content_type == aio_types.ContentType.PHOTO) |
+    (F.content_type == aio_types.ContentType.AUDIO) |
+    (F.content_type == aio_types.ContentType.VIDEO)
+)
+async def handle_attachment(message: aio_types.Message):
+    chat_id = message.chat.id
+    content_type = message.content_type
+    file_id = None
+    file_name = None
+
+    if content_type == aio_types.ContentType.DOCUMENT:
+        file_id = message.document.file_id
+        file_name = message.document.file_name
+    elif content_type == aio_types.ContentType.PHOTO:
+        # Get the highest resolution photo
+        file_id = message.photo[-1].file_id
+        file_name = f"photo_{file_id}.jpg"
+    elif content_type == aio_types.ContentType.AUDIO:
+        file_id = message.audio.file_id
+        file_name = message.audio.file_name or f"audio_{file_id}.mp3"
+    elif content_type == aio_types.ContentType.VIDEO:
+        file_id = message.video.file_id
+        file_name = message.video.file_name or f"video_{file_id}.mp4"
+    else:
+        await message.reply(escape_markdown("Unsupported attachment type."))
+        return
+
+    # Get file URL from Telegram
+    file = await message.bot.get_file(file_id)
+    file_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file.file_path}"
+
+    # GCS bucket and destination
+    GCS_BUCKET = os.environ.get("GCS_BUCKET")
+    if not GCS_BUCKET:
+        await message.reply(escape_markdown("GCS_BUCKET environment variable not set."))
+        return
+    destination_blob_name = f"telegram_uploads/{chat_id}/{file_name}"
+
+    try:
+        gcs_url = await upload_file_to_gcs(file_url, GCS_BUCKET, destination_blob_name)
+        await message.reply(escape_markdown(f"Attachment uploaded to GCS: {gcs_url}"))
+    except Exception as e:
+        logger.error(f"Failed to upload attachment: {e}")
+        await message.reply(escape_markdown(f"Failed to upload attachment: {e}"))
 
 @router.message()
 async def handle_non_text(message: aio_types.Message):

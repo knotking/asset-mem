@@ -1,4 +1,7 @@
 import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import logging
 logging.basicConfig(level=logging.INFO)
 # Load environment variables from .env if present
@@ -31,4 +34,4 @@ def main():
         sys.exit(0)
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -31,8 +31,17 @@ def get_or_create_reasoning_engine_session(telegram_chat_id: int):
         raise RuntimeError("AI Agent service not ready.")
     user_id_for_session = str(telegram_chat_id)
     logger.info(f"Creating new session for chat {telegram_chat_id}")
-    new_session = reasoning_engine_resource.create_session(user_id=user_id_for_session)
-    return new_session
+    sessionsObj = reasoning_engine_resource.list_sessions(user_id=str(user_id_for_session))
+    sessions = sessionsObj.get("sessions", [])
+    session = None
+    if not sessions:
+        logger.info(f"No sessions found for user_id {user_id_for_session}, creating new session.")
+        session = reasoning_engine_resource.create_session(user_id=user_id_for_session)
+    else:
+        session = sessions[-1]
+    return session
+
+
 
 def stream_agent_response(chat_id: int, session_id: str, user_text: str) -> str:
     agent_answer_parts = []
@@ -72,14 +81,11 @@ def get_agent_answer(chat_id: int, user_text: str) -> str:
         logger.error("Reasoning Engine not initialized. Cannot process request.")
         return "Sorry, my AI brain is not connected right now. Please try again later."
     try:
-        # Get or create session
-        get_or_create_reasoning_engine_session(chat_id)
-        sessionsObj = reasoning_engine_resource.list_sessions(user_id=str(chat_id))
-        sessions = sessionsObj.get("sessions", [])
-        if not sessions:
-            logger.error(f"No sessions found for user_id {chat_id}")
-            return "Sorry, I couldn't find an active session. Please try again later."
-        session_id = sessions[-1]["id"]
+        session = get_or_create_reasoning_engine_session(chat_id)    
+        if not session:
+            logger.error(f"Failed to create session for user_id {chat_id}")
+            return "Sorry, I couldn't create an active session. Please try again later."
+        session_id = session["id"]
         logger.info(f"Using Session ID: {session_id}")
         # Instead of just the answer, get the full response dict
         response = None
