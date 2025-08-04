@@ -22,6 +22,10 @@ def return_instructions_root() -> str:
         before answering. Once you have the information you need, you can use the retrieval tool
         If you cannot provide an answer, clearly explain why.
 
+        For every new user question about a different appliance or topic, always use the retrieval tool 
+        to fetch relevant information from the corpus, even if you have previously answered questions in the same session. 
+        Do not rely solely on your memory or previous answers—always check the corpus for each distinct query.
+
         Do not answer questions that are not related to the corpus.
         When crafting your answer, you may use the retrieval tool to fetch details
         from the corpus. Make sure to cite the source of the information.

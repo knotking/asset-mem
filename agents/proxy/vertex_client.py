@@ -6,10 +6,12 @@ from vertexai import agent_engines
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 # --- Environment Variables ---
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_REGION = os.environ.get("GCP_REGION")
 REASONING_ENGINE_ID = os.environ.get("REASONING_ENGINE_ID")
+
 
 # --- Vertex AI Reasoning Engine Client (Global) ---
 reasoning_engine_resource = None
@@ -23,6 +25,7 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
+
 
 # --- Reasoning Engine Session Management Functions ---
 def get_or_create_reasoning_engine_session(telegram_chat_id: int):
@@ -43,9 +46,19 @@ def get_or_create_reasoning_engine_session(telegram_chat_id: int):
 
 
 
+
 def stream_agent_response(chat_id: int, session_id: str, user_text: str) -> str:
     agent_answer_parts = []
-    for event in reasoning_engine_resource.stream_query(user_id=str(chat_id), session_id=session_id, message=user_text):
+    tool_args = {
+        "retrieve_rag_documentation": {
+            "metadata_filters": {"user_id": str(chat_id)}
+        }
+    }
+    for event in reasoning_engine_resource.stream_query(
+        user_id=str(chat_id), 
+        session_id=session_id, 
+        message=user_text, tool_args=tool_args
+    ):
         logger.info(f"Event: {event}")
         parts = event.get("content", {}).get("parts", [])
         if isinstance(parts, list):
@@ -76,21 +89,30 @@ def format_vertex_rag_response(response: dict) -> str:
     return main_answer
 
 # --- Unified function for Telegram bot ---
-def get_agent_answer(chat_id: int, user_text: str) -> str:
+
+def get_agent_answer(chat_id: int, user_query: str, gcs_urls) -> str:
     if not reasoning_engine_resource:
         logger.error("Reasoning Engine not initialized. Cannot process request.")
         return "Sorry, my AI brain is not connected right now. Please try again later."
     try:
-        session = get_or_create_reasoning_engine_session(chat_id)    
+        session = get_or_create_reasoning_engine_session(chat_id)
         if not session:
             logger.error(f"Failed to create session for user_id {chat_id}")
             return "Sorry, I couldn't create an active session. Please try again later."
         session_id = session["id"]
         logger.info(f"Using Session ID: {session_id}")
+
+        # Compose message based on gcs_urls
+        if gcs_urls and isinstance(gcs_urls, list) and len(gcs_urls) > 0:
+            gcs_str = ", ".join(gcs_urls)
+            message = f"{user_query}. Check in documents {gcs_str}"
+        else:
+            message = user_query
+
         # Instead of just the answer, get the full response dict
         response = None
         agent_answer_parts = []
-        for event in reasoning_engine_resource.stream_query(user_id=str(chat_id), session_id=session_id, message=user_text):
+        for event in reasoning_engine_resource.stream_query(user_id=str(chat_id), session_id=session_id, message=message):
             response = event  # The last event will have the full response
             parts = event.get("content", {}).get("parts", [])
             if isinstance(parts, list):
@@ -105,4 +127,4 @@ def get_agent_answer(chat_id: int, user_text: str) -> str:
         return agent_answer
     except Exception as e:
         logger.error(f"Error getting agent answer: {e}", exc_info=True)
-        return "Oops! Unable to process your request. Please try again later." 
+        return "Oops! Unable to process your request. Please try again later."

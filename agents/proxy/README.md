@@ -38,7 +38,7 @@ d. Deploy to Cloud Run:
     --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
     --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
     --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=2770162371576987648" \
+    --set-env-vars="REASONING_ENGINE_ID=1468833185499447296" \
     --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
     --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376"
   ```
@@ -60,8 +60,10 @@ Production Testing Bot
 ```bash
 curl -F "url=https://telegram-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      -F "secret_token=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
-     "https://api.telegram.org/bot7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI/setWebhook"
+     "https://api.telegram.org/bot8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s/setWebhook"
 ```
+
+
 Development Testing Bot
 ```bash
 curl -F "url=https://g8f6cq7r-8080.inc1.devtunnels.ms/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
@@ -166,4 +168,8 @@ uvicorn telegram_api:app --host=0.0.0.0 --port=8080 --env-file=./.env --reload
 
 python local_test.py
 
-animation file_id "AAMCAgADGQEAAkpJaIN4iMmFx8kCTejKzWr1AAFDIBWJAAJvBQACP5XMCsA0UmHcq07IAQAHbQADNgQ"
+gcloud projects add-iam-policy-binding your-project-id \
+  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+  --role="roles/pubsub.editor"
+  
+gcloud pubsub topics create user-upload-topic

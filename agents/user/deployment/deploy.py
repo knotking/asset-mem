@@ -68,7 +68,7 @@ remote_app = agent_engines.create(
     extra_packages=[
         "./rag",
     ],
-    display_name="Catalog"
+    display_name="UserCatalogAgent"
 )
 
 # log remote_app
