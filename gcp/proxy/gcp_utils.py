@@ -1,3 +1,4 @@
+
 import tempfile
 import aiohttp
 from google.cloud import storage
@@ -19,19 +20,57 @@ async def upload_file_to_gcs(file_url: str, bucket_name: str, destination_blob_n
                 tmp_file.flush()
                 blob.upload_from_filename(tmp_file.name)
     return f"gs://{bucket_name}/{destination_blob_name}"
+
+def get_user_gcs_files(bucket_name: str, folder_name: str, user_id: str) -> list:
+    """
+    Fetch all file names for a user from GCS bucket under telegram-uploads/{user_id}/
+    Returns a list of file names (full GCS paths).
+    """
+    from google.cloud import storage
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    user_prefix = f"{folder_name}/{user_id}/"
+    blobs = bucket.list_blobs(prefix=user_prefix)
+    return [blob.name for blob in blobs if not blob.name.endswith("/")]
+
 from google.cloud import pubsub_v1
 
 
-def publish_event(project_id, topic_id, gcs_urls, user_id, user_query):
+def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
 
     event = {
         "gcs_urls": gcs_urls,
         "user_id": user_id,
-        "user_query": user_query
+        "user_query": user_query,
+        "source": source  # Add source parameter
     }
 
     data = json.dumps(event).encode("utf-8")
     future = publisher.publish(topic_path, data)
     print(f"Published message ID: {future.result()}")
+
+
+
+    from google.cloud import pubsub_v1
+
+def listen_to_event(project_id, subscription_id, callback):
+    """
+    Listen to a Pub/Sub subscription and call the callback for each message.
+    The callback should accept one argument: the message data (decoded as string).
+    """
+    subscriber = pubsub_v1.SubscriberClient()
+    subscription_path = subscriber.subscription_path(project_id, subscription_id)
+
+    def _callback(message):
+        print(f"Received message: {message.data}")
+        callback(message.data.decode("utf-8"))
+        message.ack()
+
+    streaming_pull_future = subscriber.subscribe(subscription_path, callback=_callback)
+    print(f"Listening for messages on {subscription_path}...")
+    try:
+        streaming_pull_future.result()
+    except KeyboardInterrupt:
+        streaming_pull_future.cancel()

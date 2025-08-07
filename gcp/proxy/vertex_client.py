@@ -90,7 +90,7 @@ def format_vertex_rag_response(response: dict) -> str:
 
 # --- Unified function for Telegram bot ---
 
-def get_agent_answer(chat_id: int, user_query: str, gcs_urls) -> str:
+def get_agent_answer(chat_id: int, user_query: str, doc_types: str, gcs_files: list) -> str:
     if not reasoning_engine_resource:
         logger.error("Reasoning Engine not initialized. Cannot process request.")
         return "Sorry, my AI brain is not connected right now. Please try again later."
@@ -103,9 +103,8 @@ def get_agent_answer(chat_id: int, user_query: str, gcs_urls) -> str:
         logger.info(f"Using Session ID: {session_id}")
 
         # Compose message based on gcs_urls
-        if gcs_urls and isinstance(gcs_urls, list) and len(gcs_urls) > 0:
-            gcs_str = ", ".join(gcs_urls)
-            message = f"{user_query}. Check in documents {gcs_str}"
+        if doc_types:
+            message = f"Check analysis for documents {doc_types} where user asked: {user_query}"
         else:
             message = user_query
 

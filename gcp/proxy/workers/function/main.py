@@ -2,17 +2,102 @@ import base64
 import json
 import os
 import requests
-import vertexai
+
 from vertexai import rag
+import vertexai
+
 import logging
+from google.cloud import pubsub_v1
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TELEGRAM_BOT_WEBHOOK_URL = os.environ.get("TELEGRAM_API_WEBHOOK_URL")  # e.g. https://your.domain.com/processing_complete
-WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET")  # Optional: for securing the endpoint
 RAG_CORPUS = os.environ.get("RAG_CORPUS")
+USER_UPLOAD_RESULT_TOPIC = os.environ.get("USER_UPLOAD_RESULT_TOPIC")  # Set your topic name in env
+PROJECT = os.environ.get("GCP_PROJECT_ID")
+LOCATION = os.environ.get("GCP_REGION", "us-central1")
+
+def get_gcs_file_mime_type(gcs_url):
+    """
+    Guess the MIME type of a file based on its GCS URL.
+    """
+    import mimetypes
+    mime_type, _ = mimetypes.guess_type(gcs_url)
+    if not mime_type:
+        ext = os.path.splitext(gcs_url)[1].lower()
+        if ext in [".jpg", ".jpeg"]:
+            return "image/jpeg"
+        elif ext == ".png":
+            return "image/png"
+        elif ext == ".pdf":
+            return "application/pdf"
+        else:
+            return "application/octet-stream"
+
+def classify_document_type(gcs_url):
+    """
+    Use LLM to classify the type of document uploaded.
+    Returns one of: 'product_manual', 'issue_image', 'warranty', 'insurance', or 'unknown'.
+    """
+    try:
+       
+        # Multimodal LLM: pass file path (image, pdf, text, etc.) directly to the model
+        # Prompt for summary in JSON format
+        prompt = (
+            "You are an expert homecare document and image classifier. "
+            "Given the following file, analyze its content and return a JSON object with: "
+            "- title: a short title for the document or image\n"
+            "- type: one of ['product_manual', 'warranty', 'insurance', 'appliance_issue', 'plumbing_issue', 'electrical_issue', 'structural_issue', 'hvac_issue', 'other']\n"
+            "- summary: a brief summary of the content or what is shown in the image\n"
+            "If the file is an image, describe what is shown and classify the type of homecare issue if possible (e.g., appliance, plumbing, electrical, structural, HVAC, etc). "
+            "If it is a document, summarize its purpose and classify its type. "
+            "If you detect a model number, serial number, or brand of an appliance in the file, mention these details in the summary. "
+            "Respond ONLY with a valid JSON object."
+        )
+
+        # Use google.genai with Vertex AI API configuration
+        from google import genai
+        from google.genai import types
+        import json as pyjson
+
+     
+        client = genai.Client(
+            vertexai=True,
+            project=PROJECT,
+            location=LOCATION,
+            http_options=types.HttpOptions(api_version='v1')
+        )
+
+
+        mime_type=get_gcs_file_mime_type(gcs_url)
+        
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_text(text="Analyse the following file and classify its type:"),
+                types.Part.from_uri(file_uri=gcs_url, mime_type=mime_type)
+            ],
+            config=types.GenerateContentConfig(system_instruction=prompt)
+        )
+        try:
+            import re
+            raw_text = response.candidates[0].content.parts[0].text
+            # Use regex to extract the first JSON object
+            match = re.search(r'\{[\s\S]*\}', raw_text)
+            if match:
+                json_str = match.group(0)
+                result_json = pyjson.loads(json_str)
+            else:
+                raise ValueError("No JSON object found in model output")
+            logger.info(f"Classified document {gcs_url} as {result_json}")
+            return result_json
+        except Exception as parse_e:
+            logger.error(f"Failed to parse LLM response as JSON: {parse_e}, raw: {getattr(response.candidates[0].content.parts[0], 'text', str(response))}")
+            return {"title": "unknown", "type": "unknown", "summary": "Could not classify"}
+    except Exception as e:
+        logger.error(f"Failed to classify document type for {gcs_url}: {e}")
+        return {"title": "unknown", "type": "unknown", "summary": "Error during classification"}
 
 def import_to_rag_corpus(gcs_urls):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
@@ -20,19 +105,33 @@ def import_to_rag_corpus(gcs_urls):
         llmParserConfig = rag.LlmParserConfig(
             model_name="gemini-2.5-flash"
         )
-        result = rag.import_files(
+        # Classify each document type
+        doc_types = {}
+        document_urls = []
+        for url in gcs_urls:
+            doc_info = classify_document_type(url)
+            doc_types[url] = doc_info
+            # Only import if type is a document (not image)
+            if doc_info["type"] in ["product_manual", "warranty", "insurance", "other"]:
+                document_urls.append(url)
+        result = None
+        if document_urls:
+            result = rag.import_files(
                 corpus_name=RAG_CORPUS,
-                paths=gcs_urls,
+                paths=document_urls,
                 llm_parser=llmParserConfig
             )
-        logger.info(f"Import result: {result}")
-        return True, result
+            logger.info(f"Import result: {result}")
+        else:
+            logger.info("No document files to import to RAG corpus.")
+        logger.info(f"Document types: {doc_types}")
+        return True, {"import_result": result, "doc_types": doc_types}
     except Exception as e:
         logger.error(f"Failed to import to RAG corpus: {e}")
         return False, str(e)
 
 
-def pubsub_to_telegram(request, context):
+def pubsub_to_user_uploads(request, context):
     """Background Cloud Function to be triggered by Pub/Sub."""
     if 'data' in request:
         payload = json.loads(base64.b64decode(request['data']).decode('utf-8'))
@@ -42,6 +141,7 @@ def pubsub_to_telegram(request, context):
     gcs_urls = payload.get("gcs_urls", [])
     user_id = payload.get("user_id")
     user_query = payload.get("user_query", "")
+    source = payload.get("source", "unknown")
 
     if not user_id or not gcs_urls:
         logger.warning("No user_id or gcs_urls in payload, skipping.")
@@ -50,11 +150,6 @@ def pubsub_to_telegram(request, context):
     logger.info(f"Payload: {gcs_urls}, {user_id}, {user_query}")
     # Import to Vertex AI RAG corpus
     success, result_msg = import_to_rag_corpus(gcs_urls)
-
-    # Prepare POST to Telegram bot webhook
-    headers = {"Content-Type": "application/json"}
-    if WEBHOOK_SECRET:
-        headers["X-Webhook-Secret"] = WEBHOOK_SECRET
 
     if success:
         result_str = str(result_msg)
@@ -65,11 +160,14 @@ def pubsub_to_telegram(request, context):
         "gcs_urls": gcs_urls,
         "user_id": user_id,
         "user_query": user_query,
-        "result": result_str
+        "result": result_str,
+        "source": source
     }
 
+    # Publish to Pub/Sub topic
     try:
-        resp = requests.post(TELEGRAM_BOT_WEBHOOK_URL, headers=headers, json=data, timeout=10)
-        logger.info(f"POST to Telegram bot returned {resp.status_code}: {resp.text}")
+        publisher = pubsub_v1.PublisherClient()
+        future = publisher.publish(topic=USER_UPLOAD_RESULT_TOPIC, data=json.dumps(data).encode("utf-8"))
+        logger.info(f"Published result to Pub/Sub topic {USER_UPLOAD_RESULT_TOPIC}: {future.result()}")
     except Exception as e:
-        logger.error(f"Failed to POST to Telegram bot: {e}")
+        logger.error(f"Failed to publish to Pub/Sub topic: {e}")

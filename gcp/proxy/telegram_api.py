@@ -33,6 +33,9 @@ from vertex_client import (
     get_agent_answer
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,6 +52,7 @@ dp = Dispatcher()
 router = Router()
 
 dp.include_router(router)
+from gcp_utils import listen_to_event
 
 # --- Helper Functions for Telegram API ---
 def escape_markdown(text: str) -> str:
@@ -195,13 +199,14 @@ async def handle_attachment(message: aio_types.Message):
         # --- Publish event to Pub/Sub ---
         from gcp_utils import publish_event
         project_id = os.environ.get("GCP_PROJECT_ID")
-        topic_id = os.environ.get("GCP_PUBSUB_TOPIC")
+        topic_id = os.environ.get("USER_UPLOAD_TOPIC")
         user_id = str(chat_id)
         # Try to get the user's last text message as the query, fallback to empty string
         user_query = getattr(message, 'caption', None) or getattr(message, 'text', None) or ""
         if project_id and topic_id:
             try:
-                publish_event(project_id, topic_id, uploaded_gcs_urls, user_id, user_query)
+                # Add source parameter with value 'telegram'
+                publish_event(project_id, topic_id, uploaded_gcs_urls, user_id, user_query, source="telegram")
                 await message.reply(escape_markdown("Processing your attachments..."))
             except Exception as e:
                 logger.error(f"Failed to publish event to Pub/Sub: {e}")
@@ -238,6 +243,7 @@ app = FastAPI()
 WEBHOOK_PATH = "/"
 WEBHOOK_URL = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  # e.g., https://your.domain.com/webhook
 
+
 @app.get("/health")
 async def health_check():
     status_msg = "ok"
@@ -252,20 +258,71 @@ async def telegram_webhook(request: Request):
     await dp.feed_update(bot, telegram_update)
     return {"status": "ok"}
 
-@app.post("/processing_complete")
-async def processing_complete(request: Request):
-    data = await request.json()
-    # Example: data = {"gcs_urls:[]","user_id": "123","user_query":"", "result": "imported_rag_files_count: 1", ...}
-    user_id = data.get("user_id")
-    user_query = data.get("user_query")
-    gcs_urls = data.get("gcs_urls", [])
-    # result = data.get("result", "Processing complete.")
-    agent_answer = get_agent_answer(user_id, user_query, gcs_urls ) # This is where your AI logic runs
-    logger.info(f"Agent answer: {agent_answer}")
+async def on_event_user_upload_result(message: str):
+    # Define the expected type using pydantic
+    from pydantic import BaseModel, Field
+    from typing import List, Dict
+    import json
+
+    class DocTypeInfo(BaseModel):
+        title: str
+        type: str
+        summary: str
+
+    class UserUploadResultEvent(BaseModel):
+        user_id: str
+        user_query: str
+        gcs_urls: List[str]
+        doc_types: Dict[str, DocTypeInfo]
+
+    logger.info(f"User upload result event received: {message}")
+    try:
+        event_obj = UserUploadResultEvent.model_validate(json.loads(message))
+        logger.info(f"Parsed event: {event_obj}")
+
+        # Convert doc_types to a Gemini-style JSON string
+        import json as pyjson
+        doc_types_json = pyjson.dumps({k: v.dict() for k, v in event_obj.doc_types.items()}, indent=2)
+        doc_types_str = f"```json\n{doc_types_json}\n```"
+        from gcp_utils import get_user_gcs_files
+        gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "telegram-uploads", event_obj.user_id)
+        agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, doc_types_str, gcs_files) # This is where your AI logic runs
+        logger.info(f"Agent answer: {agent_answer}")
     # 2. Edit the "Thinking..." message with the actual answer
-    if user_id:
-        await bot.send_message(chat_id=int(user_id), text=escape_markdown(agent_answer))
+    except Exception as e:
+        logger.error(f"Failed to parse user upload result event: {e}")
+    if event_obj.user_id:
+        await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer))
     return {"status": "ok"}
+
+        # You can now access event_obj.user_id, event_obj.user_query, event_obj.gcs_urls, event_obj.doc_types
+   
+
+
+# @app.post("/processing_complete")
+# async def processing_complete(request: Request):
+#     data = await request.json()
+#     # Example: data = {"gcs_urls:[]","user_id": "123","user_query":"", "result": "imported_rag_files_count: 1", ...}
+#     user_id = data.get("user_id")
+#     user_query = data.get("user_query")
+#     gcs_urls = data.get("gcs_urls", [])
+#     # result = data.get("result", "Processing complete.")
+#     agent_answer = get_agent_answer(user_id, user_query, gcs_urls ) # This is where your AI logic runs
+#     logger.info(f"Agent answer: {agent_answer}")
+#     # 2. Edit the "Thinking..." message with the actual answer
+#     if user_id:
+#         await bot.send_message(chat_id=int(user_id), text=escape_markdown(agent_answer))
+#     return {"status": "ok"}
+import threading
+
+def start_pubsub_listener():
+    listen_to_event(
+        os.environ.get("GCP_PROJECT_ID"),
+        os.environ.get("USER_UPLOAD_RESULT_SUBSCRIPTION"),
+        on_event_user_upload_result
+    )
+
+threading.Thread(target=start_pubsub_listener, daemon=True).start()
 
 # # --- aiogram webhook setup and FastAPI runner ---
 # import asyncio

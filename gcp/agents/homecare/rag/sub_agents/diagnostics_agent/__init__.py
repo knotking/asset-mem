@@ -1,3 +1,3 @@
 
 
-from .agent import product_manual_agent
+from .agent import diagnostic_agent

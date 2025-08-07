@@ -40,7 +40,9 @@ d. Deploy to Cloud Run:
     --set-env-vars="GCP_REGION=us-central1" \
     --set-env-vars="REASONING_ENGINE_ID=1468833185499447296" \
     --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
-    --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376"
+    --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
+    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"
+    --set-env-vars="USER_UPLOAD_RESULT_TOPIC=user-upload-result-topic"
   ```
 
   _Replace placeholders like `homegeekdemo`, `YOUR_TELEGRAM_BOT_TOKEN`, and `YOUR_RANDOM_WEBHOOK_SECRET` with your actual values._
@@ -164,7 +166,7 @@ $ curl -X POST -H "Content-Type: application/json" -d '{
 }
 }' http://localhost:8080/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
 
-uvicorn telegram_api:app --host=0.0.0.0 --port=8080 --env-file=./.env --reload
+ 
 
 python local_test.py
 
@@ -173,3 +175,24 @@ gcloud projects add-iam-policy-binding your-project-id \
   --role="roles/pubsub.editor"
   
 gcloud pubsub topics create user-upload-topic
+
+uvicorn telegram_api:app --host=0.0.0.0 --port=8080 --env-file=./.env --reload
+
+
+ gcloud run deploy telegram-agent-proxy \
+    --source . \
+    --region us-central1 \
+    --platform managed \
+    --allow-unauthenticated \
+    --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+    --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
+    --set-env-vars="GCP_REGION=us-central1" \
+    --set-env-vars="REASONING_ENGINE_ID=1468833185499447296" \
+    --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
+    --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
+    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"
+    --set-env-vars="USER_UPLOAD_RESULT_TOPIC=user-upload-result-topic"
+
+
+gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
+gcloud pubsub subscriptions create user-upload-topic-subscription --topic=user-upload-topic
