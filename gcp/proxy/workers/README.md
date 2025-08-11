@@ -15,5 +15,9 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
 --role=roles/cloudfunctions.developer
 
+gcloud storage buckets add-iam-policy-binding gs://homegeek-user-data \
+  --member="serviceAccount:service-321433914812@gcp-sa-vertex-rag.iam.gserviceaccount.com" \
+  --role="roles/storage.objectCreator"
 
 gcloud services enable eventarc.googleapis.com --project=homegeekdemo
+

@@ -1,7 +1,9 @@
+
 import os
 import logging
 import vertexai
-from vertexai import agent_engines
+from vertexai import agent_engines, AgentEngine
+from typing import Optional, Dict, Any, List
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -14,7 +16,7 @@ REASONING_ENGINE_ID = os.environ.get("REASONING_ENGINE_ID")
 
 
 # --- Vertex AI Reasoning Engine Client (Global) ---
-reasoning_engine_resource = None
+reasoning_engine_resource:AgentEngine = None
 try:
     if GCP_PROJECT_ID and GCP_REGION and REASONING_ENGINE_ID:
         vertexai.init(project=GCP_PROJECT_ID, location=GCP_REGION)
@@ -28,7 +30,7 @@ except Exception as e:
 
 
 # --- Reasoning Engine Session Management Functions ---
-def get_or_create_reasoning_engine_session(telegram_chat_id: int):
+def get_or_create_reasoning_engine_session(telegram_chat_id: int, initial_state: Dict[str, Any]) -> Dict[str, Any]:
     if not reasoning_engine_resource:
         logger.error("Reasoning Engine not initialized. Cannot manage sessions.")
         raise RuntimeError("AI Agent service not ready.")
@@ -69,7 +71,7 @@ def stream_agent_response(chat_id: int, session_id: str, user_text: str) -> str:
     agent_answer = "".join(agent_answer_parts) if agent_answer_parts else "How can I help you?"
     return agent_answer
 
-def format_vertex_rag_response(response: dict) -> str:
+def format_vertex_rag_response(response: Dict[str, Any]) -> str:
     main_answer = response['content']['parts'][0]['text']
     # citations = []
     # for chunk in response.get('grounding_metadata', {}).get('grounding_chunks', []):
@@ -90,7 +92,7 @@ def format_vertex_rag_response(response: dict) -> str:
 
 # --- Unified function for Telegram bot ---
 
-def get_agent_answer(chat_id: int, user_query: str, doc_types: str, gcs_files: list) -> str:
+def get_agent_answer(chat_id: int, user_query: str, doc_types: str, gcs_files: List[str]) -> str:
     if not reasoning_engine_resource:
         logger.error("Reasoning Engine not initialized. Cannot process request.")
         return "Sorry, my AI brain is not connected right now. Please try again later."
@@ -101,7 +103,7 @@ def get_agent_answer(chat_id: int, user_query: str, doc_types: str, gcs_files: l
             return "Sorry, I couldn't create an active session. Please try again later."
         session_id = session["id"]
         logger.info(f"Using Session ID: {session_id}")
-
+        session
         # Compose message based on gcs_urls
         if doc_types:
             message = f"Check analysis for documents {doc_types} where user asked: {user_query}"

@@ -30,7 +30,6 @@ GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 STAGING_BUCKET = os.getenv("STAGING_BUCKET")
 # Define the path to the .env file relative to this script
 ENV_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-print (ENV_FILE_PATH)
 vertexai.init(
     project=GOOGLE_CLOUD_PROJECT,
     location=GOOGLE_CLOUD_LOCATION,

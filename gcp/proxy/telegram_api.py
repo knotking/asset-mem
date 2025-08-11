@@ -15,10 +15,6 @@
 import os
 import logging
 import re
-import asyncio
-from google.genai import types
-from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
 
 # aiogram imports
 from aiogram.enums import ParseMode, ChatAction
@@ -38,10 +34,10 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # --- Environment Variables ---
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN: str   = os.environ.get("TELEGRAM_BOT_TOKEN","")    
 
 # --- aiogram Bot and Dispatcher Initialization ---
 bot = Bot(
@@ -60,10 +56,6 @@ def escape_markdown(text: str) -> str:
     pattern = r'([{}])'.format(re.escape(markdown_v2_special_chars))
     return re.sub(pattern, r'\\\1', text)
 
-def is_command(text: str) -> bool:
-    if not text:
-        return False
-    return text.strip().startswith("/")
 
 def parse_command(text: str) -> str:
     return text.strip().split()[0].lower()
@@ -77,17 +69,14 @@ async def cmd_start(message: aio_types.Message):
 async def cmd_help(message: aio_types.Message):
     await message.reply(escape_markdown("You can chat with me or use commands like /start and /help. Just type your question!"))
 
-@router.message(lambda message: is_command(message.text))
-async def unknown_command(message: aio_types.Message):
-    command = parse_command(message.text)
+@router.message(Command())
+async def handle_unknown_command(message: aio_types.Message) -> None:
+    command: str = parse_command(getattr(message, "text", ""))
     if command not in ["/start", "/help"]:
         await message.reply(escape_markdown(f"Unknown command: {command}\nType /help for available commands."))
 
 
 # --- Attachment Handler ---
-from google.cloud import storage
-import tempfile
-import aiohttp
 
 from gcp_utils import upload_file_to_gcs
 
@@ -182,7 +171,7 @@ async def handle_attachment(message: aio_types.Message):
         # Get file URL from Telegram
         file = await message.bot.get_file(file_id)
         file_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file.file_path}"
-        destination_blob_name = f"telegram_uploads/{chat_id}/{file_name}"
+        destination_blob_name = f"uploads/{chat_id}/{file_name}"
 
         try:
             gcs_url = await upload_file_to_gcs(file_url, GCS_BUCKET, destination_blob_name)
@@ -236,7 +225,6 @@ async def handle_non_text(message: aio_types.Message):
 
 # --- FastAPI App and Webhook ---
 from fastapi import FastAPI, Request
-import json
 
 app = FastAPI()
 
@@ -285,7 +273,7 @@ async def on_event_user_upload_result(message: str):
         doc_types_json = pyjson.dumps({k: v.dict() for k, v in event_obj.doc_types.items()}, indent=2)
         doc_types_str = f"```json\n{doc_types_json}\n```"
         from gcp_utils import get_user_gcs_files
-        gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "telegram-uploads", event_obj.user_id)
+        gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "uploads", event_obj.user_id)
         agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, doc_types_str, gcs_files) # This is where your AI logic runs
         logger.info(f"Agent answer: {agent_answer}")
     # 2. Edit the "Thinking..." message with the actual answer

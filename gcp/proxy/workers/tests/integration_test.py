@@ -12,9 +12,10 @@ if function_dir not in sys.path:
 import importlib.util
 os.environ["TELEGRAM_API_WEBHOOK_URL"] = "https://httpbin.org/post"  # Use httpbin for safe POST testing
 os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "homegeekdemo"
-os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
-os.environ["PUBSUB_USER_UPLOADS_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
+os.environ["GCP_PROJECT_ID"] = "homegeekdemo"
+os.environ["GCP_LOCATION"] = "us-central1"
+os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
+os.environ["GCS_BUCKET"] = "homegeek-user-data"
 
 main_path = os.path.join(function_dir, "main.py")
 spec = importlib.util.spec_from_file_location("main", main_path)
@@ -27,12 +28,15 @@ class TestIntegrationPubSubToTelegram(unittest.TestCase):
         # Set environment variables for integration test
         os.environ["TELEGRAM_API_WEBHOOK_URL"] = "https://httpbin.org/post"  # Use httpbin for safe POST testing
         os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624"
-        # Optionally set WEBHOOK_SECRET if your code requires it
+        os.environ["GCP_PROJECT_ID"] = "homegeekdemo"
+        os.environ["GCP_LOCATION"] = "us-central1"
+        os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
+        os.environ["GCS_BUCKET"] = "homegeek-user-data"
 
     def test_pubsub_to_user_uploads_integration(self):
         # Prepare a realistic payload
-        gcs_urls = ["gs://homegeek-user-data/telegram_uploads/538445573/photo_AgACAgUAAxkBAAIEyGiE_H28Zu0ekcqDWFVWntywsOR0AAIS0DEbP80pVGvcxuTbp-jGAQADAgADbQADNgQ.jpg"]
-        user_id = "integration_test_user"
+        gcs_urls = ["gs://homegeek-user-data/uploads/user/issue3.png"]
+        user_id = "user"
         user_query = "Help me with this"
         source = "integration_test_source"
         payload = {

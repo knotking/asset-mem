@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import requests
+from datetime import datetime, timezone
 
 from vertexai import rag
 import vertexai
@@ -17,6 +18,7 @@ RAG_CORPUS = os.environ.get("RAG_CORPUS")
 USER_UPLOAD_RESULT_TOPIC = os.environ.get("USER_UPLOAD_RESULT_TOPIC")  # Set your topic name in env
 PROJECT = os.environ.get("GCP_PROJECT_ID")
 LOCATION = os.environ.get("GCP_REGION", "us-central1")
+GCS_BUCKET = os.environ.get("GCS_BUCKET")
 
 def get_gcs_file_mime_type(gcs_url):
     """
@@ -99,7 +101,7 @@ def classify_document_type(gcs_url):
         logger.error(f"Failed to classify document type for {gcs_url}: {e}")
         return {"title": "unknown", "type": "unknown", "summary": "Error during classification"}
 
-def import_to_rag_corpus(gcs_urls):
+def import_to_rag_corpus(gcs_urls, user_id:str):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
     try:
         llmParserConfig = rag.LlmParserConfig(
@@ -112,18 +114,25 @@ def import_to_rag_corpus(gcs_urls):
             doc_info = classify_document_type(url)
             doc_types[url] = doc_info
             # Only import if type is a document (not image)
-            if doc_info["type"] in ["product_manual", "warranty", "insurance", "other"]:
-                document_urls.append(url)
+            # if doc_info["type"] in ["product_manual", "warranty", "insurance", "other"]:
+            #     document_urls.append(url)
+            document_urls.append(url)  # Always import for now
         result = None
+        import_result_sink: str = f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.ndjson"
+        logger.info(f"Import result sink: {import_result_sink}")
         if document_urls:
             result = rag.import_files(
                 corpus_name=RAG_CORPUS,
                 paths=document_urls,
-                llm_parser=llmParserConfig
+                llm_parser=llmParserConfig,
+                import_result_sink=import_result_sink
+                
             )
             logger.info(f"Import result: {result}")
+            
         else:
             logger.info("No document files to import to RAG corpus.")
+      
         logger.info(f"Document types: {doc_types}")
         return True, {"import_result": result, "doc_types": doc_types}
     except Exception as e:
@@ -149,7 +158,9 @@ def pubsub_to_user_uploads(request, context):
 
     logger.info(f"Payload: {gcs_urls}, {user_id}, {user_query}")
     # Import to Vertex AI RAG corpus
-    success, result_msg = import_to_rag_corpus(gcs_urls)
+    success, result_msg = import_to_rag_corpus(gcs_urls, user_id)
+    rag_files = list(rag.list_files(corpus_name=RAG_CORPUS))
+    logger.info(f"RAG corpus files after import: {rag_files}")
 
     if success:
         result_str = str(result_msg)
@@ -160,7 +171,7 @@ def pubsub_to_user_uploads(request, context):
         "gcs_urls": gcs_urls,
         "user_id": user_id,
         "user_query": user_query,
-        "result": result_str,
+        # "result": result_str,
         "source": source
     }
 

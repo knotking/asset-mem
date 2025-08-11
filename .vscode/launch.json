@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug adk run rag",
+      "type": "python",
+      "request": "launch",
+      "program": "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.venv/bin/adk",
+      "args": ["run", "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/rag"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

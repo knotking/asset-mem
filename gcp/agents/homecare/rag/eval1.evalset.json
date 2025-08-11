@@ -1,0 +1,144 @@
+{
+  "eval_set_id": "eval1",
+  "name": "eval1",
+  "description": null,
+  "eval_cases": [
+    {
+      "eval_id": "case336ddd",
+      "conversation": [
+        {
+          "invocation_id": "e-77be6a46-9940-43cb-a811-b50d0e327b84",
+          "user_content": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "Give me troubleshooting steps for water heater w1000\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "I am unable to provide specific troubleshooting steps without more information. Could you please provide the full model number of your water heater or upload its user manual? This will help me find the most accurate troubleshooting guide for your specific appliance."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-a317722d-d744-420e-9fd9-859af527c04b",
+                "args": {
+                  "agent_name": "ask_user_uploads_agent"
+                },
+                "name": "transfer_to_agent"
+              },
+              {
+                "id": "adk-edb191ef-2a5e-4a72-b38c-9fe05afda599",
+                "args": {
+                  "agent_name": "homecare_agent"
+                },
+                "name": "transfer_to_agent"
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1754665280.398777
+        }
+      ],
+      "session_input": {
+        "app_name": "rag",
+        "user_id": "user",
+        "state": {}
+      },
+      "creation_timestamp": 1754665365.151489
+    },
+    {
+      "eval_id": "case1df90b",
+      "conversation": [
+        {
+          "invocation_id": "e-77be6a46-9940-43cb-a811-b50d0e327b84",
+          "user_content": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "Give me troubleshooting steps for water heater w1000\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "I am unable to provide specific troubleshooting steps without more information. Could you please provide the full model number of your water heater or upload its user manual? This will help me find the most accurate troubleshooting guide for your specific appliance."
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-a317722d-d744-420e-9fd9-859af527c04b",
+                "args": {
+                  "agent_name": "ask_user_uploads_agent"
+                },
+                "name": "transfer_to_agent"
+              },
+              {
+                "id": "adk-edb191ef-2a5e-4a72-b38c-9fe05afda599",
+                "args": {
+                  "agent_name": "homecare_agent"
+                },
+                "name": "transfer_to_agent"
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1754665280.398777
+        }
+      ],
+      "session_input": {
+        "app_name": "rag",
+        "user_id": "user",
+        "state": {}
+      },
+      "creation_timestamp": 1754665374.375603
+    }
+  ],
+  "creation_timestamp": 1754665358.7879732
+}
