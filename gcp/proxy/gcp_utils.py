@@ -33,10 +33,11 @@ def get_user_gcs_files(bucket_name: str, folder_name: str, user_id: str) -> list
     blobs = bucket.list_blobs(prefix=user_prefix)
     return [blob.name for blob in blobs if not blob.name.endswith("/")]
 
-from google.cloud import pubsub_v1
+
 
 
 def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
+    from google.cloud import pubsub_v1
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
 
@@ -56,6 +57,7 @@ def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
     from google.cloud import pubsub_v1
 
 def listen_to_event(project_id, subscription_id, callback):
+    from google.cloud import pubsub_v1
     """
     Listen to a Pub/Sub subscription and call the callback for each message.
     The callback should accept one argument: the message data (decoded as string).

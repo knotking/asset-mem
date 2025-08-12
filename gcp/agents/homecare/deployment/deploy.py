@@ -67,7 +67,13 @@ remote_app = agent_engines.create(
     extra_packages=[
         "./rag",
     ],
-    display_name="OrchestratorAgent"
+    display_name="OrchestratorAgent",
+    env_vars=[
+        "GOOGLE_CLOUD_BUCKET",
+        "USER_UPLOAD_FOLDER",
+        "USER_UPLOAD_RAG_CORPUS",
+        "PRODUCT_MANUAL_RAG_CORPUS",
+    ]
 )
 
 # log remote_app

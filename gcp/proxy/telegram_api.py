@@ -69,11 +69,10 @@ async def cmd_start(message: aio_types.Message):
 async def cmd_help(message: aio_types.Message):
     await message.reply(escape_markdown("You can chat with me or use commands like /start and /help. Just type your question!"))
 
-@router.message(Command())
+@router.message(F.text.startswith("/") & ~F.text.in_(["/start", "/help"]))
 async def handle_unknown_command(message: aio_types.Message) -> None:
     command: str = parse_command(getattr(message, "text", ""))
-    if command not in ["/start", "/help"]:
-        await message.reply(escape_markdown(f"Unknown command: {command}\nType /help for available commands."))
+    await message.reply(escape_markdown(f"Unknown command: {command}\nType /help for available commands."))
 
 
 # --- Attachment Handler ---
@@ -181,9 +180,9 @@ async def handle_attachment(message: aio_types.Message):
             await message.reply(escape_markdown(f"Failed to upload attachment {file_name}: {e}"))
 
     if uploaded_gcs_urls:
-        await message.reply(escape_markdown(
-            "Attachments uploaded to GCS:\n" + "\n".join(uploaded_gcs_urls)
-        ))
+        # await message.reply(escape_markdown(
+        #     "Attachments uploaded to GCS:\n" + "\n".join(uploaded_gcs_urls)
+        # ))
 
         # --- Publish event to Pub/Sub ---
         from gcp_utils import publish_event
@@ -215,7 +214,7 @@ async def handle_text_message(message: aio_types.Message):
     thinking_message = await message.answer(escape_markdown("Searching...🔍"))
     agent_answer = get_agent_answer(chat_id, user_text) # This is where your AI logic runs
     logger.info(f"Agent answer: {agent_answer}")
-    # 2. Edit the "Thinking..." message with the actual answer
+    # # 2. Edit the "Thinking..." message with the actual answer
     await thinking_message.edit_text(escape_markdown(agent_answer))
 
 @router.message()
@@ -246,41 +245,31 @@ async def telegram_webhook(request: Request):
     await dp.feed_update(bot, telegram_update)
     return {"status": "ok"}
 
-async def on_event_user_upload_result(message: str):
+async def  on_event_user_upload_result(message: str):
     # Define the expected type using pydantic
     from pydantic import BaseModel, Field
     from typing import List, Dict
     import json
 
-    class DocTypeInfo(BaseModel):
-        title: str
-        type: str
-        summary: str
-
     class UserUploadResultEvent(BaseModel):
         user_id: str
         user_query: str
         gcs_urls: List[str]
-        doc_types: Dict[str, DocTypeInfo]
 
     logger.info(f"User upload result event received: {message}")
     try:
         event_obj = UserUploadResultEvent.model_validate(json.loads(message))
         logger.info(f"Parsed event: {event_obj}")
 
-        # Convert doc_types to a Gemini-style JSON string
-        import json as pyjson
-        doc_types_json = pyjson.dumps({k: v.dict() for k, v in event_obj.doc_types.items()}, indent=2)
-        doc_types_str = f"```json\n{doc_types_json}\n```"
-        from gcp_utils import get_user_gcs_files
-        gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "uploads", event_obj.user_id)
-        agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, doc_types_str, gcs_files) # This is where your AI logic runs
-        logger.info(f"Agent answer: {agent_answer}")
+        # from gcp_utils import get_user_gcs_files
+        # gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "uploads", event_obj.user_id)
+        # agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, event_obj.gcs_urls) # This is where your AI logic runs
+        # logger.info(f"Agent answer: {agent_answer}")
     # 2. Edit the "Thinking..." message with the actual answer
     except Exception as e:
         logger.error(f"Failed to parse user upload result event: {e}")
-    if event_obj.user_id:
-        await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer))
+    # if event_obj.user_id:
+    #     await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer))
     return {"status": "ok"}
 
         # You can now access event_obj.user_id, event_obj.user_query, event_obj.gcs_urls, event_obj.doc_types
@@ -302,12 +291,15 @@ async def on_event_user_upload_result(message: str):
 #         await bot.send_message(chat_id=int(user_id), text=escape_markdown(agent_answer))
 #     return {"status": "ok"}
 import threading
+import asyncio
 
 def start_pubsub_listener():
+    def sync_callback(message):
+        asyncio.run(on_event_user_upload_result(message))
     listen_to_event(
         os.environ.get("GCP_PROJECT_ID"),
         os.environ.get("USER_UPLOAD_RESULT_SUBSCRIPTION"),
-        on_event_user_upload_result
+        sync_callback
     )
 
 threading.Thread(target=start_pubsub_listener, daemon=True).start()

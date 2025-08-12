@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+from google.cloud.aiplatform_v1.types.vertex_rag_data_service import ImportRagFilesResponse
 import requests
 from datetime import datetime, timezone
 
@@ -9,7 +10,7 @@ import vertexai
 
 import logging
 from google.cloud import pubsub_v1
-from .prompts import document_classification_prompt, parsing_prompt_other
+from prompts import document_classification_prompt, parsing_prompt_other
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,16 +84,26 @@ def classify_document_type(gcs_url):
         logger.error(f"Error classifying document type: {e}")
         return "unknown"
 
+def serialize_import_result(result):
+    """Convert ImportRagFilesResponse or similar objects to a serializable dict."""
+    if result is None:
+        return {}
+    if hasattr(result, "to_dict"):
+        return result.to_dict()
+    # Fallback: try to convert to string
+    return str(result)
+
 def import_to_rag_corpus(gcs_urls, user_id:str):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
     try:
-
         llmParserConfig = rag.LlmParserConfig(
             model_name="gemini-2.5-flash",
         )
 
         manual_docs = []
         other_docs = [] 
+        manual_docs_result: ImportRagFilesResponse = None
+        other_docs_result: ImportRagFilesResponse = None    
         for gcs_url in gcs_urls:
             doc_type = classify_document_type(gcs_url)
             if doc_type == "product_manual":
@@ -100,14 +111,12 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
             else: 
                 other_docs.append(gcs_url)
 
-
         logger.info(f"Manual documents: {manual_docs}")
         logger.info(f"Other documents: {other_docs}")
 
-
         # Import product manuals to RAG corpus
         if manual_docs:
-            manual_docs_result =rag.import_files(
+            manual_docs_result = rag.import_files(
                 corpus_name=RAG_CORPUS,
                 paths=manual_docs,
                 llm_parser=llmParserConfig,
@@ -122,11 +131,12 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
                 paths=other_docs,
                 llm_parser=llmParserConfig,
                 import_result_sink=f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}other.ndjson"
-                )
-        
+            )
 
-
-        return True, {"import_result": manual_docs_result, "other_import_result": other_docs_result}
+        return True, {
+            "import_result": serialize_import_result(manual_docs_result),
+            "other_import_result": serialize_import_result(other_docs_result)
+        }
     except Exception as e:
         logger.error(f"Failed to import to RAG corpus: {e}")
         return False, str(e)

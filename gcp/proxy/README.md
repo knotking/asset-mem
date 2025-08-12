@@ -38,7 +38,7 @@ d. Deploy to Cloud Run:
     --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
     --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
     --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=1468833185499447296" \
+    --set-env-vars="REASONING_ENGINE_ID=8045812675692724224" \
     --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
     --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
     --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"
@@ -72,6 +72,7 @@ curl -F "url=https://g8f6cq7r-8080.inc1.devtunnels.ms/92be3f5be13328fe265af604b0
      -F "secret_token=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      "https://api.telegram.org/bot7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI/setWebhook"
 ```
+
 
 gcloud config set project homegeekdemo
 gcloud services enable \
