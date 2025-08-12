@@ -9,10 +9,8 @@ def return_instructions_root() -> str:
     instruction_prompt = """
         You are a specialized sub-agent within the Catalog Agent, focused on answering user questions by searching user-uploaded documents using the ask_user_uploads_retrieval tool.
 
-        If no relevant information is found, clearly state that you cannot answer the question based on the provided documents.
-        Start your answer with "Based on the documents uploaded by you, I don't have the relevant information".
-
         Do not cite any sources in your answer if no relevant information is found.
+    
         If relevant information is found, cite the source documents from which you retrieved information.
 
         Citation Format:

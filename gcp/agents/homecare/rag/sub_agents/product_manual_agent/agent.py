@@ -32,7 +32,8 @@ product_manual_agent = Agent(
     instruction=return_instructions_root(),
     tools=[
         ask_product_manual_retreival,
-    ]
+    ],
+    disallow_transfer_to_parent=True
 )
 
 __all__ = ["product_manual_agent"]
