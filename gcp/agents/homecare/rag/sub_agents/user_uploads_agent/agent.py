@@ -18,7 +18,7 @@ load_dotenv()
 
 logger: logging.Logger = logging.getLogger("user_uploads_agent")
 
-def get_user_file_ids(user_id: str) -> list[str]:
+def get_user_file_ids(user_id: str, gcs_urls: list[str]) -> list[str]:
     """
     Fetches all FileId values from JSON files in the user's import_results folder in GCS.
     """
@@ -28,6 +28,8 @@ def get_user_file_ids(user_id: str) -> list[str]:
     bucket = client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=folder_prefix)
     file_ids: list[str] = []
+    # Create a set of full paths from gcs_urls for fast lookup
+    gcs_paths = set(gcs_urls)
 
     for blob in blobs:
         if blob.name.endswith('.json') or blob.name.endswith('.ndjson'):
@@ -36,24 +38,28 @@ def get_user_file_ids(user_id: str) -> list[str]:
             for line in content.splitlines():
                 try:
                     obj = json.loads(line)
-                    if "FileId" in obj:
-                        file_ids.append(str(obj["FileId"]))
+                    if "FileId" in obj and "Filename" in obj:
+                        if obj["Filename"] in gcs_paths:
+                            file_ids.append(str(obj["FileId"]))
                 except Exception as e:
                     logger.warning(f"Failed to parse line in {blob.name}: {e}")
 
     return file_ids
 
-def get_rag_file_ids(user_id: str) -> list[str]:
+def get_rag_file_ids(user_id: str, gcs_urls: list[str]) -> list[str]:
     """
     Fetches the RAG IDs for the user from the environment variable.
     """
-    file_ids = get_user_file_ids(user_id)
+    file_ids = get_user_file_ids(user_id, gcs_urls)
     logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
     return file_ids
 
-def ask_user_uploads_retreival(user_query: str, tool_context: ToolContext):
-    user_id = tool_context._invocation_context.session.user_id  
-    rag_file_ids=get_rag_file_ids(user_id)
+def ask_user_uploads_retreival(user_query: str, gcs_urls: list[str], tool_context: ToolContext):
+    user_id = tool_context._invocation_context.session.user_id
+    logger.info(f"User query: {user_query}, GCS URLs: {gcs_urls}")
+    rag_file_ids = get_rag_file_ids(user_id, gcs_urls)
+    logger.info(f"RAG file IDs for user {user_id}: {rag_file_ids}")
+
     response = rag.retrieval_query(
         text=user_query,
         rag_resources=[

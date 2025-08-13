@@ -105,9 +105,10 @@ def get_agent_answer(
 
         if gcs_files:
             # If GCS files are provided, format the message accordingly
-            message = f"Get analysis for documents {gcs_files}" 
+            gcs_files_str = ", ".join(gcs_files)
+            message = f"I have uploaded document(s) {gcs_files_str} What does this document(s) contain" 
             if user_query:
-                message += f" where user asked: {user_query}"
+                message += f" and user asked: {user_query}"
         else:
             # If no GCS files, just use the user query
             message = user_query

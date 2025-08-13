@@ -35,12 +35,13 @@ class TestIntegrationPubSubToTelegram(unittest.TestCase):
 
     def test_pubsub_to_user_uploads_integration(self):
         # Prepare a realistic payload
-        gcs_urls = ["gs://homegeek-user-data/uploads/user/issue3.png"]
+        gcs_urls_1 = ["gs://homegeek-user-data/uploads/test_user/issue2.png"]
+        gcs_urls_2 = ["gs://homegeek-user-data/uploads/test_user/issue4.png"]
         user_id = "user"
         user_query = "Help me with this"
         source = "integration_test_source"
         payload = {
-            "gcs_urls": gcs_urls,
+            "gcs_urls": gcs_urls_1,
             "user_id": user_id,
             "user_query": user_query,
             "source": source
@@ -49,9 +50,18 @@ class TestIntegrationPubSubToTelegram(unittest.TestCase):
             "data": base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
         }
         context = None
-
+        payload2 = {
+            "gcs_urls": gcs_urls_2,
+            "user_id": user_id,
+            "user_query": user_query,
+            "source": source
+        }
+        event2 = {
+            "data": base64.b64encode(json.dumps(payload2).encode("utf-8")).decode("utf-8")
+        }
         # Call the real function (this will POST to httpbin and try to call Vertex AI)
         main.pubsub_to_user_uploads(event, context)
+        main.pubsub_to_user_uploads(event2, context)
 
         # There is no assert here because this is an integration test.
         # You can check logs or manually inspect httpbin output.

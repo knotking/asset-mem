@@ -116,7 +116,7 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
 
         # Import product manuals to RAG corpus
         if manual_docs:
-            manual_docs_result = rag.import_files(
+            manual_docs_result:ImportRagFilesResponse = rag.import_files(
                 corpus_name=RAG_CORPUS,
                 paths=manual_docs,
                 llm_parser=llmParserConfig,

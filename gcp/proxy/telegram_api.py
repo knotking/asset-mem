@@ -15,6 +15,7 @@
 import os
 import logging
 import re
+from typing import Any, Dict, List, Union
 
 # aiogram imports
 from aiogram.enums import ParseMode, ChatAction
@@ -22,6 +23,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher, types as aio_types, Router
 from aiogram.filters import Command
 from aiogram import F
+import asyncio
 
 # Import Vertex AI client logic
 from vertex_client import (
@@ -116,16 +118,15 @@ async def handle_attachment(message: aio_types.Message):
             })
     elif content_type == aio_types.ContentType.PHOTO:
         # message.photo is a list of sizes, take the largest (last) as the main photo
-        for idx, photo in enumerate(message.photo):
-            # Use a timestamp and index for uniqueness
-            ts = int(time.time())
-            file_name = f"photo_{photo.file_id}_{ts}_{idx}.jpg"
-            attachments.append({
-                'file_id': photo.file_id,
-                'file_name': file_name,
-                'file_size': photo.file_size,
-                'type': 'photo'
-            })
+        photo = message.photo[-1]  # Take the highest resolution photo
+        ts = int(time.time())
+        file_name = f"photo_{photo.file_id}_{ts}.jpg"
+        attachments.append({
+            'file_id': photo.file_id,
+            'file_name': file_name,
+            'file_size': photo.file_size,
+            'type': 'photo'
+        })
     elif content_type == aio_types.ContentType.AUDIO:
         file_name = message.audio.file_name or f"audio_{message.audio.file_id}.mp3"
         attachments.append({
@@ -227,6 +228,9 @@ from fastapi import FastAPI, Request
 
 app = FastAPI()
 
+main_loop = asyncio.get_event_loop()
+
+
 WEBHOOK_PATH = "/"
 WEBHOOK_URL = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  # e.g., https://your.domain.com/webhook
 
@@ -248,54 +252,46 @@ async def telegram_webhook(request: Request):
 async def  on_event_user_upload_result(message: str):
     # Define the expected type using pydantic
     from pydantic import BaseModel, Field
-    from typing import List, Dict
+    from typing import List, Dict, Any, Union
     import json
 
     class UserUploadResultEvent(BaseModel):
         user_id: str
         user_query: str
         gcs_urls: List[str]
+        success: bool = Field(default=True)
+        error: str = Field(default="")
+        source: str = Field(default="unknown")
+        result: Union[Dict[str, Any], str] = Field(default_factory=dict)
 
-    logger.info(f"User upload result event received: {message}")
     try:
         event_obj = UserUploadResultEvent.model_validate(json.loads(message))
         logger.info(f"Parsed event: {event_obj}")
 
-        # from gcp_utils import get_user_gcs_files
-        # gcs_files = get_user_gcs_files(os.environ.get("GCS_BUCKET"), "uploads", event_obj.user_id)
-        # agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, event_obj.gcs_urls) # This is where your AI logic runs
-        # logger.info(f"Agent answer: {agent_answer}")
+        agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, event_obj.gcs_urls)
+        logger.info(f"Agent answer: {agent_answer}")
+        await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer), parse_mode=ParseMode.MARKDOWN_V2)
     # 2. Edit the "Thinking..." message with the actual answer
     except Exception as e:
         logger.error(f"Failed to parse user upload result event: {e}")
-    # if event_obj.user_id:
-    #     await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer))
+        if event_obj.user_id:
+            await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown("Oops! Unable to process your request. Please try again later."))
     return {"status": "ok"}
 
         # You can now access event_obj.user_id, event_obj.user_query, event_obj.gcs_urls, event_obj.doc_types
    
 
 
-# @app.post("/processing_complete")
-# async def processing_complete(request: Request):
-#     data = await request.json()
-#     # Example: data = {"gcs_urls:[]","user_id": "123","user_query":"", "result": "imported_rag_files_count: 1", ...}
-#     user_id = data.get("user_id")
-#     user_query = data.get("user_query")
-#     gcs_urls = data.get("gcs_urls", [])
-#     # result = data.get("result", "Processing complete.")
-#     agent_answer = get_agent_answer(user_id, user_query, gcs_urls ) # This is where your AI logic runs
-#     logger.info(f"Agent answer: {agent_answer}")
-#     # 2. Edit the "Thinking..." message with the actual answer
-#     if user_id:
-#         await bot.send_message(chat_id=int(user_id), text=escape_markdown(agent_answer))
-#     return {"status": "ok"}
 import threading
 import asyncio
 
 def start_pubsub_listener():
     def sync_callback(message):
-        asyncio.run(on_event_user_upload_result(message))
+        # Schedule the coroutine on the main event loop
+        asyncio.run_coroutine_threadsafe(
+            on_event_user_upload_result(message),
+            main_loop
+        )
     listen_to_event(
         os.environ.get("GCP_PROJECT_ID"),
         os.environ.get("USER_UPLOAD_RESULT_SUBSCRIPTION"),
@@ -303,24 +299,3 @@ def start_pubsub_listener():
     )
 
 threading.Thread(target=start_pubsub_listener, daemon=True).start()
-
-# # --- aiogram webhook setup and FastAPI runner ---
-# import asyncio
-
-# if __name__ == "__main__":
-#     import uvicorn
-
-#     async def on_startup():
-#         if not WEBHOOK_URL:
-#             logger.error("WEBHOOK_URL environment variable not set!")
-#             return
-#         await bot.set_webhook(WEBHOOK_URL)
-#         logger.info(f"Webhook set to: {WEBHOOK_URL}")
-
-#     async def main():
-#         await on_startup()
-#         config = uvicorn.Config("agents.proxy.api:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), log_level="info")
-#         server = uvicorn.Server(config)
-#         await server.serve()
-
-#     asyncio.run(main())

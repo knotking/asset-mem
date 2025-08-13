@@ -38,7 +38,7 @@ d. Deploy to Cloud Run:
     --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
     --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
     --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=8045812675692724224" \
+    --set-env-vars="REASONING_ENGINE_ID=4216064142567538688" \
     --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
     --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
     --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"

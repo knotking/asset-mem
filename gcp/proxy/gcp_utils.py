@@ -1,8 +1,10 @@
-
 import tempfile
 import aiohttp
 from google.cloud import storage
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def upload_file_to_gcs(file_url: str, bucket_name: str, destination_blob_name: str) -> str:
@@ -50,11 +52,7 @@ def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
 
     data = json.dumps(event).encode("utf-8")
     future = publisher.publish(topic_path, data)
-    print(f"Published message ID: {future.result()}")
-
-
-
-    from google.cloud import pubsub_v1
+    logger.info(f"Published message ID: {future.result()}")
 
 def listen_to_event(project_id, subscription_id, callback):
     from google.cloud import pubsub_v1
@@ -66,12 +64,11 @@ def listen_to_event(project_id, subscription_id, callback):
     subscription_path = subscriber.subscription_path(project_id, subscription_id)
 
     def _callback(message):
-        print(f"Received message: {message.data}")
         callback(message.data.decode("utf-8"))
         message.ack()
 
     streaming_pull_future = subscriber.subscribe(subscription_path, callback=_callback)
-    print(f"Listening for messages on {subscription_path}...")
+    logger.info(f"Listening for messages on {subscription_path}...")
     try:
         streaming_pull_future.result()
     except KeyboardInterrupt:
