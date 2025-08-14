@@ -16,14 +16,7 @@ gcloud functions deploy pubsub_to_user_uploads \
   --set-env-vars USER_UPLOAD_RESULT_TOPIC=projects/homegeekdemo/topics/user-upload-result-topic \
   --set-env-vars RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624
 
-gcloud run deploy YOUR_SERVICE_NAME \
-    --image YOUR_IMAGE_URL \
-    --platform managed \
-    --region YOUR_REGION \
-    --max-instances 1 \
-    --concurrency 1 \
-    --no-allow-unauthenticated \  # If you don't want unauthenticated access
-    --trigger-topic user-upload-topic  
+
 
 
 python -m unittest test_main.py

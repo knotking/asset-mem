@@ -178,13 +178,9 @@ async def handle_attachment(message: aio_types.Message):
             uploaded_gcs_urls.append(gcs_url)
         except Exception as e:
             logger.error(f"Failed to upload attachment {file_name}: {e}")
-            await message.reply(escape_markdown(f"Failed to upload attachment {file_name}: {e}"))
+            await message.reply(escape_markdown(f"Failed to upload your document {file_name}: {e}"))
 
     if uploaded_gcs_urls:
-        # await message.reply(escape_markdown(
-        #     "Attachments uploaded to GCS:\n" + "\n".join(uploaded_gcs_urls)
-        # ))
-
       
         user_id = str(chat_id)
         # Try to get the user's last text message as the query, fallback to empty string
@@ -193,12 +189,12 @@ async def handle_attachment(message: aio_types.Message):
         try:
             
             await message.reply(escape_markdown("Processing your documents..."))
-            agent_answer = get_agent_answer(chat_id, user_query=user_query, uploaded_gcs_urls=uploaded_gcs_urls) # This is where your AI logic runs
+            agent_answer = get_agent_answer(user_id, user_query=user_query, gcs_files=uploaded_gcs_urls) # This is where your AI logic runs
             logger.info(f"Agent answer: {agent_answer}")
             await message.answer(escape_markdown(agent_answer))
         except Exception as e:
-                logger.error(f"Failed to publish event to Pub/Sub: {e}")
-                await message.reply(escape_markdown(f"Failed to publish event to Pub/Sub: {e}"))
+            logger.error(f"Failed to get an answer: {e}")
+            await message.reply(escape_markdown(f"Oops!! Please try later: {str(e)}"))
     else:
         await message.reply(escape_markdown("No attachments were uploaded."))
 
