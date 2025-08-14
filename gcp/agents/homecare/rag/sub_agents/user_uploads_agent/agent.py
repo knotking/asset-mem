@@ -2,15 +2,15 @@ import os
 import random
 import json
 
-from google.cloud.storage.bucket import Bucket
+
 from google.cloud.storage.client import Client
 
 from google.adk.agents import Agent
-from google.adk.tools.retrieval.vertex_ai_rag_retrieval import VertexAiRagRetrieval
+
 from google.adk.tools import ToolContext
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root, return_instructions_user_uploads
+from .prompts import return_instructions_root
 import logging
     
 
