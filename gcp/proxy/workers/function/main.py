@@ -21,23 +21,6 @@ PROJECT = os.environ.get("GCP_PROJECT_ID")
 LOCATION = os.environ.get("GCP_REGION", "us-central1")
 GCS_BUCKET = os.environ.get("GCS_BUCKET")
 
-def get_gcs_file_mime_type(gcs_url):
-    """
-    Guess the MIME type of a file based on its GCS URL.
-    """
-    import mimetypes
-    mime_type, _ = mimetypes.guess_type(gcs_url)
-    if not mime_type:
-        ext = os.path.splitext(gcs_url)[1].lower()
-        if ext in [".jpg", ".jpeg"]:
-            return "image/jpeg"
-        elif ext == ".png":
-            return "image/png"
-        elif ext == ".pdf":
-            return "application/pdf"
-        else:
-            return "application/octet-stream"
-
 
 def serialize_import_result(result):
     """Convert ImportRagFilesResponse or similar objects to a serializable dict."""
@@ -59,6 +42,7 @@ def is_media_mime_type(mime_type: str) -> bool:
 def import_to_rag_corpus(gcs_urls, user_id:str):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
     try:
+        import mimetypes
         llmParserConfig = rag.LlmParserConfig(
             model_name="gemini-2.5-flash",
         )
@@ -69,7 +53,7 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
         media_result: ImportRagFilesResponse = None    
         
         for gcs_url in gcs_urls:
-            mime_type = get_gcs_file_mime_type(gcs_url)
+            mime_type,_ = mimetypes.guess_type(gcs_url)
             if is_media_mime_type(mime_type):
                 media_list.append(gcs_url)
             else:
@@ -78,13 +62,13 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
         logger.info(f"Document files: {documents_list}")
         logger.info(f"Media files: {media_list}")
         sink_path = f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
-        # Import product manuals to RAG corpus
+        # Import documents to RAG corpus
         if documents_list:
             documents_result:ImportRagFilesResponse = rag.import_files(
                 corpus_name=RAG_CORPUS,
                 paths=documents_list,
                 llm_parser=llmParserConfig,
-                import_result_sink=f"{sink_path}-manuals.ndjson"
+                import_result_sink=f"{sink_path}-documents.ndjson"
             )
 
         # Import other documents to RAG corpus

@@ -281,12 +281,11 @@ def start_pubsub_listener():
 threading.Thread(target=start_pubsub_listener, daemon=True).start()
 
 
-async def agent_transfer_callback(agent_name: str, message_obj: aio_types.Message):
+async def agent_transfer_callback(transfer_message: str, message_obj: aio_types.Message):
     """
     Callback to notify the user when the request is being transferred to another agent.
     """
     try:
-        
-        await message_obj.reply(escape_markdown(agent_name))
+        await message_obj.reply(escape_markdown(transfer_message))
     except Exception as e:
         logger.error(f"Failed to send agent transfer notification: {e}")

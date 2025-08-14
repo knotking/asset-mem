@@ -29,6 +29,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 gcloud storage buckets add-iam-policy-binding gs://homegeek-user-data \
   --member="serviceAccount:service-321433914812@gcp-sa-vertex-rag.iam.gserviceaccount.com" \
   --role="roles/storage.objectCreator"
+  
+gcloud pubsub topics add-iam-policy-binding projects/321433914812/topics/user-upload-topic \
+    --member="serviceAccount:service-321433914812@gcp-sa-aiplatform.iam.gserviceaccount.com" \
+    --role="roles/pubsub.editor"
 
 gcloud services enable eventarc.googleapis.com --project=homegeekdemo
 

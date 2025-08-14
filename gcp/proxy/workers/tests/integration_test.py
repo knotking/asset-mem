@@ -36,7 +36,7 @@ class TestIntegrationPubSubToTelegram(unittest.TestCase):
     def test_pubsub_to_user_uploads_integration(self):
         # Prepare a realistic payload
         gcs_urls_1 = ["gs://homegeek-user-data/uploads/test_user/issue2.png"]
-        gcs_urls_2 = ["gs://homegeek-user-data/uploads/test_user/issue4.png"]
+        gcs_urls_2 = ["gs://homegeek-user-data/uploads/538445573/ExecuteDownloadPolicyDocument.pdf"]
         user_id = "user"
         user_query = "Help me with this"
         source = "integration_test_source"

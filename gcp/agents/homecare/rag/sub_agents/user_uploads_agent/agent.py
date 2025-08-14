@@ -52,32 +52,6 @@ def get_rag_file_ids(user_id: str) -> list[str]:
     logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
     return file_ids
 
-# def ask_user_uploads_retreival(user_query: str, gcs_urls: list[str], tool_context: ToolContext):
-#     user_id = tool_context._invocation_context.session.user_id
-#     logger.info(f"User query: {user_query}, GCS URLs: {gcs_urls}")
-#     rag_file_ids = get_rag_file_ids(user_id, gcs_urls)
-#     logger.info(f"RAG file IDs for user {user_id}: {rag_file_ids}")
-
-#     response = rag.retrieval_query(
-#         text=user_query,
-#         rag_resources=[
-#             rag.RagResource(
-#                 rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"),
-#                 rag_file_ids=rag_file_ids
-#             )
-#         ],
-#         similarity_top_k=10,
-#         vector_distance_threshold=0.6,
-#     )
-
-#     logging.debug('RAG raw response: %s', response)
-
-#     return (
-#         f'No matching result found.'
-#         if not response.contexts.contexts
-#         else [context.text for context in response.contexts.contexts]
-#     )
-
 def ask_user_uploads_retreival(user_id:str, user_query: str, tool_context: ToolContext):
 
     logger.info(f"User query: {user_query},  user_id: {user_id}")
@@ -100,23 +74,6 @@ def ask_user_uploads_retreival(user_id:str, user_query: str, tool_context: ToolC
         if not response.contexts.contexts
         else [context.text for context in response.contexts.contexts]
     )
-
-# ask_user_uploads_retreival = VertexAiRagRetrieval(
-#     name='retrieve_rag_documentation',
-#     description=(
-#         'Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,'
-#     ),
-#     rag_resources=[
-#         rag.RagResource(
-#             # please fill in your own rag corpus
-#             # here is a sample rag corpus for testing purpose
-#             # e.g. projects/123/locations/us-central1/ragCorpora/456
-#             rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"),
-#         )
-#     ],
-#     similarity_top_k=10,
-#     vector_distance_threshold=0.6,
-# )
 
 user_uploads_agent = Agent(
     model='gemini-2.5-flash-lite',
