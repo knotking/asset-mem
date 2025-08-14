@@ -71,17 +71,20 @@ def main():
     common_requirements = [
         "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
         "google-adk==1.7.0",
+        "google-cloud-pubsub==2.31.1",
         "python-dotenv",
         "google-auth",
         "tqdm",
         "requests",
         "llama-index",
+
     ]
     common_env_vars = [
         "GOOGLE_CLOUD_BUCKET",
         "USER_UPLOAD_FOLDER",
         "USER_UPLOAD_RAG_CORPUS",
-        "PRODUCT_MANUAL_RAG_CORPUS",
+        "KNOWLEDGE_BASE_RAG_CORPUS",
+        "USER_UPLOAD_TOPIC"
     ]
     display_name = "OrchestratorAgent"
     extra_packages = ["./rag"]

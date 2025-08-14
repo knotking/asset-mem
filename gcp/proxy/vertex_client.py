@@ -106,13 +106,13 @@ def get_agent_answer(
         if gcs_files:
             # If GCS files are provided, format the message accordingly
             gcs_files_str = ", ".join(gcs_files)
-            message = f"I have uploaded document(s) {gcs_files_str} What does this document(s) contain" 
+            message = f"Analyse {gcs_files_str}" 
             if user_query:
                 message += f" and user asked: {user_query}"
         else:
             # If no GCS files, just use the user query
             message = user_query
-        message = f"Get analysis for documents {gcs_files} where user asked: {user_query}" if gcs_files else user_query
+       
 
         response = None
         for event in reasoning_engine_resource.stream_query(user_id=str(chat_id), session_id=session_id, message=message):

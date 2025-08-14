@@ -9,8 +9,8 @@ from .prompts import return_instructions_root
 
 load_dotenv()
 
-ask_product_manual_retreival = VertexAiRagRetrieval(
-    name='retrieve_rag_documentation',
+ask_knowledge_base_retrieval = VertexAiRagRetrieval(
+    name='ask_knowledge_base_retrieval',
     description=(
         'Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,'
     ),
@@ -19,21 +19,21 @@ ask_product_manual_retreival = VertexAiRagRetrieval(
             # please fill in your own rag corpus
             # here is a sample rag corpus for testing purpose
             # e.g. projects/123/locations/us-central1/ragCorpora/456
-            rag_corpus=os.environ.get("PRODUCT_MANUAL_RAG_CORPUS")
+            rag_corpus=os.environ.get("KNOWLEDGE_BASE_RAG_CORPUS")
         )
     ],
     similarity_top_k=10,
     vector_distance_threshold=0.6,
 )
 
-product_manual_agent = Agent(
-    model='gemini-2.5-flash',
-    name='product_manual_agent',
+knowledge_base_agent = Agent(
+    model='gemini-2.5-flash-lite',
+    name='knowledge_base_agent',
     instruction=return_instructions_root(),
     tools=[
-        ask_product_manual_retreival,
+        ask_knowledge_base_retrieval,
     ],
     disallow_transfer_to_parent=True
 )
 
-__all__ = ["product_manual_agent"]
+__all__ = ["knowledge_base_agent"]

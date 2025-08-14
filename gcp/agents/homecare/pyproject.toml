@@ -19,6 +19,7 @@ google-cloud-aiplatform = { extras = [
         "agent-engines",
 ], version = "1.104.0" }
 llama-index = "^0.12"
+google-cloud-pubsub = "^2.31.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"

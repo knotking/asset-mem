@@ -1,21 +1,87 @@
-
 import os
 import uuid
 import json
+import base64
+from google.cloud.storage.client import Client
 from google.adk.agents import Agent
+from google.adk.tools import ToolContext
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root
+from .prompts import return_instructions_root, document_parsing_prompt
+import sys
+import logging
 
-
+logger = logging.getLogger(__name__)
 load_dotenv()
+
+def publish_data_to_pubsub(gcs_urls:list[str], user_query:str, tool_context: ToolContext ) -> dict:
+    """Publishes a structured payload to a Pub/Sub topic."""
+    try:
+        from google.cloud import pubsub_v1  # <-- Fix import
+        publisher = pubsub_v1.PublisherClient()
+        
+        topic_path = publisher.topic_path(os.environ.get("GOOGLE_CLOUD_PROJECT"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
+        payload = {
+            "gcs_urls": gcs_urls,
+            "user_id": tool_context._invocation_context.session.user_id,
+            "user_query": user_query,
+            "source": 'diagnostic-agent'  # Add source parameter
+        }
+        data = json.dumps(payload).encode("utf-8")
+        future = publisher.publish(topic_path, data)
+        return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
+    except Exception as e:
+        logger.error(f"Failed to publish data to Pub/Sub: {e}")
+        return {"error": str(e)}  
+
+def analyze_document_image(user_query: str, gcs_url: str) -> dict:
+        """Analyzes an document or image."""
+        try:
+    
+            # Use google.genai with Vertex AI API configuration
+            from google import genai
+            from google.genai import types
+            import json as pyjson
+            import mimetypes
+        
+            client = genai.Client(
+                vertexai=True,
+                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+                location=os.environ.get("GOOGLE_CLOUD_LOCATION"),
+                http_options=types.HttpOptions(api_version='v1')
+            )
+    
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-lite",
+                contents=[
+                    types.Part.from_text(text=user_query),
+                    types.Part.from_uri(file_uri=gcs_url, mime_type=mimetypes.guess_type(gcs_url)[0])
+                ],
+                config=types.GenerateContentConfig(system_instruction=document_parsing_prompt()),
+            )
+            try:
+
+                raw_text = response.candidates[0].content.parts[0].text
+                logger.info(f"Raw response text: {raw_text}")
+
+                return raw_text 
+            except Exception as e:
+
+                logger.error(f"Unable to parse response: {e}")
+        except Exception as e:
+            logger.error(f"Error parsing document type: {e}")
+            return "Unable to parse document"
+        
+
+    
+
 
 
 diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=return_instructions_root(),
-    tools=[]
+    tools=[analyze_document_image, publish_data_to_pubsub],
 )
 
 __all__ = ["diagnostic_agent"]

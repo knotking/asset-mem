@@ -10,7 +10,7 @@ import vertexai
 
 import logging
 from google.cloud import pubsub_v1
-from prompts import document_classification_prompt, parsing_prompt_other
+from prompts import parsing_prompt_media
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,51 +38,6 @@ def get_gcs_file_mime_type(gcs_url):
         else:
             return "application/octet-stream"
 
-def classify_document_type(gcs_url):
-    """
-    Use LLM to classify the type of document uploaded.
-    Returns one of: 'product_manual', 'issue_image', 'warranty', 'insurance', or 'unknown'.
-    """
-    try:
-       
-        # Multimodal LLM: pass file path (image, pdf, text, etc.) directly to the model
-        
-        
-
-        # Use google.genai with Vertex AI API configuration
-        from google import genai
-        from google.genai import types
-        import json as pyjson
-
-     
-        client = genai.Client(
-            vertexai=True,
-            project=PROJECT,
-            location=LOCATION,
-            http_options=types.HttpOptions(api_version='v1')
-        )
- 
-        mime_type=get_gcs_file_mime_type(gcs_url)
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=[
-                types.Part.from_text(text="Analyse the following file and classify its type:"),
-                types.Part.from_uri(file_uri=gcs_url, mime_type=mime_type)
-            ],
-            config=types.GenerateContentConfig(system_instruction=document_classification_prompt()),
-        )
-        try:
-
-            raw_text = response.candidates[0].content.parts[0].text
-            logger.info(f"Raw response text: {raw_text}")
-            return raw_text 
-        except Exception as e:
-
-            logger.error(f"Failed to parse response: {e}")
-    except Exception as e:
-        logger.error(f"Error classifying document type: {e}")
-        return "unknown"
 
 def serialize_import_result(result):
     """Convert ImportRagFilesResponse or similar objects to a serializable dict."""
@@ -93,6 +48,14 @@ def serialize_import_result(result):
     # Fallback: try to convert to string
     return str(result)
 
+def is_media_mime_type(mime_type: str) -> bool:
+    """
+    Returns True if the MIME type is media (image, audio, or video), else False.
+    """
+    if not mime_type:
+        return False
+    return any(mime_type.startswith(prefix) for prefix in ("image/", "audio/", "video/"))
+
 def import_to_rag_corpus(gcs_urls, user_id:str):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
     try:
@@ -100,42 +63,43 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
             model_name="gemini-2.5-flash",
         )
 
-        manual_docs = []
-        other_docs = [] 
-        manual_docs_result: ImportRagFilesResponse = None
-        other_docs_result: ImportRagFilesResponse = None    
+        documents_list = []
+        media_list = [] 
+        documents_result: ImportRagFilesResponse = None
+        media_result: ImportRagFilesResponse = None    
+        
         for gcs_url in gcs_urls:
-            doc_type = classify_document_type(gcs_url)
-            if doc_type == "product_manual":
-                manual_docs.append(gcs_url)
-            else: 
-                other_docs.append(gcs_url)
+            mime_type = get_gcs_file_mime_type(gcs_url)
+            if is_media_mime_type(mime_type):
+                media_list.append(gcs_url)
+            else:
+                documents_list.append(gcs_url)
 
-        logger.info(f"Manual documents: {manual_docs}")
-        logger.info(f"Other documents: {other_docs}")
-
+        logger.info(f"Document files: {documents_list}")
+        logger.info(f"Media files: {media_list}")
+        sink_path = f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         # Import product manuals to RAG corpus
-        if manual_docs:
-            manual_docs_result:ImportRagFilesResponse = rag.import_files(
+        if documents_list:
+            documents_result:ImportRagFilesResponse = rag.import_files(
                 corpus_name=RAG_CORPUS,
-                paths=manual_docs,
+                paths=documents_list,
                 llm_parser=llmParserConfig,
-                import_result_sink=f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}manuals.ndjson"
+                import_result_sink=f"{sink_path}-manuals.ndjson"
             )
 
         # Import other documents to RAG corpus
-        if other_docs:
-            llmParserConfig.custom_parsing_prompt = parsing_prompt_other()
-            other_docs_result = rag.import_files(
+        if media_list:
+            llmParserConfig.custom_parsing_prompt = parsing_prompt_media()
+            media_result = rag.import_files(
                 corpus_name=RAG_CORPUS,
-                paths=other_docs,
+                paths=media_list,
                 llm_parser=llmParserConfig,
-                import_result_sink=f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}other.ndjson"
+                import_result_sink=f"{sink_path}-media.ndjson"
             )
 
         return True, {
-            "import_result": serialize_import_result(manual_docs_result),
-            "other_import_result": serialize_import_result(other_docs_result)
+            "document_import_result": serialize_import_result(documents_result),
+            "media_import_result": serialize_import_result(media_result)
         }
     except Exception as e:
         logger.error(f"Failed to import to RAG corpus: {e}")
@@ -183,3 +147,4 @@ def pubsub_to_user_uploads(request, context):
         logger.info(f"Published result to Pub/Sub topic {USER_UPLOAD_RESULT_TOPIC}: {future.result()}")
     except Exception as e:
         logger.error(f"Failed to publish to Pub/Sub topic: {e}")
+

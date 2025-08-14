@@ -185,23 +185,20 @@ async def handle_attachment(message: aio_types.Message):
         #     "Attachments uploaded to GCS:\n" + "\n".join(uploaded_gcs_urls)
         # ))
 
-        # --- Publish event to Pub/Sub ---
-        from gcp_utils import publish_event
-        project_id = os.environ.get("GCP_PROJECT_ID")
-        topic_id = os.environ.get("USER_UPLOAD_TOPIC")
+      
         user_id = str(chat_id)
         # Try to get the user's last text message as the query, fallback to empty string
         user_query = getattr(message, 'caption', None) or getattr(message, 'text', None) or ""
-        if project_id and topic_id:
-            try:
-                # Add source parameter with value 'telegram'
-                publish_event(project_id, topic_id, uploaded_gcs_urls, user_id, user_query, source="telegram")
-                await message.reply(escape_markdown("Processing your attachments..."))
-            except Exception as e:
+        
+        try:
+            
+            await message.reply(escape_markdown("Processing your documents..."))
+            agent_answer = get_agent_answer(chat_id, user_query=user_query, uploaded_gcs_urls=uploaded_gcs_urls) # This is where your AI logic runs
+            logger.info(f"Agent answer: {agent_answer}")
+            await message.answer(escape_markdown(agent_answer))
+        except Exception as e:
                 logger.error(f"Failed to publish event to Pub/Sub: {e}")
                 await message.reply(escape_markdown(f"Failed to publish event to Pub/Sub: {e}"))
-        else:
-            await message.reply(escape_markdown("GCP_PROJECT_ID or GCP_PUBSUB_TOPIC environment variable not set. Event not published."))
     else:
         await message.reply(escape_markdown("No attachments were uploaded."))
 
@@ -268,15 +265,10 @@ async def  on_event_user_upload_result(message: str):
         event_obj = UserUploadResultEvent.model_validate(json.loads(message))
         logger.info(f"Parsed event: {event_obj}")
 
-        agent_answer = get_agent_answer(event_obj.user_id, event_obj.user_query, event_obj.gcs_urls)
-        logger.info(f"Agent answer: {agent_answer}")
-        await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown(agent_answer), parse_mode=ParseMode.MARKDOWN_V2)
     # 2. Edit the "Thinking..." message with the actual answer
     except Exception as e:
         logger.error(f"Failed to parse user upload result event: {e}")
-        if event_obj.user_id:
-            await bot.send_message(chat_id=int(event_obj.user_id), text=escape_markdown("Oops! Unable to process your request. Please try again later."))
-    return {"status": "ok"}
+    
 
         # You can now access event_obj.user_id, event_obj.user_query, event_obj.gcs_urls, event_obj.doc_types
    
