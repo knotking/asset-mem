@@ -28,7 +28,7 @@ import asyncio
 # Import Vertex AI client logic
 from vertex_client import (
     reasoning_engine_resource,
-    get_agent_answer
+    stream_agent_answers
 )
 
 from dotenv import load_dotenv
@@ -181,17 +181,13 @@ async def handle_attachment(message: aio_types.Message):
             await message.reply(escape_markdown(f"Failed to upload your document {file_name}: {e}"))
 
     if uploaded_gcs_urls:
-      
         user_id = str(chat_id)
-        # Try to get the user's last text message as the query, fallback to empty string
         user_query = getattr(message, 'caption', None) or getattr(message, 'text', None) or ""
-        
         try:
-            
             await message.reply(escape_markdown("Processing your documents..."))
-            agent_answer = get_agent_answer(user_id, user_query=user_query, gcs_files=uploaded_gcs_urls) # This is where your AI logic runs
-            logger.info(f"Agent answer: {agent_answer}")
-            await message.answer(escape_markdown(agent_answer))
+            # Stream agent answers as they arrive
+            async for answer_part in stream_agent_answers(user_id, user_query, uploaded_gcs_urls):
+                await message.answer(escape_markdown(str(answer_part)))
         except Exception as e:
             logger.error(f"Failed to get an answer: {e}")
             await message.reply(escape_markdown(f"Oops!! Please try later: {str(e)}"))
@@ -203,13 +199,9 @@ async def handle_text_message(message: aio_types.Message):
     chat_id = message.chat.id
     user_text = message.text
 
-    # 1. Send "Thinking..." message and chat action immediately
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)
-    thinking_message = await message.answer(escape_markdown("Searching...🔍"))
-    agent_answer = get_agent_answer(chat_id, user_text) # This is where your AI logic runs
-    logger.info(f"Agent answer: {agent_answer}")
-    # # 2. Edit the "Thinking..." message with the actual answer
-    await thinking_message.edit_text(escape_markdown(agent_answer))
+    async for answer_part in stream_agent_answers(chat_id, user_text):
+        await message.answer(escape_markdown(str(answer_part)))
 
 @router.message()
 async def handle_non_text(message: aio_types.Message):
@@ -287,3 +279,14 @@ def start_pubsub_listener():
     )
 
 threading.Thread(target=start_pubsub_listener, daemon=True).start()
+
+
+async def agent_transfer_callback(agent_name: str, message_obj: aio_types.Message):
+    """
+    Callback to notify the user when the request is being transferred to another agent.
+    """
+    try:
+        
+        await message_obj.reply(escape_markdown(agent_name))
+    except Exception as e:
+        logger.error(f"Failed to send agent transfer notification: {e}")
