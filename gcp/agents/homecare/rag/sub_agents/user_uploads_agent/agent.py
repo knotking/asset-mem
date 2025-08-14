@@ -52,9 +52,15 @@ def get_rag_file_ids(user_id: str) -> list[str]:
     logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
     return file_ids
 
-def ask_user_uploads_retreival(user_id:str, user_query: str, tool_context: ToolContext):
+def ask_user_uploads_retreival( user_query: str, tool_context: ToolContext):
 
-    logger.info(f"User query: {user_query},  user_id: {user_id}")
+    
+    user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
+    
+    rag_file_ids = get_rag_file_ids(user_id)
+    if not rag_file_ids:
+        logger.info(f"No RAG file IDs found for user {user_id}.")
+        return "No relevant documents found."
     response = rag.retrieval_query(
         text=user_query,
         rag_resources=[
@@ -76,9 +82,9 @@ def ask_user_uploads_retreival(user_id:str, user_query: str, tool_context: ToolC
     )
 
 user_uploads_agent = Agent(
-    model='gemini-2.5-flash-lite',
+    model='gemini-2.5-flash',
     name='ask_user_uploads_agent',
-    instruction=return_instructions_user_uploads(),
+    instruction=return_instructions_root(),
     tools=[
         ask_user_uploads_retreival
     ]
