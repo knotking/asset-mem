@@ -30,19 +30,7 @@ d. Deploy to Cloud Run:
 - Run the deployment command:
 
   ```bash
-  gcloud run deploy telegram-agent-proxy \
-    --source . \
-    --region us-central1 \
-    --platform managed \
-    --allow-unauthenticated \
-    --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
-    --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
-    --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=5044444999026999296" \
-    --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
-    --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
-    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"
-    --set-env-vars="USER_UPLOAD_RESULT_TOPIC=user-upload-result-topic"
+
   ```
 
   _Replace placeholders like `homegeekdemo`, `YOUR_TELEGRAM_BOT_TOKEN`, and `YOUR_RANDOM_WEBHOOK_SECRET` with your actual values._
@@ -188,11 +176,11 @@ uvicorn telegram_api:app --host=0.0.0.0 --port=8080 --env-file=./.env --reload
     --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
     --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
     --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=5044444999026999296" \
-    --set-env-vars="TELEGRAM_BOT_TOKEN=7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI" \
+    --set-env-vars="REASONING_ENGINE_ID=1905436058749763584" \
+    --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
     --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
-    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic"
-    --set-env-vars="USER_UPLOAD_RESULT_TOPIC=user-upload-result-topic"
+    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \
+    --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription" 
 
 
 gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic

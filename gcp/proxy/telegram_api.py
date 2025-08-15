@@ -62,6 +62,22 @@ def escape_markdown(text: str) -> str:
 def parse_command(text: str) -> str:
     return text.strip().split()[0].lower()
 
+def split_message(text: str, max_length: int = 4000) -> list:
+    """
+    Splits a long text into chunks suitable for Telegram messages.
+    """
+    lines = text.splitlines(keepends=True)
+    chunks = []
+    current = ""
+    for line in lines:
+        if len(current) + len(line) > max_length:
+            chunks.append(current)
+            current = ""
+        current += line
+    if current:
+        chunks.append(current)
+    return chunks
+
 # --- aiogram Handlers ---
 @router.message(Command("start"))
 async def cmd_start(message: aio_types.Message):
@@ -187,7 +203,9 @@ async def handle_attachment(message: aio_types.Message):
             await message.reply(escape_markdown("Processing your documents..."))
             # Stream agent answers as they arrive
             async for answer_part in stream_agent_answers(user_id, user_query, uploaded_gcs_urls):
-                await message.answer(escape_markdown(str(answer_part)))
+                answer_str = escape_markdown(str(answer_part))
+                for part in split_message(answer_str):
+                    await message.answer(part)
         except Exception as e:
             logger.error(f"Failed to get an answer: {e}")
             await message.reply(escape_markdown(f"Oops!! Please try later: {str(e)}"))
@@ -201,7 +219,9 @@ async def handle_text_message(message: aio_types.Message):
 
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)
     async for answer_part in stream_agent_answers(chat_id, user_text):
-        await message.answer(escape_markdown(str(answer_part)))
+        answer_str = escape_markdown(str(answer_part))
+        for part in split_message(answer_str):
+            await message.answer(part)
 
 @router.message()
 async def handle_non_text(message: aio_types.Message):
