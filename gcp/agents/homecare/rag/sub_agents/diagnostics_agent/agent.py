@@ -7,7 +7,7 @@ from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root, document_parsing_prompt
+from .prompts import return_instructions_root, multimodal_parsing_prompt
 import sys
 import logging
 
@@ -34,8 +34,8 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context
         logger.error(f"Failed to publish data to Pub/Sub: {e}")
         return {"error": str(e)}  
 
-def analyze_document_image(user_query: str, gcs_url: str) -> dict:
-        """Analyzes an document or image."""
+def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
+        """Analyzes multimodal data file."""
         try:
     
             # Use google.genai with Vertex AI API configuration
@@ -81,7 +81,7 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=return_instructions_root(),
-    tools=[analyze_document_image, publish_doc_to_secure_store],
+    tools=[analyse_multimodal_data, publish_doc_to_secure_store],
     disallow_transfer_to_parent=True,
     
 )
