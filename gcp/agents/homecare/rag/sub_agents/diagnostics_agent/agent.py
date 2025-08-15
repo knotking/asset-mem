@@ -82,6 +82,8 @@ diagnostic_agent = Agent(
     name='diagnostic_agent',
     instruction=return_instructions_root(),
     tools=[analyze_document_image, publish_doc_to_secure_store],
+    disallow_transfer_to_parent=True,
+    
 )
 
 __all__ = ["diagnostic_agent"]

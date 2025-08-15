@@ -13,13 +13,13 @@ def return_instructions_root() -> str:
         If relevant information is found, cite the source documents from which you retrieved information.
 
         Citation Format:
-        - If your answer is derived from only one retrieved chunk, include exactly one citation.
-        - If multiple chunks came from the same file, cite that file only once.
-        - If chunks came from different files, provide citations for each unique file.
-        - Use the retrieved chunk's title to reconstruct the reference.
-        - Include document title and section if available.
-        - For web resources, include the full URL when available.
-        - Format citations at the end of your answer under a heading like "Citations" or "References."
+            - If your answer is derived from only one retrieved chunk, include exactly one citation.
+            - If multiple chunks came from the same file, cite that file only once.
+            - If chunks came from different files, provide citations for each unique file.
+            - Use the retrieved chunk's title to reconstruct the reference.
+            - Include document title and section if available.
+            - For web resources, include the full URL when available.
+            - Format citations at the end of your answer under a heading "Citations"
 
         Provide concise, factual answers and relevant citations only. If information is unavailable, state that clearly.
         
