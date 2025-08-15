@@ -86,7 +86,7 @@ def main():
         "KNOWLEDGE_BASE_RAG_CORPUS",
         "USER_UPLOAD_TOPIC"
     ]
-    display_name = "OrchestratorAgent"
+    display_name = "HomecareAgent"
     extra_packages = ["./rag"]
 
     if action == "create":

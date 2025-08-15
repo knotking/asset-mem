@@ -14,8 +14,8 @@ import logging
 logger = logging.getLogger(__name__)
 load_dotenv()
 
-def publish_data_to_pubsub(gcs_urls:list[str], user_query:str, tool_context: ToolContext ) -> dict:
-    """Publishes a structured payload to a Pub/Sub topic."""
+def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context: ToolContext ) -> dict:
+    """Publishes a structured payload to a secure storage."""
     try:
         from google.cloud import pubsub_v1  # <-- Fix import
         publisher = pubsub_v1.PublisherClient()
@@ -81,7 +81,7 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=return_instructions_root(),
-    tools=[analyze_document_image, publish_data_to_pubsub],
+    tools=[analyze_document_image, publish_doc_to_secure_store],
 )
 
 __all__ = ["diagnostic_agent"]
