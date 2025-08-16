@@ -53,18 +53,8 @@ app = AdkApp(
     enable_tracing=True
 )
 
-def get_pickled_object_gcs_uri(agent_engine_id):
-    engine = agent_engines.get(agent_engine_id)
-    engine_dict = engine.to_dict()
-    
-    try:
-        return engine_dict["spec"]["packageSpec"]["pickleObjectGcsUri"]
-    except KeyError:
-        logger.error("pickleObjectGcsUri not found in engine dict.")
-        return None
-
 def main():
-    action = sys.argv[1] if len(sys.argv) > 1 else "update"
+    action = sys.argv[1] if len(sys.argv) > 1 else "create"
     logger.info(f"Action: {action}")
 
     # Common configuration
@@ -90,6 +80,13 @@ def main():
     extra_packages = ["./rag"]
 
     if action == "create":
+        current_engine = agent_engines.get(AGENT_ENGINE_ID)
+        if current_engine:
+            try:
+                current_engine.delete(force=True)
+            except Exception as e:
+                logger.error(f"Error deleting current engine: {e}")
+
         remote_app = agent_engines.create(
             app,
             requirements=common_requirements,
@@ -100,14 +97,7 @@ def main():
         logging.info(f"Deployed agent to Vertex AI Agent Engine successfully, resource name: {remote_app.resource_name}")
         update_env_file(remote_app.resource_name, ENV_FILE_PATH)
     elif action == "update":
-        pickled_object_gcs_uri = get_pickled_object_gcs_uri(AGENT_ENGINE_ID)
-        remote_agent = agent_engines.get(
-            f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{GOOGLE_CLOUD_LOCATION}/reasoningEngines/{AGENT_ENGINE_ID}"
-        )
-        if not pickled_object_gcs_uri:
-            logger.error("pickled_object_gcs_uri not found for the existing engine. Cannot update.")
-            return
-        logger.info(f"Pickled object GCS URI: {pickled_object_gcs_uri}")
+ 
         updated_app = agent_engines.update(
             resource_name=AGENT_ENGINE_ID,
             description="OrchestratorAgentv1",

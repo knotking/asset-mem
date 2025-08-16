@@ -46,11 +46,12 @@ def multimodal_parsing_prompt() -> str:
             - A concise summary of the content, whether it is a document, image, or other file type.
             - Any detected model numbers, serial numbers, or brands, if present.
             - If the data is an image showing an issue, describe the problem clearly (e.g., "a leak under the sink," "a cracked screen").
-        
-        Ensure your analysis is directly related to the actual content of the data.  
-        If the data cannot be recognized or analyzed, state this clearly.
 
-        Do not perform any actions or make assumptions beyond the provided content.
+        Important Notes;
+            - Never ask for additional information or clarification from the user. If not clear on user intent, transfer to the parent agent.
+            - Ensure your analysis is directly related to the actual content of the data.  
+            - If the data cannot be recognized or analyzed, state this clearly.
+            - Do not perform any actions or make assumptions beyond the provided content.
         """
 
     return multimodal_prompt

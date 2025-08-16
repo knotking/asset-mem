@@ -52,12 +52,12 @@ def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
             )
     
             response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
+                model="gemini-2.5-flash",
                 contents=[
                     types.Part.from_text(text=user_query),
                     types.Part.from_uri(file_uri=gcs_url, mime_type=mimetypes.guess_type(gcs_url)[0])
                 ],
-                config=types.GenerateContentConfig(system_instruction=document_parsing_prompt()),
+                config=types.GenerateContentConfig(system_instruction=multimodal_parsing_prompt()),
             )
             try:
 
