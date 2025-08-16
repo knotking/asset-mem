@@ -80,8 +80,8 @@ async def stream_agent_answers(
             # Extract and yield text parts
             parts = event.get("content", {}).get("parts", [])
             for part in parts:
-                if isinstance(part, dict) and "text" in part:
-                    yield part["text"]
+                if isinstance(part, dict) and "text" in part and part["text"]:
+                    yield f"[{prettify_name(event.get('author',''))}]: {part['text']}"
 
 
 def extract_event_data_with_transfer_target(event_data: dict) -> str | None:

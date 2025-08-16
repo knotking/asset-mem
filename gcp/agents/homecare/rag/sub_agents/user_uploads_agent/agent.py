@@ -88,7 +88,8 @@ user_uploads_agent = Agent(
     instruction=return_instructions_root(),
     tools=[
         ask_user_uploads_retreival
-    ]
+    ],
+    disallow_transfer_to_parent=True
 )
 
 __all__ = ["user_uploads_agent"]
