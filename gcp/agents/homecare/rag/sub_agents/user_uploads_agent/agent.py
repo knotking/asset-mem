@@ -22,6 +22,7 @@ def get_user_file_ids(user_id: str) -> list[str]:
     """
     Fetches all FileId values from JSON files in the user's import_results folder in GCS.
     """
+    user_id = "538445573"
     bucket_name = os.environ.get("GOOGLE_CLOUD_BUCKET")
     folder_prefix = f"{os.environ.get('USER_UPLOAD_FOLDER', 'uploads')}/{user_id}/import-results"
     client = Client()
@@ -73,8 +74,6 @@ def ask_user_uploads_retreival( user_query: str, tool_context: ToolContext):
         similarity_top_k=10,
         vector_distance_threshold=0.6,
     )
-
-    logging.debug('RAG raw response: %s', response)
 
     return (
         f'No matching result found.'

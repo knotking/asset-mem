@@ -67,6 +67,8 @@ def main():
         "tqdm",
         "requests",
         "llama-index",
+        "langchain-community==0.3.27",
+        "youtube-search==2.1.2"
 
     ]
     common_env_vars = [

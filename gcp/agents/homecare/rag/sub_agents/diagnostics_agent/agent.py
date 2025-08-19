@@ -3,14 +3,17 @@ import uuid
 import json
 import base64
 from google.cloud.storage.client import Client
-from google.adk.agents import Agent
-from google.adk.tools import ToolContext
+from google.adk.agents import Agent, SequentialAgent, ParallelAgent
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools import ToolContext, google_search
+from google.adk.tools.langchain_tool import LangchainTool
+from langchain_community.tools import YouTubeSearchTool
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root, multimodal_parsing_prompt
+from .prompts import return_instructions_root, multimodal_parsing_prompt, research_agent_prompt
 import sys
 import logging
-
+from ..user_uploads_agent.agent import ask_user_uploads_retreival
 logger = logging.getLogger(__name__)
 load_dotenv()
 
@@ -62,8 +65,6 @@ def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
             try:
 
                 raw_text = response.candidates[0].content.parts[0].text
-                logger.info(f"Raw response text: {raw_text}")
-
                 return raw_text 
             except Exception as e:
 
@@ -73,17 +74,38 @@ def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
             return "Unable to parse document"
         
 
-    
+google_search_agent = Agent(
+    name="google_search_agent",
+    model="gemini-2.5-flash-lite",
+    description="Agent to answer questions using Google Search.",
+    instruction="I can answer your questions by searching the internet. Just ask me anything!",
+    tools=[google_search],
+)
+
+youtube_search = YouTubeSearchTool(
+    name="youtube_search",
+    description="Searches YouTube for videos related to the provided query.",
+    max_results=5,
+)
 
 
+
+research_agent = Agent(
+    model='gemini-2.5-flash',
+    name='research_agent',
+    description="Handles comprehensive research tasks for the diagnostics agent by gathering information from multiple sources.",
+    instruction=research_agent_prompt(),
+    tools=[AgentTool(agent=google_search_agent),
+        ask_user_uploads_retreival, 
+        LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query.")],
+)
 
 diagnostic_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-2.5-flash-lite',
     name='diagnostic_agent',
     instruction=return_instructions_root(),
-    tools=[analyse_multimodal_data, publish_doc_to_secure_store],
+    tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store],
     disallow_transfer_to_parent=True,
-    
 )
 
 __all__ = ["diagnostic_agent"]
