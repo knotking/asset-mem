@@ -5,7 +5,7 @@ from google.adk.agents import Agent
 from google.adk.tools.retrieval.vertex_ai_rag_retrieval import VertexAiRagRetrieval
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root
+from .prompts import knowledge_base_instructions
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ ask_knowledge_base_retrieval = VertexAiRagRetrieval(
 knowledge_base_agent = Agent(
     model='gemini-2.5-flash',
     name='ask_knowledge_base_agent',
-    instruction=return_instructions_root(),
+    instruction=knowledge_base_instructions(),
     tools=[
         ask_knowledge_base_retrieval,
     ],

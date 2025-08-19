@@ -10,7 +10,7 @@ from google.adk.tools.langchain_tool import LangchainTool
 from langchain_community.tools import YouTubeSearchTool
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root, multimodal_parsing_prompt, research_agent_prompt
+from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt
 import sys
 import logging
 from ..user_uploads_agent.agent import ask_user_uploads_retreival
@@ -103,7 +103,7 @@ research_agent = Agent(
 diagnostic_agent = Agent(
     model='gemini-2.5-flash-lite',
     name='diagnostic_agent',
-    instruction=return_instructions_root(),
+    instruction=diagnostic_agent_instructions(),
     tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store],
     disallow_transfer_to_parent=True,
 )

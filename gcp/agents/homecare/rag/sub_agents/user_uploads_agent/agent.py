@@ -10,7 +10,7 @@ from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import return_instructions_root
+from .prompts import user_uploads_agent_instruction
 import logging
     
 
@@ -22,7 +22,6 @@ def get_user_file_ids(user_id: str) -> list[str]:
     """
     Fetches all FileId values from JSON files in the user's import_results folder in GCS.
     """
-    user_id = "538445573"
     bucket_name = os.environ.get("GOOGLE_CLOUD_BUCKET")
     folder_prefix = f"{os.environ.get('USER_UPLOAD_FOLDER', 'uploads')}/{user_id}/import-results"
     client = Client()
@@ -84,7 +83,7 @@ def ask_user_uploads_retreival( user_query: str, tool_context: ToolContext):
 user_uploads_agent = Agent(
     model='gemini-2.5-flash',
     name='ask_user_uploads_agent',
-    instruction=return_instructions_root(),
+    instruction=user_uploads_agent_instruction(),
     tools=[
         ask_user_uploads_retreival
     ],

@@ -5,7 +5,7 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 """
 
 
-def return_instructions_root() -> str:
+def knowledge_base_instructions() -> str:
 
     instruction_prompt = """
         You are a highly specialized sub-agent, operating within the DocuLink Agent, specifically tasked with answering user questions by retrieving information from a comprehensive knowledge base. Your role is to provide direct, accurate, and concise answers based solely on the content retrieved via the `ask_knowledge_base_retrieval` tool.

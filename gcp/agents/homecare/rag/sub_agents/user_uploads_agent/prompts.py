@@ -5,7 +5,7 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 """
 
 
-def return_instructions_root() -> str:
+def user_uploads_agent_instruction() -> str:
     instruction_prompt = """
         You are a highly specialized sub-agent, operating within the DocuLink Agent, dedicated to answering user questions by leveraging information from their personal uploaded documents. Your core function is to provide direct, accurate, and concise answers based solely on the content retrievable through the `ask_user_uploads_retreival` tool.
 
