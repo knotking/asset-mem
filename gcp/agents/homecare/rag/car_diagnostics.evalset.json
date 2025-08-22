@@ -1,0 +1,94 @@
+{
+  "eval_set_id": "car_diagnostics",
+  "name": "car_diagnostics",
+  "description": null,
+  "eval_cases": [
+    {
+      "eval_id": "case_scratches",
+      "conversation": [
+        {
+          "invocation_id": "e-e88a1502-d342-4eb7-a4bf-ca432fc98ed9",
+          "user_content": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "Analyse gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "The image displays significant white scratch marks and scuffing on the lower portion of the rear quarter panel and the adjacent bumper of a red vehicle. The damage is prominent near the rear wheel well, extending across the side and rear bumper area. The vehicle's distinctive design features, including the unique black aero wheel cover and the shape of the rear light assembly, indicate it is a Tesla.\n\n**Summary of Findings:**\nThe red Tesla has significant white scratch marks and scuffing on its rear quarter panel and bumper. For DIY repair, solutions range from polishing compounds for minor clear coat scratches to touch-up paint kits for deeper damage. An insurance policy is in place for a 2025 Tesla Model Y, which includes comprehensive and collision coverage that may be relevant for physical damage, subject to deductibles and policy terms, particularly regarding custom options. YouTube offers video tutorials on car scratch repair.\n\n**Google Search Results:**\n*   **DIY Tesla Car Scratch Repair:** Options include polishing compounds/scratch removal kits for minor scuffs (clear coat only) and touch-up paint kits for deeper scratches (through clear coat into base color).\n*   **Touch-Up Paint Kits:** Typically include paint matched to the car's color code, blending solution, and applicators. Best for chips and scratches that have penetrated the clear coat. Available from Tesla's official shop, T Sportline, AutomotiveTouchup, Meguiar's, Shine Armor, and TouchUpDirect. Matching the car's specific paint code is crucial.\n*   **Scratch Removal Compounds/Kits:** Designed to buff out light scratches and swirl marks in the clear coat. Examples include Meguiar's Scratch Eraser Kit, Shine Armor Revive Scratch Repair, and 3M Scratch Removal System. Effectiveness is limited for scratches that can be felt with a fingernail.\n*   **General DIY Steps:** Clean the area, assess scratch depth, protect surrounding areas (masking tape), apply product as directed, buff, and protect the repair with wax/sealant.\n*   **Important Notes:** Deep scratches may not be perfectly repaired with DIY methods, and professional help might be needed. Achieving factory-perfect color matching can be challenging.\n\n**Your Documents:**\n**Insurance Coverage Details:**\n*   **Policy/Document Name & Number:** GEICO Declarations Page - Policy Number: 4422-19-24-78\n*   **Coverage Period:** 07-04-25 through 01-04-26\n*   **Total Premium Paid:** $1,397.40 (Total Six Month Premium)\n*   **Vehicle Covered:** 2025 Tesla Model Y (VIN: 7SAYGDED8SF317338)\n*   **Key Coverage Amounts/Limits/Deductibles:**\n    *   Comprehensive (Excluding Collision): $1,000 Ded (for 2025 Tesla Model Y)\n    *   Collision: $500 Ded/Waiver (for 2025 Tesla Model Y)\n*   **Important Disclaimers/Notes:** \"Physical damage coverage will not cover loss for custom options on an owned automobile, including equipment, furnishings or finishings including paint, if the existence of those options has not been previously reported to us.\"\n*   **Relevant Contact Information:** GEICO - Tel: 1-800-841-3000\n\n**YouTube Search Results:**\n*   https://www.youtube.com/shorts/8FH4dVUg9s4\n*   https://www.youtube.com/shorts/h9UH5suczxw"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-5565748b-aae6-4316-b23b-fa252331c4a5",
+                "args": {
+                  "agent_name": "diagnostic_agent"
+                },
+                "name": "transfer_to_agent"
+              },
+              {
+                "id": "adk-765fa9a6-9d58-4f0e-a81c-8cd1121a4e21",
+                "args": {
+                  "user_query": "Analyse gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg",
+                  "gcs_url": "gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg"
+                },
+                "name": "analyse_multimodal_data"
+              },
+              {
+                "id": "adk-2cb1b76a-3ec4-4157-b588-15a566f49750",
+                "args": {
+                  "request": "The image displays significant white scratch marks and scuffing on the lower portion of the rear quarter panel and the adjacent bumper of a red vehicle. The damage is prominent near the rear wheel well, extending across the side and rear bumper area. The vehicle's distinctive design features, including the unique black aero wheel cover and the shape of the rear light assembly, indicate it is a Tesla."
+                },
+                "name": "research_agent"
+              },
+              {
+                "id": "adk-29125550-5da2-4e1d-8166-e1320c46cc71",
+                "args": {
+                  "gcs_urls": [
+                    "gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg"
+                  ],
+                  "user_query": "Analyse gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg"
+                },
+                "name": "publish_doc_to_secure_store"
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1755614615.378577
+        }
+      ],
+      "session_input": {
+        "app_name": "rag",
+        "user_id": "user",
+        "state": {}
+      },
+      "creation_timestamp": 1755614815.257797
+    }
+  ],
+  "creation_timestamp": 1755614798.2796469
+}

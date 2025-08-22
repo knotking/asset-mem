@@ -17,4 +17,4 @@ ENV PORT 8080
 EXPOSE $PORT
 
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "telegram_api:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

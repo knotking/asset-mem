@@ -12,7 +12,7 @@ try:
 except ImportError:
     print("python-dotenv not installed. Skipping .env loading.")
 
-from vertex_client import get_agent_answer
+from gcp.proxy.api.vertex_client import get_agent_answer
 def main():
     print("Local Vertex AI Reasoning Engine Test Console")
     print("Type 'exit' to quit.")

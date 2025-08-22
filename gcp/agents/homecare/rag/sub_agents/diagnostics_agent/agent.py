@@ -17,6 +17,10 @@ from ..user_uploads_agent.agent import ask_user_uploads_retreival
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+def before_tool_callback(tool_context: ToolContext, **kwargs):
+    # Ensure the user_id is set in the tool context state
+    tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
+
 def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context: ToolContext ) -> dict:
     """Publishes a structured payload to a secure storage."""
     try:
@@ -101,11 +105,12 @@ research_agent = Agent(
 )
 
 diagnostic_agent = Agent(
-    model='gemini-2.5-flash-lite',
+    model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
     tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store],
     disallow_transfer_to_parent=True,
+    before_tool_callback=before_tool_callback,
 )
 
 __all__ = ["diagnostic_agent"]

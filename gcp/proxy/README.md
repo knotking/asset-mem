@@ -165,18 +165,18 @@ gcloud projects add-iam-policy-binding your-project-id \
   
 gcloud pubsub topics create user-upload-topic
 
-uvicorn telegram_api:app --host=0.0.0.0 --port=8080 --env-file=./.env --reload
+uvicorn main:app --host=0.0.0.0 --port=8080 --env-file=../.env --reload
 
 
- gcloud run deploy telegram-agent-proxy \
-    --source . \
+ gcloud run deploy homecare-agent-proxy \
+    --source api \
     --region us-central1 \
     --platform managed \
     --allow-unauthenticated \
     --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
     --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
     --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=8366975624119582720" \
+    --set-env-vars="REASONING_ENGINE_ID=2031396110827782144" \
     --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
     --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
     --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \

@@ -22,9 +22,18 @@ def diagnostic_agent_instructions() -> str:
 
         **Strict Sequence of Operations:**
         1.  **First:** Call the `analyse_multimodal_data` tool. Provide the *original user query* and the *GCS URL* received from the user as parameters. Let's call the output of this tool `analysis_result`.
-        2.  **Second - Conditional Research:** Examine the `analysis_result` from the previous step.
-            *   **If the `analysis_result` explicitly states or clearly indicates that the uploaded content is a comprehensive document like an "Insurance Policy," "Declarations Page," "Homeowners Policy," or a detailed "Warranty Document" that already provides extensive information (i.e., the user's core intent seems to be covered by the document itself and external research would be redundant), then do NOT call the `research_agent`.** In such cases, the `analysis_result` itself forms the primary output related to information gathering.
-            *   **Otherwise (if the `analysis_result` describes a problem like a "scratch," "leak," "cracked screen," or a general item that might require external troubleshooting/information), you MUST proceed to call the `research_agent`.** Pass the `analysis_result` (the full text output from `analyse_multimodal_data`) as the query to the `research_agent`. **Crucially, never send the GCS URL directly to the `research_agent`.**
+        2.  **Second - Mandatory Research (with specific exception):**
+            *   **Your default action MUST be to call the `research_agent`.** This tool is essential for gathering additional context and information.
+            *   **You MUST ONLY skip calling the `research_agent` if, and only if, the `analysis_result` clearly and explicitly indicates that the uploaded content is a formal, self-contained, informational document that would make external research redundant.** Examples of such documents include:
+                *   "Insurance Policy"
+                *   "Declarations Page"
+                *   "Homeowners Policy"
+                *   "Appliance Manual"
+                *   "Product Manual"
+                *   "Warranty Document"
+                *   Any document whose primary purpose is to convey *its own complete, structured information* about a product, policy, or service.
+            *   **Conversely, if the `analysis_result` describes a problem (e.g., "scratch marks," "leak," "cracked screen," "dent"), an image of an object/component, or any document that is *not* one of the explicitly listed formal information sources, you MUST proceed to call the `research_agent`.**
+            *   When calling the `research_agent`, pass the `analysis_result` (the full text output from `analyse_multimodal_data`) as the query to the `research_agent`. **Crucially, never send the GCS URL directly to the `research_agent`.**
         3.  **Third - Long-Term Storage:** Call the `publish_doc_to_secure_store` tool. The payload must include the *original GCS URL* provided by the user and the *original user query*. **Do not include the outcome or confirmation of this publication in your response to the user.** This is an internal storage operation.
 
         **Final Response Formulation:**
@@ -35,9 +44,8 @@ def diagnostic_agent_instructions() -> str:
 
         **Critical Guidelines:**
         *   The `publish_doc_to_secure_store` tool is exclusively for background long-term storage and its result must not be part of your final response to the user.
-        *   Always ensure the correct GCS URL and original user query are passed to their respective tools as specified.
+        *   Always ensure the correct GCS URL and original user query are correctly passed to their respective tools as specified.
         *   Your ultimate goal is to provide the analysis and, if applicable, the research results back to the caller as quickly as possible, while also ensuring the data is queued for long-term storage.
-
         """
 
 
