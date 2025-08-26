@@ -47,20 +47,20 @@ d. Deploy to Cloud Run:
 You can also do this via a `curl` command (replace `YOUR_BOT_TOKEN` and `YOUR_FULL_WEBHOOK_URL`):
 
 Production Testing Bot
+
 ```bash
 curl -F "url=https://telegram-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      -F "secret_token=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      "https://api.telegram.org/bot8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s/setWebhook"
 ```
 
-
 Development Testing Bot
+
 ```bash
 curl -F "url=https://g8f6cq7r-8080.inc1.devtunnels.ms/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      -F "secret_token=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      "https://api.telegram.org/bot7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI/setWebhook"
 ```
-
 
 gcloud config set project homegeekdemo
 gcloud services enable \
@@ -155,33 +155,32 @@ $ curl -X POST -H "Content-Type: application/json" -d '{
 }
 }' http://localhost:8080/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
 
- 
-
 python local_test.py
 
 gcloud projects add-iam-policy-binding your-project-id \
-  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
-  --role="roles/pubsub.editor"
-  
+ --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+ --role="roles/pubsub.editor"
+
 gcloud pubsub topics create user-upload-topic
 
 uvicorn main:app --host=0.0.0.0 --port=8080 --env-file=../.env --reload
 
-
- gcloud run deploy homecare-agent-proxy \
-    --source api \
-    --region us-central1 \
-    --platform managed \
-    --allow-unauthenticated \
-    --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
-    --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
-    --set-env-vars="GCP_REGION=us-central1" \
-    --set-env-vars="REASONING_ENGINE_ID=2031396110827782144" \
-    --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
-    --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
-    --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \
-    --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription" 
-
+gcloud run deploy homecare-agent-proxy \
+ --source api \
+ --region us-central1 \
+ --platform managed \
+ --allow-unauthenticated \
+ --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+ --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
+ --set-env-vars="GCP_REGION=us-central1" \
+ --set-env-vars="REASONING_ENGINE_ID=2031396110827782144" \
+ --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
+ --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
+ --set-env-vars="FIREBASE_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
+ --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \
+ --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription"
 
 gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
 gcloud pubsub subscriptions create user-upload-topic-subscription --topic=user-upload-topic
+
+Install pytest; pytest -s firebase_integration_test.py

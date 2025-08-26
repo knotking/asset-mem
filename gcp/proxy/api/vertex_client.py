@@ -4,7 +4,7 @@ import vertexai
 from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
-
+ 
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         if responded_tools:
             result_parts.append(f"Responded: {', '.join(prettify_name(tool) for tool in responded_tools)}")
 
-        return ", ".join(result_parts)
+        return ", ".join(result_parts) + "\n"
 
     except (IndexError, KeyError) as e:
         logger.error(f"Error parsing event: {e}")
