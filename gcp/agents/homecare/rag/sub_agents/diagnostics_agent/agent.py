@@ -10,7 +10,7 @@ from google.adk.tools.langchain_tool import LangchainTool
 from langchain_community.tools import YouTubeSearchTool
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt
+from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
 import sys
 import logging
 from ..user_uploads_agent.agent import ask_user_uploads_retreival
@@ -99,16 +99,28 @@ research_agent = Agent(
     name='research_agent',
     description="Handles comprehensive research tasks for the diagnostics agent by gathering information from multiple sources.",
     instruction=research_agent_prompt(),
-    tools=[AgentTool(agent=google_search_agent),
-        ask_user_uploads_retreival, 
-        LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query.")],
+    tools=[
+        AgentTool(agent=google_search_agent),
+        ask_user_uploads_retreival,
+        LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query."),
+    ],
+)
+
+service_provider_agent = Agent(
+    model='gemini-2.5-flash',
+    name='service_provider_agent',
+    description="Find service providers or authorized service centers for an identified issue near to the user's location.",
+    instruction=service_provider_agent_prompt(),
+    tools=[
+        AgentTool(agent=google_search_agent),
+    ],
 )
 
 diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store],
+    tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store, AgentTool(service_provider_agent)],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
 )

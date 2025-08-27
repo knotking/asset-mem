@@ -80,6 +80,7 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
                 llm_parser=llmParserConfig,
                 import_result_sink=f"{sink_path}-media.ndjson"
             )
+        logger.info(f"Document Results: {documents_result}, Media Results: {media_result}")
 
         return True, {
             "document_import_result": serialize_import_result(documents_result),
@@ -111,7 +112,7 @@ def pubsub_to_user_uploads(request, context):
     success, result_msg = import_to_rag_corpus(gcs_urls, user_id)
     # rag_files = list(rag.list_files(corpus_name=RAG_CORPUS))
     # logger.info(f"RAG corpus files after import: {rag_files}")
-
+    logger.info(f"Result: {result_msg}")
 
     data   = {
         "gcs_urls": gcs_urls,

@@ -151,12 +151,12 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         if transfer_target_agent:
             result_parts.append(f"Transferred To: {prettify_name(transfer_target_agent)}")
 
-        if called_tools:
+        if called_tools and not transfer_target_agent:
             result_parts.append(f"Called: {', '.join(prettify_name(tool) for tool in called_tools)}")
         if responded_tools:
             result_parts.append(f"Responded: {', '.join(prettify_name(tool) for tool in responded_tools)}")
 
-        return ", ".join(result_parts) + "\n"
+        return ", ".join(result_parts) + "  \n"
 
     except (IndexError, KeyError) as e:
         logger.error(f"Error parsing event: {e}")
@@ -168,4 +168,4 @@ def prettify_name(name: str) -> str:
     """
     if not name:
         return ""
-    return " ".join(word.capitalize() for word in name.split("_"))
+    return f"**{\" ".join(word.capitalize() for word in name.split("_"))}**"
