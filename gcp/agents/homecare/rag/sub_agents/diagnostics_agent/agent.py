@@ -120,7 +120,9 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
+    instruction="You are a helpful assitant. Call searvice_provider_agent with the query The image depicts significant white scratch marks and scuffing on the lower rear quarter panel and bumper area of a red vehicle. Address: 5816 EL DORADO LN DUBLIN CA 94568-4782 ",
     tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store, AgentTool(service_provider_agent)],
+    # tools=[AgentTool(service_provider_agent)],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
 )

@@ -1,4 +1,5 @@
 {
   "python.defaultInterpreterPath": "python/.venv/bin/python",
-  "python.analysis.extraPaths": ["./python"]
+  "python.analysis.extraPaths": ["./python"],
+  "cursorpyright.analysis.extraPaths": ["./python"]
 }

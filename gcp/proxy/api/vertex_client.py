@@ -146,26 +146,34 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
             logger.warning("No author agent found in event data.")
             return None
 
-        result_parts = [f"Agent: {prettify_name(author_agent)}"]
+        result_parts = [f"{prettify_name(author_agent)}"]
 
         if transfer_target_agent:
-            result_parts.append(f"Transferred To: {prettify_name(transfer_target_agent)}")
+            result_parts.append(f"➡️ {prettify_name(transfer_target_agent)}")
 
         if called_tools and not transfer_target_agent:
-            result_parts.append(f"Called: {', '.join(prettify_name(tool) for tool in called_tools)}")
+            result_parts.append(f"Executing: {', '.join(format_name(tool, bold=False) for tool in called_tools)}")
         if responded_tools:
-            result_parts.append(f"Responded: {', '.join(prettify_name(tool) for tool in responded_tools)}")
+            result_parts.append(f"Completed: {', '.join(format_name(tool, bold=False) for tool in responded_tools)}")
 
-        return ", ".join(result_parts) + "  \n"
+        return " ".join(result_parts) + "  \n\n"
 
     except (IndexError, KeyError) as e:
         logger.error(f"Error parsing event: {e}")
         return None
 
-def prettify_name(name: str) -> str:
+def format_name(name: str, bold: bool = True) -> str:
     """
-    Converts a snake_case name like 'homecare_agent' to 'Homecare Agent'.
+    Converts a snake_case name like 'homecare_agent' to 'Homecare Agent'
+    and optionally bolds the output.
     """
     if not name:
         return ""
-    return f"**{\" ".join(word.capitalize() for word in name.split("_"))}**"
+    formatted_name = " ".join(word.capitalize() for word in name.split("_"))
+    return f"**{formatted_name}**" if bold else formatted_name
+
+def prettify_name(name: str) -> str:
+    """
+    Converts a snake_case name like 'homecare_agent' to 'Homecare Agent' and bolds it.
+    """
+    return format_name(name, bold=True)

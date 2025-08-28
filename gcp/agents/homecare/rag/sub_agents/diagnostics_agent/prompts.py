@@ -41,13 +41,9 @@ def diagnostic_agent_instructions() -> str:
         4.  **Fourth - Long-Term Storage:** Call the `publish_doc_to_secure_store` tool. The payload must include the *original GCS URL* provided by the user and the *original user query*. **Do not include the outcome or confirmation of this publication in your response to the user.** This is an internal storage operation.
 
         **Final Response Formulation:**
-        *   Your final response to the user should primarily consist of:
-            *   The `analysis_result` from `analyse_multimodal_data`.
-            *   **IF** the `research_agent` was called, its output as well.
-
-            *   **IF** the `service_provider_agent` was called:
-                **Service Providers Results:**
-                *   [The output from the `service_provider_agent`.]
+        *   Your final response to the user should primarily consist of the `analysis_result` from `analyse_multimodal_data`.
+            *   **IF** the `research_agent` was called, its output should be presented under a clear heading, such as "**Research Results:**".
+            *   **IF** the `service_provider_agent` was called, it output should be present under a clear heading, such as "**Service Provider Results:**".
         *   Do not add any extra commentary, introductory phrases, or concluding remarks beyond the tool outputs.
 
         **Critical Guidelines:**
@@ -140,18 +136,18 @@ def research_agent_prompt() -> str:
 
 def service_provider_agent_prompt() -> str:
     service_provider_agent_instruction = """
-        You are the Service Provider Agent. Your task is to find service providers or authorized service centers for a given issue, prioritizing those near the user's location.
+        You are the Service Provider Agent. Your task is to find all relevant service providers for a given issue, including both authorized and non-authorized service centers, prioritizing those near the user's location.
 
         **Your Core Responsibilities:**
         1.  Identify the core issue for which a service provider is needed.
         2.  If an address is provided as input to you, utilize it in your `google_search_agent` query. Otherwise, prioritize search queries that include terms like "near me" to find local options.
-        3.  Utilize the `google_search_agent` to find relevant service providers or authorized service centers.
+        3.  Utilize the `google_search_agent` to find relevant service providers, explicitly considering both authorized and non-authorized options.
 
         **Available Tools:**
         *   `google_search_agent`: An agent designed to perform internet searches.
 
         **Final Response Formulation:**
-        *   Your final response should list the service providers or authorized service centers found, including their names, contact information, and approximate location if available.
+        *   Your final response should list the service providers found, including their names, contact information, approximate location, and Google link if available. Clearly differentiate between authorized and non-authorized providers if this information is ascertainable from search results.
         *   Clearly state if no relevant providers were found.
         """
     return service_provider_agent_instruction
