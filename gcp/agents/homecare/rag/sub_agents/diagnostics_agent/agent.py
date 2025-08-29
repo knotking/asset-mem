@@ -8,6 +8,7 @@ from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext, google_search
 from google.adk.tools.langchain_tool import LangchainTool
 from langchain_community.tools import YouTubeSearchTool
+from langchain.utilities import SerpAPIWrapper
 from vertexai.preview import rag
 from dotenv import load_dotenv
 from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
@@ -92,7 +93,10 @@ youtube_search = YouTubeSearchTool(
     max_results=5,
 )
 
-
+# New SerpAPI tool for business listings
+serpapi_search = SerpAPIWrapper(
+    serpapi_api_key=os.environ.get("SERP_API_KEY"), # Assuming SERP_API_KEY is in environment variables
+)
 
 research_agent = Agent(
     model='gemini-2.5-flash',
@@ -112,7 +116,7 @@ service_provider_agent = Agent(
     description="Find service providers or authorized service centers for an identified issue near to the user's location.",
     instruction=service_provider_agent_prompt(),
     tools=[
-        AgentTool(agent=google_search_agent),
+        LangchainTool(tool=serpapi_search, name="serpapi_search", description="Searches for local business listings and service providers."),
     ],
 )
 
@@ -120,9 +124,7 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    instruction="You are a helpful assitant. Call searvice_provider_agent with the query The image depicts significant white scratch marks and scuffing on the lower rear quarter panel and bumper area of a red vehicle. Address: 5816 EL DORADO LN DUBLIN CA 94568-4782 ",
     tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store, AgentTool(service_provider_agent)],
-    # tools=[AgentTool(service_provider_agent)],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
 )

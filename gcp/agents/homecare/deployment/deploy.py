@@ -68,7 +68,8 @@ def main():
         "requests",
         "llama-index",
         "langchain-community==0.3.27",
-        "youtube-search==2.1.2"
+        "youtube-search==2.1.2",
+        "google-search-results==2.4.2"
 
     ]
     common_env_vars = [
@@ -76,7 +77,8 @@ def main():
         "USER_UPLOAD_FOLDER",
         "USER_UPLOAD_RAG_CORPUS",
         "KNOWLEDGE_BASE_RAG_CORPUS",
-        "USER_UPLOAD_TOPIC"
+        "USER_UPLOAD_TOPIC",
+        "SERP_API_KEY"
     ]
     display_name = "HomecareAgent"
     extra_packages = ["./rag"]

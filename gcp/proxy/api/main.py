@@ -48,7 +48,9 @@ from telegram_api import get_telegram_webhook_endpoint
 from firebase_api import handle_firebase_message, stream_firebase_agent_answers
 # Import Vertex AI client logic
 from vertex_client import (
-    reasoning_engine_resource
+    reasoning_engine_resource,
+    create_reasoning_engine_session,
+    delete_reasoning_engine_session
 )
 # Register Telegram handlers
 
@@ -73,18 +75,20 @@ async def _extract_firebase_request_data(request: Request) -> (str, str, List[st
     if not user_id:
         logger.error("User ID is required")
         raise ValueError("User ID is required")
+
+    session_id = data.get("session_id", "")
     user_query = data.get("message", "")
     gcs_files = data.get("gcs_files", [])
-    return user_id, user_query, gcs_files
+    return user_id, user_query, gcs_files, session_id
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-webhook")
 async def firebase_webhook(request: Request):
     logger.info("Firebase webhook received a request.")
     try:
-        user_id, user_query, gcs_files = await _extract_firebase_request_data(request)
+        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
         logger.info(f"Firebase webhook data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
         
-        return await handle_firebase_message(user_id, user_query, gcs_files)
+        return await handle_firebase_message(user_id, user_query, gcs_files, session_id=session_id)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
@@ -95,14 +99,43 @@ async def firebase_webhook(request: Request):
 async def firebase_streaming_webhook(request: Request):
     logger.info("Firebase streaming webhook received a request.")
     try:
-        user_id, user_query, gcs_files = await _extract_firebase_request_data(request)
+        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
         
-        return StreamingResponse(stream_firebase_agent_answers(user_id=user_id, user_query=user_query, gcs_files=gcs_files), media_type="text/event-stream")
+        return StreamingResponse(stream_firebase_agent_answers(user_id=user_id, user_query=user_query, gcs_files=gcs_files, session_id=session_id), media_type="text/event-stream")
 
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing Firebase streaming webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/agent-session")
+async def firebase_agent_session_webhook(request: Request):
+    logger.info("Firebase agent session webhook received a request.")
+    try:
+        user_id, _, _, _ = await _extract_firebase_request_data(request)
+        logger.info(f"Received session create request from user: {user_id}")
+        return create_reasoning_engine_session(user_id)
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error processing Firebase agent session webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.delete(f"/{FIREBASE_WEBHOOK_SECRET}/agent-session")
+async def firebase_agent_delete_session_webhook(request: Request):
+    logger.info("Firebase agent session webhook received a request.")
+    try:
+        data = await request.json()
+        user_id = data.get("user_id", "")
+        session_id = data.get("session_id","")
+        logger.info(f"Received session delete request from user: {user_id}, {session_id}")
+        delete_reasoning_engine_session(user_id, session_id)
+        return {"status": "success", "message": "Deleted Session"}
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error processing Firebase agent session webhook: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):

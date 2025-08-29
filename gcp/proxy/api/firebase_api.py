@@ -11,8 +11,10 @@ logger = logging.getLogger(__name__)
 async def stream_firebase_agent_answers(
     user_id: str,
     user_query: str = "",
-    gcs_files: Optional[List[str]] = None
+    gcs_files: Optional[List[str]] = None,
+    session_id: Optional[str] = None
 ):
+    logger.info(f"Processing Firebase message. Data: {user_id}, {user_query}, {gcs_files}, {session_id}")
     if not user_id:
         logger.warning("User ID not provided for streaming.")
         yield json.dumps({"status": "error", "message": "User ID is required"})
@@ -24,7 +26,8 @@ async def stream_firebase_agent_answers(
         async for event_part in stream_agent_answers(
             chat_id=user_id,
             user_query=user_query,
-            gcs_files=gcs_files if gcs_files is not None else []
+            gcs_files=gcs_files if gcs_files is not None else [],
+            session_id=session_id
         ):
             if isinstance(event_part, dict) and "message" in event_part:
                 logger.info(f"streaming dict message: {event_part}")
@@ -40,12 +43,13 @@ async def stream_firebase_agent_answers(
 
 async def handle_firebase_message( user_id: str,
     user_query: str = "",
-    gcs_files: Optional[List[str]] = None) -> Dict[str, Any]:
+    gcs_files: Optional[List[str]] = None,
+    session_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Handles incoming Firebase messages.
     Verifies the Firebase ID token, extracts user_id, and processes the message further.
     """
-    logger.info(f"Processing Firebase message. Data: {user_id}, {user_query}, {gcs_files}")
+    logger.info(f"Processing Firebase message. Data: {user_id}, {user_query}, {gcs_files}, {session_id}")
 
     if not user_id:
         logger.warning("User ID not provided.")
@@ -59,7 +63,8 @@ async def handle_firebase_message( user_id: str,
         async for event_part in stream_agent_answers(
             chat_id=user_id, # Use user_id as chat_id
             user_query=user_query,
-            gcs_files=gcs_files
+            gcs_files=gcs_files,
+            session_id=session_id
         ):
             # event_part can be a string (from text parts) or a dict (from transfer messages)
             if isinstance(event_part, str):

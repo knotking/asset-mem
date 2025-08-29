@@ -45,22 +45,32 @@ def get_or_create_reasoning_engine_session(telegram_chat_id: int) -> Dict[str, A
         session = sessions[-1]
     return session
 
+def create_reasoning_engine_session(user_id: int) -> Dict[str, Any]:
+    user_id_for_session = str(user_id)
+    session = reasoning_engine_resource.create_session(user_id=user_id_for_session)
+    return session
 
+def delete_reasoning_engine_session(user_id: int, session_id: str):
+    user_id_for_session = str(user_id)
+    reasoning_engine_resource.delete_session(user_id=user_id_for_session, session_id=session_id)
 
 
 async def stream_agent_answers(
     chat_id: int,
     user_query: str,
     gcs_files: Optional[List[str]] = None,
+    session_id: Optional[str] = None,
 ):
     if not reasoning_engine_resource:
         yield "Sorry, my AI brain is not connected right now. Please try again later."
         return
-    session = get_or_create_reasoning_engine_session(chat_id)
-    if not session:
-        yield "Sorry, I couldn't create an active session. Please try again later."
-        return
-    session_id = session["id"]
+    if not session_id:
+        logger.info('Session ID not found. trying to create a new one')
+        session = get_or_create_reasoning_engine_session(chat_id)
+        if not session:
+            yield "Sorry, I couldn't create an active session. Please try again later."
+            return
+        session_id = session["id"]
     if gcs_files:
         gcs_files_str = ", ".join(gcs_files)
         message = f"Analyse {gcs_files_str}"

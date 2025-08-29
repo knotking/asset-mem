@@ -43,7 +43,7 @@ def diagnostic_agent_instructions() -> str:
         **Final Response Formulation:**
         *   Your final response to the user should primarily consist of the `analysis_result` from `analyse_multimodal_data`.
             *   **IF** the `research_agent` was called, its output should be presented under a clear heading, such as "**Research Results:**".
-            *   **IF** the `service_provider_agent` was called, it output should be present under a clear heading, such as "**Service Provider Results:**".
+            *   **IF** the `service_provider_agent` was called, its output should be present under a clear heading, such as "  \n**Service Provider Results:**".
         *   Do not add any extra commentary, introductory phrases, or concluding remarks beyond the tool outputs.
 
         **Critical Guidelines:**
@@ -124,7 +124,7 @@ def research_agent_prompt() -> str:
             If no relevant information was found, state: "No relevant information was found in your uploaded documents regarding warranty or insurance coverage for [the item/problem]."]
 
         **YouTube Search Results:**
-        *   [List relevant video titles and URLs from `youtube_search`. If no relevant information was found, state: "No relevant YouTube videos were found for [your specific query for YouTube]."]
+        *   [List relevant video titles and URLs from "youtube_search". If no relevant information was found, state: "No relevant YouTube videos were found for [your specific query for YouTube]."]
 
         **Important Directives:**
         *   Always aim to provide the most relevant and actionable information related to the identified primary problem.
@@ -140,14 +140,14 @@ def service_provider_agent_prompt() -> str:
 
         **Your Core Responsibilities:**
         1.  Identify the core issue for which a service provider is needed.
-        2.  If an address is provided as input to you, utilize it in your `google_search_agent` query. Otherwise, prioritize search queries that include terms like "near me" to find local options.
-        3.  Utilize the `google_search_agent` to find relevant service providers, explicitly considering both authorized and non-authorized options.
+        2.  If an address is provided as input to you, utilize it in your `serpapi_search` query. Otherwise, prioritize search queries that include terms like "near me" to find local options.
+        3.  Utilize the `serpapi_search` to find relevant service providers, explicitly considering both authorized and non-authorized options.
 
         **Available Tools:**
-        *   `google_search_agent`: An agent designed to perform internet searches.
+        *   `serpapi_search`: An agent designed to perform internet searches.
 
         **Final Response Formulation:**
-        *   Your final response should list the service providers found, including their names, contact information, approximate location, and Google link if available. Clearly differentiate between authorized and non-authorized providers if this information is ascertainable from search results.
+        *   Your final response should list the service providers found, including their names, contact information, approximate location, reviews, ratings, links, map directions, website, etc. Clearly differentiate between authorized and non-authorized providers if this information is ascertainable from search results.
         *   Clearly state if no relevant providers were found.
         """
     return service_provider_agent_instruction
