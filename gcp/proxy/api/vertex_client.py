@@ -4,6 +4,7 @@ import vertexai
 from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
+import json
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,35 +29,51 @@ except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
 
+def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
+    """Publishes a structured payload to a secure storage."""
+    try:
+        from google.cloud import pubsub_v1  # <-- Fix import
+        publisher = pubsub_v1.PublisherClient()
+        
+        topic_path = publisher.topic_path(os.environ.get("GCP_PROJECT_ID"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
+        payload = {
+            "gcs_urls": gcs_urls,
+            "user_id": user_id,
+            "user_query": user_query,
+            "source": 'rag-file-upload'  # Add source parameter
+        }
+        data = json.dumps(payload).encode("utf-8")
+        future = publisher.publish(topic_path, data)
+        return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
+    except Exception as e:
+        logger.error(f"Failed to publish data to Pub/Sub: {e}")
+        return {"error": str(e)}  
 
 # --- Reasoning Engine Session Management Functions ---
-def get_or_create_reasoning_engine_session(telegram_chat_id: int) -> Dict[str, Any]:
+def get_or_create_reasoning_engine_session(chat_id: str) -> Dict[str, Any]:
     if not reasoning_engine_resource:
         logger.error("Reasoning Engine not initialized. Cannot manage sessions.")
         raise RuntimeError("AI Agent service not ready.")
-    user_id_for_session = str(telegram_chat_id)
-    sessionsObj = reasoning_engine_resource.list_sessions(user_id=str(user_id_for_session))
+    sessionsObj = reasoning_engine_resource.list_sessions(user_id=chat_id)
     sessions = sessionsObj.get("sessions", [])
     session = None
     if not sessions:
-        logger.info(f"No sessions found for user_id {user_id_for_session}, creating new session.")
-        session = reasoning_engine_resource.create_session(user_id=user_id_for_session)
+        logger.info(f"No sessions found for user_id {chat_id}, creating new session.")
+        session = reasoning_engine_resource.create_session(user_id=chat_id)
     else:
         session = sessions[-1]
     return session
 
-def create_reasoning_engine_session(user_id: int) -> Dict[str, Any]:
-    user_id_for_session = str(user_id)
-    session = reasoning_engine_resource.create_session(user_id=user_id_for_session)
+def create_reasoning_engine_session(user_id: str) -> Dict[str, Any]:
+    session = reasoning_engine_resource.create_session(user_id=user_id)
     return session
 
-def delete_reasoning_engine_session(user_id: int, session_id: str):
-    user_id_for_session = str(user_id)
-    reasoning_engine_resource.delete_session(user_id=user_id_for_session, session_id=session_id)
+def delete_reasoning_engine_session(user_id: str, session_id: str):
+    reasoning_engine_resource.delete_session(user_id=user_id, session_id=session_id)
 
 
 async def stream_agent_answers(
-    chat_id: int,
+    chat_id: str,
     user_query: str,
     gcs_files: Optional[List[str]] = None,
     session_id: Optional[str] = None,
@@ -81,8 +98,10 @@ async def stream_agent_answers(
     else:
         message = user_query
 
+    publish_result = publish_doc_to_secure_store(gcs_files, message, chat_id)
+    logger.info(f"stream_agent_answers:{publish_result}")
     for event in reasoning_engine_resource.stream_query(
-        user_id=str(chat_id), session_id=session_id, message=message
+        user_id=chat_id, session_id=session_id, message=message
     ):
         if parse_response:
         # You can yield the whole event, or just the text/agent_name/etc.

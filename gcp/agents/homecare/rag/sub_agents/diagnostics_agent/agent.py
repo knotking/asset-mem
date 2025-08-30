@@ -1,6 +1,5 @@
 import os
 import uuid
-import json
 import base64
 from google.cloud.storage.client import Client
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
@@ -22,25 +21,6 @@ def before_tool_callback(tool_context: ToolContext, **kwargs):
     # Ensure the user_id is set in the tool context state
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
-def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
-    """Publishes a structured payload to a secure storage."""
-    try:
-        from google.cloud import pubsub_v1  # <-- Fix import
-        publisher = pubsub_v1.PublisherClient()
-        
-        topic_path = publisher.topic_path(os.environ.get("GOOGLE_CLOUD_PROJECT"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
-        payload = {
-            "gcs_urls": gcs_urls,
-            "user_id": user_id,
-            "user_query": user_query,
-            "source": 'diagnostic-agent'  # Add source parameter
-        }
-        data = json.dumps(payload).encode("utf-8")
-        future = publisher.publish(topic_path, data)
-        return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
-    except Exception as e:
-        logger.error(f"Failed to publish data to Pub/Sub: {e}")
-        return {"error": str(e)}  
 
 def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolContext) -> dict:
         """Analyzes multimodal data file."""
@@ -70,7 +50,6 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
             try:
 
                 raw_text = response.candidates[0].content.parts[0].text
-                publish_doc_to_secure_store(gcs_urls=[gcs_url],user_query=user_query, user_id=user_id)
                 return raw_text 
             except Exception as e:
 

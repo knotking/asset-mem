@@ -217,7 +217,7 @@ async def handle_text_message(message: aio_types.Message):
     user_text = message.text
 
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)
-    async for answer_part in stream_agent_answers(chat_id, user_text):
+    async for answer_part in stream_agent_answers(str(chat_id), user_text):
         answer_str = escape_markdown(str(answer_part))
         for part in split_message(answer_str):
             await message.answer(part)

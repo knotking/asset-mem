@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, Optional, List
 import firebase_admin
 from firebase_admin import auth
-from vertex_client import stream_agent_answers
+from vertex_client import stream_agent_answers, publish_doc_to_secure_store
 import json
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,15 @@ async def stream_firebase_agent_answers(
         yield json.dumps({"status": "error", "message": f"Internal server error: {e}"})
 
 
+def handle_firebase_file_upload( user_id: str,
+    user_query: str = "",
+    gcs_files: List[str] = None) -> Dict[str, Any]:
 
-async def handle_firebase_message( user_id: str,
+    result = publish_doc_to_secure_store(gcs_urls=gcs_files, user_query=user_query, user_id=user_id)
+    logger.info(f"handle_firebase_file_upload: {result}")
+    return {"status": "success", "message": "Files are published for upload"}
+
+async def handle_firebase_agent_query( user_id: str,
     user_query: str = "",
     gcs_files: Optional[List[str]] = None,
     session_id: Optional[str] = None) -> Dict[str, Any]:

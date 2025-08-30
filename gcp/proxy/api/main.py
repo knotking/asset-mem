@@ -45,7 +45,7 @@ main_loop = asyncio.get_event_loop()
 
 from gcp_utils import listen_to_event
 from telegram_api import get_telegram_webhook_endpoint
-from firebase_api import handle_firebase_message, stream_firebase_agent_answers
+from firebase_api import handle_firebase_agent_query, stream_firebase_agent_answers, handle_firebase_file_upload
 # Import Vertex AI client logic
 from vertex_client import (
     reasoning_engine_resource,
@@ -81,21 +81,21 @@ async def _extract_firebase_request_data(request: Request) -> (str, str, List[st
     gcs_files = data.get("gcs_files", [])
     return user_id, user_query, gcs_files, session_id
 
-@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-webhook")
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query")
 async def firebase_webhook(request: Request):
-    logger.info("Firebase webhook received a request.")
+    logger.info("Firebase querywebhook received a request.")
     try:
         user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
-        logger.info(f"Firebase webhook data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
+        logger.info(f"Firebase query webhook data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
         
-        return await handle_firebase_message(user_id, user_query, gcs_files, session_id=session_id)
+        return await handle_firebase_agent_query(user_id, user_query, gcs_files, session_id=session_id)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing Firebase webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-stream")
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream")
 async def firebase_streaming_webhook(request: Request):
     logger.info("Firebase streaming webhook received a request.")
     try:
@@ -136,6 +136,20 @@ async def firebase_agent_delete_session_webhook(request: Request):
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing Firebase agent session webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/rag-file-upload")
+async def firebase_webhook_file_upload(request: Request):
+    logger.info("Firebase webhook file upload received a request.")
+    try:
+        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
+        logger.info(f"Firebase webhook file upload data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
+        
+        return handle_firebase_file_upload(user_id, user_query, gcs_files)
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error processing Firebase webhook: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):
