@@ -60,17 +60,18 @@ async def handle_firebase_message( user_id: str,
         logger.info(f"Authenticated user_id: {user_id}")
 
         full_response_content = []
-        async for event_part in stream_agent_answers(
+        async for event in stream_agent_answers(
             chat_id=user_id, # Use user_id as chat_id
             user_query=user_query,
             gcs_files=gcs_files,
-            session_id=session_id
+            session_id=session_id,
+            parse_response=False
         ):
             # event_part can be a string (from text parts) or a dict (from transfer messages)
-            if isinstance(event_part, str):
-                full_response_content.append(event_part)
-            elif isinstance(event_part, dict) and "message" in event_part:
-                full_response_content.append(event_part["message"])
+            parts = event.get("content", {}).get("parts", [])
+            for part in parts:
+                if isinstance(part, dict) and "text" in part and part["text"]:
+                    full_response_content.append(part['text'])
             # You might need to refine how you process event_part based on its actual structure
 
         final_response = " ".join(full_response_content).strip()
@@ -80,5 +81,5 @@ async def handle_firebase_message( user_id: str,
         return {"status": "success", "message": final_response}
 
     except Exception as e:
-        logger.error(f"Error verifying Firebase ID token or processing message: {e}")
+        logger.error(f"Error processing message: {e}")
         return {"status": "error", "message": f"Internal server error: {e}"}

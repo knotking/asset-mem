@@ -60,6 +60,7 @@ async def stream_agent_answers(
     user_query: str,
     gcs_files: Optional[List[str]] = None,
     session_id: Optional[str] = None,
+    parse_response: Optional[bool] = True
 ):
     if not reasoning_engine_resource:
         yield "Sorry, my AI brain is not connected right now. Please try again later."
@@ -71,6 +72,7 @@ async def stream_agent_answers(
             yield "Sorry, I couldn't create an active session. Please try again later."
             return
         session_id = session["id"]
+        logger.info(f"Using session ID: {session_id}")
     if gcs_files:
         gcs_files_str = ", ".join(gcs_files)
         message = f"Analyse {gcs_files_str}"
@@ -82,18 +84,21 @@ async def stream_agent_answers(
     for event in reasoning_engine_resource.stream_query(
         user_id=str(chat_id), session_id=session_id, message=message
     ):
+        if parse_response:
         # You can yield the whole event, or just the text/agent_name/etc.
-        transfer_message = extract_event_data_with_transfer_target(event)
-        if transfer_message:
-            yield transfer_message
+            transfer_message = extract_event_data_with_transfer_target(event)
+            if transfer_message:
+                yield transfer_message
+            else:
+                # Extract and yield text parts
+                parts = event.get("content", {}).get("parts", [])
+                for part in parts:
+                    if isinstance(part, dict) and "text" in part and part["text"]:
+                        yield f"[{prettify_name(event.get('author',''))}]: {part['text']}"
         else:
-            # Extract and yield text parts
-            parts = event.get("content", {}).get("parts", [])
-            for part in parts:
-                if isinstance(part, dict) and "text" in part and part["text"]:
-                    yield f"[{prettify_name(event.get('author',''))}]: {part['text']}"
+            yield event
 
-
+        
 def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
     """
     Extracts agent, tool names (can be multiple), and specifically the transfer target agent
