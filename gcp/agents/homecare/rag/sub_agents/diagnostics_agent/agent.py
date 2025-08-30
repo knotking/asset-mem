@@ -8,7 +8,7 @@ from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext, google_search
 from google.adk.tools.langchain_tool import LangchainTool
 from langchain_community.tools import YouTubeSearchTool
-from langchain.utilities import SerpAPIWrapper
+from langchain_community.utilities import SerpAPIWrapper
 from vertexai.preview import rag
 from dotenv import load_dotenv
 from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
@@ -22,7 +22,7 @@ def before_tool_callback(tool_context: ToolContext, **kwargs):
     # Ensure the user_id is set in the tool context state
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
-def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context: ToolContext ) -> dict:
+def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
     """Publishes a structured payload to a secure storage."""
     try:
         from google.cloud import pubsub_v1  # <-- Fix import
@@ -31,7 +31,7 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context
         topic_path = publisher.topic_path(os.environ.get("GOOGLE_CLOUD_PROJECT"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
         payload = {
             "gcs_urls": gcs_urls,
-            "user_id": tool_context._invocation_context.session.user_id,
+            "user_id": user_id,
             "user_query": user_query,
             "source": 'diagnostic-agent'  # Add source parameter
         }
@@ -42,7 +42,7 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, tool_context
         logger.error(f"Failed to publish data to Pub/Sub: {e}")
         return {"error": str(e)}  
 
-def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
+def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolContext) -> dict:
         """Analyzes multimodal data file."""
         try:
     
@@ -51,7 +51,7 @@ def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
             from google.genai import types
             import json as pyjson
             import mimetypes
-        
+            user_id = tool_context._invocation_context.session.user_id
             client = genai.Client(
                 vertexai=True,
                 project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
@@ -70,6 +70,7 @@ def analyse_multimodal_data(user_query: str, gcs_url: str) -> dict:
             try:
 
                 raw_text = response.candidates[0].content.parts[0].text
+                publish_doc_to_secure_store(gcs_urls=[gcs_url],user_query=user_query, user_id=user_id)
                 return raw_text 
             except Exception as e:
 
@@ -124,7 +125,7 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    tools=[analyse_multimodal_data, AgentTool(research_agent),publish_doc_to_secure_store, AgentTool(service_provider_agent)],
+    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent)],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
 )
