@@ -95,11 +95,16 @@ async def stream_agent_answers(
         message = f"Analyse {gcs_files_str}"
         if user_query:
             message += f" and user asked: {user_query}"
+
+        # Publish document to secure store
+        publish_result = publish_doc_to_secure_store(gcs_files, message, chat_id)
+        if "error" in publish_result:
+            yield f"Error publishing document: {publish_result['error']}"
+            return
+        logger.info(f"stream_agent_answers: {publish_result}")
     else:
         message = user_query
 
-    publish_result = publish_doc_to_secure_store(gcs_files, message, chat_id)
-    logger.info(f"stream_agent_answers:{publish_result}")
     for event in reasoning_engine_resource.stream_query(
         user_id=chat_id, session_id=session_id, message=message
     ):
