@@ -5,7 +5,8 @@ from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
 import json
-from pydantic import BaseModel
+# from pydantic import BaseModel
+from .models import AgentRequest
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -29,12 +30,6 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
-
-class AgentQueryRequest(BaseModel):
-    user_query: str
-    context_doc_uris: Optional[List[str]] = None
-    diagnosis_uris: Optional[List[str]] = None
-    session_id: Optional[str] = None
 
 def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
     """Publishes a structured payload to a secure storage."""
@@ -80,22 +75,21 @@ def delete_reasoning_engine_session(user_id: str, session_id: str):
 
 
 async def stream_agent_answers(
-    chat_id: str,
-    request: AgentQueryRequest,
+    request: AgentRequest,
     parse_response: Optional[bool] = True
 ):
     if not reasoning_engine_resource:
         yield "Sorry, my AI brain is not connected right now. Please try again later."
         return
-    
+    user_id = request.user_id
     session_id = request.session_id
     user_query = request.user_query
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
-
+    property_address = request.property_address
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
-        session = get_or_create_reasoning_engine_session(chat_id)
+        session = get_or_create_reasoning_engine_session(user_id)
         if not session:
             yield "Sorry, I couldn't create an active session. Please try again later."
             return
@@ -109,11 +103,14 @@ async def stream_agent_answers(
 
     if diagnosis_uris:
         payload["diagnosis_uris"] = diagnosis_uris
+    
+    if property_address:
+        payload["property_address"] = property_address
 
     message = json.dumps(payload)
 
     for event in reasoning_engine_resource.stream_query(
-        user_id=chat_id, session_id=session_id, message=message
+        user_id=user_id, session_id=session_id, message=message
     ):
         if parse_response:
         # You can yield the whole event, or just the text/agent_name/etc.
