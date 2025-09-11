@@ -33,7 +33,8 @@ knowledge_base_agent = Agent(
     tools=[
         ask_knowledge_base_retrieval,
     ],
-    disallow_transfer_to_parent=True
+    disallow_transfer_to_parent=True,
+    output_key='knowledge_base_results'
 )
 
 __all__ = ["knowledge_base_agent"]

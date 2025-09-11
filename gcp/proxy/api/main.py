@@ -69,7 +69,7 @@ async def health_check():
 async def telegram_webhook(request: Request):
     return await get_telegram_webhook_endpoint()(request)
 
-async def _extract_firebase_request_data(request: Request) -> (str, str, List[str]):
+async def _extract_firebase_request_data(request: Request) -> (str, str, List[str], List[str], str):
     data = await request.json()
     user_id = data.get("user_id", "")
     if not user_id:
@@ -78,17 +78,18 @@ async def _extract_firebase_request_data(request: Request) -> (str, str, List[st
 
     session_id = data.get("session_id", "")
     user_query = data.get("message", "")
-    gcs_files = data.get("gcs_files", [])
-    return user_id, user_query, gcs_files, session_id
+    context_doc_uris = data.get("context_doc_uris", [])
+    diagnosis_uris = data.get("diagnosis_uris", [])
+    return user_id, user_query, context_doc_uris, diagnosis_uris, session_id
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query")
 async def firebase_webhook(request: Request):
     logger.info("Firebase querywebhook received a request.")
     try:
-        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
-        logger.info(f"Firebase query webhook data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
+        user_id, user_query, context_doc_uris, diagnosis_uris, session_id = await _extract_firebase_request_data(request)
+        logger.info(f"Firebase query webhook data: {'user_id': {user_id}, 'user_query': {user_query}, 'context_doc_uris': {context_doc_uris}, 'diagnosis_uris': {diagnosis_uris}}")
         
-        return await handle_firebase_agent_query(user_id, user_query, gcs_files, session_id=session_id)
+        return await handle_firebase_agent_query(user_id, user_query, context_doc_uris, diagnosis_uris, session_id=session_id)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
@@ -99,9 +100,9 @@ async def firebase_webhook(request: Request):
 async def firebase_streaming_webhook(request: Request):
     logger.info("Firebase streaming webhook received a request.")
     try:
-        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
+        user_id, user_query, context_doc_uris, diagnosis_uris, session_id = await _extract_firebase_request_data(request)
         
-        return StreamingResponse(stream_firebase_agent_answers(user_id=user_id, user_query=user_query, gcs_files=gcs_files, session_id=session_id), media_type="text/event-stream")
+        return StreamingResponse(stream_firebase_agent_answers(user_id=user_id, user_query=user_query, context_doc_uris=context_doc_uris, diagnosis_uris=diagnosis_uris, session_id=session_id), media_type="text/event-stream")
 
     except ValueError as e:
         return {"status": "error", "message": str(e)}
@@ -113,7 +114,7 @@ async def firebase_streaming_webhook(request: Request):
 async def firebase_agent_session_webhook(request: Request):
     logger.info("Firebase agent session webhook received a request.")
     try:
-        user_id, _, _, _ = await _extract_firebase_request_data(request)
+        user_id, _, _, _, _ = await _extract_firebase_request_data(request)
         logger.info(f"Received session create request from user: {user_id}")
         return create_reasoning_engine_session(user_id)
     except ValueError as e:
@@ -142,10 +143,10 @@ async def firebase_agent_delete_session_webhook(request: Request):
 async def firebase_webhook_file_upload(request: Request):
     logger.info("Firebase webhook file upload received a request.")
     try:
-        user_id, user_query, gcs_files, session_id = await _extract_firebase_request_data(request)
-        logger.info(f"Firebase webhook file upload data: {{'user_id': {user_id}, 'user_query': {user_query}, 'gcs_files': {gcs_files}}}")
+        user_id, user_query, context_doc_uris, diagnosis_uris, session_id = await _extract_firebase_request_data(request)
+        logger.info(f"Firebase webhook file upload data: {'user_id': {user_id}, 'user_query': {user_query}, 'context_doc_uris': {context_doc_uris}, 'diagnosis_uris': {diagnosis_uris}}")
         
-        return handle_firebase_file_upload(user_id, user_query, gcs_files)
+        return handle_firebase_file_upload(user_id, user_query, context_doc_uris)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:

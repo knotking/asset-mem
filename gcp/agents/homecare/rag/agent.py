@@ -7,10 +7,12 @@ from .prompts import root_agent_instructions,doculink_agent_system_instruction
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_uploads_agent import user_uploads_agent
 from .sub_agents.diagnostics_agent import diagnostic_agent
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from .agent_inputs import DiagnosisInput, DocsInput
 
 
 load_dotenv()
-
 
 def before_tool_callback(tool_context: ToolContext, **kwargs):
     # Ensure the user_id is set in the tool context state
@@ -21,6 +23,7 @@ doculink_agent = Agent(
     name='doculink_agent',
     description=("Agent that manages and executes document retrieval-related tasks."),
     instruction=doculink_agent_system_instruction(),
+    input_schema=DocsInput,
     tools=[
         AgentTool(user_uploads_agent),
         AgentTool(knowledge_base_agent),
@@ -29,11 +32,12 @@ doculink_agent = Agent(
     before_tool_callback=before_tool_callback
 )
 
-root_agent = Agent( 
+root_agent = Agent(
     model='gemini-2.5-flash-lite',
     name='homecare_agent',
     description=("Agent that manages and executes homecare-related tasks."),
     instruction=root_agent_instructions(),
+    input_schema=DiagnosisInput,
     sub_agents=[
         diagnostic_agent,
         doculink_agent

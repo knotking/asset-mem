@@ -5,6 +5,7 @@ from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
 import json
+from pydantic import BaseModel
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,6 +29,12 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
+
+class AgentQueryRequest(BaseModel):
+    user_query: str
+    context_doc_uris: Optional[List[str]] = None
+    diagnosis_uris: Optional[List[str]] = None
+    session_id: Optional[str] = None
 
 def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
     """Publishes a structured payload to a secure storage."""
@@ -74,14 +81,18 @@ def delete_reasoning_engine_session(user_id: str, session_id: str):
 
 async def stream_agent_answers(
     chat_id: str,
-    user_query: str,
-    gcs_files: Optional[List[str]] = None,
-    session_id: Optional[str] = None,
+    request: AgentQueryRequest,
     parse_response: Optional[bool] = True
 ):
     if not reasoning_engine_resource:
         yield "Sorry, my AI brain is not connected right now. Please try again later."
         return
+    
+    session_id = request.session_id
+    user_query = request.user_query
+    context_doc_uris = request.context_doc_uris
+    diagnosis_uris = request.diagnosis_uris
+
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(chat_id)
@@ -90,20 +101,16 @@ async def stream_agent_answers(
             return
         session_id = session["id"]
         logger.info(f"Using session ID: {session_id}")
-    if gcs_files:
-        gcs_files_str = ", ".join(gcs_files)
-        message = f"Analyse {gcs_files_str}"
-        if user_query:
-            message += f" and user asked: {user_query}"
+    
+    payload: Dict[str, Any] = {"user_query": user_query}
 
-        # Publish document to secure store
-        publish_result = publish_doc_to_secure_store(gcs_files, message, chat_id)
-        if "error" in publish_result:
-            yield f"Error publishing document: {publish_result['error']}"
-            return
-        logger.info(f"stream_agent_answers: {publish_result}")
-    else:
-        message = user_query
+    if context_doc_uris:
+        payload["context_doc_uris"] = context_doc_uris
+
+    if diagnosis_uris:
+        payload["diagnosis_uris"] = diagnosis_uris
+
+    message = json.dumps(payload)
 
     for event in reasoning_engine_resource.stream_query(
         user_id=chat_id, session_id=session_id, message=message

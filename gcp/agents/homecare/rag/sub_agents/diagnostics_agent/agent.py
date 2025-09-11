@@ -14,6 +14,7 @@ from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, r
 import sys
 import logging
 from ..user_uploads_agent.agent import ask_user_uploads_retreival
+from ...agent_inputs import DiagnosisInput, DocsInput
 logger = logging.getLogger(__name__)
 load_dotenv()
 
@@ -88,6 +89,7 @@ research_agent = Agent(
         ask_user_uploads_retreival,
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query."),
     ],
+    input_schema=DocsInput
 )
 
 service_provider_agent = Agent(
@@ -107,6 +109,7 @@ diagnostic_agent = Agent(
     tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent)],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
+    input_schema=DiagnosisInput
 )
 
 __all__ = ["diagnostic_agent"]

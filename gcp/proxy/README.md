@@ -49,7 +49,7 @@ You can also do this via a `curl` command (replace `YOUR_BOT_TOKEN` and `YOUR_FU
 Production Testing Bot
 
 ```bash
-curl -F "url=https://telegram-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
+curl -F "url=https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      -F "secret_token=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
      "https://api.telegram.org/bot8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s/setWebhook"
 ```
@@ -178,7 +178,8 @@ gcloud run deploy homecare-agent-proxy \
  --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
  --set-env-vars="FIREBASE_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
  --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \
- --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription"
+ --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription" \
+ --set-env-vars="GCS_BUCKET=homegeek-user-data"
 
 gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
 gcloud pubsub subscriptions create user-upload-topic-subscription --topic=user-upload-topic
