@@ -5,7 +5,7 @@ import firebase_admin
 from firebase_admin import auth
 from vertex_client import stream_agent_answers, publish_doc_to_secure_store
 import json
-from .models import AgentRequest
+from models import AgentRequest
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +33,8 @@ async def stream_firebase_agent_answers(request: AgentRequest):
         yield json.dumps({"status": "error", "message": f"Internal server error: {e}"})
 
 
-def handle_firebase_file_upload( user_id: str,
-    user_query: str = "",
-    context_doc_uris: List[str] = None) -> Dict[str, Any]:
-
-    result = publish_doc_to_secure_store(gcs_urls=context_doc_uris, user_query=user_query, user_id=user_id)
+def handle_firebase_file_upload( request: AgentRequest) -> Dict[str, Any]:
+    result = publish_doc_to_secure_store(gcs_urls=request.context_doc_uris, user_query=request.user_query, user_id=request.user_id)
     logger.info(f"handle_firebase_file_upload: {result}")
     return {"status": "success", "message": "Files are published for upload"}
 

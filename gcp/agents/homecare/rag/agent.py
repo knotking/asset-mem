@@ -34,7 +34,7 @@ doculink_agent = Agent(
 
 root_agent = Agent(
     model='gemini-2.5-flash-lite',
-    name='homecare_agent',
+    name='property_agent',
     description=("Agent that manages and executes homecare-related tasks."),
     instruction=root_agent_instructions(),
     input_schema=DiagnosisInput,

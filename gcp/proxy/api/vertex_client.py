@@ -6,7 +6,7 @@ from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
 import json
 # from pydantic import BaseModel
-from .models import AgentRequest
+from models import AgentRequest
  
 # Configure logging
 logger = logging.getLogger(__name__)

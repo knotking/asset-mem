@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Union
 import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
-from .models import AgentRequest
+from models import AgentRequest
 
 
 from dotenv import load_dotenv
@@ -105,15 +105,9 @@ async def firebase_webhook(request: Request):
     logger.info("Firebase querywebhook received a request.")
     try:
         request_data = await _extract_firebase_request_data(request)
-        user_id = request_data.user_id
-        user_query = request_data.user_query
-        context_doc_uris = request_data.context_doc_uris
-        diagnosis_uris = request_data.diagnosis_uris
-        session_id = request_data.session_id
-        property_address = request_data.property_address
-        logger.info(f"Firebase query webhook data: {'user_id': {user_id}, 'user_query': {user_query}, 'context_doc_uris': {context_doc_uris}, 'diagnosis_uris': {diagnosis_uris}}")
+        logger.info(f"Firebase query webhook data: {request_data.model_dump_json()}")
         
-        return await handle_firebase_agent_query(user_id, user_query, context_doc_uris, diagnosis_uris, session_id=session_id, property_address=property_address)
+        return await handle_firebase_agent_query(request_data)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
@@ -124,15 +118,8 @@ async def firebase_webhook(request: Request):
 async def firebase_streaming_webhook(request: Request):
     logger.info("Firebase streaming webhook received a request.")
     try:
-        request_data = await _extract_firebase_request_data(request)
-        user_id = request_data.user_id
-        user_query = request_data.user_query
-        context_doc_uris = request_data.context_doc_uris
-        diagnosis_uris = request_data.diagnosis_uris
-        session_id = request_data.session_id
-        property_address = request_data.property_address
-        
-        return StreamingResponse(stream_firebase_agent_answers(user_id=user_id, user_query=user_query, context_doc_uris=context_doc_uris, diagnosis_uris=diagnosis_uris, session_id=session_id, property_address=property_address), media_type="text/event-stream")
+        request_data = await _extract_firebase_request_data(request)    
+        return StreamingResponse(stream_firebase_agent_answers(request_data), media_type="text/event-stream")
 
     except ValueError as e:
         return {"status": "error", "message": str(e)}
@@ -175,14 +162,9 @@ async def firebase_webhook_file_upload(request: Request):
     logger.info("Firebase webhook file upload received a request.")
     try:
         request_data = await _extract_firebase_request_data(request)
-        user_id = request_data.user_id
-        user_query = request_data.user_query
-        context_doc_uris = request_data.context_doc_uris
-        diagnosis_uris = request_data.diagnosis_uris
-        session_id = request_data.session_id
-        logger.info(f"Firebase webhook file upload data: {'user_id': {user_id}, 'user_query': {user_query}, 'context_doc_uris': {context_doc_uris}, 'diagnosis_uris': {diagnosis_uris}}")
+        logger.info(f"Firebase webhook file upload data: {request_data.model_dump_json()}")
         
-        return handle_firebase_file_upload(user_id, user_query, context_doc_uris)
+        return handle_firebase_file_upload(request_data)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:

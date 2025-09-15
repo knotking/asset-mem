@@ -34,14 +34,17 @@ FIREBASE_WEBHOOK_SECRET = "92be3f5be13328fe265af604b0bde2061e18662203a83b5b56921
 async def test_firebase_webhook_success():
     with TestClient(app) as client:
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-webhook",
+            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query",
             json={
                 "user_id": "test_user_id",
-                "message": "Give me troubleshooting tips for washing machine",
-                "gcs_files": []
+                "user_query": "Give me troubleshooting tips for washing machine",
+                "diagnosis_uris": [],
+                "context_doc_uris": [],
+                "property_address": "",
+                "session_id": ""
             }
         )
-        print(f"test_firebase_webhook_success Response: {response.json()}")
+        print(f"test_firebase-agent-query_success Response: {response.json()}")
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     assert "message" in response.json()
@@ -50,10 +53,15 @@ async def test_firebase_webhook_success():
 async def test_firebase_webhook_no_user_id():
     with TestClient(app) as client:
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-webhook",
-            json={"message": "Give me troubleshooting tips for washing machine"}
+            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query",
+            json={"user_query": "Give me troubleshooting tips for washing machine",
+                "diagnosis_uris": [],
+                "context_doc_uris": [],
+                "property_address": "",
+                "session_id": ""
+            }
         )
-        print(f"test_firebase_webhook_no_user_id Response: {response.json()}")
+        print(f"test_firebase-agent-query_no_user_id Response: {response.json()}")
     assert response.status_code == 200
     assert response.json()["status"] == "error"
     assert "User ID is required" in response.json()["message"]
@@ -62,11 +70,14 @@ async def test_firebase_webhook_no_user_id():
 async def test_firebase_diagnostic_mode_success():
     with TestClient(app) as client:
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-stream",
+            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream",
             json={
                 "user_id": "test_user_id",
-                "message": "Analyse",
-                "gcs_files": ["gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg"]
+                "user_query": "Analyse",
+                "diagnosis_uris": ["gs://homegeek-user-data/uploads/538445573/photo_AgACAgUAAxkBAAICh2ii4UNlQz3Em4n68KsIVjLjZq5eAAJPxTEb3vYZVQ5WYEQ0SL0UAQADAgADeQADNgQ_1755504998.jpg"],
+                "context_doc_uris": [],
+                "property_address": "",
+                "session_id": ""
             },
             # timeout=None is not needed for TestClient
         )
@@ -82,15 +93,19 @@ async def test_firebase_diagnostic_mode_success():
 async def test_firebase_streaming_webhook_success():
     with TestClient(app) as client:
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-stream",
+            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream",
             json={
                 "user_id": "test_user_id",
-                "message": "Give me troubleshooting tips for washing machine",
-                "gcs_files": []
+                "session_id": "",
+                "user_query": "Give me troubleshooting tips for washing machine",
+                "diagnosis_uris": [],
+                "context_doc_uris": [],
+                "property_address": "",
+                
             },
             # timeout=None is not needed for TestClient
         )
-        print(f"test_firebase_streaming_webhook_success Response: {response.text}")
+        print(f"test_firebase-agent-stream_success Response: {response.text}")
     assert response.status_code == 200
     # For streaming, we need to read the content as it comes in
     # This is a basic check; you might want more sophisticated parsing for actual streamed events.
@@ -102,11 +117,16 @@ async def test_firebase_streaming_webhook_success():
 async def test_firebase_streaming_webhook_no_user_id():
     with TestClient(app) as client:
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-stream",
-            json={"message": "Give me troubleshooting tips for washing machine"},
+            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream",
+            json={"user_query": "Give me troubleshooting tips for washing machine",
+                "diagnosis_uris": [],
+                "context_doc_uris": [],
+                "property_address": "",
+                "session_id": ""
+            },
             # timeout=None is not needed for TestClient
         )
-        print(f"test_firebase_streaming_webhook_no_user_id Response: {response.text}")
+        print(f"test_firebase-agent-stream_no_user_id Response: {response.text}")
     assert response.status_code == 200
     content = response.text
     assert "User ID is required" in content
