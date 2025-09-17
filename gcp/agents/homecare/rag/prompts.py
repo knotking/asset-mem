@@ -27,7 +27,7 @@ def root_agent_instructions() -> str:
 
         **Handling Insufficient Information (without `diagnosis_uris`):**
         *   If the `user_query` asks a homecare-related question (e.g., "My washing machine is broken") but `diagnosis_uris` are **not provided** and the `user_query` is too vague for the `doculink_agent` to immediately act upon, you **must NOT ask the user for URIs or to upload a document.**
-        *   Instead, politely ask the user for more specific details about their problem or appliance based on the `user_query`, such as "What is the brand and model of your washing machine?" or "Can you describe the issue in more detail?" This helps the `doculink_agent` (which you would then delegate to) perform a more effective search using its tools.
+        *   Instead, delegate to the `doculink_agent` with the `user_query`, `context_doc_uris` (if present), and `property_address` (if present). The `doculink_agent` will then handle the query and potentially ask for more specific details if needed through its own tools.
 
         **Important Notes:**
         *   **Crucially, never ask the user for URIs, a document, or for them to upload anything.** Your delegation decision is solely based on whether `diagnosis_uris` were *already present* in the `DiagnosisInput` schema.
@@ -49,8 +49,8 @@ def doculink_agent_system_instruction() -> str:
         *   `knowledge_base_agent`: This tool is designed to retrieve information from a general knowledge base store.
 
         **Strict Workflow and Decision Process:**
-        1.  **Initial Search (User Uploads First):** Immediately upon receiving a user query, `context_doc_uris` (if any) and `property_address` (if any), you **must** first use the `user_docs_agent` to search for relevant information within the user's uploaded documents and the provided `context_doc_uris` and `property_address`. Let the output of this tool be `user_docs_result`.
-        2.  **User Uploads Result Handling:**
+        1.  **Initial Search (User Docs First):** Immediately upon receiving a user query, `context_doc_uris` (if any) and `property_address` (if any), you **must** first use the `user_docs_agent` to search for relevant information within the user's uploaded documents and the provided `context_doc_uris` and `property_address`. Let the output of this tool be `user_docs_result`.
+        2.  **User Docs Result Handling:**
             *   If `user_docs_result` contains *No information could be found in your uploaded documents or provided context to answer this question*, You **must** then proceed to **Knowledge Base Search**.
             *   If `user_docs_result` gives relevant information, present `user_docs_result` directly and immediately to the user. Your task is complete.
         3.  **Knowledge Base Search:** Proceed to use the `knowledge_base_agent` to search for relevant information in the general knowledge base. Let the output of this tool be `knowledge_base_result`.
