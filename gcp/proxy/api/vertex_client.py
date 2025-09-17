@@ -192,7 +192,7 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         result_parts = [f"{prettify_name(author_agent)}"]
 
         if transfer_target_agent:
-            result_parts.append(f"➡️ {prettify_name(transfer_target_agent)}")
+            result_parts.append(f"TransferredTo: {prettify_name(transfer_target_agent)}")
 
         if called_tools and not transfer_target_agent:
             result_parts.append(f"Executing: {', '.join(format_name(tool, bold=False) for tool in called_tools)}")
