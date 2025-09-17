@@ -47,7 +47,7 @@
               {
                 "id": "adk-a317722d-d744-420e-9fd9-859af527c04b",
                 "args": {
-                  "agent_name": "ask_user_uploads_agent"
+                  "agent_name": "ask_user_docs_agent"
                 },
                 "name": "transfer_to_agent"
               },
@@ -115,7 +115,7 @@
               {
                 "id": "adk-a317722d-d744-420e-9fd9-859af527c04b",
                 "args": {
-                  "agent_name": "ask_user_uploads_agent"
+                  "agent_name": "ask_user_docs_agent"
                 },
                 "name": "transfer_to_agent"
               },
@@ -192,7 +192,7 @@
                 "args": {
                   "request": "troubleshooting steps for washing machine"
                 },
-                "name": "ask_user_uploads_agent"
+                "name": "ask_user_docs_agent"
               },
               {
                 "id": "adk-70a4ca21-0858-4d6d-9a49-d980b0eae974",
@@ -274,7 +274,7 @@
                 "args": {
                   "request": "details of HVAC"
                 },
-                "name": "ask_user_uploads_agent"
+                "name": "ask_user_docs_agent"
               }
             ],
             "intermediate_responses": []

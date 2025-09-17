@@ -12,14 +12,14 @@ from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from vertexai.preview import rag
 from dotenv import load_dotenv
-from .prompts import user_uploads_agent_instruction
+from .prompts import user_docs_agent_instruction
 import logging
 from ...agent_inputs import DocsInput
     
 
 load_dotenv()
 
-logger: logging.Logger = logging.getLogger("user_uploads_agent")
+logger: logging.Logger = logging.getLogger("user_docs_agent")
 
 def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
     """
@@ -56,7 +56,7 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
     logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
     return file_ids
 
-def ask_user_uploads_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):
+def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):
 
     
     user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
@@ -84,17 +84,17 @@ def ask_user_uploads_retreival( user_query: str, context_doc_uris: Optional[List
         else [context.text for context in response.contexts.contexts]
     )
 
-user_uploads_agent = Agent(
+user_docs_agent = Agent(
     model='gemini-2.5-flash',
-    name='ask_user_uploads_agent',
-    instruction=user_uploads_agent_instruction(),
+    name='ask_user_docs_agent',
+    instruction=user_docs_agent_instruction(),
     input_schema=DocsInput,
     tools=[
-        ask_user_uploads_retreival
+        ask_user_docs_retreival
     ],
     disallow_transfer_to_parent=True,
-    output_key='user_uploads_result'
+    output_key='user_docs_result'
 
 )
 
-__all__ = ["user_uploads_agent"]
+__all__ = ["user_docs_agent"]

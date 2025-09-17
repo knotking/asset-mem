@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
 import sys
 import logging
-from ..user_uploads_agent.agent import ask_user_uploads_retreival
+from ..user_docs_agent.agent import ask_user_docs_retreival
 from ...agent_inputs import DiagnosisInput, DocsInput
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -86,7 +86,7 @@ research_agent = Agent(
     instruction=research_agent_prompt(),
     tools=[
         AgentTool(agent=google_search_agent),
-        ask_user_uploads_retreival,
+        ask_user_docs_retreival,
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query."),
     ],
     input_schema=DocsInput

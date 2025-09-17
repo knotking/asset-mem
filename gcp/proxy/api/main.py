@@ -87,7 +87,7 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
         raise ValueError("User ID is required")
 
     session_id = data.get("session_id", "")
-    user_query = data.get("message", "Analyse")
+    user_query = data.get("user_query", "Analyse")
     context_doc_uris = data.get("context_doc_uris", [])
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")

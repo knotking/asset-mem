@@ -5,7 +5,7 @@ from google.adk.tools import ToolContext
 from dotenv import load_dotenv
 from .prompts import root_agent_instructions,doculink_agent_system_instruction
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
-from .sub_agents.user_uploads_agent import user_uploads_agent
+from .sub_agents.user_docs_agent import user_docs_agent
 from .sub_agents.diagnostics_agent import diagnostic_agent
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -25,7 +25,7 @@ doculink_agent = Agent(
     instruction=doculink_agent_system_instruction(),
     input_schema=DocsInput,
     tools=[
-        AgentTool(user_uploads_agent),
+        AgentTool(user_docs_agent),
         AgentTool(knowledge_base_agent),
     ],
     disallow_transfer_to_parent=True,

@@ -20,7 +20,7 @@ sys.modules["main"] = main
 class TestPubSubToTelegram(unittest.TestCase):
     @patch('main.import_to_rag_corpus')
     @patch('main.requests.post')
-    def test_pubsub_to_user_uploads_success(self, mock_post, mock_import):
+    def test_pubsub_to_user_docs_success(self, mock_post, mock_import):
         # Arrange
         gcs_urls = ["gs://bucket/file1.txt"]
         user_id = "123"
@@ -40,7 +40,7 @@ class TestPubSubToTelegram(unittest.TestCase):
         mock_post.return_value.text = "OK"
 
         # Act
-        main.pubsub_to_user_uploads(event, context)
+        main.pubsub_to_user_docs(event, context)
 
         # Assert
         mock_import.assert_called_once_with(gcs_urls)
@@ -51,7 +51,7 @@ class TestPubSubToTelegram(unittest.TestCase):
 
     @patch('main.import_to_rag_corpus')
     @patch('main.requests.post')
-    def test_pubsub_to_user_uploads_missing_fields(self, mock_post, mock_import):
+    def test_pubsub_to_user_docs_missing_fields(self, mock_post, mock_import):
         # Arrange
         payload = {
             "user_query": "test"
@@ -62,7 +62,7 @@ class TestPubSubToTelegram(unittest.TestCase):
         context = None
 
         # Act
-        main.pubsub_to_user_uploads(event, context)
+        main.pubsub_to_user_docs(event, context)
 
         # Assert
         mock_import.assert_not_called()

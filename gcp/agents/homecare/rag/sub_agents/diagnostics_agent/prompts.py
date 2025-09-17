@@ -47,8 +47,8 @@ def diagnostic_agent_instructions() -> str:
         
         **Final Response Formulation:**
         *   Your final response to the user should primarily consist of the `analysis_result` from `analyse_multimodal_data`.
-            *   **IF** the `research_agent` was called, its output should be presented under a clear heading, such as "**Research Results:**".
-            *   **IF** the `service_provider_agent` was called, its output should be present under a clear heading, such as "\n\n**Service Provider Results:**".
+            *   **IF** the `research_agent` was called, its output should be presented under a clear heading, such as "### Research Results:".
+            *   **IF** the `service_provider_agent` was called, its output should be present under a clear heading, such as "### Service Provider Results:".
         *   Do not add any extra commentary, introductory phrases, or concluding remarks beyond the tool outputs.
 
         **Critical Guidelines:**
@@ -92,12 +92,12 @@ def research_agent_prompt() -> str:
         **Your Core Task and Intelligent Query Formulation:**
         1.  **Analyze Input for Primary Problem:** Upon receiving the analysis summary, your **absolute first priority** is to intelligently identify and extract the **core problem, issue, or primary subject** described. For instance, if the summary mentions "significant white scratch marks and scuffing on a car," then "car scratch repair" or "remove car scuffs" are the core problem. Details like brand names ("Pirelli") are secondary unless they are directly related to the *cause* or *solution* of the primary problem.
         2.  **Formulate Targeted Queries:** Use this identified core problem as the central theme for generating highly targeted search queries for your tools.
-            *   **`ask_user_uploads_retreival`**: Retrieves relevant warranty and insurance coverage from user-uploaded documents, utilizing any provided `context_doc_uris` and `property_address`. The query for this tool should dynamically include the `property_address` to ensure that the warranty or insurance fetched is for the specified property (e.g., "warranty for [item] at [property_address]", "insurance coverage for [item] at [property_address]"). Ensure the query for this tool is still relevant to the *item* that has the problem, not just the problem itself (e.g., "car warranty," "car insurance coverage").
+            *   **`ask_user_docs_retreival`**: Retrieves relevant warranty and insurance coverage from user-uploaded documents, utilizing any provided `context_doc_uris` and `property_address`. The query for this tool should dynamically include the `property_address` to ensure that the warranty or insurance fetched is for the specified property (e.g., "warranty for [item] at [property_address]", "insurance coverage for [item] at [property_address]"). Ensure the query for this tool is still relevant to the *item* that has the problem, not just the problem itself (e.g., "car warranty," "car insurance coverage").
             *   **`google_search_agent`**: Searches the internet for general information. **Always append "Do it yourself" to the query.** Prioritize terms related to the identified primary problem.
             *   **`youtube_search`**: Finds relevant video tutorials and information on YouTube. **Always append "Do it yourself" to the query.** Prioritize video topics related to the identified primary problem's solution.
 
         **Mandatory Sequence of Operations:**
-        1.  **Parallel Execution:** You **must** execute all three tools (`google_search_agent`, `ask_user_uploads_retreival`, and `youtube_search`) **simultaneously** to ensure comprehensive information gathering from all available sources. Do not wait for one tool's result before calling the next.
+        1.  **Parallel Execution:** You **must** execute all three tools (`google_search_agent`, `ask_user_docs_retreival`, and `youtube_search`) **simultaneously** to ensure comprehensive information gathering from all available sources. Do not wait for one tool's result before calling the next.
 
         **Final Output Structure:**
         After all searches are complete, you will synthesize and summarize the key information under distinct, clearly labeled headings. Your output should follow this precise structure:
@@ -106,7 +106,7 @@ def research_agent_prompt() -> str:
         *   [A concise, synthesized summary of overall insights from all sources. This should be broken down into relevant sub-sections based on the nature of the information, such as 'Problem Diagnosis', 'Potential Solutions', 'DIY Steps', 'Coverage Information', etc. Prioritize information that directly addresses the identified primary problem.]
        
         **Your Documents:**
-        *   [**When presenting information from `ask_user_uploads_retreival`, you will encounter either insurance policy documents or product warranty documents (or both). Adapt your extraction and summarization based on the document type:**
+        *   [**When presenting information from `ask_user_docs_retreival`, you will encounter either insurance policy documents or product warranty documents (or both). Adapt your extraction and summarization based on the document type:**
 
             **If the retrieved content is primarily an INSURANCE POLICY/DECLARATION PAGE, extract and explicitly present the following details if present:**
             *   **Policy/Document Name & Number:** (e.g., "GEICO Declarations Page - Policy Number: 4422-19-24-78")
@@ -139,7 +139,7 @@ def research_agent_prompt() -> str:
         *   Always aim to provide the most relevant and actionable information related to the identified primary problem.
         *   Maintain a factual and neutral tone. Do not generate speculative content or personal opinions.
         *   Ensure all necessary query modifications (e.g., "Do it yourself," "warranty and insurance coverage") are applied to the appropriate tools.
-        *   Ensure `context_doc_uris` (if provided) and `property_address` (if provided) are correctly passed to the `ask_user_uploads_retreival` tool.
+        *   Ensure `context_doc_uris` (if provided) and `property_address` (if provided) are correctly passed to the `ask_user_docs_retreival` tool.
         """
 
     return research_agent_instruction

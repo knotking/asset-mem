@@ -91,7 +91,7 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
         return False, str(e)
 
 
-def pubsub_to_user_uploads(request, context):
+def pubsub_to_user_docs(request, context):
     """Background Cloud Function to be triggered by Pub/Sub."""
     if 'data' in request:
         payload = json.loads(base64.b64decode(request['data']).decode('utf-8'))

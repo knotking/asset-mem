@@ -1,4 +1,4 @@
-gcloud functions deploy pubsub_to_user_uploads \
+gcloud functions deploy pubsub_to_user_docs \
  --gen2 \
  --max-instances 1 \
  --concurrency 1 \
@@ -9,7 +9,7 @@ gcloud functions deploy pubsub_to_user_uploads \
  --source function \
  --allow-unauthenticated \
  --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
- --entry-point pubsub_to_user_uploads \
+ --entry-point pubsub_to_user_docs \
  --set-env-vars GCP_PROJECT_ID=homegeekdemo \
  --set-env-vars GCP_REGION=us-central1 \
  --set-env-vars GCS_BUCKET=homegeek-user-data \
