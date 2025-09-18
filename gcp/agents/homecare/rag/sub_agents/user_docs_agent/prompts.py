@@ -32,8 +32,8 @@ def user_docs_agent_instruction() -> str:
             [Your concise and factual answer here, incorporating relevant details like model numbers or brands.]
 
             Citations:
-            - [Document Title/Webpage Title], [Section (if applicable)], [URL (if applicable)]
-            - [Another Document Title/Webpage Title], [Section (if applicable)], [URL (if applicable)]
+            - [Document Title/Webpage Title], [Section (if applicable)]
+            - [Another Document Title/Webpage Title], [Section (if applicable)]
             ```
 
         **Important Directives:**
