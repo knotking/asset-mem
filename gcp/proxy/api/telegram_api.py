@@ -27,6 +27,7 @@ from aiogram.filters import Command
 from aiogram import F
 from fastapi import FastAPI, Request
 import telegramify_markdown
+from models import AgentRequest
 
 # Import Vertex AI client logic
 from vertex_client import (
@@ -252,7 +253,15 @@ async def handle_attachment(message: aio_types.Message):
         try:
             await message.reply(safe_markdown_format("Processing your documents..."))
             # Stream agent answers as they arrive
-            async for answer_part in stream_agent_answers(user_id, user_query, uploaded_gcs_urls):
+            agent_request = AgentRequest(
+                    user_id=user_id,
+                    user_query=user_query,
+                    diagnosis_uris=uploaded_gcs_urls,
+                    session_id=None, # Session ID will be handled by vertex_client
+                    context_doc_uris=None,
+                    property_address=None,
+                )
+            async for answer_part in stream_agent_answers(agent_request):
                 answer_str = safe_markdown_format(str(answer_part))
                 for part in split_message(answer_str):
                     await message.answer(part)
@@ -272,7 +281,15 @@ async def handle_text_message(message: aio_types.Message):
 
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)
     
-    async for answer_part in stream_agent_answers(str(chat_id), user_text):
+    agent_request = AgentRequest(
+        user_id=str(chat_id),
+        user_query=user_text,
+        session_id=None, # Session ID will be handled by vertex_client
+        context_doc_uris=None,
+        diagnosis_uris=None,
+        property_address=None,
+    )
+    async for answer_part in stream_agent_answers(agent_request):
         answer_str = safe_markdown_format(str(answer_part))
         for part in split_message(answer_str):
             await message.answer(part)
