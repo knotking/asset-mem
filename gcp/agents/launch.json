@@ -1,0 +1,8 @@
+{
+  "name": "Python: Debug adk run rag",
+  "type": "python",
+  "request": "launch",
+  "program": "adk",
+  "args": ["run", "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/rag"],
+  "console": "integratedTerminal"
+}
