@@ -54,7 +54,7 @@ app = AdkApp(
 )
 
 def main():
-    action = sys.argv[1] if len(sys.argv) > 1 else "create"
+    action = sys.argv[1] if len(sys.argv) > 1 else "update"
     logger.info(f"Action: {action}")
 
     # Common configuration
@@ -104,11 +104,7 @@ def main():
  
         updated_app = agent_engines.update(
             resource_name=AGENT_ENGINE_ID,
-            description="OrchestratorAgentv1",
-            # requirements=common_requirements,
-            extra_packages=extra_packages,
-            # display_name=display_name,
-            # env_vars=common_env_vars,
+            agent_engine=app
         )
         logging.info(f"Updated agent on Vertex AI Agent Engine successfully, resource name: {updated_app.resource_name}")
         update_env_file(updated_app.resource_name, ENV_FILE_PATH)

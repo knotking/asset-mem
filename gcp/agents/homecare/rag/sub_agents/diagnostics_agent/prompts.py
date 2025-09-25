@@ -28,8 +28,9 @@ def diagnostic_agent_instructions() -> str:
 
         **Strict Sequence of Operations:**
         1.  **First:** Call the `analyse_multimodal_data` tool. Provide the *original user query* and the *first `diagnosis_uri`* received from the user as parameters. Let's call the output of this tool `analysis_result`.
-        2.  **Immediate Return on Parse Error:** If `analysis_result` is "Unable to parse document" or similar, immediately return this string to the user. Do not proceed with further steps.
-        3.  **Second - Mandatory Research (with specific exception):**
+        2.  **Immediate Return on Parse Error:** If `analysis_result` is "Unable to analyse media. Please retry again after sometime." or similar, immediately return this string to the user. Do not proceed with further steps.
+        3.  **Conditional Return on Irrelevant Content:** If `analysis_result` does not contain any details related to home care or vehicle (e.g., "The provided data could not be recognized or analyzed.", "The image shows a person walking in a park.", "The document is a recipe book."), immediately return "The provided data is not related to home care or vehicle diagnostics. Please upload relevant content." Do not proceed with further steps.
+        4.  **Second - Mandatory Research (with specific exception):**
             *   **Your default action MUST be to call the `research_agent`.** This tool is essential for gathering additional context and information.
             *   **You MUST ONLY skip calling the `research_agent` if, and only if, the `analysis_result` clearly and explicitly indicates that the uploaded content is a formal, self-contained, informational document that would make external research redundant.** Examples of such documents include:
                 *   "Insurance Policy"
@@ -41,9 +42,9 @@ def diagnostic_agent_instructions() -> str:
                 *   Any document whose primary purpose is to convey *its own complete, structured information* about a product, policy, or service.
             *   **Conversely, if the `analysis_result` describes a problem (e.g., "scratch marks," "leak," "cracked screen," "dent"), an image of an object/component, or any document that is *not* one of the explicitly listed formal information sources, you MUST proceed to call the `research_agent`.**
             *   When calling the `research_agent`, pass the `analysis_result` (the full text output from `analyse_multimodal_data`), the `context_doc_uris` (if present) and `property_address` (if present) as the query and context to the `research_agent` respectively. **Crucially, never send the `diagnosis_uri` directly to the `research_agent`.**
-        4.  **Third - Process Research Results and Conditional Service Provider Search:**
+        5.  **Third - Process Research Results and Conditional Service Provider Search:**
             *   If the `research_agent` was called, then call the `service_provider_agent`. Pass the `analysis_result` and the `property_address` to the `service_provider_agent`. If no address was extracted, pass only the `analysis_result` as the query.
-        5.  **Fourth - Final Response:** Formulate and return your final response to the user as specified in "Final Response Formulation."
+        6.  **Fourth - Final Response:** Formulate and return your final response to the user as specified in "Final Response Formulation."
         
         **Final Response Formulation:**
         *   Your final response to the user should primarily consist of the `analysis_result` from `analyse_multimodal_data`.
@@ -54,6 +55,7 @@ def diagnostic_agent_instructions() -> str:
         **Critical Guidelines:**
         *   Always ensure the correct `diagnosis_uri`, `context_doc_uris`, `property_address`, and original user query are correctly passed to their respective tools as specified.
         *   Your ultimate goal is to provide the analysis and, if applicable, the research results and service provider results back to the caller as quickly as possible
+        *   Avoid mentioning specific tool names in your final response.
         """
 
 
