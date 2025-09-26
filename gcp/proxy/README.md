@@ -173,7 +173,7 @@ gcloud run deploy homecare-agent-proxy \
  --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
  --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
  --set-env-vars="GCP_REGION=us-central1" \
- --set-env-vars="REASONING_ENGINE_ID=6552636302754316288" \
+ --set-env-vars="REASONING_ENGINE_ID=8822450514949046272" \
  --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
  --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
  --set-env-vars="FIREBASE_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
@@ -184,4 +184,4 @@ gcloud run deploy homecare-agent-proxy \
 gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
 gcloud pubsub subscriptions create user-upload-topic-subscription --topic=user-upload-topic
 
-Install pytest; pytest -s firebase_integration_test.py
+Install pytest; python -m pytest firebase_integration_test.py
