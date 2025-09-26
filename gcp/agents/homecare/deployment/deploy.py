@@ -78,7 +78,9 @@ def main():
         "USER_UPLOAD_RAG_CORPUS",
         "KNOWLEDGE_BASE_RAG_CORPUS",
         "USER_UPLOAD_TOPIC",
-        "SERP_API_KEY"
+        "SERP_API_KEY",
+        "YELP_API_KEY",
+        "YELP_URL"
     ]
     display_name = "HomecareAgent"
     extra_packages = ["./rag"]
@@ -104,7 +106,9 @@ def main():
  
         updated_app = agent_engines.update(
             resource_name=AGENT_ENGINE_ID,
-            agent_engine=app
+            agent_engine=app,
+            env_vars=common_env_vars,
+            extra_packages=extra_packages
         )
         logging.info(f"Updated agent on Vertex AI Agent Engine successfully, resource name: {updated_app.resource_name}")
         update_env_file(updated_app.resource_name, ENV_FILE_PATH)

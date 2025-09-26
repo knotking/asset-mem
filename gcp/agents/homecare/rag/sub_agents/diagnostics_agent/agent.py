@@ -15,6 +15,8 @@ import sys
 import logging
 from ..user_docs_agent.agent import ask_user_docs_retreival
 from ...agent_inputs import DiagnosisInput, DocsInput
+import requests
+
 logger = logging.getLogger(__name__)
 load_dotenv()
 
@@ -79,6 +81,26 @@ serpapi_search = SerpAPIWrapper(
     serpapi_api_key=os.environ.get("SERP_API_KEY"), # Assuming SERP_API_KEY is in environment variables
 )
 
+def yelpapi_search(query: str) -> str:
+    yelp_api_key=os.environ.get("YELP_API_KEY")
+    yelp_url = os.environ.get("YELP_URL")
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {yelp_api_key}"
+    }
+    data: dict[str, any] = {
+        "query": query,
+    }
+    try:
+        response = requests.post(url=yelp_url, json=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+        logger.info(f"Yelp query: {query} Response: {response.text}")
+        return response.text
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Yelp API call failed: {e} for query {query}")
+        return "No service providers found"
+
 research_agent = Agent(
     model='gemini-2.5-flash',
     name='research_agent',
@@ -99,6 +121,7 @@ service_provider_agent = Agent(
     instruction=service_provider_agent_prompt(),
     tools=[
         LangchainTool(tool=serpapi_search, name="serpapi_search", description="Searches for local business listings and service providers."),
+        yelpapi_search
     ],
 )
 

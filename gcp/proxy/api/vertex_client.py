@@ -11,6 +11,20 @@ from models import AgentRequest
 # Configure logging
 logger = logging.getLogger(__name__)
 
+_DISPLAY_NAME_MAP = {
+    "property_agent": "Agent",
+    "doculink_agent": "Agent",
+    "diagnostic_agent": "Agent",
+    "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
+    "ask_user_docs_agent": "Scanning your documents",
+    "diagnostics_agent": "Agent",
+    "transfer_to_agent": "Agent",
+    "ask_knowledge_base_retrieval": "Accessing HomeGeekAI catalog",
+    "ask_user_docs_retrieval": "Accessing your documents",
+    "analyse_multimodal_data": "Analyzing Media",
+    "research_agent": "Researching Solutions",
+    "service_provider_agent": "Finding Local Pros"
+}
 
 # --- Environment Variables ---
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -122,7 +136,7 @@ async def stream_agent_answers(
                 parts = event.get("content", {}).get("parts", [])
                 for part in parts:
                     if isinstance(part, dict) and "text" in part and part["text"]:
-                        yield f"[{prettify_name(event.get('author',''))}]: {part['text']}"
+                        yield f"{prettify_name(event.get('author',''))}: {part['text']}"
         else:
             yield event
 
@@ -212,7 +226,7 @@ def format_name(name: str, bold: bool = True) -> str:
     """
     if not name:
         return ""
-    formatted_name = " ".join(word.capitalize() for word in name.split("_"))
+    formatted_name = _DISPLAY_NAME_MAP.get(name, " ".join(word.capitalize() for word in name.split("_")))
     return f"**{formatted_name}**" if bold else formatted_name
 
 def prettify_name(name: str) -> str:
