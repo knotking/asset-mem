@@ -7,7 +7,7 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 
 def diagnostic_agent_instructions() -> str:
 
-    instruction_prompt = f"""
+    instruction_prompt = """
         You are the Diagnostics Agent, specializing in immediate multimodal data analysis (including documents, images, and other file types), conditional search for additional information.
 
         **Input Parameters:**
