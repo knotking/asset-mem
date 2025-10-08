@@ -96,7 +96,7 @@ def yelpapi_search(query: str) -> str:
         response = requests.post(url=yelp_url, json=data, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
         logger.info(f"Yelp query: {query} Response: {response.text}")
-        return response.text
+        return response.json()
     except requests.exceptions.RequestException as e:
         logger.error(f"Yelp API call failed: {e} for query {query}")
         return "No service providers found"
