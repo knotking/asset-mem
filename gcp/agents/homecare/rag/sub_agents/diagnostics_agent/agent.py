@@ -72,7 +72,12 @@ google_search_agent = Agent(
 
 youtube_search = YouTubeSearchTool(
     name="youtube_search",
-    description="Searches YouTube for videos related to the provided query.",
+    description=(
+        "Searches YouTube for videos related to the provided query.\n"
+        "Output Format:\n"
+        "- Title: Title of the video.\n"
+        "- Video Link: Formatted as https://www.youtube.com/watch?v={video_id}."
+    ),
     max_results=5,
 )
 
