@@ -150,11 +150,11 @@ def service_provider_agent_prompt() -> str:
               "location": "Approximate location",
               "specialties": "Specialties of the service provider",
               "reviews": "Number of reviews",
-              "ratings": "Rating (e.g., 4.5/5)",
-              "link": "Link to service provider's page",
+              "ratings": "Rating (e.g., 4.5/5) or null if not explicitly stated",
+              "link": "Link to service provider's page or null if not explicitly provided",
               "directions": "Link to map directions",
               "website": "Service provider's website",
-              "authorized": "True/False or Yes/No if ascertainable",
+              "authorized": "True/False if ascertainable",
               "additional_information": "Any other relevant information not captured in the above fields"
             }}
           ],
@@ -165,15 +165,15 @@ def service_provider_agent_prompt() -> str:
               "location": "Approximate location",
               "specialties": "Specialties of the service provider",
               "reviews": "Number of reviews",
-              "ratings": "Rating (e.g., 4.5/5)",
-              "link": "Link to Yelp page",
+              "ratings": "Rating (e.g., 4.5/5) or null if not explicitly stated",
+              "link": "Link to Yelp page or null if not explicitly provided",
               "directions": "Link to map directions",
               "website": "Service provider's website",
-              "authorized": "True/False or Yes/No if ascertainable",
+              "authorized": "True/False if ascertainable",
               "additional_information": "Any other relevant information not captured in the above fields"
             }}
           ]
         }}
-        *   Clearly state if no relevant providers were found for either search within their respective arrays. For instance, if no Yelp results, the `yelpAPIResults` array should be empty.
+        *   Clearly state if no relevant providers were found for either search within their respective arrays. For instance, if no Yelp results, the `yelpAPIResults` array should be empty. If values for "ratings" or "link" are not found, set them to null.
         """
     return service_provider_agent_instruction
