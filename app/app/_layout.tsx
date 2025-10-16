@@ -11,7 +11,7 @@ import React, { useState, useEffect } from "react";
 import { useColorScheme } from "../hooks/use-color-scheme";
 
 export const unstable_settings = {
-  initialRouteName: "auth", // Set initial route to auth
+  initialRouteName: "(tabs)", // Set initial route to tabs
 };
 
 export default function RootLayout() {
@@ -28,12 +28,12 @@ export default function RootLayout() {
     checkLoginStatus();
   }, []);
 
-  const initialRoute = isSignedIn ? "home" : "auth";
+  const initialRoute = isSignedIn ? "(tabs)" : "auth";
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack initialRouteName={initialRoute}>
-        <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />

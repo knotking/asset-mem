@@ -23,7 +23,7 @@ const AuthScreen: React.FC = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Success", "Login successful!");
-      router.replace("home");
+      router.replace("(tabs)");
     } catch (error: any) {
       Alert.alert("Error", error.message);
     }

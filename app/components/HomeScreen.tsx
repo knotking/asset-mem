@@ -17,6 +17,7 @@ import {
   FontAwesome,
 } from "@expo/vector-icons";
 import PropertyCard from "./PropertyCard";
+import TopNavBar from "./TopNavBar";
 
 interface Property {
   id: string;
@@ -27,11 +28,7 @@ interface Property {
   clouds: number;
 }
 
-interface HomeScreenProps {
-  onLogout: () => void;
-}
-
-const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
+const HomeScreen: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
@@ -57,41 +54,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      onLogout();
-    } catch (error: any) {
-      console.error("Failed to log out: ", error);
-    }
-  };
-
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
+      <TopNavBar />
       <ScrollView style={styles.scrollViewContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <MaterialCommunityIcons name="home" size={28} color="black" />
-            <Text style={styles.headerTitle}>HomeGeek AI</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color="black"
-              style={styles.notificationIcon}
-            />
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={handleLogout}
-            >
-              <Text style={styles.profileButtonText}>PR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Property AI Agent Section */}
         <View style={styles.aiAgentSection}>
           <Text style={styles.aiAgentTitle}>Property AI Agent</Text>
@@ -163,41 +129,8 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flex: 1,
-    paddingTop: 50,
     paddingHorizontal: 20,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginLeft: 10,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  notificationIcon: {
-    marginRight: 15,
-  },
-  profileButton: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  profileButtonText: {
-    fontWeight: "bold",
+    paddingTop: 20,
   },
   aiAgentSection: {
     backgroundColor: "#fff",
