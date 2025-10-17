@@ -1,8 +1,9 @@
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
+import "../global.css"; // Import Nativewind CSS
 import { ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
+// import "react-native-reanimated";
 import React, { useState, useEffect } from "react";
 
 import { ThemeProvider, useTheme } from "../hooks/use-theme";
@@ -27,7 +28,7 @@ function RootLayoutContent() {
     // In a real app, you would check for a token or user session here
     const checkLoginStatus = async () => {
       // Simulate async check
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       // setIsSignedIn(true); // Set to true to bypass auth for testing tabs
     };
     checkLoginStatus();
@@ -36,7 +37,9 @@ function RootLayoutContent() {
   const initialRoute = isSignedIn ? "(tabs)" : "auth";
 
   return (
-    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider
+      value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+    >
       <Stack initialRouteName={initialRoute}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
