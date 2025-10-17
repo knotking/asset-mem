@@ -10,7 +10,7 @@ from langchain_community.tools import YouTubeSearchTool
 from langchain_community.utilities import SerpAPIWrapper
 from vertexai.preview import rag  
 from dotenv import load_dotenv
-from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt, product_recommendations_agent_prompt
+from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt, product_recommendations_agent_prompt, cost_estimation_agent_prompt
 import sys
 import logging
 from ..user_docs_agent.agent import ask_user_docs_retreival  
@@ -105,6 +105,100 @@ def yelpapi_search(query: str) -> str:
     except requests.exceptions.RequestException as e:
         logger.error(f"Yelp API call failed: {e} for query {query}")
         return "No service providers found"
+
+# Tool for cost estimation
+def cost_estimation(query: str) -> str:
+    """
+    Provides high-level cost estimates for DIY and professional service options.
+    This is a simplified estimation based on common repair types and market rates.
+    """
+    query_lower = query.lower()
+    
+    # Define cost estimation categories with DIY and professional estimates
+    cost_categories = {
+        # Automotive repairs
+        "scratch": {"diy": "$20-50", "pro": "$200-500", "description": "Paint touch-up and scratch repair"},
+        "dent": {"diy": "$30-80", "pro": "$150-400", "description": "Minor dent repair"},
+        "brake": {"diy": "$100-300", "pro": "$300-600", "description": "Brake pad/rotor replacement"},
+        "oil": {"diy": "$30-50", "pro": "$50-80", "description": "Oil change service"},
+        
+        # Home repairs
+        "plumbing": {"diy": "$50-150", "pro": "$150-400", "description": "Minor plumbing repair"},
+        "leak": {"diy": "$20-100", "pro": "$200-500", "description": "Pipe leak repair"},
+        "electrical": {"diy": "$30-100", "pro": "$150-300", "description": "Outlet/switch replacement"},
+        "drywall": {"diy": "$20-50", "pro": "$200-400", "description": "Drywall patch and repair"},
+        "painting": {"diy": "$50-200", "pro": "$300-800", "description": "Room painting"},
+        
+        # Appliance repairs
+        "appliance": {"diy": "$50-200", "pro": "$200-500", "description": "Appliance repair"},
+        "refrigerator": {"diy": "$100-300", "pro": "$300-600", "description": "Refrigerator repair"},
+        "washer": {"diy": "$50-150", "pro": "$200-400", "description": "Washing machine repair"},
+        "dryer": {"diy": "$50-150", "pro": "$200-400", "description": "Dryer repair"},
+        
+        # HVAC
+        "hvac": {"diy": "$100-300", "pro": "$300-800", "description": "HVAC maintenance/repair"},
+        "furnace": {"diy": "$100-400", "pro": "$400-1000", "description": "Furnace repair"},
+        "air conditioning": {"diy": "$100-300", "pro": "$300-800", "description": "AC repair"},
+    }
+    
+    # Find matching category
+    matched_category = None
+    for category, costs in cost_categories.items():
+        if category in query_lower:
+            matched_category = costs
+            break
+    
+    if matched_category:
+        diy_cost = matched_category["diy"]
+        pro_cost = matched_category["pro"]
+        description = matched_category["description"]
+        
+        return f"""### Cost Estimates for {description.title()}:
+
+**DIY Estimate**: {diy_cost}
+- Material/product costs
+- Basic tools (if needed)
+- Time investment required
+
+**Professional Service Estimate**: {pro_cost}
+- Labor costs
+- Professional expertise
+- Warranty/guarantee included
+
+**Cost Comparison**: 
+- DIY typically saves 60-80% on labor costs
+- Professional service provides expertise and warranty
+- Consider complexity and your skill level
+
+**Recommendation**: 
+- Simple repairs: DIY may be cost-effective
+- Complex or safety-critical repairs: Professional service recommended
+- Estimates may vary by location and specific circumstances"""
+    
+    else:
+        return f"""### Cost Estimates for {query}:
+
+**DIY Estimate**: $50-300
+- Material/product costs vary by repair type
+- Basic tools may be required
+- Time investment needed
+
+**Professional Service Estimate**: $200-800
+- Labor costs depend on complexity
+- Professional expertise included
+- Warranty/guarantee typically provided
+
+**Cost Comparison**: 
+- DIY typically saves 60-80% on labor costs
+- Professional service provides expertise and warranty
+- Consider repair complexity and safety factors
+
+**Recommendation**: 
+- Simple repairs: DIY may be cost-effective
+- Complex or safety-critical repairs: Professional service recommended
+- Estimates are rough and may vary significantly by location and specific circumstances
+
+*Note: For accurate estimates, consult local professionals or get multiple quotes.*"""
 
 # New tool for product recommendations  
 def product_recommendations(query: str) -> str:
@@ -232,11 +326,19 @@ product_recommendations_agent = Agent(
     tools=[product_recommendations],
 )
 
+cost_estimation_agent = Agent(
+    model='gemini-2.5-flash',
+    name='cost_estimation_agent',
+    description="Provide high-level cost estimates for both DIY repair and professional service engagement.",
+    instruction=cost_estimation_agent_prompt(),
+    tools=[cost_estimation],
+)
+
 diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent), AgentTool(product_recommendations_agent)], 
+    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent), AgentTool(product_recommendations_agent), AgentTool(cost_estimation_agent)], 
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
     input_schema=DiagnosisInput

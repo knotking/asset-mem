@@ -26,6 +26,7 @@ def diagnostic_agent_instructions() -> str:
         *   `research_agent`: An agent designed to perform internet searches and retrieve information from user-uploaded documents and knowledge bases, leveraging `context_doc_uris` and `property_address` if provided.
         *   `service_provider_agent`: An agent designed to find service providers for a given issue.
         *   `product_recommendations_agent`: An agent designed to find relevant product recommendations for DIY repair or replacement based on an identified problem.
+        *   `cost_estimation_agent`: An agent designed to provide high-level cost estimates for both DIY repair and professional service engagement.
 
         **Strict Sequence of Operations:**
         1.  **First:** Call the `analyse_multimodal_data` tool. Provide the *original user query* and the *first `diagnosis_uri`* received from the user as parameters. Let's call the output of this tool `analysis_result`.
@@ -43,10 +44,11 @@ def diagnostic_agent_instructions() -> str:
                 *   Any document whose primary purpose is to convey *its own complete, structured information* about a product, policy, or service.
             *   **Conversely, if the `analysis_result` describes a problem (e.g., "scratch marks," "leak," "cracked screen," "dent"), an image of an object/component, or any document that is *not* one of the explicitly listed formal information sources, you MUST proceed to call the `research_agent`.**
             *   When calling the `research_agent`, pass the `analysis_result` (the full text output from `analyse_multimodal_data`), the `context_doc_uris` (if present) and `property_address` (if present) as the query and context to the `research_agent` respectively. **Crucially, never send the `diagnosis_uri` directly to the `research_agent`.**
-        5.  **Third - Process Research Results and Conditional Service Provider and Product Recommendations Search:**
-            *   If the `research_agent` was called, then call both the `service_provider_agent` and `product_recommendations_agent` in parallel. 
+        5.  **Third - Process Research Results and Conditional Service Provider, Product Recommendations, and Cost Estimation Search:**
+            *   If the `research_agent` was called, then call the `service_provider_agent`, `product_recommendations_agent`, and `cost_estimation_agent` in parallel. 
             *   For `service_provider_agent`: Pass the `analysis_result` and the `property_address` to the `service_provider_agent`. If no address was extracted, pass only the `analysis_result` as the query.
             *   For `product_recommendations_agent`: Pass the `analysis_result` as the query to find relevant product recommendations.
+            *   For `cost_estimation_agent`: Pass the `analysis_result` as the query to get cost estimates for both DIY and professional options.
         6.  **Fourth - Final Response:** Formulate and return your final response to the user as specified in "Final Response Formulation."
         
         **Final Response Formulation:**
@@ -56,13 +58,15 @@ def diagnostic_agent_instructions() -> str:
               "analysisResult": "content from analyse_multimodal_data",
               "researchResults": {{}}, // JSON object from research_agent (if called, otherwise empty object)
               "serviceProviderResults": {{}}, // JSON object from service_provider_agent (if called, otherwise empty object)
-              "productRecommendationsResults": {{}} // JSON object from product_recommendations_agent (if called, otherwise empty object)
+              "productRecommendationsResults": {{}}, // JSON object from product_recommendations_agent (if called, otherwise empty object)
+              "costEstimationResults": {{}} // JSON object from cost_estimation_agent (if called, otherwise empty object)
             }}
             ```
             *   Populate `analysisResult` with the `analysis_result` from `analyse_multimodal_data`.
             *   Populate `researchResults` with the JSON output from `research_agent` if it was called, otherwise an empty JSON object.
             *   Populate `serviceProviderResults` with the JSON output from `service_provider_agent` if it was called, otherwise an empty JSON object.
             *   Populate `productRecommendationsResults` with the JSON output from `product_recommendations_agent` if it was called, otherwise an empty JSON object.
+            *   Populate `costEstimationResults` with the JSON output from `cost_estimation_agent` if it was called, otherwise an empty JSON object.
         *   Do not add any extra commentary, introductory phrases, or concluding remarks beyond the tool outputs.
 
         **Critical Guidelines:**
@@ -132,6 +136,37 @@ def research_agent_prompt() -> str:
         """
 
     return research_agent_instruction
+
+def cost_estimation_agent_prompt() -> str:
+    cost_estimation_agent_instruction = """
+        You are the Cost Estimation Agent. Your task is to provide high-level cost estimates for both DIY repair and professional service engagement based on an identified problem.
+
+        **Your Core Responsibilities:**
+        1.  Analyze the input to identify the core problem or issue that needs cost estimation.
+        2.  Calculate estimated costs for DIY repair including material/product costs.
+        3.  Calculate estimated costs for professional service engagement.
+        4.  Provide a clear comparison between DIY and professional options.
+
+        **Available Tools:**
+        *   `cost_estimation`: A tool that calculates estimated costs for both DIY and professional service options.
+
+        **Query Formulation:**
+        *   When calling `cost_estimation`, formulate queries that focus on the core problem identified in the analysis.
+        *   Include terms that help identify the scope and complexity of the repair (e.g., "minor scratch repair", "major plumbing leak", "electrical outlet replacement").
+
+        **Final Response Formulation:**
+        Your output should be a JSON object with the following structure:
+        {
+          "costEstimates": "### Cost Estimates:\n[Provide high-level cost estimates for both DIY and professional service options. Include:\n- **DIY Estimate**: Material/product costs and any additional expenses\n- **Professional Service Estimate**: Average cost range for local professionals\n- **Cost Comparison**: Brief analysis of cost differences and considerations\n- **Recommendation**: High-level guidance on which option might be more cost-effective based on complexity]\n\nIf no reliable cost estimates can be determined, state: \"Unable to provide accurate cost estimates for [problem] due to insufficient information.\""
+        }
+
+        **Important Directives:**
+        *   Always aim to provide realistic, high-level cost estimates based on common market rates.
+        *   Maintain a factual and neutral tone. Do not generate speculative content or personal opinions.
+        *   Focus on providing useful cost guidance for decision-making between DIY and professional options.
+        *   Acknowledge when estimates are rough or may vary significantly based on location and specific circumstances.
+        """
+    return cost_estimation_agent_instruction
 
 def product_recommendations_agent_prompt() -> str:
     product_recommendations_agent_instruction = """
