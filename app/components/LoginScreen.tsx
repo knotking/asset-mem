@@ -15,6 +15,11 @@ import { Home, Eye, EyeOff, Chrome } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "../constants/theme";
 import { useTheme } from "../hooks/use-theme";
+import { User } from "firebase/auth"; // Import User type
+
+interface LoginScreenProps {
+  onAuthSuccess: (user: User) => void; // Update prop to accept User object
+}
 
 const createDynamicStyles = (themeColors: typeof Colors.light) =>
   StyleSheet.create({
@@ -73,7 +78,7 @@ const createDynamicStyles = (themeColors: typeof Colors.light) =>
     },
   });
 
-const AuthScreen: React.FC = () => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +91,14 @@ const AuthScreen: React.FC = () => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      if (onAuthSuccess) {
+        onAuthSuccess(userCredential.user); // Pass user object on successful authentication
+      }
       router.replace("/");
     } catch (error: any) {
       Alert.alert("Error", error.message);
@@ -164,13 +176,16 @@ const AuthScreen: React.FC = () => {
         onPress={handleLogin}
         disabled={loading}
       >
-        {loading ? (
-          <ActivityIndicator color={themeColors.background} />
-        ) : (
-          <Text style={[styles.signInButtonText, dynamicStyles.signInButtonText]}>
-            Sign In
-          </Text>
-        )}
+        <Text
+          style={[
+            styles.signInButtonText,
+            dynamicStyles.signInButtonText,
+            loading && { marginRight: 10 }, // Add margin when loading
+          ]}
+        >
+          Sign In
+        </Text>
+        {loading && <ActivityIndicator color={themeColors.background} />}
       </TouchableOpacity>
 
       <View style={styles.orContainer}>
@@ -201,7 +216,7 @@ const AuthScreen: React.FC = () => {
         >
           Don't have an account?{" "}
         </Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.replace("/auth/signup")}>
           <Text style={[styles.signUpText, dynamicStyles.signUpText]}>
             Sign Up
           </Text>
@@ -270,6 +285,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
+    flexDirection: "row", // Added for horizontal alignment
+    justifyContent: "center", // Center content horizontally
   },
   signInButtonText: {
     fontSize: 18,
@@ -318,4 +335,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AuthScreen;
+export default LoginScreen;

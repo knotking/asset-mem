@@ -15,6 +15,72 @@ import { useTheme } from "../hooks/use-theme";
 import { Colors } from "../constants/theme";
 import { useProperties } from "../contexts/PropertyContext";
 
+interface HomeScreenProps {
+  onLogout: () => void;
+}
+
+// Skeleton component for PropertyCard
+const PropertyCardSkeleton = ({
+  themeColors,
+}: {
+  themeColors: typeof Colors.light;
+}) => (
+  <View
+    style={[
+      skeletonStyles.card,
+      { backgroundColor: themeColors.cardBackground },
+    ]}
+  >
+    <View
+      style={[
+        skeletonStyles.imagePlaceholder,
+        { backgroundColor: themeColors.skeleton },
+      ]}
+    />
+    <View style={skeletonStyles.textContainer}>
+      <View
+        style={[
+          skeletonStyles.textPlaceholder,
+          { backgroundColor: themeColors.skeleton, width: "80%" },
+        ]}
+      />
+      <View
+        style={[
+          skeletonStyles.textPlaceholder,
+          { backgroundColor: themeColors.skeleton, width: "60%" },
+        ]}
+      />
+    </View>
+  </View>
+);
+
+// Skeleton component for AddPropertyCard
+const AddPropertyCardSkeleton = ({
+  themeColors,
+}: {
+  themeColors: typeof Colors.light;
+}) => (
+  <View
+    style={[
+      skeletonStyles.addCard,
+      { backgroundColor: themeColors.cardBackground },
+    ]}
+  >
+    <View
+      style={[
+        skeletonStyles.iconPlaceholder,
+        { backgroundColor: themeColors.skeleton },
+      ]}
+    />
+    <View
+      style={[
+        skeletonStyles.textPlaceholder,
+        { backgroundColor: themeColors.skeleton, width: "70%" },
+      ]}
+    />
+  </View>
+);
+
 const createDynamicStyles = (themeColors: typeof Colors.light) =>
   StyleSheet.create({
     fullContainer: {
@@ -47,6 +113,10 @@ const createDynamicStyles = (themeColors: typeof Colors.light) =>
       fontSize: 18,
       color: themeColors.text,
     },
+    skeletonContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
     errorContainer: {
       flex: 1,
       justifyContent: "center",
@@ -59,7 +129,7 @@ const createDynamicStyles = (themeColors: typeof Colors.light) =>
     },
   });
 
-const HomeScreen: React.FC = () => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ onLogout }) => {
   const { properties, loading, error } = useProperties();
   const { colorScheme } = useTheme();
   const themeColors = Colors[colorScheme ?? "light"];
@@ -67,8 +137,14 @@ const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={dynamicStyles.loadingContainer}>
-        <Text style={dynamicStyles.loadingText}>Loading properties...</Text>
+      <View style={[styles.fullContainer, dynamicStyles.fullContainer]}>
+        <TopNavBar />
+        <ScrollView style={dynamicStyles.skeletonContainer}>
+          <AddPropertyCardSkeleton themeColors={themeColors} />
+          {[...Array(3)].map((_, i) => (
+            <PropertyCardSkeleton key={i} themeColors={themeColors} />
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -136,6 +212,45 @@ const styles = StyleSheet.create({
   },
   propertyList: {
     // Styles for the list of property cards
+  },
+});
+
+const skeletonStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  imagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 5,
+    marginRight: 15,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  textPlaceholder: {
+    height: 15,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  addCard: {
+    flexDirection: "row",
+    padding: 20,
+    marginBottom: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 100,
+  },
+  iconPlaceholder: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
   },
 });
 

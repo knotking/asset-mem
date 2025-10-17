@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import AuthScreen from "@/components/AuthScreen";
+import LoginScreen from "@/components/LoginScreen";
 import HomeScreen from "@/components/HomeScreen";
 import { auth } from "@/firebaseConfig";
-import { User, onAuthStateChanged } from "firebase/auth";
+import { User, onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function Index() {
   const [user, setUser] = useState<User | null>(null);
@@ -26,9 +26,17 @@ export default function Index() {
   }
 
   if (user) {
-    return <HomeScreen onLogout={() => setUser(null)} />;
+    const handleLogout = async () => {
+      try {
+        await signOut(auth);
+        setUser(null);
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    };
+    return <HomeScreen onLogout={handleLogout} />;
   } else {
-    return <AuthScreen onAuthSuccess={() => {}} />;
+    return <LoginScreen onAuthSuccess={(user) => setUser(user)} />;
   }
 }
 

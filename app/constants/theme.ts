@@ -29,6 +29,7 @@ export const Colors = {
     separator: "#eee",
     placeholderText: "#666",
     profileBackground: "#e0e0e0",
+    skeleton: "#e0e0e0", // Added skeleton color for light theme
   },
   dark: {
     text: "#ECEDEE",
@@ -50,6 +51,7 @@ export const Colors = {
     separator: "#3c3c3c",
     placeholderText: "#9BA1A6",
     profileBackground: "#151718",
+    skeleton: "#2e2e2e", // Added skeleton color for dark theme
   },
   common: {
     white: "#fff",
