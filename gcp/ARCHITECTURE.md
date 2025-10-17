@@ -26,17 +26,26 @@ The `doculink_agent` is a sub-agent of the `root_agent` and is responsible for d
 
 #### 1.3.1. Diagnostics Agent (`homecare/rag/sub_agents/diagnostics_agent/agent.py`)
 
-This agent is responsible for diagnosing issues, gathering research, and finding service providers.
+This agent is responsible for diagnosing issues, gathering research, finding service providers, recommending products, and providing cost estimates.
 
-- **Purpose**: Handles comprehensive research tasks for the diagnostics agent by gathering information from multiple sources and analyzing multimodal data.
-- **Tools**:
-  - `analyse_multimodal_data`: Analyzes multimodal data (e.g., images, videos) provided via GCS URLs using `gemini-2.5-flash`.
+- **Purpose**: Handles comprehensive multimodal data analysis and orchestrates multiple specialized sub-agents for complete diagnostic workflows.
+- **Core Tools**:
+  - `analyse_multimodal_data`: Analyzes multimodal data (e.g., images, videos, documents) provided via GCS URLs using `gemini-2.5-flash`.
+- **Sub-Agents**:
+  - `research_agent`: Combines `google_search_agent`, `ask_user_docs_retreival`, and `youtube_search` for comprehensive research.
+  - `service_provider_agent`: Uses `serpapi_search` and `yelpapi_search` to find local service providers.
+  - `product_recommendations_agent`: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart) for DIY repair products.
+  - `cost_estimation_agent`: Provides high-level cost estimates for both DIY and professional service options.
+- **External Tools**:
   - `google_search_agent`: An agent that uses Google Search to answer general questions.
   - `youtube_search`: A Langchain tool to search YouTube for related videos.
   - `serpapi_search`: A Langchain tool for searching local business listings and service providers using SerpAPI.
   - `yelpapi_search`: A custom function to search for service providers using the Yelp API.
-  - `research_agent`: An agent that combines `google_search_agent`, `ask_user_docs_retreival`, and `youtube_search` for comprehensive research.
-  - `service_provider_agent`: An agent that uses `serpapi_search` and `yelpapi_search` to find service providers.
+- **Workflow**: 
+  1. Analyzes multimodal data from diagnosis URIs
+  2. Conditionally calls research agent for additional information
+  3. Runs service provider, product recommendations, and cost estimation agents in parallel
+  4. Returns comprehensive JSON response with analysis, research, service providers, products, and cost estimates
 
 #### 1.3.2. Knowledge Base Agent (`homecare/rag/sub_agents/knowledge_base_agent/agent.py`)
 
@@ -88,8 +97,8 @@ This file contains a Cloud Function triggered by Pub/Sub, primarily responsible 
 1.  **User Interaction**: Users interact with the system through platforms like Firebase or Telegram, sending queries or uploading files.
 2.  **Proxy Ingestion**: The `proxy/api/main.py` service receives these interactions via webhooks.
 3.  **Agent Orchestration**: For queries, the `proxy` dispatches them to the `root_agent` (`homecare/rag/agent.py`), which then orchestrates its sub-agents (`diagnostic_agent`, `doculink_agent`, `knowledge_base_agent`, `user_docs_agent`) to process the request.
-4.  **RAG and External Tools**: The sub-agents utilize various tools including Vertex AI RAG retrieval (for knowledge base and user documents), Google Search, YouTube Search, SerpAPI, and Yelp API for gathering information and providing responses.
-5.  **Multimodal Analysis**: The `diagnostic_agent` can analyze multimodal data (e.g., images) uploaded by the user.
+4.  **RAG and External Tools**: The sub-agents utilize various tools including Vertex AI RAG retrieval (for knowledge base and user documents), Google Search, YouTube Search, SerpAPI, Yelp API, and multiple retailer APIs (Amazon, Home Depot, Lowe's, Walmart) for gathering information and providing responses.
+5.  **Multimodal Analysis**: The `diagnostic_agent` can analyze multimodal data (e.g., images, videos, documents) uploaded by the user and provide comprehensive diagnostic workflows including research, service provider recommendations, product suggestions, and cost estimates.
 6.  **File Upload Processing**: When files are uploaded, the `proxy/api/main.py` handles the initial request and publishes a message to a Pub/Sub topic.
 7.  **Asynchronous RAG Import**: The `proxy/workers/function/main.py` (a Cloud Function) is triggered by the Pub/Sub message, which then imports the uploaded files into the Vertex AI RAG corpus.
 8.  **Result Notification**: After RAG import, the worker publishes the results to another Pub/Sub topic, which the `proxy/api/main.py` listens to, allowing for asynchronous updates or notifications back to the user.
