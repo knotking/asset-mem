@@ -12,7 +12,7 @@ import GoogleSvg from '../assets/images/google-icon.svg';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { Link } from 'expo-router';
-import { Home } from 'lucide-react-native';
+import { Home, Eye, EyeOff } from 'lucide-react-native';
 
 import { Button } from '../../components/ui/button';
 import { Icon } from '../../components/ui/icon';
@@ -24,6 +24,7 @@ WebBrowser.maybeCompleteAuthSession();
 initializeApp(firebaseConfig);
 
 export default function LoginScreen() {
+  const [passwordVisible, setPasswordVisible] = React.useState(false);
   const [state, dispatch] = useReducer(
     (
       prevState: { email: string; password: string; error: string | null },
@@ -90,33 +91,37 @@ export default function LoginScreen() {
         onChangeText={(text: string) => dispatch({ type: 'SET_EMAIL', payload: text })}
         keyboardType="email-address"
         autoCapitalize="none"
-        className="mb-4 w-full max-w-sm rounded-md border border-input bg-background px-3 py-2 text-base text-foreground shadow-sm"
+        className="mb-4 w-full max-w-sm rounded-md border border-input bg-gray-100 px-3 py-2 text-base text-foreground shadow-sm"
       />
       <Text className="self-start text-base font-medium text-foreground">Password</Text>
-      <Input
-        placeholder="Enter your password"
-        value={state.password}
-        onChangeText={(text: string) => dispatch({ type: 'SET_PASSWORD', payload: text })}
-        secureTextEntry
-        className="mb-4 w-full max-w-sm rounded-md border border-input bg-background px-3 py-2 text-base text-foreground shadow-sm"
-      />
+      <View className="relative mb-4 w-full max-w-sm">
+        <Input
+          placeholder="Enter your password"
+          value={state.password}
+          onChangeText={(text: string) => dispatch({ type: 'SET_PASSWORD', payload: text })}
+          secureTextEntry={!passwordVisible}
+          className="w-full rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground shadow-sm"
+        />
+        <Button
+          variant="link"
+          className="absolute right-0 top-0 h-full px-3"
+          onPress={() => setPasswordVisible(!passwordVisible)}>
+          <Icon as={passwordVisible ? EyeOff : Eye} size={20} className="text-gray-500" />
+        </Button>
+      </View>
       <Button variant="link" className="mb-8 self-end" onPress={handleForgotPassword}>
-        <Text className="text-primary">Forgot Password?</Text>
+        <Text className="text-blue-600">Forgot Password?</Text>
       </Button>
       {state.error && <Text className="mb-4 text-red-500">{state.error}</Text>}
       <Button
         onPress={handleSignIn}
-        className="mb-4 w-full max-w-sm rounded-md bg-black py-3 shadow-sm hover:bg-gray-800">
-        <Text className="text-lg font-semibold text-white">Sign In</Text>
+        className="h-12 w-full bg-black text-white hover:bg-gray-800 active:bg-gray-900">
+        <Text className="text-lg text-white">Sign In</Text>
       </Button>
-      <View className="mb-4 flex-row items-center justify-center">
-        <View className="h-px flex-1 bg-gray-300" />
-        <Text className="px-4 text-gray-400">or</Text>
-        <View className="h-px flex-1 bg-gray-300" />
-      </View>
-      <Link href="/auth/signup" className="mt-2 text-center text-primary">
+
+      <Link href="/auth/signup" className="mt-10 text-center text-primary">
         <Text className="text-base text-gray-500">
-          Don't have an account? <Text className="font-semibold text-primary">Sign Up</Text>
+          Don't have an account? <Text className="font-semibold text-blue-600">Sign Up</Text>
         </Text>
       </Link>
     </View>

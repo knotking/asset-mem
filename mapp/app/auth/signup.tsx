@@ -53,21 +53,21 @@ export default function SignupScreen() {
         onChangeText={(text) => dispatch({ type: 'SET_EMAIL', payload: text })}
         keyboardType="email-address"
         autoCapitalize="none"
-        className="mb-4 w-full max-w-sm"
+        className="mb-4 w-full max-w-sm rounded-md border border-input bg-gray-100 px-3 py-2 text-base text-foreground shadow-sm"
       />
       <Input
         placeholder="Password"
         value={state.password}
         onChangeText={(text) => dispatch({ type: 'SET_PASSWORD', payload: text })}
         secureTextEntry
-        className="mb-4 w-full max-w-sm"
+        className="mb-4 w-full max-w-sm rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground shadow-sm"
       />
       <Input
         placeholder="Confirm Password"
         value={state.confirmPassword}
         onChangeText={(text) => dispatch({ type: 'SET_CONFIRM_PASSWORD', payload: text })}
         secureTextEntry
-        className="mb-6 w-full max-w-sm"
+        className="mb-6 w-full max-w-sm rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground shadow-sm"
       />
       {state.error && <Text className="mb-4 text-red-500">{state.error}</Text>}
       <Button onPress={handleSignUp} className="mb-4 w-full max-w-sm">
