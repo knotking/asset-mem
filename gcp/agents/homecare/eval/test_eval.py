@@ -16,9 +16,33 @@ def load_env():
 
 @pytest.mark.asyncio
 async def test_eval_full_conversation():
-    """Test the agent's basic ability on a few examples."""
+    """Test the homecare agent's multimodal diagnostic capabilities."""
     await AgentEvaluator.evaluate(
         agent_module="rag",
+        eval_dataset_file_path_or_dir=str(
+            pathlib.Path(__file__).parent / "data/conversation.test.json"
+        ),
+        num_runs=1,
+    )
+
+
+@pytest.mark.asyncio
+async def test_eval_diagnostic_agent():
+    """Test the diagnostic agent's comprehensive analysis capabilities."""
+    await AgentEvaluator.evaluate(
+        agent_module="rag.sub_agents.diagnostics_agent",
+        eval_dataset_file_path_or_dir=str(
+            pathlib.Path(__file__).parent / "data/conversation.test.json"
+        ),
+        num_runs=1,
+    )
+
+
+@pytest.mark.asyncio
+async def test_eval_cost_estimation():
+    """Test the cost estimation agent's ability to provide accurate cost estimates."""
+    await AgentEvaluator.evaluate(
+        agent_module="rag.sub_agents.diagnostics_agent.cost_estimation_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/conversation.test.json"
         ),
