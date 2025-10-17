@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { auth } from "../firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -76,18 +77,21 @@ const AuthScreen: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { colorScheme } = useTheme();
   const themeColors = Colors[colorScheme ?? "light"];
   const dynamicStyles = createDynamicStyles(themeColors);
 
   const handleLogin = async () => {
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", "Login successful!");
       router.replace("/");
     } catch (error: any) {
       Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -158,10 +162,15 @@ const AuthScreen: React.FC = () => {
       <TouchableOpacity
         style={[styles.signInButton, dynamicStyles.signInButton]}
         onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={[styles.signInButtonText, dynamicStyles.signInButtonText]}>
-          Sign In
-        </Text>
+        {loading ? (
+          <ActivityIndicator color={themeColors.background} />
+        ) : (
+          <Text style={[styles.signInButtonText, dynamicStyles.signInButtonText]}>
+            Sign In
+          </Text>
+        )}
       </TouchableOpacity>
 
       <View style={styles.orContainer}>
