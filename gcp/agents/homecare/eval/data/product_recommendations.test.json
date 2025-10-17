@@ -1,0 +1,62 @@
+[
+  {
+    "query": "I need products to fix a car scratch. What do you recommend?",
+    "expected_tool_use": [
+      {
+        "tool_name": "product_recommendations",
+        "tool_input": {
+          "query": "car scratch repair products"
+        }
+      }
+    ],
+    "reference": "Here are recommended products for car scratch repair:\n\n### Recommended Products:\n\n**Amazon Products:**\n- Touch-Up Paint Kit ($25) - Complete kit with primer, paint, and clear coat\n- Automotive Sandpaper Set ($15) - Various grits for surface preparation\n- Microfiber Cloths ($10) - For cleaning and buffing\n\n**Home Depot Products:**\n- Automotive Primer ($20) - High-quality primer for scratch repair\n- Touch-Up Paint ($18) - Color-matched paint for your vehicle\n- Sanding Block ($8) - For smooth surface preparation\n\n**Lowe's Products:**\n- Car Scratch Repair Kit ($30) - All-in-one solution with tools\n- Automotive Clear Coat ($22) - Protective finish for repaired areas\n- Detailing Clay Bar ($12) - For surface cleaning\n\n**Walmart Products:**\n- Touch-Up Paint Pen ($15) - Easy-to-use paint applicator\n- Automotive Wax ($20) - For final protection and shine\n- Scratch Repair Compound ($18) - For minor scratch removal\n\nThese products provide everything needed for DIY car scratch repair, from surface preparation to final finishing."
+  },
+  {
+    "query": "What products do I need to fix a leaking faucet?",
+    "expected_tool_use": [
+      {
+        "tool_name": "product_recommendations",
+        "tool_input": {
+          "query": "faucet leak repair products"
+        }
+      }
+    ],
+    "reference": "Here are recommended products for faucet leak repair:\n\n### Recommended Products:\n\n**Amazon Products:**\n- Faucet Repair Kit ($25) - Complete set with O-rings and gaskets\n- Plumber's Grease ($12) - For sealing connections\n- Faucet Cartridge ($35) - Replacement cartridge for modern faucets\n\n**Home Depot Products:**\n- O-Ring Assortment ($15) - Various sizes for different faucet types\n- Faucet Seat Dressing Tool ($20) - For smoothing valve seats\n- Pipe Wrench Set ($45) - Professional-grade tools\n\n**Lowe's Products:**\n- Faucet Repair Kit ($30) - Comprehensive repair solution\n- Plumber's Tape ($8) - Thread sealant for connections\n- Faucet Valve Seat ($18) - Replacement seat for worn valves\n\n**Walmart Products:**\n- Basic Faucet Repair Kit ($20) - Essential components for most repairs\n- Silicone Sealant ($10) - For waterproof sealing\n- Faucet Washer Set ($12) - Various washer sizes\n\nThese products cover the most common faucet leak causes and provide professional-quality repair solutions."
+  },
+  {
+    "query": "I need brake pads for my car. What are the best options?",
+    "expected_tool_use": [
+      {
+        "tool_name": "product_recommendations",
+        "tool_input": {
+          "query": "brake pad replacement parts"
+        }
+      }
+    ],
+    "reference": "Here are recommended brake pads for your car:\n\n### Recommended Products:\n\n**Amazon Products:**\n- Ceramic Brake Pads ($65) - High-performance, low-dust option\n- Brake Pad Set ($45) - Complete front and rear set\n- Brake Hardware Kit ($25) - Clips, springs, and shims\n\n**Home Depot Products:**\n- Professional Brake Pads ($55) - Heavy-duty construction\n- Brake Cleaner ($12) - For cleaning brake components\n- Brake Lubricant ($15) - For proper brake operation\n\n**Lowe's Products:**\n- Premium Brake Pads ($70) - Long-lasting ceramic material\n- Brake Tool Set ($35) - Specialized tools for brake work\n- Brake Fluid ($18) - DOT 4 brake fluid\n\n**Walmart Products:**\n- Standard Brake Pads ($40) - Reliable, budget-friendly option\n- Brake Pad Wear Sensor ($20) - For vehicles with wear indicators\n- Brake Service Kit ($30) - Complete brake maintenance set\n\nChoose ceramic pads for better performance and less dust, or standard pads for cost-effectiveness."
+  },
+  {
+    "query": "What products can I use to repair drywall cracks?",
+    "expected_tool_use": [
+      {
+        "tool_name": "product_recommendations",
+        "tool_input": {
+          "query": "drywall crack repair products"
+        }
+      }
+    ],
+    "reference": "Here are recommended products for drywall crack repair:\n\n### Recommended Products:\n\n**Amazon Products:**\n- Joint Compound ($15) - Ready-mix compound for crack filling\n- Drywall Tape ($8) - Self-adhesive tape for crack reinforcement\n- Putty Knife Set ($20) - Various sizes for different applications\n\n**Home Depot Products:**\n- Spackling Compound ($12) - Lightweight compound for small cracks\n- Drywall Sandpaper ($10) - Fine-grit sandpaper for smooth finish\n- Primer ($18) - For preparing repaired areas for paint\n\n**Lowe's Products:**\n- Drywall Repair Kit ($25) - Complete kit with compound and tools\n- Sanding Sponge ($6) - For smoothing repaired areas\n- Drywall Screws ($8) - For securing loose drywall\n\n**Walmart Products:**\n- Basic Spackle ($8) - Simple crack filler\n- Sanding Block ($5) - For surface preparation\n- Paint Brush Set ($12) - For primer and paint application\n\nThese products provide everything needed for professional-quality drywall crack repair."
+  },
+  {
+    "query": "I need replacement parts for my washing machine. What do you recommend?",
+    "expected_tool_use": [
+      {
+        "tool_name": "product_recommendations",
+        "tool_input": {
+          "query": "washing machine replacement parts"
+        }
+      }
+    ],
+    "reference": "Here are recommended replacement parts for washing machines:\n\n### Recommended Products:\n\n**Amazon Products:**\n- Washing Machine Drain Pump ($45) - For drainage issues\n- Door Seal/Gasket ($35) - Prevents water leaks\n- Water Inlet Valve ($25) - Controls water flow\n\n**Home Depot Products:**\n- Washing Machine Belt ($20) - Drive belt for motor connection\n- Suspension Rods ($40) - For tub suspension\n- Lid Switch ($15) - Safety switch for lid operation\n\n**Lowe's Products:**\n- Washing Machine Motor ($120) - Complete motor assembly\n- Water Level Switch ($30) - Controls water fill level\n- Drain Hose ($18) - Replacement drain hose\n\n**Walmart Products:**\n- Washing Machine Filter ($12) - For water filtration\n- Detergent Dispenser ($25) - Replacement dispenser drawer\n- Control Board ($80) - Electronic control panel\n\nThese parts cover the most common washing machine repair needs and are compatible with most major brands."
+  }
+]
