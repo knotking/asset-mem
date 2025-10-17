@@ -23,7 +23,9 @@ _DISPLAY_NAME_MAP = {
     "ask_user_docs_retrieval": "Accessing your documents",
     "analyse_multimodal_data": "Analyzing Media",
     "research_agent": "Researching Solutions",
-    "service_provider_agent": "Finding Local Pros"
+    "service_provider_agent": "Finding Local Pros",
+    "product_recommendations_agent": "Finding Products",
+    "cost_estimation_agent": "Calculating Costs"
 }
 
 # --- Environment Variables ---
