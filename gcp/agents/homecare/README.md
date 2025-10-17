@@ -1,23 +1,123 @@
-# Documentation Retrieval Agent
+# Homecare AI Agent System
 
 ## Overview
 
-This agent is designed to answer questions related to documents you uploaded to Vertex AI RAG Engine. It utilizes Retrieval-Augmented Generation (RAG) with the Vertex AI RAG Engine to fetch relevant documentation snippets and code references, which are then synthesized by an LLM (Gemini) to provide informative answers with citations.
-
+This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, product recommendations, and cost estimation through a sophisticated multi-agent architecture.
 
 ![RAG Architecture](RAG_architecture.png)
 
-This diagram outlines the agent's workflow, designed to provide informed and context-aware responses. User queries are processed by agent development kit. The LLM determines if external knowledge (RAG corpus) is required. If so, the `VertexAiRagRetrieval` tool fetches relevant information from the configured Vertex RAG Engine corpus. The LLM then synthesizes this retrieved information with its internal knowledge to generate an accurate answer, including citations pointing back to the source documentation URLs.
+The system consists of a main orchestrator agent that delegates tasks to specialized sub-agents, each handling specific aspects of home care diagnostics and support.
+
+## System Architecture
+
+### Main Orchestrator Agent (`root_agent`)
+
+The main orchestrator manages the overall workflow and delegates tasks to appropriate sub-agents based on input parameters:
+
+- **Diagnostics Agent**: Activated when `diagnosis_uris` are provided for multimodal analysis
+- **DocuLink Agent**: Activated for document retrieval and general queries when no diagnosis URIs are present
+
+### Sub-Agents
+
+#### 1. Diagnostics Agent
+Comprehensive multimodal analysis system with multiple specialized sub-agents:
+
+- **Core Analysis**: Multimodal data analysis using Gemini 2.5 Flash
+- **Research Agent**: Combines Google Search, user documents, and YouTube videos
+- **Service Provider Agent**: Finds local service providers via SerpAPI and Yelp
+- **Product Recommendations Agent**: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart)
+- **Cost Estimation Agent**: Provides DIY vs. professional cost estimates
+
+#### 2. DocuLink Agent
+Document retrieval and knowledge base access:
+
+- **User Docs Agent**: Retrieves information from user-uploaded documents
+- **Knowledge Base Agent**: Accesses pre-defined RAG corpus for reference materials
+
+## Key Features
+
+### Multimodal Analysis
+- **Image Analysis**: Processes photos of damage, issues, or components
+- **Video Analysis**: Analyzes video content for diagnostic purposes
+- **Document Analysis**: Processes uploaded documents, manuals, and policies
+- **Problem Identification**: Extracts core issues and relevant details
+
+### Comprehensive Research
+- **Internet Search**: Google Search integration for general information
+- **User Documents**: Warranty and insurance information retrieval
+- **Video Tutorials**: YouTube search for DIY repair guides
+- **Parallel Processing**: Simultaneous execution of multiple research tools
+
+### Service Provider Discovery
+- **Local Search**: Finds service providers near user location
+- **Multiple Platforms**: Searches SerpAPI and Yelp for comprehensive coverage
+- **Detailed Information**: Contact info, locations, specialties, reviews, ratings
+- **Authorization Status**: Identifies authorized vs. non-authorized service centers
+
+### Product Recommendations
+- **Multi-Retailer Search**: Amazon, Home Depot, Lowe's, Walmart APIs
+- **Real-Time Pricing**: Current prices and availability
+- **Product Details**: Names, descriptions, specifications
+- **Direct Links**: Purchase links for easy access
+
+### Cost Estimation
+- **DIY Estimates**: Material costs and tool requirements
+- **Professional Estimates**: Labor costs and service fees
+- **Cost Comparison**: Analysis of DIY vs. professional options
+- **Recommendations**: Guidance based on complexity and safety factors
 
 ## Agent Details
-| Attribute         | Details                                                                                                                                                                                             |
-| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interaction Type** | Conversational                                                                                                                                                                                      |
-| **Complexity**    | Intermediate 
-| **Agent Type**    | Single Agent                                                                                                                                                                                        |
-| **Components**    | Tools, RAG, Evaluation                                                                                                                                                                               |
-| **Vertical**      | Horizontal                                                                                                                                                                               |
-### Agent Architecture
+
+| Attribute | Details |
+|:----------|:--------|
+| **Interaction Type** | Conversational with multimodal support |
+| **Complexity** | Advanced multi-agent system |
+| **Agent Type** | Orchestrator with specialized sub-agents |
+| **Components** | Tools, RAG, External APIs, Multimodal Analysis |
+| **Vertical** | Home Care and Vehicle Diagnostics |
+
+## Workflow
+
+### Input Processing
+The system accepts various input types:
+- **User Query**: Text description of the issue or question
+- **Diagnosis URIs**: GCS URLs pointing to images, videos, or documents for analysis
+- **Context Doc URIs**: Additional documents for context (warranties, manuals, policies)
+- **Property Address**: Location for local service provider search
+
+### Processing Flow
+1. **Input Analysis**: Main orchestrator determines which sub-agent to activate
+2. **Multimodal Analysis**: If diagnosis URIs provided, analyzes content using Gemini 2.5 Flash
+3. **Research Phase**: Gathers comprehensive information from multiple sources
+4. **Service Discovery**: Finds local service providers and authorized centers
+5. **Product Recommendations**: Searches multiple retailers for relevant products
+6. **Cost Estimation**: Calculates DIY vs. professional cost estimates
+7. **Response Assembly**: Combines all results into structured JSON response
+
+### Output Schema
+```json
+{
+  "analysisResult": "Multimodal analysis summary",
+  "researchResults": {
+    "summaryOfFindings": "Research summary",
+    "yourDocuments": "Warranty/insurance information",
+    "googleSearch": "Internet search results",
+    "youtubeSearch": "Video tutorial results"
+  },
+  "serviceProviderResults": {
+    "serpAPIResults": [...],
+    "yelpAPIResults": [...]
+  },
+  "productRecommendationsResults": {
+    "recommendedProducts": "Product recommendations with links"
+  },
+  "costEstimationResults": {
+    "costEstimates": "DIY vs professional cost analysis"
+  }
+}
+```
+
+## Agent Architecture
 
 ![RAG](RAG_workflow.png)
 
@@ -172,18 +272,40 @@ from the root project directory:
     Select the RAG from the dropdown
 
 
-### Example Interaction
-Here's a quick example of how a user might interact with the agent:
+### Example Interactions
 
-**Example 1: Document Information Retrieval**
+**Example 1: Vehicle Scratch Repair**
 
-User: What are the key business segments mentioned in Alphabet's 2024 10-K report?
+User uploads image of car scratch with query: "How can I fix this scratch on my car?"
 
-Agent: According to Alphabet's 2024 10-K report, the key business segments are:
-1. Google Services (including Google Search, YouTube, Google Maps, Play Store)
-2. Google Cloud (offering cloud computing services, data analytics, and AI solutions)
-3. Other Bets (including Waymo for autonomous driving technology)
-[Source: goog-10-k-2024.pdf]
+Agent Response:
+- **Analysis**: "Significant white scratch marks on the rear quarter panel of a red vehicle"
+- **Research**: DIY repair methods, paint touch-up techniques, YouTube tutorials
+- **Service Providers**: Local auto body shops, paint specialists with ratings and contact info
+- **Products**: Touch-up paint kits, sandpaper, primer from Amazon, Home Depot, Lowe's
+- **Cost Estimates**: DIY ($20-50), Professional ($200-500), with recommendations
+
+**Example 2: Home Plumbing Issue**
+
+User uploads video of leaky faucet with query: "My kitchen faucet is leaking, what should I do?"
+
+Agent Response:
+- **Analysis**: "Water dripping from kitchen faucet base, potential seal or cartridge issue"
+- **Research**: Faucet repair guides, common causes, troubleshooting steps
+- **Service Providers**: Local plumbers, hardware store services with reviews
+- **Products**: Replacement cartridges, O-rings, tools from multiple retailers
+- **Cost Estimates**: DIY ($20-50), Professional ($150-300), complexity assessment
+
+**Example 3: Appliance Manual Query**
+
+User uploads washing machine manual with query: "What does error code E3 mean?"
+
+Agent Response:
+- **Analysis**: "Washing machine service manual with error code definitions"
+- **Research**: E3 error code meaning, troubleshooting steps, common solutions
+- **Service Providers**: Appliance repair services, manufacturer service centers
+- **Products**: Replacement parts, cleaning supplies if needed
+- **Cost Estimates**: DIY repair costs vs. professional service estimates
 
 ## Evaluating the Agent
 
