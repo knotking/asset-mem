@@ -2,18 +2,18 @@ import os
 import uuid
 import base64
 from google.cloud.storage.client import Client
-from google.adk.agents import Agent, SequentialAgent, ParallelAgent
+from google.adk.agents import Agent, SequentialAgent, ParallelAgent 
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext, google_search
 from google.adk.tools.langchain_tool import LangchainTool
 from langchain_community.tools import YouTubeSearchTool
 from langchain_community.utilities import SerpAPIWrapper
-from vertexai.preview import rag
+from vertexai.preview import rag  
 from dotenv import load_dotenv
 from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
 import sys
 import logging
-from ..user_docs_agent.agent import ask_user_docs_retreival
+from ..user_docs_agent.agent import ask_user_docs_retreival  
 from ...agent_inputs import DiagnosisInput, DocsInput
 import requests
 
@@ -26,7 +26,7 @@ def before_tool_callback(tool_context: ToolContext, **kwargs):
 
 
 def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolContext) -> dict:
-        """Analyzes multimodal data file."""
+        """Analyzes multimodal data file.""" 
         try:
     
             # Use google.genai with Vertex AI API configuration
@@ -51,11 +51,11 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
                 config=types.GenerateContentConfig(system_instruction=multimodal_parsing_prompt()),
             )
             try:
-
+                
                 raw_text = response.candidates[0].content.parts[0].text
                 return raw_text 
             except Exception as e:
-
+                
                 logger.error(f"Unable to parse response: {e}")
         except Exception as e:
             logger.error(f"Error parsing document type: {e}")
@@ -83,7 +83,7 @@ youtube_search = YouTubeSearchTool(
 
 # New SerpAPI tool for business listings
 serpapi_search = SerpAPIWrapper(
-    serpapi_api_key=os.environ.get("SERP_API_KEY"), # Assuming SERP_API_KEY is in environment variables
+    serpapi_api_key=os.environ.get("SERP_API_KEY"), # Assuming SERP_API_KEY is in environment variables  
 )
 
 def yelpapi_search(query: str) -> str:
@@ -91,7 +91,7 @@ def yelpapi_search(query: str) -> str:
     yelp_url = os.environ.get("YELP_URL")
     headers = {
         "accept": "application/json",
-        "Content-Type": "application/json",
+        "Content-Type": "application/json", 
         "Authorization": f"Bearer {yelp_api_key}"
     }
     data: dict[str, any] = {
@@ -106,6 +106,100 @@ def yelpapi_search(query: str) -> str:
         logger.error(f"Yelp API call failed: {e} for query {query}")
         return "No service providers found"
 
+# New tool for product recommendations  
+def product_recommendations(query: str) -> str:
+    amazon_api_key = os.environ.get("AMAZON_API_KEY")
+    home_depot_api_key = os.environ.get("HOME_DEPOT_API_KEY")
+    lowes_api_key = os.environ.get("LOWES_API_KEY")
+    walmart_api_key = os.environ.get("WALMART_API_KEY")
+    
+    recommendations = []
+    
+    # Amazon API search
+    amazon_url = f"https://amazon-product-reviews-keywords.p.rapidapi.com/product/search?keyword={query}&country=US"
+    headers = {
+        "X-RapidAPI-Key": amazon_api_key,
+        "X-RapidAPI-Host": "amazon-product-reviews-keywords.p.rapidapi.com"
+    }
+    response = requests.get(amazon_url, headers=headers)
+    if response.status_code == 200:
+        results = response.json()
+        for result in results["products"][:3]:
+            try:
+                name = result["title"]
+                link = result["url"]
+                price = result["price"]["current_price"] 
+                desc = result["description"][:100] + "..."
+                rec = f"- {name} (${price}) - {desc} - {link}"
+                recommendations.append(rec)
+            except KeyError:
+                pass
+                
+    # Home Depot API search
+    home_depot_url = f"https://home-depot-data-api.p.rapidapi.com/search/products?keyword={query}"
+    headers = {
+        "X-RapidAPI-Key": home_depot_api_key,
+        "X-RapidAPI-Host": "home-depot-data-api.p.rapidapi.com"
+    }
+    response = requests.get(home_depot_url, headers=headers)
+    if response.status_code == 200:  
+        results = response.json()
+        for result in results["data"][:3]:
+            try:
+                name = result["store_sku_title"] 
+                link = f"https://www.homedepot.com/p/{result['store_sku']}"
+                price = result["main_price"]
+                desc = result["short_description"][:100] + "..."
+                rec = f"- {name} (${price}) - {desc} - {link}"
+                recommendations.append(rec)
+            except KeyError:
+                pass
+
+    # Lowe's API search
+    lowes_url = f"https://lowes.p.rapidapi.com/products/search?query={query}"
+    headers = {
+        "X-RapidAPI-Key": lowes_api_key,
+        "X-RapidAPI-Host": "lowes.p.rapidapi.com"  
+    }
+    response = requests.get(lowes_url, headers=headers)
+    if response.status_code == 200:
+        results = response.json()  
+        for result in results["searchResults"]["products"][:3]:
+            try:
+                name = result["productName"]
+                link = f"https://www.lowes.com{result['productUrl']}" 
+                price = result["prices"]["specialPrice"] or result["prices"]["regularPrice"]
+                desc = result["description"][:100] + "..."
+                rec = f"- {name} (${price}) - {desc} - {link}"
+                recommendations.append(rec) 
+            except KeyError:
+                pass
+
+    # Walmart API search
+    walmart_url = f"https://walmart.p.rapidapi.com/products/list?query={query}"
+    headers = {
+        "X-RapidAPI-Key": walmart_api_key,  
+        "X-RapidAPI-Host": "walmart.p.rapidapi.com"
+    } 
+    response = requests.get(walmart_url, headers=headers)
+    if response.status_code == 200:
+        results = response.json()
+        for result in results["data"]["search"]["searchResult"]["itemStacks"][0]["items"][:3]: 
+            try:
+                name = result["name"] 
+                link = result["canonicalUrl"]
+                price = result["price"]
+                desc = result["description"][:100] + "..."  
+                rec = f"- {name} (${price}) - {desc} - {link}"
+                recommendations.append(rec)
+            except KeyError: 
+                pass
+
+    if recommendations:
+        return "\n".join(recommendations)  
+    else:
+        return f"No recommended products found for {query}."
+
 research_agent = Agent(
     model='gemini-2.5-flash',
     name='research_agent',
@@ -115,13 +209,14 @@ research_agent = Agent(
         AgentTool(agent=google_search_agent),
         ask_user_docs_retreival,
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query."),
+        product_recommendations,
     ],
-    input_schema=DocsInput
+    input_schema=DocsInput  
 )
 
 service_provider_agent = Agent(
     model='gemini-2.5-flash',
-    name='service_provider_agent',
+    name='service_provider_agent', 
     description="Find service providers or authorized service centers for an identified issue near to the user's location.",
     instruction=service_provider_agent_prompt(),
     tools=[
@@ -134,7 +229,7 @@ diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent)],
+    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent)], 
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
     input_schema=DiagnosisInput
