@@ -1,21 +1,26 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, DefaultTheme } from "@react-navigation/native";
+import { ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import React, { useState, useEffect } from "react";
 
-import { useColorScheme } from "../hooks/use-color-scheme";
+import { ThemeProvider, useTheme } from "../hooks/use-theme";
 
 export const unstable_settings = {
   initialRouteName: "(tabs)", // Set initial route to tabs
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  return (
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
+  );
+}
+
+function RootLayoutContent() {
+  const { colorScheme } = useTheme();
   const [isSignedIn, setIsSignedIn] = useState(false); // Placeholder for authentication state
 
   useEffect(() => {
@@ -31,12 +36,12 @@ export default function RootLayout() {
   const initialRoute = isSignedIn ? "(tabs)" : "auth";
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack initialRouteName={initialRoute}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }

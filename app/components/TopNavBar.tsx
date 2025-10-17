@@ -6,14 +6,34 @@ import {
   TouchableOpacity,
   StatusBar,
 } from "react-native";
-import {
-  MaterialCommunityIcons,
-  Ionicons,
-} from "@expo/vector-icons";
+import { Home, Bell } from "lucide-react-native";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebaseConfig";
+import { Colors } from "../constants/theme";
+import { useTheme } from "../hooks/use-theme";
+
+const createDynamicStyles = (themeColors: typeof Colors.light) =>
+  StyleSheet.create({
+    header: {
+      backgroundColor: themeColors.navBarBackground,
+      borderBottomColor: themeColors.navBarBorder,
+    },
+    headerTitle: {
+      color: themeColors.text,
+    },
+    profileButton: {
+      backgroundColor: themeColors.profileBackground,
+    },
+    profileButtonText: {
+      color: themeColors.text,
+    },
+  });
 
 const TopNavBar: React.FC = () => {
+  const { colorScheme } = useTheme();
+  const themeColors = Colors[colorScheme ?? "light"];
+  const dynamicStyles = createDynamicStyles(themeColors);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -23,24 +43,32 @@ const TopNavBar: React.FC = () => {
   };
 
   return (
-    <View style={styles.header}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
+    <View style={[styles.header, dynamicStyles.header]}>
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={themeColors.background}
+      />
       <View style={styles.headerLeft}>
-        <MaterialCommunityIcons name="home" size={28} color="black" />
-        <Text style={styles.headerTitle}>HomeGeek AI</Text>
+        <Home size={28} color={themeColors.text} />
+        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>
+          HomeGeek AI
+        </Text>
       </View>
       <View style={styles.headerRight}>
-        <Ionicons
-          name="notifications-outline"
+        <Bell
           size={24}
-          color="black"
+          color={themeColors.text}
           style={styles.notificationIcon}
         />
         <TouchableOpacity
-          style={styles.profileButton}
+          style={[styles.profileButton, dynamicStyles.profileButton]}
           onPress={handleLogout}
         >
-          <Text style={styles.profileButtonText}>PR</Text>
+          <Text
+            style={[styles.profileButtonText, dynamicStyles.profileButtonText]}
+          >
+            PR
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -54,9 +82,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 50,
     paddingHorizontal: 20,
-    backgroundColor: "#f8f8f8",
+    // backgroundColor: Colors.common.white,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    // borderBottomColor: Colors.common.mediumGrey,
     paddingBottom: 10,
   },
   headerLeft: {
@@ -76,7 +104,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   profileButton: {
-    backgroundColor: "#e0e0e0",
+    // backgroundColor: Colors.common.profileBackground,
     borderRadius: 20,
     width: 40,
     height: 40,

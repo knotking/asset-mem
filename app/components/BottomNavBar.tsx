@@ -1,22 +1,38 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import {
-  MaterialCommunityIcons,
-  FontAwesome,
-  Ionicons,
-} from "@expo/vector-icons";
+import { Home, FileText, Briefcase, Settings } from "lucide-react-native";
+import { Colors } from "../constants/theme";
+import { useTheme } from "../hooks/use-theme";
+
+const createDynamicStyles = (themeColors: typeof Colors.light) =>
+  StyleSheet.create({
+    navBar: {
+      backgroundColor: themeColors.navBarBackground,
+      borderTopColor: themeColors.navBarBorder,
+    },
+    navTextActive: {
+      color: themeColors.tint,
+    },
+    navTextInactive: {
+      color: themeColors.inactiveText,
+    },
+  });
 
 const BottomNavBar: React.FC = () => {
+  const { colorScheme } = useTheme();
+  const themeColors = Colors[colorScheme ?? "light"];
+  const dynamicStyles = createDynamicStyles(themeColors);
+
   return (
-    <View style={styles.navBar}>
+    <View style={[styles.navBar, dynamicStyles.navBar]}>
       <TouchableOpacity
         style={styles.navItem}
         onPress={() =>
           Alert.alert("Navigation", "Home screen functionality coming soon!")
         }
       >
-        <MaterialCommunityIcons name="home" size={24} color="#007AFF" />
-        <Text style={[styles.navText, { color: "#007AFF" }]}>Home</Text>
+        <Home size={24} color={dynamicStyles.navTextActive.color} />
+        <Text style={[styles.navText, dynamicStyles.navTextActive]}>Home</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.navItem}
@@ -27,8 +43,10 @@ const BottomNavBar: React.FC = () => {
           )
         }
       >
-        <FontAwesome name="file-text-o" size={24} color="gray" />
-        <Text style={styles.navText}>Documents</Text>
+        <FileText size={24} color={dynamicStyles.navTextInactive.color} />
+        <Text style={[styles.navText, dynamicStyles.navTextInactive]}>
+          Documents
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.navItem}
@@ -39,12 +57,10 @@ const BottomNavBar: React.FC = () => {
           )
         }
       >
-        <MaterialCommunityIcons
-          name="briefcase-outline"
-          size={24}
-          color="gray"
-        />
-        <Text style={styles.navText}>Services</Text>
+        <Briefcase size={24} color={dynamicStyles.navTextInactive.color} />
+        <Text style={[styles.navText, dynamicStyles.navTextInactive]}>
+          Services
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.navItem}
@@ -55,8 +71,10 @@ const BottomNavBar: React.FC = () => {
           )
         }
       >
-        <Ionicons name="settings-outline" size={24} color="gray" />
-        <Text style={styles.navText}>Settings</Text>
+        <Settings size={24} color={dynamicStyles.navTextInactive.color} />
+        <Text style={[styles.navText, dynamicStyles.navTextInactive]}>
+          Settings
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -66,9 +84,9 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#fff",
+    // backgroundColor: Colors.common.white,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    // borderTopColor: Colors.common.lightBorder,
     paddingVertical: 10,
     position: "absolute",
     bottom: 0,
@@ -79,7 +97,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 12,
-    color: "gray",
+    // color: Colors.common.lightTextGrey,
     marginTop: 5,
   },
 });

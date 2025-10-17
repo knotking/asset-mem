@@ -10,38 +10,105 @@ import {
 } from "react-native";
 import { auth } from "../firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
+import { Home, Eye, EyeOff, Chrome } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { Colors } from "../constants/theme";
+import { useTheme } from "../hooks/use-theme";
+
+const createDynamicStyles = (themeColors: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: themeColors.background,
+    },
+    signInText: {
+      color: themeColors.text,
+    },
+    forgotPasswordText: {
+      color: themeColors.tint,
+    },
+    socialButton: {
+      borderColor: themeColors.border,
+      backgroundColor: themeColors.background,
+    },
+    socialButtonText: {
+      color: themeColors.text,
+    },
+    dontHaveAccountText: {
+      color: themeColors.text,
+    },
+    signUpText: {
+      color: themeColors.tint,
+      fontWeight: "bold",
+    },
+    welcomeBackText: {
+      color: themeColors.text,
+    },
+    label: {
+      color: themeColors.text,
+    },
+    input: {
+      borderColor: themeColors.inputBorder,
+      backgroundColor: themeColors.inputBackground,
+      color: themeColors.inputText,
+    },
+    passwordInputContainer: {
+      borderColor: themeColors.inputBorder,
+      backgroundColor: themeColors.inputBackground,
+    },
+    forgotPasswordButtonText: {
+      color: themeColors.tint,
+    },
+    signInButton: {
+      backgroundColor: themeColors.tint,
+    },
+    signInButtonText: {
+      color: themeColors.background,
+    },
+    line: {
+      backgroundColor: themeColors.separator,
+    },
+    orText: {
+      color: themeColors.icon,
+    },
+  });
 
 const AuthScreen: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { colorScheme } = useTheme();
+  const themeColors = Colors[colorScheme ?? "light"];
+  const dynamicStyles = createDynamicStyles(themeColors);
 
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Success", "Login successful!");
-      router.replace("(tabs)");
+      router.replace("/");
     } catch (error: any) {
       Alert.alert("Error", error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, dynamicStyles.container]}>
       <View style={styles.iconContainer}>
-        <MaterialCommunityIcons name="home" size={50} color="black" />
+        <Home size={50} color={themeColors.text} />
       </View>
-      <Text style={styles.welcomeBackText}>Welcome Back</Text>
-      <Text style={styles.signInText}>Sign in to manage your properties</Text>
+      <Text style={[styles.welcomeBackText, dynamicStyles.welcomeBackText]}>
+        Welcome Back
+      </Text>
+      <Text style={[styles.signInText, dynamicStyles.signInText]}>
+        Sign in to manage your properties
+      </Text>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, dynamicStyles.label]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, dynamicStyles.input]}
           placeholder="Enter your email"
+          placeholderTextColor={themeColors.icon}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -50,11 +117,17 @@ const AuthScreen: React.FC = () => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.passwordInputContainer}>
+        <Text style={[styles.label, dynamicStyles.label]}>Password</Text>
+        <View
+          style={[
+            styles.passwordInputContainer,
+            dynamicStyles.passwordInputContainer,
+          ]}
+        >
           <TextInput
-            style={styles.passwordInput}
+            style={[styles.passwordInput, dynamicStyles.input]}
             placeholder="Enter your password"
+            placeholderTextColor={themeColors.icon}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -63,42 +136,66 @@ const AuthScreen: React.FC = () => {
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeIcon}
           >
-            <MaterialCommunityIcons
-              name={showPassword ? "eye-off" : "eye"}
-              size={24}
-              color="gray"
-            />
+            {showPassword ? (
+              <EyeOff size={24} color={themeColors.icon} />
+            ) : (
+              <Eye size={24} color={themeColors.icon} />
+            )}
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.forgotPasswordButton}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          <Text
+            style={[
+              styles.forgotPasswordText,
+              dynamicStyles.forgotPasswordText,
+            ]}
+          >
+            Forgot Password?
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
-        <Text style={styles.signInButtonText}>Sign In</Text>
+      <TouchableOpacity
+        style={[styles.signInButton, dynamicStyles.signInButton]}
+        onPress={handleLogin}
+      >
+        <Text style={[styles.signInButtonText, dynamicStyles.signInButtonText]}>
+          Sign In
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.orContainer}>
-        <View style={styles.line} />
-        <Text style={styles.orText}>or</Text>
-        <View style={styles.line} />
+        <View style={[styles.line, dynamicStyles.line]} />
+        <Text style={[styles.orText, dynamicStyles.orText]}>or</Text>
+        <View style={[styles.line, dynamicStyles.line]} />
       </View>
 
-      <TouchableOpacity style={styles.socialButton}>
-        <FontAwesome
-          name="google"
+      <TouchableOpacity
+        style={[styles.socialButton, dynamicStyles.socialButton]}
+      >
+        <Chrome
           size={20}
-          color="#4285F4"
+          color={Colors.common.googleBlue}
           style={styles.socialIcon}
         />
-        <Text style={styles.socialButtonText}>Continue with Google</Text>
+        <Text style={[styles.socialButtonText, dynamicStyles.socialButtonText]}>
+          Continue with Google
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.signUpContainer}>
-        <Text style={styles.dontHaveAccountText}>Don't have an account? </Text>
+        <Text
+          style={[
+            styles.dontHaveAccountText,
+            dynamicStyles.dontHaveAccountText,
+          ]}
+        >
+          Don't have an account?{" "}
+        </Text>
         <TouchableOpacity>
-          <Text style={styles.signUpText}>Sign Up</Text>
+          <Text style={[styles.signUpText, dynamicStyles.signUpText]}>
+            Sign Up
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -111,7 +208,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
   },
   iconContainer: {
     marginBottom: 20,
@@ -123,7 +219,6 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontSize: 16,
-    color: "#666",
     marginBottom: 40,
   },
   inputGroup: {
@@ -139,17 +234,11 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
-    backgroundColor: "#f5f5f5",
   },
   passwordInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#f5f5f5",
     paddingRight: 10,
   },
   passwordInput: {
@@ -164,19 +253,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   forgotPasswordText: {
-    color: "#007AFF",
     fontSize: 14,
   },
   signInButton: {
     width: "100%",
-    backgroundColor: "#000",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
   signInButtonText: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -189,12 +275,10 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: "#ddd",
   },
   orText: {
     width: 40,
     textAlign: "center",
-    color: "#888",
   },
   socialButton: {
     flexDirection: "row",
@@ -202,11 +286,9 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     justifyContent: "center",
     marginBottom: 10,
-    backgroundColor: "#fff",
   },
   socialIcon: {
     marginRight: 10,
@@ -221,12 +303,9 @@ const styles = StyleSheet.create({
   },
   dontHaveAccountText: {
     fontSize: 16,
-    color: "#666",
   },
   signUpText: {
     fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "bold",
   },
 });
 
