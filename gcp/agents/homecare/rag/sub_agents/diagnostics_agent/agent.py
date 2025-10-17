@@ -10,7 +10,7 @@ from langchain_community.tools import YouTubeSearchTool
 from langchain_community.utilities import SerpAPIWrapper
 from vertexai.preview import rag  
 from dotenv import load_dotenv
-from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt
+from .prompts import diagnostic_agent_instructions, multimodal_parsing_prompt, research_agent_prompt, service_provider_agent_prompt, product_recommendations_agent_prompt
 import sys
 import logging
 from ..user_docs_agent.agent import ask_user_docs_retreival  
@@ -209,7 +209,6 @@ research_agent = Agent(
         AgentTool(agent=google_search_agent),
         ask_user_docs_retreival,
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for videos related to the user query."),
-        product_recommendations,
     ],
     input_schema=DocsInput  
 )
@@ -225,11 +224,19 @@ service_provider_agent = Agent(
     ],
 )
 
+product_recommendations_agent = Agent(
+    model='gemini-2.5-flash',
+    name='product_recommendations_agent',
+    description="Find relevant product recommendations for DIY repair or replacement based on an identified problem.",
+    instruction=product_recommendations_agent_prompt(),
+    tools=[product_recommendations],
+)
+
 diagnostic_agent = Agent(
     model='gemini-2.5-flash',
     name='diagnostic_agent',
     instruction=diagnostic_agent_instructions(),
-    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent)], 
+    tools=[analyse_multimodal_data, AgentTool(research_agent), AgentTool(service_provider_agent), AgentTool(product_recommendations_agent)], 
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback,
     input_schema=DiagnosisInput
