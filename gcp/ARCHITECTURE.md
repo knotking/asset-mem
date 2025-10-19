@@ -34,7 +34,7 @@ This agent is responsible for diagnosing issues, gathering research, finding ser
 - **Sub-Agents**:
   - `research_agent`: Combines `google_search_agent`, `ask_user_docs_retreival`, and `youtube_search` for comprehensive research.
   - `service_provider_agent`: Uses `serpapi_search` and `yelpapi_search` to find local service providers.
-  - `product_recommendations_agent`: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart) for DIY repair products.
+  - `product_recommendations_agent`: Searches Google Shopping via SerpAPI for DIY repair products.
   - `cost_estimation_agent`: Provides high-level cost estimates for both DIY and professional service options.
 - **External Tools**:
   - `google_search_agent`: An agent that uses Google Search to answer general questions.
@@ -97,7 +97,7 @@ This file contains a Cloud Function triggered by Pub/Sub, primarily responsible 
 1.  **User Interaction**: Users interact with the system through platforms like Firebase or Telegram, sending queries or uploading files.
 2.  **Proxy Ingestion**: The `proxy/api/main.py` service receives these interactions via webhooks.
 3.  **Agent Orchestration**: For queries, the `proxy` dispatches them to the `root_agent` (`homecare/rag/agent.py`), which then orchestrates its sub-agents (`diagnostic_agent`, `doculink_agent`, `knowledge_base_agent`, `user_docs_agent`) to process the request.
-4.  **RAG and External Tools**: The sub-agents utilize various tools including Vertex AI RAG retrieval (for knowledge base and user documents), Google Search, YouTube Search, SerpAPI, Yelp API, and multiple retailer APIs (Amazon, Home Depot, Lowe's, Walmart) for gathering information and providing responses.
+4.  **RAG and External Tools**: The sub-agents utilize various tools including Vertex AI RAG retrieval (for knowledge base and user documents), Google Search, YouTube Search, SerpAPI (for service providers and Google Shopping), and Yelp API for gathering information and providing responses.
 5.  **Multimodal Analysis**: The `diagnostic_agent` can analyze multimodal data (e.g., images, videos, documents) uploaded by the user and provide comprehensive diagnostic workflows including research, service provider recommendations, product suggestions, and cost estimates.
 6.  **File Upload Processing**: When files are uploaded, the `proxy/api/main.py` handles the initial request and publishes a message to a Pub/Sub topic.
 7.  **Asynchronous RAG Import**: The `proxy/workers/function/main.py` (a Cloud Function) is triggered by the Pub/Sub message, which then imports the uploaded files into the Vertex AI RAG corpus.

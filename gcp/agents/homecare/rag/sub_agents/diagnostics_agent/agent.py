@@ -200,99 +200,79 @@ def cost_estimation(query: str) -> str:
 
 *Note: For accurate estimates, consult local professionals or get multiple quotes.*"""
 
-# New tool for product recommendations  
+# New tool for product recommendations using Google Shopping via SerpAPI
 def product_recommendations(query: str) -> str:
-    amazon_api_key = os.environ.get("AMAZON_API_KEY")
-    home_depot_api_key = os.environ.get("HOME_DEPOT_API_KEY")
-    lowes_api_key = os.environ.get("LOWES_API_KEY")
-    walmart_api_key = os.environ.get("WALMART_API_KEY")
+    """
+    Provides product recommendations using Google Shopping via SerpAPI.
+    This searches Google Shopping for relevant products across multiple retailers.
+    """
+    serpapi_api_key = os.environ.get("SERP_API_KEY")
     
-    recommendations = []
+    if not serpapi_api_key:
+        return "Product recommendations service not available (missing API key)."
     
-    # Amazon API search
-    amazon_url = f"https://amazon-product-reviews-keywords.p.rapidapi.com/product/search?keyword={query}&country=US"
-    headers = {
-        "X-RapidAPI-Key": amazon_api_key,
-        "X-RapidAPI-Host": "amazon-product-reviews-keywords.p.rapidapi.com"
-    }
-    response = requests.get(amazon_url, headers=headers)
-    if response.status_code == 200:
-        results = response.json()
-        for result in results["products"][:3]:
+    try:
+        # Use SerpAPI to search Google Shopping
+        import serpapi
+        
+        search = serpapi.GoogleSearch({
+            "q": f"{query} products",
+            "tbm": "shop",  # Google Shopping results
+            "api_key": serpapi_api_key,
+            "num": 10,  # Get up to 10 results
+            "gl": "us",  # Country: United States
+            "hl": "en"   # Language: English
+        })
+        
+        results = search.get_dict()
+        shopping_results = results.get("shopping_results", [])
+        
+        if not shopping_results:
+            return f"No recommended products found for {query}."
+        
+        recommendations = []
+        
+        # Process Google Shopping results
+        for result in shopping_results[:8]:  # Limit to 8 results
             try:
-                name = result["title"]
-                link = result["url"]
-                price = result["price"]["current_price"] 
-                desc = result["description"][:100] + "..."
-                rec = f"- {name} (${price}) - {desc} - {link}"
-                recommendations.append(rec)
-            except KeyError:
-                pass
+                title = result.get("title", "Unknown Product")
+                price = result.get("price", "Price not available")
+                link = result.get("link", "")
+                source = result.get("source", "Unknown Store")
                 
-    # Home Depot API search
-    home_depot_url = f"https://home-depot-data-api.p.rapidapi.com/search/products?keyword={query}"
-    headers = {
-        "X-RapidAPI-Key": home_depot_api_key,
-        "X-RapidAPI-Host": "home-depot-data-api.p.rapidapi.com"
-    }
-    response = requests.get(home_depot_url, headers=headers)
-    if response.status_code == 200:  
-        results = response.json()
-        for result in results["data"][:3]:
-            try:
-                name = result["store_sku_title"] 
-                link = f"https://www.homedepot.com/p/{result['store_sku']}"
-                price = result["main_price"]
-                desc = result["short_description"][:100] + "..."
-                rec = f"- {name} (${price}) - {desc} - {link}"
-                recommendations.append(rec)
-            except KeyError:
-                pass
-
-    # Lowe's API search
-    lowes_url = f"https://lowes.p.rapidapi.com/products/search?query={query}"
-    headers = {
-        "X-RapidAPI-Key": lowes_api_key,
-        "X-RapidAPI-Host": "lowes.p.rapidapi.com"  
-    }
-    response = requests.get(lowes_url, headers=headers)
-    if response.status_code == 200:
-        results = response.json()  
-        for result in results["searchResults"]["products"][:3]:
-            try:
-                name = result["productName"]
-                link = f"https://www.lowes.com{result['productUrl']}" 
-                price = result["prices"]["specialPrice"] or result["prices"]["regularPrice"]
-                desc = result["description"][:100] + "..."
-                rec = f"- {name} (${price}) - {desc} - {link}"
-                recommendations.append(rec) 
-            except KeyError:
-                pass
-
-    # Walmart API search
-    walmart_url = f"https://walmart.p.rapidapi.com/products/list?query={query}"
-    headers = {
-        "X-RapidAPI-Key": walmart_api_key,  
-        "X-RapidAPI-Host": "walmart.p.rapidapi.com"
-    } 
-    response = requests.get(walmart_url, headers=headers)
-    if response.status_code == 200:
-        results = response.json()
-        for result in results["data"]["search"]["searchResult"]["itemStacks"][0]["items"][:3]: 
-            try:
-                name = result["name"] 
-                link = result["canonicalUrl"]
-                price = result["price"]
-                desc = result["description"][:100] + "..."  
-                rec = f"- {name} (${price}) - {desc} - {link}"
-                recommendations.append(rec)
-            except KeyError: 
-                pass
-
-    if recommendations:
-        return "\n".join(recommendations)  
-    else:
-        return f"No recommended products found for {query}."
+                # Extract rating if available
+                rating = result.get("rating", "")
+                reviews = result.get("reviews", "")
+                
+                # Format the recommendation
+                rec_parts = [f"- {title}"]
+                
+                if price and price != "Price not available":
+                    rec_parts.append(f"({price})")
+                
+                if source and source != "Unknown Store":
+                    rec_parts.append(f"- {source}")
+                
+                if rating and reviews:
+                    rec_parts.append(f"- Rating: {rating} ({reviews} reviews)")
+                
+                if link:
+                    rec_parts.append(f"- {link}")
+                
+                recommendations.append(" ".join(rec_parts))
+                
+            except (KeyError, TypeError) as e:
+                logger.warning(f"Error processing shopping result: {e}")
+                continue
+        
+        if recommendations:
+            return "\n".join(recommendations)
+        else:
+            return f"No recommended products found for {query}."
+            
+    except Exception as e:
+        logger.error(f"Error searching Google Shopping: {e}")
+        return f"Error retrieving product recommendations: {str(e)}"
 
 research_agent = Agent(
     model='gemini-2.5-flash',

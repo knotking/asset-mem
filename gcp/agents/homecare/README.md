@@ -55,9 +55,9 @@ Document retrieval and knowledge base access:
 - **Authorization Status**: Identifies authorized vs. non-authorized service centers
 
 ### Product Recommendations
-- **Multi-Retailer Search**: Amazon, Home Depot, Lowe's, Walmart APIs
+- **Google Shopping Search**: Comprehensive product search via SerpAPI
 - **Real-Time Pricing**: Current prices and availability
-- **Product Details**: Names, descriptions, specifications
+- **Product Details**: Names, ratings, reviews, and specifications
 - **Direct Links**: Purchase links for easy access
 
 ### Cost Estimation
