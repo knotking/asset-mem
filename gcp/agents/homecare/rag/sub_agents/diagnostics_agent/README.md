@@ -53,14 +53,15 @@ Diagnostics Agent
 **Purpose**: Finds relevant products for DIY repair or replacement.
 
 **Tools**:
-- `product_recommendations`: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart)
+- `product_recommendations`: Searches Google Shopping via SerpAPI for products across multiple retailers
 
 **Features**:
-- Searches Amazon, Home Depot, Lowe's, and Walmart APIs
-- Returns product names, prices, descriptions, and purchase links
-- Provides top 3 results from each retailer
+- Searches Google Shopping for comprehensive product coverage
+- Returns product names, prices, ratings, reviews, and purchase links
+- Provides results from multiple retailers in a single search
+- Includes product ratings and review counts when available
 
-**Output**: JSON with recommended products including names, prices, descriptions, and links.
+**Output**: JSON with recommended products including names, prices, ratings, reviews, and links.
 
 ### 4. Cost Estimation Agent
 
