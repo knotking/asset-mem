@@ -1,5 +1,5 @@
 import { Text } from '@/components/ui/text';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { ScrollView, View } from 'react-native';
@@ -10,6 +10,7 @@ import { useProperties } from '@/contexts/PropertyContext';
 export default function Screen() {
   const { colorScheme } = useColorScheme();
   const { properties, loading, error } = useProperties();
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -45,6 +46,7 @@ export default function Screen() {
         {properties.map((property) => (
           <PropertyCard
             key={property.id}
+            id={property.id}
             name={property.name}
             address={property.address}
             cityStateZip={property.cityStateZip}

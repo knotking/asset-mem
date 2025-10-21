@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Home, FileText, Briefcase, Settings } from 'lucide-react-native';
 import { Icon } from '../../components/ui/icon';
 import { Text } from '../../components/ui/text';
@@ -9,14 +9,18 @@ import { NAV_THEME, THEME } from '@/lib/theme';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
+  const pathname = usePathname();
   const activeColor = NAV_THEME[colorScheme ?? 'light'].colors.primary;
   const inactiveColor = THEME[colorScheme ?? 'light'].mutedForeground;
   const tabBarBg = NAV_THEME[colorScheme ?? 'light'].colors.card;
   const borderTopColor = NAV_THEME[colorScheme ?? 'light'].colors.border;
 
+  // Hide AppHeader on property details page
+  const shouldShowAppHeader = !pathname.includes('property-details');
+
   return (
     <View className="flex-1 bg-background">
-      <AppHeader />
+      {shouldShowAppHeader && <AppHeader />}
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: activeColor,
@@ -36,7 +40,7 @@ export default function TabLayout() {
           },
         }}>
         <Tabs.Screen
-          name="index"
+          name="home"
           options={{
             title: 'Properties',
             tabBarIcon: ({ color }) => (

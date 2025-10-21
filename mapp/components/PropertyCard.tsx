@@ -1,8 +1,9 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Home, FileText, Briefcase, Cloud, CheckCircle } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 interface PropertyCardProps {
   address: string;
@@ -11,6 +12,8 @@ interface PropertyCardProps {
   docsCount: number;
   servicesCount: number;
   checksCount: number;
+  id: string; // Add id to uniquely identify the property
+  onPress?: () => void; // Add optional onPress prop
 }
 
 export default function PropertyCard({
@@ -20,9 +23,21 @@ export default function PropertyCard({
   docsCount,
   servicesCount,
   checksCount,
+  id,
+  onPress,
 }: PropertyCardProps) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push({ pathname: '/(tabs)/home/property-details', params: { id: id } });
+    }
+  };
+
   return (
-    <View className="mb-4 rounded-lg bg-background p-4 shadow-sm">
+    <TouchableOpacity onPress={handlePress} className="mb-4 rounded-lg bg-background p-4 shadow-sm">
       <View className="mb-4 flex-row items-center gap-2">
         <View
           className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
@@ -64,6 +79,6 @@ export default function PropertyCard({
           <Text className="text-xs text-muted-foreground">Checks</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
