@@ -20,6 +20,21 @@ import { Input } from 'components/ui/input';
 import { Text } from '../../components/ui/text';
 import { firebaseConfig } from '../../firebaseConfig';
 
+const getErrorMessage = (errorCode: string) => {
+  const errorMessages: { [key: string]: string } = {
+    'auth/invalid-email': 'The email address is not valid. Please enter a correct email address.',
+    'auth/user-disabled': 'Your account has been disabled. Please contact support for assistance.',
+    'auth/user-not-found': 'No account found with this email. Please sign up first.',
+    'auth/wrong-password': 'Incorrect password. Please try again or reset your password.',
+    'auth/email-already-in-use': 'The email address is already in use by another account.',
+    'auth/operation-not-allowed':
+      'Email/password accounts are not enabled. Enable email/password in the Firebase console.',
+    'auth/weak-password': 'The password is too weak. Please use a stronger password.',
+    'auth/missing-email': 'Please enter your email address.',
+  };
+  return errorMessages[errorCode] || 'An unexpected error occurred. Please try again later.';
+};
+
 WebBrowser.maybeCompleteAuthSession();
 initializeApp(firebaseConfig);
 
@@ -62,7 +77,8 @@ export default function LoginScreen() {
       await signInWithEmailAndPassword(getAuth(), state.email, state.password);
       // Navigation will be handled by AuthContext listener in _layout.tsx
     } catch (err: any) {
-      dispatch({ type: 'SET_ERROR', payload: err.message });
+      const errorMessage = getErrorMessage(err.code);
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
   };
 
@@ -75,7 +91,8 @@ export default function LoginScreen() {
       await sendPasswordResetEmail(getAuth(), state.email);
       Alert.alert('Forgot Password', 'A password reset email has been sent to your email address.');
     } catch (err: any) {
-      dispatch({ type: 'SET_ERROR', payload: err.message });
+      const errorMessage = getErrorMessage(err.code);
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
   };
 

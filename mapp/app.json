@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "mapp",
-    "slug": "mapp",
-    "version": "1.0.0",
+    "name": "HomeGeekAI",
+    "slug": "homegeek-ai",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mapp",
+    "scheme": "homegeekai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "privacy": "hidden",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -18,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mapp"
+      "bundleIdentifier": "com.homegeekai.demo"
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -26,7 +27,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.mapp"
+      "package": "com.homegeekai.demo"
     },
     "web": {
       "bundler": "metro",
@@ -39,6 +40,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4d090ffd-6554-4652-9cb5-0ca6f02fb167"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4d090ffd-6554-4652-9cb5-0ca6f02fb167"
     }
   }
 }

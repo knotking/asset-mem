@@ -1,7 +1,11 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import Platform from 'react-native';
+import { initializeApp, browserLocalPersistence } from 'firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+const persistence =
+  Platform.OS === 'web' ? browserSessionPersistence : getReactNativePersistence(AsyncStorage);
 const firebaseConfig = {
   apiKey: 'AIzaSyBboitYJHU4M0VD0vJ9TZaAzNygbqtOcjs',
   authDomain: 'goggle-gab.firebaseapp.com',
@@ -13,7 +17,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const auth = initializeAuth(app, {
+  persistence,
+});
 const db = getFirestore(app);
 
 export { auth, db, firebaseConfig };

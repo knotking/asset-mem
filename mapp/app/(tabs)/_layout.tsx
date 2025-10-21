@@ -4,21 +4,29 @@ import { Icon } from '../../components/ui/icon';
 import { Text } from '../../components/ui/text';
 import { View } from 'react-native';
 import AppHeader from '../../components/AppHeader';
+import { useColorScheme } from 'nativewind';
+import { NAV_THEME, THEME } from '@/lib/theme';
 
 export default function TabLayout() {
+  const { colorScheme } = useColorScheme();
+  const activeColor = NAV_THEME[colorScheme ?? 'light'].colors.primary;
+  const inactiveColor = THEME[colorScheme ?? 'light'].mutedForeground;
+  const tabBarBg = NAV_THEME[colorScheme ?? 'light'].colors.card;
+  const borderTopColor = NAV_THEME[colorScheme ?? 'light'].colors.border;
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-background">
       <AppHeader />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#1E90FF',
-          tabBarInactiveTintColor: '#A0A0A0',
+          tabBarActiveTintColor: activeColor,
+          tabBarInactiveTintColor: inactiveColor,
           headerShown: false,
           tabBarShowLabel: true,
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tabBarBg,
             borderTopWidth: 1,
-            borderTopColor: '#E0E0E0',
+            borderTopColor: borderTopColor,
             height: 90,
             paddingBottom: 20,
             paddingTop: 10,
@@ -30,7 +38,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
+            title: 'Properties',
             tabBarIcon: ({ color }) => (
               <View className="w-full items-center justify-center">
                 <Icon as={Home} color={color} size={24} />

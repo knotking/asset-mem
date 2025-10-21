@@ -7,7 +7,20 @@ import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
 
 export default function SignupScreen() {
-  const reducer = (state, action) => {
+  interface SignupState {
+    email: string;
+    password: string;
+    confirmPassword: string;
+    error: string | null;
+  }
+
+  type SignupAction =
+    | { type: 'SET_EMAIL'; payload: string }
+    | { type: 'SET_PASSWORD'; payload: string }
+    | { type: 'SET_CONFIRM_PASSWORD'; payload: string }
+    | { type: 'SET_ERROR'; payload: string | null };
+
+  const reducer = (state: SignupState, action: SignupAction): SignupState => {
     switch (action.type) {
       case 'SET_EMAIL':
         return { ...state, email: action.payload };
@@ -74,7 +87,7 @@ export default function SignupScreen() {
         <Text className="text-white">Sign Up</Text>
       </Button>
       <Link href="/auth/login" className="mt-2 text-primary">
-        Already have an account? Sign in
+        Already have an account? <Text className="font-semibold text-blue-600">Sign in</Text>
       </Link>
     </View>
   );

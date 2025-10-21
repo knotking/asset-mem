@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
+import { useAuth } from './AuthContext';
 
 export interface Property {
   id: string;
@@ -27,18 +28,22 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
-    const user = auth.currentUser;
+    if (isAuthLoading) {
+      return; // Wait for auth state to be determined
+    }
+
     if (!user) {
-      console.log("No user logged in, cannot fetch properties.");
+      console.log('No user logged in, cannot fetch properties.');
       setProperties([]);
       setLoading(false);
       return;
     }
 
     const propertiesRef = collection(db, `users/${user.uid}/properties`);
-    const q = query(propertiesRef, orderBy("createdAt", "desc"));
+    const q = query(propertiesRef, orderBy('createdAt', 'desc'));
 
     const docUnsubscribes: { [key: string]: () => void } = {};
 
@@ -56,7 +61,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
           const baseProperty: Omit<Property, 'docs'> = {
             id: propertyId,
             address: propertyData.address,
-            cityStateZip: propertyData.address.split(", ")[1] || "",
+            cityStateZip: propertyData.address.split(', ')[1] || '',
             services: propertyData.services || 0,
             checks: propertyData.checks || 0,
             name: propertyData.name,
@@ -98,7 +103,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
         setError(null);
       },
       (err) => {
-        console.error("Failed to fetch properties: ", err);
+        console.error('Failed to fetch properties: ', err);
         setError(err.message);
         setLoading(false);
       }
@@ -109,7 +114,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
       // Unsubscribe all docs listeners on cleanup
       Object.values(docUnsubscribes).forEach((unsubscribe) => unsubscribe());
     };
-  }, []);
+  }, [user, isAuthLoading]);
 
   return (
     <PropertyContext.Provider value={{ properties, loading, error }}>

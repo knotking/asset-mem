@@ -4,29 +4,13 @@
     "strict": true,
     "target": "es2020",
     "jsx": "react-native",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "types": [
-      "react-native",
-      "jest",
-      "./svg.d.ts",
-      "firebase",
-      "expo-auth-session",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth"
-    ]
+      "@/*": ["./*"]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts", "mapp/svg.d.ts"],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],
+  "exclude": ["node_modules"]
 }

@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import * as SplashScreen from 'expo-splash-screen';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -12,17 +13,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getAuth(), async (authenticatedUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
       setUser(authenticatedUser);
       setIsLoading(false);
       SplashScreen.hideAsync();
     });
     return () => unsubscribe();
-  }, []);
+  }, [auth]);
 
-  return <AuthContext.Provider value={{ user, isLoading }}>{children}</AuthContext.Provider>;
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, signOut }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

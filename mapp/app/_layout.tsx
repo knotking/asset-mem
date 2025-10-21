@@ -9,6 +9,7 @@ import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { PropertyProvider } from '../contexts/PropertyContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,7 +23,9 @@ export default function RootLayout() {
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <AuthProvider>
-        <Routes />
+        <PropertyProvider>
+          <Routes />
+        </PropertyProvider>
       </AuthProvider>
       <PortalHost />
     </ThemeProvider>

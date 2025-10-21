@@ -10,46 +10,58 @@ interface PropertyCardProps {
   cityStateZip: string;
   docsCount: number;
   servicesCount: number;
-  cloudsOrChecksCount: number;
-  cloudsOrChecksLabel: string;
+  checksCount: number;
 }
 
 export default function PropertyCard({
   address,
+  name,
   cityStateZip,
   docsCount,
   servicesCount,
-  cloudsOrChecksCount,
-  cloudsOrChecksLabel,
+  checksCount,
 }: PropertyCardProps) {
   return (
-    <View className="mb-4 rounded-lg bg-white p-4 shadow-sm">
+    <View className="mb-4 rounded-lg bg-background p-4 shadow-sm">
       <View className="mb-4 flex-row items-center gap-2">
-        <Icon as={Home} size={20} className="text-gray-700" />
-        <View>
-          <Text className="text-base font-semibold text-gray-800">{address}</Text>
-          <Text className="text-sm text-gray-500">{cityStateZip}</Text>
+        <View
+          className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
+          style={{ borderRadius: 9999 }}>
+          <Icon as={Home} size={24} className="text-secondary-foreground" />
+        </View>
+        <View className="flex-1">
+          <Text
+            className="text-base font-semibold text-foreground"
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {name}
+          </Text>
+          <Text className="text-sm text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
+            {address}
+          </Text>
         </View>
       </View>
-      <View className="flex-row justify-around border-t border-gray-200 pt-4">
+      <View className="flex-row justify-around border-t border-border pt-4">
         <View className="items-center">
-          <Icon as={FileText} size={24} className="text-blue-500" />
-          <Text className="text-lg font-bold">{docsCount}</Text>
-          <Text className="text-xs text-gray-500">Docs</Text>
+          <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-blue-100">
+            <Icon as={FileText} size={24} className="text-blue-500" />
+          </View>
+          <Text className="text-lg font-semibold text-foreground">{docsCount}</Text>
+          <Text className="text-xs text-muted-foreground">Docs</Text>
         </View>
         <View className="items-center">
-          <Icon as={Briefcase} size={24} className="text-green-500" />
-          <Text className="text-lg font-bold">{servicesCount}</Text>
-          <Text className="text-xs text-gray-500">Services</Text>
+          <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-green-100">
+            <Icon as={Briefcase} size={24} className="text-green-500" />
+          </View>
+          <Text className="text-lg font-semibold text-foreground">{servicesCount}</Text>
+          <Text className="text-xs text-muted-foreground">Services</Text>
         </View>
         <View className="items-center">
-          <Icon
-            as={cloudsOrChecksLabel === 'Clouds' ? Cloud : CheckCircle}
-            size={24}
-            className="text-purple-500"
-          />
-          <Text className="text-lg font-bold">{cloudsOrChecksCount}</Text>
-          <Text className="text-xs text-gray-500">{cloudsOrChecksLabel}</Text>
+          <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-purple-100">
+            <Icon as={CheckCircle} size={24} className="text-purple-500" />
+          </View>
+          <Text className="text-lg font-semibold text-foreground">{checksCount}</Text>
+          <Text className="text-xs text-muted-foreground">Checks</Text>
         </View>
       </View>
     </View>
