@@ -29,7 +29,7 @@ export default function Screen() {
   }
 
   return (
-    <ScrollView className="bg-light-background-alt flex-1">
+    <ScrollView className="flex-1 bg-light-background-alt">
       <Stack.Screen options={{ headerShown: false }} />
       <View className="mt-4 px-4">
         <Text className="text-lg font-semibold text-foreground">Property AI Agent</Text>

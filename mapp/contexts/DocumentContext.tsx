@@ -12,7 +12,13 @@ interface DocumentContextType {
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
 
-export function DocumentProvider({ children, propertyId }: { children: ReactNode; propertyId: string }) {
+export function DocumentProvider({
+  children,
+  propertyId,
+}: {
+  children: ReactNode;
+  propertyId: string;
+}) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +41,13 @@ export function DocumentProvider({ children, propertyId }: { children: ReactNode
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const newDocuments: Document[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Document));
+        const newDocuments: Document[] = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            }) as Document
+        );
         setDocuments(newDocuments);
         setLoading(false);
         setError(null);
