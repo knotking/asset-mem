@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check ownership of the parent sharedChat document
+    function isSharedChatOwner(shareId) {
+      return get(/databases/$(database)/documents/sharedChats/$(shareId)).data.originalUserId == request.auth.uid;
+    }
+  
+    // Users can only read/write their own data
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for publicly shared chat sessions
+    match /sharedChats/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.originalUserId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.originalUserId == request.auth.uid;
+      allow delete: if false;
+
+      // Messages in a shared chat are publicly readable.
+      // They can only be written (created/updated/deleted in a batch) by the original owner of the share.
+      match /messages/{messageId} {
+        allow read: if true;
+        allow write: if request.auth != null && isSharedChatOwner(shareId);
+      }
+    }
+  }
+}

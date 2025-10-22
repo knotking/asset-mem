@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-size: 16px;
+    --background: 255 100% 100%;
+    --foreground: 0 0% 14.5%;
+    --card: 255 100% 100%;
+    --card-foreground: 0 0% 14.5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 14.5%;
+    --primary: 240 7% 4%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 264 10% 95%;
+    --secondary-foreground: 240 7% 4%;
+    --muted: 0 0% 92.5%;
+    --muted-foreground: 0 0% 49.5%;
+    --accent: 220 6% 93%;
+    --accent-foreground: 240 7% 4%;
+    --destructive: 349 78% 43%;
+    --destructive-foreground: 255 100% 100%;
+    --border: 0 0% 0% / 0.1;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 0 0% 70.8%;
+    --chart-1: 41 83% 60%;
+    --chart-2: 185 45% 54%;
+    --chart-3: 227 49% 36%;
+    --chart-4: 84 81% 75%;
+    --chart-5: 70 78% 68%;
+    --radius: 0.625rem;
+
+    --sidebar-background: 0 0% 98.5%;
+    --sidebar-foreground: 0 0% 14.5%;
+    --sidebar-primary: 240 7% 4%;
+    --sidebar-primary-foreground: 0 0% 98.5%;
+    --sidebar-accent: 0 0% 97%;
+    --sidebar-accent-foreground: 0 0% 20.5%;
+    --sidebar-border: 0 0% 92.2%;
+    --sidebar-ring: 0 0% 70.8%;
+  }
+
+  .dark {
+    --background: 0 0% 14.5%;
+    --foreground: 0 0% 98.5%;
+    --card: 0 0% 14.5%;
+    --card-foreground: 0 0% 98.5%;
+    --popover: 0 0% 14.5%;
+    --popover-foreground: 0 0% 98.5%;
+    --primary: 0 0% 98.5%;
+    --primary-foreground: 0 0% 20.5%;
+    --secondary: 0 0% 26.9%;
+    --secondary-foreground: 0 0% 98.5%;
+    --muted: 0 0% 26.9%;
+    --muted-foreground: 0 0% 70.8%;
+    --accent: 0 0% 26.9%;
+    --accent-foreground: 0 0% 98.5%;
+    --destructive: 26 55% 38%;
+    --destructive-foreground: 25 80% 60%;
+    --border: 0 0% 26.9%;
+    --input: 0 0% 26.9%;
+    --ring: 0 0% 43.9%;
+    --chart-1: 264 69% 46%;
+    --chart-2: 162 57% 65%;
+    --chart-3: 70 78% 68%;
+    --chart-4: 304 74% 59%;
+    --chart-5: 16 75% 61%;
+    --sidebar-background: 0 0% 20.5%;
+    --sidebar-foreground: 0 0% 98.5%;
+    --sidebar-primary: 264 69% 46%;
+    --sidebar-primary-foreground: 0 0% 98.5%;
+    --sidebar-accent: 0 0% 26.9%;
+    --sidebar-accent-foreground: 0 0% 98.5%;
+    --sidebar-border: 0 0% 26.9%;
+    --sidebar-ring: 0 0% 43.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  .prose {
+    --tw-prose-body: hsl(var(--card-foreground));
+    --tw-prose-headings: hsl(var(--card-foreground));
+    --tw-prose-lead: hsl(var(--card-foreground));
+    --tw-prose-links: hsl(var(--primary));
+    --tw-prose-bold: hsl(var(--card-foreground));
+    --tw-prose-counters: hsl(var(--muted-foreground));
+    --tw-prose-bullets: hsl(var(--muted-foreground));
+    --tw-prose-hr: hsl(var(--border));
+    --tw-prose-quotes: hsl(var(--card-foreground));
+    --tw-prose-quote-borders: hsl(var(--border));
+    --tw-prose-captions: hsl(var(--muted-foreground));
+    --tw-prose-code: hsl(var(--card-foreground));
+    --tw-prose-pre-code: hsl(var(--secondary-foreground));
+    --tw-prose-pre-bg: hsl(var(--secondary));
+    --tw-prose-th-borders: hsl(var(--border));
+    --tw-prose-td-borders: hsl(var(--border));
+  }
+
+  .prose-sm {
+      font-size: 0.875rem;
+      line-height: 1.5;
+  }
+  
+  .dark .prose {
+    --tw-prose-body: hsl(var(--foreground));
+    --tw-prose-headings: hsl(var(--foreground));
+    --tw-prose-lead: hsl(var(--foreground));
+    --tw-prose-links: hsl(var(--primary));
+    --tw-prose-bold: hsl(var(--foreground));
+    --tw-prose-counters: hsl(var(--muted-foreground));
+    --tw-prose-bullets: hsl(var(--muted-foreground));
+    --tw-prose-hr: hsl(var(--border));
+    --tw-prose-quotes: hsl(var(--foreground));
+    --tw-prose-quote-borders: hsl(var(--border));
+    --tw-prose-captions: hsl(var(--muted-foreground));
+    --tw-prose-code: hsl(var(--foreground));
+    --tw-prose-pre-code: hsl(var(--secondary-foreground));
+    --tw-prose-pre-bg: hsl(var(--secondary));
+    --tw-prose-th-borders: hsl(var(--border));
+    --tw-prose-td-borders: hsl(var(--border));
+  }
+}

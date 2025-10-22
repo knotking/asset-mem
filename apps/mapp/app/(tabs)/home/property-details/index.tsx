@@ -25,7 +25,7 @@ function DetailsTab({ property }: { property: any }) {
 
   return (
     <View className="mb-4 w-full">
-      <View className="mb-4 rounded-lg border border-gray-300 bg-white p-4">
+      <View className="mb-4 rounded-lg border border-gray-300 bg-background p-4">
         <View className="mb-4 flex-row items-center justify-between">
           <View className="flex-row items-center gap-2">
             <Icon as={FileText} size={18} className="text-muted-foreground" />
@@ -57,11 +57,11 @@ function DetailsTab({ property }: { property: any }) {
       </View>
 
       {/* Property Documents Card */}
-      <View className="rounded-lg border border-gray-300 bg-white p-4">
+      <View className="rounded-lg border border-border bg-background p-4">
         <View className="mb-4 flex-row items-center justify-between">
           <View className="flex-row items-center gap-2">
             <Icon as={FileText} size={18} className="text-muted-foreground" />
-            <Text className="font-semibold text-foreground">Property Documents</Text>
+            <Text className="text-foreground">Property Documents</Text>
           </View>
           <TouchableOpacity className="flex-row items-center gap-2 rounded-md bg-primary px-3 py-2">
             <Icon as={Upload} size={16} className="text-primary-foreground" />
@@ -73,7 +73,7 @@ function DetailsTab({ property }: { property: any }) {
         ) : (
           <View className="space-y-3 border-t border-border pt-4">
             {documents.map((doc) => (
-              <View key={doc.id} className="mb-2 rounded-lg bg-gray-100 p-3">
+              <View key={doc.id} className="mb-2 rounded-lg bg-secondary p-3">
                 <View className="mb-3 flex-row items-start justify-between">
                   <View className="flex-row items-center gap-2">
                     <View className="rounded-md bg-red-100 p-2">
@@ -178,7 +178,7 @@ export default function PropertyDetailsScreen() {
       </View>
 
       {/* Main Content Area */}
-      <ScrollView className="flex-1 bg-white px-4 py-4">
+      <ScrollView className="flex-1 bg-background px-4 py-4">
         {activeTab === 'chat' ? (
           <View className="items-center">
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-gray-200">
