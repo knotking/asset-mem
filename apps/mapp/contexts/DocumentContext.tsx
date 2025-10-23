@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db } from '../../common/src/firebase-native';
 import { useAuth } from './AuthContext';
 import { Document } from '@/app/types';
 

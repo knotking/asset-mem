@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
-import { db, auth } from '../firebaseConfig';
+import { app, auth, storage, db, firebaseConfig } from '../../common/src/firebase-native';
 import { useAuth } from './AuthContext';
 
 export interface Property {
@@ -41,7 +41,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-
+    console.log('In Property Context, DB:', app, db);
     const propertiesRef = collection(db, `users/${user.uid}/properties`);
     const q = query(propertiesRef, orderBy('createdAt', 'desc'));
 

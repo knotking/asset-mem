@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getAuth, onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '../../common/src/firebase-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 interface AuthContextType {
@@ -13,7 +14,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       SplashScreen.hideAsync();
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
   const signOut = async () => {
     await firebaseSignOut(auth);

@@ -1,13 +1,12 @@
 import React, { useReducer } from 'react';
 import { Alert, View } from 'react-native';
+import { auth, firebaseConfig } from '../../../common/src/firebase-native';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithCredential,
 } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
 import GoogleSvg from '../assets/images/google-icon.svg';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -18,7 +17,6 @@ import { Button } from '../../components/ui/button';
 import { Icon } from '../../components/ui/icon';
 import { Input } from 'components/ui/input';
 import { Text } from '../../components/ui/text';
-import { firebaseConfig } from '../../firebaseConfig';
 
 const getErrorMessage = (errorCode: string) => {
   const errorMessages: { [key: string]: string } = {
@@ -36,7 +34,6 @@ const getErrorMessage = (errorCode: string) => {
 };
 
 WebBrowser.maybeCompleteAuthSession();
-initializeApp(firebaseConfig);
 
 export default function LoginScreen() {
   const [passwordVisible, setPasswordVisible] = React.useState(false);
@@ -67,14 +64,14 @@ export default function LoginScreen() {
     if (responseGoogle?.type === 'success') {
       const { id_token } = responseGoogle.params;
       const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(getAuth(), credential);
+      signInWithCredential(auth, credential);
     }
   }, [responseGoogle]);
 
   const handleSignIn = async () => {
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
-      await signInWithEmailAndPassword(getAuth(), state.email, state.password);
+      await signInWithEmailAndPassword(auth, state.email, state.password);
       // Navigation will be handled by AuthContext listener in _layout.tsx
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code);
@@ -88,7 +85,7 @@ export default function LoginScreen() {
       return;
     }
     try {
-      await sendPasswordResetEmail(getAuth(), state.email);
+      await sendPasswordResetEmail(auth, state.email);
       Alert.alert('Forgot Password', 'A password reset email has been sent to your email address.');
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code);
