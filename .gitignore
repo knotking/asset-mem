@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+
 lib64/
 parts/
 sdist/
@@ -180,3 +180,6 @@ server/venv/
 deployment/terraform/.terraform
 traefik/acme.json
 node_modules
+**/.expo
+**/.next
+**/expo-env.d.ts
