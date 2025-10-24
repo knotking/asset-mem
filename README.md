@@ -6,12 +6,12 @@ This repository contains multiple applications (`mapp` and `webapp`) managed wit
 
 Before you begin, ensure you have the following installed:
 
-*   **Node.js**: [LTS version recommended](https://nodejs.org/en/download/)
-*   **npm** (Node Package Manager): Comes with Node.js.
-*   **Expo CLI** (for `mapp` development):
-    ```bash
-    npm install -g expo-cli
-    ```
+- **Node.js**: [LTS version recommended](https://nodejs.org/en/download/)
+- **npm** (Node Package Manager): Comes with Node.js.
+- **Expo CLI** (for `mapp` development):
+  ```bash
+  npm install -g expo-cli
+  ```
 
 ## Monorepo Setup
 
@@ -29,19 +29,7 @@ The `--legacy-peer-deps` flag is used to handle potential peer dependency confli
 
 Both `mapp` and `webapp` rely on Firebase. You will need to set up your Firebase project and configure the environment variables.
 
-1.  Create a `.env.dev` file in the root of the project (`/Users/prakashbaskaran/projects/HomeApp/.env.dev`).
-2.  Add your Firebase configuration details to this file. An example `firebase-config.ts` is located in `apps/common/src/firebase-config.ts`. You'll need to populate the `.env.dev` with the corresponding values.
-
-    ```
-    # Example .env.dev content
-    EXPO_PUBLIC_FIREBASE_API_KEY=YOUR_API_KEY
-    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_AUTH_DOMAIN
-    EXPO_PUBLIC_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
-    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=YOUR_STORAGE_BUCKET
-    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_MESSAGING_SENDER_ID
-    EXPO_PUBLIC_FIREBASE_APP_ID=YOUR_APP_ID
-    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=YOUR_MEASUREMENT_ID
-    ```
+1.  Add your Firebase configuration details to this file `apps/common/src/firebase-config.ts`.
 
 ### Running `mapp` (Mobile Application)
 
