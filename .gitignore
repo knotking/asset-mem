@@ -179,3 +179,4 @@ server/venv/
 **/.DS_Store
 deployment/terraform/.terraform
 traefik/acme.json
+node_modules

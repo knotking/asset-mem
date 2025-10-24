@@ -1,0 +1,27 @@
+{
+  "name": "@homeapp/common",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./firebase": {
+      "react-native": "./src/firebase-native.ts",
+      "default": "./src/firebase-web.ts"
+    },
+    "./firebase-config": "./src/firebase-config.ts"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.22.0",
+    "firebase": "^12.4.0"
+  },
+  "devDependencies": {
+    "react-native": "^0.81.5",
+    "@types/react": "^19.2.2",
+    "@types/react-native": "^0.72.8",
+    "typescript": "^5.4.5"
+  }
+}
