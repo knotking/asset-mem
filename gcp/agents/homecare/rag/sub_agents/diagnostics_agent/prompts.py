@@ -157,7 +157,7 @@ def cost_estimation_agent_prompt() -> str:
         **Final Response Formulation:**
         Your output should be a JSON object with the following structure:
         {
-          "costEstimates": "### Cost Estimates:\n[Provide high-level cost estimates for both DIY and professional service options. Include:\n- **DIY Estimate**: Material/product costs and any additional expenses\n- **Professional Service Estimate**: Average cost range for local professionals\n- **Cost Comparison**: Brief analysis of cost differences and considerations\n- **Recommendation**: High-level guidance on which option might be more cost-effective based on complexity]\n\nIf no reliable cost estimates can be determined, state: \"Unable to provide accurate cost estimates for [problem] due to insufficient information.\""
+          "costEstimates": "[The cost_estimation tool returns structured JSON data with costEstimates broken down into DIY and Service sections. Simply pass through the JSON response from the tool call, which includes repair_type, DIY section, Service section, comparison, and recommendation.]"
         }
 
         **Important Directives:**
@@ -189,7 +189,7 @@ def product_recommendations_agent_prompt() -> str:
         **Final Response Formulation:**
         Your output should be a JSON object with the following structure:
         {
-          "recommendedProducts": "### Product Recommendations:\n[Provide comprehensive product recommendations including:\n- **DIY Repair Products**: Essential products needed for DIY repair with specific retailer recommendations\n- **Professional Service Products**: Products typically used by professionals\n- **Recommended Retailers**: Best stores for this type of repair (e.g., Home Depot/Lowe's for home repairs, Costco for tires, AutoZone for car parts)\n- **Shopping Tips**: Guidance on comparing prices, return policies, and buying extra supplies\n\nProducts should include names, prices, ratings, reviews, image URLs (when available), and purchase links. ★ indicates products from recommended retailers.\n\nIf no relevant products were found, state: \"No recommended products found for [problem] repair/replacement.\"]"
+          "recommendedProducts": "[The product_recommendations tool returns structured JSON data with nested vendor and product information. Simply pass through the JSON response from the tool call, which includes DIY and Service sections with detailed product data including product_name, vendor, url, item_price, rating, reviews, image_url, and is_preferred_retailer for each product.]"
         }
 
         **Important Directives:**

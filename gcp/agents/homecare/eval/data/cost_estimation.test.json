@@ -9,7 +9,33 @@
         }
       }
     ],
-    "reference": "For car scratch repair, you have several options:\n\n**DIY Estimate**: $20-50\n- Material/product costs for touch-up paint\n- Basic tools (sandpaper, primer)\n- Time investment required\n\n**Professional Service Estimate**: $200-500\n- Labor costs for professional repair\n- Professional expertise and equipment\n- Warranty/guarantee included\n\n**Cost Comparison**:\n- DIY typically saves 60-80% on labor costs\n- Professional service provides expertise and warranty\n- Consider complexity and your skill level\n\n**Recommendation**:\n- Simple scratches: DIY may be cost-effective\n- Complex or deep scratches: Professional service recommended\n- Estimates may vary by location and specific circumstances"
+    "reference": {
+      "costEstimates": {
+        "repair_type": "Paint Touch-Up And Scratch Repair",
+        "DIY": {
+          "cost_range": "$20-50",
+          "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+          "savings": "60-80% on labor costs",
+          "complexity": "Simple repairs may be cost-effective"
+        },
+        "Service": {
+          "cost_range": "$200-500",
+          "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+          "benefits": "Expertise and warranty",
+          "complexity": "Complex or safety-critical repairs recommended"
+        },
+        "comparison": {
+          "diy_savings": "60-80% on labor costs",
+          "professional_benefits": "Expertise and warranty",
+          "considerations": "Complexity and skill level"
+        },
+        "recommendation": {
+          "simple_repairs": "DIY may be cost-effective",
+          "complex_repairs": "Professional service recommended",
+          "note": "Estimates may vary by location and specific circumstances"
+        }
+      }
+    }
   },
   {
     "query": "My kitchen faucet is leaking. What will it cost to fix?",
@@ -21,7 +47,33 @@
         }
       }
     ],
-    "reference": "For faucet leak repair, here are the cost estimates:\n\n**DIY Estimate**: $20-100\n- Material/product costs for O-rings, gaskets\n- Basic tools (wrench, pliers)\n- Time investment needed\n\n**Professional Service Estimate**: $200-500\n- Labor costs for professional repair\n- Professional expertise included\n- Warranty/guarantee typically provided\n\n**Cost Comparison**:\n- DIY typically saves 60-80% on labor costs\n- Professional service provides expertise and warranty\n- Consider repair complexity and safety factors\n\n**Recommendation**:\n- Simple leaks: DIY may be cost-effective\n- Complex plumbing issues: Professional service recommended\n- Estimates are rough and may vary significantly by location and specific circumstances"
+    "reference": {
+      "costEstimates": {
+        "repair_type": "Pipe Leak Repair",
+        "DIY": {
+          "cost_range": "$20-100",
+          "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+          "savings": "60-80% on labor costs",
+          "complexity": "Simple repairs may be cost-effective"
+        },
+        "Service": {
+          "cost_range": "$200-500",
+          "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+          "benefits": "Expertise and warranty",
+          "complexity": "Complex or safety-critical repairs recommended"
+        },
+        "comparison": {
+          "diy_savings": "60-80% on labor costs",
+          "professional_benefits": "Expertise and warranty",
+          "considerations": "Complexity and skill level"
+        },
+        "recommendation": {
+          "simple_repairs": "DIY may be cost-effective",
+          "complex_repairs": "Professional service recommended",
+          "note": "Estimates may vary by location and specific circumstances"
+        }
+      }
+    }
   },
   {
     "query": "I need to replace my brake pads. What's the cost?",
@@ -33,7 +85,33 @@
         }
       }
     ],
-    "reference": "For brake pad replacement, here are the cost estimates:\n\n**DIY Estimate**: $100-300\n- Material/product costs for brake pads\n- Basic tools (jack, lug wrench, brake tools)\n- Time investment required\n\n**Professional Service Estimate**: $300-600\n- Labor costs for professional service\n- Professional expertise included\n- Warranty/guarantee included\n\n**Cost Comparison**:\n- DIY typically saves 60-80% on labor costs\n- Professional service provides expertise and warranty\n- Consider complexity and your skill level\n\n**Recommendation**:\n- Simple brake pad replacement: DIY may be cost-effective\n- Complex brake system issues: Professional service recommended\n- Estimates may vary by location and specific circumstances"
+    "reference": {
+      "costEstimates": {
+        "repair_type": "Brake Pad/Rotor Replacement",
+        "DIY": {
+          "cost_range": "$100-300",
+          "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+          "savings": "60-80% on labor costs",
+          "complexity": "Simple repairs may be cost-effective"
+        },
+        "Service": {
+          "cost_range": "$300-600",
+          "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+          "benefits": "Expertise and warranty",
+          "complexity": "Complex or safety-critical repairs recommended"
+        },
+        "comparison": {
+          "diy_savings": "60-80% on labor costs",
+          "professional_benefits": "Expertise and warranty",
+          "considerations": "Complexity and skill level"
+        },
+        "recommendation": {
+          "simple_repairs": "DIY may be cost-effective",
+          "complex_repairs": "Professional service recommended",
+          "note": "Estimates may vary by location and specific circumstances"
+        }
+      }
+    }
   },
   {
     "query": "My dryer isn't heating. How much will repair cost?",
@@ -45,7 +123,33 @@
         }
       }
     ],
-    "reference": "For dryer repair, here are the cost estimates:\n\n**DIY Estimate**: $50-150\n- Material/product costs for replacement parts\n- Basic tools may be required\n- Time investment needed\n\n**Professional Service Estimate**: $200-400\n- Labor costs depend on complexity\n- Professional expertise included\n- Warranty/guarantee typically provided\n\n**Cost Comparison**:\n- DIY typically saves 60-80% on labor costs\n- Professional service provides expertise and warranty\n- Consider repair complexity and safety factors\n\n**Recommendation**:\n- Simple repairs: DIY may be cost-effective\n- Complex or safety-critical repairs: Professional service recommended\n- Estimates are rough and may vary significantly by location and specific circumstances"
+    "reference": {
+      "costEstimates": {
+        "repair_type": "Dryer Repair",
+        "DIY": {
+          "cost_range": "$50-150",
+          "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+          "savings": "60-80% on labor costs",
+          "complexity": "Simple repairs may be cost-effective"
+        },
+        "Service": {
+          "cost_range": "$200-400",
+          "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+          "benefits": "Expertise and warranty",
+          "complexity": "Complex or safety-critical repairs recommended"
+        },
+        "comparison": {
+          "diy_savings": "60-80% on labor costs",
+          "professional_benefits": "Expertise and warranty",
+          "considerations": "Complexity and skill level"
+        },
+        "recommendation": {
+          "simple_repairs": "DIY may be cost-effective",
+          "complex_repairs": "Professional service recommended",
+          "note": "Estimates may vary by location and specific circumstances"
+        }
+      }
+    }
   },
   {
     "query": "I have a crack in my drywall. What's the repair cost?",
@@ -57,6 +161,32 @@
         }
       }
     ],
-    "reference": "For drywall crack repair, here are the cost estimates:\n\n**DIY Estimate**: $20-50\n- Material/product costs for joint compound, tape\n- Basic tools (putty knife, sandpaper)\n- Time investment required\n\n**Professional Service Estimate**: $200-400\n- Labor costs for professional repair\n- Professional expertise included\n- Warranty/guarantee included\n\n**Cost Comparison**:\n- DIY typically saves 60-80% on labor costs\n- Professional service provides expertise and warranty\n- Consider complexity and your skill level\n\n**Recommendation**:\n- Simple cracks: DIY may be cost-effective\n- Complex or structural cracks: Professional service recommended\n- Estimates may vary by location and specific circumstances"
+    "reference": {
+      "costEstimates": {
+        "repair_type": "Drywall Patch And Repair",
+        "DIY": {
+          "cost_range": "$20-50",
+          "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+          "savings": "60-80% on labor costs",
+          "complexity": "Simple repairs may be cost-effective"
+        },
+        "Service": {
+          "cost_range": "$200-400",
+          "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+          "benefits": "Expertise and warranty",
+          "complexity": "Complex or safety-critical repairs recommended"
+        },
+        "comparison": {
+          "diy_savings": "60-80% on labor costs",
+          "professional_benefits": "Expertise and warranty",
+          "considerations": "Complexity and skill level"
+        },
+        "recommendation": {
+          "simple_repairs": "DIY may be cost-effective",
+          "complex_repairs": "Professional service recommended",
+          "note": "Estimates may vary by location and specific circumstances"
+        }
+      }
+    }
   }
 ]

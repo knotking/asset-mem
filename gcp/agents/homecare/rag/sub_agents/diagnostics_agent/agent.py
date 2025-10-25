@@ -111,7 +111,10 @@ def cost_estimation(query: str) -> str:
     """
     Provides high-level cost estimates for DIY and professional service options.
     This is a simplified estimation based on common repair types and market rates.
+    Returns structured output for nested JSON response.
     """
+    import json
+    
     query_lower = query.lower()
     
     # Define cost estimation categories with DIY and professional estimates
@@ -153,66 +156,80 @@ def cost_estimation(query: str) -> str:
         pro_cost = matched_category["pro"]
         description = matched_category["description"]
         
-        return f"""### Cost Estimates for {description.title()}:
-
-**DIY Estimate**: {diy_cost}
-- Material/product costs
-- Basic tools (if needed)
-- Time investment required
-
-**Professional Service Estimate**: {pro_cost}
-- Labor costs
-- Professional expertise
-- Warranty/guarantee included
-
-**Cost Comparison**: 
-- DIY typically saves 60-80% on labor costs
-- Professional service provides expertise and warranty
-- Consider complexity and your skill level
-
-**Recommendation**: 
-- Simple repairs: DIY may be cost-effective
-- Complex or safety-critical repairs: Professional service recommended
-- Estimates may vary by location and specific circumstances"""
-    
+        response_data = {
+            "costEstimates": {
+                "repair_type": description.title(),
+                "DIY": {
+                    "cost_range": diy_cost,
+                    "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
+                    "savings": "60-80% on labor costs",
+                    "complexity": "Simple repairs may be cost-effective"
+                },
+                "Service": {
+                    "cost_range": pro_cost,
+                    "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
+                    "benefits": "Expertise and warranty",
+                    "complexity": "Complex or safety-critical repairs recommended"
+                },
+                "comparison": {
+                    "diy_savings": "60-80% on labor costs",
+                    "professional_benefits": "Expertise and warranty",
+                    "considerations": "Complexity and skill level"
+                },
+                "recommendation": {
+                    "simple_repairs": "DIY may be cost-effective",
+                    "complex_repairs": "Professional service recommended",
+                    "note": "Estimates may vary by location and specific circumstances"
+                }
+            }
+        }
+        
     else:
-        return f"""### Cost Estimates for {query}:
-
-**DIY Estimate**: $50-300
-- Material/product costs vary by repair type
-- Basic tools may be required
-- Time investment needed
-
-**Professional Service Estimate**: $200-800
-- Labor costs depend on complexity
-- Professional expertise included
-- Warranty/guarantee typically provided
-
-**Cost Comparison**: 
-- DIY typically saves 60-80% on labor costs
-- Professional service provides expertise and warranty
-- Consider repair complexity and safety factors
-
-**Recommendation**: 
-- Simple repairs: DIY may be cost-effective
-- Complex or safety-critical repairs: Professional service recommended
-- Estimates are rough and may vary significantly by location and specific circumstances
-
-*Note: For accurate estimates, consult local professionals or get multiple quotes.*"""
+        response_data = {
+            "costEstimates": {
+                "repair_type": query,
+                "DIY": {
+                    "cost_range": "$50-300",
+                    "includes": ["Material/product costs vary by repair type", "Basic tools may be required", "Time investment needed"],
+                    "savings": "60-80% on labor costs",
+                    "complexity": "Simple repairs may be cost-effective"
+                },
+                "Service": {
+                    "cost_range": "$200-800",
+                    "includes": ["Labor costs depend on complexity", "Professional expertise included", "Warranty/guarantee typically provided"],
+                    "benefits": "Expertise and warranty",
+                    "complexity": "Complex or safety-critical repairs recommended"
+                },
+                "comparison": {
+                    "diy_savings": "60-80% on labor costs",
+                    "professional_benefits": "Expertise and warranty",
+                    "considerations": "Repair complexity and safety factors"
+                },
+                "recommendation": {
+                    "simple_repairs": "DIY may be cost-effective",
+                    "complex_repairs": "Professional service recommended",
+                    "note": "Estimates are rough and may vary significantly by location and specific circumstances. For accurate estimates, consult local professionals or get multiple quotes."
+                }
+            }
+        }
+    
+    return json.dumps(response_data)
 
 # Enhanced tool for product recommendations with DIY vs Service scenarios
 def product_recommendations(query: str) -> str:
     """
     Provides targeted product recommendations for both DIY and Service scenarios.
     Recommends specific products based on problem type and appropriate retailers.
+    Returns structured JSON output with nested vendor and product information.
     """
     serpapi_api_key = os.environ.get("SERP_API_KEY")
     
     if not serpapi_api_key:
-        return "Product recommendations service not available (missing API key)."
+        return '{"recommendedProducts": "Product recommendations service not available (missing API key)."}'
     
     try:
         import serpapi
+        import json
         
         # Determine problem type and appropriate retailers
         query_lower = query.lower()
@@ -290,32 +307,23 @@ def product_recommendations(query: str) -> str:
                     source = result.get("source", "Unknown Store")
                     rating = result.get("rating", "")
                     reviews = result.get("reviews", "")
-                    image_url = result.get("thumbnail", "")  # Extract image URL
+                    image_url = result.get("thumbnail", "")
                     
                     # Prioritize preferred retailers
-                    if any(retailer.lower() in source.lower() for retailer in preferred_retailers):
-                        priority = "★ "
-                    else:
-                        priority = ""
+                    is_preferred = any(retailer.lower() in source.lower() for retailer in preferred_retailers)
                     
-                    rec_parts = [f"- {priority}{title}"]
+                    product_data = {
+                        "product_name": title,
+                        "vendor": source if source != "Unknown Store" else None,
+                        "url": link if link else None,
+                        "item_price": price if price != "Price not available" else None,
+                        "rating": rating if rating else None,
+                        "reviews": reviews if reviews else None,
+                        "image_url": image_url if image_url else None,
+                        "is_preferred_retailer": is_preferred
+                    }
                     
-                    if price and price != "Price not available":
-                        rec_parts.append(f"({price})")
-                    
-                    if source and source != "Unknown Store":
-                        rec_parts.append(f"- {source}")
-                    
-                    if rating and reviews:
-                        rec_parts.append(f"- Rating: {rating} ({reviews} reviews)")
-                    
-                    if image_url:
-                        rec_parts.append(f"- Image: {image_url}")
-                    
-                    if link:
-                        rec_parts.append(f"- {link}")
-                    
-                    processed.append(" ".join(rec_parts))
+                    processed.append(product_data)
                     
                 except (KeyError, TypeError) as e:
                     logger.warning(f"Error processing {scenario_name} product: {e}")
@@ -324,45 +332,35 @@ def product_recommendations(query: str) -> str:
             return processed
         
         # Generate recommendations
-        recommendations = []
-        
-        # DIY Recommendations
         diy_items = process_products(diy_products, "DIY")
-        if diy_items:
-            recommendations.append("### DIY Repair Products:")
-            recommendations.append("Essential products you'll need to fix this yourself:")
-            recommendations.extend(diy_items)
-            recommendations.append("")
-        
-        # Service Recommendations  
         service_items = process_products(service_products, "Service")
-        if service_items:
-            recommendations.append("### Professional Service Products:")
-            recommendations.append("Products typically used by professionals for this repair:")
-            recommendations.extend(service_items)
-            recommendations.append("")
         
-        # Add retailer recommendations
-        if preferred_retailers:
-            recommendations.append("### Recommended Retailers:")
-            recommendations.append(f"Best stores for this type of repair: {', '.join(preferred_retailers[:4])}")
-            recommendations.append("")
+        # Create structured response
+        response_data = {
+            "recommendedProducts": {
+                "DIY": {
+                    "products": diy_items,
+                    "description": "Essential products you'll need to fix this yourself"
+                },
+                "Service": {
+                    "products": service_items,
+                    "description": "Products typically used by professionals for this repair"
+                },
+                "recommended_retailers": preferred_retailers[:4],
+                "shopping_tips": [
+                    "★ indicates products from recommended retailers",
+                    "Compare prices across multiple stores",
+                    "Check return policies before purchasing",
+                    "Consider buying extra supplies for future repairs"
+                ]
+            }
+        }
         
-        # Add general guidance
-        recommendations.append("### Shopping Tips:")
-        recommendations.append("- ★ indicates products from recommended retailers")
-        recommendations.append("- Compare prices across multiple stores")
-        recommendations.append("- Check return policies before purchasing")
-        recommendations.append("- Consider buying extra supplies for future repairs")
-        
-        if recommendations:
-            return "\n".join(recommendations)
-        else:
-            return f"No recommended products found for {query}. Try searching with more specific terms."
+        return json.dumps(response_data)
             
     except Exception as e:
         logger.error(f"Error searching for product recommendations: {e}")
-        return f"Error retrieving product recommendations: {str(e)}"
+        return json.dumps({"recommendedProducts": f"Error retrieving product recommendations: {str(e)}"})
 
 research_agent = Agent(
     model='gemini-2.5-flash',
