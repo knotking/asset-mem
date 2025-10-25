@@ -9,7 +9,77 @@
         }
       }
     ],
-    "reference": "### Product Recommendations:\n\n### DIY Repair Products:\nEssential products you'll need to fix this yourself:\n- ★ Touch-Up Paint Kit ($25) - AutoZone - Rating: 4.5 (120 reviews) - Image: https://images.autozone.com/paint-kit.jpg - https://autozone.com/touch-up-paint\n- ★ Automotive Sandpaper Set ($15) - Advance Auto - Rating: 4.2 (85 reviews) - Image: https://images.advanceauto.com/sandpaper.jpg - https://advanceauto.com/sandpaper\n- Microfiber Cloths ($10) - Amazon - Rating: 4.3 (200 reviews) - Image: https://images.amazon.com/microfiber.jpg - https://amazon.com/microfiber\n- Car Scratch Repair Kit ($30) - O'Reilly Auto - Rating: 4.1 (95 reviews) - https://oreillyauto.com/repair-kit\n- Touch-Up Paint Pen ($15) - AutoZone - Rating: 4.4 (150 reviews) - Image: https://images.autozone.com/paint-pen.jpg - https://autozone.com/paint-pen\n\n### Professional Service Products:\nProducts typically used by professionals for this repair:\n- ★ Professional Touch-Up Paint ($45) - AutoZone - Rating: 4.6 (180 reviews) - Image: https://images.autozone.com/pro-paint.jpg - https://autozone.com/pro-paint\n- ★ Automotive Primer ($25) - Advance Auto - Rating: 4.3 (120 reviews) - Image: https://images.advanceauto.com/primer.jpg - https://advanceauto.com/primer\n- Clear Coat Spray ($20) - O'Reilly Auto - Rating: 4.2 (95 reviews) - https://oreillyauto.com/clear-coat\n- Professional Sanding Block ($18) - AutoZone - Rating: 4.1 (110 reviews) - Image: https://images.autozone.com/sanding-block.jpg - https://autozone.com/sanding-block\n\n### Recommended Retailers:\nBest stores for this type of repair: AutoZone, Advance Auto, O'Reilly Auto, Body Shop Supply\n\n### Shopping Tips:\n- ★ indicates products from recommended retailers\n- Compare prices across multiple stores\n- Check return policies before purchasing\n- Consider buying extra supplies for future repairs"
+    "reference": {
+      "recommendedProducts": {
+        "DIY": {
+          "products": [
+            {
+              "product_name": "Touch-Up Paint Kit",
+              "vendor": "AutoZone",
+              "url": "https://autozone.com/touch-up-paint",
+              "item_price": "$25",
+              "rating": "4.5",
+              "reviews": "120 reviews",
+              "image_url": "https://images.autozone.com/paint-kit.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "Automotive Sandpaper Set",
+              "vendor": "Advance Auto",
+              "url": "https://advanceauto.com/sandpaper",
+              "item_price": "$15",
+              "rating": "4.2",
+              "reviews": "85 reviews",
+              "image_url": "https://images.advanceauto.com/sandpaper.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "Microfiber Cloths",
+              "vendor": "Amazon",
+              "url": "https://amazon.com/microfiber",
+              "item_price": "$10",
+              "rating": "4.3",
+              "reviews": "200 reviews",
+              "image_url": "https://images.amazon.com/microfiber.jpg",
+              "is_preferred_retailer": false
+            }
+          ],
+          "description": "Essential products you'll need to fix this yourself"
+        },
+        "Service": {
+          "products": [
+            {
+              "product_name": "Professional Touch-Up Paint",
+              "vendor": "AutoZone",
+              "url": "https://autozone.com/pro-paint",
+              "item_price": "$45",
+              "rating": "4.6",
+              "reviews": "180 reviews",
+              "image_url": "https://images.autozone.com/pro-paint.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "Automotive Primer",
+              "vendor": "Advance Auto",
+              "url": "https://advanceauto.com/primer",
+              "item_price": "$25",
+              "rating": "4.3",
+              "reviews": "120 reviews",
+              "image_url": "https://images.advanceauto.com/primer.jpg",
+              "is_preferred_retailer": true
+            }
+          ],
+          "description": "Products typically used by professionals for this repair"
+        },
+        "recommended_retailers": ["AutoZone", "Advance Auto", "O'Reilly Auto", "Body Shop Supply"],
+        "shopping_tips": [
+          "★ indicates products from recommended retailers",
+          "Compare prices across multiple stores",
+          "Check return policies before purchasing",
+          "Consider buying extra supplies for future repairs"
+        ]
+      }
+    }
   },
   {
     "query": "What products do I need to fix a leaking faucet?",
@@ -21,7 +91,77 @@
         }
       }
     ],
-    "reference": "### Product Recommendations:\n\n### DIY Repair Products:\nEssential products you'll need to fix this yourself:\n- ★ Faucet Repair Kit ($25) - Home Depot - Rating: 4.6 (180 reviews) - Image: https://images.homedepot.com/faucet-kit.jpg - https://homedepot.com/faucet-repair\n- ★ O-Ring Assortment ($15) - Lowe's - Rating: 4.3 (120 reviews) - Image: https://images.lowes.com/o-rings.jpg - https://lowes.com/o-rings\n- Plumber's Grease ($12) - Ace Hardware - Rating: 4.2 (95 reviews) - Image: https://images.acehardware.com/grease.jpg - https://acehardware.com/grease\n- Faucet Cartridge ($35) - Home Depot - Rating: 4.4 (110 reviews) - https://homedepot.com/cartridge\n- Pipe Wrench Set ($45) - Lowe's - Rating: 4.1 (200 reviews) - Image: https://images.lowes.com/wrench.jpg - https://lowes.com/wrench\n\n### Professional Service Products:\nProducts typically used by professionals for this repair:\n- ★ Professional Faucet Repair Kit ($45) - Home Depot - Rating: 4.7 (250 reviews) - Image: https://images.homedepot.com/pro-kit.jpg - https://homedepot.com/pro-kit\n- ★ Faucet Seat Dressing Tool ($20) - Lowe's - Rating: 4.5 (180 reviews) - Image: https://images.lowes.com/dressing-tool.jpg - https://lowes.com/dressing-tool\n- Professional O-Ring Kit ($25) - Ace Hardware - Rating: 4.4 (150 reviews) - https://acehardware.com/pro-rings\n- Faucet Valve Seat ($18) - Home Depot - Rating: 4.3 (120 reviews) - Image: https://images.homedepot.com/valve-seat.jpg - https://homedepot.com/valve-seat\n\n### Recommended Retailers:\nBest stores for this type of repair: Home Depot, Lowe's, Ace Hardware\n\n### Shopping Tips:\n- ★ indicates products from recommended retailers\n- Compare prices across multiple stores\n- Check return policies before purchasing\n- Consider buying extra supplies for future repairs"
+    "reference": {
+      "recommendedProducts": {
+        "DIY": {
+          "products": [
+            {
+              "product_name": "Faucet Repair Kit",
+              "vendor": "Home Depot",
+              "url": "https://homedepot.com/faucet-repair",
+              "item_price": "$25",
+              "rating": "4.6",
+              "reviews": "180 reviews",
+              "image_url": "https://images.homedepot.com/faucet-kit.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "O-Ring Assortment",
+              "vendor": "Lowe's",
+              "url": "https://lowes.com/o-rings",
+              "item_price": "$15",
+              "rating": "4.3",
+              "reviews": "120 reviews",
+              "image_url": "https://images.lowes.com/o-rings.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "Plumber's Grease",
+              "vendor": "Ace Hardware",
+              "url": "https://acehardware.com/grease",
+              "item_price": "$12",
+              "rating": "4.2",
+              "reviews": "95 reviews",
+              "image_url": "https://images.acehardware.com/grease.jpg",
+              "is_preferred_retailer": true
+            }
+          ],
+          "description": "Essential products you'll need to fix this yourself"
+        },
+        "Service": {
+          "products": [
+            {
+              "product_name": "Professional Faucet Repair Kit",
+              "vendor": "Home Depot",
+              "url": "https://homedepot.com/pro-kit",
+              "item_price": "$45",
+              "rating": "4.7",
+              "reviews": "250 reviews",
+              "image_url": "https://images.homedepot.com/pro-kit.jpg",
+              "is_preferred_retailer": true
+            },
+            {
+              "product_name": "Faucet Seat Dressing Tool",
+              "vendor": "Lowe's",
+              "url": "https://lowes.com/dressing-tool",
+              "item_price": "$20",
+              "rating": "4.5",
+              "reviews": "180 reviews",
+              "image_url": "https://images.lowes.com/dressing-tool.jpg",
+              "is_preferred_retailer": true
+            }
+          ],
+          "description": "Products typically used by professionals for this repair"
+        },
+        "recommended_retailers": ["Home Depot", "Lowe's", "Ace Hardware"],
+        "shopping_tips": [
+          "★ indicates products from recommended retailers",
+          "Compare prices across multiple stores",
+          "Check return policies before purchasing",
+          "Consider buying extra supplies for future repairs"
+        ]
+      }
+    }
   },
   {
     "query": "I need brake pads for my car. What are the best options?",
