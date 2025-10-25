@@ -55,10 +55,14 @@ Document retrieval and knowledge base access:
 - **Authorization Status**: Identifies authorized vs. non-authorized service centers
 
 ### Product Recommendations
-- **Google Shopping Search**: Comprehensive product search via SerpAPI
-- **Real-Time Pricing**: Current prices and availability
-- **Product Details**: Names, ratings, reviews, and specifications
-- **Direct Links**: Purchase links for easy access
+- **Dual Scenario Support**: Products for both DIY repair and professional service scenarios
+- **Targeted Retailer Selection**: Smart recommendations based on problem type
+  - Home repairs: Home Depot, Lowe's, Ace Hardware
+  - Automotive: AutoZone, Advance Auto, Costco (for tires)
+  - General: Amazon, Harbor Freight
+- **Comprehensive Product Lists**: Essential items needed to fix specific problems
+- **Rich Product Data**: Current prices, ratings, reviews, and product images
+- **Shopping Guidance**: Tips for comparing prices and return policies
 
 ### Cost Estimation
 - **DIY Estimates**: Material costs and tool requirements

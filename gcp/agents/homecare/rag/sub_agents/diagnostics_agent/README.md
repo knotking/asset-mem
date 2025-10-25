@@ -50,18 +50,22 @@ Diagnostics Agent
 
 ### 3. Product Recommendations Agent
 
-**Purpose**: Finds relevant products for DIY repair or replacement.
+**Purpose**: Finds relevant products for both DIY repair and professional service scenarios.
 
 **Tools**:
-- `product_recommendations`: Searches Google Shopping via SerpAPI for products across multiple retailers
+- `product_recommendations`: Searches Google Shopping via SerpAPI for products across multiple retailers with targeted recommendations
 
 **Features**:
-- Searches Google Shopping for comprehensive product coverage
-- Returns product names, prices, ratings, reviews, and purchase links
-- Provides results from multiple retailers in a single search
-- Includes product ratings and review counts when available
+- **Dual Scenario Support**: Provides products for both DIY and professional service scenarios
+- **Targeted Retailer Selection**: Recommends appropriate retailers based on problem type
+  - Home repairs: Home Depot, Lowe's, Ace Hardware
+  - Automotive: AutoZone, Advance Auto, Costco (for tires)
+  - General: Amazon, Harbor Freight
+- **Smart Product Prioritization**: ★ indicates products from recommended retailers
+- **Comprehensive Product Info**: Names, prices, ratings, reviews, image URLs, and purchase links
+- **Shopping Guidance**: Tips for comparing prices, return policies, and buying extra supplies
 
-**Output**: JSON with recommended products including names, prices, ratings, reviews, and links.
+**Output**: JSON with recommended products organized by DIY vs Service scenarios, retailer recommendations, and shopping tips.
 
 ### 4. Cost Estimation Agent
 
