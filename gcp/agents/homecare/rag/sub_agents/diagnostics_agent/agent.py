@@ -200,11 +200,11 @@ def cost_estimation(query: str) -> str:
 
 *Note: For accurate estimates, consult local professionals or get multiple quotes.*"""
 
-# New tool for product recommendations using Google Shopping via SerpAPI
+# Enhanced tool for product recommendations with DIY vs Service scenarios
 def product_recommendations(query: str) -> str:
     """
-    Provides product recommendations using Google Shopping via SerpAPI.
-    This searches Google Shopping for relevant products across multiple retailers.
+    Provides targeted product recommendations for both DIY and Service scenarios.
+    Recommends specific products based on problem type and appropriate retailers.
     """
     serpapi_api_key = os.environ.get("SERP_API_KEY")
     
@@ -212,66 +212,156 @@ def product_recommendations(query: str) -> str:
         return "Product recommendations service not available (missing API key)."
     
     try:
-        # Use SerpAPI to search Google Shopping
         import serpapi
         
-        search = serpapi.GoogleSearch({
-            "q": f"{query} products",
-            "tbm": "shop",  # Google Shopping results
+        # Determine problem type and appropriate retailers
+        query_lower = query.lower()
+        
+        # Define retailer preferences based on problem type
+        retailer_preferences = {
+            # Home repair problems
+            "plumbing": ["Home Depot", "Lowe's", "Ace Hardware"],
+            "electrical": ["Home Depot", "Lowe's", "Electrical Supply"],
+            "drywall": ["Home Depot", "Lowe's", "Sherwin Williams"],
+            "painting": ["Home Depot", "Lowe's", "Sherwin Williams"],
+            "hvac": ["Home Depot", "Lowe's", "HVAC Supply"],
+            "appliance": ["Home Depot", "Lowe's", "Appliance Parts"],
+            
+            # Automotive problems
+            "tire": ["Costco", "Discount Tire", "Firestone", "Goodyear"],
+            "brake": ["AutoZone", "Advance Auto", "O'Reilly Auto"],
+            "oil": ["AutoZone", "Advance Auto", "Walmart"],
+            "scratch": ["AutoZone", "Advance Auto", "O'Reilly Auto"],
+            "dent": ["AutoZone", "Advance Auto", "Body Shop Supply"],
+            "car": ["AutoZone", "Advance Auto", "O'Reilly Auto"],
+            
+            # General problems
+            "tool": ["Home Depot", "Lowe's", "Harbor Freight"],
+            "hardware": ["Home Depot", "Lowe's", "Ace Hardware"],
+            "supply": ["Home Depot", "Lowe's", "Amazon"]
+        }
+        
+        # Find appropriate retailers for this problem
+        preferred_retailers = []
+        for problem_type, retailers in retailer_preferences.items():
+            if problem_type in query_lower:
+                preferred_retailers.extend(retailers)
+                break
+        
+        if not preferred_retailers:
+            preferred_retailers = ["Home Depot", "Lowe's", "Amazon", "AutoZone"]
+        
+        # Search for DIY products
+        diy_query = f"{query} DIY repair products tools"
+        diy_search = serpapi.GoogleSearch({
+            "q": diy_query,
+            "tbm": "shop",
             "api_key": serpapi_api_key,
-            "num": 10,  # Get up to 10 results
-            "gl": "us",  # Country: United States
-            "hl": "en"   # Language: English
+            "num": 6,
+            "gl": "us",
+            "hl": "en"
         })
         
-        results = search.get_dict()
-        shopping_results = results.get("shopping_results", [])
+        diy_results = diy_search.get_dict()
+        diy_products = diy_results.get("shopping_results", [])
         
-        if not shopping_results:
-            return f"No recommended products found for {query}."
+        # Search for service/repair products
+        service_query = f"{query} professional repair parts replacement"
+        service_search = serpapi.GoogleSearch({
+            "q": service_query,
+            "tbm": "shop",
+            "api_key": serpapi_api_key,
+            "num": 6,
+            "gl": "us",
+            "hl": "en"
+        })
         
+        service_results = service_search.get_dict()
+        service_products = service_results.get("shopping_results", [])
+        
+        # Process and filter results
+        def process_products(products, scenario_name, max_results=5):
+            processed = []
+            for result in products[:max_results]:
+                try:
+                    title = result.get("title", "Unknown Product")
+                    price = result.get("price", "Price not available")
+                    link = result.get("link", "")
+                    source = result.get("source", "Unknown Store")
+                    rating = result.get("rating", "")
+                    reviews = result.get("reviews", "")
+                    image_url = result.get("thumbnail", "")  # Extract image URL
+                    
+                    # Prioritize preferred retailers
+                    if any(retailer.lower() in source.lower() for retailer in preferred_retailers):
+                        priority = "★ "
+                    else:
+                        priority = ""
+                    
+                    rec_parts = [f"- {priority}{title}"]
+                    
+                    if price and price != "Price not available":
+                        rec_parts.append(f"({price})")
+                    
+                    if source and source != "Unknown Store":
+                        rec_parts.append(f"- {source}")
+                    
+                    if rating and reviews:
+                        rec_parts.append(f"- Rating: {rating} ({reviews} reviews)")
+                    
+                    if image_url:
+                        rec_parts.append(f"- Image: {image_url}")
+                    
+                    if link:
+                        rec_parts.append(f"- {link}")
+                    
+                    processed.append(" ".join(rec_parts))
+                    
+                except (KeyError, TypeError) as e:
+                    logger.warning(f"Error processing {scenario_name} product: {e}")
+                    continue
+            
+            return processed
+        
+        # Generate recommendations
         recommendations = []
         
-        # Process Google Shopping results
-        for result in shopping_results[:8]:  # Limit to 8 results
-            try:
-                title = result.get("title", "Unknown Product")
-                price = result.get("price", "Price not available")
-                link = result.get("link", "")
-                source = result.get("source", "Unknown Store")
-                
-                # Extract rating if available
-                rating = result.get("rating", "")
-                reviews = result.get("reviews", "")
-                
-                # Format the recommendation
-                rec_parts = [f"- {title}"]
-                
-                if price and price != "Price not available":
-                    rec_parts.append(f"({price})")
-                
-                if source and source != "Unknown Store":
-                    rec_parts.append(f"- {source}")
-                
-                if rating and reviews:
-                    rec_parts.append(f"- Rating: {rating} ({reviews} reviews)")
-                
-                if link:
-                    rec_parts.append(f"- {link}")
-                
-                recommendations.append(" ".join(rec_parts))
-                
-            except (KeyError, TypeError) as e:
-                logger.warning(f"Error processing shopping result: {e}")
-                continue
+        # DIY Recommendations
+        diy_items = process_products(diy_products, "DIY")
+        if diy_items:
+            recommendations.append("### DIY Repair Products:")
+            recommendations.append("Essential products you'll need to fix this yourself:")
+            recommendations.extend(diy_items)
+            recommendations.append("")
+        
+        # Service Recommendations  
+        service_items = process_products(service_products, "Service")
+        if service_items:
+            recommendations.append("### Professional Service Products:")
+            recommendations.append("Products typically used by professionals for this repair:")
+            recommendations.extend(service_items)
+            recommendations.append("")
+        
+        # Add retailer recommendations
+        if preferred_retailers:
+            recommendations.append("### Recommended Retailers:")
+            recommendations.append(f"Best stores for this type of repair: {', '.join(preferred_retailers[:4])}")
+            recommendations.append("")
+        
+        # Add general guidance
+        recommendations.append("### Shopping Tips:")
+        recommendations.append("- ★ indicates products from recommended retailers")
+        recommendations.append("- Compare prices across multiple stores")
+        recommendations.append("- Check return policies before purchasing")
+        recommendations.append("- Consider buying extra supplies for future repairs")
         
         if recommendations:
             return "\n".join(recommendations)
         else:
-            return f"No recommended products found for {query}."
+            return f"No recommended products found for {query}. Try searching with more specific terms."
             
     except Exception as e:
-        logger.error(f"Error searching Google Shopping: {e}")
+        logger.error(f"Error searching for product recommendations: {e}")
         return f"Error retrieving product recommendations: {str(e)}"
 
 research_agent = Agent(
