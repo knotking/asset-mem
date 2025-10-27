@@ -1,19 +1,20 @@
 import { Text } from '@/components/ui/text';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useColorScheme } from 'nativewind';
 import * as React from 'react';
-import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import {
   ArrowLeft,
-  Clock,
+  MessageSquare,
   Paperclip,
   Send,
   FileText,
   MapPin,
   Pencil,
   Upload,
+  X,
+  File,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -23,9 +24,9 @@ import { MessagesProvider, useMessages } from '@homeapp/common/contexts/messages
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
-import SessionsModal from '@/components/SessionsModal';
+import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
-import type { Session } from '@homeapp/common/types';
+import type { Session, Document } from '@homeapp/common/types';
 
 function DetailsTab({ property }: { property: any }) {
   const { documents, isLoading: documentsLoading } = useProperty();
@@ -128,13 +129,16 @@ export default function PropertyDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { properties } = usePropertiesList();
   const { draftsByProperty } = useSession();
+  const { documents } = useProperty();
   const { user } = useAuth();
   const { db } = useFirebase();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>('details');
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>('chat');
   const [message, setMessage] = React.useState('');
-  const [sessionsModalVisible, setSessionsModalVisible] = React.useState(false);
+  const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
+  const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
   const [isSending, setIsSending] = React.useState(false);
 
   // Auto-select draft session when property loads
@@ -166,6 +170,12 @@ export default function PropertyDetailsScreen() {
         role: 'user',
         content: message,
         createdAt: serverTimestamp(),
+        ...(selectedDocuments.length > 0 && {
+          documents: selectedDocuments.map(doc => ({
+            name: doc.name,
+            type: doc.documentType || 'OTHER',
+          })),
+        }),
       });
 
       setMessage('');
@@ -180,7 +190,18 @@ export default function PropertyDetailsScreen() {
     } finally {
       setIsSending(false);
     }
-  }, [user, selectedSessionId, message, isSending, db, id]);
+  }, [user, selectedSessionId, message, isSending, db, id, selectedDocuments]);
+
+  const toggleDocumentSelection = (document: Document) => {
+    setSelectedDocuments(prev => {
+      const isSelected = prev.some(doc => doc.id === document.id);
+      if (isSelected) {
+        return prev.filter(doc => doc.id !== document.id);
+      } else {
+        return [...prev, document];
+      }
+    });
+  };
 
   // Find the property with the matching ID
   const property = properties.find((p: any) => p.id === id);
@@ -211,14 +232,32 @@ export default function PropertyDetailsScreen() {
         <View className="flex-row items-center justify-between">
           <TouchableOpacity onPress={() => router.back()} className="flex-row items-center gap-2">
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
-            {/* <Text className="text-lg font-semibold text-foreground">property-details</Text> */}
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSessionsModalVisible(true)}
-            className="flex-row items-center gap-2">
-            <Icon as={Clock} size={20} className="text-muted-foreground" />
-            <Text className="text-muted-foreground">Sessions</Text>
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-3">
+            {activeTab === 'chat' && (
+              <>
+                <TouchableOpacity
+                  onPress={() => setDocumentsDrawerVisible(true)}
+                  className="flex-row items-center gap-2 rounded-md bg-secondary px-3 py-2">
+                  <Icon as={File} size={18} className="text-foreground" />
+                  <Text className="text-foreground">Docs</Text>
+                  {selectedDocuments.length > 0 && (
+                    <View className="rounded-full bg-primary px-2 py-0.5">
+                      <Text className="text-xs font-semibold text-primary-foreground">
+                        {selectedDocuments.length}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSessionsDrawerVisible(true)}
+                  className="flex-row items-center gap-2 rounded-md bg-secondary px-3 py-2">
+                  <Icon as={MessageSquare} size={18} className="text-foreground" />
+                  <Text className="text-foreground">Sessions</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
       </View>
 
@@ -251,6 +290,35 @@ export default function PropertyDetailsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Selected Documents Display */}
+      {activeTab === 'chat' && selectedDocuments.length > 0 && (
+        <View className="border-b border-border bg-secondary px-4 py-2">
+          <Text className="mb-2 text-xs font-semibold text-muted-foreground">Resources:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row gap-2">
+              {selectedDocuments.map((doc) => (
+                <View
+                  key={doc.id}
+                  className="flex-row items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5">
+                  <Icon as={FileText} size={14} className="text-muted-foreground" />
+                  <Text className="max-w-32 text-xs text-foreground" numberOfLines={1}>
+                    {doc.name}
+                  </Text>
+                  <TouchableOpacity onPress={() => toggleDocumentSelection(doc)}>
+                    <Icon as={X} size={14} className="text-muted-foreground" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => setSelectedDocuments([])}
+                className="items-center justify-center rounded-full bg-background px-3 py-1.5">
+                <Text className="text-xs text-muted-foreground">Clear all</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {/* Main Content Area */}
       {activeTab === 'chat' ? (
@@ -301,21 +369,130 @@ export default function PropertyDetailsScreen() {
         </View>
       )}
 
-      {/* Sessions Modal */}
-      <SessionsModal
-        visible={sessionsModalVisible}
-        onClose={() => setSessionsModalVisible(false)}
-        propertyId={id}
-        propertyName={property.name}
-        onSessionPress={(session: Session) => {
-          setSelectedSessionId(session.id);
-          setActiveTab('chat');
-        }}
-        onCreateSession={() => {
-          // Create new session will automatically be picked up by the draft
-          setActiveTab('chat');
-        }}
-      />
+      {/* Sessions Drawer */}
+      <Modal
+        visible={sessionsDrawerVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSessionsDrawerVisible(false)}>
+        <SafeAreaView className="flex-1 bg-background">
+          <View className="border-b border-border bg-background px-4 py-3">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-foreground">Sessions</Text>
+                <Text className="text-sm text-muted-foreground" numberOfLines={1}>
+                  {property.name}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setSessionsDrawerVisible(false)}
+                className="ml-2 p-2">
+                <Icon as={X} size={24} className="text-foreground" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <SessionsList
+            propertyId={id}
+            onSessionPress={(session: Session) => {
+              setSelectedSessionId(session.id);
+              setActiveTab('chat');
+              setSessionsDrawerVisible(false);
+            }}
+            onCreateSession={() => {
+              setActiveTab('chat');
+              setSessionsDrawerVisible(false);
+            }}
+          />
+        </SafeAreaView>
+      </Modal>
+
+      {/* Documents Selection Drawer */}
+      <Modal
+        visible={documentsDrawerVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setDocumentsDrawerVisible(false)}>
+        <SafeAreaView className="flex-1 bg-background">
+          <View className="border-b border-border bg-background px-4 py-3">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-foreground">Select Resources</Text>
+                <Text className="text-sm text-muted-foreground">
+                  {selectedDocuments.length} selected
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setDocumentsDrawerVisible(false)}
+                className="ml-2 p-2">
+                <Icon as={X} size={24} className="text-foreground" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <ScrollView className="flex-1 px-4 py-4">
+            {documents.length === 0 ? (
+              <View className="items-center py-8">
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                  <Icon as={FileText} size={32} className="text-muted-foreground" />
+                </View>
+                <Text className="text-center text-muted-foreground">
+                  No documents available for this property.
+                </Text>
+              </View>
+            ) : (
+              <View className="space-y-3">
+                {documents.map((document) => {
+                  const isSelected = selectedDocuments.some(doc => doc.id === document.id);
+                  return (
+                    <TouchableOpacity
+                      key={document.id}
+                      onPress={() => toggleDocumentSelection(document)}
+                      className={`rounded-lg border p-4 ${
+                        isSelected
+                          ? 'border-primary bg-blue-50'
+                          : 'border-border bg-background'
+                      }`}>
+                      <View className="flex-row items-start gap-3">
+                        <View
+                          className={`h-10 w-10 items-center justify-center rounded-full ${
+                            isSelected ? 'bg-primary' : 'bg-secondary'
+                          }`}>
+                          <Icon
+                            as={FileText}
+                            size={20}
+                            className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-semibold text-foreground">{document.name}</Text>
+                          {document.documentType && (
+                            <Text className="mt-1 text-xs capitalize text-muted-foreground">
+                              {document.documentType.replace(/_/g, ' ').toLowerCase()}
+                            </Text>
+                          )}
+                          {document.createdAt && (
+                            <Text className="mt-1 text-xs text-muted-foreground">
+                              {new Date(
+                                document.createdAt instanceof Date
+                                  ? document.createdAt
+                                  : document.createdAt.toDate()
+                              ).toLocaleDateString()}
+                            </Text>
+                          )}
+                        </View>
+                        {isSelected && (
+                          <View className="rounded-full bg-primary p-1">
+                            <Icon as={X} size={16} className="text-primary-foreground" />
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

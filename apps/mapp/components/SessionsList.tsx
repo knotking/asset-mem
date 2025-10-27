@@ -18,19 +18,33 @@ export default function SessionsList({
   onSessionPress,
   onCreateSession,
 }: SessionsListProps) {
-  const { sessionsByProperty, draftsByProperty, isLoading, createPropertyDraftSession } =
-    useSession();
+  const { sessionsByProperty, draftsByProperty, isLoading, createPropertyDraftSession } = useSession();
   const { user } = useAuth();
 
   const sessions = sessionsByProperty[propertyId] || [];
   const draftSession = draftsByProperty[propertyId];
+  // Draft sessions are hidden from the list (similar to webapp)
+  // They are auto-selected on property load and transition to regular sessions on first message
 
   const handleCreateSession = async () => {
+    if (!user) return;
+
+    // Claim existing draft or create new one (same as webapp)
+    if (draftSession) {
+      // Draft exists - claim it by selecting it
+      onSessionPress?.(draftSession);
+    } else {
+      // No draft exists - create one
+      const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
+      if (newSessionId) {
+        // The draft will be picked up by the context and auto-selected
+        // In parallel, a new draft will be created for future use
+      }
+    }
+
+    // Call the onCreateSession callback if provided
     if (onCreateSession) {
       onCreateSession();
-    } else if (user) {
-      // Create a new draft session if one doesn't exist
-      await createPropertyDraftSession(user.uid, propertyId);
     }
   };
 
@@ -62,7 +76,7 @@ export default function SessionsList({
 
       {/* Sessions List */}
       <ScrollView className="flex-1 px-4">
-        {sessions.length === 0 && !draftSession ? (
+        {sessions.length === 0 ? (
           <View className="items-center py-8">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
               <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
@@ -73,37 +87,7 @@ export default function SessionsList({
           </View>
         ) : (
           <View className="space-y-3 pb-4">
-            {/* Draft Session */}
-            {draftSession && (
-              <TouchableOpacity
-                onPress={() => onSessionPress?.(draftSession)}
-                className="mb-4 rounded-lg border border-border bg-secondary p-4">
-                <View className="flex-row items-start gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                    <Icon as={MessageSquare} size={20} className="text-blue-500" />
-                  </View>
-                  <View className="flex-1">
-                    <View className="mb-1 flex-row items-center justify-between">
-                      <Text className="font-semibold text-foreground">{draftSession.name}</Text>
-                      <View className="rounded-full bg-blue-100 px-2 py-1">
-                        <Text className="text-xs font-medium text-blue-700">Draft</Text>
-                      </View>
-                    </View>
-                    <Text className="text-xs text-muted-foreground">
-                      {formatDate(draftSession.createdAt)}
-                    </Text>
-                    {draftSession.messageCount !== undefined && draftSession.messageCount > 0 && (
-                      <Text className="mt-1 text-xs text-muted-foreground">
-                        {draftSession.messageCount} message
-                        {draftSession.messageCount !== 1 ? 's' : ''}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Regular Sessions */}
+            {/* Regular Sessions - Draft sessions are hidden */}
             {sessions.map((session) => (
               <TouchableOpacity
                 key={session.id}
