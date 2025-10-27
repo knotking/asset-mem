@@ -9,7 +9,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@common/*": ["../common/src/*"]
+      "@common/*": ["../common/src/*"],
+      "@common/firebase/*": ["../common/src/firebase/*"],
+      "@homeapp/common/firebase": ["../common/src/firebase/firebase-native.ts"],
+      "@homeapp/common/firebase-config": ["../common/src/firebase/firebase-config.ts"],
+      "@homeapp/common/types": ["../common/src/types.ts"],
+      "@homeapp/common/contexts/firebase": ["../common/src/contexts/firebase-context.tsx"],
+      "@homeapp/common/contexts/*": ["../common/src/contexts/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],

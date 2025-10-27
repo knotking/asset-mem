@@ -10,18 +10,25 @@ import {
   Clock,
   Paperclip,
   Send,
-  X,
   FileText,
   MapPin,
   Pencil,
   Upload,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useProperties } from '@/contexts/PropertyContext';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
+import { useProperty } from '@homeapp/common/contexts/property';
+import { useSession } from '@homeapp/common/contexts/session-context';
+import { MessagesProvider, useMessages } from '@homeapp/common/contexts/messages-context';
+import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+import SessionsModal from '@/components/SessionsModal';
+import ChatList from '@/components/ChatList';
+import type { Session } from '@homeapp/common/types';
 
 function DetailsTab({ property }: { property: any }) {
-  const { documents, loading: documentsLoading } = useDocuments();
+  const { documents, isLoading: documentsLoading } = useProperty();
 
   return (
     <View className="mb-4 w-full">
@@ -85,7 +92,7 @@ function DetailsTab({ property }: { property: any }) {
                   </View>
                 </View>
                 <View className="space-y-2 border-t border-gray-100 pt-3">
-                  {doc.keyEntities.map((entity, index) => (
+                  {doc.keyEntities?.map((entity, index) => (
                     <View key={index} className="flex-row justify-between">
                       <Text className="text-muted-foreground">{entity.name}</Text>
                       <Text className="font-semibold text-foreground">{entity.value}</Text>
@@ -101,16 +108,82 @@ function DetailsTab({ property }: { property: any }) {
   );
 }
 
+function ChatTab({ sessionId }: { sessionId: string | null }) {
+  const { messages, isLoading } = useMessages();
+
+  if (!sessionId) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-center text-muted-foreground">
+          Select a session to start chatting
+        </Text>
+      </View>
+    );
+  }
+
+  return <ChatList messages={messages} isLoading={isLoading} />;
+}
+
 export default function PropertyDetailsScreen() {
-  const { colorScheme } = useColorScheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { properties } = useProperties();
+  const { properties } = usePropertiesList();
+  const { draftsByProperty } = useSession();
+  const { user } = useAuth();
+  const { db } = useFirebase();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>('details');
   const [message, setMessage] = React.useState('');
+  const [sessionsModalVisible, setSessionsModalVisible] = React.useState(false);
+  const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
+  const [isSending, setIsSending] = React.useState(false);
+
+  // Auto-select draft session when property loads
+  React.useEffect(() => {
+    if (id && draftsByProperty[id] && !selectedSessionId) {
+      setSelectedSessionId(draftsByProperty[id].id);
+    }
+  }, [id, draftsByProperty, selectedSessionId]);
+
+  const handleSendMessage = React.useCallback(async () => {
+    if (!user || !selectedSessionId || !message.trim() || isSending) return;
+
+    setIsSending(true);
+    try {
+      // Check if this is a draft session and claim it
+      const sessionRef = doc(db, 'users', user.uid, 'chats', selectedSessionId);
+      const sessionDoc = await getDoc(sessionRef);
+
+      if (sessionDoc.exists() && sessionDoc.data().name === 'draft') {
+        const newName = message.substring(0, 30) || 'New Chat';
+        await updateDoc(sessionRef, {
+          name: newName,
+          propertyId: id,
+        });
+      }
+
+      // Add user message to Firestore
+      await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
+        role: 'user',
+        content: message,
+        createdAt: serverTimestamp(),
+      });
+
+      setMessage('');
+
+      // TODO: Call the agent API to get response
+      // For now, we just save the user message
+      // The agent response would be added via streaming API similar to webapp
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // TODO: Show error toast/alert
+    } finally {
+      setIsSending(false);
+    }
+  }, [user, selectedSessionId, message, isSending, db, id]);
 
   // Find the property with the matching ID
-  const property = properties.find((p) => p.id === id);
+  const property = properties.find((p: any) => p.id === id);
 
   if (!property) {
     return (
@@ -140,10 +213,12 @@ export default function PropertyDetailsScreen() {
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
             {/* <Text className="text-lg font-semibold text-foreground">property-details</Text> */}
           </TouchableOpacity>
-          <View className="flex-row items-center gap-2">
+          <TouchableOpacity
+            onPress={() => setSessionsModalVisible(true)}
+            className="flex-row items-center gap-2">
             <Icon as={Clock} size={20} className="text-muted-foreground" />
             <Text className="text-muted-foreground">Sessions</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -178,26 +253,21 @@ export default function PropertyDetailsScreen() {
       </View>
 
       {/* Main Content Area */}
-      <ScrollView className="flex-1 bg-background px-4 py-4">
-        {activeTab === 'chat' ? (
-          <View className="items-center">
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-gray-200">
-              <Icon as={Send} size={32} className="text-muted-foreground" />
-            </View>
-            <Text className="text-center text-muted-foreground">
-              Ask questions about this property's{'\n'}documents, services, and history
-            </Text>
-          </View>
-        ) : (
+      {activeTab === 'chat' ? (
+        <MessagesProvider sessionId={selectedSessionId}>
+          <ChatTab sessionId={selectedSessionId} />
+        </MessagesProvider>
+      ) : (
+        <ScrollView className="flex-1 bg-background px-4 py-4">
           <DetailsTab property={property} />
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {/* Bottom Input Bar */}
-      {activeTab === 'chat' && (
+      {activeTab === 'chat' && selectedSessionId && (
         <View className="border-t border-border bg-background px-4 py-3">
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity>
+            <TouchableOpacity disabled>
               <Icon as={Paperclip} size={20} className="text-muted-foreground" />
             </TouchableOpacity>
             <TextInput
@@ -206,13 +276,46 @@ export default function PropertyDetailsScreen() {
               placeholder="Type a message..."
               className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-foreground"
               placeholderTextColor="#9CA3AF"
+              multiline
+              style={{ maxHeight: 100 }}
+              editable={!isSending}
+              onSubmitEditing={handleSendMessage}
             />
-            <TouchableOpacity className="rounded-lg bg-primary p-2">
-              <Icon as={Send} size={20} className="text-primary-foreground" />
+            <TouchableOpacity
+              className={`rounded-lg p-2 ${
+                message.trim() && !isSending ? 'bg-primary' : 'bg-secondary'
+              }`}
+              onPress={handleSendMessage}
+              disabled={!message.trim() || isSending}>
+              {isSending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Icon
+                  as={Send}
+                  size={20}
+                  className={message.trim() ? 'text-primary-foreground' : 'text-muted-foreground'}
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
       )}
+
+      {/* Sessions Modal */}
+      <SessionsModal
+        visible={sessionsModalVisible}
+        onClose={() => setSessionsModalVisible(false)}
+        propertyId={id}
+        propertyName={property.name}
+        onSessionPress={(session: Session) => {
+          setSelectedSessionId(session.id);
+          setActiveTab('chat');
+        }}
+        onCreateSession={() => {
+          // Create new session will automatically be picked up by the draft
+          setActiveTab('chat');
+        }}
+      />
     </SafeAreaView>
   );
 }

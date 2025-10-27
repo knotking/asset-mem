@@ -1,34 +1,23 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
-import { app, auth, storage, db, firebaseConfig } from '../../common/src/firebase-native';
-import { useAuth } from './AuthContext';
+import type { Property } from '../types';
+import { useAuth } from './auth-context';
+import { useFirebase } from './firebase-context';
 
-export interface Property {
-  id: string;
-  address: string;
-  cityStateZip: string;
-  docs: number;
-  services: number;
-  checks: number;
-  name: string;
-  propertyType: string;
-  createdAt: any;
-  userId: string;
-}
-
-interface PropertyContextType {
+interface PropertiesListContextType {
   properties: Property[];
   loading: boolean;
   error: string | null;
 }
 
-const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
+const PropertiesListContext = createContext<PropertiesListContextType | undefined>(undefined);
 
-export function PropertyProvider({ children }: { children: ReactNode }) {
+export function PropertiesListProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, loading: isAuthLoading } = useAuth();
+  const { db } = useFirebase();
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -41,7 +30,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    console.log('In Property Context, DB:', app, db);
+
     const propertiesRef = collection(db, `users/${user.uid}/properties`);
     const q = query(propertiesRef, orderBy('createdAt', 'desc'));
 
@@ -114,19 +103,19 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
       // Unsubscribe all docs listeners on cleanup
       Object.values(docUnsubscribes).forEach((unsubscribe) => unsubscribe());
     };
-  }, [user, isAuthLoading]);
+  }, [user, isAuthLoading, db]);
 
   return (
-    <PropertyContext.Provider value={{ properties, loading, error }}>
+    <PropertiesListContext.Provider value={{ properties, loading, error }}>
       {children}
-    </PropertyContext.Provider>
+    </PropertiesListContext.Provider>
   );
 }
 
-export function useProperties() {
-  const context = useContext(PropertyContext);
+export function usePropertiesList() {
+  const context = useContext(PropertiesListContext);
   if (context === undefined) {
-    throw new Error('useProperties must be used within a PropertyProvider');
+    throw new Error('usePropertiesList must be used within a PropertiesListProvider');
   }
   return context;
 }

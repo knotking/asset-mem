@@ -8,8 +8,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { PropertyProvider } from '../contexts/PropertyContext';
+import { FirebaseProvider } from '@homeapp/common/contexts/firebase';
+import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth';
+import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list';
+import { SessionProvider } from '@homeapp/common/contexts/session-context';
+import { app, auth, db, storage } from '@homeapp/common/firebase';
+import { createAgentSession } from '@/lib/api';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,20 +26,24 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <AuthProvider>
-        <PropertyProvider>
-          <Routes />
-        </PropertyProvider>
-      </AuthProvider>
+      <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
+        <AuthProvider>
+          <SessionProvider createAgentSession={createAgentSession}>
+            <PropertiesListProvider>
+              <Routes />
+            </PropertiesListProvider>
+          </SessionProvider>
+        </AuthProvider>
+      </FirebaseProvider>
       <PortalHost />
     </ThemeProvider>
   );
 }
 
 function Routes() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const isSignedIn = !!user;
-  const isLoaded = !isLoading;
+  const isLoaded = !loading;
 
   React.useEffect(() => {
     if (isLoaded) {

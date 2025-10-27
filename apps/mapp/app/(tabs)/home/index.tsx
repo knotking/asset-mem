@@ -5,11 +5,11 @@ import * as React from 'react';
 import { ScrollView, View } from 'react-native';
 import AddNewProperty from '@/components/AddNewProperty';
 import PropertyCard from '@/components/PropertyCard';
-import { useProperties } from '@/contexts/PropertyContext';
+import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
 
 export default function Screen() {
   const { colorScheme } = useColorScheme();
-  const { properties, loading, error } = useProperties();
+  const { properties, loading, error } = usePropertiesList();
   const router = useRouter();
 
   if (loading) {

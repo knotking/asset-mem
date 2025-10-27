@@ -5,10 +5,18 @@
   "types": "dist/index.d.ts",
   "exports": {
     "./firebase": {
-      "react-native": "./src/firebase-native.ts",
-      "default": "./src/firebase-web.ts"
+      "react-native": "./src/firebase/firebase-native.ts",
+      "default": "./src/firebase/firebase-web.ts"
     },
-    "./firebase-config": "./src/firebase-config.ts"
+    "./firebase-config": "./src/firebase/firebase-config.ts",
+    "./types": "./src/types.ts",
+    "./contexts/firebase": "./src/contexts/firebase-context.tsx",
+    "./contexts/auth": "./src/contexts/auth-context.tsx",
+    "./contexts/session": "./src/contexts/session-context.tsx",
+    "./contexts/property": "./src/contexts/property-context.tsx",
+    "./contexts/properties-list": "./src/contexts/properties-list-context.tsx",
+    "./contexts/property-documents": "./src/contexts/property-documents-context.tsx",
+    "./contexts/upload-dialog": "./src/contexts/upload-dialog-context.tsx"
   },
   "scripts": {
     "build": "tsc --build",
