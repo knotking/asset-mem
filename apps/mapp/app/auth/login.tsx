@@ -1,6 +1,6 @@
 import React, { useReducer } from 'react';
 import { Alert, View } from 'react-native';
-import { auth, firebaseConfig } from '../../../common/src/firebase-native';
+import { auth, firebaseConfig } from '@homeapp/common/firebase';
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,

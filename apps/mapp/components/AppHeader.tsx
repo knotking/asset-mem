@@ -5,7 +5,7 @@ import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
 import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@homeapp/common/contexts/auth';
 import { User } from 'firebase/auth';
 
 const THEME_ICONS = {
@@ -28,7 +28,7 @@ function ThemeToggle() {
 }
 
 export default function AppHeader() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
   const getUserInitials = (user: User | null) => {
     if (!user) return 'NA';
@@ -59,7 +59,7 @@ export default function AppHeader() {
         </Button>
         <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary">
           <Text className="text-sm font-semibold text-secondary-foreground">
-            {isLoading ? '' : userInitials}
+            {loading ? '' : userInitials}
           </Text>
         </View>
       </View>

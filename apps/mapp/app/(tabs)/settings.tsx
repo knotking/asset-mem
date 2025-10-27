@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@homeapp/common/contexts/auth';
 import { User } from 'firebase/auth';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -36,13 +36,13 @@ const getUserInitials = (user: User | null) => {
 };
 
 export default function SettingsScreen() {
-  const { user, isLoading, signOut } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const userInitials = getUserInitials(user);
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       // Optionally, navigate to the login screen or show a success message
     } catch (error) {
       console.error('Error signing out:', error);
@@ -56,7 +56,7 @@ export default function SettingsScreen() {
         <View className="flex-row items-center space-x-4">
           <View className="h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-secondary">
             <Text className="text-xl font-semibold text-secondary-foreground">
-              {isLoading ? '' : userInitials}
+              {loading ? '' : userInitials}
             </Text>
           </View>
           <View className="ml-2 flex-1">

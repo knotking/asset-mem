@@ -1,6 +1,7 @@
 import React, { useReducer } from 'react';
 import { Alert, View } from 'react-native';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@homeapp/common/firebase';
 import { Link } from 'expo-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -49,7 +50,7 @@ export default function SignupScreen() {
     }
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
-      await createUserWithEmailAndPassword(getAuth(), state.email, state.password);
+      await createUserWithEmailAndPassword(auth, state.email, state.password);
       Alert.alert('Sign Up', 'Account created successfully!');
       // Navigation to login or home will be handled by AuthContext listener in _layout.tsx
     } catch (err: any) {

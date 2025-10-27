@@ -1,11 +1,11 @@
-import { DocumentProvider } from '@/contexts/DocumentContext';
+import { PropertyProvider } from '@homeapp/common/contexts/property';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
 export default function PropertyDetailsLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   return (
-    <DocumentProvider propertyId={id}>
+    <PropertyProvider propertyId={id}>
       <Stack />
-    </DocumentProvider>
+    </PropertyProvider>
   );
 }
