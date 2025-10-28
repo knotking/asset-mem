@@ -1,15 +1,35 @@
 import React from 'react';
-import { View, Image, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
+import { View, Image, TouchableOpacity, Linking } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
-  User, Bot, FileText, Home, ShieldCheck, Receipt, Search, FileKey,
-  Info, Wrench, Users, Phone, Map, Star, CheckCircle
+  User,
+  Bot,
+  FileText,
+  Home,
+  ShieldCheck,
+  Receipt,
+  Search,
+  FileKey,
+  Info,
+  Wrench,
+  Users,
+  Phone,
+  Map,
+  Star,
+  CheckCircle,
 } from 'lucide-react-native';
 import type { Message, StructuredResponseData, ServiceProvider } from '@homeapp/common/types';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
+import TypingIndicator from './TypingIndicator';
+import { AgentStatus } from './AgentStatus';
 
 interface ChatMessageProps {
   message: Message;
@@ -41,8 +61,11 @@ const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
 };
 
 const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
-  const isPrimaryLinkValid = provider.link && (provider.link.startsWith('http://') || provider.link.startsWith('https://'));
-  const isDirectionsLinkValid = provider.directions && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
+  const isPrimaryLinkValid =
+    provider.link && (provider.link.startsWith('http://') || provider.link.startsWith('https://'));
+  const isDirectionsLinkValid =
+    provider.directions &&
+    (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
 
   return (
     <View className="mb-3 rounded-lg border border-border bg-background p-3">
@@ -50,7 +73,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         <Text className="flex-1 font-semibold text-foreground" numberOfLines={2}>
           {provider.name}
         </Text>
-        {provider.authorized === "True" && (
+        {provider.authorized === 'True' && (
           <View className="ml-2 flex-row items-center gap-1 rounded-full bg-blue-100 px-2 py-1">
             <Icon as={CheckCircle} size={12} className="text-blue-800" />
             <Text className="text-xs text-blue-800">Authorized</Text>
@@ -62,9 +85,11 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         <Icon as={Star} size={14} className="text-yellow-500" />
         <Text className="text-sm text-foreground">{provider.ratings?.split('/')[0] || 'N/A'}</Text>
         <Text className="text-xs text-muted-foreground">
-          ({provider.reviews && !provider.reviews.toLowerCase().includes('review')
+          (
+          {provider.reviews && !provider.reviews.toLowerCase().includes('review')
             ? provider.reviews
-            : `${provider.reviews || '0'} reviews`})
+            : `${provider.reviews || '0'} reviews`}
+          )
         </Text>
       </View>
 
@@ -75,7 +100,9 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
       <View className="mb-2 space-y-1">
         <View className="flex-row items-center gap-2">
           <Icon as={Phone} size={14} className="text-muted-foreground" />
-          <Text className="flex-1 text-sm text-foreground">{provider.contact_info || 'Not available'}</Text>
+          <Text className="flex-1 text-sm text-foreground">
+            {provider.contact_info || 'Not available'}
+          </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Icon as={Map} size={14} className="text-muted-foreground" />
@@ -106,7 +133,9 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
           <TouchableOpacity
             onPress={() => Linking.openURL(provider.directions!)}
             className="flex-1 rounded-md bg-primary px-3 py-2">
-            <Text className="text-center text-sm font-medium text-primary-foreground">Directions</Text>
+            <Text className="text-center text-sm font-medium text-primary-foreground">
+              Directions
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -296,34 +325,6 @@ const DocumentsList = ({ documents }: { documents: NonNullable<Message['document
   );
 };
 
-const AgentStepsIndicator = ({ steps }: { steps: NonNullable<Message['agentSteps']> }) => {
-  return (
-    <View className="mb-2 space-y-1">
-      {steps.map((step, index) => (
-        <View key={index} className="flex-row items-center gap-2">
-          {step.status === 'executing' && <ActivityIndicator size="small" />}
-          {step.status === 'completed' && (
-            <View className="h-4 w-4 items-center justify-center rounded-full bg-green-500">
-              <Text className="text-xs text-white">✓</Text>
-            </View>
-          )}
-          {step.status === 'failed' && (
-            <View className="h-4 w-4 items-center justify-center rounded-full bg-red-500">
-              <Text className="text-xs text-white">✕</Text>
-            </View>
-          )}
-          {step.status === 'transferredto' && (
-            <View className="h-4 w-4 items-center justify-center rounded-full bg-blue-500">
-              <Text className="text-xs text-white">→</Text>
-            </View>
-          )}
-          <Text className="text-xs text-muted-foreground">{step.name}</Text>
-        </View>
-      ))}
-    </View>
-  );
-};
-
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
@@ -332,24 +333,19 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     <View className={`mb-4 flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       <MessageAvatar role={message.role} />
       <View className="flex-1">
-        <View
-          className={`rounded-lg p-3 ${
-            isUser ? 'bg-primary' : 'bg-secondary'
-          }`}>
+        <View className={`rounded-lg p-3 ${isUser ? 'bg-primary' : 'bg-secondary'}`}>
           {message.file && <FilePreview file={message.file} />}
           {message.documents && message.documents.length > 0 && (
             <DocumentsList documents={message.documents} />
           )}
-          {message.agentSteps && message.agentSteps.length > 0 && (
-            <AgentStepsIndicator steps={message.agentSteps} />
-          )}
           {isLoading ? (
-            <View className="flex-row items-center gap-2">
-              <ActivityIndicator size="small" />
-              <Text className={isUser ? 'text-primary-foreground' : 'text-foreground'}>
-                Thinking...
-              </Text>
-            </View>
+            <>
+              {message.agentSteps && message.agentSteps.length > 0 ? (
+                <AgentStatus steps={message.agentSteps} />
+              ) : (
+                <TypingIndicator />
+              )}
+            </>
           ) : (
             <MessageContent content={message.content} isUser={isUser} />
           )}
@@ -357,9 +353,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         {message.createdAt && (
           <Text className="mt-1 text-xs text-muted-foreground">
             {new Date(
-              message.createdAt instanceof Date
-                ? message.createdAt
-                : message.createdAt.toDate()
+              message.createdAt instanceof Date ? message.createdAt : message.createdAt.toDate()
             ).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
