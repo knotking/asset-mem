@@ -1,10 +1,10 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData, Product, RecommendedProducts, CostEstimates } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, ShoppingCart, DollarSign } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -87,6 +87,175 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     </Card>
 )};
 
+const ProductCard = ({ product }: { product: Product }) => {
+    const isLinkValid = product.url && (product.url.startsWith('http://') || product.url.startsWith('https://'));
+
+    return (
+        <Card className="flex flex-col h-full w-full">
+            <CardHeader>
+                <CardTitle className="text-sm flex justify-between items-start">
+                    <span className="line-clamp-2 flex-1">{product.product_name}</span>
+                    {product.is_preferred_retailer && (
+                        <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 shrink-0">
+                            <Star className="h-3 w-3 fill-current" />
+                            Recommended
+                        </Badge>
+                    )}
+                </CardTitle>
+                <CardDescription className="flex items-center justify-between pt-1">
+                    {product.vendor && (
+                        <span className="text-xs text-muted-foreground">{product.vendor}</span>
+                    )}
+                    {product.rating && (
+                        <div className="flex items-center gap-1 text-xs text-yellow-500">
+                            <Star className="h-3 w-3 fill-current" />
+                            <span>{product.rating}</span>
+                        </div>
+                    )}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1">
+                <div className="space-y-2">
+                    {product.item_price && (
+                        <p className="text-lg font-semibold text-foreground">{product.item_price}</p>
+                    )}
+                    {product.reviews && (
+                        <p className="text-xs text-muted-foreground">{product.reviews} reviews</p>
+                    )}
+                </div>
+            </CardContent>
+            {isLinkValid && (
+                <CardFooter>
+                    <Button variant="outline" size="sm" asChild className="w-full">
+                        <a href={product.url!} target="_blank" rel="noopener noreferrer">
+                            View Product <ExternalLink className="ml-2 h-3 w-3" />
+                        </a>
+                    </Button>
+                </CardFooter>
+            )}
+        </Card>
+    );
+};
+
+const CostEstimateSection = ({ estimate }: { estimate: NonNullable<StructuredResponseData['costEstimationResults']>['costEstimates'] }) => {
+    if (!estimate) return null;
+
+    return (
+        <div className="space-y-4">
+            {estimate.repair_type && (
+                <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold">{estimate.repair_type}</h3>
+                </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {estimate.DIY && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">DIY Repair</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <div className="text-2xl font-bold text-green-600">{estimate.DIY.cost_range}</div>
+                            {estimate.DIY.includes && estimate.DIY.includes.length > 0 && (
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-muted-foreground">Includes:</p>
+                                    <ul className="list-disc list-inside text-sm space-y-1">
+                                        {estimate.DIY.includes.map((item, idx) => (
+                                            <li key={idx} className="text-muted-foreground">{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {estimate.DIY.savings && (
+                                <p className="text-sm text-green-600 font-semibold">{estimate.DIY.savings}</p>
+                            )}
+                            {estimate.DIY.complexity && (
+                                <p className="text-xs text-muted-foreground">{estimate.DIY.complexity}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+                
+                {estimate.Service && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Professional Service</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <div className="text-2xl font-bold text-blue-600">{estimate.Service.cost_range}</div>
+                            {estimate.Service.includes && estimate.Service.includes.length > 0 && (
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-muted-foreground">Includes:</p>
+                                    <ul className="list-disc list-inside text-sm space-y-1">
+                                        {estimate.Service.includes.map((item, idx) => (
+                                            <li key={idx} className="text-muted-foreground">{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {estimate.Service.benefits && (
+                                <p className="text-sm text-blue-600 font-semibold">{estimate.Service.benefits}</p>
+                            )}
+                            {estimate.Service.complexity && (
+                                <p className="text-xs text-muted-foreground">{estimate.Service.complexity}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+
+            {estimate.comparison && (
+                <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                        <div className="space-y-2">
+                            {estimate.comparison.diy_savings && (
+                                <p className="text-sm">
+                                    <span className="font-semibold">DIY Savings: </span>
+                                    {estimate.comparison.diy_savings}
+                                </p>
+                            )}
+                            {estimate.comparison.professional_benefits && (
+                                <p className="text-sm">
+                                    <span className="font-semibold">Professional Benefits: </span>
+                                    {estimate.comparison.professional_benefits}
+                                </p>
+                            )}
+                            {estimate.comparison.considerations && (
+                                <p className="text-sm">
+                                    <span className="font-semibold">Considerations: </span>
+                                    {estimate.comparison.considerations}
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {estimate.recommendation && (
+                <Card className="border-l-4 border-l-primary">
+                    <CardHeader>
+                        <CardTitle className="text-base">Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-2 text-sm">
+                            {estimate.recommendation.simple_repairs && (
+                                <li>• {estimate.recommendation.simple_repairs}</li>
+                            )}
+                            {estimate.recommendation.complex_repairs && (
+                                <li>• {estimate.recommendation.complex_repairs}</li>
+                            )}
+                            {estimate.recommendation.note && (
+                                <li className="text-xs text-muted-foreground italic">Note: {estimate.recommendation.note}</li>
+                            )}
+                        </ul>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
+};
+
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const allProviders = [
         ...(data.serviceProviderResults?.yelpAPIResults || []),
@@ -97,6 +266,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         data.researchResults?.[key] && data.researchResults[key]?.trim() !== '';
         
     const hasProviders = allProviders.length > 0;
+
+    const hasProducts = 
+        (data.productRecommendationsResults?.recommendedProducts?.DIY?.products?.length ?? 0) > 0 ||
+        (data.productRecommendationsResults?.recommendedProducts?.Service?.products?.length ?? 0) > 0;
+
+    const hasCostEstimate = !!data.costEstimationResults?.costEstimates;
 
     return (
         <Accordion type="single" collapsible defaultValue="summary" className="w-full">
@@ -137,6 +312,87 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
                         {hasContent('googleSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.googleSearch!}</ReactMarkdown>}
                         {hasContent('youtubeSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>{data.researchResults!.youtubeSearch!}</ReactMarkdown>}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {hasProducts && (
+                <AccordionItem value="products">
+                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <ShoppingCart className="h-4 w-4" />
+                            <span>Product Recommendations</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
+                        <div className="space-y-6">
+                            {data.productRecommendationsResults?.recommendedProducts?.DIY?.products && data.productRecommendationsResults.recommendedProducts.DIY.products.length > 0 && (
+                                <div>
+                                    <h3 className="text-base font-semibold mb-2">DIY Products</h3>
+                                    {data.productRecommendationsResults.recommendedProducts.DIY.description && (
+                                        <p className="text-sm text-muted-foreground mb-3">{data.productRecommendationsResults.recommendedProducts.DIY.description}</p>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {data.productRecommendationsResults.recommendedProducts.DIY.products.map((product, index) => (
+                                            <ProductCard key={index} product={product} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {data.productRecommendationsResults?.recommendedProducts?.Service?.products && data.productRecommendationsResults.recommendedProducts.Service.products.length > 0 && (
+                                <div>
+                                    <h3 className="text-base font-semibold mb-2">Professional Service Products</h3>
+                                    {data.productRecommendationsResults.recommendedProducts.Service.description && (
+                                        <p className="text-sm text-muted-foreground mb-3">{data.productRecommendationsResults.recommendedProducts.Service.description}</p>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {data.productRecommendationsResults.recommendedProducts.Service.products.map((product, index) => (
+                                            <ProductCard key={index} product={product} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {data.productRecommendationsResults?.recommendedProducts?.recommended_retailers && data.productRecommendationsResults.recommendedProducts.recommended_retailers.length > 0 && (
+                                <Card className="bg-blue-50 border-blue-200">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm">Recommended Retailers</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex flex-wrap gap-2">
+                                            {data.productRecommendationsResults.recommendedProducts.recommended_retailers.map((retailer, idx) => (
+                                                <Badge key={idx} variant="secondary">{retailer}</Badge>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                            {data.productRecommendationsResults?.recommendedProducts?.shopping_tips && data.productRecommendationsResults.recommendedProducts.shopping_tips.length > 0 && (
+                                <Card className="bg-muted/50">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm">Shopping Tips</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ul className="text-sm space-y-1 list-disc list-inside">
+                                            {data.productRecommendationsResults.recommendedProducts.shopping_tips.map((tip, idx) => (
+                                                <li key={idx} className="text-muted-foreground">{tip}</li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {hasCostEstimate && (
+                <AccordionItem value="costs">
+                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <DollarSign className="h-4 w-4" />
+                            <span>Cost Estimates</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
+                        <CostEstimateSection estimate={data.costEstimationResults?.costEstimates} />
                     </AccordionContent>
                 </AccordionItem>
             )}
@@ -538,13 +794,19 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
           const jsonRegex = /\*\*.*?\*\*\s*:\s*```json\s*\n([\s\S]*?)```/;
           const match = message.content.match(jsonRegex);
           
+          let parsed: any = null;
+          
           if (match && match[1]) {
               // sometimes json has markdown which has unescaped characters
               const cleaned = match[1].trim().replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
-              const parsed = JSON.parse(cleaned);
-               if (parsed.researchResults || parsed.serviceProviderResults) {
-                  structuredData = parsed;
-              }
+              parsed = JSON.parse(cleaned);
+          } else {
+              // Try parsing the entire content as JSON
+              parsed = JSON.parse(message.content);
+          }
+          
+          if (parsed && (parsed.researchResults || parsed.serviceProviderResults || parsed.productRecommendationsResults || parsed.costEstimationResults)) {
+              structuredData = parsed;
           }
         }
     } catch (e) {

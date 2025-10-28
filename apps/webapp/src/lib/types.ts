@@ -28,6 +28,7 @@ export type Message = {
 };
 
 export type StructuredResponseData = {
+  analysisResult?: string;
   researchResults?: {
       summaryOfFindings?: string;
       yourDocuments?: string;
@@ -37,7 +38,13 @@ export type StructuredResponseData = {
   serviceProviderResults?: {
       serpAPIResults?: ServiceProvider[];
       yelpAPIResults?: ServiceProvider[];
-  }
+  };
+  productRecommendationsResults?: {
+      recommendedProducts?: RecommendedProducts;
+  };
+  costEstimationResults?: {
+      costEstimates?: CostEstimates;
+  };
 }
 
 export type ServiceProvider = {
@@ -150,3 +157,53 @@ export type Provider = {
   addedDate: Date;
   createdAt: Date;
 }
+
+export type Product = {
+  product_name: string;
+  vendor: string | null;
+  url: string | null;
+  item_price: string | null;
+  rating: string | null;
+  reviews: string | null;
+  image_url: string | null;
+  is_preferred_retailer: boolean;
+};
+
+export type RecommendedProducts = {
+  DIY?: {
+    products: Product[];
+    description: string;
+  };
+  Service?: {
+    products: Product[];
+    description: string;
+  };
+  recommended_retailers?: string[];
+  shopping_tips?: string[];
+};
+
+export type CostEstimates = {
+  repair_type?: string;
+  DIY?: {
+    cost_range: string;
+    includes: string[];
+    savings: string;
+    complexity: string;
+  };
+  Service?: {
+    cost_range: string;
+    includes: string[];
+    benefits: string;
+    complexity: string;
+  };
+  comparison?: {
+    diy_savings?: string;
+    professional_benefits?: string;
+    considerations?: string;
+  };
+  recommendation?: {
+    simple_repairs?: string;
+    complex_repairs?: string;
+    note?: string;
+  };
+};
