@@ -88,9 +88,20 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
 )};
 
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
+    // New structured format
+    const hasTriageSummary = data.triageSummary && data.triageSummary.trim() !== '';
+    const hasCoverageAnalysis = data.coverageAnalysis && data.coverageAnalysis.trim() !== '';
+    const hasDiySteps = data.diyRecommendation?.steps && data.diyRecommendation.steps.trim() !== '';
+    const hasDiyProducts = data.diyRecommendation?.products && data.diyRecommendation.products.products && data.diyRecommendation.products.products.length > 0;
+    const hasDiyCost = data.diyRecommendation?.costEstimation;
+    const hasServicePros = data.serviceRecommendation?.localPros && data.serviceRecommendation.localPros.length > 0;
+    const hasServiceCost = data.serviceRecommendation?.costEstimation;
+    
+    // Legacy format support
     const allProviders = [
         ...(data.serviceProviderResults?.yelpAPIResults || []),
         ...(data.serviceProviderResults?.serpAPIResults || []),
+        ...(data.serviceRecommendation?.localPros || []),
     ];
 
     const hasContent = (key: keyof NonNullable<StructuredResponseData['researchResults']>) =>
@@ -98,6 +109,139 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         
     const hasProviders = allProviders.length > 0;
 
+    // Check if using new format
+    const isNewFormat = hasTriageSummary || hasCoverageAnalysis || hasDiySteps || hasDiyProducts || hasServicePros;
+
+    if (isNewFormat) {
+        return (
+            <Accordion type="single" collapsible defaultValue="triage" className="w-full">
+                {hasTriageSummary && (
+                    <AccordionItem value="triage">
+                        <AccordionTrigger className="text-sm sm:text-sm px-2">
+                            <div className="flex items-center gap-2 flex-1 text-left">
+                                <Info className="h-4 w-4" />
+                                <span>Triage Summary</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.triageSummary!}</ReactMarkdown>
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+                {hasCoverageAnalysis && (
+                    <AccordionItem value="coverage">
+                        <AccordionTrigger className="text-sm sm:text-sm px-2">
+                             <div className="flex items-center gap-2 flex-1 text-left">
+                               <ShieldCheck className="h-4 w-4" />
+                               <span>Coverage Analysis</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.coverageAnalysis!}</ReactMarkdown>
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+                {(hasDiySteps || hasDiyProducts || hasDiyCost) && (
+                    <AccordionItem value="diy">
+                         <AccordionTrigger className="text-sm sm:text-sm px-2">
+                            <div className="flex items-center gap-2 flex-1 text-left">
+                              <Wrench className="h-4 w-4" />
+                              <span>DIY Recommendation</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-4 bg-background rounded-b-lg border-t space-y-4">
+                            {hasDiySteps && (
+                                <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>{data.diyRecommendation!.steps!}</ReactMarkdown>
+                                </div>
+                            )}
+                            {hasDiyProducts && (
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">{data.diyRecommendation!.products!.description}</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {data.diyRecommendation!.products!.products!.map((product, idx) => (
+                                            <Card key={idx} className="p-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium line-clamp-2">{product.product_name}</p>
+                                                        {product.vendor && <p className="text-xs text-muted-foreground mt-1">{product.vendor}</p>}
+                                                        {product.item_price && <p className="text-sm font-semibold mt-1">{product.item_price}</p>}
+                                                    </div>
+                                                    {product.url && (
+                                                        <Button size="sm" variant="link" asChild className="shrink-0">
+                                                            <a href={product.url} target="_blank" rel="noopener noreferrer">
+                                                                <ExternalLink className="h-4 w-4" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {hasDiyCost && (
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Cost Estimation</h4>
+                                    <Card className="p-3">
+                                        <p className="text-sm font-semibold">{data.diyRecommendation!.costEstimation!.cost_range}</p>
+                                        <ul className="text-xs text-muted-foreground mt-2 list-disc list-inside space-y-1">
+                                            {data.diyRecommendation!.costEstimation!.includes.map((item, idx) => (
+                                                <li key={idx}>{item}</li>
+                                            ))}
+                                        </ul>
+                                        {data.diyRecommendation!.costEstimation!.savings && (
+                                            <p className="text-xs text-green-600 dark:text-green-400 mt-2">{data.diyRecommendation!.costEstimation!.savings}</p>
+                                        )}
+                                    </Card>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+                {(hasServicePros || hasServiceCost) && (
+                    <AccordionItem value="service">
+                        <AccordionTrigger className="text-sm sm:text-sm px-2">
+                            <div className="flex items-center gap-2 flex-1 text-left">
+                                <Users className="h-4 w-4" />
+                                <span>Service Recommendation</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-4 bg-background rounded-b-lg border-t space-y-4">
+                            {hasServicePros && (
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Local Pro Recommendation</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {data.serviceRecommendation!.localPros!.map((provider, index) => (
+                                            <ServiceProviderCard key={index} provider={provider} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {hasServiceCost && (
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Cost Estimation</h4>
+                                    <Card className="p-3">
+                                        <p className="text-sm font-semibold">{data.serviceRecommendation!.costEstimation!.cost_range}</p>
+                                        <ul className="text-xs text-muted-foreground mt-2 list-disc list-inside space-y-1">
+                                            {data.serviceRecommendation!.costEstimation!.includes.map((item, idx) => (
+                                                <li key={idx}>{item}</li>
+                                            ))}
+                                        </ul>
+                                        {data.serviceRecommendation!.costEstimation!.benefits && (
+                                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">{data.serviceRecommendation!.costEstimation!.benefits}</p>
+                                        )}
+                                    </Card>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+            </Accordion>
+        );
+    }
+
+    // Legacy format
     return (
         <Accordion type="single" collapsible defaultValue="summary" className="w-full">
             {hasContent('summaryOfFindings') && (

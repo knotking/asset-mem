@@ -28,6 +28,31 @@ export type Message = {
 };
 
 export type StructuredResponseData = {
+  triageSummary?: string;
+  coverageAnalysis?: string;
+  diyRecommendation?: {
+    steps?: string;
+    products?: {
+      products: Product[];
+      description: string;
+    };
+    costEstimation?: {
+      cost_range: string;
+      includes: string[];
+      savings?: string;
+      complexity?: string;
+    };
+  };
+  serviceRecommendation?: {
+    localPros?: ServiceProvider[];
+    costEstimation?: {
+      cost_range: string;
+      includes: string[];
+      benefits?: string;
+      complexity?: string;
+    };
+  };
+  // Legacy fields for backwards compatibility
   researchResults?: {
       summaryOfFindings?: string;
       yourDocuments?: string;
@@ -38,6 +63,17 @@ export type StructuredResponseData = {
       serpAPIResults?: ServiceProvider[];
       yelpAPIResults?: ServiceProvider[];
   }
+}
+
+export type Product = {
+  product_name: string;
+  vendor?: string;
+  url?: string;
+  item_price?: string;
+  rating?: string;
+  reviews?: string;
+  image_url?: string;
+  is_preferred_retailer?: boolean;
 }
 
 export type ServiceProvider = {

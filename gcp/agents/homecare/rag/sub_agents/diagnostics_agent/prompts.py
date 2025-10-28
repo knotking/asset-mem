@@ -55,18 +55,29 @@ def diagnostic_agent_instructions() -> str:
         *   Your final response to the user should be a JSON object with the following structure:
             ```json
             {{
-              "analysisResult": "content from analyse_multimodal_data",
-              "researchResults": {{}}, // JSON object from research_agent (if called, otherwise empty object)
-              "serviceProviderResults": {{}}, // JSON object from service_provider_agent (if called, otherwise empty object)
-              "productRecommendationsResults": {{}}, // JSON object from product_recommendations_agent (if called, otherwise empty object)
-              "costEstimationResults": {{}} // JSON object from cost_estimation_agent (if called, otherwise empty object)
+              "triageSummary": "Problem analysis from analyse_multimodal_data",
+              "coverageAnalysis": "Coverage info from documents or empty",
+              "diyRecommendation": {{
+                "steps": "Combined DIY steps from googleSearch and youtubeSearch",
+                "products": {{product data from productRecommendationsResults.DIY}},
+                "costEstimation": {{DIY cost data from costEstimationResults.DIY}}
+              }},
+              "serviceRecommendation": {{
+                "localPros": {{service provider data}},
+                "costEstimation": {{Service cost data from costEstimationResults.Service}}
+              }}
             }}
             ```
-            *   Populate `analysisResult` with the `analysis_result` from `analyse_multimodal_data`.
-            *   Populate `researchResults` with the JSON output from `research_agent` if it was called, otherwise an empty JSON object.
-            *   Populate `serviceProviderResults` with the JSON output from `service_provider_agent` if it was called, otherwise an empty JSON object.
-            *   Populate `productRecommendationsResults` with the JSON output from `product_recommendations_agent` if it was called, otherwise an empty JSON object.
-            *   Populate `costEstimationResults` with the JSON output from `cost_estimation_agent` if it was called, otherwise an empty JSON object.
+            *   **Step 1 - Triage Summary**: Use the complete `analysis_result` from `analyse_multimodal_data` as the problem analysis.
+            *   **Step 2 - Coverage Analysis**: If `researchResults` contains `yourDocuments`, extract and include that content. Otherwise use "No coverage information found."
+            *   **Step 3 - DIY Recommendation**: Assemble from multiple sources:
+                *   `steps`: Combine the content from `googleSearch` and `youtubeSearch` in `researchResults` to create a comprehensive DIY steps guide
+                *   `products`: Extract the `DIY` section from `productRecommendationsResults.recommendedProducts.DIY`
+                *   `costEstimation`: Extract the `DIY` section from `costEstimationResults.costEstimates.DIY`
+            *   **Step 4 - Service Recommendation**: Assemble from multiple sources:
+                *   `localPros`: Combine both `yelpAPIResults` and `serpAPIResults` arrays from `serviceProviderResults`
+                *   `costEstimation`: Extract the `Service` section from `costEstimationResults.costEstimates.Service`
+            *   **Important**: If any tool was not called (e.g., research_agent was skipped), set the corresponding fields to empty values: "No information available" for strings, empty object `{}` for objects, empty array `[]` for arrays.
         *   Do not add any extra commentary, introductory phrases, or concluding remarks beyond the tool outputs.
 
         **Critical Guidelines:**
