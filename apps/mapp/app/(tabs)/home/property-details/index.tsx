@@ -1,7 +1,14 @@
 import { Text } from '@/components/ui/text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { ScrollView, View, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
+import {
+  ScrollView,
+  View,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import {
@@ -171,7 +178,7 @@ export default function PropertyDetailsScreen() {
         content: message,
         createdAt: serverTimestamp(),
         ...(selectedDocuments.length > 0 && {
-          documents: selectedDocuments.map(doc => ({
+          documents: selectedDocuments.map((doc) => ({
             name: doc.name,
             type: doc.documentType || 'OTHER',
           })),
@@ -183,7 +190,6 @@ export default function PropertyDetailsScreen() {
       // TODO: Call the agent API to get response
       // For now, we just save the user message
       // The agent response would be added via streaming API similar to webapp
-
     } catch (error) {
       console.error('Error sending message:', error);
       // TODO: Show error toast/alert
@@ -193,10 +199,10 @@ export default function PropertyDetailsScreen() {
   }, [user, selectedSessionId, message, isSending, db, id, selectedDocuments]);
 
   const toggleDocumentSelection = (document: Document) => {
-    setSelectedDocuments(prev => {
-      const isSelected = prev.some(doc => doc.id === document.id);
+    setSelectedDocuments((prev) => {
+      const isSelected = prev.some((doc) => doc.id === document.id);
       if (isSelected) {
-        return prev.filter(doc => doc.id !== document.id);
+        return prev.filter((doc) => doc.id !== document.id);
       } else {
         return [...prev, document];
       }
@@ -220,7 +226,7 @@ export default function PropertyDetailsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <Stack.Screen
         options={{
           headerShown: false,
@@ -229,7 +235,7 @@ export default function PropertyDetailsScreen() {
 
       {/* Navigation Header */}
       <View className="bg-background px-4 py-3">
-        <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
           <TouchableOpacity onPress={() => router.back()} className="flex-row items-center gap-2">
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
           </TouchableOpacity>
@@ -264,7 +270,6 @@ export default function PropertyDetailsScreen() {
       {/* Property Address */}
       <View className="px-4 py-2">
         <Text className="text-xl font-bold text-foreground">{property.name}</Text>
-        <Text className="text-muted-foreground">{property.address}</Text>
       </View>
 
       {/* Tabs */}
@@ -342,10 +347,15 @@ export default function PropertyDetailsScreen() {
               value={message}
               onChangeText={setMessage}
               placeholder="Type a message..."
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              className="flex-1 rounded-lg border border-border bg-background px-3 text-foreground"
               placeholderTextColor="#9CA3AF"
               multiline
-              style={{ maxHeight: 100 }}
+              style={{
+                maxHeight: 50,
+                paddingTop: 8,
+                paddingBottom: 8,
+                textAlignVertical: 'center',
+              }}
               editable={!isSending}
               onSubmitEditing={handleSendMessage}
             />
@@ -441,15 +451,13 @@ export default function PropertyDetailsScreen() {
             ) : (
               <View className="space-y-3">
                 {documents.map((document) => {
-                  const isSelected = selectedDocuments.some(doc => doc.id === document.id);
+                  const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
                   return (
                     <TouchableOpacity
                       key={document.id}
                       onPress={() => toggleDocumentSelection(document)}
                       className={`rounded-lg border p-4 ${
-                        isSelected
-                          ? 'border-primary bg-blue-50'
-                          : 'border-border bg-background'
+                        isSelected ? 'border-primary bg-blue-50' : 'border-border bg-background'
                       }`}>
                       <View className="flex-row items-start gap-3">
                         <View
@@ -459,7 +467,9 @@ export default function PropertyDetailsScreen() {
                           <Icon
                             as={FileText}
                             size={20}
-                            className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                            className={
+                              isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                            }
                           />
                         </View>
                         <View className="flex-1">
