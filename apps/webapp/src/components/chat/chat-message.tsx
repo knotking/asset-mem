@@ -1,10 +1,10 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData, Product, RecommendedProducts, CostEstimates } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, ShoppingCart, DollarSign } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -87,69 +87,6 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     </Card>
 )};
 
-const ProductCard = ({ product }: { product: Product }) => {
-    const isLinkValid = product.url && (product.url.startsWith('http://') || product.url.startsWith('https://'));
-
-    return (
-        <Card className="flex flex-col h-full w-full">
-            <CardHeader>
-                <CardTitle className="text-sm flex justify-between items-start">
-                    <span className="line-clamp-2 flex-1">{product.product_name}</span>
-                    {product.is_preferred_retailer && (
-                        <Badge variant="outline" className="flex items-center gap-1 bg-green-100 text-green-800 border-green-200 shrink-0">
-                            <Star className="h-3 w-3 fill-current" />
-                            Recommended
-                        </Badge>
-                    )}
-                </CardTitle>
-                <CardDescription className="flex items-center justify-between pt-1">
-                    {product.vendor && (
-                        <span className="text-xs text-muted-foreground">{product.vendor}</span>
-                    )}
-                    {product.rating && (
-                        <div className="flex items-center gap-1 text-xs text-yellow-500">
-                            <Star className="h-3 w-3 fill-current" />
-                            <span>{product.rating}</span>
-                        </div>
-                    )}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-2">
-                <div className="space-y-2">
-                    {product.item_price && (
-                        <p className="text-lg font-semibold text-foreground">{product.item_price}</p>
-                    )}
-                    {product.reviews && (
-                        <p className="text-xs text-muted-foreground">{product.reviews} reviews</p>
-                    )}
-                </div>
-                {isLinkValid && (
-                    <div className="pt-2 border-t">
-                        <a 
-                            href={product.url!} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-primary hover:underline break-all"
-                        >
-                            <ExternalLink className="h-3 w-3 shrink-0" />
-                            <span className="line-clamp-1">{product.url}</span>
-                        </a>
-                    </div>
-                )}
-            </CardContent>
-            {isLinkValid && (
-                <CardFooter>
-                    <Button variant="outline" size="sm" asChild className="w-full">
-                        <a href={product.url!} target="_blank" rel="noopener noreferrer">
-                            View Product <ExternalLink className="ml-2 h-3 w-3" />
-                        </a>
-                    </Button>
-                </CardFooter>
-            )}
-        </Card>
-    );
-};
-
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const allProviders = [
         ...(data.serviceProviderResults?.yelpAPIResults || []),
@@ -160,23 +97,15 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         data.researchResults?.[key] && data.researchResults[key]?.trim() !== '';
         
     const hasProviders = allProviders.length > 0;
-    const hasDiyProducts = (data.productRecommendationsResults?.recommendedProducts?.DIY?.products?.length ?? 0) > 0;
-    const hasServiceProducts = (data.productRecommendationsResults?.recommendedProducts?.Service?.products?.length ?? 0) > 0;
-    const hasCostEstimate = !!data.costEstimationResults?.costEstimates;
-    const hasDiyCost = hasCostEstimate && !!data.costEstimationResults?.costEstimates?.DIY;
-    const hasServiceCost = hasCostEstimate && !!data.costEstimationResults?.costEstimates?.Service;
-    const hasDiyContent = hasContent('googleSearch') || hasContent('youtubeSearch') || hasDiyProducts || hasDiyCost;
-    const hasProContent = hasProviders || hasServiceProducts || hasServiceCost;
 
     return (
-        <Accordion type="single" collapsible defaultValue="triage" className="w-full">
-            {/* 1. Triage Summary */}
+        <Accordion type="single" collapsible defaultValue="summary" className="w-full">
             {hasContent('summaryOfFindings') && (
-                <AccordionItem value="triage">
+                <AccordionItem value="summary">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
                             <Info className="h-4 w-4" />
-                            <span>Triage Summary</span>
+                            <span>Summary</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
@@ -184,14 +113,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     </AccordionContent>
                 </AccordionItem>
             )}
-
-            {/* 2. Coverage Analysis */}
             {hasContent('yourDocuments') && (
                 <AccordionItem value="coverage">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <ShieldCheck className="h-4 w-4" />
-                            <span>Coverage Analysis</span>
+                         <div className="flex items-center gap-2 flex-1 text-left">
+                           <ShieldCheck className="h-4 w-4" />
+                           <span>Coverage</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
@@ -199,164 +126,34 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     </AccordionContent>
                 </AccordionItem>
             )}
-
-            {/* 3. DIY Recommendation */}
-            {hasDiyContent && (
+            {(hasContent('googleSearch') || hasContent('youtubeSearch')) && (
                 <AccordionItem value="diy">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <Wrench className="h-4 w-4" />
-                            <span>DIY Recommendation</span>
+                          <Wrench className="h-4 w-4" />
+                          <span>DIY Solutions</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t space-y-4">
-                        {/* Steps */}
-                        {(hasContent('googleSearch') || hasContent('youtubeSearch')) && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <Search className="h-4 w-4" />
-                                    Steps
-                                </h4>
-                                <div className="prose prose-sm dark:prose-invert max-w-none break-words space-y-4">
-                                    {hasContent('googleSearch') && (
-                                        <div>
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.googleSearch!}</ReactMarkdown>
-                                        </div>
-                                    )}
-                                    {hasContent('youtubeSearch') && (
-                                        <div>
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>{data.researchResults!.youtubeSearch!}</ReactMarkdown>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* DIY Products */}
-                        {hasDiyProducts && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <ShoppingCart className="h-4 w-4" />
-                                    Products
-                                </h4>
-                                {data.productRecommendationsResults?.recommendedProducts?.DIY?.description && (
-                                    <p className="text-sm text-muted-foreground">{data.productRecommendationsResults.recommendedProducts.DIY.description}</p>
-                                )}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {data.productRecommendationsResults?.recommendedProducts?.DIY?.products?.map((product, index) => (
-                                        <ProductCard key={index} product={product} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* DIY Cost Estimation */}
-                        {hasDiyCost && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4" />
-                                    Cost Estimation
-                                </h4>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">DIY Repair</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="text-2xl font-bold text-green-600">{data.costEstimationResults!.costEstimates!.DIY!.cost_range}</div>
-                                        {data.costEstimationResults!.costEstimates!.DIY!.includes && data.costEstimationResults!.costEstimates!.DIY!.includes.length > 0 && (
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-semibold text-muted-foreground">Includes:</p>
-                                                <ul className="list-disc list-inside text-sm space-y-1">
-                                                    {data.costEstimationResults!.costEstimates!.DIY!.includes.map((item, idx) => (
-                                                        <li key={idx} className="text-muted-foreground">{item}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {data.costEstimationResults!.costEstimates!.DIY!.savings && (
-                                            <p className="text-sm text-green-600 font-semibold">{data.costEstimationResults!.costEstimates!.DIY!.savings}</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                        {hasContent('googleSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.googleSearch!}</ReactMarkdown>}
+                        {hasContent('youtubeSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>{data.researchResults!.youtubeSearch!}</ReactMarkdown>}
                     </AccordionContent>
                 </AccordionItem>
             )}
-
-            {/* 4. Service Recommendation */}
-            {hasProContent && (
-                <AccordionItem value="service">
+            {hasProviders && (
+                <AccordionItem value="providers">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <Building className="h-4 w-4" />
-                            <span>Service Recommendation</span>
+                            <Users className="h-4 w-4" />
+                            <span>Service Providers</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t space-y-4">
-                        {/* Local Pros Recommendation */}
-                        {hasProviders && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <Users className="h-4 w-4" />
-                                    Local Pro Recommendation
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {allProviders.map((provider, index) => (
-                                        <ServiceProviderCard key={index} provider={provider} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Service Products */}
-                        {hasServiceProducts && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <ShoppingCart className="h-4 w-4" />
-                                    Products
-                                </h4>
-                                {data.productRecommendationsResults?.recommendedProducts?.Service?.description && (
-                                    <p className="text-sm text-muted-foreground">{data.productRecommendationsResults.recommendedProducts.Service.description}</p>
-                                )}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {data.productRecommendationsResults?.recommendedProducts?.Service?.products?.map((product, index) => (
-                                        <ProductCard key={index} product={product} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Service Cost Estimation */}
-                        {hasServiceCost && (
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                    <DollarSign className="h-4 w-4" />
-                                    Cost Estimation
-                                </h4>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">Professional Service</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="text-2xl font-bold text-blue-600">{data.costEstimationResults!.costEstimates!.Service!.cost_range}</div>
-                                        {data.costEstimationResults!.costEstimates!.Service!.includes && data.costEstimationResults!.costEstimates!.Service!.includes.length > 0 && (
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-semibold text-muted-foreground">Includes:</p>
-                                                <ul className="list-disc list-inside text-sm space-y-1">
-                                                    {data.costEstimationResults!.costEstimates!.Service!.includes.map((item, idx) => (
-                                                        <li key={idx} className="text-muted-foreground">{item}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {data.costEstimationResults!.costEstimates!.Service!.benefits && (
-                                            <p className="text-sm text-blue-600 font-semibold">{data.costEstimationResults!.costEstimates!.Service!.benefits}</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
+                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {allProviders.map((provider, index) => (
+                                <ServiceProviderCard key={index} provider={provider} />
+                            ))}
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
             )}
