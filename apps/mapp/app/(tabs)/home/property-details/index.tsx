@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
@@ -33,7 +34,8 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
-import type { Session, Document } from '@homeapp/common/types';
+import type { Session, Document, AgentStep } from '@homeapp/common/types';
+import { streamAgentResponse } from '@/lib/api';
 
 function DetailsTab({ property }: { property: any }) {
   const { documents, isLoading: documentsLoading } = useProperty();
@@ -159,23 +161,33 @@ export default function PropertyDetailsScreen() {
     if (!user || !selectedSessionId || !message.trim() || isSending) return;
 
     setIsSending(true);
+    const userMessage = message;
+    setMessage(''); // Clear input immediately
+
     try {
       // Check if this is a draft session and claim it
       const sessionRef = doc(db, 'users', user.uid, 'chats', selectedSessionId);
       const sessionDoc = await getDoc(sessionRef);
+      const sessionData = sessionDoc.data();
 
-      if (sessionDoc.exists() && sessionDoc.data().name === 'draft') {
-        const newName = message.substring(0, 30) || 'New Chat';
+      if (sessionDoc.exists() && sessionData?.name === 'draft') {
+        const newName = userMessage.substring(0, 30) || 'New Chat';
         await updateDoc(sessionRef, {
           name: newName,
           propertyId: id,
         });
       }
 
+      // Get agentSessionId from session
+      const agentSessionId = sessionData?.agentSessionId;
+      if (!agentSessionId) {
+        throw new Error('Agent session ID not found');
+      }
+
       // Add user message to Firestore
       await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
         role: 'user',
-        content: message,
+        content: userMessage,
         createdAt: serverTimestamp(),
         ...(selectedDocuments.length > 0 && {
           documents: selectedDocuments.map((doc) => ({
@@ -185,18 +197,85 @@ export default function PropertyDetailsScreen() {
         }),
       });
 
-      setMessage('');
+      // Create placeholder for assistant message
+      const assistantMessageRef = await addDoc(
+        collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'),
+        {
+          role: 'assistant',
+          content: '',
+          createdAt: serverTimestamp(),
+          agentSteps: [],
+        }
+      );
 
-      // TODO: Call the agent API to get response
-      // For now, we just save the user message
-      // The agent response would be added via streaming API similar to webapp
+      // Prepare context document URIs
+      const contextDocURIs = selectedDocuments
+        .map((doc) => doc.gsURI)
+        .filter((uri): uri is string => !!uri);
+
+      // Get property address
+      const currentProperty = properties.find((p: any) => p.id === id);
+      const propertyAddress = currentProperty?.address;
+
+      // Stream agent response
+      let assistantContent = '';
+      let agentSteps: AgentStep[] = [];
+
+      await streamAgentResponse({
+        userId: user.uid,
+        agentSessionId,
+        userQuery: userMessage,
+        contextDocURIs,
+        propertyAddress,
+        onChunk: (chunk) => {
+          // Accumulate content but don't update Firestore yet
+          // This keeps the message in "loading" state
+          assistantContent += chunk;
+        },
+        onAgentStep: (step) => {
+          // Update agent steps in real-time
+          const existingStepIndex = agentSteps.findIndex((s) => s.name === step.name);
+          if (existingStepIndex > -1) {
+            agentSteps[existingStepIndex] = step;
+          } else {
+            agentSteps.push(step);
+          }
+          // Immediate update for agent steps (important for UX)
+          updateDoc(assistantMessageRef, {
+            agentSteps: [...agentSteps],
+          }).catch((err) => console.error('Error updating agent steps:', err));
+        },
+        onComplete: (finalResponse, finalSteps) => {
+          // Final update with complete response - this replaces AgentStatus
+          updateDoc(assistantMessageRef, {
+            content: finalResponse,
+            agentSteps: finalSteps,
+          }).catch((err) => console.error('Error completing message:', err));
+        },
+        onError: (error) => {
+          // Update message to show error
+          updateDoc(assistantMessageRef, {
+            content: `Error: ${error.message}`,
+          }).catch((err) => console.error('Error updating error message:', err));
+          throw error;
+        },
+      });
+
+      // Clear selected documents after successful send
+      setSelectedDocuments([]);
     } catch (error) {
       console.error('Error sending message:', error);
-      // TODO: Show error toast/alert
+      Alert.alert(
+        'Error',
+        `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        [{ text: 'OK' }]
+      );
+      // Restore message if there was an error
+      setMessage(userMessage);
     } finally {
       setIsSending(false);
     }
-  }, [user, selectedSessionId, message, isSending, db, id, selectedDocuments]);
+  }, [user, selectedSessionId, message, isSending, db, id, selectedDocuments, properties]);
 
   const toggleDocumentSelection = (document: Document) => {
     setSelectedDocuments((prev) => {
