@@ -8,7 +8,7 @@
     "query": "I have a scratch on my car door. Can you help me understand what options I have?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a scratch on my car door. Can you help me understand what options I have?",
           "diagnosis_uris": [],
@@ -23,7 +23,7 @@
     "query": "My kitchen faucet is leaking. What should I do?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent", 
+        "tool_name": "analysis_agent", 
         "tool_input": {
           "user_query": "My kitchen faucet is leaking. What should I do?",
           "diagnosis_uris": [],
@@ -38,7 +38,7 @@
     "query": "I uploaded a photo of my washing machine error code E3. What does this mean?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I uploaded a photo of my washing machine error code E3. What does this mean?",
           "diagnosis_uris": ["gs://bucket/error-code-photo.jpg"],
@@ -53,7 +53,7 @@
     "query": "I have a dent in my car bumper from a parking incident. Can you help me understand my options?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a dent in my car bumper from a parking incident. Can you help me understand my options?",
           "diagnosis_uris": [],
@@ -68,7 +68,7 @@
     "query": "My refrigerator is making strange noises. I uploaded a video of the sound.",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "My refrigerator is making strange noises. I uploaded a video of the sound.",
           "diagnosis_uris": ["gs://bucket/refrigerator-noise.mp4"],
@@ -83,7 +83,7 @@
     "query": "I have a leak under my kitchen sink. What are my repair options?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a leak under my kitchen sink. What are my repair options?",
           "diagnosis_uris": [],
@@ -98,7 +98,7 @@
     "query": "My dryer isn't heating properly. I uploaded a photo of the control panel.",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "My dryer isn't heating properly. I uploaded a photo of the control panel.",
           "diagnosis_uris": ["gs://bucket/dryer-control-panel.jpg"],
@@ -113,7 +113,7 @@
     "query": "I have a crack in my drywall. Can you help me understand how to fix it?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a crack in my drywall. Can you help me understand how to fix it?",
           "diagnosis_uris": [],
@@ -128,7 +128,7 @@
     "query": "My car's brake pads are squeaking. What should I do?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "My car's brake pads are squeaking. What should I do?",
           "diagnosis_uris": [],
@@ -143,7 +143,7 @@
     "query": "I uploaded my car insurance policy. Can you help me understand my coverage for the scratch repair?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I uploaded my car insurance policy. Can you help me understand my coverage for the scratch repair?",
           "diagnosis_uris": [],
@@ -158,7 +158,7 @@
     "query": "My HVAC system isn't working properly. I uploaded a video of the issue.",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "My HVAC system isn't working properly. I uploaded a video of the issue.",
           "diagnosis_uris": ["gs://bucket/hvac-issue.mp4"],
@@ -173,7 +173,7 @@
     "query": "I have a broken electrical outlet in my kitchen. Is this something I can fix myself?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a broken electrical outlet in my kitchen. Is this something I can fix myself?",
           "diagnosis_uris": [],
@@ -188,7 +188,7 @@
     "query": "My washing machine is showing error code F21. I uploaded a photo of the display.",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "My washing machine is showing error code F21. I uploaded a photo of the display.",
           "diagnosis_uris": ["gs://bucket/washing-machine-error.jpg"],
@@ -203,7 +203,7 @@
     "query": "I have a paint chip on my car's hood. What are my repair options?",
     "expected_tool_use": [
       {
-        "tool_name": "diagnostic_agent",
+        "tool_name": "analysis_agent",
         "tool_input": {
           "user_query": "I have a paint chip on my car's hood. What are my repair options?",
           "diagnosis_uris": [],

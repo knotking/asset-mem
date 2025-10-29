@@ -25,8 +25,8 @@ Tests the complete multimodal diagnostic workflow:
 - Cost estimation
 - Integration between all sub-agents
 
-#### 2. Diagnostic Agent Tests (`test_eval_diagnostic_agent`)
-Tests the diagnostic agent's orchestration capabilities:
+#### 2. Analysis Agent Tests (`test_eval_analysis_agent`)
+Tests the analysis agent's orchestration capabilities:
 - Proper delegation to sub-agents
 - Multimodal data analysis
 - Conditional research execution
@@ -91,7 +91,7 @@ Each test case includes expected tool usage patterns:
 {
   "expected_tool_use": [
     {
-      "tool_name": "diagnostic_agent",
+      "tool_name": "analysis_agent",
       "tool_input": {
         "user_query": "Problem description",
         "diagnosis_uris": ["gs://bucket/image.jpg"],
@@ -138,8 +138,8 @@ poetry run pytest eval/test_eval.py::test_eval_full_conversation -v
 
 ### Individual Agent Evaluation
 ```bash
-# Diagnostic Agent
-poetry run pytest eval/test_eval.py::test_eval_diagnostic_agent -v
+# Analysis Agent
+poetry run pytest eval/test_eval.py::test_eval_analysis_agent -v
 
 # Cost Estimation Agent
 poetry run pytest eval/test_eval.py::test_eval_cost_estimation -v

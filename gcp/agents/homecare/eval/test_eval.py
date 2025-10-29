@@ -27,10 +27,10 @@ async def test_eval_full_conversation():
 
 
 @pytest.mark.asyncio
-async def test_eval_diagnostic_agent():
-    """Test the diagnostic agent's comprehensive analysis capabilities."""
+async def test_eval_analysis_agent():
+    """Test the analysis agent's comprehensive analysis capabilities."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.diagnostics_agent",
+        agent_module="property_agent.sub_agents.analysis_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/conversation.test.json"
         ),
@@ -42,7 +42,7 @@ async def test_eval_diagnostic_agent():
 async def test_eval_cost_estimation():
     """Test the cost estimation agent's ability to provide accurate cost estimates."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.diagnostics_agent.cost_estimation_agent",
+        agent_module="property_agent.sub_agents.analysis_agent.cost_estimation_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/cost_estimation.test.json"
         ),
@@ -54,7 +54,7 @@ async def test_eval_cost_estimation():
 async def test_eval_product_recommendations():
     """Test the product recommendations agent's ability to find relevant products."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.diagnostics_agent.product_recommendations_agent",
+        agent_module="property_agent.sub_agents.analysis_agent.product_recommendations_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/product_recommendations.test.json"
         ),
@@ -66,7 +66,7 @@ async def test_eval_product_recommendations():
 async def test_eval_service_provider():
     """Test the service provider agent's ability to find local services."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.diagnostics_agent.service_provider_agent",
+        agent_module="property_agent.sub_agents.analysis_agent.service_provider_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/conversation.test.json"
         ),

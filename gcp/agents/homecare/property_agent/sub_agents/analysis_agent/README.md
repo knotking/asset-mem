@@ -1,15 +1,15 @@
-# Diagnostics Agent Documentation
+# Analysis Agent Documentation
 
 ## Overview
 
-The Diagnostics Agent is a comprehensive multimodal analysis system that provides end-to-end diagnostic workflows for home care and vehicle issues. It analyzes uploaded media, conducts research, finds service providers, recommends products, and provides cost estimates.
+The Analysis Agent is a comprehensive multimodal analysis system that provides end-to-end diagnostic workflows for home care and vehicle issues. It analyzes uploaded media, conducts research, finds service providers, recommends products, and provides cost estimates.
 
 ## Architecture
 
-The Diagnostics Agent orchestrates multiple specialized sub-agents to provide comprehensive diagnostic services:
+The Analysis Agent orchestrates multiple specialized sub-agents to provide comprehensive diagnostic services:
 
 ```
-Diagnostics Agent
+Analysis Agent
 ├── Core Analysis Tool
 │   └── analyse_multimodal_data
 ├── Research Agent
