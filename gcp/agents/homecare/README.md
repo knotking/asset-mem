@@ -184,7 +184,7 @@ The system accepts various input types:
 
 #### How to upload my file to my RAG corpus
 
-The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a RAG corpus and upload an initial document. By default, it downloads Alphabet's 2024 10-K PDF and uploads it to a new corpus.
+The `property_agent/shared_libraries/prepare_corpus_and_data.py` script helps you set up a RAG corpus and upload an initial document. By default, it downloads Alphabet's 2024 10-K PDF and uploads it to a new corpus.
 
 1.  **Authenticate with your Google Cloud account:**
     ```bash
@@ -202,12 +202,12 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
     *   **To use the default behavior (upload Alphabet's 10K PDF):**
         Simply run the script:
         ```bash
-        python rag/shared_libraries/prepare_corpus_and_data.py
+        python property_agent/shared_libraries/prepare_corpus_and_data.py
         ```
         This will create a corpus named `Alphabet_10K_2024_corpus` (if it doesn't exist) and upload the PDF `goog-10-k-2024.pdf` downloaded from the URL specified in the script.
 
     *   **To upload a different PDF from a URL:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
+        a. Open the `property_agent/shared_libraries/prepare_corpus_and_data.py` file.
         b. Modify the following variables at the top of the script:
            ```python
            # --- Please fill in your configurations ---
@@ -220,11 +220,11 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
            ```
         c. Run the script:
            ```bash
-           python rag/shared_libraries/prepare_corpus_and_data.py
+           python property_agent/shared_libraries/prepare_corpus_and_data.py
            ```
 
     *   **To upload a local PDF file:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
+        a. Open the `property_agent/shared_libraries/prepare_corpus_and_data.py` file.
         b. Modify the `CORPUS_DISPLAY_NAME` and `CORPUS_DESCRIPTION` variables as needed (see above).
         c. Modify the `main()` function at the bottom of the script to directly call `upload_pdf_to_corpus` with your local file details:
            ```python
@@ -253,7 +253,7 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
            ```
         d. Run the script:
            ```bash
-           python rag/shared_libraries/prepare_corpus_and_data.py
+           python property_agent/shared_libraries/prepare_corpus_and_data.py
            ```
 
 More details about managing data in Vertex RAG Engine can be found in the
@@ -266,14 +266,14 @@ from the root project directory:
 1.  Run agent in CLI:
 
     ```bash
-    adk run rag
+    adk run property_agent
     ```
 
 2.  Run agent with ADK Web UI:
     ```bash
     adk web
     ```
-    Select the RAG from the dropdown
+    Select the property_agent from the dropdown
 
 
 ### Example Interactions
@@ -313,7 +313,7 @@ Agent Response:
 
 ## Evaluating the Agent
 
-The evaluation can be run from the `RAG` directory using
+The evaluation can be run from the `property_agent` directory using
 the `pytest` module:
 
 ```

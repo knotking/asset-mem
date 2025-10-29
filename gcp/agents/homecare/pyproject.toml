@@ -1,5 +1,5 @@
 [project]
-name = "rag"
+name = "property_agent"
 version = "0.1.0"
 description = "Answer questions related to Vertex AI documentation using Vertex AI RAG Engine"
 authors = []
