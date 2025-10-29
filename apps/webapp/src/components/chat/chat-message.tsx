@@ -1,10 +1,10 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData, Product } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -87,46 +87,110 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     </Card>
 )};
 
+const ProductCard = ({ product }: { product: Product }) => {
+    return (
+        <Card className="flex flex-col h-full w-full">
+        <CardHeader>
+            <CardTitle className="text-base flex justify-between items-start">
+                <span className="line-clamp-2">{product.product_name}</span>
+            </CardTitle>
+            {product.vendor && (
+                <CardDescription className="flex items-center gap-2 pt-1">
+                    <ShoppingCart className="h-4 w-4" />
+                    <span>{product.vendor}</span>
+                </CardDescription>
+            )}
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col space-y-3">
+            {product.image_url && (
+                <div className="relative w-full h-32 rounded-md overflow-hidden">
+                    <Image
+                        src={product.image_url}
+                        alt={product.product_name}
+                        fill
+                        className="object-cover"
+                    />
+                </div>
+            )}
+            <div className="text-sm space-y-2">
+                {product.item_price && (
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-primary">{product.item_price}</span>
+                    </div>
+                )}
+                {(product.rating || product.reviews) && (
+                    <div className="flex items-center gap-2 text-sm text-yellow-500">
+                        {product.rating && (
+                            <>
+                                <Star className="h-4 w-4 fill-current" />
+                                <span>{product.rating}</span>
+                            </>
+                        )}
+                        {product.reviews && (
+                            <span className="text-muted-foreground text-xs">
+                                ({product.reviews})
+                            </span>
+                        )}
+                    </div>
+                )}
+            </div>
+        </CardContent>
+        <CardFooter className="flex gap-2 mt-auto pt-4">
+            {product.url && (
+                <Button variant="outline" size="sm" asChild>
+                    <a href={product.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Product
+                    </a>
+                </Button>
+            )}
+        </CardFooter>
+    </Card>
+    );
+};
+
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const allProviders = [
-        ...(data.serviceProviderResults?.yelpAPIResults || []),
-        ...(data.serviceProviderResults?.serpAPIResults || []),
+        ...(data.serviceResults?.yelpAPIResults || []),
+        ...(data.serviceResults?.serpAPIResults || []),
     ];
-
-    const hasContent = (key: keyof NonNullable<StructuredResponseData['researchResults']>) =>
-        data.researchResults?.[key] && data.researchResults[key]?.trim() !== '';
-        
-    const hasProviders = allProviders.length > 0;
+    
+    const hasTriage = data.triageResult && data.triageResult.trim() !== '';
+    const hasCoverage = data.coverageResult && data.coverageResult.trim() !== '';
+    const hasDIY = data.diyResults?.summaryOfFindings || data.diyResults?.youtubeSearch;
+    const hasProducts = data.diyResults?.recommendedProducts?.DIY?.products && data.diyResults.recommendedProducts.DIY.products.length > 0;
+    const hasServiceProviders = allProviders.length > 0;
+    const hasCostEstimates = data.serviceResults?.costEstimates && data.serviceResults.costEstimates.trim() !== '';
 
     return (
-        <Accordion type="single" collapsible defaultValue="summary" className="w-full">
-            {hasContent('summaryOfFindings') && (
-                <AccordionItem value="summary">
+        <Accordion type="single" collapsible defaultValue="triage" className="w-full">
+            {hasTriage && (
+                <AccordionItem value="triage">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <Info className="h-4 w-4" />
-                            <span>Summary</span>
+                            <Stethoscope className="h-4 w-4" />
+                            <span>Problem Analysis</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.summaryOfFindings!}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.triageResult!}</ReactMarkdown>
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {hasContent('yourDocuments') && (
+            {hasCoverage && (
                 <AccordionItem value="coverage">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                          <div className="flex items-center gap-2 flex-1 text-left">
                            <ShieldCheck className="h-4 w-4" />
-                           <span>Coverage</span>
+                           <span>Coverage & Warranty</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.yourDocuments!}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.coverageResult!}</ReactMarkdown>
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {(hasContent('googleSearch') || hasContent('youtubeSearch')) && (
+            {hasDIY && (
                 <AccordionItem value="diy">
                      <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
@@ -135,12 +199,53 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        {hasContent('googleSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.researchResults!.googleSearch!}</ReactMarkdown>}
-                        {hasContent('youtubeSearch') && <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>{data.researchResults!.youtubeSearch!}</ReactMarkdown>}
+                        {data.diyResults?.summaryOfFindings && (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.diyResults.summaryOfFindings}</ReactMarkdown>
+                        )}
+                        {data.diyResults?.youtubeSearch && (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
+                                {data.diyResults.youtubeSearch}
+                            </ReactMarkdown>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {hasProviders && (
+            {hasProducts && (
+                <AccordionItem value="products">
+                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <ShoppingCart className="h-4 w-4" />
+                            <span>Recommended Products</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
+                        {data.diyResults?.recommendedProducts?.DIY?.description && (
+                            <p className="text-sm text-muted-foreground mb-4">
+                                {data.diyResults.recommendedProducts.DIY.description}
+                            </p>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {data.diyResults!.recommendedProducts!.DIY!.products!.map((product, index) => (
+                                <ProductCard key={index} product={product} />
+                            ))}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {hasCostEstimates && (
+                <AccordionItem value="costs">
+                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <TrendingUp className="h-4 w-4" />
+                            <span>Cost Estimates</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.serviceResults!.costEstimates!}</ReactMarkdown>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {hasServiceProviders && (
                 <AccordionItem value="providers">
                     <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
@@ -542,7 +647,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               // sometimes json has markdown which has unescaped characters
               const cleaned = match[1].trim().replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
               const parsed = JSON.parse(cleaned);
-               if (parsed.researchResults || parsed.serviceProviderResults) {
+               if (parsed.triageResult || parsed.diyResults || parsed.serviceResults) {
                   structuredData = parsed;
               }
           }

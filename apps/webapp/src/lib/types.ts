@@ -28,16 +28,33 @@ export type Message = {
 };
 
 export type StructuredResponseData = {
-  researchResults?: {
-      summaryOfFindings?: string;
-      yourDocuments?: string;
-      googleSearch?: string;
-      youtubeSearch?: string;
+  triageResult?: string;
+  coverageResult?: string;
+  diyResults?: {
+    summaryOfFindings?: string;
+    youtubeSearch?: string;
+    recommendedProducts?: {
+      DIY?: {
+        products?: Product[];
+        description?: string;
+      };
+    };
   };
-  serviceProviderResults?: {
-      serpAPIResults?: ServiceProvider[];
-      yelpAPIResults?: ServiceProvider[];
-  }
+  serviceResults?: {
+    costEstimates?: string;
+    serpAPIResults?: ServiceProvider[];
+    yelpAPIResults?: ServiceProvider[];
+  };
+}
+
+export type Product = {
+  product_name: string;
+  vendor?: string | null;
+  url?: string | null;
+  item_price?: string | null;
+  rating?: string | null;
+  reviews?: string | null;
+  image_url?: string | null;
 }
 
 export type ServiceProvider = {
