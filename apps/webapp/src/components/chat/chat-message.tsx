@@ -92,7 +92,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         <Card className="flex flex-col h-full w-full">
         <CardHeader>
             <CardTitle className="text-base flex justify-between items-start">
-                <span className="line-clamp-2">{product.product_name}</span>
+                <span className="line-clamp-2">{product.product_name || product.description || 'Product'}</span>
             </CardTitle>
             {product.vendor && (
                 <CardDescription className="flex items-center gap-2 pt-1">
@@ -106,16 +106,16 @@ const ProductCard = ({ product }: { product: Product }) => {
                 <div className="relative w-full h-32 rounded-md overflow-hidden">
                     <Image
                         src={product.image_url}
-                        alt={product.product_name}
+                        alt={product.product_name || product.description || 'Product'}
                         fill
                         className="object-cover"
                     />
                 </div>
             )}
             <div className="text-sm space-y-2">
-                {product.item_price && (
+                {(product.price || product.item_price) && (
                     <div className="flex items-center gap-2">
-                        <span className="font-semibold text-primary">{product.item_price}</span>
+                        <span className="font-semibold text-primary">{product.price || product.item_price}</span>
                     </div>
                 )}
                 {(product.rating || product.reviews) && (
@@ -150,17 +150,24 @@ const ProductCard = ({ product }: { product: Product }) => {
 };
 
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
+    const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
+    const triage = analysis?.triageResult;
+    const coverage = analysis?.coverageResult;
+    const diy = analysis?.diyResults;
+    const service = analysis?.serviceResults;
+
     const allProviders = [
-        ...(data.serviceResults?.yelpAPIResults || []),
-        ...(data.serviceResults?.serpAPIResults || []),
+        ...(service?.localPros?.yelpAPIResults || []),
+        ...(service?.localPros?.serpAPIResults || []),
     ];
-    
-    const hasTriage = data.triageResult && data.triageResult.trim() !== '';
-    const hasCoverage = data.coverageResult && data.coverageResult.trim() !== '';
-    const hasDIY = data.diyResults?.summaryOfFindings || data.diyResults?.youtubeSearch;
-    const hasProducts = data.diyResults?.recommendedProducts?.DIY?.products && data.diyResults.recommendedProducts.DIY.products.length > 0;
+
+    const hasTriage = !!(triage?.diagnosis && triage.diagnosis.trim() !== '');
+    const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
+    const hasDIYSteps = !!(diy?.diySteps?.summary || (diy?.diySteps?.steps && diy.diySteps.steps.length > 0));
+    const hasYouTube = !!(diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0);
+    const hasProducts = !!(diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0);
+    const hasCostEstimates = !!(service?.costEstimates && service.costEstimates.trim() !== '');
     const hasServiceProviders = allProviders.length > 0;
-    const hasCostEstimates = data.serviceResults?.costEstimates && data.serviceResults.costEstimates.trim() !== '';
 
     return (
         <Accordion type="single" collapsible defaultValue="triage" className="w-full">
@@ -173,7 +180,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.triageResult!}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{triage!.diagnosis!}</ReactMarkdown>
                     </AccordionContent>
                 </AccordionItem>
             )}
@@ -186,11 +193,22 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.coverageResult!}</ReactMarkdown>
+                        {coverage?.warrantyInfo && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Warranty</h4>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.warrantyInfo}</ReactMarkdown>
+                          </div>
+                        )}
+                        {coverage?.insuranceInfo && (
+                          <div className="space-y-2 mt-3">
+                            <h4 className="text-sm font-semibold">Insurance</h4>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.insuranceInfo}</ReactMarkdown>
+                          </div>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {hasDIY && (
+            {(hasDIYSteps || hasYouTube) && (
                 <AccordionItem value="diy">
                      <AccordionTrigger className="text-sm sm:text-sm px-2">
                         <div className="flex items-center gap-2 flex-1 text-left">
@@ -199,13 +217,48 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        {data.diyResults?.summaryOfFindings && (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.diyResults.summaryOfFindings}</ReactMarkdown>
+                        {diy?.diySteps?.summary && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">Summary</h4>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
+                          </div>
                         )}
-                        {data.diyResults?.youtubeSearch && (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
-                                {data.diyResults.youtubeSearch}
-                            </ReactMarkdown>
+                        {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
+                          <div className="space-y-2 mt-3">
+                            <h4 className="text-sm font-semibold">Steps</h4>
+                            <ol className="list-decimal pl-4 space-y-1">
+                              {diy.diySteps.steps.map((s, idx) => (
+                                <li key={idx} className="text-sm">{s.description}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+                        {hasYouTube && (
+                          <div className="space-y-2 mt-3">
+                            <h4 className="text-sm font-semibold flex items-center gap-2"><Youtube className="h-4 w-4" /> Tutorials</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {diy!.youtubeSearch!.videos!.map((v, i) => {
+                                const id = getYouTube_VideoId(v.url);
+                                return (
+                                  <div key={i} className="space-y-2">
+                                    {id ? (
+                                      <iframe
+                                        src={`https://www.youtube.com/embed/${id}`}
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        title={v.title || `YouTube video ${i+1}`}
+                                        className="w-full max-w-full aspect-video rounded-md"
+                                      />
+                                    ) : (
+                                      <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-words">{v.title || v.url}</a>
+                                    )}
+                                    {v.description && <p className="text-xs text-muted-foreground line-clamp-3">{v.description}</p>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                     </AccordionContent>
                 </AccordionItem>
@@ -219,13 +272,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
-                        {data.diyResults?.recommendedProducts?.DIY?.description && (
-                            <p className="text-sm text-muted-foreground mb-4">
-                                {data.diyResults.recommendedProducts.DIY.description}
-                            </p>
-                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {data.diyResults!.recommendedProducts!.DIY!.products!.map((product, index) => (
+                            {diy!.recommendedProducts!.products!.map((product, index) => (
                                 <ProductCard key={index} product={product} />
                             ))}
                         </div>
@@ -241,7 +289,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.serviceResults!.costEstimates!}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{service!.costEstimates!}</ReactMarkdown>
                     </AccordionContent>
                 </AccordionItem>
             )}
