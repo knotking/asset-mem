@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Union
 import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
-from models import AgentRequest
+from models import AgentRequest, ExtractDocInfoRequest
 
 
 from dotenv import load_dotenv
@@ -62,6 +62,8 @@ from vertex_client import (
     create_reasoning_engine_session,
     delete_reasoning_engine_session
 )
+# Import document analysis
+from document_analysis import extract_doc_info
 # Register Telegram handlers
 
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  
@@ -163,12 +165,47 @@ async def firebase_webhook_file_upload(request: Request):
     try:
         request_data = await _extract_firebase_request_data(request)
         logger.info(f"Firebase webhook file upload data: {request_data.model_dump_json()}")
-        
+
         return handle_firebase_file_upload(request_data)
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing Firebase webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/extract-doc-info")
+async def extract_document_info(request: Request):
+    """
+    Extract structured information from property documents using Gemini AI.
+
+    This endpoint analyzes documents and extracts:
+    - Document type (DEED, INSURANCE_POLICY, etc.)
+    - Property address (normalized)
+    - Key entities (policy numbers, dates, amounts)
+    - Summary
+
+    Request body:
+    {
+        "docUrl": "https://storage.googleapis.com/.../document.pdf",
+        "contentType": "application/pdf"
+    }
+    """
+    logger.info("Document analysis endpoint received a request.")
+    try:
+        data = await request.json()
+        doc_request = ExtractDocInfoRequest(**data)
+        logger.info(f"Analyzing document: {doc_request.docUrl}")
+
+        result = extract_doc_info(doc_request)
+
+        logger.info(f"Analysis complete: {result.documentType.value}")
+        return result.model_dump()
+
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error processing document analysis: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):
