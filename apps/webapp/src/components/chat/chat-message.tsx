@@ -29,11 +29,46 @@ const docTypeIcons: { [key: string]: React.ElementType } = {
 const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
   
  
-    const primaryLink = provider.link || provider.website;
-    const primaryLinkLabel = provider.link?.includes('yelp.com') ? 'View on Yelp' : 'Website';
+    const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
+    const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
+    const primaryLink = linkStr || websiteStr || undefined;
+    const isYelp = (linkStr && linkStr.includes('yelp.com')) || (websiteStr && websiteStr.includes('yelp.com'));
+    const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
 
-    const isPrimaryLinkValid = primaryLink && (primaryLink.startsWith('http://') || primaryLink.startsWith('https://'));
-    const isDirectionsLinkValid = provider.directions && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
+    const isPrimaryLinkValid = typeof primaryLink === 'string' && (primaryLink.startsWith('http://') || primaryLink.startsWith('https://'));
+    const isDirectionsLinkValid = typeof provider.directions === 'string' && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
+
+    // Helper function to check if a value is meaningful (not empty, null, undefined, or "N/A")
+    const hasValue = (val: any): boolean => {
+        if (!val) return false;
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            return trimmed !== '' && 
+                   trimmed.toLowerCase() !== 'n/a' && 
+                   trimmed.toLowerCase() !== 'not available' &&
+                   trimmed.toLowerCase() !== 'none' &&
+                   trimmed.toLowerCase() !== 'null';
+        }
+        return true;
+    };
+
+    // Extract rating number if available
+    const ratingValue = provider.ratings && typeof provider.ratings === 'string' 
+        ? provider.ratings.split('/')[0].trim() 
+        : null;
+    const hasRating = hasValue(ratingValue) && ratingValue !== 'N/A' && ratingValue !== '0';
+    const hasReviews = hasValue(provider.reviews);
+    const hasContact = hasValue(provider.contact_info);
+    const hasLocation = hasValue(provider.location);
+    const hasAdditionalInfo = hasValue(provider.additional_information) && 
+                               provider.additional_information?.toLowerCase() !== 'no additional information available.';
+    const hasSpecialties = hasValue(provider.specialties);
+
+    // Show card if provider has a name - we'll only display fields that have data
+    // This ensures we show all providers that come from the agent, and let the UI handle empty fields gracefully
+    if (!provider.name) {
+        return null;
+    }
 
     return (
     <Card className="flex flex-col h-full w-full">
@@ -47,43 +82,57 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
                     </Badge>
                 )}
             </CardTitle>
-            <CardDescription className="flex items-center gap-2 pt-1">
-                <div className="flex items-center gap-1 text-sm text-yellow-500">
-                    <Star className="h-4 w-4 fill-current" />
-                    <span>{provider.ratings?.split('/')[0] || 'N/A'}</span>
-                </div>
-                <span className="text-muted-foreground text-xs">
-                     ({provider.reviews && !provider.reviews.toLowerCase().includes('review') 
-                        ? provider.reviews 
-                        : `${provider.reviews || '0'} reviews`})
-                </span>
-            </CardDescription>
+            {(hasRating || hasReviews) && (
+                <CardDescription className="flex items-center gap-2 pt-1">
+                    {hasRating && (
+                        <div className="flex items-center gap-1 text-sm text-yellow-500">
+                            <Star className="h-4 w-4 fill-current" />
+                            <span>{ratingValue}</span>
+                        </div>
+                    )}
+                    {hasReviews && (
+                        <span className="text-muted-foreground text-xs">
+                            {provider.reviews && !provider.reviews.toLowerCase().includes('review') 
+                                ? provider.reviews 
+                                : `${provider.reviews} reviews`}
+                        </span>
+                    )}
+                </CardDescription>
+            )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col space-y-3">
-             <p className="text-sm text-muted-foreground line-clamp-3">
-              {provider.additional_information || 'No additional information available.'}
-            </p>
+             {hasAdditionalInfo && (
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                    {provider.additional_information}
+                </p>
+             )}
             <div className="text-sm space-y-2">
-                <div className="flex items-start gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <span className='min-w-0'>{provider.contact_info || 'Not available'}</span>
-                </div>
-                <div className="flex items-start gap-2 min-w-0">
-                    <Map className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <span className="line-clamp-1 min-w-0">{provider.location || 'Not available'}</span>
-                </div>
+                {hasContact && (
+                    <div className="flex items-start gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <span className='min-w-0'>{provider.contact_info}</span>
+                    </div>
+                )}
+                {hasLocation && (
+                    <div className="flex items-start gap-2 min-w-0">
+                        <Map className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <span className="line-clamp-1 min-w-0">{provider.location}</span>
+                    </div>
+                )}
             </div>
-            {provider.specialties && (
+            {hasSpecialties && (
                 <div className="space-y-1 pt-1 min-w-0">
                     <h4 className="text-xs font-semibold text-muted-foreground">Specialties</h4>
                     <p className="text-xs text-foreground break-words">{provider.specialties}</p>
                 </div>
             )}
         </CardContent>
-        <CardFooter className="flex gap-2 mt-auto pt-4">
-            {isPrimaryLinkValid && <Button variant="outline" size="sm" asChild><a href={primaryLink} target="_blank" rel="noopener noreferrer">{primaryLinkLabel}</a></Button>}
-            {isDirectionsLinkValid && <Button variant="default" size="sm" asChild><a href={provider.directions} target="_blank" rel="noopener noreferrer">Directions</a></Button>}
-        </CardFooter>
+        {(isPrimaryLinkValid || isDirectionsLinkValid) && (
+            <CardFooter className="flex gap-2 mt-auto pt-4">
+                {isPrimaryLinkValid && primaryLink && <Button variant="outline" size="sm" asChild><a href={primaryLink} target="_blank" rel="noopener noreferrer">{primaryLinkLabel}</a></Button>}
+                {isDirectionsLinkValid && provider.directions && <Button variant="default" size="sm" asChild><a href={provider.directions} target="_blank" rel="noopener noreferrer">Directions</a></Button>}
+            </CardFooter>
+        )}
     </Card>
 )};
 
@@ -151,161 +200,294 @@ const ProductCard = ({ product }: { product: Product }) => {
 
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
-    const triage = analysis?.triageResult;
-    const coverage = analysis?.coverageResult;
-    const diy = analysis?.diyResults;
-    const service = analysis?.serviceResults;
+    // Support both nested (analysis.*) and flat structures (top-level keys)
+    const triage = analysis?.triageResult || (data as any)?.triageResult;
+    const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
+    const diy = analysis?.diyResults || (data as any)?.diyResults;
+    const service = analysis?.serviceResults || (data as any)?.serviceResults;
 
-    const allProviders = [
-        ...(service?.localPros?.yelpAPIResults || []),
-        ...(service?.localPros?.serpAPIResults || []),
+    // Normalize and validate provider objects coming from various agents/APIs
+    const normalizeProvider = (p: any): ServiceProvider | null => {
+        if (!p || typeof p !== 'object') return null;
+        const nameCandidate = p.name || p.business_name || p.businessName || p.title || p.company || p.provider || p.store || '';
+        const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
+        if (!name.trim()) return null;
+
+        const website = p.website || p.url || p.link || undefined;
+        const link = p.link || p.url || p.website || undefined;
+        const directions = p.directions || p.directions_url || p.map_link || undefined;
+        const contact_info = p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
+        const location = p.location || p.address || p.address_line || undefined;
+        const ratings = p.ratings || p.rating || undefined;
+        const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
+        const specialties = p.specialties || p.services || undefined;
+        const additional_information = p.additional_information || p.description || p.about || undefined;
+        const authorized = p.authorized || p.verified || undefined;
+
+        return {
+            name,
+            website,
+            link,
+            directions,
+            contact_info,
+            location,
+            ratings: ratings != null ? String(ratings) : undefined,
+            reviews: reviews != null ? String(reviews) : undefined,
+            specialties: specialties != null ? String(specialties) : undefined,
+            additional_information: additional_information != null ? String(additional_information) : undefined,
+            authorized: authorized != null ? String(authorized) : undefined,
+        } as ServiceProvider;
+    };
+
+    const providerHasValidData = (provider: any): boolean => {
+        const nameCandidate = provider?.name || provider?.business_name || provider?.businessName || provider?.title || provider?.company || provider?.provider || provider?.store;
+        return !!(nameCandidate && String(nameCandidate).trim() !== '');
+    };
+
+    // Get all providers (before filtering) to check if service section should show
+    // Handle both array format and potential string/object formats
+    const getProvidersArray = (providers: any): ServiceProvider[] => {
+        if (!providers) return [];
+        if (Array.isArray(providers)) return providers as ServiceProvider[];
+        if (typeof providers === 'string') {
+            try {
+                const parsed = JSON.parse(providers);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        if (typeof providers === 'object') {
+            // Common container keys
+            const keys = ['providers','results','items','pros','list'];
+            for (const k of keys) {
+                if (Array.isArray((providers as any)[k])) return (providers as any)[k];
+            }
+        }
+        return [];
+    };
+
+    const allProvidersRaw = [
+        ...getProvidersArray(service?.localPros?.yelpAPIResults),
+        ...getProvidersArray(service?.localPros?.serpAPIResults),
+        ...getProvidersArray(service?.providers),
+        ...getProvidersArray(service?.localProviders),
+        ...getProvidersArray(service?.local_pros),
+        ...getProvidersArray(service?.results),
+        ...getProvidersArray(service?.nearbyProviders),
     ];
+    
+    // Filter providers to show only those with meaningful data
+    const allProviders = allProvidersRaw.filter(providerHasValidData).map(normalizeProvider).filter(Boolean) as ServiceProvider[];
 
-    const hasTriage = !!(triage?.diagnosis && triage.diagnosis.trim() !== '');
+    const hasTriage = !!(triage?.diagnosis && typeof triage.diagnosis === 'string' && triage.diagnosis.trim() !== '');
     const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
-    const hasDIYSteps = !!(diy?.diySteps?.summary || (diy?.diySteps?.steps && diy.diySteps.steps.length > 0));
-    const hasYouTube = !!(diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0);
-    const hasProducts = !!(diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0);
-    const hasCostEstimates = !!(service?.costEstimates && service.costEstimates.trim() !== '');
-    const hasServiceProviders = allProviders.length > 0;
+    const hasDIY = !!(diy && (
+        diy.diySteps?.summary || 
+        (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
+        (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
+        (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
+    ));
+    
+    // Cost Estimates support (handles many likely keys and nested JSON)
+    const hasCostEstimates = false;
+    const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
+    const hasService = !!(service && hasProviders);
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Service Recommendations Debug:', {
+            serviceExists: !!service,
+            hasCostEstimates: false,
+            costEstimatesType: 'removed',
+            costEstimatesValue: 'removed',
+            costEstimatesText: 'removed',
+            rawProvidersCount: allProvidersRaw.length,
+            filteredProvidersCount: allProviders.length,
+            hasProviders: hasProviders,
+            hasServiceSection: hasService,
+            serviceKeys: service ? Object.keys(service) : [],
+            localProsExists: !!service?.localPros,
+            localProsKeys: service?.localPros ? Object.keys(service.localPros) : [],
+            yelpAPIResults: service?.localPros?.yelpAPIResults ? (Array.isArray(service.localPros.yelpAPIResults) ? service.localPros.yelpAPIResults.length : typeof service.localPros.yelpAPIResults) : 'missing',
+            serpAPIResults: service?.localPros?.serpAPIResults ? (Array.isArray(service.localPros.serpAPIResults) ? service.localPros.serpAPIResults.length : typeof service.localPros.serpAPIResults) : 'missing',
+            firstProvider: allProvidersRaw.length > 0 ? allProvidersRaw[0] : null,
+            fullServiceData: service
+        });
+    }
+
+    // Currency helper
+    const toCurrency = (value: any): string => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') {
+            const stripped = value.replace(/[^0-9.\-]/g, '');
+            if (stripped === '') return value;
+            const num = Number(stripped);
+            if (isNaN(num)) return value;
+            return `$${num.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+        }
+        if (typeof value === 'number') {
+            return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+        }
+        return '';
+    };
+
+    // Cost estimates removed by request
 
     return (
-        <Accordion type="single" collapsible defaultValue="triage" className="w-full">
+        <Accordion type="multiple" className="w-full space-y-2">
             {hasTriage && (
-                <AccordionItem value="triage">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+                <AccordionItem value="triage" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <Stethoscope className="h-4 w-4" />
-                            <span>Problem Analysis</span>
+                            <Stethoscope className="h-5 w-5 text-blue-600" />
+                            <span className="font-semibold">Triage Summary</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{triage!.diagnosis!}</ReactMarkdown>
                     </AccordionContent>
                 </AccordionItem>
             )}
+            
             {hasCoverage && (
-                <AccordionItem value="coverage">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
-                         <div className="flex items-center gap-2 flex-1 text-left">
-                           <ShieldCheck className="h-4 w-4" />
-                           <span>Coverage & Warranty</span>
+                <AccordionItem value="coverage" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <ShieldCheck className="h-5 w-5 text-green-600" />
+                            <span className="font-semibold">Coverage Analysis</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
                         {coverage?.warrantyInfo && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Warranty</h4>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.warrantyInfo}</ReactMarkdown>
-                          </div>
+                            <div className="space-y-2 mb-4">
+                                <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Warranty Information</h4>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.warrantyInfo}</ReactMarkdown>
+                            </div>
                         )}
                         {coverage?.insuranceInfo && (
-                          <div className="space-y-2 mt-3">
-                            <h4 className="text-sm font-semibold">Insurance</h4>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.insuranceInfo}</ReactMarkdown>
-                          </div>
-                        )}
-                    </AccordionContent>
-                </AccordionItem>
-            )}
-            {(hasDIYSteps || hasYouTube) && (
-                <AccordionItem value="diy">
-                     <AccordionTrigger className="text-sm sm:text-sm px-2">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                          <Wrench className="h-4 w-4" />
-                          <span>DIY Solutions</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        {diy?.diySteps?.summary && (
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">Summary</h4>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
-                          </div>
-                        )}
-                        {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
-                          <div className="space-y-2 mt-3">
-                            <h4 className="text-sm font-semibold">Steps</h4>
-                            <ol className="list-decimal pl-4 space-y-1">
-                              {diy.diySteps.steps.map((s, idx) => (
-                                <li key={idx} className="text-sm">{s.description}</li>
-                              ))}
-                            </ol>
-                          </div>
-                        )}
-                        {hasYouTube && (
-                          <div className="space-y-2 mt-3">
-                            <h4 className="text-sm font-semibold flex items-center gap-2"><Youtube className="h-4 w-4" /> Tutorials</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {diy!.youtubeSearch!.videos!.map((v, i) => {
-                                const id = getYouTube_VideoId(v.url);
-                                return (
-                                  <div key={i} className="space-y-2">
-                                    {id ? (
-                                      <iframe
-                                        src={`https://www.youtube.com/embed/${id}`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        title={v.title || `YouTube video ${i+1}`}
-                                        className="w-full max-w-full aspect-video rounded-md"
-                                      />
-                                    ) : (
-                                      <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-words">{v.title || v.url}</a>
-                                    )}
-                                    {v.description && <p className="text-xs text-muted-foreground line-clamp-3">{v.description}</p>}
-                                  </div>
-                                );
-                              })}
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Insurance Information</h4>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.insuranceInfo}</ReactMarkdown>
                             </div>
-                          </div>
                         )}
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {hasProducts && (
-                <AccordionItem value="products">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+            
+            {hasDIY && (
+                <AccordionItem value="diy" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <ShoppingCart className="h-4 w-4" />
-                            <span>Recommended Products</span>
+                            <Wrench className="h-5 w-5 text-orange-600" />
+                            <span className="font-semibold">DIY Recommendations</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {diy!.recommendedProducts!.products!.map((product, index) => (
-                                <ProductCard key={index} product={product} />
-                            ))}
-                        </div>
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
+                        {diy?.diySteps?.summary && (
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Summary</h4>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
+                            </div>
+                        )}
+                        
+                        {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Step-by-Step Instructions</h4>
+                                <ol className="list-decimal pl-6 space-y-2">
+                                    {diy.diySteps.steps.map((s: any, idx: number) => (
+                                        <li key={idx} className="text-sm">{s.description}</li>
+                                    ))}
+                                </ol>
+                            </div>
+                        )}
+                        
+                        {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                                    <Youtube className="h-4 w-4" /> Video Tutorials
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {diy.youtubeSearch.videos.map((v: any, i: number) => {
+                                        const id = getYouTube_VideoId(v.url);
+                                        return (
+                                            <div key={i} className="space-y-2">
+                                                {id ? (
+                                                    <iframe
+                                                        src={`https://www.youtube.com/embed/${id}`}
+                                                        frameBorder="0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                        title={v.title || `YouTube video ${i+1}`}
+                                                        className="w-full max-w-full aspect-video rounded-md border"
+                                                    />
+                                                ) : (
+                                                    <a 
+                                                        href={v.url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="text-blue-600 dark:text-blue-400 underline break-words block"
+                                                    >
+                                                        {v.title || v.url}
+                                                    </a>
+                                                )}
+                                                {v.description && (
+                                                    <p className="text-xs text-muted-foreground line-clamp-3">{v.description}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                                    <ShoppingCart className="h-4 w-4" /> Recommended Products
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {diy.recommendedProducts.products.map((product: Product, index: number) => (
+                                        <ProductCard key={index} product={product} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
             )}
-            {hasCostEstimates && (
-                <AccordionItem value="costs">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
+            
+            {hasService && (
+                <AccordionItem value="service" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 text-left">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>Cost Estimates</span>
+                            <TrendingUp className="h-5 w-5 text-purple-600" />
+                            <span className="font-semibold">Service Recommendations</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words p-4 bg-background rounded-b-lg border-t">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{service!.costEstimates!}</ReactMarkdown>
-                    </AccordionContent>
-                </AccordionItem>
-            )}
-            {hasServiceProviders && (
-                <AccordionItem value="providers">
-                    <AccordionTrigger className="text-sm sm:text-sm px-2">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Users className="h-4 w-4" />
-                            <span>Service Providers</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4 bg-background rounded-b-lg border-t">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {allProviders.map((provider, index) => (
-                                <ServiceProviderCard key={index} provider={provider} />
-                            ))}
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
+                    {/* Cost estimates removed */}
+                        
+                        {/* Show local pros section - always show if service data exists */}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                                <Users className="h-4 w-4" /> Local Service Providers
+                            </h4>
+                            {allProviders.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {allProviders.map((provider, index) => (
+                                        <ServiceProviderCard key={index} provider={provider} />
+                                    ))}
+                                </div>
+                            ) : hasProviders ? (
+                                <p className="text-sm text-muted-foreground italic">
+                                    Service providers were found but need additional processing to display full details.
+                                </p>
+                            ) : (
+                                <p className="text-sm text-muted-foreground italic">
+                                    No service providers found for this location. Try searching with a specific address or area.
+                                </p>
+                            )}
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -560,9 +742,28 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
       const tempDiv = document.createElement('div');
       tempDiv.appendChild(selectedHtml);
       const whatsappText = htmlToWhatsapp(tempDiv.innerHTML);
-      navigator.clipboard.writeText(whatsappText).then(() => {
-        toast({ title: "Selection copied!" });
-      });
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(whatsappText).then(() => {
+          toast({ title: "Selection copied!" });
+        }).catch(() => {
+          toast({ variant: "destructive", title: "Copy failed" });
+        });
+      } else {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          toast({ title: "Selection copied!" });
+        } catch {
+          toast({ variant: "destructive", title: "Copy failed" });
+        }
+        document.body.removeChild(textArea);
+      }
     }
   }, [toast]);
 
@@ -572,17 +773,38 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
 
   const handleCopyClick = () => {
     const whatsappFormattedText = markdownToWhatsapp(message.content);
-    navigator.clipboard.writeText(whatsappFormattedText).then(() => {
-      toast({
-        title: "Message copied!",
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(whatsappFormattedText).then(() => {
+        toast({
+          title: "Message copied!",
+        });
+      }, (err) => {
+        toast({
+          variant: "destructive",
+          title: "Copy failed",
+          description: "Could not copy message to clipboard.",
+        });
       });
-    }, (err) => {
-      toast({
-        variant: "destructive",
-        title: "Copy failed",
-        description: "Could not copy message to clipboard.",
-      });
-    });
+    } else {
+      // Fallback for browsers without clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = whatsappFormattedText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ title: "Message copied!" });
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Copy failed",
+          description: "Could not copy message to clipboard.",
+        });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const renderDocumentList = () => {
@@ -686,22 +908,199 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
   const isMediaOnly = (fileData?.type.startsWith('image/') || fileData?.type.startsWith('video/')) && !message.content;
 
   let structuredData: StructuredResponseData | null = null;
+  let fallbackParsedJson: any | null = null;
+
+  const jsonToMarkdown = (data: any, level: number = 3): string => {
+    const heading = (text: string, lvl: number) => `${'#'.repeat(Math.min(6, lvl))} ${text}`;
+    const toInline = (val: any): string => {
+      if (val === null || val === undefined) return '`null`';
+      if (typeof val === 'string') return val.includes('\n') ? `\n\n${val}\n\n` : val;
+      if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+      if (Array.isArray(val)) return val.length === 0 ? '[]' : `${val.length} items`;
+      if (typeof val === 'object') return Object.keys(val).length === 0 ? '{}' : `${Object.keys(val).length} fields`;
+      return String(val);
+    };
+
+    const isHomogeneousObjectArray = (arr: any[]): boolean => {
+      if (arr.length === 0) return false;
+      return arr.every(it => it && typeof it === 'object' && !Array.isArray(it));
+    };
+
+    if (Array.isArray(data)) {
+      if (isHomogeneousObjectArray(data)) {
+        const headers = Array.from(new Set(data.flatMap(obj => Object.keys(obj))));
+        const lines: string[] = [];
+        lines.push(`| ${headers.join(' | ')} |`);
+        lines.push(`| ${headers.map(() => '---').join(' | ')} |`);
+        data.forEach((row) => {
+          lines.push(`| ${headers.map(h => toInline((row as any)[h] ?? '')).join(' | ')} |`);
+        });
+        return lines.join('\n');
+      }
+      return data.map((it: any) => `- ${toInline(it)}`).join('\n');
+    }
+
+    if (typeof data === 'object' && data) {
+      const sections: string[] = [];
+      for (const [key, value] of Object.entries(data)) {
+        if (value && typeof value === 'object') {
+          sections.push(heading(String(key), level));
+          sections.push(jsonToMarkdown(value, level + 1));
+          sections.push('');
+        } else {
+          sections.push(`- **${key}**: ${toInline(value)}`);
+        }
+      }
+      return sections.join('\n');
+    }
+
+    return toInline(data);
+  };
     try {
         if (!isUser && message.content) {
-          const jsonRegex = /\*\*.*?\*\*\s*:\s*```json\s*\n([\s\S]*?)```/;
-          const match = message.content.match(jsonRegex);
+          let contentToParse = message.content.trim();
           
-          if (match && match[1]) {
-              // sometimes json has markdown which has unescaped characters
-              const cleaned = match[1].trim().replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
-              const parsed = JSON.parse(cleaned);
-               if (parsed.triageResult || parsed.diyResults || parsed.serviceResults) {
-                  structuredData = parsed;
+          // Method 1: If the entire content is just JSON (starts with { and ends with }), try parsing directly
+          if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
+              try {
+                  const parsed = JSON.parse(contentToParse);
+                  if (parsed && typeof parsed === 'object' && (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults)) {
+                      structuredData = parsed;
+                      if (process.env.NODE_ENV === 'development') {
+                          console.log('Parsed JSON directly from content');
+                      }
+                  } else if (parsed && typeof parsed === 'object') {
+                      fallbackParsedJson = parsed;
+                  }
+              } catch {
+                  // Not pure JSON, continue with other methods
+              }
+          }
+          
+          // Method 2: Try to extract JSON from markdown code block (```json ... ``` or ``` ... ```)
+          if (!structuredData) {
+              const jsonCodeBlockRegex = /```(?:json)?\s*\n([\s\S]*?)```/;
+              const codeBlockMatch = contentToParse.match(jsonCodeBlockRegex);
+              
+              if (codeBlockMatch && codeBlockMatch[1]) {
+                  contentToParse = codeBlockMatch[1].trim();
+              }
+              
+              // Method 3: Try to find JSON object within markdown (after **label**:)
+              if (!codeBlockMatch) {
+                  const labeledJsonRegex = /\*\*.*?\*\*\s*:\s*```(?:json)?\s*\n([\s\S]*?)```/;
+                  const labeledMatch = contentToParse.match(labeledJsonRegex);
+                  if (labeledMatch && labeledMatch[1]) {
+                      contentToParse = labeledMatch[1].trim();
+                  }
+              }
+              
+              // Method 4: Try to extract JSON object directly from content (look for { "analysis": ... } or similar)
+              if (!codeBlockMatch && !contentToParse.startsWith('{')) {
+                  // More comprehensive regex to match JSON objects with our keys
+                  // Try multiple patterns to catch different formats
+                  const patterns = [
+                      /\{[\s\S]*"(?:analysis|triageResult|diyResults|serviceResults|coverageResult)":[\s\S]*\}/,
+                      /\{[\s\S]*"analysis"[\s\S]*\}/,
+                      /\{[\s\S]*"triageResult"[\s\S]*\}/,
+                      /\{[\s\S]*"serviceResults"[\s\S]*\}/
+                  ];
+                  
+                  for (const pattern of patterns) {
+                      const objectMatch = contentToParse.match(pattern);
+                      if (objectMatch) {
+                          contentToParse = objectMatch[0];
+                          break;
+                      }
+                  }
+              }
+              
+              // Clean and parse the JSON
+              if (contentToParse && contentToParse.startsWith('{')) {
+                  // Remove any leading/trailing whitespace and clean escape characters
+                  contentToParse = contentToParse.trim();
+                  // Fix common JSON issues
+                  contentToParse = contentToParse.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+                  
+                  try {
+                      const parsed = JSON.parse(contentToParse);
+                      // Check for valid structured data format
+                      if (parsed && typeof parsed === 'object') {
+                          // Check for new nested structure (analysis) or legacy flat structure
+                          if (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult) {
+                              structuredData = parsed;
+                              // Debug: log successful parse with detailed service info
+                              if (process.env.NODE_ENV === 'development') {
+                                  const serviceData = parsed.analysis?.serviceResults || parsed.serviceResults;
+                                  console.log('Successfully parsed structured data from content:', {
+                                      hasAnalysis: !!parsed.analysis,
+                                      hasTriage: !!parsed.triageResult || !!parsed.analysis?.triageResult,
+                                      hasDiy: !!parsed.diyResults || !!parsed.analysis?.diyResults,
+                                      hasService: !!parsed.serviceResults || !!parsed.analysis?.serviceResults,
+                                      hasCoverage: !!parsed.coverageResult || !!parsed.analysis?.coverageResult,
+                                      structure: parsed.analysis ? 'nested' : 'flat',
+                                      serviceDataDetails: serviceData ? {
+                                          hasCostEstimates: !!serviceData.costEstimates,
+                                          hasLocalPros: !!serviceData.localPros,
+                                          localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
+                                          yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
+                                          serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
+                                          serviceDataKeys: Object.keys(serviceData)
+                                      } : null
+                                  });
+                              }
+                          } else {
+                              fallbackParsedJson = parsed;
+                              // Debug: log why it wasn't structured
+                              if (process.env.NODE_ENV === 'development') {
+                                  console.log('Parsed JSON but not recognized as structured data. Keys:', Object.keys(parsed));
+                              }
+                          }
+                      }
+                  } catch (parseError) {
+                      if (process.env.NODE_ENV === 'development') {
+                          console.log('JSON parse error:', parseError, 'Content preview:', contentToParse.substring(0, 200));
+                      }
+                      // Try to fix common JSON issues
+                      try {
+                          // Remove comments if any
+                          const cleaned = contentToParse.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+                          const parsed = JSON.parse(cleaned);
+                          if (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult) {
+                              structuredData = parsed;
+                              if (process.env.NODE_ENV === 'development') {
+                                  console.log('Successfully parsed after cleaning');
+                              }
+                          } else {
+                              fallbackParsedJson = parsed;
+                          }
+                      } catch {
+                          // Not valid JSON, will be treated as plain text
+                          if (process.env.NODE_ENV === 'development') {
+                              console.log('Could not parse as JSON, will display as plain text');
+                          }
+                      }
+                  }
+              }
+          }
+          
+          // Final check: If we still haven't parsed structured data but content looks like JSON
+          // (contains key markers), log it for debugging
+          if (!structuredData && process.env.NODE_ENV === 'development') {
+              const hasJsonMarkers = message.content.includes('"analysis"') || 
+                                     message.content.includes('"triageResult"') || 
+                                     message.content.includes('"serviceResults"') ||
+                                     message.content.includes('"diyResults"') ||
+                                     message.content.includes('"coverageResult"');
+              if (hasJsonMarkers) {
+                  console.warn('Detected JSON markers but failed to parse structured data. Content preview:', message.content.substring(0, 500));
               }
           }
         }
     } catch (e) {
-      console.log('Exception:', e)
+      if (process.env.NODE_ENV === 'development') {
+          console.log('Exception parsing structured data:', e);
+      }
         // Not a JSON object, treat as plain text
     }
 
@@ -775,7 +1174,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                         remarkPlugins={[remarkGfm]}
                         components={markdownRenderers}
                       >
-                        {message.content}
+                        {fallbackParsedJson ? jsonToMarkdown(fallbackParsedJson) : message.content}
                       </ReactMarkdown>
                     )}
                      {renderDocumentList()}
