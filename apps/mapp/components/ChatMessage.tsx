@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Image, TouchableOpacity, Linking } from 'react-native';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
@@ -285,15 +286,87 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
 const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
+  const [imageError, setImageError] = React.useState(false);
+  const [imageDimensions, setImageDimensions] = React.useState<{ width: number; height: number } | null>(null);
+
+  // Video player hook - only create if video
+  const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
+    player.pause();
+  });
+
+  React.useEffect(() => {
+    if (isImage && file.url) {
+      Image.getSize(
+        file.url,
+        (width, height) => {
+          // Calculate aspect ratio and set dimensions
+          // Max width is screen width minus padding, let's assume 350px
+          const maxWidth = 350;
+          const maxHeight = 400;
+
+          let displayWidth = width;
+          let displayHeight = height;
+
+          // Scale down if image is too wide
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            displayWidth = maxWidth;
+            displayHeight = height * ratio;
+          }
+
+          // Scale down if image is too tall
+          if (displayHeight > maxHeight) {
+            const ratio = maxHeight / displayHeight;
+            displayWidth = displayWidth * ratio;
+            displayHeight = maxHeight;
+          }
+
+          setImageDimensions({ width: displayWidth, height: displayHeight });
+        },
+        (error) => {
+          console.error('Failed to get image size:', error);
+          setImageError(true);
+        }
+      );
+    }
+  }, [isImage, file.url]);
 
   return (
-    <View className="mb-2 overflow-hidden rounded-lg border border-border">
+    <View className="mb-2 overflow-hidden rounded-lg border border-border bg-secondary/30">
       {isImage ? (
-        <Image source={{ uri: file.url }} className="h-48 w-full" resizeMode="cover" />
+        imageError ? (
+          <View className="flex-row items-center gap-2 bg-secondary p-3">
+            <Icon as={FileText} size={20} className="text-muted-foreground" />
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                {file.name}
+              </Text>
+              <Text className="text-xs text-red-500">Failed to load image</Text>
+            </View>
+          </View>
+        ) : imageDimensions ? (
+          <Image
+            source={{ uri: file.url }}
+            style={{ width: imageDimensions.width, height: imageDimensions.height }}
+            resizeMode="contain"
+            onError={(e) => {
+              console.error('Image load error:', e.nativeEvent.error);
+              setImageError(true);
+            }}
+          />
+        ) : (
+          <View className="h-48 w-full items-center justify-center">
+            <Text className="text-sm text-muted-foreground">Loading image...</Text>
+          </View>
+        )
       ) : isVideo ? (
-        <View className="h-48 w-full items-center justify-center bg-secondary">
-          <Text className="text-muted-foreground">Video: {file.name}</Text>
-        </View>
+        <VideoView
+          player={player}
+          style={{ width: 350, height: 300 }}
+          contentFit="contain"
+          allowsFullscreen
+          allowsPictureInPicture
+        />
       ) : (
         <View className="flex-row items-center gap-2 bg-secondary p-3">
           <Icon as={FileText} size={20} className="text-muted-foreground" />
@@ -331,8 +404,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <View className={`mb-4 flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <MessageAvatar role={message.role} />
-      <View className="flex-1">
+      <View className="hidden md:flex">
+        <MessageAvatar role={message.role} />
+      </View>
+      <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
         <View className={`rounded-lg p-3 ${isUser ? 'bg-primary' : 'bg-secondary'}`}>
           {message.file && <FilePreview file={message.file} />}
           {message.documents && message.documents.length > 0 && (
