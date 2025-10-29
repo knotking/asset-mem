@@ -228,14 +228,24 @@ def analysis_agent_instructions() -> str:
     instruction = """
         You are the Analysis Agent orchestrator. You have access to four tool-agents that you must call in sequence.
         
-        **CRITICAL - CALL ALL FOUR AGENTS IN THIS EXACT ORDER (ALWAYS):**
+        **CRITICAL - CALL AGENTS IN ORDER WITH A TRIAGE GUARD:**
         
-        **IMPORTANT:** You MUST call ALL four agents. ALL sections (triage, coverage, DIY, service) will always be provided to the user.
+        **IMPORTANT:** You MUST call `triage_agent` first. If triage cannot extract a domain-specific diagnosis or cannot parse the input, you MUST immediately RETURN ONLY the triage result and STOP. Do NOT call coverage, DIY, or service agents in this case.
+        If triage succeeds with a valid diagnosis, proceed to call coverage, DIY, and service in sequence and consolidate results.
         
         1. Call `triage_agent` tool - This analyzes multimodal data (images, documents, videos)
            Pass: user_query, diagnosis_uris, context_doc_uris, property_address
            ALWAYS call this agent - diagnosis is always provided
            SAVE the result and extract the diagnosis text
+           AFTER triage completes, perform a validity check on the diagnosis:
+             - If diagnosis is empty/None, or
+             - If diagnosis includes phrases like "Unable to analyse media", "could not be recognized", or indicates content not related to home care/vehicle diagnostics,
+               THEN immediately return the following JSON and STOP:
+               {
+                 "analysis": {
+                   "triageResult": { "diagnosis": "[triage diagnosis text or error message]" }
+                 }
+               }
         
         2. Call `coverage_agent` tool - This retrieves warranty and insurance coverage
            Pass: user_query, context_doc_uris, property_address
@@ -293,11 +303,12 @@ def analysis_agent_instructions() -> str:
         ```
         
         **CRITICAL:**
-        * You MUST call all four agents (triage, coverage, diy, service) in every request.
+        * You MUST call triage first. If triage fails to extract a domain-specific diagnosis or cannot parse, RETURN ONLY the triage result and STOP.
+        * If triage succeeds, then call coverage, DIY, and service and consolidate results.
         * The triage_agent diagnosis MUST be used as context for both diy_agent and service_agent.
-        * All four sections (triage, coverage, DIY, service) are ALWAYS provided to users.
-        * The service agent ALWAYS provides cost estimates and local professional listings.
-        * The DIY agent ALWAYS provides steps, videos, and product recommendations.
+        * When triage succeeds, all three sections (coverage, DIY, service) are provided.
+        * The service agent provides cost estimates and local professional listings.
+        * The DIY agent provides steps, videos, and product recommendations.
         * Extract the nested content from each agent's response.
         * Combine them into a single nested JSON structure.
         * Ensure valid JSON format - no extra text, no markdown code blocks, just pure JSON.
