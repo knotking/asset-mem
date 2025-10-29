@@ -2,7 +2,7 @@ import os
 import uuid
 import base64
 from google.cloud.storage.client import Client
-from google.adk.agents import Agent, SequentialAgent, ParallelAgent 
+from google.adk.agents import Agent 
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext, google_search
 from google.adk.tools.langchain_tool import LangchainTool
@@ -282,15 +282,13 @@ def product_recommendations_diy(query: str) -> str:
         return json.dumps({"recommendedProducts": {"error": f"Error retrieving product recommendations: {str(e)}"}})
 
 
-# Create sub-agents
+# Create agents
 triage_agent = Agent(
     model='gemini-2.5-flash',
     name='triage_agent',
     description="Analyzes multimodal data and extracts the problem description.",
     instruction=triage_agent_instructions(),
     tools=[analyse_multimodal_data],
-    disallow_transfer_to_parent=True,
-    before_tool_callback=before_tool_callback,
     input_schema=DiagnosisInput
 )
 
@@ -300,8 +298,6 @@ coverage_agent = Agent(
     description="Retrieves warranty and insurance coverage information from user documents.",
     instruction=coverage_agent_instructions(),
     tools=[ask_user_docs_retreival],
-    disallow_transfer_to_parent=True,
-    before_tool_callback=before_tool_callback,
     input_schema=DocsInput
 )
 
@@ -315,8 +311,6 @@ diy_agent = Agent(
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for DIY tutorials."),
         product_recommendations_diy,
     ],
-    disallow_transfer_to_parent=True,
-    before_tool_callback=before_tool_callback,
     input_schema=DocsInput
 )
 
@@ -330,30 +324,24 @@ service_agent = Agent(
         LangchainTool(tool=serpapi_search, name="serpapi_search", description="Searches for local business listings and service providers."),
         yelpapi_search
     ],
-    disallow_transfer_to_parent=True,
-    before_tool_callback=before_tool_callback,
     input_schema=DocsInput
 )
 
-# Main analysis agent orchestrates: Triage -> Coverage -> (DIY || Service)
-analysis_agent = SequentialAgent(
+# Main analysis agent calls all agents as tools
+analysis_agent = Agent(
     name='analysis_agent',
+    model='gemini-2.5-flash',
     description="Orchestrates Triage, Coverage, DIY, and Service agents to provide comprehensive problem analysis.",
     instruction=analysis_agent_instructions(),
-    agents=[
-        triage_agent,
-        coverage_agent,
-        ParallelAgent(
-            name='diy_and_service',
-            agents=[
-                diy_agent,
-                service_agent
-            ]
-        )
+    tools=[
+        AgentTool(triage_agent),
+        AgentTool(coverage_agent),
+        AgentTool(diy_agent),
+        AgentTool(service_agent)
     ],
+    input_schema=DiagnosisInput,
     disallow_transfer_to_parent=True,
-    before_tool_callback=before_tool_callback,
-    input_schema=DiagnosisInput
+    before_tool_callback=before_tool_callback
 )
 
 __all__ = ["analysis_agent"]
