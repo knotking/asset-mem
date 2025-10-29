@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
@@ -23,6 +24,8 @@ import {
   Upload,
   X,
   File,
+  AlertCircle,
+  CheckCircle,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -32,9 +35,11 @@ import { MessagesProvider, useMessages } from '@homeapp/common/contexts/messages
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import * as ImagePicker from 'expo-image-picker';
 import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
-import type { Session, Document, AgentStep } from '@homeapp/common/types';
+import type { Session, Document, AgentStep, FileAttachment } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 
 function DetailsTab({ property }: { property: any }) {
@@ -140,7 +145,7 @@ export default function PropertyDetailsScreen() {
   const { draftsByProperty } = useSession();
   const { documents } = useProperty();
   const { user } = useAuth();
-  const { db } = useFirebase();
+  const { db, storage } = useFirebase();
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>('chat');
   const [message, setMessage] = React.useState('');
@@ -149,6 +154,7 @@ export default function PropertyDetailsScreen() {
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
   const [isSending, setIsSending] = React.useState(false);
+  const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
 
   // Auto-select draft session when property loads
   React.useEffect(() => {
@@ -157,12 +163,124 @@ export default function PropertyDetailsScreen() {
     }
   }, [id, draftsByProperty, selectedSessionId]);
 
+  // Handle file selection and upload
+  const handleFileUpload = React.useCallback(async () => {
+    if (!user) return;
+
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant permission to access your media library.');
+      return;
+    }
+
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const attachmentId = `upload-${Date.now()}`;
+    const fileName = asset.fileName || `file-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+    const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+
+    // Create storage reference
+    const storageRef = ref(storage, `uploads/${user.uid}/${Date.now()}_${fileName}`);
+
+    // Initialize attachment state
+    setFileAttachment({
+      id: attachmentId,
+      uri: asset.uri,
+      progress: 0,
+      downloadURL: null,
+      error: null,
+      storagePath: storageRef.fullPath,
+      fileName,
+      fileType,
+      fileSize: asset.fileSize || 0,
+    });
+
+    try {
+      // Fetch the file blob from URI
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      // Upload to Firebase Storage
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress } : null));
+        },
+        (error) => {
+          console.error('Upload error:', error);
+          setFileAttachment((prev: FileAttachment | null) =>
+            prev ? { ...prev, error: 'Upload failed. Please try again.' } : null
+          );
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress: 100, downloadURL } : null));
+          } catch (error) {
+            console.error('Error getting download URL:', error);
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, error: 'Failed to process file.' } : null
+            );
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setFileAttachment((prev: FileAttachment | null) =>
+        prev ? { ...prev, error: 'Failed to upload file.' } : null
+      );
+    }
+  }, [user, storage]);
+
+  // Remove file attachment
+  const removeFileAttachment = React.useCallback(async () => {
+    if (!fileAttachment) return;
+
+    // Delete from Firebase Storage if uploaded
+    if (fileAttachment.storagePath && fileAttachment.downloadURL) {
+      const fileRef = ref(storage, fileAttachment.storagePath);
+      try {
+        await deleteObject(fileRef);
+      } catch (error: any) {
+        if (error.code !== 'storage/object-not-found') {
+          console.error('Error deleting file from storage:', error);
+        }
+      }
+    }
+
+    setFileAttachment(null);
+  }, [fileAttachment, storage]);
+
   const handleSendMessage = React.useCallback(async () => {
-    if (!user || !selectedSessionId || !message.trim() || isSending) return;
+    // Check if there's content to send (message text OR file attachment)
+    const hasContent = message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
+    if (!user || !selectedSessionId || !hasContent || isSending) return;
+
+    // Don't allow sending if file is still uploading or has error
+    if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
+      Alert.alert('Upload in progress', 'Please wait for the file to finish uploading.');
+      return;
+    }
 
     setIsSending(true);
     const userMessage = message;
+    const currentFileAttachment = fileAttachment;
     setMessage(''); // Clear input immediately
+    setFileAttachment(null); // Clear file attachment
 
     try {
       // Check if this is a draft session and claim it
@@ -171,7 +289,9 @@ export default function PropertyDetailsScreen() {
       const sessionData = sessionDoc.data();
 
       if (sessionDoc.exists() && sessionData?.name === 'draft') {
-        const newName = userMessage.substring(0, 30) || 'New Chat';
+        // Use message text if available, otherwise use file name, or fallback to 'New Chat'
+        const newName = userMessage.substring(0, 30) ||
+                        (currentFileAttachment ? `File: ${currentFileAttachment.fileName.substring(0, 20)}` : 'New Chat');
         await updateDoc(sessionRef, {
           name: newName,
           propertyId: id,
@@ -182,6 +302,18 @@ export default function PropertyDetailsScreen() {
       const agentSessionId = sessionData?.agentSessionId;
       if (!agentSessionId) {
         throw new Error('Agent session ID not found');
+      }
+
+      // Prepare file data if attachment exists
+      let fileData = undefined;
+      if (currentFileAttachment && currentFileAttachment.downloadURL) {
+        const storageRef = ref(storage, currentFileAttachment.storagePath);
+        fileData = {
+          name: currentFileAttachment.fileName,
+          type: currentFileAttachment.fileType,
+          url: currentFileAttachment.downloadURL,
+          gsURI: `gs://${storageRef.bucket}/${storageRef.fullPath}`,
+        };
       }
 
       // Add user message to Firestore
@@ -195,6 +327,7 @@ export default function PropertyDetailsScreen() {
             type: doc.documentType || 'OTHER',
           })),
         }),
+        ...(fileData && { file: fileData }),
       });
 
       // Create placeholder for assistant message
@@ -213,6 +346,9 @@ export default function PropertyDetailsScreen() {
         .map((doc) => doc.gsURI)
         .filter((uri): uri is string => !!uri);
 
+      // Prepare diagnosis URIs from file attachment
+      const diagnosisURIs = fileData?.gsURI ? [fileData.gsURI] : [];
+
       // Get property address
       const currentProperty = properties.find((p: any) => p.id === id);
       const propertyAddress = currentProperty?.address;
@@ -221,11 +357,15 @@ export default function PropertyDetailsScreen() {
       let assistantContent = '';
       let agentSteps: AgentStep[] = [];
 
+      // If no message text, provide a default query for file-only messages
+      const queryText = userMessage || 'What can you tell me about this?';
+
       await streamAgentResponse({
         userId: user.uid,
         agentSessionId,
-        userQuery: userMessage,
+        userQuery: queryText,
         contextDocURIs,
+        diagnosisURIs,
         propertyAddress,
         onChunk: (chunk) => {
           // Accumulate content but don't update Firestore yet
@@ -270,12 +410,13 @@ export default function PropertyDetailsScreen() {
         `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
         [{ text: 'OK' }]
       );
-      // Restore message if there was an error
+      // Restore message and file attachment if there was an error
       setMessage(userMessage);
+      setFileAttachment(currentFileAttachment);
     } finally {
       setIsSending(false);
     }
-  }, [user, selectedSessionId, message, isSending, db, id, selectedDocuments, properties]);
+  }, [user, selectedSessionId, message, isSending, fileAttachment, db, storage, id, selectedDocuments, properties]);
 
   const toggleDocumentSelection = (document: Document) => {
     setSelectedDocuments((prev) => {
@@ -418,9 +559,75 @@ export default function PropertyDetailsScreen() {
       {/* Bottom Input Bar */}
       {activeTab === 'chat' && selectedSessionId && (
         <View className="border-t border-border bg-background px-4 py-3">
+          {/* File Attachment Preview */}
+          {fileAttachment && (
+            <View className="mb-3 overflow-hidden rounded-lg border border-border">
+              {/* Image Preview */}
+              {fileAttachment.fileType.startsWith('image/') && (
+                <Image
+                  source={{ uri: fileAttachment.uri }}
+                  className="h-32 w-full"
+                  resizeMode="cover"
+                />
+              )}
+
+              {/* Video Preview */}
+              {fileAttachment.fileType.startsWith('video/') && (
+                <View className="h-32 w-full items-center justify-center bg-secondary">
+                  <Icon as={FileText} size={32} className="text-muted-foreground" />
+                  <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
+                </View>
+              )}
+
+              {/* File Info */}
+              <View className="bg-secondary p-3">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                      {fileAttachment.fileName}
+                    </Text>
+                    {fileAttachment.error ? (
+                      <View className="mt-1 flex-row items-center gap-1">
+                        <Icon as={AlertCircle} size={14} className="text-red-500" />
+                        <Text className="text-xs text-red-500">{fileAttachment.error}</Text>
+                      </View>
+                    ) : fileAttachment.progress < 100 ? (
+                      <View className="mt-1">
+                        <Text className="text-xs text-muted-foreground">
+                          Uploading... {Math.round(fileAttachment.progress)}%
+                        </Text>
+                        <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
+                          <View
+                            className="h-full bg-primary"
+                            style={{ width: `${fileAttachment.progress}%` }}
+                          />
+                        </View>
+                      </View>
+                    ) : (
+                      <View className="mt-1 flex-row items-center gap-1">
+                        <Icon as={CheckCircle} size={14} className="text-green-500" />
+                        <Text className="text-xs text-green-500">Upload complete</Text>
+                      </View>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={removeFileAttachment}
+                    className="ml-2 rounded-full bg-background p-2">
+                    <Icon as={X} size={16} className="text-foreground" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Input Row */}
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity disabled>
-              <Icon as={Paperclip} size={20} className="text-muted-foreground" />
+            <TouchableOpacity onPress={handleFileUpload} disabled={isSending || !!fileAttachment}>
+              <Icon
+                as={Paperclip}
+                size={20}
+                className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
+              />
             </TouchableOpacity>
             <TextInput
               value={message}
@@ -440,17 +647,17 @@ export default function PropertyDetailsScreen() {
             />
             <TouchableOpacity
               className={`rounded-lg p-2 ${
-                message.trim() && !isSending ? 'bg-primary' : 'bg-secondary'
+                (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) && !isSending ? 'bg-primary' : 'bg-secondary'
               }`}
               onPress={handleSendMessage}
-              disabled={!message.trim() || isSending}>
+              disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}>
               {isSending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Icon
                   as={Send}
                   size={20}
-                  className={message.trim() ? 'text-primary-foreground' : 'text-muted-foreground'}
+                  className={(message.trim() || fileAttachment?.downloadURL) ? 'text-primary-foreground' : 'text-muted-foreground'}
                 />
               )}
             </TouchableOpacity>

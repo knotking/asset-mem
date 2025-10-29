@@ -310,10 +310,12 @@ export const markdownRules = {
       }
     }
 
-    // Default list item rendering
+    // Default list item rendering with flex wrapper for text content
     return (
       <View key={node.key} style={styles.list_item}>
-        {children}
+        <View style={{ flex: 1 }}>
+          {children}
+        </View>
       </View>
     );
   },

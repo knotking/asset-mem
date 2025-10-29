@@ -5,6 +5,18 @@ export type AgentStep = {
   status: 'transferredto' | 'executing' | 'completed' | 'failed';
 };
 
+export type FileAttachment = {
+  id: string;
+  uri: string;
+  progress: number;
+  downloadURL: string | null;
+  error: string | null;
+  storagePath: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
 export type Message = {
   id: string;
   role: 'user' | 'assistant';

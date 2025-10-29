@@ -50,6 +50,7 @@ export interface StreamAgentResponseParams {
   agentSessionId: string;
   userQuery: string;
   contextDocURIs?: string[];
+  diagnosisURIs?: string[];
   propertyAddress?: string;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
@@ -62,6 +63,7 @@ export async function streamAgentResponse({
   agentSessionId,
   userQuery,
   contextDocURIs = [],
+  diagnosisURIs = [],
   propertyAddress,
   onChunk,
   onAgentStep,
@@ -79,7 +81,7 @@ export async function streamAgentResponse({
       session_id: agentSessionId,
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
-      diagnosis_uris: [],
+      diagnosis_uris: diagnosisURIs,
       property_address: propertyAddress,
     };
 
