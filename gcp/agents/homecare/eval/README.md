@@ -133,27 +133,32 @@ Measures how closely the agent's responses match expected outputs:
 
 ### Full System Evaluation
 ```bash
-poetry run pytest eval/test_eval.py::test_eval_full_conversation -v
+uv run pytest eval/test_eval.py::test_eval_full_conversation -v
+```
+
+Or if your virtual environment is already activated:
+```bash
+pytest eval/test_eval.py::test_eval_full_conversation -v
 ```
 
 ### Individual Agent Evaluation
 ```bash
 # Analysis Agent
-poetry run pytest eval/test_eval.py::test_eval_analysis_agent -v
+uv run pytest eval/test_eval.py::test_eval_analysis_agent -v
 
 # Cost Estimation Agent
-poetry run pytest eval/test_eval.py::test_eval_cost_estimation -v
+uv run pytest eval/test_eval.py::test_eval_cost_estimation -v
 
 # Product Recommendations Agent
-poetry run pytest eval/test_eval.py::test_eval_product_recommendations -v
+uv run pytest eval/test_eval.py::test_eval_product_recommendations -v
 
 # Service Provider Agent
-poetry run pytest eval/test_eval.py::test_eval_service_provider -v
+uv run pytest eval/test_eval.py::test_eval_service_provider -v
 ```
 
 ### All Evaluations
 ```bash
-poetry run pytest eval/test_eval.py -v
+uv run pytest eval/test_eval.py -v
 ```
 
 ## Test Data Requirements
@@ -212,7 +217,13 @@ The evaluation uses sample GCS URLs for testing:
 Enable debug logging for detailed evaluation information:
 ```bash
 export DEBUG=true
-poetry run pytest eval/test_eval.py -v -s
+uv run pytest eval/test_eval.py -v -s
+```
+
+Or if your virtual environment is already activated:
+```bash
+export DEBUG=true
+pytest eval/test_eval.py -v -s
 ```
 
 This evaluation framework ensures the Homecare AI Agent system provides accurate, comprehensive, and reliable diagnostic services for home care and vehicle issues.
