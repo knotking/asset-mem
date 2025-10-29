@@ -163,6 +163,13 @@ export default function PropertyDetailsScreen() {
     }
   }, [id, draftsByProperty, selectedSessionId]);
 
+  // Auto-select all documents by default when documents are loaded
+  React.useEffect(() => {
+    if (documents && documents.length > 0 && selectedDocuments.length === 0) {
+      setSelectedDocuments(documents);
+    }
+  }, [documents, selectedDocuments.length]);
+
   // Handle file selection and upload
   const handleFileUpload = React.useCallback(async () => {
     if (!user) return;
@@ -401,8 +408,7 @@ export default function PropertyDetailsScreen() {
         },
       });
 
-      // Clear selected documents after successful send
-      setSelectedDocuments([]);
+      // Keep documents selected for next message (removed automatic reset)
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert(

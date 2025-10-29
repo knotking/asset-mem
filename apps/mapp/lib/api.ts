@@ -5,6 +5,10 @@ const AGENT_SESSION_URL =
   'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session';
 const AGENT_SSE_URL =
   'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream';
+const RAG_FILE_UPLOAD_URL =
+  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-upload';
+const DOCUMENT_ANALYSIS_URL =
+  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info';
 
 export async function createAgentSession(
   userId: string
@@ -224,5 +228,101 @@ export async function streamAgentResponse({
     } else {
       throw error;
     }
+  }
+}
+
+// Document analysis types
+export type DocumentType =
+  | 'DEED'
+  | 'INSURANCE_POLICY'
+  | 'UTILITY_BILL'
+  | 'INSPECTION_REPORT'
+  | 'MORTGAGE_STATEMENT'
+  | 'OTHER';
+
+export interface ExtractDocInfoInput {
+  docUrl: string;
+  contentType: string;
+}
+
+export interface ExtractDocInfoOutput {
+  documentType: DocumentType;
+  propertyAddress: string;
+  keyEntities: Array<{ name: string; value: string }>;
+  summary: string;
+}
+
+/**
+ * Extract document information using AI analysis
+ */
+export async function extractDocInfo(
+  input: ExtractDocInfoInput
+): Promise<ExtractDocInfoOutput> {
+  try {
+    const url = DOCUMENT_ANALYSIS_URL;
+    if (!url) {
+      throw new Error('DOCUMENT_ANALYSIS_URL not set.');
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to analyze document, status: ${response.status}, body: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error analyzing document:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload file to RAG system for indexing
+ */
+export async function postFileToAgent(
+  gsURI: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const url = RAG_FILE_UPLOAD_URL;
+    if (!url) {
+      throw new Error('RAG_FILE_UPLOAD_URL not set.');
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        context_doc_uris: [gsURI],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.warn(`RAG upload failed (non-blocking): ${response.status}, ${errorBody}`);
+      // Don't throw - RAG failures shouldn't block document upload
+      return { success: false, error: errorBody };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error uploading to RAG:', error);
+    // Don't throw - RAG failures shouldn't block document upload
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
   }
 }
