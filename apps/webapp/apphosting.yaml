@@ -1,6 +1,13 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# For npm workspaces monorepo: specify where the Next.js app is located
+# The root package.json and package-lock.json are at the repository root
+buildConfig:
+  runtime: nodejs20
+  buildCommand: "npm run build --workspace=apps/webapp"
+  outputDirectory: "apps/webapp/.next"
+
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
