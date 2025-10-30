@@ -31,11 +31,25 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
  
     const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
     const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
-    const primaryLink = linkStr || websiteStr || undefined;
-    const isYelp = (linkStr && linkStr.includes('yelp.com')) || (websiteStr && websiteStr.includes('yelp.com'));
+
+    const normalizeUrl = (u?: string): string | undefined => {
+        if (!u || typeof u !== 'string') return undefined;
+        const trimmed = u.trim();
+        if (trimmed === '') return undefined;
+        const withProto = (/^https?:\/\//i.test(trimmed)) ? trimmed : `https://${trimmed}`;
+        try {
+            const url = new URL(withProto);
+            return url.toString();
+        } catch {
+            return undefined;
+        }
+    };
+
+    const primaryLink = normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined;
+    const isYelp = !!primaryLink && primaryLink.includes('yelp.com');
     const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
 
-    const isPrimaryLinkValid = typeof primaryLink === 'string' && (primaryLink.startsWith('http://') || primaryLink.startsWith('https://'));
+    const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
     const isDirectionsLinkValid = typeof provider.directions === 'string' && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
 
     // Helper function to check if a value is meaningful (not empty, null, undefined, or "N/A")
@@ -137,6 +151,9 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
 )};
 
 const ProductCard = ({ product }: { product: Product }) => {
+    // Determine an image source: prefer explicit image_url; otherwise, if the url looks like an image, use it
+    const guessedImageFromUrl = typeof product.url === 'string' && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(product.url) ? product.url : null;
+    const imageSrc = product.image_url || guessedImageFromUrl || null;
     return (
         <Card className="flex flex-col h-full w-full">
         <CardHeader>
@@ -151,10 +168,10 @@ const ProductCard = ({ product }: { product: Product }) => {
             )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col space-y-3">
-            {product.image_url && (
+            {imageSrc && (
                 <div className="relative w-full h-32 rounded-md overflow-hidden">
                     <Image
-                        src={product.image_url}
+                        src={imageSrc}
                         alt={product.product_name || product.description || 'Product'}
                         fill
                         className="object-cover"
@@ -290,18 +307,48 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     ));
     
     // Cost Estimates support (handles many likely keys and nested JSON)
-    const hasCostEstimates = false;
+    const findServiceCostEstimates = (): any => {
+        if (!service || typeof service !== 'object') return null;
+        const candidates = ['costEstimates','cost_estimates','estimates','estimate','costs','pricing','prices','priceEstimates','price_estimates'];
+        for (const key of candidates) {
+            const val = (service as any)[key];
+            if (val !== undefined && val !== null && !(typeof val === 'string' && String(val).trim() === '')) return val;
+        }
+        for (const [, v] of Object.entries(service)) {
+            if (!v || typeof v !== 'object') continue;
+            for (const key of candidates) {
+                const nested = (v as any)[key];
+                if (nested !== undefined && nested !== null && !(typeof nested === 'string' && String(nested).trim() === '')) return nested;
+            }
+        }
+        return null;
+    };
+
+    const serviceCostEstimatesRaw = findServiceCostEstimates();
+    const serviceCostEstimatesText = (() => {
+        if (!serviceCostEstimatesRaw) return null;
+        if (typeof serviceCostEstimatesRaw === 'string') {
+            const trimmed = serviceCostEstimatesRaw.trim();
+            return trimmed !== '' ? trimmed : null;
+        }
+        if (typeof serviceCostEstimatesRaw === 'object') {
+            return JSON.stringify(serviceCostEstimatesRaw, null, 2);
+        }
+        return null;
+    })();
+
+    const hasCostEstimates = !!serviceCostEstimatesText;
     const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
-    const hasService = !!(service && hasProviders);
+    const hasService = !!(service && (hasCostEstimates || hasProviders));
     
     // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
         console.log('Service Recommendations Debug:', {
             serviceExists: !!service,
-            hasCostEstimates: false,
-            costEstimatesType: 'removed',
-            costEstimatesValue: 'removed',
-            costEstimatesText: 'removed',
+            hasCostEstimates,
+            costEstimatesType: serviceCostEstimatesRaw ? typeof serviceCostEstimatesRaw : 'null',
+            costEstimatesValue: serviceCostEstimatesRaw ? (typeof serviceCostEstimatesRaw === 'string' ? String(serviceCostEstimatesRaw).substring(0, 200) : JSON.stringify(serviceCostEstimatesRaw).substring(0, 200)) : 'null',
+            costEstimatesText: serviceCostEstimatesText ? serviceCostEstimatesText.substring(0, 100) : 'null',
             rawProvidersCount: allProvidersRaw.length,
             filteredProvidersCount: allProviders.length,
             hasProviders: hasProviders,
@@ -332,7 +379,214 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         return '';
     };
 
-    // Cost estimates removed by request
+    // Service: render cost estimates
+    const isPrimitive = (v: any) => v === null || ['string','number','boolean'].includes(typeof v);
+    const renderPrimitive = (v: any) => {
+        if (v === null || v === undefined) return <span className="text-muted-foreground">N/A</span>;
+        if (typeof v === 'number') return <span>{toCurrency(v) || String(v)}</span>;
+        if (typeof v === 'string') return <span>{v}</span>;
+        if (typeof v === 'boolean') return <span>{v ? 'Yes' : 'No'}</span>;
+        return <span>{String(v)}</span>;
+    };
+
+    const renderRecursiveDetails = (title: string, value: any, keyPath: string): React.ReactNode => {
+        if (value === null || value === undefined) return null;
+        // Known tables (array of objects) → simple table
+        if (Array.isArray(value) && value.length > 0 && value.every(v => v && typeof v === 'object' && !Array.isArray(v))) {
+            const headers = Array.from(new Set(value.flatMap((row: any) => Object.keys(row))));
+            return (
+                <AccordionItem value={`${keyPath}-table`} className="border rounded-lg">
+                    <AccordionTrigger className="text-sm px-3 hover:no-underline">
+                        <div className="flex items-center gap-2"><span className="font-semibold">{title}</span></div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-0 pb-3 px-3">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border rounded">
+                                <thead>
+                                    <tr className="bg-muted/40">
+                                        {headers.map(h => (<th key={h} className="text-left p-2 capitalize">{h.replaceAll('_',' ')}</th>))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {value.map((row: any, idx: number) => (
+                                        <tr key={idx} className="border-t">
+                                            {headers.map(h => (
+                                                <td key={h} className="p-2 align-top">
+                                                    {isPrimitive(row[h]) ? renderPrimitive(row[h]) : <code className="text-xs">{JSON.stringify(row[h])}</code>}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            );
+        }
+
+        // Array of primitives → list
+        if (Array.isArray(value) && value.every(isPrimitive)) {
+            return (
+                <AccordionItem value={`${keyPath}-list`} className="border rounded-lg">
+                    <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
+                    <AccordionContent className="pt-0 pb-3 px-3">
+                        <ul className="list-disc pl-5 text-sm space-y-1">
+                            {value.map((v, i) => (<li key={i}>{renderPrimitive(v)}</li>))}
+                        </ul>
+                    </AccordionContent>
+                </AccordionItem>
+            );
+        }
+
+        // Object → nested accordion with key/value
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            const entries = Object.entries(value as Record<string, any>);
+            return (
+                <AccordionItem value={`${keyPath}-obj`} className="border rounded-lg">
+                    <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
+                    <AccordionContent className="pt-0 pb-3 px-3">
+                        <Accordion type="multiple" className="space-y-2">
+                            {entries.map(([k, v]) => (
+                                <div key={k}>
+                                    {isPrimitive(v) ? (
+                                        <div className="flex items-start justify-between py-1 text-sm">
+                                            <span className="font-medium mr-3 capitalize">{k.replaceAll('_',' ')}</span>
+                                            <span className="text-right">{renderPrimitive(v)}</span>
+                                        </div>
+                                    ) : (
+                                        renderRecursiveDetails(k.replaceAll('_',' '), v, `${keyPath}-${k}`)
+                                    )}
+                                </div>
+                            ))}
+                        </Accordion>
+                    </AccordionContent>
+                </AccordionItem>
+            );
+        }
+
+        // Primitive → simple row
+        return (
+            <AccordionItem value={`${keyPath}-val`} className="border rounded-lg">
+                <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
+                <AccordionContent className="pt-0 pb-3 px-3 text-sm">{renderPrimitive(value)}</AccordionContent>
+            </AccordionItem>
+        );
+    };
+
+    const renderCostEstimatesSection = () => {
+        if (!hasCostEstimates || !service) return null;
+        let raw = serviceCostEstimatesRaw as any;
+        let parsed: any = null;
+        if (typeof raw === 'string') {
+            let s = raw.trim();
+            const fenceMatch = s.match(/```(?:json)?\s*\n([\s\S]*?)```/);
+            if (fenceMatch && fenceMatch[1]) s = fenceMatch[1].trim();
+            if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+                try { parsed = JSON.parse(s); } catch {}
+            }
+        } else if (typeof raw === 'object') {
+            parsed = raw;
+        }
+
+        if (!parsed) {
+            return (
+                <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Cost Estimates</h4>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{serviceCostEstimatesText!}</ReactMarkdown>
+                </div>
+            );
+        }
+
+        const summary: string | null = typeof parsed.summary === 'string' ? parsed.summary : (typeof parsed.overview === 'string' ? parsed.overview : null);
+        const steps: any[] = Array.isArray(parsed.steps) ? parsed.steps : Array.isArray(parsed.procedure) ? parsed.procedure : [];
+        const materials: any[] = Array.isArray(parsed.materials) ? parsed.materials : Array.isArray(parsed.parts) ? parsed.parts : [];
+        const notes: string | null = typeof parsed.notes === 'string' ? parsed.notes : (typeof parsed.recommendations === 'string' ? parsed.recommendations : null);
+        const timeline: string | null = typeof parsed.timeline === 'string' ? parsed.timeline : null;
+        const breakdownSource: any = parsed.breakdown || parsed.items || parsed.estimates || parsed.line_items || parsed.costs || parsed.pricing || parsed.prices;
+        const breakdown: any[] = Array.isArray(breakdownSource) ? breakdownSource : [];
+        const totals = parsed.totals || parsed.total || parsed.aggregate || null;
+
+        // Build dropdown accordion UI
+        const details: Record<string, any> = { ...(parsed || {}) };
+        delete details['summary'];
+        delete details['overview'];
+        delete details['steps'];
+        delete details['procedure'];
+        delete details['materials'];
+        delete details['parts'];
+        delete details['notes'];
+        delete details['recommendations'];
+        delete details['timeline'];
+        delete details['breakdown'];
+        delete details['items'];
+        delete details['estimates'];
+        delete details['line_items'];
+        delete details['costs'];
+        delete details['pricing'];
+        delete details['prices'];
+        delete details['totals'];
+        delete details['total'];
+        delete details['aggregate'];
+
+        return (
+            <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Cost Estimates</h4>
+                {summary && (<p className="text-sm">{summary}</p>)}
+                <Accordion type="multiple" className="space-y-2">
+                    {totals && (
+                        <AccordionItem value="totals" className="border rounded-lg">
+                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Totals</span></AccordionTrigger>
+                            <AccordionContent className="pt-0 pb-3 px-3">
+                                <ul className="list-disc pl-5 text-sm">
+                                    {typeof totals === 'object' ? (
+                                        <>
+                                            {totals.parts && <li>Parts: {toCurrency(totals.parts)}</li>}
+                                            {totals.labor && <li>Labor: {toCurrency(totals.labor)}</li>}
+                                            {totals.total && <li>Total: {toCurrency(totals.total)}</li>}
+                                        </>
+                                    ) : (
+                                        <li>Total: {toCurrency(totals)}</li>
+                                    )}
+                                </ul>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {breakdown.length > 0 && renderRecursiveDetails('Breakdown', breakdown, 'breakdown')}
+                    {steps.length > 0 && (
+                        <AccordionItem value="steps" className="border rounded-lg">
+                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Service Steps</span></AccordionTrigger>
+                            <AccordionContent className="pt-0 pb-3 px-3">
+                                <ol className="list-decimal pl-5 space-y-1 text-sm">
+                                    {steps.map((s: any, idx: number) => (
+                                        <li key={idx}>{typeof s === 'string' ? s : (s.description || s.step || JSON.stringify(s))}</li>
+                                    ))}
+                                </ol>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {materials.length > 0 && (
+                        <AccordionItem value="materials" className="border rounded-lg">
+                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Parts/Materials</span></AccordionTrigger>
+                            <AccordionContent className="pt-0 pb-3 px-3">
+                                <ul className="list-disc pl-5 text-sm">
+                                    {materials.map((m: any, idx: number) => (
+                                        <li key={idx}>{typeof m === 'string' ? m : (m.name || m.part || JSON.stringify(m))}</li>
+                                    ))}
+                                </ul>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {timeline && renderRecursiveDetails('Timeline', timeline, 'timeline')}
+                    {notes && renderRecursiveDetails('Notes', notes, 'notes')}
+
+                    {Object.keys(details).length > 0 && (
+                        renderRecursiveDetails('Additional Details', details, 'details')
+                    )}
+                </Accordion>
+            </div>
+        );
+    };
 
     return (
         <Accordion type="multiple" className="w-full space-y-2">
@@ -390,6 +644,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
                             </div>
                         )}
+                        {/* cost estimates note removed */}
+                        {/* cost estimates removed */}
                         
                         {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
                             <div className="space-y-2">
@@ -466,7 +722,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
-                    {/* Cost estimates removed */}
+                    {/* Cost estimates parsed from service-agent output */}
+                    {hasCostEstimates && renderCostEstimatesSection()}
                         
                         {/* Show local pros section - always show if service data exists */}
                         <div className="space-y-3">
