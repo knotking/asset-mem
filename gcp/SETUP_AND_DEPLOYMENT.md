@@ -13,7 +13,7 @@ Before proceeding with the setup and deployment, ensure you have the following:
   gcloud config set project your-project-id
   ```
 - **Python 3.9+:** Ensure you have Python 3.9 or a later version installed.
-- **Poetry:** Install Poetry by following the instructions on the official Poetry website: [https://python-poetry.org/docs/](https://python-poetry.org/docs/)
+- **UV:** Install UV (the fast Python package installer) by following the instructions: [https://github.com/astral-sh/uv](https://github.com/astral-sh/uv)
 - **Git:** Ensure you have Git installed.
 - **Docker:** Docker installed and running for building container images.
 
@@ -91,7 +91,7 @@ gcloud projects add-iam-policy-binding your-project-id \
 
 This section details the setup and deployment of the AI agents.
 
-### 3.1. Project Setup with Poetry
+### 3.1. Project Setup with UV
 
 1.  **Navigate to the `homecare` directory:**
 
@@ -99,22 +99,37 @@ This section details the setup and deployment of the AI agents.
     cd /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare
     ```
 
-2.  **Install Dependencies with Poetry:**
+2.  **Install UV (if not already installed):**
 
     ```bash
-    poetry install
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
 
-    This command reads the `pyproject.toml` file and installs all the necessary dependencies into a virtual environment managed by Poetry.
-
-3.  **Activate the Poetry Shell:**
+    Or install via pip:
     ```bash
-    poetry env activate
+    pip install uv
     ```
-    Alternatively, you can activate it using:
+
+3.  **Install Dependencies with UV:**
+
+    ```bash
+    uv sync
+    ```
+
+    This command reads the `pyproject.toml` file and installs all the necessary dependencies into a virtual environment managed by UV.
+
+4.  **Activate the Virtual Environment:**
     ```bash
     source .venv/bin/activate
     ```
+
+    Or use UV's built-in environment activation:
+
+    ```bash
+    uv run <command>
+    ```
+
+    UV can run commands directly in the virtual environment without explicit activation.
 
 ### 3.2. Environment Variables (`.env` file)
 
@@ -142,7 +157,11 @@ If you don't have a RAG corpus setup yet, you can use a script to create one and
 
 2.  **Run the deployment script:**
     ```bash
-    poetry run python deployment/deploy.py
+    uv run python deployment/deploy.py
+    ```
+    Or if your virtual environment is already activated:
+    ```bash
+    python deployment/deploy.py
     ```
     Upon successful deployment, you will see an INFO log message containing the `AGENT_ENGINE_ID`. Update your `.env` file with this `AGENT_ENGINE_ID`.
 

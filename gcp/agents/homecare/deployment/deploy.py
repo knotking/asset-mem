@@ -15,7 +15,7 @@
 import vertexai
 from vertexai import agent_engines
 from vertexai.preview.reasoning_engines import AdkApp
-from rag.agent import root_agent
+from property_agent.agent import root_agent
 import logging
 import os
 from dotenv import set_key
@@ -83,7 +83,7 @@ def main():
         "YELP_URL"
     ]
     display_name = "HomecareAgent"
-    extra_packages = ["./rag"]
+    extra_packages = ["./property_agent"]
 
     if action == "create":
         current_engine = agent_engines.get(AGENT_ENGINE_ID)

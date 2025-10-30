@@ -1,8 +1,8 @@
 {
-  "name": "Python: Debug adk run rag",
+  "name": "Python: Debug adk run property_agent",
   "type": "python",
   "request": "launch",
   "program": "adk",
-  "args": ["run", "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/rag"],
+  "args": ["run", "/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent"],
   "console": "integratedTerminal"
 }

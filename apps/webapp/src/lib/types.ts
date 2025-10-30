@@ -28,16 +28,48 @@ export type Message = {
 };
 
 export type StructuredResponseData = {
-  researchResults?: {
-      summaryOfFindings?: string;
-      yourDocuments?: string;
-      googleSearch?: string;
-      youtubeSearch?: string;
+  analysis?: {
+    triageResult?: {
+      diagnosis?: string;
+    };
+    coverageResult?: {
+      warrantyInfo?: string;
+      insuranceInfo?: string;
+    };
+    diyResults?: {
+      diySteps?: {
+        summary?: string;
+        steps?: Array<{ stepNumber: number; description: string }>;
+      };
+      youtubeSearch?: {
+        videos?: Array<{ title: string; url: string; description?: string }>;
+      };
+      recommendedProducts?: {
+        products?: Product[];
+      };
+    };
+    serviceResults?: {
+      costEstimates?: string;
+      localPros?: {
+        serpAPIResults?: ServiceProvider[];
+        yelpAPIResults?: ServiceProvider[];
+      }
+    };
   };
-  serviceProviderResults?: {
-      serpAPIResults?: ServiceProvider[];
-      yelpAPIResults?: ServiceProvider[];
-  }
+}
+
+export type Product = {
+  // legacy fields (kept for backward compatibility)
+  product_name?: string;
+  item_price?: string | null;
+  image_url?: string | null;
+  rating?: string | null;
+  reviews?: string | null;
+  // new structured fields
+  vendor?: string | null;
+  url?: string | null;
+  description?: string | null;
+  price?: string | null;
 }
 
 export type ServiceProvider = {

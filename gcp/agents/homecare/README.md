@@ -8,6 +8,29 @@ This is a comprehensive AI agent system designed for home care and vehicle diagn
 
 The system consists of a main orchestrator agent that delegates tasks to specialized sub-agents, each handling specific aspects of home care diagnostics and support.
 
+## Quick Start
+
+From the `gcp/agents/homecare` directory:
+
+```bash
+# Show all available commands
+make help
+
+# Setup and install dependencies
+make setup
+
+# Run the agent locally
+make run
+
+# Run tests
+make test-eval
+
+# Deploy to Vertex AI
+make deploy
+```
+
+For detailed usage, see sections below.
+
 ## System Architecture
 
 ### Main Orchestrator Agent (`root_agent`)
@@ -141,50 +164,63 @@ The system accepts various input types:
 
 *   **Google Cloud Account:** You need a Google Cloud account.
 *   **Python 3.9+:** Ensure you have Python 3.9 or a later version installed.
-*   **Poetry:** Install Poetry by following the instructions on the official Poetry website: [https://python-poetry.org/docs/](https://python-poetry.org/docs/)
+*   **UV:** Install UV (the fast Python package installer) by following the instructions: [https://github.com/astral-sh/uv](https://github.com/astral-sh/uv)
 *   **Git:** Ensure you have git installed.
 
-### Project Setup with Poetry
+### Project Setup with UV
 
 1.  **Clone the Repository:**
 
     ```bash
-    git clone https://github.com/google/adk-samples.git
-    cd adk-samples/python/agents/RAG
+    git clone <repository-url>
+    cd gcp/agents/homecare
     ```
 
-2.  **Install Dependencies with Poetry:**
+2.  **Install UV (if not already installed):**
 
     ```bash
-    poetry install
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     ```
 
-    This command reads the `pyproject.toml` file and installs all the necessary dependencies into a virtual environment managed by Poetry.
+    Or install via pip:
+    ```bash
+    pip install uv
+    ```
 
-3.  **Activate the Poetry Shell:**
+3.  **Install Dependencies with UV:**
 
     ```bash
-    poetry env activate
+    uv sync
     ```
 
-    This activates the virtual environment, allowing you to run commands within the project's environment.
-    Make sure the environment is active. If not, you can also activate it through 
+    This command reads the `pyproject.toml` file and installs all the necessary dependencies into a virtual environment managed by UV.
 
-     ```bash
-    source .venv/bin/activate 
-    ```   
-4.  **Set up Environment Variables:**
+4.  **Activate the Virtual Environment:**
+
+    ```bash
+    source .venv/bin/activate
+    ```
+
+    Or use UV's built-in environment activation:
+
+    ```bash
+    uv run <command>
+    ```
+
+    UV can run commands directly in the virtual environment without explicit activation.
+
+5.  **Set up Environment Variables:**
     Rename the file ".env.example" to ".env" 
     Follow the steps in the file to set up the environment variables.
 
-5. **Setup Corpus:**
+6.  **Setup Corpus:**
     If you have an existing corpus in Vertex AI RAG Engine, please set corpus information in your .env file. For example: RAG_CORPUS='projects/123/locations/us-central1/ragCorpora/456'. 
 
     If you don't have a corpus setup yet, please follow "How to upload my file to my RAG corpus" section. The `prepare_corpus_and_data.py` script will automatically create a corpus (if needed) and update the `RAG_CORPUS` variable in your `.env` file with the resource name of the created or retrieved corpus.
 
 #### How to upload my file to my RAG corpus
 
-The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a RAG corpus and upload an initial document. By default, it downloads Alphabet's 2024 10-K PDF and uploads it to a new corpus.
+The `property_agent/shared_libraries/prepare_corpus_and_data.py` script helps you set up a RAG corpus and upload an initial document. By default, it downloads Alphabet's 2024 10-K PDF and uploads it to a new corpus.
 
 1.  **Authenticate with your Google Cloud account:**
     ```bash
@@ -202,12 +238,12 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
     *   **To use the default behavior (upload Alphabet's 10K PDF):**
         Simply run the script:
         ```bash
-        python rag/shared_libraries/prepare_corpus_and_data.py
+        python property_agent/shared_libraries/prepare_corpus_and_data.py
         ```
         This will create a corpus named `Alphabet_10K_2024_corpus` (if it doesn't exist) and upload the PDF `goog-10-k-2024.pdf` downloaded from the URL specified in the script.
 
     *   **To upload a different PDF from a URL:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
+        a. Open the `property_agent/shared_libraries/prepare_corpus_and_data.py` file.
         b. Modify the following variables at the top of the script:
            ```python
            # --- Please fill in your configurations ---
@@ -220,11 +256,11 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
            ```
         c. Run the script:
            ```bash
-           python rag/shared_libraries/prepare_corpus_and_data.py
+           python property_agent/shared_libraries/prepare_corpus_and_data.py
            ```
 
     *   **To upload a local PDF file:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
+        a. Open the `property_agent/shared_libraries/prepare_corpus_and_data.py` file.
         b. Modify the `CORPUS_DISPLAY_NAME` and `CORPUS_DESCRIPTION` variables as needed (see above).
         c. Modify the `main()` function at the bottom of the script to directly call `upload_pdf_to_corpus` with your local file details:
            ```python
@@ -253,27 +289,49 @@ The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a 
            ```
         d. Run the script:
            ```bash
-           python rag/shared_libraries/prepare_corpus_and_data.py
+           python property_agent/shared_libraries/prepare_corpus_and_data.py
            ```
 
 More details about managing data in Vertex RAG Engine can be found in the
 [official documentation page](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-quickstart).
 
 ## Running the Agent
-You can run the agent using the ADK command in your terminal.
-from the root project directory:
+You can run the agent using the ADK command or the Makefile.
+
+### Using Makefile (Recommended)
+
+From the `gcp/agents/homecare` directory:
+
+```bash
+# Show all available commands
+make help
+
+# Setup the project
+make setup
+
+# Run the agent locally
+make run
+
+# Run tests
+make test-eval
+
+# Deploy the agent
+make deploy
+```
+
+### Using ADK Directly
 
 1.  Run agent in CLI:
 
     ```bash
-    adk run rag
+    adk run property_agent
     ```
 
 2.  Run agent with ADK Web UI:
     ```bash
     adk web
     ```
-    Select the RAG from the dropdown
+    Select the property_agent from the dropdown
 
 
 ### Example Interactions
@@ -313,11 +371,34 @@ Agent Response:
 
 ## Evaluating the Agent
 
-The evaluation can be run from the `RAG` directory using
-the `pytest` module:
+### Using Makefile (Recommended)
 
+From the `gcp/agents/homecare` directory:
+
+```bash
+# Run all evaluation tests
+make test-eval
+
+# Run specific test categories
+make test-agent      # Analysis agent tests
+make test-cost       # Cost estimation tests
+make test-products   # Product recommendation tests
+make test-service    # Service provider tests
+make test-full       # Full conversation tests
 ```
-poetry run pytest eval
+
+### Using UV Directly
+
+The evaluation can be run using UV:
+
+```bash
+uv run pytest eval
+```
+
+Or if your virtual environment is already activated:
+
+```bash
+pytest eval
 ```
 
 ### Evaluation Process
@@ -346,11 +427,39 @@ This evaluation helps ensure the agent correctly leverages the RAG capabilities 
 
 ## Deploying the Agent
 
-The Agent can be deployed to Vertex AI Agent Engine using the following
-commands:
+### Using Makefile (Recommended)
 
+From the `gcp/agents/homecare` directory:
+
+```bash
+# Deploy the agent (first time)
+make deploy
+
+# Update existing deployment
+make update
+
+# Grant RAG corpus permissions (required for deployed agent)
+make grant-permissions
 ```
-poetry run python deployment/deploy.py
+
+### Using UV Directly
+
+The Agent can be deployed to Vertex AI Agent Engine using:
+
+```bash
+uv run python deployment/deploy.py create
+```
+
+Or to update an existing deployment:
+
+```bash
+uv run python deployment/deploy.py update
+```
+
+Or if your virtual environment is already activated:
+
+```bash
+python deployment/deploy.py create
 ```
 
 After deploying the agent, you'll be able to read the following INFO log message:

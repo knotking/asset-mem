@@ -65,7 +65,7 @@
         }
       ],
       "session_input": {
-        "app_name": "rag",
+        "app_name": "property_agent",
         "user_id": "user",
         "state": {}
       },
@@ -133,7 +133,7 @@
         }
       ],
       "session_input": {
-        "app_name": "rag",
+        "app_name": "property_agent",
         "user_id": "user",
         "state": {}
       },
@@ -283,7 +283,7 @@
         }
       ],
       "session_input": {
-        "app_name": "rag",
+        "app_name": "property_agent",
         "user_id": "user",
         "state": {}
       },

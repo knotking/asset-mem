@@ -1,5 +1,5 @@
 [project]
-name = "rag"
+name = "property_agent"
 version = "0.1.0"
 description = "Answer questions related to Vertex AI documentation using Vertex AI RAG Engine"
 authors = []
@@ -9,10 +9,12 @@ readme = "README.md"
 dependencies = [
     "adk>=0.0.5",
     "google-adk>=1.17.0",
+    "google-search-results>=2.4.2",
     "langchain>=1.0.2",
     "langchain-community>=0.4",
     "tool>=0.8.0",
     "tools>=1.0.6",
+    "youtube-search>=2.1.2",
 ]
 
 [tool.poetry.dependencies]

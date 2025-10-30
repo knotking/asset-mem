@@ -47,7 +47,7 @@
               {
                 "id": "adk-5565748b-aae6-4316-b23b-fa252331c4a5",
                 "args": {
-                  "agent_name": "diagnostic_agent"
+                  "agent_name": "analysis_agent"
                 },
                 "name": "transfer_to_agent"
               },
@@ -73,7 +73,7 @@
         }
       ],
       "session_input": {
-        "app_name": "rag",
+        "app_name": "property_agent",
         "user_id": "user",
         "state": {}
       },

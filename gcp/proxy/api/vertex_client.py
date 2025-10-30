@@ -12,20 +12,19 @@ from models import AgentRequest
 logger = logging.getLogger(__name__)
 
 _DISPLAY_NAME_MAP = {
-    "property_agent": "Agent",
-    "doculink_agent": "Agent",
-    "diagnostic_agent": "Agent",
+    "property_agent": "Property Agent",
+    "doculink_agent": "Doculink Agent",
+    "diagnostic_agent": "Diagnostic Agent",
     "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
     "ask_user_docs_agent": "Scanning your documents",
-    "diagnostics_agent": "Agent",
-    "transfer_to_agent": "Agent",
+    "transfer_to_agent": "Transfer to Agent",
     "ask_knowledge_base_retrieval": "Accessing HomeGeekAI catalog",
     "ask_user_docs_retrieval": "Accessing your documents",
-    "analyse_multimodal_data": "Analyzing Media",
+    "analyse_multimodal_data": "Analyzing Multimodal Data",
     "research_agent": "Researching Solutions",
-    "service_provider_agent": "Finding Local Pros",
-    "product_recommendations_agent": "Finding Products",
-    "cost_estimation_agent": "Calculating Costs"
+    "service_provider_agent": "Service Provider Agent",
+    "product_recommendations_agent": "Product Recommendations Agent",
+    "cost_estimation_agent": "Cost Estimation Agent"
 }
 
 # --- Environment Variables ---
