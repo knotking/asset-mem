@@ -30,18 +30,101 @@ components:
       type: object
       additionalProperties: false
       properties:
-        analysisResult:
-          type: string
-          description: Multimodal analysis summary produced by the analysis agent.
-        researchResults:
-          $ref: '#/components/schemas/ResearchResults'
-        serviceProviderResults:
-          $ref: '#/components/schemas/ServiceProviderResults'
-        productRecommendationsResults:
-          $ref: '#/components/schemas/ProductRecommendationsResults'
-        costEstimationResults:
-          $ref: '#/components/schemas/CostEstimationResults'
-      description: Aggregated response with optional sections depending on the task.
+        analysis:
+          type: object
+          additionalProperties: false
+          properties:
+            triageResult:
+              type: object
+              additionalProperties: false
+              properties:
+                diagnosis:
+                  type: string
+            coverageResult:
+              type: object
+              additionalProperties: false
+              properties:
+                warrantyInfo:
+                  type: string
+                insuranceInfo:
+                  type: string
+            diyResults:
+              type: object
+              additionalProperties: false
+              properties:
+                diySteps:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    summary:
+                      type: string
+                    steps:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          stepNumber:
+                            type: integer
+                          description:
+                            type: string
+                youtubeSearch:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    videos:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          title:
+                            type: string
+                          url:
+                            type: string
+                            format: uri
+                          description:
+                            type: string
+                recommendedProducts:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    products:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          url:
+                            type: string
+                            format: uri
+                          description:
+                            type: string
+                          price:
+                            type: string
+            serviceResults:
+              type: object
+              additionalProperties: false
+              properties:
+                costEstimates:
+                  oneOf:
+                    - type: string
+                    - $ref: '#/components/schemas/CostEstimationResults'
+                localPros:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    serpAPIResults:
+                      type: array
+                      items:
+                        type: object
+                    yelpAPIResults:
+                      type: array
+                      items:
+                        type: object
+      description: Aggregated response with nested analysis results.
 
     ResearchResults:
       type: object
@@ -140,36 +223,44 @@ components:
     ExampleStructuredResponse:
       summary: Structured response with all sections
       value:
-        analysisResult: "Multimodal analysis summary about uploaded faucet leak video."
-        researchResults:
-          summaryOfFindings: "Common causes include worn cartridge and O-rings."
-          yourDocuments: "Warranty covers parts for 5 years."
-          googleSearch: "Multiple guides recommend replacing the cartridge."
-          youtubeSearch: "Top tutorials: how to replace kitchen faucet cartridge."
-        serviceProviderResults:
-          serpAPIResults:
-            - name: "Springfield Plumbing Co"
-              phone: "+1-555-123-4567"
-              rating: 4.6
-          yelpAPIResults:
-            - name: "Main St Plumbers"
-              phone: "+1-555-987-6543"
-              rating: 4.3
-        productRecommendationsResults:
-          recommendedProducts:
-            - title: "Universal Faucet Cartridge"
-              url: "https://example.com/product/123"
-              price: 24.99
-              rating: 4.5
-              imageUrl: "https://example.com/images/123.jpg"
-        costEstimationResults:
-          costEstimates:
-            diy:
-              estimatedCost: 35
-              notes: "Includes cartridge and basic tools."
-            professional:
-              estimatedCost: 180
-              notes: "Typical service visit and replacement."
+        analysis:
+          triageResult:
+            diagnosis: "Leaking kitchen faucet due to worn cartridge"
+          coverageResult:
+            warrantyInfo: "Warranty covers parts for 5 years."
+            insuranceInfo: "Insurance does not cover routine maintenance."
+          diyResults:
+            diySteps:
+              summary: "Replace the faucet cartridge to stop the leak."
+              steps:
+                - stepNumber: 1
+                  description: "Turn off water supply."
+                - stepNumber: 2
+                  description: "Remove handle and bonnet nut."
+                - stepNumber: 3
+                  description: "Replace the cartridge and reassemble."
+            youtubeSearch:
+              videos:
+                - title: "How to replace a kitchen faucet cartridge"
+                  url: "https://example.com/video/abc"
+                  description: "Step-by-step tutorial"
+            recommendedProducts:
+              products:
+                - vendor: "ExampleStore"
+                  url: "https://example.com/product/123"
+                  description: "Universal Faucet Cartridge"
+                  price: "24.99"
+          serviceResults:
+            costEstimates: "DIY: ~$35, Pro: ~$180"
+            localPros:
+              serpAPIResults:
+                - name: "Springfield Plumbing Co"
+                  rating: "4.6"
+                  phone: "+1-555-123-4567"
+              yelpAPIResults:
+                - name: "Main St Plumbers"
+                  rating: "4.3"
+                  phone: "+1-555-987-6543"
 
     ExampleRetrievalResponse:
       summary: Retrieval result from user documents
