@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Analysis Agent orchestrates a multimodal diagnostic workflow for home care and vehicle issues. It analyzes uploaded media, checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service options with cost estimates.
+The Analysis Agent orchestrates a diagnostic workflow for home care and vehicle issues. It can analyze uploaded media when available, or perform text‑only triage from the user’s query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service options with cost estimates.
 
 ## Architecture
 
@@ -28,9 +28,9 @@ Analysis Agent
 
 ### 1. Triage Agent
 
-- **Purpose**: Analyze multimodal data (images, documents, videos) and extract the primary problem description.
-- **Tool**: `analyse_multimodal_data(user_query, gcs_url)`
-- **Output**: JSON containing a complete diagnosis text used by subsequent agents.
+- **Purpose**: Produce a clear diagnosis either by analyzing multimodal data (images, documents, videos) when provided, or by deriving a concise diagnosis from text when no media is available.
+- **Tool (when media provided)**: `analyse_multimodal_data(user_query, gcs_url)`
+- **Output**: JSON containing a diagnosis text used by subsequent agents.
 
 ### 2. Coverage Agent
 
@@ -59,7 +59,8 @@ Analysis Agent
 ## Workflow
 
 1. Triage (mandatory first step)
-   - Analyze the first media URI to produce a domain-specific diagnosis.
+   - If media is provided, analyze the first URI to produce a domain-specific diagnosis.
+   - If no media is provided, perform text-only triage from `user_query` (and `property_address` if present) to produce a concise diagnosis.
    - If triage fails or diagnosis is invalid/empty, return ONLY the triage result and stop.
 2. Coverage
    - Retrieve warranty/insurance information from user docs.
@@ -80,6 +81,7 @@ Analysis Agent
   "property_address": "string"
 }
 ```
+Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in text‑only mode.
 
 ## Output Schema
 
