@@ -1,0 +1,183 @@
+openapi: 3.1.0
+info:
+  title: Property Agent API
+  version: 1.0.0
+  description: |
+    OpenAPI schema for the Property Agent response. The Property Agent returns
+    the sub-agent output verbatim. Depending on routing, the response can be a
+    structured object (multimodal analysis and aggregated results) or a direct
+    retrieval result. Casual, non-homecare queries may yield a simple string.
+
+paths: {}
+
+components:
+  schemas:
+    PropertyAgentResponse:
+      oneOf:
+        - $ref: '#/components/schemas/StructuredResponse'
+        - $ref: '#/components/schemas/RetrievalResponse'
+        - type: string
+          description: Plain text response for casual or small-talk queries.
+      description: |
+        The root agent returns either a structured analysis/aggregation object,
+        a retrieval payload, or a simple text response.
+      examples:
+        - $ref: '#/components/examples/ExampleStructuredResponse'
+        - $ref: '#/components/examples/ExampleRetrievalResponse'
+        - 'Hello! How can I help you with your home care needs today?'
+
+    StructuredResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        analysisResult:
+          type: string
+          description: Multimodal analysis summary produced by the analysis agent.
+        researchResults:
+          $ref: '#/components/schemas/ResearchResults'
+        serviceProviderResults:
+          $ref: '#/components/schemas/ServiceProviderResults'
+        productRecommendationsResults:
+          $ref: '#/components/schemas/ProductRecommendationsResults'
+        costEstimationResults:
+          $ref: '#/components/schemas/CostEstimationResults'
+      description: Aggregated response with optional sections depending on the task.
+
+    ResearchResults:
+      type: object
+      additionalProperties: false
+      properties:
+        summaryOfFindings:
+          type: string
+          description: Overall summary of research across sources.
+        yourDocuments:
+          type: string
+          description: Findings extracted from user-provided documents.
+        googleSearch:
+          type: string
+          description: Notable findings from web search.
+        youtubeSearch:
+          type: string
+          description: Notable tutorials or guidance found on YouTube.
+
+    ServiceProviderResults:
+      type: object
+      additionalProperties: false
+      properties:
+        serpAPIResults:
+          type: array
+          items:
+            type: object
+            description: Provider record as returned by SerpAPI integration.
+        yelpAPIResults:
+          type: array
+          items:
+            type: object
+            description: Provider record as returned by Yelp integration.
+
+    ProductRecommendationsResults:
+      type: object
+      additionalProperties: false
+      properties:
+        recommendedProducts:
+          type: array
+          description: Curated list of relevant products with key attributes.
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              url:
+                type: string
+                format: uri
+              price:
+                type: number
+              rating:
+                type: number
+              imageUrl:
+                type: string
+                format: uri
+
+    CostEstimationResults:
+      type: object
+      additionalProperties: false
+      properties:
+        costEstimates:
+          type: object
+          additionalProperties: false
+          properties:
+            diy:
+              type: object
+              properties:
+                estimatedCost:
+                  type: number
+                notes:
+                  type: string
+            professional:
+              type: object
+              properties:
+                estimatedCost:
+                  type: number
+                notes:
+                  type: string
+
+    RetrievalResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        source:
+          type: string
+          enum: [user_documents, knowledge_base]
+          description: Origin of the retrieval results.
+        result:
+          type: string
+          description: Raw retrieval output (may contain citations or formatting).
+        noInformationFound:
+          type: boolean
+          description: True if the retrieval tools found no relevant information.
+
+  examples:
+    ExampleStructuredResponse:
+      summary: Structured response with all sections
+      value:
+        analysisResult: "Multimodal analysis summary about uploaded faucet leak video."
+        researchResults:
+          summaryOfFindings: "Common causes include worn cartridge and O-rings."
+          yourDocuments: "Warranty covers parts for 5 years."
+          googleSearch: "Multiple guides recommend replacing the cartridge."
+          youtubeSearch: "Top tutorials: how to replace kitchen faucet cartridge."
+        serviceProviderResults:
+          serpAPIResults:
+            - name: "Springfield Plumbing Co"
+              phone: "+1-555-123-4567"
+              rating: 4.6
+          yelpAPIResults:
+            - name: "Main St Plumbers"
+              phone: "+1-555-987-6543"
+              rating: 4.3
+        productRecommendationsResults:
+          recommendedProducts:
+            - title: "Universal Faucet Cartridge"
+              url: "https://example.com/product/123"
+              price: 24.99
+              rating: 4.5
+              imageUrl: "https://example.com/images/123.jpg"
+        costEstimationResults:
+          costEstimates:
+            diy:
+              estimatedCost: 35
+              notes: "Includes cartridge and basic tools."
+            professional:
+              estimatedCost: 180
+              notes: "Typical service visit and replacement."
+
+    ExampleRetrievalResponse:
+      summary: Retrieval result from user documents
+      value:
+        source: user_documents
+        result: |
+          The E3 error indicates an unbalanced load. See manual section 4.2.
+          Citation: gs://my-bucket/manuals/washer.pdf#page=12
+        noInformationFound: false
+
+
