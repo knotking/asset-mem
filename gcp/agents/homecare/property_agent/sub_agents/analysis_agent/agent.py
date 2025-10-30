@@ -214,6 +214,53 @@ def cost_estimation(query: str) -> str:
     return json.dumps(response_data)
 
 
+def cost_estimation_diy(query: str) -> str:
+    """Provides DIY-only cost estimate for the given repair query.
+
+    Returns a JSON string with a single `diyCostEstimates` object that includes
+    repair type and DIY cost guidance. This is designed for inclusion in the
+    DIY agent output without professional service details.
+    """
+    try:
+        full = cost_estimation(query)
+        parsed = json.loads(full)
+        ce = parsed.get("costEstimates", {}) if isinstance(parsed, dict) else {}
+        diy = ce.get("DIY") if isinstance(ce, dict) else None
+        repair_type = ce.get("repair_type") if isinstance(ce, dict) else query
+        result = {
+            "diyCostEstimates": {
+                "repair_type": repair_type,
+                "DIY": diy or {
+                    "cost_range": "$50-300",
+                    "includes": [
+                        "Material/product costs vary by repair type",
+                        "Basic tools may be required",
+                        "Time investment needed"
+                    ],
+                    "savings": "60-80% on labor costs",
+                    "complexity": "Simple repairs may be cost-effective"
+                }
+            }
+        }
+        return json.dumps(result)
+    except Exception:
+        fallback = {
+            "diyCostEstimates": {
+                "repair_type": query,
+                "DIY": {
+                    "cost_range": "$50-300",
+                    "includes": [
+                        "Material/product costs vary by repair type",
+                        "Basic tools may be required",
+                        "Time investment needed"
+                    ],
+                    "savings": "60-80% on labor costs",
+                    "complexity": "Simple repairs may be cost-effective"
+                }
+            }
+        }
+        return json.dumps(fallback)
+
 def product_recommendations_diy(query: str) -> str:
     """Provides product recommendations for DIY repairs only."""
     serpapi_api_key = os.environ.get("SERP_API_KEY")
@@ -309,6 +356,7 @@ diy_agent = Agent(
     tools=[
         AgentTool(agent=google_search_agent),
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for DIY tutorials."),
+        cost_estimation_diy,
         product_recommendations_diy,
     ],
     input_schema=DocsInput

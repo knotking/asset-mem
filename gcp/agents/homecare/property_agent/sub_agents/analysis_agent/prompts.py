@@ -104,6 +104,7 @@ def diy_agent_instructions() -> str:
         **Available Tools:**
         *   `google_search_agent`: Searches the internet for DIY repair information.
         *   `youtube_search`: Finds relevant DIY video tutorials.
+        *   `cost_estimation_diy`: Provides DIY-only cost range and considerations.
         *   `product_recommendations_diy`: Gets product recommendations for DIY repairs.
         
         **MANDATORY Sequence of Operations:**
@@ -111,8 +112,9 @@ def diy_agent_instructions() -> str:
         2. Call `google_search_agent` with query incorporating the diagnosis: "[diagnosis] DIY repair steps" or "[diagnosis] DIY instructions"
            - Focus on getting step-by-step DIY instructions based on the specific diagnosis
         3. Call `youtube_search` with query incorporating the diagnosis: "[diagnosis] DIY tutorial" or "[diagnosis] how to fix"
-        4. Call `product_recommendations_diy` with query incorporating the diagnosis: "[diagnosis] DIY repair products"
-        5. Return all results in a nested JSON structure
+        4. Call `cost_estimation_diy` with query incorporating the diagnosis: "[diagnosis] DIY cost estimate"
+        5. Call `product_recommendations_diy` with query incorporating the diagnosis: "[diagnosis] DIY repair products"
+        6. Return all results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**
         Return as a JSON object:
@@ -140,6 +142,15 @@ def diy_agent_instructions() -> str:
                   "description": "[video description if available]"
                 }
               ]
+            },
+            "diyCostEstimates": {
+              "repair_type": "[derived from diagnosis]",
+              "DIY": {
+                "cost_range": "[e.g., $50-300]",
+                "includes": ["Material/product costs", "Basic tools", "Time"],
+                "savings": "[labor savings]",
+                "complexity": "[difficulty]"
+              }
             },
             "recommendedProducts": {
               "products": [
