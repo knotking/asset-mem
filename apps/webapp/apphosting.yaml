@@ -5,9 +5,3 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-
-# Specify the root directory where the Next.js app is located
-# This is required for monorepo setups
-env:
-  - variable: GOOGLE_BUILDABLE
-    value: apps/webapp
