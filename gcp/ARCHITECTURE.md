@@ -1,104 +1,138 @@
 # GCP Architecture
 
-This document outlines the architecture of the `gcp` directory, which primarily contains components for AI agents and a proxy service to handle external interactions and data processing.
+This document defines the complete architecture of agents and supporting services under `gcp/`.
 
-## 1. Agents Directory (`agents/`)
+## 1. Agents (`gcp/agents/homecare`)
 
-The `agents` directory houses the core AI reasoning and conversational agents. The main agent, `property_agent` (also referred to as `root_agent`), orchestrates various sub-agents to handle homecare-related tasks, document retrieval, and diagnostics.
+The Homecare agents implement a multi-agent system centered on the root Property Agent, with specialized sub-agents for retrieval and diagnostics.
 
-### 1.1. Homecare Agent (`homecare/rag/agent.py`)
+### 1.1 Root Property Agent (`property_agent`)
+- Location: `gcp/agents/homecare/property_agent/agent.py`
+- Role: Orchestrator that routes requests based on input.
+- Routing rules and instructions:
 
-This is the main orchestrator agent that manages and executes homecare-related tasks.
+```startLine:endLine:gcp/agents/homecare/property_agent/prompts.py
+8:36
+```
 
-- **`root_agent` (or `property_agent`)**:
-  - **Purpose**: Manages and executes homecare-related tasks, acting as the primary entry point for complex queries.
-  - **Sub-agents**: Delegates tasks to `diagnostic_agent` and `doculink_agent`.
-  - **Key Functions**: Orchestrates the flow of information and task execution between specialized sub-agents.
+- DocuLink sub-agent behavior and tool selection:
 
-### 1.2. Doculink Agent (`homecare/rag/agent.py`)
+```startLine:endLine:gcp/agents/homecare/property_agent/prompts.py
+52:65
+```
 
-The `doculink_agent` is a sub-agent of the `root_agent` and is responsible for document retrieval.
+- Input schema used by the root agent and DocuLink:
 
-- **Purpose**: Manages and executes document retrieval-related tasks.
-- **Tools**: Utilizes `user_docs_agent` and `knowledge_base_agent`.
+```startLine:endLine:gcp/agents/homecare/property_agent/agent_inputs.py
+4:14
+```
 
-### 1.3. Sub-Agents
+The root agent constructs:
+- `doculink_agent` for retrieval
+- `analysis_agent` for multimodal diagnostics
 
-#### 1.3.1. Diagnostics Agent (`homecare/rag/sub_agents/diagnostics_agent/agent.py`)
+```startLine:endLine:gcp/agents/homecare/property_agent/agent.py
+21:45
+```
 
-This agent is responsible for diagnosing issues, gathering research, finding service providers, recommending products, and providing cost estimates.
+### 1.2 DocuLink Agent (`doculink_agent`)
+- Location: constructed in `property_agent/agent.py`
+- Purpose: Answer using either user-uploaded documents or a general knowledge base.
+- Tools:
+  - `user_docs_agent` (preferred when `context_doc_uris` provided)
+  - `knowledge_base_agent` (fallback when no context is provided)
 
-- **Purpose**: Handles comprehensive multimodal data analysis and orchestrates multiple specialized sub-agents for complete diagnostic workflows.
-- **Core Tools**:
-  - `analyse_multimodal_data`: Analyzes multimodal data (e.g., images, videos, documents) provided via GCS URLs using `gemini-2.5-flash`.
-- **Sub-Agents**:
-  - `research_agent`: Combines `google_search_agent`, `ask_user_docs_retreival`, and `youtube_search` for comprehensive research.
-  - `service_provider_agent`: Uses `serpapi_search` and `yelpapi_search` to find local service providers.
-  - `product_recommendations_agent`: Searches Google Shopping via SerpAPI for DIY repair products.
-  - `cost_estimation_agent`: Provides high-level cost estimates for both DIY and professional service options.
-- **External Tools**:
-  - `google_search_agent`: An agent that uses Google Search to answer general questions.
-  - `youtube_search`: A Langchain tool to search YouTube for related videos.
-  - `serpapi_search`: A Langchain tool for searching local business listings and service providers using SerpAPI.
-  - `yelpapi_search`: A custom function to search for service providers using the Yelp API.
-- **Workflow**: 
-  1. Analyzes multimodal data from diagnosis URIs
-  2. Conditionally calls research agent for additional information
-  3. Runs service provider, product recommendations, and cost estimation agents in parallel
-  4. Returns comprehensive JSON response with analysis, research, service providers, products, and cost estimates
+### 1.3 Diagnostics/Analysis Agent (`analysis_agent`)
+- Location: `gcp/agents/homecare/property_agent/sub_agents/analysis_agent/`
+- Purpose: Multimodal triage and end-to-end diagnostic workflow (DIY, providers, products, costs).
+- See detailed doc:
 
-#### 1.3.2. Knowledge Base Agent (`homecare/rag/sub_agents/knowledge_base_agent/agent.py`)
+```startLine:endLine:gcp/agents/homecare/property_agent/sub_agents/analysis_agent/README.md
+1:32
+```
 
-This agent is responsible for retrieving information from a pre-defined RAG (Retrieval Augmented Generation) corpus.
+### 1.4 Knowledge Base Agent
+- Location: `gcp/agents/homecare/property_agent/sub_agents/knowledge_base_agent/`
+- Purpose: Retrieve answers from a configured Vertex AI RAG corpus.
+- Wiring and tool config:
 
-- **Purpose**: Retrieves documentation and reference materials from a configured RAG corpus.
-- **Tools**: `VertexAiRagRetrieval`: Utilizes Vertex AI's RAG retrieval capabilities.
+```startLine:endLine:gcp/agents/homecare/property_agent/sub_agents/knowledge_base_agent/agent.py
+12:38
+```
 
-#### 1.3.3. User Docs Agent (`homecare/rag/sub_agents/user_docs_agent/agent.py`)
+- Instruction and citation requirements:
 
-This agent handles the retrieval of user-specific uploaded documents.
+```startLine:endLine:gcp/agents/homecare/property_agent/sub_agents/knowledge_base_agent/prompts.py
+10:44
+```
 
-- **Purpose**: Fetches and retrieves information from documents uploaded by the user, stored in a RAG corpus.
-- **Key Functions**:
-  - `get_user_file_ids`: Fetches `FileId` values from JSON files in the user's GCS import results folder.
-  - `get_rag_file_ids`: Retrieves RAG file IDs for a specific user.
-  - `ask_user_docs_retreival`: Performs a RAG retrieval query against user-specific documents.
+### 1.5 User Docs Agent
+- Location: `gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/`
+- Purpose: Retrieve answers from a user’s uploaded documents filtered by matching `context_doc_uris`.
+- Retrieval flow and agent wiring:
 
-## 2. Proxy Directory (`proxy/`)
+```startLine:endLine:gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent.py
+24:100
+```
 
-The `proxy` directory contains the FastAPI application that acts as an API gateway, handling incoming requests from various platforms (e.g., Firebase, Telegram) and managing file uploads and processing via Pub/Sub workers.
+- Instruction and citation requirements:
 
-### 2.1. API Service (`proxy/api/main.py`)
+```startLine:endLine:gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/prompts.py
+8:47
+```
 
-This is the main FastAPI application serving as the backend for the conversational agents.
+## 2. End-to-end Flow
 
-- **Purpose**: Exposes API endpoints for interacting with the AI agents, handling webhooks, and managing agent sessions.
-- **Key Endpoints**:
-  - `/health`: Health check endpoint.
-  - `/{TELEGRAM_WEBHOOK_SECRET}`: Telegram webhook endpoint for receiving messages.
-  - `/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query`: Firebase webhook for direct agent queries.
-  - `/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream`: Firebase webhook for streaming agent answers.
-  - `/{FIREBASE_WEBHOOK_SECRET}/agent-session`: Endpoint for creating agent sessions (Reasoning Engine sessions).
-  - `/{FIREBASE_WEBHOOK_SECRET}/rag-file-upload`: Firebase webhook for handling file uploads to the RAG corpus.
-- **Integrations**: Firebase API (`firebase_api.py`), Telegram API (`telegram_api.py`), Vertex AI client (`vertex_client.py`).
-- **Pub/Sub Listener**: Includes a background thread that listens to a Pub/Sub topic (`USER_UPLOAD_RESULT_SUBSCRIPTION`) for results of user file uploads, updating the main application loop.
+1. Input arrives with `user_query`, optional `context_doc_uris`, optional `diagnosis_uris`, and optional `property_address`.
+2. Root Property Agent routing:
+   - If `diagnosis_uris` present → delegate to `analysis_agent`.
+   - Else → delegate to `doculink_agent`.
+3. DocuLink tool selection:
+   - If `context_doc_uris` provided → use `user_docs_agent` over user corpus files matching those URIs.
+   - Else → use `knowledge_base_agent` over general RAG corpus.
+4. Response:
+   - Root returns the sub-agent’s response verbatim (or a simple greeting for casual queries).
 
-### 2.2. Worker Function (`proxy/workers/function/main.py`)
+## 3. Response Schemas
 
-This file contains a Cloud Function triggered by Pub/Sub, primarily responsible for importing user-uploaded files into the Vertex AI RAG corpus.
+The OpenAPI schema for the Property Agent response lives at:
+- `gcp/agents/homecare/property_agent/openapi.yaml`
 
-- **Purpose**: Processes messages from a Pub/Sub topic (`user-upload-topic`) to import GCS URLs (documents and media) into the RAG corpus.
-- **Key Functions**:
-  - `import_to_rag_corpus`: Handles the actual import of files (documents and media) to the Vertex AI RAG corpus, applying appropriate parsing configurations (e.g., `llmParserConfig` with `gemini-2.5-flash`).
-  - `pubsub_to_user_docs`: The entry point for the Cloud Function, decodes Pub/Sub messages, extracts GCS URLs and user information, triggers the RAG import, and publishes the results to another Pub/Sub topic (`USER_UPLOAD_RESULT_TOPIC`).
+It describes a `PropertyAgentResponse` that can be a structured object (diagnostics aggregate), a retrieval payload, or a plain string for small talk.
 
-## 3. Data Flow and Interactions
+## 4. Proxy/API and Workers (`gcp/proxy`)
 
-1.  **User Interaction**: Users interact with the system through platforms like Firebase or Telegram, sending queries or uploading files.
-2.  **Proxy Ingestion**: The `proxy/api/main.py` service receives these interactions via webhooks.
-3.  **Agent Orchestration**: For queries, the `proxy` dispatches them to the `root_agent` (`homecare/rag/agent.py`), which then orchestrates its sub-agents (`diagnostic_agent`, `doculink_agent`, `knowledge_base_agent`, `user_docs_agent`) to process the request.
-4.  **RAG and External Tools**: The sub-agents utilize various tools including Vertex AI RAG retrieval (for knowledge base and user documents), Google Search, YouTube Search, SerpAPI (for service providers and Google Shopping), and Yelp API for gathering information and providing responses.
-5.  **Multimodal Analysis**: The `diagnostic_agent` can analyze multimodal data (e.g., images, videos, documents) uploaded by the user and provide comprehensive diagnostic workflows including research, service provider recommendations, product suggestions, and cost estimates.
-6.  **File Upload Processing**: When files are uploaded, the `proxy/api/main.py` handles the initial request and publishes a message to a Pub/Sub topic.
-7.  **Asynchronous RAG Import**: The `proxy/workers/function/main.py` (a Cloud Function) is triggered by the Pub/Sub message, which then imports the uploaded files into the Vertex AI RAG corpus.
-8.  **Result Notification**: After RAG import, the worker publishes the results to another Pub/Sub topic, which the `proxy/api/main.py` listens to, allowing for asynchronous updates or notifications back to the user.
+The proxy exposes REST endpoints and manages file ingestion and RAG imports via Pub/Sub workers.
+
+### 4.1 API Service (`proxy/api/`)
+- Entrypoint: `proxy/api/main.py`
+- Responsibilities: webhooks, session creation, agent invocation, file upload orchestration.
+- Integrations: Firebase, Telegram, Vertex AI client.
+
+### 4.2 Workers (`proxy/workers/function`)
+- Pub/Sub-triggered function to import uploaded files into Vertex AI RAG corpus.
+- Publishes import results back to a results topic which the API consumes.
+
+## 5. Data and Control Flows
+
+1. User sends message/uploads → API receives via webhook.
+2. API invokes root agent or enqueues upload work.
+3. Workers import content to RAG corpus and emit `FileId` results.
+4. For queries, root agent routes to DocuLink or Analysis per rules; DocuLink picks tool by context presence.
+5. Sub-agents call external tools/APIs as needed; results are returned verbatim by the root.
+
+## 6. Environments and Configuration
+- Core environment variables (see sub-agent READMEs for details):
+  - `KNOWLEDGE_BASE_RAG_CORPUS`
+  - `USER_UPLOAD_RAG_CORPUS`
+  - `GOOGLE_CLOUD_BUCKET`, `USER_UPLOAD_FOLDER`
+  - Project/location and Reasoning Engine IDs for deployment
+
+## 7. Deployment
+- See `gcp/agents/homecare/README.md` for Make targets and deployment steps.
+- After deploy, update `.env` with the Agent Engine resource and RAG corpus identifiers.
+
+## 8. Error Handling and Guarantees
+- Root returns sub-agent output verbatim; no post-processing.
+- DocuLink agents must return a fixed no‑info message when retrieval yields nothing.
+- Analysis agent uses guard clauses: if triage fails, return triage-only result.
