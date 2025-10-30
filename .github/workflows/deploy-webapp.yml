@@ -53,8 +53,8 @@ jobs:
       - name: Deploy to Firebase App Hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: goggle-gab
-          BACKEND_ID: studio
+          PROJECT_ID: homegeekdemo
+          BACKEND_ID: staging
         run: |
           # Set Firebase project
           firebase use $PROJECT_ID --token $FIREBASE_TOKEN
@@ -68,7 +68,7 @@ jobs:
         if: success()
         run: |
           echo "✅ Deployment successful!"
-          echo "🌐 Your webapp is available at: https://studio--goggle-gab.us-central1.hosted.app"
+          echo "🌐 Your webapp is available at: https://staging--homegeekdemo.us-central1.hosted.app"
 
       - name: Deployment Failed
         if: failure()

@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_ID="goggle-gab"
 WEBAPP_DIR="/Users/prakashbaskaran/projects/HomeApp/apps/webapp"
-BACKEND_ID="studio"  # This matches your existing studio backend
+BACKEND_ID="staging"  # This matches your existing staging backend
 REGION="us-central1"
 
 echo -e "${GREEN}Starting Firebase App Hosting deployment...${NC}"
@@ -73,14 +73,14 @@ else
     echo -e "${RED}Backend '${BACKEND_ID}' not found.${NC}"
     echo -e "${YELLOW}You need to create the App Hosting backend first.${NC}"
     echo -e "${YELLOW}Please run the following command to create it:${NC}"
-    echo -e "${BLUE}firebase apphosting:backends:create \\${NC}"
-    echo -e "${BLUE}  --project ${PROJECT_ID} \\${NC}"
-    echo -e "${BLUE}  --location ${REGION} \\${NC}"
+    echo -e "${BLUE}firebase apphosting:backends:create \\ ${NC}"
+    echo -e "${BLUE}  --project ${PROJECT_ID} \\ ${NC}"
+    echo -e "${BLUE}  --location ${REGION} \\ ${NC}"
     echo -e "${BLUE}  --service-account=githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com${NC}"
     echo -e ""
     echo -e "${YELLOW}Or, if you want to link to your existing GitHub repo:${NC}"
-    echo -e "${BLUE}firebase apphosting:backends:create ${BACKEND_ID} \\${NC}"
-    echo -e "${BLUE}  --project ${PROJECT_ID} \\${NC}"
+    echo -e "${BLUE}firebase apphosting:backends:create ${BACKEND_ID} \\ ${NC}"
+    echo -e "${BLUE}  --project ${PROJECT_ID} \\ ${NC}"
     echo -e "${BLUE}  --location ${REGION}${NC}"
     exit 1
 fi
