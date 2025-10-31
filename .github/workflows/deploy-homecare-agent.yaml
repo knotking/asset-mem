@@ -1,0 +1,135 @@
+name: Deploy Homecare Agent Engine
+
+on:
+  push:
+    branches:
+      - main
+      - deploy
+    paths:
+      - "gcp/agents/homecare/deployment/**"
+      - "gcp/agents/homecare/property_agent/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select the deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - prod
+      action:
+        description: "Deployment action (create or update)"
+        required: true
+        default: "create"
+        type: choice
+        options:
+          - create
+          - update
+
+env:
+  GOOGLE_GENAI_USE_VERTEXAI=1
+  GOOGLE_CLOUD_LOCATION: us-central1
+  PYTHON_VERSION: "3.10"
+  DEPLOY_SCRIPT_PATH: gcp/agents/homecare/deployment/deploy.py
+  WORKING_DIRECTORY: gcp/agents/homecare
+
+  # Staging Environment Variables
+  STAGING_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your staging project ID
+  STAGING_STAGING_BUCKET: gs://homegeek-catalog # Replace with your staging agent staging bucket
+  STAGING_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/new # Replace with your staging agent engine ID
+  STAGING_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data-staging # Replace with your staging user data bucket
+  STAGING_USER_UPLOAD_FOLDER: uploads
+  STAGING_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo-staging/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging user upload RAG Corpus ID
+  STAGING_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo-staging/locations/us-central1/ragCorpora/3419358017081049088 # Replace with your staging knowledge base RAG Corpus ID
+  STAGING_USER_UPLOAD_TOPIC: user-upload-topic-staging
+  STAGING_YELP_URL: https://api.yelp.com/v3/businesses/search
+
+  # Production Environment Variables
+  PROD_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your production project ID
+  PROD_STAGING_BUCKET: gs://homegeek-catalog # Replace with your production agent staging bucket
+  PROD_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/new # Replace with your production agent engine ID
+  PROD_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data-prod # Replace with your production user data bucket
+  PROD_USER_UPLOAD_FOLDER: uploads-prod
+  PROD_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your production user upload RAG Corpus ID
+  PROD_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/3419358017081049088 # Replace with your production knowledge base RAG Corpus ID
+  PROD_USER_UPLOAD_TOPIC: user-upload-topic-prod
+  PROD_YELP_URL: https://api.yelp.com/v3/businesses/search
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set environment variables
+        run: |
+          CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
+          DEPLOY_ACTION="${{ github.event.inputs.action }}"
+
+          if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
+            if [[ "${{ github.ref_name }}" == "deploy" ]]; then
+              CURRENT_ENVIRONMENT="staging"
+            else
+              CURRENT_ENVIRONMENT="prod"
+            fi
+          fi
+
+          if [[ "$DEPLOY_ACTION" == "" ]]; then
+            DEPLOY_ACTION="update"
+          fi
+
+          echo "DEPLOY_ACTION=$DEPLOY_ACTION" >> $GITHUB_ENV
+
+          if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
+            echo "GOOGLE_CLOUD_PROJECT=${{ env.STAGING_GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
+            echo "STAGING_BUCKET=${{ env.STAGING_STAGING_BUCKET }}" >> $GITHUB_ENV
+            echo "AGENT_ENGINE_ID=${{ env.STAGING_AGENT_ENGINE_ID }}" >> $GITHUB_ENV
+            echo "GOOGLE_CLOUD_BUCKET=${{ env.STAGING_GOOGLE_CLOUD_BUCKET }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_FOLDER=${{ env.STAGING_USER_UPLOAD_FOLDER }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_RAG_CORPUS=${{ env.STAGING_USER_UPLOAD_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ env.STAGING_KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_TOPIC=${{ env.STAGING_USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
+            echo "YELP_URL=${{ env.STAGING_YELP_URL }}" >> $GITHUB_ENV
+            echo "SERP_API_KEY=${{ secrets.STAGING_SERP_API_KEY }}" >> $GITHUB_ENV
+            echo "YELP_API_KEY=${{ secrets.STAGING_YELP_API_KEY }}" >> $GITHUB_ENV
+          else
+            echo "GOOGLE_CLOUD_PROJECT=${{ env.PROD_GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
+            echo "STAGING_BUCKET=${{ env.PROD_STAGING_BUCKET }}" >> $GITHUB_ENV
+            echo "AGENT_ENGINE_ID=${{ env.PROD_AGENT_ENGINE_ID }}" >> $GITHUB_ENV
+            echo "GOOGLE_CLOUD_BUCKET=${{ env.PROD_GOOGLE_CLOUD_BUCKET }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_FOLDER=${{ env.PROD_USER_UPLOAD_FOLDER }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_RAG_CORPUS=${{ env.PROD_USER_UPLOAD_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ env.PROD_KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_TOPIC=${{ env.PROD_USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
+            echo "YELP_URL=${{ env.PROD_YELP_URL }}" >> $GITHUB_ENV
+            echo "SERP_API_KEY=${{ secrets.PROD_SERP_API_KEY }}" >> $GITHUB_ENV
+            echo "YELP_API_KEY=${{ secrets.PROD_YELP_API_KEY }}" >> $GITHUB_ENV
+          fi
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "projects/1000000000000/locations/global/workloadIdentityPools/github-pool/providers/github-provider" # Replace with your Workload Identity Provider
+          service_account: "${{ env.SERVICE_ACCOUNT_EMAIL }}"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Run deployment script
+        run: python ${{ env.DEPLOY_SCRIPT_PATH }} ${{ env.DEPLOY_ACTION }}
+        working-directory: ${{ env.WORKING_DIRECTORY }}
