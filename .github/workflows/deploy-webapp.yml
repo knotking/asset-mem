@@ -1,13 +1,16 @@
 name: Deploy WebApp to Firebase App Hosting
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/webapp/**'
-      - '.github/workflows/deploy-webapp.yml'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - prod
+        default: "staging"
 
 jobs:
   deploy:
@@ -25,8 +28,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: apps/webapp/package-lock.json
 
       - name: Install Dependencies
@@ -53,8 +56,8 @@ jobs:
       - name: Deploy to Firebase App Hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: homegeekdemo
-          BACKEND_ID: staging
+          PROJECT_ID: goggle-gab
+          BACKEND_ID: ${{ github.event.inputs.environment }}
         run: |
           # Set Firebase project
           firebase use $PROJECT_ID --token $FIREBASE_TOKEN
@@ -68,7 +71,7 @@ jobs:
         if: success()
         run: |
           echo "✅ Deployment successful!"
-          echo "🌐 Your webapp is available at: https://staging--homegeekdemo.us-central1.hosted.app"
+          echo "🌐 Your webapp is available at: https://${{ github.event.inputs.environment }}--goggle-gab.us-central1.hosted.app"
 
       - name: Deployment Failed
         if: failure()
