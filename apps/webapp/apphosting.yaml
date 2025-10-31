@@ -1,6 +1,25 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+env:
+  # Server-side environment variables (available in API routes and server components)
+  - variable: NEXT_AGENT_QUERY_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-query
+  - variable: NEXT_AGENT_SSE_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream
+  - variable: NEXT_RAG_FILE_UPLOAD_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload
+  - variable: NEXT_PUBLIC_AGENT_SSE_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream
+  - variable: NEXT_PUBLIC_AGENT_SESSION_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session
+  # Reference to secret stored in Google Secret Manager
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+  # Add this for monorepo support
+  - variable: GOOGLE_BUILDABLE
+    value: apps/webapp
+
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
