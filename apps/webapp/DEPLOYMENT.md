@@ -14,35 +14,46 @@ Firebase App Hosting provides full Next.js support including:
 - Image Optimization
 - Incremental Static Regeneration (ISR)
 
+## Prerequisites
+
+Before deploying, ensure you have granted access to secrets used by the app:
+
+```bash
+# Grant access to the GEMINI_API_KEY secret for App Hosting
+firebase apphosting:secrets:grantaccess GEMINI_API_KEY \
+  --project goggle-gab
+```
+
+This command allows the Firebase App Hosting service to access the `GEMINI_API_KEY` secret stored in Google Secret Manager. You only need to run this once per secret per backend.
+
+**Other prerequisites:**
+
+- Firebase CLI installed: `npm install -g firebase-tools@latest`
+- Authenticated to Firebase: `firebase login`
+- Secret created in Google Secret Manager (see Environment Variables section)
+
 ## Deployment Methods
 
-### Method 1: Automated GitHub Actions (Recommended)
+### Method 1: Firebase Console (Recommended)
 
-The webapp automatically deploys when changes are pushed to the `main` branch.
+Deploy directly from the Firebase Console:
 
-**Workflow:** `.github/workflows/deploy-webapp.yml`
+1. Go to [Firebase Console - App Hosting](https://console.firebase.google.com/project/goggle-gab/apphosting)
+2. Click on your backend (`staging` or `prod`)
+3. Click **"Create rollout"** or **"Deploy"** button
+4. Select the branch you want to deploy from
+5. Firebase will automatically build and deploy your app
 
-**Trigger conditions:**
+**Benefits:**
 
-- Push to `main` branch with changes in `apps/webapp/`
-- Manual trigger via GitHub Actions UI
+- No local setup or CLI required
+- Visual interface to monitor deployment progress
+- Easy rollback to previous rollouts
+- Automatic deployment on push to live branch (if configured)
+- View build logs directly in the console
 
-**Setup Requirements:**
-
-1. **GitHub Secrets Required:**
-   - `GCP_SA_KEY`: Service account key JSON for authentication
-   - `FIREBASE_TOKEN`: Firebase CI token (optional, can use GCP_SA_KEY)
-
-2. **Service Account Permissions:**
-   The service account needs these IAM roles:
-   - `Firebase App Hosting Admin`
-   - `Cloud Run Admin`
-   - `Service Account User`
-
-3. **Manual Trigger:**
-   ```bash
-   # Go to GitHub Actions → Deploy WebApp to Firebase App Hosting → Run workflow
-   ```
+**Automatic Deployments:**
+If you set a "Live branch" (e.g., `main`) in the backend settings, Firebase will automatically deploy whenever you push to that branch.
 
 ### Method 2: Local Deployment Script
 
@@ -77,8 +88,11 @@ cd apps/webapp
 # Set the project
 firebase use goggle-gab
 
-# Create a new rollout
-firebase apphosting:rollouts:create studio --project goggle-gab
+# Create a new rollout for staging
+firebase apphosting:rollouts:create staging --project goggle-gab
+
+# Or for production
+firebase apphosting:rollouts:create prod --project goggle-gab
 ```
 
 ## Configuration Files
