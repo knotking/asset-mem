@@ -9,8 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "install": "npm ci --quiet --no-fund --no-audit --legacy-peer-deps"
+    "typecheck": "tsc --noEmit"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
