@@ -8,4 +8,4 @@ runConfig:
   minInstances: 1
 
 scripts:
-  buildCommand: npm ci --quiet --no-fund --no-audit --legacy-peer-deps
+  buildCommand: echo "Running my custom build command!" && npm ci --quiet --no-fund --no-audit --legacy-peer-deps
