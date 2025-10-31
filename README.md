@@ -21,6 +21,12 @@ To set up the monorepo and install all dependencies for `mapp`, `webapp`, and `c
 npm install --legacy-peer-deps
 ```
 
+To generate lock file for webapp folder,
+
+```bash
+npm --prefix=apps/webapp install --legacy-peer-deps
+```
+
 The `--legacy-peer-deps` flag is used to handle potential peer dependency conflicts, especially with `next-themes` and React 19.
 
 ## Local Development
