@@ -31,7 +31,7 @@ env:
 
   # Environment specific variables
   STAGING_PROJECT_ID: homegeekdemo # Replace with your staging project ID
-  STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo-staging.iam.gserviceaccount.com # Replace with your staging service account
+  STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
   STAGING_TRIGGER_TOPIC: user-upload-topic-staging
   STAGING_GCS_BUCKET: homegeek-user-data-staging
   STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo-staging/topics/user-upload-result-topic-staging
