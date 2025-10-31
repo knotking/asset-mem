@@ -1,73 +1,105 @@
-# Minimal Template
+# HomeApp Monorepo
 
-This is a [React Native](https://reactnative.dev/) project built with [Expo](https://expo.dev/) and [React Native Reusables](https://reactnativereusables.com).
+This repository contains multiple applications (`mapp` and `webapp`) managed within a single monorepo structure.
 
-It was initialized using the following command:
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js**: [LTS version recommended](https://nodejs.org/en/download/)
+- **npm** (Node Package Manager): Comes with Node.js.
+- **Expo CLI** (for `mapp` development):
+  ```bash
+  npm install -g expo-cli
+  ```
+
+## Monorepo Setup
+
+To set up the monorepo and install all dependencies for `mapp`, `webapp`, and `common` packages, navigate to the root of this project and run:
 
 ```bash
-npx @react-native-reusables/cli@latest init -t mapp
+npm install --legacy-peer-deps
 ```
 
-## Getting Started
-
-To run the development server:
+To generate lock file for webapp folder,
 
 ```bash
+npm --prefix=apps/webapp install --legacy-peer-deps
+```
+
+The `--legacy-peer-deps` flag is used to handle potential peer dependency conflicts, especially with `next-themes` and React 19.
+
+## Local Development
+
+### Firebase Configuration
+
+Both `mapp` and `webapp` rely on Firebase. You will need to set up your Firebase project and configure the environment variables.
+
+1.  Add your Firebase configuration details to this file `apps/common/src/firebase-config.ts`.
+
+### Running `mapp` (Mobile Application)
+
+The `mapp` is an Expo-based React Native application.
+
+1.  Navigate to the `mapp` directory:
+    ```bash
+    cd apps/mapp
+    ```
+2.  Start the Expo development server:
+    ```bash
     npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    # or
-    bun dev
-```
+    ```
+    This will open a new tab in your browser with the Expo Dev Tools. You can then run the app on an iOS simulator, Android emulator, or your physical device using the Expo Go app.
 
-This will start the Expo Dev Server. Open the app in:
+### Running `webapp` (Web Application)
 
-- **iOS**: press `i` to launch in the iOS simulator _(Mac only)_
-- **Android**: press `a` to launch in the Android emulator
-- **Web**: press `w` to run in a browser
+The `webapp` is a Next.js application.
 
-You can also scan the QR code using the [Expo Go](https://expo.dev/go) app on your device. This project fully supports running in Expo Go for quick testing on physical devices.
+1.  Navigate to the `webapp` directory:
+    ```bash
+    cd apps/webapp
+    ```
+2.  Start the Next.js development server:
+    ```bash
+    npm run dev
+    ```
+    The application will typically be available at `http://localhost:9002` (as configured in `package.json`).
 
-## Adding components
+## Building Shared Library
 
-You can add more reusable components using the CLI:
+The `common` package is a shared library used by `mapp` and `webapp`. You need to build it for changes to be reflected.
 
-```bash
-npx react-native-reusables/cli@latest add [...components]
-```
+1.  Navigate to the `common` directory:
+    ```bash
+    cd apps/common
+    ```
+2.  Build the package:
+    ```bash
+    npm run build
+    ```
 
-> e.g. `npx react-native-reusables/cli@latest add input textarea`
+## Type Checking
 
-If you don't specify any component names, you'll be prompted to select which components to add interactively. Use the `--all` flag to install all available components at once.
+To run type checks for `mapp` and `webapp`:
 
-## Project Features
+### For `mapp`:
 
-- ⚛️ Built with [Expo Router](https://expo.dev/router)
-- 🎨 Styled with [Tailwind CSS](https://tailwindcss.com/) via [Nativewind](https://www.nativewind.dev/)
-- 📦 UI powered by [React Native Reusables](https://github.com/founded-labs/react-native-reusables)
-- 🚀 New Architecture enabled
-- 🔥 Edge to Edge enabled
-- 📱 Runs on iOS, Android, and Web
+1.  Navigate to the `mapp` directory:
+    ```bash
+    cd apps/mapp
+    ```
+2.  Run the TypeScript compiler:
+    ```bash
+    npx tsc --noEmit
+    ```
 
-## Learn More
+### For `webapp`:
 
-To dive deeper into the technologies used:
-
-- [React Native Docs](https://reactnative.dev/docs/getting-started)
-- [Expo Docs](https://docs.expo.dev/)
-- [Nativewind Docs](https://www.nativewind.dev/)
-- [React Native Reusables](https://reactnativereusables.com)
-
-## Deploy with EAS
-
-The easiest way to deploy your app is with [Expo Application Services (EAS)](https://expo.dev/eas).
-
-- [EAS Build](https://docs.expo.dev/build/introduction/)
-- [EAS Updates](https://docs.expo.dev/eas-update/introduction/)
-- [EAS Submit](https://docs.expo.dev/submit/introduction/)
-
----
-
-If you enjoy using React Native Reusables, please consider giving it a ⭐ on [GitHub](https://github.com/founded-labs/react-native-reusables). Your support means a lot!
+1.  Navigate to the `webapp` directory:
+    ```bash
+    cd apps/webapp
+    ```
+2.  Run the type check script:
+    ```bash
+    npm run typecheck
+    ```

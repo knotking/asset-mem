@@ -1,15 +1,14 @@
 import { Text } from '@/components/ui/text';
 import { Stack, useRouter } from 'expo-router';
-import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { ScrollView, View } from 'react-native';
 import AddNewProperty from '@/components/AddNewProperty';
 import AddPropertyModal from '@/components/AddPropertyModal';
 import PropertyCard from '@/components/PropertyCard';
+import PropertyListSkeleton from '@/components/PropertyListSkeleton';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
 
 export default function Screen() {
-  const { colorScheme } = useColorScheme();
   const { properties, loading, error } = usePropertiesList();
   const router = useRouter();
   const [modalVisible, setModalVisible] = React.useState(false);
@@ -21,11 +20,7 @@ export default function Screen() {
   };
 
   if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-foreground">Loading properties...</Text>
-      </View>
-    );
+    return <PropertyListSkeleton />;
   }
 
   if (error) {
