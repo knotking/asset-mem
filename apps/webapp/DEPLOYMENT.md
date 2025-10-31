@@ -5,7 +5,7 @@ This guide explains how to deploy the Next.js webapp to Firebase App Hosting.
 ## Overview
 
 The webapp is deployed to Firebase App Hosting at:
-**https://staging--homegeekdemo.us-central1.hosted.app**
+**https://staging--goggle-gab.us-central1.hosted.app**
 
 Firebase App Hosting provides full Next.js support including:
 
@@ -108,23 +108,23 @@ Minimal configuration for Firestore rules. App Hosting doesn't require hosting c
 
 ## Backend Information
 
-- **Project ID:** homegeekdemo
+- **Project ID:** goggle-gab
 - **Backend ID:** staging
 - **Region:** us-central1
-- **URL:** https://staging--homegeekdemo.us-central1.hosted.app
+- **URL:** https://staging--goggle-gab.us-central1.hosted.app
 
 ## Monitoring Deployment
 
 ### Check Rollout Status
 
 ```bash
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project goggle-gab
 ```
 
 ### View Backend Details
 
 ```bash
-firebase apphosting:backends:get staging --project homegeekdemo
+firebase apphosting:backends:get staging --project goggle-gab
 ```
 
 ### Check Logs
@@ -132,7 +132,7 @@ firebase apphosting:backends:get staging --project homegeekdemo
 ```bash
 # Via Google Cloud Console
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=staging" \
-  --project homegeekdemo \
+  --project goggle-gab \
   --limit 50 \
   --format json
 ```
@@ -145,7 +145,7 @@ If you see "Backend 'staging' not found", you need to create it first:
 
 ```bash
 firebase apphosting:backends:create staging \
-  --project homegeekdemo \
+  --project goggle-gab \
   --location us-central1
 ```
 
@@ -187,11 +187,11 @@ To rollback to a previous version:
 
 ```bash
 # List recent rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project goggle-gab
 
 # Get specific rollout ID and create new rollout from it
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project goggle-gab \
   --rollout-id <PREVIOUS_ROLLOUT_ID>
 ```
 
