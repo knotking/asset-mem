@@ -3,10 +3,7 @@
 
 # For npm workspaces monorepo: specify where the Next.js app is located
 # The root package.json and package-lock.json are at the repository root
-buildConfig:
-  runtime: nodejs20
-  buildCommand: "npm run build --workspace=apps/webapp"
-  outputDirectory: "apps/webapp/.next"
+rootDirectory: apps/webapp
 
 runConfig:
   # Increase this value if you'd like to automatically spin up
