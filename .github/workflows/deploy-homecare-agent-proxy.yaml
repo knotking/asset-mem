@@ -76,6 +76,16 @@ jobs:
           echo "USER_UPLOAD_RESULT_SUBSCRIPTION=${{ env.USER_UPLOAD_RESULT_SUBSCRIPTION }}$ENV_SUFFIX" >> $GITHUB_ENV
           echo "GCS_BUCKET=${{ env.GCS_BUCKET }}$ENV_SUFFIX" >> $GITHUB_ENV
 
+      - name: Verify secrets are set
+        run: |
+          echo "TELEGRAM_BOT_TOKEN starts with: ${TELEGRAM_BOT_TOKEN:0:3}..."
+          echo "TELEGRAM_WEBHOOK_SECRET starts with: ${TELEGRAM_WEBHOOK_SECRET:0:3}..."
+          echo "FIREBASE_WEBHOOK_SECRET starts with: ${FIREBASE_WEBHOOK_SECRET:0:3}..."
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          FIREBASE_WEBHOOK_SECRET: ${{ secrets.FIREBASE_WEBHOOK_SECRET }}
+
       - name: Google Auth
         id: auth
         uses: "google-github-actions/auth@v2"

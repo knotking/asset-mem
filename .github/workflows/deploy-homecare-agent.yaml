@@ -103,8 +103,8 @@ jobs:
             echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ env.STAGING_KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
             echo "USER_UPLOAD_TOPIC=${{ env.STAGING_USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
             echo "YELP_URL=${{ env.STAGING_YELP_URL }}" >> $GITHUB_ENV
-            echo "SERP_API_KEY=${{ secrets.STAGING_SERP_API_KEY }}" >> $GITHUB_ENV
-            echo "YELP_API_KEY=${{ secrets.STAGING_YELP_API_KEY }}" >> $GITHUB_ENV
+            echo "SERP_API_KEY=${{ secrets.SERP_API_KEY }}" >> $GITHUB_ENV
+            echo "YELP_API_KEY=${{ secrets.YELP_API_KEY }}" >> $GITHUB_ENV
           else
             echo "GOOGLE_CLOUD_PROJECT=${{ env.PROD_GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
             echo "STAGING_BUCKET=${{ env.PROD_STAGING_BUCKET }}" >> $GITHUB_ENV
@@ -115,9 +115,17 @@ jobs:
             echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ env.PROD_KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
             echo "USER_UPLOAD_TOPIC=${{ env.PROD_USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
             echo "YELP_URL=${{ env.PROD_YELP_URL }}" >> $GITHUB_ENV
-            echo "SERP_API_KEY=${{ secrets.PROD_SERP_API_KEY }}" >> $GITHUB_ENV
-            echo "YELP_API_KEY=${{ secrets.PROD_YELP_API_KEY }}" >> $GITHUB_ENV
+            echo "SERP_API_KEY=${{ secrets.SERP_API_KEY }}" >> $GITHUB_ENV
+            echo "YELP_API_KEY=${{ secrets.YELP_API_KEY }}" >> $GITHUB_ENV
           fi
+
+      - name: Verify secrets are set
+        run: |
+          echo "SERP_API_KEY starts with: ${SERP_API_KEY:0:3}..."
+          echo "YELP_API_KEY starts with: ${YELP_API_KEY:0:3}..."
+        env:
+          SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
+          YELP_API_KEY: ${{ secrets.YELP_API_KEY }}
 
       - name: Google Auth
         id: auth
