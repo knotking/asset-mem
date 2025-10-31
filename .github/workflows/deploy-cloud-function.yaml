@@ -26,7 +26,7 @@ env:
   ENTRY_POINT: pubsub_to_user_docs
   MAX_INSTANCES: 1
   CONCURRENCY: 1
-  MEMORY: 512MB
+  MEMORY: 512Mi
   SOURCE_DIRECTORY: gcp/proxy/workers/function
 
   # Environment specific variables
@@ -61,13 +61,15 @@ jobs:
           CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
           if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
             if [[ "${{ github.ref_name }}" == "deploy" ]]; then
-              CURRENT_ENVIRONMENT="prod"
-            else
               CURRENT_ENVIRONMENT="staging"
+            else
+              CURRENT_ENVIRONMENT="prod"
             fi
           fi
 
+          ENV_SUFFIX=""
           if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
+            ENV_SUFFIX="-staging"
             echo "GCP_PROJECT_ID=${{ env.STAGING_PROJECT_ID }}" >> $GITHUB_ENV
             echo "SERVICE_ACCOUNT_EMAIL=${{ env.STAGING_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
             echo "TRIGGER_TOPIC=${{ env.STAGING_TRIGGER_TOPIC }}" >> $GITHUB_ENV
@@ -75,6 +77,7 @@ jobs:
             echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.STAGING_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
             echo "RAG_CORPUS=${{ env.STAGING_RAG_CORPUS }}" >> $GITHUB_ENV
           else
+            ENV_SUFFIX="-prod"
             echo "GCP_PROJECT_ID=${{ env.PROD_PROJECT_ID }}" >> $GITHUB_ENV
             echo "SERVICE_ACCOUNT_EMAIL=${{ env.PROD_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
             echo "TRIGGER_TOPIC=${{ env.PROD_TRIGGER_TOPIC }}" >> $GITHUB_ENV
@@ -82,6 +85,7 @@ jobs:
             echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.PROD_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
             echo "RAG_CORPUS=${{ env.PROD_RAG_CORPUS }}" >> $GITHUB_ENV
           fi
+          echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
 
       - name: Google Auth
         id: auth
@@ -98,14 +102,14 @@ jobs:
           runtime: ${{ env.RUNTIME }}
           region: ${{ env.REGION }}
           entry_point: ${{ env.ENTRY_POINT }}
-          source: ${{ env.SOURCE_DIRECTORY }}
-          max_instances: ${{ env.MAX_INSTANCES }}
-          concurrency: ${{ env.CONCURRENCY }}
+          source_dir: ${{ env.SOURCE_DIRECTORY }}
+          max_instance_count: ${{ env.MAX_INSTANCES }}
+          max_instance_request_concurrency: ${{ env.CONCURRENCY }}
           memory: ${{ env.MEMORY }}
-          trigger_topic: ${{ env.TRIGGER_TOPIC }}
-          allow_unauthenticated: true
+          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
+          event_trigger_pubsub_topic: ${{ env.TRIGGER_TOPIC }}
           service_account: ${{ env.SERVICE_ACCOUNT_EMAIL }}
-          env_vars: |
+          environment_variables: |
             GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }}
             GCP_REGION=${{ env.REGION }}
             GCS_BUCKET=${{ env.GCS_BUCKET }}
