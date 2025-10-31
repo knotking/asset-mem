@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { Message, ServiceProvider, StructuredResponseData, Product } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -340,7 +340,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
     const hasCostEstimates = !!serviceCostEstimatesText;
     const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
-    const hasService = !!(service && (hasCostEstimates || hasProviders));
+    const hasService = !!(service && hasProviders); // Service section now only depends on providers
     
     // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
@@ -475,8 +475,9 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         );
     };
 
-    const renderCostEstimatesSection = () => {
-        if (!hasCostEstimates || !service) return null;
+    // Parse cost estimates data
+    const parseCostEstimates = () => {
+        if (!hasCostEstimates || !service) return { parsed: null, details: null, isValid: false, costEstimatesInDetails: null };
         let raw = serviceCostEstimatesRaw as any;
         let parsed: any = null;
         if (typeof raw === 'string') {
@@ -491,22 +492,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         }
 
         if (!parsed) {
-            return (
-                <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Cost Estimates</h4>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{serviceCostEstimatesText!}</ReactMarkdown>
-                </div>
-            );
+            return { parsed: null, details: null, isValid: false, costEstimatesInDetails: null };
         }
-
-        const summary: string | null = typeof parsed.summary === 'string' ? parsed.summary : (typeof parsed.overview === 'string' ? parsed.overview : null);
-        const steps: any[] = Array.isArray(parsed.steps) ? parsed.steps : Array.isArray(parsed.procedure) ? parsed.procedure : [];
-        const materials: any[] = Array.isArray(parsed.materials) ? parsed.materials : Array.isArray(parsed.parts) ? parsed.parts : [];
-        const notes: string | null = typeof parsed.notes === 'string' ? parsed.notes : (typeof parsed.recommendations === 'string' ? parsed.recommendations : null);
-        const timeline: string | null = typeof parsed.timeline === 'string' ? parsed.timeline : null;
-        const breakdownSource: any = parsed.breakdown || parsed.items || parsed.estimates || parsed.line_items || parsed.costs || parsed.pricing || parsed.prices;
-        const breakdown: any[] = Array.isArray(breakdownSource) ? breakdownSource : [];
-        const totals = parsed.totals || parsed.total || parsed.aggregate || null;
 
         // Build dropdown accordion UI
         const details: Record<string, any> = { ...(parsed || {}) };
@@ -529,10 +516,39 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         delete details['totals'];
         delete details['total'];
         delete details['aggregate'];
+        
+        // Extract costEstimates if it exists in details
+        const costEstimatesInDetails = details['costEstimates'];
+        if (costEstimatesInDetails) {
+            delete details['costEstimates'];
+        }
+
+        const hasAdditionalDetails = Object.keys(details).length > 0;
+        return { parsed, details: hasAdditionalDetails ? details : null, isValid: true, costEstimatesInDetails };
+    };
+
+    const { parsed: costEstimatesParsed, details: costEstimatesAdditionalDetails, isValid: costEstimatesIsValid, costEstimatesInDetails } = parseCostEstimates();
+
+    const renderCostEstimatesSection = () => {
+        if (!costEstimatesIsValid || !costEstimatesParsed) {
+            return (
+                <div className="space-y-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{serviceCostEstimatesText!}</ReactMarkdown>
+                </div>
+            );
+        }
+
+        const summary: string | null = typeof costEstimatesParsed.summary === 'string' ? costEstimatesParsed.summary : (typeof costEstimatesParsed.overview === 'string' ? costEstimatesParsed.overview : null);
+        const steps: any[] = Array.isArray(costEstimatesParsed.steps) ? costEstimatesParsed.steps : Array.isArray(costEstimatesParsed.procedure) ? costEstimatesParsed.procedure : [];
+        const materials: any[] = Array.isArray(costEstimatesParsed.materials) ? costEstimatesParsed.materials : Array.isArray(costEstimatesParsed.parts) ? costEstimatesParsed.parts : [];
+        const notes: string | null = typeof costEstimatesParsed.notes === 'string' ? costEstimatesParsed.notes : (typeof costEstimatesParsed.recommendations === 'string' ? costEstimatesParsed.recommendations : null);
+        const timeline: string | null = typeof costEstimatesParsed.timeline === 'string' ? costEstimatesParsed.timeline : null;
+        const breakdownSource: any = costEstimatesParsed.breakdown || costEstimatesParsed.items || costEstimatesParsed.estimates || costEstimatesParsed.line_items || costEstimatesParsed.costs || costEstimatesParsed.pricing || costEstimatesParsed.prices;
+        const breakdown: any[] = Array.isArray(breakdownSource) ? breakdownSource : [];
+        const totals = costEstimatesParsed.totals || costEstimatesParsed.total || costEstimatesParsed.aggregate || null;
 
         return (
             <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Cost Estimates</h4>
                 {summary && (<p className="text-sm">{summary}</p>)}
                 <Accordion type="multiple" className="space-y-2">
                     {totals && (
@@ -580,10 +596,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     )}
                     {timeline && renderRecursiveDetails('Timeline', timeline, 'timeline')}
                     {notes && renderRecursiveDetails('Notes', notes, 'notes')}
-
-                    {Object.keys(details).length > 0 && (
-                        renderRecursiveDetails('Additional Details', details, 'details')
-                    )}
                 </Accordion>
             </div>
         );
@@ -735,9 +747,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
-                    {/* Cost estimates parsed from service-agent output */}
-                    {hasCostEstimates && renderCostEstimatesSection()}
-                        
                         {/* Show local pros section - always show if service data exists */}
                         <div className="space-y-3">
                             <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2">
@@ -761,6 +770,26 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionContent>
                 </AccordionItem>
+            )}
+            
+            {costEstimatesInDetails && (
+                <AccordionItem value="costEstimatesFromDetails" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <DollarSign className="h-5 w-5 text-purple-600" />
+                            <span className="font-semibold">Cost Estimates</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
+                        <Accordion type="multiple" className="space-y-2">
+                            {renderRecursiveDetails('Details', costEstimatesInDetails, 'cost-estimates-from-details')}
+                        </Accordion>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            
+            {costEstimatesAdditionalDetails && (
+                renderRecursiveDetails('Additional Details', costEstimatesAdditionalDetails, 'cost-estimates-additional-details')
             )}
         </Accordion>
     );
