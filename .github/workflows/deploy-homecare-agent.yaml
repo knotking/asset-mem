@@ -28,7 +28,7 @@ on:
           - update
 
 env:
-  GOOGLE_GENAI_USE_VERTEXAI=1
+  GOOGLE_GENAI_USE_VERTEXAI: 1
   GOOGLE_CLOUD_LOCATION: us-central1
   PYTHON_VERSION: "3.10"
   DEPLOY_SCRIPT_PATH: gcp/agents/homecare/deployment/deploy.py
