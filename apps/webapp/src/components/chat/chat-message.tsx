@@ -1230,14 +1230,26 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
         if (!isUser && message.content) {
           let contentToParse = message.content.trim();
           
+          // Helper function to check if parsed JSON has structured data keys
+          const hasStructuredDataKeys = (parsed: any): boolean => {
+              if (!parsed || typeof parsed !== 'object') return false;
+              // Check for nested structure (analysis.*)
+              if (parsed.analysis && typeof parsed.analysis === 'object') {
+                  return !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
+                           parsed.analysis.diyResults || parsed.analysis.serviceResults);
+              }
+              // Check for flat structure
+              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult);
+          };
+          
           // Method 1: If the entire content is just JSON (starts with { and ends with }), try parsing directly
           if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
               try {
                   const parsed = JSON.parse(contentToParse);
-                  if (parsed && typeof parsed === 'object' && (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults)) {
+                  if (hasStructuredDataKeys(parsed)) {
                       structuredData = parsed;
                       if (process.env.NODE_ENV === 'development') {
-                          console.log('Parsed JSON directly from content');
+                          console.log('✓ Parsed JSON directly from content (Method 1)');
                       }
                   } else if (parsed && typeof parsed === 'object') {
                       fallbackParsedJson = parsed;
@@ -1249,127 +1261,138 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
           
           // Method 2: Try to extract JSON from markdown code block (```json ... ``` or ``` ... ```)
           if (!structuredData) {
-              const jsonCodeBlockRegex = /```(?:json)?\s*\n([\s\S]*?)```/;
-              const codeBlockMatch = contentToParse.match(jsonCodeBlockRegex);
+              // Look for any code block that might contain JSON
+              const jsonCodeBlockRegex = /```(?:json)?\s*\n?([\s\S]*?)```/g;
+              let codeBlockMatch;
+              let foundValidJson = false;
               
-              if (codeBlockMatch && codeBlockMatch[1]) {
-                  contentToParse = codeBlockMatch[1].trim();
-              }
-              
-              // Method 3: Try to find JSON object within markdown (after **label**:)
-              if (!codeBlockMatch) {
-                  const labeledJsonRegex = /\*\*.*?\*\*\s*:\s*```(?:json)?\s*\n([\s\S]*?)```/;
-                  const labeledMatch = contentToParse.match(labeledJsonRegex);
-                  if (labeledMatch && labeledMatch[1]) {
-                      contentToParse = labeledMatch[1].trim();
+              // Try all code blocks
+              while ((codeBlockMatch = jsonCodeBlockRegex.exec(contentToParse)) !== null && !foundValidJson) {
+                  const codeContent = codeBlockMatch[1].trim();
+                  if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
+                      try {
+                          const parsed = JSON.parse(codeContent);
+                          if (hasStructuredDataKeys(parsed)) {
+                              structuredData = parsed;
+                              foundValidJson = true;
+                              if (process.env.NODE_ENV === 'development') {
+                                  console.log('✓ Parsed JSON from code block (Method 2)');
+                              }
+                          }
+                      } catch {
+                          // Not valid JSON in this block
+                      }
                   }
               }
               
-              // Method 4: Try to extract JSON object directly from content (look for { "analysis": ... } or similar)
-              if (!codeBlockMatch && !contentToParse.startsWith('{')) {
-                  // More comprehensive regex to match JSON objects with our keys
-                  // Try multiple patterns to catch different formats
+              if (foundValidJson) {
+                  // Already parsed, skip remaining methods
+              } else {
+                  // Method 3: Try to find JSON object directly from content (look for { "analysis": ... } or similar)
+                  // More aggressive regex to match JSON objects with our keys
                   const patterns = [
-                      /\{[\s\S]*"(?:analysis|triageResult|diyResults|serviceResults|coverageResult)":[\s\S]*\}/,
-                      /\{[\s\S]*"analysis"[\s\S]*\}/,
-                      /\{[\s\S]*"triageResult"[\s\S]*\}/,
-                      /\{[\s\S]*"serviceResults"[\s\S]*\}/
+                      // Match complete JSON objects that might span multiple lines
+                      /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/s,
+                      // Try to find the first { and match until balanced closing }
+                      /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/s
                   ];
                   
                   for (const pattern of patterns) {
-                      const objectMatch = contentToParse.match(pattern);
-                      if (objectMatch) {
-                          contentToParse = objectMatch[0];
-                          break;
+                      const objectMatches = contentToParse.match(new RegExp(pattern.source, 'g'));
+                      if (objectMatches) {
+                          for (const match of objectMatches) {
+                              try {
+                                  const parsed = JSON.parse(match);
+                                  if (hasStructuredDataKeys(parsed)) {
+                                      structuredData = parsed;
+                                      if (process.env.NODE_ENV === 'development') {
+                                          console.log('✓ Parsed JSON from pattern match (Method 3)');
+                                      }
+                                      break;
+                                  }
+                              } catch {
+                                  // Continue trying
+                              }
+                          }
+                          if (structuredData) break;
                       }
                   }
-              }
-              
-              // Clean and parse the JSON
-              if (contentToParse && contentToParse.startsWith('{')) {
-                  // Remove any leading/trailing whitespace and clean escape characters
-                  contentToParse = contentToParse.trim();
-                  // Fix common JSON issues
-                  contentToParse = contentToParse.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
                   
-                  try {
-                      const parsed = JSON.parse(contentToParse);
-                      // Check for valid structured data format
-                      if (parsed && typeof parsed === 'object') {
-                          // Check for new nested structure (analysis) or legacy flat structure
-                          if (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult) {
-                              structuredData = parsed;
-                              // Debug: log successful parse with detailed service info
-                              if (process.env.NODE_ENV === 'development') {
-                                  const serviceData = parsed.analysis?.serviceResults || parsed.serviceResults;
-                                  console.log('Successfully parsed structured data from content:', {
-                                      hasAnalysis: !!parsed.analysis,
-                                      hasTriage: !!parsed.triageResult || !!parsed.analysis?.triageResult,
-                                      hasDiy: !!parsed.diyResults || !!parsed.analysis?.diyResults,
-                                      hasService: !!parsed.serviceResults || !!parsed.analysis?.serviceResults,
-                                      hasCoverage: !!parsed.coverageResult || !!parsed.analysis?.coverageResult,
-                                      structure: parsed.analysis ? 'nested' : 'flat',
-                                      serviceDataDetails: serviceData ? {
-                                          hasCostEstimates: !!serviceData.costEstimates,
-                                          hasLocalPros: !!serviceData.localPros,
-                                          localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
-                                          yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
-                                          serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
-                                          serviceDataKeys: Object.keys(serviceData)
-                                      } : null
-                                  });
+                  // Method 4: Try to extract JSON by finding the first { and last matching }
+                  if (!structuredData && contentToParse.includes('{')) {
+                      const firstBrace = contentToParse.indexOf('{');
+                      const lastBrace = contentToParse.lastIndexOf('}');
+                      if (firstBrace < lastBrace) {
+                          const potentialJson = contentToParse.substring(firstBrace, lastBrace + 1);
+                          try {
+                              const parsed = JSON.parse(potentialJson);
+                              if (hasStructuredDataKeys(parsed)) {
+                                  structuredData = parsed;
+                                  if (process.env.NODE_ENV === 'development') {
+                                      console.log('✓ Parsed JSON from brace matching (Method 4)');
+                                  }
                               }
-                          } else {
-                              fallbackParsedJson = parsed;
-                              // Debug: log why it wasn't structured
-                              if (process.env.NODE_ENV === 'development') {
-                                  console.log('Parsed JSON but not recognized as structured data. Keys:', Object.keys(parsed));
+                          } catch {
+                              // Try cleaning common issues
+                              try {
+                                  // Remove comments, fix trailing commas, etc.
+                                  let cleaned = potentialJson
+                                      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+                                      .replace(/\/\/.*$/gm, '') // Remove line comments
+                                      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+                                      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\'); // Fix escape sequences
+                                  
+                                  const parsed = JSON.parse(cleaned);
+                                  if (hasStructuredDataKeys(parsed)) {
+                                      structuredData = parsed;
+                                      if (process.env.NODE_ENV === 'development') {
+                                          console.log('✓ Parsed JSON after cleaning (Method 4b)');
+                                      }
+                                  }
+                              } catch {
+                                  // Final fallback
                               }
-                          }
-                      }
-                  } catch (parseError) {
-                      if (process.env.NODE_ENV === 'development') {
-                          console.log('JSON parse error:', parseError, 'Content preview:', contentToParse.substring(0, 200));
-                      }
-                      // Try to fix common JSON issues
-                      try {
-                          // Remove comments if any
-                          const cleaned = contentToParse.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-                          const parsed = JSON.parse(cleaned);
-                          if (parsed.analysis || parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult) {
-                              structuredData = parsed;
-                              if (process.env.NODE_ENV === 'development') {
-                                  console.log('Successfully parsed after cleaning');
-                              }
-                          } else {
-                              fallbackParsedJson = parsed;
-                          }
-                      } catch {
-                          // Not valid JSON, will be treated as plain text
-                          if (process.env.NODE_ENV === 'development') {
-                              console.log('Could not parse as JSON, will display as plain text');
                           }
                       }
                   }
               }
           }
           
-          // Final check: If we still haven't parsed structured data but content looks like JSON
-          // (contains key markers), log it for debugging
-          if (!structuredData && process.env.NODE_ENV === 'development') {
+          // Debug logging
+          if (structuredData) {
+              if (process.env.NODE_ENV === 'development') {
+                  const serviceData = structuredData.analysis?.serviceResults || structuredData.serviceResults;
+                  console.log('✓ Successfully parsed structured data:', {
+                      hasAnalysis: !!structuredData.analysis,
+                      hasTriage: !!(structuredData.analysis?.triageResult || structuredData.triageResult),
+                      hasDiy: !!(structuredData.analysis?.diyResults || structuredData.diyResults),
+                      hasService: !!(structuredData.analysis?.serviceResults || structuredData.serviceResults),
+                      hasCoverage: !!(structuredData.analysis?.coverageResult || structuredData.coverageResult),
+                      structure: structuredData.analysis ? 'nested' : 'flat',
+                      serviceDataDetails: serviceData ? {
+                          hasCostEstimates: !!serviceData.costEstimates,
+                          hasLocalPros: !!serviceData.localPros,
+                          localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
+                          yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
+                          serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
+                      } : null
+                  });
+              }
+          } else if (process.env.NODE_ENV === 'development') {
               const hasJsonMarkers = message.content.includes('"analysis"') || 
                                      message.content.includes('"triageResult"') || 
                                      message.content.includes('"serviceResults"') ||
                                      message.content.includes('"diyResults"') ||
                                      message.content.includes('"coverageResult"');
               if (hasJsonMarkers) {
-                  console.warn('Detected JSON markers but failed to parse structured data. Content preview:', message.content.substring(0, 500));
+                  console.warn('⚠ Detected JSON markers but failed to parse structured data. Content preview:', message.content.substring(0, 500));
+                  console.warn('Full content length:', message.content.length);
               }
           }
         }
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
-          console.log('Exception parsing structured data:', e);
+          console.error('Exception parsing structured data:', e);
       }
         // Not a JSON object, treat as plain text
     }
