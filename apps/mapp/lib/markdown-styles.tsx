@@ -62,13 +62,13 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
   const isDark = colorScheme === 'dark';
   const theme = isDark ? colors.dark : colors.light;
 
-  // For user messages, use colors that contrast with primary background
-  // Primary background is dark in light mode and light in dark mode
-  // So we need light text in light mode and dark text in dark mode for user messages
+  // For user messages, use colors that contrast with gray background
+  // Gray background is light (gray-200) in light mode and dark (gray-800) in dark mode
+  // So we need dark text in light mode and light text in dark mode for user messages
   const textColor = isUserMessage
     ? isDark
-      ? colors.dark.foreground  // Dark mode: primary is light, so use dark text
-      : '#FFFFFF'  // Light mode: primary is dark (#171717), so use white text
+      ? colors.dark.foreground  // Dark mode: gray-800 background, use light text
+      : colors.light.foreground  // Light mode: gray-200 background, use dark text
     : theme.foreground;
 
   return StyleSheet.create({

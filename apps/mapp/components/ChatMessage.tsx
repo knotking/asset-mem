@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, Linking } from 'react-native';
+import { View, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
@@ -19,6 +20,7 @@ import {
   Map,
   Star,
   CheckCircle,
+  Copy,
 } from 'lucide-react-native';
 import type { Message, StructuredResponseData, ServiceProvider } from '@homeapp/common/types';
 import {
@@ -29,6 +31,7 @@ import {
 } from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
+import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 
@@ -402,13 +405,23 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
 
+  const handleCopyMessage = async () => {
+    try {
+      const whatsappFormattedText = markdownToWhatsapp(message.content);
+      await Clipboard.setStringAsync(whatsappFormattedText);
+      Alert.alert('Copied!', 'Message copied to clipboard');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy message');
+    }
+  };
+
   return (
     <View className={`mb-4 flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       <View className="hidden md:flex">
         <MessageAvatar role={message.role} />
       </View>
       <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
-        <View className={`rounded-lg p-3 ${isUser ? 'bg-primary' : 'bg-secondary'}`}>
+        <View className={`rounded-lg p-3 ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
           {message.file && <FilePreview file={message.file} />}
           {message.documents && message.documents.length > 0 && (
             <DocumentsList documents={message.documents} />
@@ -423,6 +436,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             </>
           ) : (
             <MessageContent content={message.content} isUser={isUser} />
+          )}
+          {!isUser && message.content && !isLoading && (
+            <TouchableOpacity
+              onPress={handleCopyMessage}
+              className="mt-2 self-end flex-row items-center gap-1 rounded-md bg-background px-2 py-1">
+              <Icon as={Copy} size={14} className="text-muted-foreground" />
+              <Text className="text-xs text-muted-foreground">Copy</Text>
+            </TouchableOpacity>
           )}
         </View>
         {message.createdAt && (
