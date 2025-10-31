@@ -302,7 +302,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const hasDIY = !!(diy && (
         diy.diySteps?.summary || 
         (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
-        diy.diyCostEstimates ||
         (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
@@ -651,19 +650,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
-                        {diy?.diyCostEstimates && (
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">DIY Cost Estimate</h4>
-                                {typeof diy.diyCostEstimates === 'string' ? (
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diyCostEstimates}</ReactMarkdown>
-                                ) : (
-                                    <Accordion type="multiple" className="space-y-2">
-                                        {diy.diyCostEstimates.DIY && renderRecursiveDetails('DIY', diy.diyCostEstimates.DIY, 'diy-cost')}
-                                        {diy.diyCostEstimates.repair_type && renderRecursiveDetails('Repair Type', diy.diyCostEstimates.repair_type, 'diy-repair-type')}
-                                    </Accordion>
-                                )}
-                            </div>
-                        )}
                         {diy?.diySteps?.summary && (
                             <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Summary</h4>
