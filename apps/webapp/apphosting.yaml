@@ -6,6 +6,3 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
   minInstances: 1
-
-scripts:
-  buildCommand: echo "Running my custom build command!" && npm ci --quiet --no-fund --no-audit --legacy-peer-deps
