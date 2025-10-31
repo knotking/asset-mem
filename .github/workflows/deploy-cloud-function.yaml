@@ -47,7 +47,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ github.event.inputs.environment ||  'staging' }}
     permissions:
       contents: "read"
       id-token: "write"
@@ -92,7 +92,7 @@ jobs:
 
       - name: Deploy Cloud Function
         id: deploy
-        uses: "google-github-actions/deploy-cloud-function@v2"
+        uses: "google-github-actions/deploy-cloud-functions@v3"
         with:
           name: ${{ env.FUNCTION_NAME }}
           runtime: ${{ env.RUNTIME }}

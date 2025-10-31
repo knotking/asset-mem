@@ -38,7 +38,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ github.event.inputs.environment || 'staging' }}
     permissions:
       contents: "read"
       id-token: "write"
