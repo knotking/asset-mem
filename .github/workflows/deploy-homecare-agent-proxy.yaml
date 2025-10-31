@@ -7,6 +7,7 @@ on:
       - deploy
     paths:
       - "gcp/proxy/api/**"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
