@@ -29,7 +29,7 @@ env:
   # Environment specific variables
   STAGING_PROJECT_ID: homegeekdemo # Replace with your staging project ID
   STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
-  STAGING_REASONING_ENGINE_ID: 5556162108640460800
+  STAGING_REASONING_ENGINE_ID: "5556162108640460800"
 
   PROD_PROJECT_ID: homegeekdemo # Replace with your production project ID
   PROD_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your production service account
