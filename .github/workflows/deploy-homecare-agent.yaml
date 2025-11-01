@@ -82,11 +82,7 @@ jobs:
           DEPLOY_ACTION="${{ github.event.inputs.action }}"
 
           if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
-            if [[ "${{ github.ref_name }}" == "deploy" ]]; then
               CURRENT_ENVIRONMENT="staging"
-            else
-              CURRENT_ENVIRONMENT="prod"
-            fi
           fi
 
           if [[ "$DEPLOY_ACTION" == "" ]]; then

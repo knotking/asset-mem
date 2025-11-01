@@ -50,11 +50,7 @@ jobs:
         run: |
           CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
           if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
-            if [[ "${{ github.ref_name }}" == "deploy" ]]; then
               CURRENT_ENVIRONMENT="staging"
-            else
-              CURRENT_ENVIRONMENT="prod"
-            fi
           fi
 
           ENV_SUFFIX=""
