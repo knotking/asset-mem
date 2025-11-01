@@ -8,6 +8,7 @@ on:
     paths:
       - "gcp/agents/homecare/deployment/**"
       - "gcp/agents/homecare/property_agent/**"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -31,7 +32,7 @@ env:
   GOOGLE_GENAI_USE_VERTEXAI: 1
   GOOGLE_CLOUD_LOCATION: us-central1
   PYTHON_VERSION: "3.10"
-  DEPLOY_SCRIPT_PATH: gcp/agents/homecare/deployment/deploy.py
+  DEPLOY_SCRIPT_PATH: deployment/deploy.py
   WORKING_DIRECTORY: gcp/agents/homecare
 
   # Staging Environment Variables
@@ -87,7 +88,7 @@ jobs:
           fi
 
           if [[ "$DEPLOY_ACTION" == "" ]]; then
-            DEPLOY_ACTION="update"
+            DEPLOY_ACTION="create"
           fi
 
           echo "DEPLOY_ACTION=$DEPLOY_ACTION" >> $GITHUB_ENV
