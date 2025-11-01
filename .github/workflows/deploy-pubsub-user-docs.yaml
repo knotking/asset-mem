@@ -7,6 +7,7 @@ on:
       - deploy
     paths:
       - "gcp/proxy/workers/function/**"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -31,9 +32,9 @@ env:
   # Environment specific variables
   STAGING_PROJECT_ID: homegeekdemo # Replace with your staging project ID
   STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
-  STAGING_TRIGGER_TOPIC: projects/homegeekdemo/topics/user-upload-topic-staging
-  STAGING_GCS_BUCKET: homegeek-user-data-staging
-  STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic-staging
+  STAGING_TRIGGER_TOPIC: projects/homegeekdemo/topics/user-upload-topic
+  STAGING_GCS_BUCKET: homegeek-user-data
+  STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic
   STAGING_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging RAG Corpus ID
 
   PROD_PROJECT_ID: homegeekdemo # Replace with your production project ID
@@ -41,7 +42,7 @@ env:
   PROD_TRIGGER_TOPIC: projects/homegeekdemo/topics/user-upload-topic-prod
   PROD_GCS_BUCKET: homegeek-user-data-prod
   PROD_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic-prod
-  PROD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your production RAG Corpus ID
+  PROD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/new # Replace with your production RAG Corpus ID
 
 jobs:
   deploy:
@@ -68,13 +69,14 @@ jobs:
 
           ENV_SUFFIX=""
           if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
-            ENV_SUFFIX="-staging"
+            ENV_SUFFIX=""
             echo "GCP_PROJECT_ID=${{ env.STAGING_PROJECT_ID }}" >> $GITHUB_ENV
             echo "SERVICE_ACCOUNT_EMAIL=${{ env.STAGING_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
             echo "TRIGGER_TOPIC=${{ env.STAGING_TRIGGER_TOPIC }}" >> $GITHUB_ENV
             echo "GCS_BUCKET=${{ env.STAGING_GCS_BUCKET }}" >> $GITHUB_ENV
             echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.STAGING_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
             echo "RAG_CORPUS=${{ env.STAGING_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
           else
             ENV_SUFFIX="-prod"
             echo "GCP_PROJECT_ID=${{ env.PROD_PROJECT_ID }}" >> $GITHUB_ENV
@@ -83,8 +85,8 @@ jobs:
             echo "GCS_BUCKET=${{ env.PROD_GCS_BUCKET }}" >> $GITHUB_ENV
             echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.PROD_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
             echo "RAG_CORPUS=${{ env.PROD_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
           fi
-          echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
 
       - name: Google Auth
         id: auth
