@@ -35,6 +35,9 @@ env:
   DEPLOY_SCRIPT_PATH: deployment/deploy.py
   WORKING_DIRECTORY: gcp/agents/homecare
 
+  # Service Account Configuration
+  SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your service account email
+
   # Staging Environment Variables
   STAGING_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your staging project ID
   STAGING_STAGING_BUCKET: gs://homegeek-catalog # Replace with your staging agent staging bucket
