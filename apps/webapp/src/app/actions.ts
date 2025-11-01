@@ -81,7 +81,6 @@ export async function deleteAgentSessionAction(userId: string, agentSessionId: s
 
 export async function postFileToAgent(gsURI: string, userId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
     try {
-        // const url = process.env.NEXT_AGENT_QUERY_URL;
         const url = process.env.NEXT_RAG_FILE_UPLOAD_URL;
         if (!url) {
             throw new Error("NEXT_AGENT_URL environment variable not set.");
