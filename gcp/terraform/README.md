@@ -1,10 +1,12 @@
 # Terraform Infrastructure for HomeApp
 
 This directory contains Terraform configurations for managing all GCP resources used by the HomeApp project.
+This is a WORK IN PROGRESS
 
 ## Overview
 
 The infrastructure is organized into modules for managing:
+
 - Vertex AI (Agent Engine, RAG Corpus)
 - Cloud Run services
 - Cloud Functions
@@ -82,12 +84,14 @@ terraform destroy
 ## Environment Management
 
 ### Staging Environment
+
 - Location: `terraform/environments/staging/`
 - GCP Project: `homegeekdemo-staging`
 - Region: `us-central1`
 - Branch: `deploy`
 
 ### Production Environment
+
 - Location: `terraform/environments/prod/`
 - GCP Project: `homegeekdemo`
 - Region: `us-central1`
@@ -103,21 +107,25 @@ terraform destroy
 ## Managed Resources
 
 ### Core Services
+
 - Cloud Run: `homecare-agent-proxy-{env}`
 - Cloud Function: `pubsub_to_user_docs-{env}`
 - Cloud Storage: `homegeek-user-data-{env}`
 
 ### Messaging
+
 - Pub/Sub Topic: `user-upload-topic-{env}`
 - Pub/Sub Topic: `user-upload-result-topic-{env}`
 - Subscriptions for both topics
 
 ### IAM
+
 - Service Account: `githubworkflowdeployment@{project}.iam.gserviceaccount.com`
 - Workload Identity Pool for GitHub Actions
 - Role bindings for all services
 
 ### Secrets
+
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_WEBHOOK_SECRET`
 - `FIREBASE_WEBHOOK_SECRET`
@@ -127,6 +135,7 @@ terraform destroy
 ## Workflow Integration
 
 The Terraform configuration is designed to work alongside GitHub Actions workflows:
+
 - Workflows deploy application code
 - Terraform manages infrastructure resources
 - Both use the same service account for authentication
@@ -136,6 +145,7 @@ The Terraform configuration is designed to work alongside GitHub Actions workflo
 ### Common Issues
 
 1. **API not enabled**: Enable required APIs via console or:
+
    ```bash
    gcloud services enable <api-name>.googleapis.com
    ```
