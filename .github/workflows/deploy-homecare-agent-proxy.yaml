@@ -4,10 +4,8 @@ on:
   push:
     branches:
       - main
-      - deploy
     paths:
       - "gcp/proxy/api/**"
-      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -21,7 +19,7 @@ on:
 
 env:
   REGION: ${{ vars.GCP_REGION }}
-  SERVICE_NAME: homecare-agent-proxy
+  SERVICE_NAME_BASE: homecare-agent-proxy
 
 jobs:
   deploy:
@@ -35,19 +33,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set environment variables
+      - name: Set service name
         run: |
-          CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
-          if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
-              CURRENT_ENVIRONMENT="staging"
-          fi
-
-          ENV_SUFFIX=""
-          if [[ "$CURRENT_ENVIRONMENT" == "prod" ]]; then
-            ENV_SUFFIX="-prod"
-          fi
-
-          echo "SERVICE_NAME=${{ env.SERVICE_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
+          echo "SERVICE_NAME=${{ env.SERVICE_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
 
       - name: Verify secrets are set
         run: |
