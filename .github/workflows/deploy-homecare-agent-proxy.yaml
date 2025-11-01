@@ -7,6 +7,7 @@ on:
       - deploy
     paths:
       - "gcp/proxy/api/**"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -19,20 +20,8 @@ on:
           - prod
 
 env:
-  REGION: us-central1
+  REGION: ${{ vars.GCP_REGION }}
   SERVICE_NAME: homecare-agent-proxy
-  USER_UPLOAD_TOPIC: user-upload-topic
-  USER_UPLOAD_RESULT_SUBSCRIPTION: user-upload-result-subscription
-  GCS_BUCKET: homegeek-user-data
-
-  # Environment specific variables
-  STAGING_PROJECT_ID: homegeekdemo # Replace with your staging project ID
-  STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
-  STAGING_REASONING_ENGINE_ID: "1582298387439419392"
-
-  PROD_PROJECT_ID: homegeekdemo # Replace with your production project ID
-  PROD_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your production service account
-  PROD_REASONING_ENGINE_ID: new # Replace with your production reasoning engine ID
 
 jobs:
   deploy:
@@ -54,27 +43,11 @@ jobs:
           fi
 
           ENV_SUFFIX=""
-          if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
-            ENV_SUFFIX=""
-            echo "GCP_PROJECT_ID=${{ env.STAGING_PROJECT_ID }}" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT_EMAIL=${{ env.STAGING_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
-            echo "REASONING_ENGINE_ID=${{ env.STAGING_REASONING_ENGINE_ID }}" >> $GITHUB_ENV
-            echo "ENV_SUFFIX=$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "SERVICE_NAME=${{ env.SERVICE_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "USER_UPLOAD_TOPIC=${{ env.USER_UPLOAD_TOPIC }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "USER_UPLOAD_RESULT_SUBSCRIPTION=${{ env.USER_UPLOAD_RESULT_SUBSCRIPTION }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "GCS_BUCKET=${{ env.GCS_BUCKET }}$ENV_SUFFIX" >> $GITHUB_ENV
-          else
+          if [[ "$CURRENT_ENVIRONMENT" == "prod" ]]; then
             ENV_SUFFIX="-prod"
-            echo "GCP_PROJECT_ID=${{ env.PROD_PROJECT_ID }}" >> $GITHUB_ENV
-            echo "SERVICE_ACCOUNT_EMAIL=${{ env.PROD_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
-            echo "REASONING_ENGINE_ID=${{ env.PROD_REASONING_ENGINE_ID }}" >> $GITHUB_ENV
-            echo "ENV_SUFFIX=$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "SERVICE_NAME=${{ env.SERVICE_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "USER_UPLOAD_TOPIC=${{ env.USER_UPLOAD_TOPIC }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "USER_UPLOAD_RESULT_SUBSCRIPTION=${{ env.USER_UPLOAD_RESULT_SUBSCRIPTION }}$ENV_SUFFIX" >> $GITHUB_ENV
-            echo "GCS_BUCKET=${{ env.GCS_BUCKET }}$ENV_SUFFIX" >> $GITHUB_ENV
           fi
+
+          echo "SERVICE_NAME=${{ env.SERVICE_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
 
       - name: Verify secrets are set
         run: |
@@ -90,8 +63,8 @@ jobs:
         id: auth
         uses: "google-github-actions/auth@v2"
         with:
-          workload_identity_provider: "projects/321433914812/locations/global/workloadIdentityPools/github-pool/providers/github-provider" # Replace with your Workload Identity Provider
-          service_account: "${{ env.SERVICE_ACCOUNT_EMAIL }}"
+          workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -100,14 +73,14 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           source: gcp/proxy/api # Path to the source directory for the service
-          flags: "--allow-unauthenticated --service-account=${{ env.SERVICE_ACCOUNT_EMAIL }}"
+          flags: "--allow-unauthenticated --service-account=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
           env_vars: |
-            GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }}
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_REGION=${{ env.REGION }}
-            REASONING_ENGINE_ID=${{ env.REASONING_ENGINE_ID }}
+            REASONING_ENGINE_ID=${{ vars.REASONING_ENGINE_ID }}
             TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
             FIREBASE_WEBHOOK_SECRET=${{ secrets.FIREBASE_WEBHOOK_SECRET }}
-            USER_UPLOAD_TOPIC=${{ env.USER_UPLOAD_TOPIC }}
-            USER_UPLOAD_RESULT_SUBSCRIPTION=${{ env.USER_UPLOAD_RESULT_SUBSCRIPTION }}
-            GCS_BUCKET=${{ env.GCS_BUCKET }}
+            USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}
+            USER_UPLOAD_RESULT_SUBSCRIPTION=${{ vars.USER_UPLOAD_RESULT_SUBSCRIPTION }}
+            GCS_BUCKET=${{ vars.GCS_BUCKET }}
