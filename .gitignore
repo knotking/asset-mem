@@ -186,3 +186,4 @@ node_modules
 **/.expo
 **/.next
 **/expo-env.d.ts
+**/package-lock.json
