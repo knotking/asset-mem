@@ -34,7 +34,7 @@ env:
   STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
   STAGING_TRIGGER_TOPIC: user-upload-topic-staging
   STAGING_GCS_BUCKET: homegeek-user-data-staging
-  STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo-staging/topics/user-upload-result-topic-staging
+  STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic-staging
   STAGING_RAG_CORPUS: projects/homegeekdemo-staging/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging RAG Corpus ID
 
   PROD_PROJECT_ID: homegeekdemo # Replace with your production project ID

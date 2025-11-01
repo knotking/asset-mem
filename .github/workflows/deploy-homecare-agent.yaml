@@ -40,8 +40,8 @@ env:
   STAGING_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/new # Replace with your staging agent engine ID
   STAGING_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data-staging # Replace with your staging user data bucket
   STAGING_USER_UPLOAD_FOLDER: uploads
-  STAGING_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo-staging/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging user upload RAG Corpus ID
-  STAGING_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo-staging/locations/us-central1/ragCorpora/3419358017081049088 # Replace with your staging knowledge base RAG Corpus ID
+  STAGING_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging user upload RAG Corpus ID
+  STAGING_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/3419358017081049088 # Replace with your staging knowledge base RAG Corpus ID
   STAGING_USER_UPLOAD_TOPIC: user-upload-topic-staging
   STAGING_YELP_URL: https://api.yelp.com/v3/businesses/search
 
