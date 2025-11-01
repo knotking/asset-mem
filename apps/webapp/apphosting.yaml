@@ -1,4 +1,6 @@
-# Settings to manage and configure a Firebase App Hosting backend.
+# Default/Development environment configuration for Firebase App Hosting
+# For staging: use apphosting.staging.yaml
+# For production: use apphosting.prod.yaml
 # https://firebase.google.com/docs/app-hosting/configure
 
 env:

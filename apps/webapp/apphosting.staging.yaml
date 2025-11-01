@@ -1,0 +1,48 @@
+# Staging environment configuration for Firebase App Hosting
+# Deploy with: firebase apphosting:backends:create --config apphosting.staging.yaml
+
+env:
+  # Server-side environment variables (available in API routes and server components)
+  - variable: NEXT_AGENT_QUERY_URL
+    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-query
+    availability:
+      - RUNTIME
+  - variable: NEXT_AGENT_SSE_URL
+    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream
+    availability:
+      - RUNTIME
+  - variable: NEXT_RAG_FILE_UPLOAD_URL
+    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload
+    availability:
+      - RUNTIME
+  - variable: NEXT_PUBLIC_AGENT_SSE_URL
+    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_AGENT_SESSION_URL
+    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session
+    availability:
+      - BUILD
+      - RUNTIME
+  # Reference to secret stored in Google Secret Manager
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY_STAGING
+    availability:
+      - RUNTIME
+  # Add this for monorepo support
+  - variable: GOOGLE_BUILDABLE
+    value: apps/webapp
+    availability:
+      - BUILD
+  # Environment identifier
+  - variable: NEXT_PUBLIC_ENV
+    value: staging
+    availability:
+      - BUILD
+      - RUNTIME
+
+runConfig:
+  # Staging can have lower limits
+  maxInstances: 1
+  minInstances: 0
