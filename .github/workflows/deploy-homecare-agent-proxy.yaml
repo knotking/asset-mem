@@ -33,6 +33,76 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required GitHub variables
+        run: |
+          missing_vars=()
+
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            missing_vars+=("GCP_REGION")
+          fi
+
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            missing_vars+=("GCP_PROJECT_ID")
+          fi
+
+          if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          fi
+
+          if [ -z "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}" ]; then
+            missing_vars+=("GCP_SERVICE_ACCOUNT_EMAIL")
+          fi
+
+          if [ -z "${{ vars.REASONING_ENGINE_ID }}" ]; then
+            missing_vars+=("REASONING_ENGINE_ID")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_TOPIC }}" ]; then
+            missing_vars+=("USER_UPLOAD_TOPIC")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_RESULT_SUBSCRIPTION }}" ]; then
+            missing_vars+=("USER_UPLOAD_RESULT_SUBSCRIPTION")
+          fi
+
+          if [ -z "${{ vars.GCS_BUCKET }}" ]; then
+            missing_vars+=("GCS_BUCKET")
+          fi
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
+            echo "Please set the following variables in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_vars[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub variables are set"
+
+      - name: Validate required GitHub secrets
+        run: |
+          missing_secrets=()
+
+          if [ -z "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
+            missing_secrets+=("TELEGRAM_BOT_TOKEN")
+          fi
+
+          if [ -z "${{ secrets.TELEGRAM_WEBHOOK_SECRET }}" ]; then
+            missing_secrets+=("TELEGRAM_WEBHOOK_SECRET")
+          fi
+
+          if [ -z "${{ secrets.FIREBASE_WEBHOOK_SECRET }}" ]; then
+            missing_secrets+=("FIREBASE_WEBHOOK_SECRET")
+          fi
+
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub secrets: ${missing_secrets[*]}"
+            echo "Please set the following secrets in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_secrets[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub secrets are set"
+
       - name: Set service name
         run: |
           echo "SERVICE_NAME=${{ env.SERVICE_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
