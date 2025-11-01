@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - deploy
     paths:
       - "gcp/agents/homecare/deployment/**"
       - "gcp/agents/homecare/property_agent/**"

@@ -4,10 +4,8 @@ on:
   push:
     branches:
       - main
-      - deploy
     paths:
       - "gcp/proxy/workers/function/**"
-      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -21,7 +19,7 @@ on:
 
 env:
   REGION: ${{ vars.GCP_REGION }}
-  FUNCTION_NAME: pubsub_to_user_docs
+  FUNCTION_NAME_BASE: pubsub-to-user-docs
   RUNTIME: python313
   ENTRY_POINT: pubsub_to_user_docs
   MAX_INSTANCES: 1
@@ -43,19 +41,9 @@ jobs:
 
       - name: Set environment variables
         run: |
-          CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
-          if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
-              CURRENT_ENVIRONMENT="staging"
-          fi
-
-          ENV_SUFFIX=""
-          if [[ "$CURRENT_ENVIRONMENT" == "prod" ]]; then
-            ENV_SUFFIX="-prod"
-          fi
-
+          echo "FUNCTION_NAME=${{ env.FUNCTION_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
           echo "TRIGGER_TOPIC=projects/${{ vars.GCP_PROJECT_ID }}/topics/${{ vars.USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_RESULT_TOPIC_PATH=projects/${{ vars.GCP_PROJECT_ID }}/topics/${{ vars.USER_UPLOAD_RESULT_TOPIC }}" >> $GITHUB_ENV
-          echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
 
       - name: Google Auth
         id: auth
