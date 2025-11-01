@@ -39,6 +39,51 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required GitHub variables
+        run: |
+          missing_vars=()
+
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            missing_vars+=("GCP_REGION")
+          fi
+
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            missing_vars+=("GCP_PROJECT_ID")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_TOPIC }}" ]; then
+            missing_vars+=("USER_UPLOAD_TOPIC")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_RESULT_TOPIC }}" ]; then
+            missing_vars+=("USER_UPLOAD_RESULT_TOPIC")
+          fi
+
+          if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          fi
+
+          if [ -z "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}" ]; then
+            missing_vars+=("GCP_SERVICE_ACCOUNT_EMAIL")
+          fi
+
+          if [ -z "${{ vars.GCS_BUCKET }}" ]; then
+            missing_vars+=("GCS_BUCKET")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_RAG_CORPUS }}" ]; then
+            missing_vars+=("USER_UPLOAD_RAG_CORPUS")
+          fi
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
+            echo "Please set the following variables in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_vars[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub variables are set"
+
       - name: Set environment variables
         run: |
           echo "FUNCTION_NAME=${{ env.FUNCTION_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV

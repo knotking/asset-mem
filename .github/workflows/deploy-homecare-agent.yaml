@@ -45,6 +45,96 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required GitHub variables
+        run: |
+          missing_vars=()
+
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            missing_vars+=("GCP_REGION")
+          fi
+
+          if [ -z "${{ vars.PYTHON_VERSION }}" ]; then
+            missing_vars+=("PYTHON_VERSION")
+          fi
+
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            missing_vars+=("GCP_PROJECT_ID")
+          fi
+
+          if [ -z "${{ vars.GCP_PROJECT_NUMBER }}" ]; then
+            missing_vars+=("GCP_PROJECT_NUMBER")
+          fi
+
+          if [ -z "${{ vars.AGENT_STAGING_BUCKET }}" ]; then
+            missing_vars+=("AGENT_STAGING_BUCKET")
+          fi
+
+          if [ -z "${{ vars.REASONING_ENGINE_ID }}" ]; then
+            missing_vars+=("REASONING_ENGINE_ID")
+          fi
+
+          if [ -z "${{ vars.GCS_BUCKET }}" ]; then
+            missing_vars+=("GCS_BUCKET")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_FOLDER }}" ]; then
+            missing_vars+=("USER_UPLOAD_FOLDER")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_RAG_CORPUS }}" ]; then
+            missing_vars+=("USER_UPLOAD_RAG_CORPUS")
+          fi
+
+          if [ -z "${{ vars.KNOWLEDGE_BASE_RAG_CORPUS }}" ]; then
+            missing_vars+=("KNOWLEDGE_BASE_RAG_CORPUS")
+          fi
+
+          if [ -z "${{ vars.USER_UPLOAD_TOPIC }}" ]; then
+            missing_vars+=("USER_UPLOAD_TOPIC")
+          fi
+
+          if [ -z "${{ vars.YELP_URL }}" ]; then
+            missing_vars+=("YELP_URL")
+          fi
+
+          if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          fi
+
+          if [ -z "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}" ]; then
+            missing_vars+=("GCP_SERVICE_ACCOUNT_EMAIL")
+          fi
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
+            echo "Please set the following variables in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_vars[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub variables are set"
+
+      - name: Validate required GitHub secrets
+        run: |
+          missing_secrets=()
+
+          if [ -z "${{ secrets.SERP_API_KEY }}" ]; then
+            missing_secrets+=("SERP_API_KEY")
+          fi
+
+          if [ -z "${{ secrets.YELP_API_KEY }}" ]; then
+            missing_secrets+=("YELP_API_KEY")
+          fi
+
+          if [ ${#missing_secrets[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub secrets: ${missing_secrets[*]}"
+            echo "Please set the following secrets in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_secrets[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub secrets are set"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
