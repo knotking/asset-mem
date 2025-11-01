@@ -92,6 +92,7 @@ jobs:
           fi
 
           echo "DEPLOY_ACTION=$DEPLOY_ACTION" >> $GITHUB_ENV
+          echo "CURRENT_ENVIRONMENT=$CURRENT_ENVIRONMENT" >> $GITHUB_ENV
 
           if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
             echo "GOOGLE_CLOUD_PROJECT=${{ env.STAGING_GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
@@ -145,5 +146,5 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
       - name: Run deployment script
-        run: uv run python ${{ env.DEPLOY_SCRIPT_PATH }} ${{ env.DEPLOY_ACTION }}
+        run: uv run python ${{ env.DEPLOY_SCRIPT_PATH }} ${{ env.DEPLOY_ACTION }} ${{ env.CURRENT_ENVIRONMENT }}
         working-directory: ${{ env.WORKING_DIRECTORY }}
