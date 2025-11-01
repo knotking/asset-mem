@@ -41,7 +41,7 @@ env:
   STAGING_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your staging project ID
   STAGING_STAGING_BUCKET: gs://homegeek-catalog # Replace with your staging agent staging bucket
   STAGING_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/1582298387439419392 # Replace with your staging agent engine ID
-  STAGING_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data # Replace with your staging user data bucket
+  STAGING_GOOGLE_CLOUD_BUCKET: homegeek-user-data # Replace with your staging user data bucket
   STAGING_USER_UPLOAD_FOLDER: uploads
   STAGING_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging user upload RAG Corpus ID
   STAGING_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/3419358017081049088 # Replace with your staging knowledge base RAG Corpus ID
@@ -52,7 +52,7 @@ env:
   PROD_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your production project ID
   PROD_STAGING_BUCKET: gs://homegeek-agent-prod # Replace with your production agent staging bucket
   PROD_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/new # Replace with your production agent engine ID
-  PROD_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data-prod # Replace with your production user data bucket
+  PROD_GOOGLE_CLOUD_BUCKET: homegeek-user-data-prod # Replace with your production user data bucket
   PROD_USER_UPLOAD_FOLDER: uploads-prod
   PROD_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/new # Replace with your production user upload RAG Corpus ID
   PROD_KNOWLEDGE_BASE_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/new # Replace with your production knowledge base RAG Corpus ID
