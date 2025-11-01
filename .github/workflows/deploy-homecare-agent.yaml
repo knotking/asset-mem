@@ -31,7 +31,7 @@ on:
 env:
   GOOGLE_GENAI_USE_VERTEXAI: 1
   GOOGLE_CLOUD_LOCATION: us-central1
-  PYTHON_VERSION: "3.11"
+  PYTHON_VERSION: "3.12"
   DEPLOY_SCRIPT_PATH: deployment/deploy.py
   WORKING_DIRECTORY: gcp/agents/homecare
 
