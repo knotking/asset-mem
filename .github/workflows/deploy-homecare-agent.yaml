@@ -22,7 +22,7 @@ on:
       action:
         description: "Deployment action (create or update)"
         required: true
-        default: "create"
+        default: "update"
         type: choice
         options:
           - create
@@ -41,7 +41,7 @@ env:
   # Staging Environment Variables
   STAGING_GOOGLE_CLOUD_PROJECT: homegeekdemo # Replace with your staging project ID
   STAGING_STAGING_BUCKET: gs://homegeek-catalog # Replace with your staging agent staging bucket
-  STAGING_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/8822450514949046272 # Replace with your staging agent engine ID
+  STAGING_AGENT_ENGINE_ID: projects/321433914812/locations/us-central1/reasoningEngines/1582298387439419392 # Replace with your staging agent engine ID
   STAGING_GOOGLE_CLOUD_BUCKET: homegeekdemo-user-data # Replace with your staging user data bucket
   STAGING_USER_UPLOAD_FOLDER: uploads
   STAGING_USER_UPLOAD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging user upload RAG Corpus ID
@@ -91,7 +91,7 @@ jobs:
           fi
 
           if [[ "$DEPLOY_ACTION" == "" ]]; then
-            DEPLOY_ACTION="create"
+            DEPLOY_ACTION="update"
           fi
 
           echo "DEPLOY_ACTION=$DEPLOY_ACTION" >> $GITHUB_ENV
