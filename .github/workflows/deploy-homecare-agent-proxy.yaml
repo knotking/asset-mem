@@ -100,8 +100,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           source: gcp/proxy/api # Path to the source directory for the service
-          service_account: ${{ env.SERVICE_ACCOUNT_EMAIL }}
-          flags: "--allow-unauthenticated"
+          flags: "--allow-unauthenticated --service-account=${{ env.SERVICE_ACCOUNT_EMAIL }}"
           env_vars: |
             GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }}
             GCP_REGION=${{ env.REGION }}
