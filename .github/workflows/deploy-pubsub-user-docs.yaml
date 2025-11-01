@@ -1,0 +1,117 @@
+name: Deploy PubSub to User Docs Function
+
+on:
+  push:
+    branches:
+      - main
+      - deploy
+    paths:
+      - "gcp/proxy/workers/function/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select the deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - prod
+
+env:
+  REGION: us-central1
+  FUNCTION_NAME: pubsub_to_user_docs
+  RUNTIME: python313
+  ENTRY_POINT: pubsub_to_user_docs
+  MAX_INSTANCES: 1
+  CONCURRENCY: 1
+  MEMORY: 512Mi
+  SOURCE_DIRECTORY: gcp/proxy/workers/function
+
+  # Environment specific variables
+  STAGING_PROJECT_ID: homegeekdemo # Replace with your staging project ID
+  STAGING_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your staging service account
+  STAGING_TRIGGER_TOPIC: projects/homegeekdemo/topics/user-upload-topic
+  STAGING_GCS_BUCKET: homegeek-user-data
+  STAGING_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic
+  STAGING_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624 # Replace with your staging RAG Corpus ID
+
+  PROD_PROJECT_ID: homegeekdemo # Replace with your production project ID
+  PROD_SERVICE_ACCOUNT_EMAIL: githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com # Replace with your production service account
+  PROD_TRIGGER_TOPIC: projects/homegeekdemo/topics/user-upload-topic-prod
+  PROD_GCS_BUCKET: homegeek-user-data-prod
+  PROD_USER_UPLOAD_RESULT_TOPIC_PATH: projects/homegeekdemo/topics/user-upload-result-topic-prod
+  PROD_RAG_CORPUS: projects/homegeekdemo/locations/us-central1/ragCorpora/new # Replace with your production RAG Corpus ID
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment ||  'staging' }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set environment variables
+        run: |
+          CURRENT_ENVIRONMENT="${{ github.event.inputs.environment }}"
+          if [[ "$CURRENT_ENVIRONMENT" == "" ]]; then
+            if [[ "${{ github.ref_name }}" == "deploy" ]]; then
+              CURRENT_ENVIRONMENT="staging"
+            else
+              CURRENT_ENVIRONMENT="prod"
+            fi
+          fi
+
+          ENV_SUFFIX=""
+          if [[ "$CURRENT_ENVIRONMENT" == "staging" ]]; then
+            ENV_SUFFIX=""
+            echo "GCP_PROJECT_ID=${{ env.STAGING_PROJECT_ID }}" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT_EMAIL=${{ env.STAGING_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
+            echo "TRIGGER_TOPIC=${{ env.STAGING_TRIGGER_TOPIC }}" >> $GITHUB_ENV
+            echo "GCS_BUCKET=${{ env.STAGING_GCS_BUCKET }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.STAGING_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
+            echo "RAG_CORPUS=${{ env.STAGING_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
+          else
+            ENV_SUFFIX="-prod"
+            echo "GCP_PROJECT_ID=${{ env.PROD_PROJECT_ID }}" >> $GITHUB_ENV
+            echo "SERVICE_ACCOUNT_EMAIL=${{ env.PROD_SERVICE_ACCOUNT_EMAIL }}" >> $GITHUB_ENV
+            echo "TRIGGER_TOPIC=${{ env.PROD_TRIGGER_TOPIC }}" >> $GITHUB_ENV
+            echo "GCS_BUCKET=${{ env.PROD_GCS_BUCKET }}" >> $GITHUB_ENV
+            echo "USER_UPLOAD_RESULT_TOPIC_PATH=${{ env.PROD_USER_UPLOAD_RESULT_TOPIC_PATH }}" >> $GITHUB_ENV
+            echo "RAG_CORPUS=${{ env.PROD_RAG_CORPUS }}" >> $GITHUB_ENV
+            echo "FUNCTION_NAME=${{ env.FUNCTION_NAME }}$ENV_SUFFIX" >> $GITHUB_ENV
+          fi
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "projects/321433914812/locations/global/workloadIdentityPools/github-pool/providers/github-provider" # Replace with your Workload Identity Provider
+          service_account: "${{ env.SERVICE_ACCOUNT_EMAIL }}"
+
+      - name: Deploy Cloud Function
+        id: deploy
+        uses: "google-github-actions/deploy-cloud-functions@v3"
+        with:
+          name: ${{ env.FUNCTION_NAME }}
+          runtime: ${{ env.RUNTIME }}
+          region: ${{ env.REGION }}
+          entry_point: ${{ env.ENTRY_POINT }}
+          source_dir: ${{ env.SOURCE_DIRECTORY }}
+          max_instance_count: ${{ env.MAX_INSTANCES }}
+          max_instance_request_concurrency: ${{ env.CONCURRENCY }}
+          memory: ${{ env.MEMORY }}
+          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
+          event_trigger_pubsub_topic: ${{ env.TRIGGER_TOPIC }}
+          service_account: ${{ env.SERVICE_ACCOUNT_EMAIL }}
+          environment_variables: |
+            GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }}
+            GCP_REGION=${{ env.REGION }}
+            GCS_BUCKET=${{ env.GCS_BUCKET }}
+            USER_UPLOAD_RESULT_TOPIC=${{ env.USER_UPLOAD_RESULT_TOPIC_PATH }}
+            RAG_CORPUS=${{ env.RAG_CORPUS }}

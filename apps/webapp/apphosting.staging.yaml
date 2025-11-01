@@ -1,7 +1,5 @@
-# Default/Development environment configuration for Firebase App Hosting
-# For staging: use apphosting.staging.yaml
-# For production: use apphosting.prod.yaml
-# https://firebase.google.com/docs/app-hosting/configure
+# Staging environment configuration for Firebase App Hosting
+# Deploy with: firebase apphosting:backends:create --config apphosting.staging.yaml
 
 env:
   # Server-side environment variables (available in API routes and server components)
@@ -29,7 +27,7 @@ env:
       - RUNTIME
   # Reference to secret stored in Google Secret Manager
   - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
+    secret: GEMINI_API_KEY_STAGING
     availability:
       - RUNTIME
   # Add this for monorepo support
@@ -37,8 +35,14 @@ env:
     value: apps/webapp
     availability:
       - BUILD
+  # Environment identifier
+  - variable: NEXT_PUBLIC_ENV
+    value: staging
+    availability:
+      - BUILD
+      - RUNTIME
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
+  # Staging can have lower limits
   maxInstances: 1
+  minInstances: 0

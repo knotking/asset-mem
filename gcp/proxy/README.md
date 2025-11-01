@@ -161,8 +161,6 @@ gcloud projects add-iam-policy-binding your-project-id \
  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
  --role="roles/pubsub.editor"
 
-gcloud pubsub topics create user-upload-topic
-
 uvicorn main:app --host=0.0.0.0 --port=8080 --env-file=../.env --reload
 
 gcloud run deploy homecare-agent-proxy \
@@ -181,7 +179,9 @@ gcloud run deploy homecare-agent-proxy \
  --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription" \
  --set-env-vars="GCS_BUCKET=homegeek-user-data"
 
-gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
+gcloud pubsub topics create user-upload-topic
+gcloud pubsub topics create user-upload-result-topic
 gcloud pubsub subscriptions create user-upload-topic-subscription --topic=user-upload-topic
+gcloud pubsub subscriptions create user-upload-result-subscription --topic=user-upload-result-topic
 
 Install pytest; python -m pytest firebase_integration_test.py

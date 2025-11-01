@@ -55,7 +55,8 @@ app = AdkApp(
 
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "update"
-    logger.info(f"Action: {action}")
+    environment = sys.argv[2] if len(sys.argv) > 2 else "staging"
+    logger.info(f"Action: {action}, Environment: {environment}")
 
     # Common configuration
     common_requirements = [
@@ -82,16 +83,21 @@ def main():
         "YELP_API_KEY",
         "YELP_URL"
     ]
-    display_name = "HomecareAgent"
+    display_name = f"HomecareAgent-{environment}"
     extra_packages = ["./property_agent"]
 
     if action == "create":
-        current_engine = agent_engines.get(AGENT_ENGINE_ID)
-        if current_engine:
-            try:
-                current_engine.delete(force=True)
-            except Exception as e:
-                logger.error(f"Error deleting current engine: {e}")
+        try:
+            current_engine = agent_engines.get(AGENT_ENGINE_ID)
+            if current_engine:
+                try:
+                    logger.info(f"Deleting existing engine: {AGENT_ENGINE_ID}")
+                    current_engine.delete(force=True)
+                    logger.info("Existing engine deleted successfully")
+                except Exception as e:
+                    logger.error(f"Error deleting current engine: {e}")
+        except Exception as e:
+            logger.warning(f"Could not retrieve existing engine (this is expected if it doesn't exist): {e}")
 
         remote_app = agent_engines.create(
             app,
