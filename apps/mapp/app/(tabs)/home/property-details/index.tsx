@@ -8,11 +8,23 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-  Alert,
   Image,
+  Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   ArrowLeft,
   MessageSquare,
@@ -26,6 +38,8 @@ import {
   File,
   AlertCircle,
   CheckCircle,
+  Trash2,
+  Sparkles,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -34,16 +48,178 @@ import { useSession } from '@homeapp/common/contexts/session-context';
 import { MessagesProvider, useMessages } from '@homeapp/common/contexts/messages-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  getDoc,
+  deleteDoc,
+} from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
 import type { Session, Document, AgentStep, FileAttachment } from '@homeapp/common/types';
-import { streamAgentResponse } from '@/lib/api';
+import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
+
+// Rotating Sparkles Component
+function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; color?: string }) {
+  const spinValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const spin = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    spin.start();
+    return () => spin.stop();
+  }, [spinValue]);
+
+  const rotate = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <Sparkles size={size} color={color} />
+    </Animated.View>
+  );
+}
 
 function DetailsTab({ property }: { property: any }) {
   const { documents, isLoading: documentsLoading } = useProperty();
+  const { user } = useAuth();
+  const { db, storage } = useFirebase();
+  const { uploadingDocs, uploadDocuments, removeUploadingDoc } = useDocumentUpload();
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
+  const [successAlertOpen, setSuccessAlertOpen] = React.useState(false);
+  const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
+
+  const handlePickDocuments = async () => {
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to upload documents');
+      return;
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'image/*',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets) {
+        return;
+      }
+      console.log('RESULT: ', result);
+
+      // Start uploading using the common hook
+      await uploadDocuments(result.assets, {
+        userId: user.uid,
+        storage,
+        onAnalyze: async (doc, gsURI) => {
+          // Run AI analysis and RAG upload in parallel
+          const [analysisResult] = await Promise.allSettled([
+            extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType }),
+            postFileToAgent(gsURI, user.uid),
+          ]);
+
+          if (analysisResult.status === 'fulfilled') {
+            return analysisResult.value;
+          } else {
+            console.warn('Analysis failed (non-blocking):', analysisResult.reason);
+            return { summary: 'Analysis failed' };
+          }
+        },
+        onComplete: async (completedDoc) => {
+          try {
+            // Save to Firestore
+            await addDoc(collection(db, 'users', user.uid, 'docs'), {
+              userId: user.uid,
+              propertyId: property.id,
+              name: completedDoc.name,
+              url: completedDoc.downloadURL,
+              storagePath: completedDoc.storagePath,
+              createdAt: serverTimestamp(),
+              gsURI: completedDoc.gsURI,
+              contentType: completedDoc.mimeType,
+              status: 'complete',
+              documentType: completedDoc.documentType || 'OTHER',
+              propertyAddress: completedDoc.propertyAddress || 'N/A',
+              keyEntities: completedDoc.keyEntities || [],
+              summary: completedDoc.summary || 'No summary available',
+            });
+
+            // Remove from uploading list after brief delay to show completion state
+            // The document will appear in the permanent list via Firestore listener
+            setTimeout(() => {
+              removeUploadingDoc(completedDoc.id);
+            }, 800);
+          } catch (error) {
+            console.error('Error saving document to Firestore:', error);
+            // Keep the uploading doc visible on error so user can see what failed
+          }
+        },
+      });
+    } catch (error) {
+      console.error('Error picking documents:', error);
+      Alert.alert('Error', 'Failed to pick documents');
+    }
+  };
+
+  const handleDeleteDocument = (document: Document) => {
+    setDocumentToDelete(document);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!user || !documentToDelete) return;
+
+    try {
+      // Delete from Firebase Storage
+      if (documentToDelete.storagePath) {
+        const fileRef = ref(storage, documentToDelete.storagePath);
+        try {
+          await deleteObject(fileRef);
+          console.log('Deleted from storage:', documentToDelete.storagePath);
+        } catch (error: any) {
+          if (error.code !== 'storage/object-not-found') {
+            console.error('Error deleting from storage:', error);
+            throw error;
+          }
+        }
+      }
+
+      // Delete from Firestore
+      const docRef = doc(db, 'users', user.uid, 'docs', documentToDelete.id);
+      await deleteDoc(docRef);
+      console.log('Deleted from Firestore:', documentToDelete.id);
+
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+      setSuccessAlertOpen(true);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      setErrorMessage('Failed to delete document. Please try again.');
+      setErrorAlertOpen(true);
+    }
+  };
 
   return (
     <View className="mb-4 w-full">
@@ -85,7 +261,9 @@ function DetailsTab({ property }: { property: any }) {
             <Icon as={FileText} size={18} className="text-muted-foreground" />
             <Text className="text-foreground">Property Documents</Text>
           </View>
-          <TouchableOpacity className="flex-row items-center gap-2 rounded-md bg-primary px-3 py-2">
+          <TouchableOpacity
+            onPress={handlePickDocuments}
+            className="flex-row items-center gap-2 rounded-md bg-primary px-3 py-2">
             <Icon as={Upload} size={16} className="text-primary-foreground" />
             <Text className="font-semibold text-primary-foreground">Upload</Text>
           </TouchableOpacity>
@@ -94,23 +272,91 @@ function DetailsTab({ property }: { property: any }) {
           <ActivityIndicator />
         ) : (
           <View className="space-y-3 border-t border-border pt-4">
-            {documents.map((doc) => (
-              <View key={doc.id} className="mb-2 rounded-lg bg-secondary p-3">
-                <View className="mb-3 flex-row items-start justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <View className="rounded-md bg-red-100 p-2">
-                      <Icon as={FileText} size={20} className="text-red-500" />
-                    </View>
-                    <View>
-                      <Text className="font-semibold text-foreground">{doc.name}</Text>
-                    </View>
+            {/* Uploading Documents */}
+            {uploadingDocs.map((doc) => (
+              <View key={doc.id} className="mb-2 rounded-lg border border-border bg-background p-3">
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1">
+                    <Text className="font-medium text-foreground" numberOfLines={1}>
+                      {doc.name}
+                    </Text>
+                    <Text className="mt-1 text-xs text-muted-foreground">
+                      {(doc.size / 1024).toFixed(1)} KB
+                    </Text>
+
+                    {/* Status */}
+                    {doc.status === 'uploading' && (
+                      <View className="mt-2">
+                        <Text className="text-xs text-muted-foreground">
+                          Uploading... {Math.round(doc.progress || 0)}%
+                        </Text>
+                        <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
+                          <View
+                            className="h-full bg-primary"
+                            style={{ width: `${doc.progress || 0}%` }}
+                          />
+                        </View>
+                      </View>
+                    )}
+
+                    {doc.status === 'analyzing' && (
+                      <View className="mt-2 flex-row items-center gap-1">
+                        <RotatingSparkles size={14} color="#3B82F6" />
+                        <Text className="text-xs text-muted-foreground">Analyzing...</Text>
+                      </View>
+                    )}
+
+                    {doc.status === 'complete' && (
+                      <View className="mt-2 flex-row items-center gap-1">
+                        <Icon as={CheckCircle} size={14} className="text-green-500" />
+                        <Text className="text-xs text-green-500">Complete</Text>
+                      </View>
+                    )}
+
+                    {doc.status === 'failed' && (
+                      <View className="mt-2 flex-row items-center gap-1">
+                        <Icon as={AlertCircle} size={14} className="text-red-500" />
+                        <Text className="text-xs text-red-500">{doc.error || 'Failed'}</Text>
+                      </View>
+                    )}
                   </View>
+
+                  <TouchableOpacity
+                    onPress={() => removeUploadingDoc(doc.id)}
+                    className="ml-2 p-1">
+                    <Icon as={X} size={18} className="text-muted-foreground" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            {/* Existing Documents */}
+            {documents
+              .filter((doc) => {
+                // Hide document if there's an uploading doc with the same name
+                // This prevents duplicate cards during upload
+                return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
+              })
+              .map((doc) => (
+                <View key={doc.id} className="mb-2 rounded-lg bg-secondary p-3">
+                <View className="mb-3 flex-row items-start">
+                  <View className="rounded-md bg-red-100 p-2">
+                    <Icon as={FileText} size={20} className="text-red-500" />
+                  </View>
+                  <View className="ml-2 flex-1">
+                    <Text className="font-semibold text-foreground">{doc.name}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleDeleteDocument(doc)} className="ml-2 p-1">
+                    <Icon as={Trash2} size={18} className="text-red-500" />
+                  </TouchableOpacity>
                 </View>
                 <View className="space-y-2 border-t border-gray-100 pt-3">
                   {doc.keyEntities?.map((entity, index) => (
-                    <View key={index} className="flex-row justify-between">
-                      <Text className="text-muted-foreground">{entity.name}</Text>
-                      <Text className="font-semibold text-foreground">{entity.value}</Text>
+                    <View key={index} className="flex-row justify-between gap-2">
+                      <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                      <Text className="flex-1 text-right font-semibold text-foreground" numberOfLines={2}>
+                        {entity.value}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -119,6 +365,57 @@ function DetailsTab({ property }: { property: any }) {
           </View>
         )}
       </View>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{documentToDelete?.name}"? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Text>Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction onPress={confirmDeleteDocument}>
+              <Text>Delete</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Success Alert Dialog */}
+      <AlertDialog open={successAlertOpen} onOpenChange={setSuccessAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Success</AlertDialogTitle>
+            <AlertDialogDescription>Document deleted successfully.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onPress={() => setSuccessAlertOpen(false)}>
+              <Text>OK</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Error Alert Dialog */}
+      <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error</AlertDialogTitle>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
+              <Text>OK</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </View>
   );
 }
@@ -194,7 +491,8 @@ export default function PropertyDetailsScreen() {
 
     const asset = result.assets[0];
     const attachmentId = `upload-${Date.now()}`;
-    const fileName = asset.fileName || `file-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+    const fileName =
+      asset.fileName || `file-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
     const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
 
     // Create storage reference
@@ -236,7 +534,9 @@ export default function PropertyDetailsScreen() {
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress: 100, downloadURL } : null));
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, progress: 100, downloadURL } : null
+            );
           } catch (error) {
             console.error('Error getting download URL:', error);
             setFileAttachment((prev: FileAttachment | null) =>
@@ -297,8 +597,11 @@ export default function PropertyDetailsScreen() {
 
       if (sessionDoc.exists() && sessionData?.name === 'draft') {
         // Use message text if available, otherwise use file name, or fallback to 'New Chat'
-        const newName = userMessage.substring(0, 30) ||
-                        (currentFileAttachment ? `File: ${currentFileAttachment.fileName.substring(0, 20)}` : 'New Chat');
+        const newName =
+          userMessage.substring(0, 30) ||
+          (currentFileAttachment
+            ? `File: ${currentFileAttachment.fileName.substring(0, 20)}`
+            : 'New Chat');
         await updateDoc(sessionRef, {
           name: newName,
           propertyId: id,
@@ -422,7 +725,18 @@ export default function PropertyDetailsScreen() {
     } finally {
       setIsSending(false);
     }
-  }, [user, selectedSessionId, message, isSending, fileAttachment, db, storage, id, selectedDocuments, properties]);
+  }, [
+    user,
+    selectedSessionId,
+    message,
+    isSending,
+    fileAttachment,
+    db,
+    storage,
+    id,
+    selectedDocuments,
+    properties,
+  ]);
 
   const toggleDocumentSelection = (document: Document) => {
     setSelectedDocuments((prev) => {
@@ -653,7 +967,10 @@ export default function PropertyDetailsScreen() {
             />
             <TouchableOpacity
               className={`rounded-lg p-2 ${
-                (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) && !isSending ? 'bg-primary' : 'bg-secondary'
+                (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
+                !isSending
+                  ? 'bg-primary'
+                  : 'bg-secondary'
               }`}
               onPress={handleSendMessage}
               disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}>
@@ -663,7 +980,11 @@ export default function PropertyDetailsScreen() {
                 <Icon
                   as={Send}
                   size={20}
-                  className={(message.trim() || fileAttachment?.downloadURL) ? 'text-primary-foreground' : 'text-muted-foreground'}
+                  className={
+                    message.trim() || fileAttachment?.downloadURL
+                      ? 'text-primary-foreground'
+                      : 'text-muted-foreground'
+                  }
                 />
               )}
             </TouchableOpacity>

@@ -163,7 +163,7 @@ gcloud projects add-iam-policy-binding your-project-id \
 
 uvicorn main:app --host=0.0.0.0 --port=8080 --env-file=../.env --reload
 
-gcloud run deploy homecare-agent-proxy \
+gcloud run deploy homecare-agent-proxy-staging \
  --source api \
  --region us-central1 \
  --platform managed \
@@ -171,7 +171,7 @@ gcloud run deploy homecare-agent-proxy \
  --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
  --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
  --set-env-vars="GCP_REGION=us-central1" \
- --set-env-vars="REASONING_ENGINE_ID=8822450514949046272" \
+ --set-env-vars="REASONING_ENGINE_ID=1582298387439419392" \
  --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \
  --set-env-vars="TELEGRAM_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \
  --set-env-vars="FIREBASE_WEBHOOK_SECRET=92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376" \

@@ -60,7 +60,22 @@ export type ServiceProvider = {
   link?: string;
 };
 
+export type Product = {
+  // legacy fields (kept for backward compatibility)
+  product_name?: string;
+  item_price?: string | null;
+  image_url?: string | null;
+  rating?: string | null;
+  reviews?: string | null;
+  // new structured fields
+  vendor?: string | null;
+  url?: string | null;
+  description?: string | null;
+  price?: string | null;
+}
+
 export type StructuredResponseData = {
+  // Legacy format (backward compatibility)
   researchResults?: {
     summaryOfFindings?: string;
     yourDocuments?: string;
@@ -70,6 +85,35 @@ export type StructuredResponseData = {
   serviceProviderResults?: {
     serpAPIResults?: ServiceProvider[];
     yelpAPIResults?: ServiceProvider[];
+  };
+  // New format (nested structure)
+  analysis?: {
+    triageResult?: {
+      diagnosis?: string;
+    };
+    coverageResult?: {
+      warrantyInfo?: string;
+      insuranceInfo?: string;
+    };
+    diyResults?: {
+      diySteps?: {
+        summary?: string;
+        steps?: Array<{ stepNumber: number; description: string }>;
+      };
+      youtubeSearch?: {
+        videos?: Array<{ title: string; url: string; description?: string }>;
+      };
+      recommendedProducts?: {
+        products?: Product[];
+      };
+    };
+    serviceResults?: {
+      costEstimates?: string;
+      localPros?: {
+        serpAPIResults?: ServiceProvider[];
+        yelpAPIResults?: ServiceProvider[];
+      }
+    };
   };
 };
 

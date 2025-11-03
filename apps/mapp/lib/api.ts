@@ -2,13 +2,13 @@ import { fetch } from 'expo/fetch';
 import type { AgentStep } from '@homeapp/common/types';
 
 const AGENT_SESSION_URL =
-  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session';
+  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session';
 const AGENT_SSE_URL =
-  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream';
+  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream';
 const RAG_FILE_UPLOAD_URL =
-  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-upload';
+  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload';
 const DOCUMENT_ANALYSIS_URL =
-  'https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info';
+  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info';
 
 export async function createAgentSession(
   userId: string
@@ -255,9 +255,7 @@ export interface ExtractDocInfoOutput {
 /**
  * Extract document information using AI analysis
  */
-export async function extractDocInfo(
-  input: ExtractDocInfoInput
-): Promise<ExtractDocInfoOutput> {
+export async function extractDocInfo(input: ExtractDocInfoInput): Promise<ExtractDocInfoOutput> {
   try {
     const url = DOCUMENT_ANALYSIS_URL;
     if (!url) {
