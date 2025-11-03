@@ -138,7 +138,7 @@ Document:"""
 
         # Parse JSON response
         result_json = json.loads(response.text)
-        logger.info(f"Analysis complete: {result_json.get('documentType')} - {result_json.get('summary')}")
+        logger.info(f"Analysis complete: {result_json.get('documentType')}")
 
         # Convert to response model
         return ExtractDocInfoResponse(

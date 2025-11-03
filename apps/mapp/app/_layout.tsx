@@ -12,6 +12,7 @@ import { FirebaseProvider } from '@homeapp/common/contexts/firebase';
 import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list';
 import { SessionProvider } from '@homeapp/common/contexts/session-context';
+import { DocumentUploadProvider } from '@homeapp/common/contexts/document-upload-context';
 import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
 
@@ -30,7 +31,9 @@ export default function RootLayout() {
         <AuthProvider>
           <SessionProvider createAgentSession={createAgentSession}>
             <PropertiesListProvider>
-              <Routes />
+              <DocumentUploadProvider>
+                <Routes />
+              </DocumentUploadProvider>
             </PropertiesListProvider>
           </SessionProvider>
         </AuthProvider>

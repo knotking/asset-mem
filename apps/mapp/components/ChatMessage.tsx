@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -22,7 +23,12 @@ import {
   CheckCircle,
   Copy,
 } from 'lucide-react-native';
-import type { Message, StructuredResponseData, ServiceProvider } from '@homeapp/common/types';
+import type {
+  Message,
+  StructuredResponseData,
+  ServiceProvider,
+  Product,
+} from '@homeapp/common/types';
 import {
   Accordion,
   AccordionItem,
@@ -64,12 +70,151 @@ const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
   );
 };
 
+const ProductCard = ({ product }: { product: Product }) => {
+  // Determine an image source: prefer explicit image_url
+  const imageSrc = product.image_url || null;
+
+  return (
+    <View className="mb-3 w-full rounded-lg border border-border bg-background p-3">
+      <View className="mb-2">
+        <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
+          {product.product_name || product.description || 'Product'}
+        </Text>
+        {product.vendor && (
+          <Text className="mt-1 text-xs text-muted-foreground">{product.vendor}</Text>
+        )}
+      </View>
+
+      {imageSrc && (
+        <View className="mb-2 h-32 w-full overflow-hidden rounded-md">
+          <Image
+            source={{ uri: imageSrc }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+
+      <View className="mb-2 space-y-1">
+        {(product.price || product.item_price) && (
+          <Text className="text-sm font-semibold text-primary">
+            {product.price || product.item_price}
+          </Text>
+        )}
+        {(product.rating || product.reviews) && (
+          <View className="flex-row items-center gap-2">
+            {product.rating && (
+              <>
+                <Icon as={Star} size={14} className="text-yellow-500" />
+                <Text className="text-sm text-foreground">{product.rating}</Text>
+              </>
+            )}
+            {product.reviews && (
+              <Text className="text-xs text-muted-foreground">({product.reviews})</Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      {product.url && (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(product.url!)}
+          className="rounded-md border border-border bg-secondary px-3 py-2">
+          <Text className="text-center text-sm font-medium text-foreground">View Product</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+const YouTubeEmbed = ({ videoUrl }: { videoUrl: string }) => {
+  // Extract video ID from YouTube URL
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
+  const videoId = getYouTubeVideoId(videoUrl);
+
+  if (!videoId) {
+    return null;
+  }
+
+  return (
+    <View className="mb-2 w-full overflow-hidden rounded-md">
+      <YoutubePlayer
+        height={192}
+        videoId={videoId}
+        play={false}
+        webViewProps={{
+          androidLayerType: 'hardware',
+        }}
+      />
+    </View>
+  );
+};
+
 const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
-  const isPrimaryLinkValid =
-    provider.link && (provider.link.startsWith('http://') || provider.link.startsWith('https://'));
+  const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
+  const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
+
+  const normalizeUrl = (u?: string): string | undefined => {
+    if (!u || typeof u !== 'string') return undefined;
+    const trimmed = u.trim();
+    if (trimmed === '') return undefined;
+    const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      const url = new URL(withProto);
+      return url.toString();
+    } catch {
+      return undefined;
+    }
+  };
+
+  const primaryLink = normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined;
+  const isYelp = !!primaryLink && primaryLink.includes('yelp.com');
+  const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
+
+  const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
   const isDirectionsLinkValid =
-    provider.directions &&
+    typeof provider.directions === 'string' &&
     (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
+
+  // Helper function to check if a value is meaningful
+  const hasValue = (val: any): boolean => {
+    if (!val) return false;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return (
+        trimmed !== '' &&
+        trimmed.toLowerCase() !== 'n/a' &&
+        trimmed.toLowerCase() !== 'not available' &&
+        trimmed.toLowerCase() !== 'none' &&
+        trimmed.toLowerCase() !== 'null'
+      );
+    }
+    return true;
+  };
+
+  // Extract rating number if available
+  const ratingValue =
+    provider.ratings && typeof provider.ratings === 'string'
+      ? provider.ratings.split('/')[0].trim()
+      : null;
+  const hasRating = hasValue(ratingValue) && ratingValue !== 'N/A' && ratingValue !== '0';
+  const hasReviews = hasValue(provider.reviews);
+  const hasContact = hasValue(provider.contact_info);
+  const hasLocation = hasValue(provider.location);
+  const hasAdditionalInfo =
+    hasValue(provider.additional_information) &&
+    provider.additional_information?.toLowerCase() !== 'no additional information available.';
+  const hasSpecialties = hasValue(provider.specialties);
+
+  // Show card if provider has a name
+  if (!provider.name) {
+    return null;
+  }
 
   return (
     <View className="mb-3 rounded-lg border border-border bg-background p-3">
@@ -85,151 +230,341 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         )}
       </View>
 
-      <View className="mb-2 flex-row items-center gap-2">
-        <Icon as={Star} size={14} className="text-yellow-500" />
-        <Text className="text-sm text-foreground">{provider.ratings?.split('/')[0] || 'N/A'}</Text>
-        <Text className="text-xs text-muted-foreground">
-          (
-          {provider.reviews && !provider.reviews.toLowerCase().includes('review')
-            ? provider.reviews
-            : `${provider.reviews || '0'} reviews`}
-          )
-        </Text>
-      </View>
+      {(hasRating || hasReviews) && (
+        <View className="mb-2 flex-row items-center gap-2">
+          {hasRating && (
+            <>
+              <Icon as={Star} size={14} className="text-yellow-500" />
+              <Text className="text-sm text-foreground">{ratingValue}</Text>
+            </>
+          )}
+          {hasReviews && (
+            <Text className="text-xs text-muted-foreground">
+              (
+              {provider.reviews && !provider.reviews.toLowerCase().includes('review')
+                ? provider.reviews
+                : `${provider.reviews} reviews`}
+              )
+            </Text>
+          )}
+        </View>
+      )}
 
-      <Text className="mb-2 text-sm text-muted-foreground" numberOfLines={3}>
-        {provider.additional_information || 'No additional information available.'}
-      </Text>
+      {hasAdditionalInfo && (
+        <Text className="mb-2 text-sm text-muted-foreground" numberOfLines={3}>
+          {provider.additional_information}
+        </Text>
+      )}
 
       <View className="mb-2 space-y-1">
-        <View className="flex-row items-center gap-2">
-          <Icon as={Phone} size={14} className="text-muted-foreground" />
-          <Text className="flex-1 text-sm text-foreground">
-            {provider.contact_info || 'Not available'}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2">
-          <Icon as={Map} size={14} className="text-muted-foreground" />
-          <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
-            {provider.location || 'Not available'}
-          </Text>
-        </View>
+        {hasContact && (
+          <View className="flex-row items-center gap-2">
+            <Icon as={Phone} size={14} className="text-muted-foreground" />
+            <Text className="flex-1 text-sm text-foreground">{provider.contact_info}</Text>
+          </View>
+        )}
+        {hasLocation && (
+          <View className="flex-row items-center gap-2">
+            <Icon as={Map} size={14} className="text-muted-foreground" />
+            <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+              {provider.location}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {provider.specialties && (
+      {hasSpecialties && (
         <View className="mb-2">
           <Text className="text-xs font-semibold text-muted-foreground">Specialties</Text>
           <Text className="text-xs text-foreground">{provider.specialties}</Text>
         </View>
       )}
 
-      <View className="flex-row gap-2">
-        {isPrimaryLinkValid && (
-          <TouchableOpacity
-            onPress={() => Linking.openURL(provider.link!)}
-            className="flex-1 rounded-md border border-border bg-secondary px-3 py-2">
-            <Text className="text-center text-sm font-medium text-foreground">
-              {provider.link?.includes('yelp.com') ? 'View on Yelp' : 'Website'}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {isDirectionsLinkValid && (
-          <TouchableOpacity
-            onPress={() => Linking.openURL(provider.directions!)}
-            className="flex-1 rounded-md bg-primary px-3 py-2">
-            <Text className="text-center text-sm font-medium text-primary-foreground">
-              Directions
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {(isPrimaryLinkValid || isDirectionsLinkValid) && (
+        <View className="flex-row gap-2">
+          {isPrimaryLinkValid && primaryLink && (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(primaryLink)}
+              className="flex-1 rounded-md border border-border bg-secondary px-3 py-2">
+              <Text className="text-center text-sm font-medium text-foreground">
+                {primaryLinkLabel}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {isDirectionsLinkValid && provider.directions && (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(provider.directions!)}
+              className="flex-1 rounded-md bg-primary px-3 py-2">
+              <Text className="text-center text-sm font-medium text-primary-foreground">
+                Directions
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 };
 
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
   const markdownStyles = useMarkdownStyles(false);
-  const allProviders = [
-    ...(data.serviceProviderResults?.yelpAPIResults || []),
-    ...(data.serviceProviderResults?.serpAPIResults || []),
+
+  // Support both nested (analysis.*) and flat structures (top-level keys)
+  const analysis = data.analysis || ({} as NonNullable<StructuredResponseData['analysis']>);
+  const triage = analysis?.triageResult || (data as any)?.triageResult;
+  const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
+  const diy = analysis?.diyResults || (data as any)?.diyResults;
+  const service = analysis?.serviceResults || (data as any)?.serviceResults;
+
+  // Normalize provider objects
+  const normalizeProvider = (p: any): ServiceProvider | null => {
+    if (!p || typeof p !== 'object') return null;
+    const nameCandidate =
+      p.name ||
+      p.business_name ||
+      p.businessName ||
+      p.title ||
+      p.company ||
+      p.provider ||
+      p.store ||
+      '';
+    const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
+    if (!name.trim()) return null;
+
+    const website = p.website || p.url || p.link || undefined;
+    const link = p.link || p.url || p.website || undefined;
+    const directions = p.directions || p.directions_url || p.map_link || undefined;
+    const contact_info =
+      p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
+    const location = p.location || p.address || p.address_line || undefined;
+    const ratings = p.ratings || p.rating || undefined;
+    const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
+    const specialties = p.specialties || p.services || undefined;
+    const additional_information =
+      p.additional_information || p.description || p.about || undefined;
+    const authorized = p.authorized || p.verified || undefined;
+
+    return {
+      name,
+      website,
+      link,
+      directions,
+      contact_info,
+      location,
+      ratings: ratings != null ? String(ratings) : '',
+      reviews: reviews != null ? String(reviews) : '',
+      specialties: specialties != null ? String(specialties) : undefined,
+      additional_information: additional_information != null ? String(additional_information) : '',
+      authorized: authorized != null ? String(authorized) : '',
+    } as ServiceProvider;
+  };
+
+  const providerHasValidData = (provider: any): boolean => {
+    const nameCandidate =
+      provider?.name ||
+      provider?.business_name ||
+      provider?.businessName ||
+      provider?.title ||
+      provider?.company ||
+      provider?.provider ||
+      provider?.store;
+    return !!(nameCandidate && String(nameCandidate).trim() !== '');
+  };
+
+  const getProvidersArray = (providers: any): ServiceProvider[] => {
+    if (!providers) return [];
+    if (Array.isArray(providers)) return providers as ServiceProvider[];
+    if (typeof providers === 'string') {
+      try {
+        const parsed = JSON.parse(providers);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    if (typeof providers === 'object') {
+      const keys = ['providers', 'results', 'items', 'pros', 'list'];
+      for (const k of keys) {
+        if (Array.isArray((providers as any)[k])) return (providers as any)[k];
+      }
+    }
+    return [];
+  };
+
+  const allProvidersRaw = [
+    ...getProvidersArray(service?.localPros?.yelpAPIResults),
+    ...getProvidersArray(service?.localPros?.serpAPIResults),
+    ...getProvidersArray(service?.providers),
+    ...getProvidersArray(service?.localProviders),
+    ...getProvidersArray(service?.local_pros),
+    ...getProvidersArray(service?.results),
+    ...getProvidersArray(service?.nearbyProviders),
   ];
 
-  const hasContent = (key: keyof NonNullable<StructuredResponseData['researchResults']>) =>
-    data.researchResults?.[key] && data.researchResults[key]?.trim() !== '';
+  const allProviders = allProvidersRaw
+    .filter(providerHasValidData)
+    .map(normalizeProvider)
+    .filter(Boolean) as ServiceProvider[];
 
-  const hasProviders = allProviders.length > 0;
+  const hasTriage = !!(
+    triage?.diagnosis &&
+    typeof triage.diagnosis === 'string' &&
+    triage.diagnosis.trim() !== ''
+  );
+  const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
+  const hasDIY = !!(
+    diy &&
+    (diy.diySteps?.summary ||
+      (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
+      (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
+      (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0))
+  );
+  const hasService = allProviders.length > 0;
 
   return (
-    <Accordion type="single" collapsible defaultValue="summary" className="w-full">
-      {hasContent('summaryOfFindings') && (
-        <AccordionItem value="summary">
+    <Accordion type="single" collapsible defaultValue="triage" className="w-full">
+      {hasTriage && (
+        <AccordionItem value="triage">
           <AccordionTrigger className="px-2">
             <View className="flex-1 flex-row items-center gap-2">
-              <Icon as={Info} size={16} className="text-muted-foreground" />
-              <Text className="font-medium text-foreground">Summary</Text>
+              <Icon as={Info} size={16} className="text-blue-600" />
+              <Text className="font-medium text-foreground">Triage Summary</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
             <Markdown style={markdownStyles} rules={markdownRules}>
-              {data.researchResults!.summaryOfFindings!}
+              {triage!.diagnosis!}
             </Markdown>
           </AccordionContent>
         </AccordionItem>
       )}
 
-      {hasContent('yourDocuments') && (
+      {hasCoverage && (
         <AccordionItem value="coverage">
           <AccordionTrigger className="px-2">
             <View className="flex-1 flex-row items-center gap-2">
-              <Icon as={ShieldCheck} size={16} className="text-muted-foreground" />
-              <Text className="font-medium text-foreground">Coverage</Text>
+              <Icon as={ShieldCheck} size={16} className="text-green-600" />
+              <Text className="font-medium text-foreground">Coverage Analysis</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
-            <Markdown style={markdownStyles} rules={markdownRules}>
-              {data.researchResults!.yourDocuments!}
-            </Markdown>
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
-      {(hasContent('googleSearch') || hasContent('youtubeSearch')) && (
-        <AccordionItem value="diy">
-          <AccordionTrigger className="px-2">
-            <View className="flex-1 flex-row items-center gap-2">
-              <Icon as={Wrench} size={16} className="text-muted-foreground" />
-              <Text className="font-medium text-foreground">DIY Solutions</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
-            {hasContent('googleSearch') && (
+            {coverage?.warrantyInfo && (
               <View className="mb-3">
+                <Text className="mb-1 text-sm font-semibold text-green-700">
+                  Warranty Information
+                </Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
-                  {data.researchResults!.googleSearch!}
+                  {coverage.warrantyInfo}
                 </Markdown>
               </View>
             )}
-            {hasContent('youtubeSearch') && (
-              <Markdown style={markdownStyles} rules={markdownRules}>
-                {data.researchResults!.youtubeSearch!}
-              </Markdown>
+            {coverage?.insuranceInfo && (
+              <View>
+                <Text className="mb-1 text-sm font-semibold text-green-700">
+                  Insurance Information
+                </Text>
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {coverage.insuranceInfo}
+                </Markdown>
+              </View>
             )}
           </AccordionContent>
         </AccordionItem>
       )}
 
-      {hasProviders && (
-        <AccordionItem value="providers">
+      {hasDIY && (
+        <AccordionItem value="diy">
           <AccordionTrigger className="px-2">
             <View className="flex-1 flex-row items-center gap-2">
-              <Icon as={Users} size={16} className="text-muted-foreground" />
-              <Text className="font-medium text-foreground">Service Providers</Text>
+              <Icon as={Wrench} size={16} className="text-orange-600" />
+              <Text className="font-medium text-foreground">DIY Recommendations</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
-            {allProviders.map((provider, index) => (
-              <ServiceProviderCard key={index} provider={provider} />
-            ))}
+            {diy?.diySteps?.summary && (
+              <View className="mb-3">
+                <Text className="mb-1 text-sm font-semibold text-orange-700">Summary</Text>
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {diy.diySteps.summary}
+                </Markdown>
+              </View>
+            )}
+
+            {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
+              <View className="mb-3">
+                <Text className="mb-2 text-sm font-semibold text-orange-700">
+                  Step-by-Step Instructions
+                </Text>
+                {diy.diySteps.steps.map((step: any, idx: number) => (
+                  <View key={idx} className="mb-2 flex-row gap-2">
+                    <Text className="text-sm font-medium text-foreground">{idx + 1}.</Text>
+                    <Text className="flex-1 text-sm text-foreground">{step.description}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
+              <View className="mb-3">
+                <Text className="mb-2 text-sm font-semibold text-orange-700">Video Tutorials</Text>
+                {diy.youtubeSearch.videos.map((video: any, i: number) => (
+                  <View key={i} className="mb-3">
+                    <YouTubeEmbed videoUrl={video.url} />
+                    <Text className="mt-1 text-sm font-medium text-foreground" numberOfLines={2}>
+                      {video.title || 'Video'}
+                    </Text>
+                    {video.description && (
+                      <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
+                        {video.description}
+                      </Text>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(video.url)}
+                      className="mt-2 rounded-md border border-border bg-secondary px-3 py-2">
+                      <Text className="text-center text-sm font-medium text-foreground">
+                        Watch on YouTube
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
+              <View className="mb-3">
+                <Text className="mb-2 text-sm font-semibold text-orange-700">
+                  Recommended Products
+                </Text>
+                {diy.recommendedProducts.products.map((product: Product, index: number) => (
+                  <ProductCard key={index} product={product} />
+                ))}
+              </View>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      )}
+
+      {hasService && (
+        <AccordionItem value="service">
+          <AccordionTrigger className="px-2">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Icon as={Users} size={16} className="text-purple-600" />
+              <Text className="font-medium text-foreground">Service Recommendations</Text>
+            </View>
+          </AccordionTrigger>
+          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
+            <Text className="mb-2 text-sm font-semibold text-purple-700">
+              Local Service Providers
+            </Text>
+            {allProviders.length > 0 ? (
+              allProviders.map((provider, index) => (
+                <ServiceProviderCard key={index} provider={provider} />
+              ))
+            ) : (
+              <Text className="text-sm italic text-muted-foreground">
+                No service providers found for this location.
+              </Text>
+            )}
           </AccordionContent>
         </AccordionItem>
       )}
@@ -246,21 +581,49 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
 
   if (!isUser && content) {
     try {
-      const jsonRegex = /\*\*.*?\*\*\s*:\s*```json\s*\n([\s\S]*?)```/;
-      const match = content.match(jsonRegex);
+      const contentToParse = content.trim();
 
-      if (match && match[1]) {
-        // Clean up markdown which has unescaped characters
-        const cleaned = match[1].trim().replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
-        const parsed = JSON.parse(cleaned);
-        if (parsed.researchResults || parsed.serviceProviderResults) {
-          structuredData = parsed;
-          // Remove the JSON block from plain content
-          plainContent = content.replace(jsonRegex, '').trim();
+      // Helper function to check if parsed JSON has structured data keys
+      const hasStructuredDataKeys = (parsed: any): boolean => {
+        if (!parsed || typeof parsed !== 'object') return false;
+        // Check for nested structure (analysis.*)
+        if (parsed.analysis && typeof parsed.analysis === 'object') {
+          return !!(
+            parsed.analysis.triageResult ||
+            parsed.analysis.coverageResult ||
+            parsed.analysis.diyResults ||
+            parsed.analysis.serviceResults
+          );
         }
+        // Check for flat structure
+        return !!(
+          parsed.triageResult ||
+          parsed.diyResults ||
+          parsed.serviceResults ||
+          parsed.coverageResult
+        );
+      };
+
+      // Single parsing method: Extract JSON from markdown code block or parse directly
+      const jsonMatch = contentToParse.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+      const jsonStr = jsonMatch ? jsonMatch[1].trim() : contentToParse.trim();
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (hasStructuredDataKeys(parsed)) {
+          structuredData = parsed;
+          // Remove the markdown wrapper from plain content if it existed
+          plainContent = jsonMatch
+            ? contentToParse.replace(jsonMatch[0], '').trim()
+            : '';
+          console.log('✓ Parsed structured JSON response');
+        }
+      } catch (e) {
+        // Not valid JSON, treat as plain text
+        console.log('Failed to parse structured data:', e);
       }
     } catch (e) {
-      console.log('Failed to parse structured data:', e);
+      console.log('Error in content parsing:', e);
       // Not a JSON object, treat as plain text
     }
   }
@@ -290,7 +653,10 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   const [imageError, setImageError] = React.useState(false);
-  const [imageDimensions, setImageDimensions] = React.useState<{ width: number; height: number } | null>(null);
+  const [imageDimensions, setImageDimensions] = React.useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Video player hook - only create if video
   const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
@@ -421,7 +787,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <MessageAvatar role={message.role} />
       </View>
       <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
-        <View className={`rounded-lg p-3 ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
+        <View
+          className={`rounded-lg p-3 ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
           {message.file && <FilePreview file={message.file} />}
           {message.documents && message.documents.length > 0 && (
             <DocumentsList documents={message.documents} />
@@ -440,7 +807,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {!isUser && message.content && !isLoading && (
             <TouchableOpacity
               onPress={handleCopyMessage}
-              className="mt-2 self-end flex-row items-center gap-1 rounded-md bg-background px-2 py-1">
+              className="mt-2 flex-row items-center gap-1 self-end rounded-md bg-background px-2 py-1">
               <Icon as={Copy} size={14} className="text-muted-foreground" />
               <Text className="text-xs text-muted-foreground">Copy</Text>
             </TouchableOpacity>

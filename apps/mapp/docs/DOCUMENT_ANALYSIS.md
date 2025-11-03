@@ -5,6 +5,7 @@ This document describes the AI-powered document analysis system in mapp that aut
 ## Overview
 
 When users upload documents to create a new property, the system automatically:
+
 1. **Extracts Property Address**: Uses AI to identify and normalize property addresses from documents
 2. **Categorizes Documents**: Automatically classifies documents into types (DEED, INSURANCE_POLICY, UTILITY_BILL, etc.)
 3. **Extracts Key Information**: Identifies important entities like policy numbers, dates, amounts
@@ -17,6 +18,7 @@ When users upload documents to create a new property, the system automatically:
 #### 1. API Layer (`apps/mapp/lib/api.ts`)
 
 **Endpoints:**
+
 - `DOCUMENT_ANALYSIS_URL`: AI document analysis service
 - `RAG_FILE_UPLOAD_URL`: RAG system for document indexing
 
@@ -25,7 +27,9 @@ When users upload documents to create a new property, the system automatically:
 ```typescript
 extractDocInfo(input: ExtractDocInfoInput): Promise<ExtractDocInfoOutput>
 ```
+
 Analyzes a document using AI to extract:
+
 - `documentType`: Classification (DEED, INSURANCE_POLICY, UTILITY_BILL, INSPECTION_REPORT, MORTGAGE_STATEMENT, OTHER)
 - `propertyAddress`: Full normalized address (converts abbreviations like "St" → "Street")
 - `keyEntities`: Array of 2-3 key entities with name/value pairs
@@ -34,6 +38,7 @@ Analyzes a document using AI to extract:
 ```typescript
 postFileToAgent(gsURI: string, userId: string): Promise<{ success: boolean; error?: string }>
 ```
+
 Uploads document to RAG system for indexing and chat context (non-blocking, failures don't prevent upload).
 
 #### 2. UI Component (`apps/mapp/components/AddPropertyModal.tsx`)
@@ -59,12 +64,14 @@ Save to Firestore on Property Creation
 ```
 
 **Document States:**
+
 1. `uploading`: File is being uploaded to Firebase Storage (shows progress bar)
 2. `analyzing`: AI is analyzing the document (shows spinner)
 3. `complete`: Analysis complete, results displayed (shows checkmark + summary)
 4. `failed`: Upload or analysis failed (shows error message)
 
 **Enhanced Document Type:**
+
 ```typescript
 type UploadingDocument = {
   id: string;
@@ -111,7 +118,7 @@ async uploadFilesToStorage(docsToUpload: UploadingDocument[]) {
 
     // 4. Run AI analysis and RAG upload in parallel
     const [analysisResult] = await Promise.allSettled([
-      extractDocInfo({ docUrl: downloadURL, contentType: mimeType }),
+      extractDocInfo({ docUrl: gsURI, contentType: mimeType }),
       postFileToAgent(gsURI, userId),
     ]);
 
@@ -128,6 +135,7 @@ async uploadFilesToStorage(docsToUpload: UploadingDocument[]) {
 **Location:** `AddPropertyModal.tsx` - `handleCreate()` function
 
 When creating a property:
+
 1. System searches all analyzed documents for valid addresses
 2. Uses the first address found (where `propertyAddress !== 'N/A'`)
 3. Sets both property `name` and `address` to the extracted address
@@ -157,21 +165,22 @@ Documents are saved to `users/{uid}/docs` with the following schema:
   userId: string;
   propertyId: string;
   name: string;
-  url: string;              // Firebase Storage download URL
-  storagePath: string;      // Firebase Storage path
-  gsURI: string;           // Google Storage URI (gs://)
-  contentType: string;      // MIME type
+  url: string; // Firebase Storage download URL
+  storagePath: string; // Firebase Storage path
+  gsURI: string; // Google Storage URI (gs://)
+  contentType: string; // MIME type
   status: 'complete';
   createdAt: Timestamp;
 
   // AI Analysis Results
-  documentType: string;     // DEED, INSURANCE_POLICY, etc. (default: 'OTHER')
-  propertyAddress: string;  // Extracted address (default: 'N/A')
-  keyEntities: Array<{      // Key information (default: [])
+  documentType: string; // DEED, INSURANCE_POLICY, etc. (default: 'OTHER')
+  propertyAddress: string; // Extracted address (default: 'N/A')
+  keyEntities: Array<{
+    // Key information (default: [])
     name: string;
     value: string;
   }>;
-  summary: string;          // One-sentence summary (default: 'No summary available')
+  summary: string; // One-sentence summary (default: 'No summary available')
 }
 ```
 
@@ -180,6 +189,7 @@ Documents are saved to `users/{uid}/docs` with the following schema:
 ### Analysis Status Indicators
 
 **During Upload (status: 'uploading'):**
+
 ```
 📄 document.pdf
 150.5 KB
@@ -188,6 +198,7 @@ Uploading... 45%
 ```
 
 **During Analysis (status: 'analyzing'):**
+
 ```
 📄 document.pdf
 150.5 KB
@@ -195,6 +206,7 @@ Uploading... 45%
 ```
 
 **Complete (status: 'complete'):**
+
 ```
 📄 document.pdf
 150.5 KB
@@ -211,6 +223,7 @@ Uploading... 45%
 ```
 
 **Failed (status: 'failed'):**
+
 ```
 📄 document.pdf
 150.5 KB
@@ -255,31 +268,34 @@ Uploading... 45%
 
 The AI categorizes documents into these types:
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `DEED` | Property deeds and titles | Warranty deed, quit claim deed |
-| `INSURANCE_POLICY` | Insurance documents | Homeowners insurance policy |
-| `UTILITY_BILL` | Utility bills and statements | Electric, water, gas bills |
-| `INSPECTION_REPORT` | Property inspection reports | Home inspection, pest inspection |
-| `MORTGAGE_STATEMENT` | Mortgage and loan documents | Mortgage statement, loan agreement |
-| `OTHER` | All other documents | General documents, miscellaneous |
+| Type                 | Description                  | Example                            |
+| -------------------- | ---------------------------- | ---------------------------------- |
+| `DEED`               | Property deeds and titles    | Warranty deed, quit claim deed     |
+| `INSURANCE_POLICY`   | Insurance documents          | Homeowners insurance policy        |
+| `UTILITY_BILL`       | Utility bills and statements | Electric, water, gas bills         |
+| `INSPECTION_REPORT`  | Property inspection reports  | Home inspection, pest inspection   |
+| `MORTGAGE_STATEMENT` | Mortgage and loan documents  | Mortgage statement, loan agreement |
+| `OTHER`              | All other documents          | General documents, miscellaneous   |
 
 ## Address Normalization
 
 The AI normalizes addresses to a standard format:
 
 **Input:**
+
 ```
 123 Main St, Apt 4B
 Anytown, CA 12345
 ```
 
 **Output:**
+
 ```
 123 Main Street, Apt 4B, Anytown, CA 12345
 ```
 
 **Normalization Rules:**
+
 - `St` → `Street`
 - `Ave` → `Avenue`
 - `Rd` → `Road`
@@ -293,30 +309,33 @@ Anytown, CA 12345
 The AI extracts 2-3 important entities from each document:
 
 **Example for Insurance Policy:**
+
 ```typescript
 [
-  { name: "Policy Number", value: "POL12345678" },
-  { name: "Insurance Provider", value: "Allstate" },
-  { name: "Coverage Amount", value: "$500,000" }
-]
+  { name: 'Policy Number', value: 'POL12345678' },
+  { name: 'Insurance Provider', value: 'Allstate' },
+  { name: 'Coverage Amount', value: '$500,000' },
+];
 ```
 
 **Example for Deed:**
+
 ```typescript
 [
-  { name: "Property Address", value: "123 Main Street, Anytown, CA" },
-  { name: "Deed Type", value: "Warranty Deed" },
-  { name: "Recording Date", value: "January 15, 2024" }
-]
+  { name: 'Property Address', value: '123 Main Street, Anytown, CA' },
+  { name: 'Deed Type', value: 'Warranty Deed' },
+  { name: 'Recording Date', value: 'January 15, 2024' },
+];
 ```
 
 **Example for Utility Bill:**
+
 ```typescript
 [
-  { name: "Service Provider", value: "Pacific Gas & Electric" },
-  { name: "Account Number", value: "123456789" },
-  { name: "Billing Period", value: "Dec 1 - Dec 31, 2024" }
-]
+  { name: 'Service Provider', value: 'Pacific Gas & Electric' },
+  { name: 'Account Number', value: '123456789' },
+  { name: 'Billing Period', value: 'Dec 1 - Dec 31, 2024' },
+];
 ```
 
 ## Error Handling
@@ -324,6 +343,7 @@ The AI extracts 2-3 important entities from each document:
 ### Non-Blocking Failures
 
 Both AI analysis and RAG upload are **non-blocking**:
+
 - If AI analysis fails, document is still saved with default values
 - If RAG upload fails, warning is logged but upload continues
 - Users can still create properties even if analysis fails
@@ -332,15 +352,16 @@ Both AI analysis and RAG upload are **non-blocking**:
 
 ```typescript
 // Analysis failed - use defaults
-documentType: doc.documentType || 'OTHER'
-propertyAddress: doc.propertyAddress || 'N/A'
-keyEntities: doc.keyEntities || []
-summary: doc.summary || 'No summary available'
+documentType: doc.documentType || 'OTHER';
+propertyAddress: doc.propertyAddress || 'N/A';
+keyEntities: doc.keyEntities || [];
+summary: doc.summary || 'No summary available';
 ```
 
 ### User-Visible Errors
 
 Upload failures are shown to the user:
+
 ```
 ⚠ Upload failed: Network error
 ```
@@ -370,6 +391,7 @@ Analysis failures are silent (default values used).
 ## Integration with Chat System
 
 Documents uploaded with analysis results are automatically:
+
 1. **Indexed in RAG system** via `postFileToAgent()`
 2. **Available in chat context** for AI assistant queries
 3. **Auto-selected by default** in property chat sessions
@@ -394,14 +416,17 @@ The extracted information (address, type, entities, summary) helps the AI provid
 ### Example Test Documents
 
 **Test Case 1: Deed with Address**
+
 - Upload: Property deed PDF
 - Expected: Document type = DEED, address extracted, property auto-named
 
 **Test Case 2: Insurance Policy**
+
 - Upload: Insurance policy PDF
 - Expected: Document type = INSURANCE_POLICY, policy number extracted
 
 **Test Case 3: Multiple Documents**
+
 - Upload: Deed + Insurance + Utility bill
 - Expected: All analyzed, first valid address used for property
 
@@ -450,28 +475,31 @@ The extracted information (address, type, entities, summary) helps the AI provid
 **Purpose:** Analyze document and extract structured information
 
 **Parameters:**
+
 ```typescript
 {
-  docUrl: string;      // Public URL of the document
+  docUrl: string; // Public URL of the document
   contentType: string; // MIME type (e.g., 'application/pdf')
 }
 ```
 
 **Returns:**
+
 ```typescript
 {
-  documentType: DocumentType;                        // Classification
-  propertyAddress: string;                          // Normalized address or 'N/A'
+  documentType: DocumentType; // Classification
+  propertyAddress: string; // Normalized address or 'N/A'
   keyEntities: Array<{ name: string; value: string }>; // 2-3 key entities
-  summary: string;                                   // One-sentence summary
+  summary: string; // One-sentence summary
 }
 ```
 
 **Example:**
+
 ```typescript
 const result = await extractDocInfo({
   docUrl: 'https://storage.googleapis.com/...document.pdf',
-  contentType: 'application/pdf'
+  contentType: 'application/pdf',
 });
 
 console.log(result);
@@ -491,14 +519,16 @@ console.log(result);
 **Purpose:** Upload document to RAG system for indexing
 
 **Parameters:**
+
 ```typescript
 {
-  gsURI: string;  // Google Storage URI (gs://bucket/path)
+  gsURI: string; // Google Storage URI (gs://bucket/path)
   userId: string; // User ID
 }
 ```
 
 **Returns:**
+
 ```typescript
 {
   success: boolean;  // true if indexed successfully
@@ -507,11 +537,9 @@ console.log(result);
 ```
 
 **Example:**
+
 ```typescript
-const result = await postFileToAgent(
-  'gs://my-bucket/documents/user123/doc.pdf',
-  'user123'
-);
+const result = await postFileToAgent('gs://my-bucket/documents/user123/doc.pdf', 'user123');
 
 console.log(result);
 // { success: true }
@@ -522,23 +550,27 @@ console.log(result);
 ### Common Issues
 
 **Issue: Analysis never completes (stuck on "Analyzing...")**
+
 - Check network connectivity
 - Verify DOCUMENT_ANALYSIS_URL is accessible
 - Check backend logs for errors
 - Try smaller document file
 
 **Issue: Wrong document type detected**
+
 - Document may be ambiguous or poor quality
 - AI makes best guess based on content
 - User cannot manually override (future enhancement)
 
 **Issue: Address not extracted**
+
 - Document may not contain a clear address
 - OCR quality may be poor
 - Address may be in non-standard format
 - System returns 'N/A' and falls back to manual name
 
 **Issue: Property created with "Pending address..."**
+
 - No documents had valid addresses
 - User can edit property details after creation
 - Future: prompt user to enter address manually
@@ -562,6 +594,7 @@ To use different endpoints, update these constants.
 ### Firebase Configuration
 
 Documents are stored in Firebase:
+
 - **Storage Path:** `documents/{userId}/{timestamp}_{filename}`
 - **Firestore Collection:** `users/{userId}/docs`
 - **Required Permissions:** Read/write access to user's document collection
@@ -569,6 +602,7 @@ Documents are stored in Firebase:
 ## Credits
 
 This implementation is based on the webapp's document analysis system:
+
 - AI analysis using Google Gemini via Genkit
 - Address extraction with normalization
 - Document type classification
