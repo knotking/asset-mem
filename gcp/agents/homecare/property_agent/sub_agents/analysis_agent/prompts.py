@@ -249,6 +249,7 @@ def analysis_agent_instructions() -> str:
            ALWAYS call this agent - service information with local pros is always provided
            SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
+           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         
         5. Call `cost_agent` tool - This provides DIY vs Service cost estimates as a separate section
            Pass: user_query and include the diagnosis context from triage_agent
@@ -289,6 +290,7 @@ def analysis_agent_instructions() -> str:
               "localPros": {
                 "serpAPIResults": "[local professional listings from serpapi_search]",
                 "yelpAPIResults": "[local professional listings from yelpapi_search]"
+                ,"googleSearchResults": "[parsed providers from google_search_agent when needed]"
               }
             },
             "costEstimationResults": {

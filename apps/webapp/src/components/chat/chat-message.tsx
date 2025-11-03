@@ -288,6 +288,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const allProvidersRaw = [
         ...getProvidersArray(service?.localPros?.yelpAPIResults),
         ...getProvidersArray(service?.localPros?.serpAPIResults),
+        ...getProvidersArray(service?.localPros?.googleSearchResults),
         ...getProvidersArray(service?.providers),
         ...getProvidersArray(service?.localProviders),
         ...getProvidersArray(service?.local_pros),

@@ -120,6 +120,10 @@ components:
                       type: array
                       items:
                         type: object
+                    googleSearchResults:
+                      type: array
+                      items:
+                        type: object
             costEstimationResults:
               type: object
               additionalProperties: false
@@ -280,6 +284,10 @@ components:
                 - name: "Main St Plumbers"
                   rating: "4.3"
                   phone: "+1-555-987-6543"
+              googleSearchResults:
+                - name: "QuickFix Plumbing"
+                  link: "https://quickfix.example.com"
+                  rating: "4.4"
           costEstimationResults:
             costEstimates:
               repair_type: "Pipe Leak Repair"

@@ -222,7 +222,8 @@ service_agent = Agent(
     instruction=service_agent_instructions(),
     tools=[
         LangchainTool(tool=serpapi_search, name="serpapi_search", description="Searches for local business listings and service providers."),
-        yelpapi_search
+        yelpapi_search,
+        AgentTool(agent=google_search_agent)
     ],
     input_schema=DocsInput
 )

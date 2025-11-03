@@ -54,7 +54,8 @@ Analysis Agent
 - **Tools**:
   - `serpapi_search`: Local service/business listings
   - `yelpapi_search`: Yelp listings with reviews and ratings
-- **Output**: JSON with local professional listings (SerpAPI and Yelp).
+  - `google_search_agent` (fallback): General web search to extract providers when others return none
+- **Output**: JSON with local professional listings. Primary sources: SerpAPI and Yelp; fallback: `localPros.googleSearchResults`.
 
 ### 5. Cost Agent
 
@@ -75,7 +76,7 @@ Analysis Agent
 3. DIY
    - Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
 4. Service
-   - Use the triage diagnosis to find local pros via SerpAPI and Yelp.
+   - Use the triage diagnosis to find local pros via SerpAPI and Yelp (within 50 miles, top 10). If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
 5. Cost Estimation
    - Use the triage diagnosis to generate cost estimates via Cost Agent.
 5. Response Assembly
