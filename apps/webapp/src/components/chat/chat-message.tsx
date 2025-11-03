@@ -221,7 +221,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const triage = analysis?.triageResult || (data as any)?.triageResult;
     const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
     const diy = analysis?.diyResults || (data as any)?.diyResults;
-    const service = analysis?.serviceResults || (data as any)?.serviceResults;
+    const service = analysis?.serviceResults || (data as any)?.serviceResults || {};
     const cost = analysis?.costEstimationResults || (data as any)?.costEstimationResults;
 
     // Normalize and validate provider objects coming from various agents/APIs
@@ -311,7 +311,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
     const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
-    const hasService = !!(service && hasProviders); // Service section depends on providers
+    const hasService = true; // Always show Service Recommendations section
     const hasCostEstimates = !!(cost && cost.costEstimates);
     
     // Debug logging in development
