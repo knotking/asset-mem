@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, product recommendations, and cost estimation through a sophisticated multi-agent architecture.
+This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, and product recommendations through a sophisticated multi-agent architecture.
 
 ![RAG Architecture](RAG_architecture.png)
 
@@ -49,7 +49,6 @@ Comprehensive multimodal analysis system with multiple specialized sub-agents:
 - **Research Agent**: Combines Google Search, user documents, and YouTube videos
 - **Service Provider Agent**: Finds local service providers via SerpAPI and Yelp
 - **Product Recommendations Agent**: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart)
-- **Cost Estimation Agent**: Provides DIY vs. professional cost estimates
 
 #### 2. DocuLink Agent
 Document retrieval and knowledge base access:
@@ -87,11 +86,7 @@ Document retrieval and knowledge base access:
 - **Rich Product Data**: Current prices, ratings, reviews, and product images
 - **Shopping Guidance**: Tips for comparing prices and return policies
 
-### Cost Estimation
-- **DIY Estimates**: Material costs and tool requirements
-- **Professional Estimates**: Labor costs and service fees
-- **Cost Comparison**: Analysis of DIY vs. professional options
-- **Recommendations**: Guidance based on complexity and safety factors
+
 
 ## Agent Details
 
@@ -118,7 +113,6 @@ The system accepts various input types:
 3. **Research Phase**: Gathers comprehensive information from multiple sources
 4. **Service Discovery**: Finds local service providers and authorized centers
 5. **Product Recommendations**: Searches multiple retailers for relevant products
-6. **Cost Estimation**: Calculates DIY vs. professional cost estimates
 7. **Response Assembly**: Combines all results into structured JSON response
 
 ### Output Schema
@@ -138,9 +132,7 @@ The system accepts various input types:
   "productRecommendationsResults": {
     "recommendedProducts": "Product recommendations with links"
   },
-  "costEstimationResults": {
-    "costEstimates": "DIY vs professional cost analysis"
-  }
+  
 }
 ```
 
@@ -345,7 +337,7 @@ Agent Response:
 - **Research**: DIY repair methods, paint touch-up techniques, YouTube tutorials
 - **Service Providers**: Local auto body shops, paint specialists with ratings and contact info
 - **Products**: Touch-up paint kits, sandpaper, primer from Amazon, Home Depot, Lowe's
-- **Cost Estimates**: DIY ($20-50), Professional ($200-500), with recommendations
+
 
 **Example 2: Home Plumbing Issue**
 
@@ -356,7 +348,7 @@ Agent Response:
 - **Research**: Faucet repair guides, common causes, troubleshooting steps
 - **Service Providers**: Local plumbers, hardware store services with reviews
 - **Products**: Replacement cartridges, O-rings, tools from multiple retailers
-- **Cost Estimates**: DIY ($20-50), Professional ($150-300), complexity assessment
+
 
 **Example 3: Appliance Manual Query**
 
@@ -367,7 +359,7 @@ Agent Response:
 - **Research**: E3 error code meaning, troubleshooting steps, common solutions
 - **Service Providers**: Appliance repair services, manufacturer service centers
 - **Products**: Replacement parts, cleaning supplies if needed
-- **Cost Estimates**: DIY repair costs vs. professional service estimates
+
 
 ## Evaluating the Agent
 
@@ -381,7 +373,6 @@ make test-eval
 
 # Run specific test categories
 make test-agent      # Analysis agent tests
-make test-cost       # Cost estimation tests
 make test-products   # Product recommendation tests
 make test-service    # Service provider tests
 make test-full       # Full conversation tests

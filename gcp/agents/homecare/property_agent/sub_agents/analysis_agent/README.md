@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Analysis Agent orchestrates a diagnostic workflow for home care and vehicle issues. It can analyze uploaded media when available, or perform text‑only triage from the user’s query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service options with cost estimates.
+The Analysis Agent orchestrates a diagnostic workflow for home care and vehicle issues. It can analyze uploaded media when available, or perform text‑only triage from the user’s query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service provider options.
 
 ## Architecture
 
@@ -19,9 +19,10 @@ Analysis Agent
 │   ├── youtube_search
 │   └── product_recommendations_diy
 └── Service Agent
-    ├── cost_estimation
     ├── serpapi_search
     └── yelpapi_search
+└── Cost Agent
+    └── cost_estimation / cost_estimation_diy
 ```
 
 ## Sub-Agents
@@ -49,12 +50,19 @@ Analysis Agent
 
 ### 4. Service Agent
 
-- **Purpose**: Provide professional service options including cost estimates and local providers.
+- **Purpose**: Provide professional service provider options near the user.
 - **Tools**:
-  - `cost_estimation`: High-level DIY vs professional cost ranges
   - `serpapi_search`: Local service/business listings
   - `yelpapi_search`: Yelp listings with reviews and ratings
-- **Output**: JSON with cost estimates and local professional listings (SerpAPI and Yelp).
+- **Output**: JSON with local professional listings (SerpAPI and Yelp).
+
+### 5. Cost Agent
+
+- **Purpose**: Provide structured DIY vs Service cost estimates.
+- **Tools**:
+  - `cost_estimation`: High-level DIY vs professional cost ranges
+  - `cost_estimation_diy`: DIY-only cost guidance
+- **Output**: JSON under `costEstimationResults.costEstimates`.
 
 ## Workflow
 
@@ -67,7 +75,9 @@ Analysis Agent
 3. DIY
    - Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
 4. Service
-   - Use the triage diagnosis to generate cost estimates and find local pros via SerpAPI and Yelp.
+   - Use the triage diagnosis to find local pros via SerpAPI and Yelp.
+5. Cost Estimation
+   - Use the triage diagnosis to generate cost estimates via Cost Agent.
 5. Response Assembly
    - Combine all results into one nested JSON object.
 
@@ -114,10 +124,17 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
       }
     },
     "serviceResults": {
-      "costEstimates": "string or object",
       "localPros": {
         "serpAPIResults": "object",
         "yelpAPIResults": "object"
+      }
+    },
+    "costEstimationResults": {
+      "costEstimates": {
+        "repair_type": "string",
+        "DIY": { "cost_range": "string", "includes": ["string"], "savings": "string", "complexity": "string" },
+        "Service": { "cost_range": "string", "includes": ["string"], "benefits": "string", "complexity": "string" },
+        "comparison": { "diy_savings": "string", "professional_benefits": "string", "considerations": "string" }
       }
     }
   }
@@ -142,7 +159,7 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
 
 - Parallel execution of research/lookups within DIY and Service
 - Efficient API usage with rate-limiting considerations
-- Reusable cost category mappings for fast responses
+
 
 ## Notes
 

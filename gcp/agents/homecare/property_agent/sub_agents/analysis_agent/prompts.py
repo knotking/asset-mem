@@ -123,42 +123,18 @@ def diy_agent_instructions() -> str:
             "diySteps": {
               "summary": "[summary from google_search_agent]",
               "steps": [
-                {
-                  "stepNumber": 1,
-                  "description": "[step description]"
-                },
-                {
-                  "stepNumber": 2,
-                  "description": "[step description]"
-                }
+                { "stepNumber": 1, "description": "[step description]" },
+                { "stepNumber": 2, "description": "[step description]" }
               ]
             },
             "youtubeSearch": {
               "videos": [
-                {
-                  "title": "[video title]",
-                  "url": "[video URL]",
-                  "description": "[video description if available]"
-                }
+                { "title": "[video title]", "url": "[video URL]", "description": "[video description if available]" }
               ]
-            },
-            "diyCostEstimates": {
-              "repair_type": "[derived from diagnosis]",
-              "DIY": {
-                "cost_range": "[e.g., $50-300]",
-                "includes": ["Material/product costs", "Basic tools", "Time"],
-                "savings": "[labor savings]",
-                "complexity": "[difficulty]"
-              }
             },
             "recommendedProducts": {
               "products": [
-                {
-                  "vendor": "[vendor/manufacturer name]",
-                  "url": "[product URL]",
-                  "description": "[product description]",
-                  "price": "[price or price range]"
-                }
+                { "vendor": "[vendor/manufacturer name]", "url": "[product URL]", "description": "[product description]", "price": "[price or price range]" }
               ]
             }
           }
@@ -267,7 +243,15 @@ def analysis_agent_instructions() -> str:
            Use the diagnosis to help the DIY agent understand the problem better
            ALWAYS call this agent - DIY information is always provided
         
-        4. Call `service_agent` tool - This provides cost estimates and local professional listings
+        4. Call `service_agent` tool - This provides local professional listings
+           Pass: user_query, context_doc_uris, property_address
+           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
+           ALWAYS call this agent - service information with local pros is always provided
+           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
+           RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
+        
+        5. Call `cost_agent` tool - This provides DIY vs Service cost estimates as a separate section
+           Pass: user_query and include the diagnosis context from triage_agent
            Pass: user_query, context_doc_uris, property_address
            IMPORTANT: Include the diagnosis from triage_agent result as context in your query
            Use the diagnosis to help the service agent understand the problem better
@@ -302,10 +286,17 @@ def analysis_agent_instructions() -> str:
               }
             },
             "serviceResults": {
-              "costEstimates": "[cost estimation]",
               "localPros": {
                 "serpAPIResults": "[local professional listings from serpapi_search]",
                 "yelpAPIResults": "[local professional listings from yelpapi_search]"
+              }
+            },
+            "costEstimationResults": {
+              "costEstimates": {
+                "repair_type": "[derived from diagnosis]",
+                "DIY": { "cost_range": "[e.g., $50-300]", "includes": ["Material/product costs", "Basic tools", "Time"], "savings": "[text]", "complexity": "[text]" },
+                "Service": { "cost_range": "[e.g., $200-800]", "includes": ["Labor", "Expertise", "Warranty"], "benefits": "[text]", "complexity": "[text]" },
+                "comparison": { "diy_savings": "[text]", "professional_benefits": "[text]", "considerations": "[text]" }
               }
             }
           }
@@ -317,7 +308,8 @@ def analysis_agent_instructions() -> str:
         * If triage succeeds, then call coverage, DIY, and service and consolidate results.
         * The triage_agent diagnosis MUST be used as context for both diy_agent and service_agent.
         * When triage succeeds, all three sections (coverage, DIY, service) are provided.
-        * The service agent provides cost estimates and local professional listings.
+        * The service agent provides local professional listings.
+        * The cost agent provides structured cost estimates in a separate section.
         * The DIY agent provides steps, videos, and product recommendations.
         * Extract the nested content from each agent's response.
         * Combine them into a single nested JSON structure.

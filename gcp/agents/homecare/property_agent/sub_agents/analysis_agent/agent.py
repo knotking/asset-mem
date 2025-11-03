@@ -21,6 +21,7 @@ from .prompts import (
 import sys
 import logging
 from ..user_docs_agent.agent import ask_user_docs_retreival  
+from ..cost_agent.agent import cost_agent, cost_estimation, cost_estimation_diy
 from ...agent_inputs import DiagnosisInput, DocsInput
 import requests
 import json
@@ -112,154 +113,7 @@ def yelpapi_search(query: str) -> str:
         return "No service providers found"
 
 
-def cost_estimation(query: str) -> str:
-    """Provides high-level cost estimates for DIY and professional service options."""
-    query_lower = query.lower()
-    
-    # Define cost estimation categories with DIY and professional estimates
-    cost_categories = {
-        # Automotive repairs
-        "scratch": {"diy": "$20-50", "pro": "$200-500", "description": "Paint touch-up and scratch repair"},
-        "dent": {"diy": "$30-80", "pro": "$150-400", "description": "Minor dent repair"},
-        "brake": {"diy": "$100-300", "pro": "$300-600", "description": "Brake pad/rotor replacement"},
-        "oil": {"diy": "$30-50", "pro": "$50-80", "description": "Oil change service"},
-        
-        # Home repairs
-        "plumbing": {"diy": "$50-150", "pro": "$150-400", "description": "Minor plumbing repair"},
-        "leak": {"diy": "$20-100", "pro": "$200-500", "description": "Pipe leak repair"},
-        "electrical": {"diy": "$30-100", "pro": "$150-300", "description": "Outlet/switch replacement"},
-        "drywall": {"diy": "$20-50", "pro": "$200-400", "description": "Drywall patch and repair"},
-        "painting": {"diy": "$50-200", "pro": "$300-800", "description": "Room painting"},
-        
-        # Appliance repairs
-        "appliance": {"diy": "$50-200", "pro": "$200-500", "description": "Appliance repair"},
-        "refrigerator": {"diy": "$100-300", "pro": "$300-600", "description": "Refrigerator repair"},
-        "washer": {"diy": "$50-150", "pro": "$200-400", "description": "Washing machine repair"},
-        "dryer": {"diy": "$50-150", "pro": "$200-400", "description": "Dryer repair"},
-        
-        # HVAC
-        "hvac": {"diy": "$100-300", "pro": "$300-800", "description": "HVAC maintenance/repair"},
-        "furnace": {"diy": "$100-400", "pro": "$400-1000", "description": "Furnace repair"},
-        "air conditioning": {"diy": "$100-300", "pro": "$300-800", "description": "AC repair"},
-    }
-    
-    # Find matching category
-    matched_category = None
-    for category, costs in cost_categories.items():
-        if category in query_lower:
-            matched_category = costs
-            break
-    
-    if matched_category:
-        diy_cost = matched_category["diy"]
-        pro_cost = matched_category["pro"]
-        description = matched_category["description"]
-        
-        response_data = {
-            "costEstimates": {
-                "repair_type": description.title(),
-                "DIY": {
-                    "cost_range": diy_cost,
-                    "includes": ["Material/product costs", "Basic tools (if needed)", "Time investment required"],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective"
-                },
-                "Service": {
-                    "cost_range": pro_cost,
-                    "includes": ["Labor costs", "Professional expertise", "Warranty/guarantee included"],
-                    "benefits": "Expertise and warranty",
-                    "complexity": "Complex or safety-critical repairs recommended"
-                },
-                "comparison": {
-                    "diy_savings": "60-80% on labor costs",
-                    "professional_benefits": "Expertise and warranty",
-                    "considerations": "Complexity and skill level"
-                },
-                "recommendation": {
-                    "simple_repairs": "DIY may be cost-effective",
-                    "complex_repairs": "Professional service recommended",
-                    "note": "Estimates may vary by location and specific circumstances"
-                }
-            }
-        }
-    else:
-        response_data = {
-            "costEstimates": {
-                "repair_type": query,
-                "DIY": {
-                    "cost_range": "$50-300",
-                    "includes": ["Material/product costs vary by repair type", "Basic tools may be required", "Time investment needed"],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective"
-                },
-                "Service": {
-                    "cost_range": "$200-800",
-                    "includes": ["Labor costs depend on complexity", "Professional expertise included", "Warranty/guarantee typically provided"],
-                    "benefits": "Expertise and warranty",
-                    "complexity": "Complex or safety-critical repairs recommended"
-                },
-                "comparison": {
-                    "diy_savings": "60-80% on labor costs",
-                    "professional_benefits": "Expertise and warranty",
-                    "considerations": "Repair complexity and safety factors"
-                },
-                "recommendation": {
-                    "simple_repairs": "DIY may be cost-effective",
-                    "complex_repairs": "Professional service recommended",
-                    "note": "Estimates are rough and may vary significantly by location and specific circumstances. For accurate estimates, consult local professionals or get multiple quotes."
-                }
-            }
-        }
-    
-    return json.dumps(response_data)
-
-
-def cost_estimation_diy(query: str) -> str:
-    """Provides DIY-only cost estimate for the given repair query.
-
-    Returns a JSON string with a single `diyCostEstimates` object that includes
-    repair type and DIY cost guidance. This is designed for inclusion in the
-    DIY agent output without professional service details.
-    """
-    try:
-        full = cost_estimation(query)
-        parsed = json.loads(full)
-        ce = parsed.get("costEstimates", {}) if isinstance(parsed, dict) else {}
-        diy = ce.get("DIY") if isinstance(ce, dict) else None
-        repair_type = ce.get("repair_type") if isinstance(ce, dict) else query
-        result = {
-            "diyCostEstimates": {
-                "repair_type": repair_type,
-                "DIY": diy or {
-                    "cost_range": "$50-300",
-                    "includes": [
-                        "Material/product costs vary by repair type",
-                        "Basic tools may be required",
-                        "Time investment needed"
-                    ],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective"
-                }
-            }
-        }
-        return json.dumps(result)
-    except Exception:
-        fallback = {
-            "diyCostEstimates": {
-                "repair_type": query,
-                "DIY": {
-                    "cost_range": "$50-300",
-                    "includes": [
-                        "Material/product costs vary by repair type",
-                        "Basic tools may be required",
-                        "Time investment needed"
-                    ],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective"
-                }
-            }
-        }
-        return json.dumps(fallback)
+## cost estimation moved to cost_agent; imported above
 
 def product_recommendations_diy(query: str) -> str:
     """Provides product recommendations for DIY repairs only."""
@@ -356,7 +210,6 @@ diy_agent = Agent(
     tools=[
         AgentTool(agent=google_search_agent),
         LangchainTool(tool=youtube_search, name="youtube_search", description="Searches YouTube for DIY tutorials."),
-        cost_estimation_diy,
         product_recommendations_diy,
     ],
     input_schema=DocsInput
@@ -368,7 +221,6 @@ service_agent = Agent(
     description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),
     tools=[
-        cost_estimation,
         LangchainTool(tool=serpapi_search, name="serpapi_search", description="Searches for local business listings and service providers."),
         yelpapi_search
     ],
@@ -385,7 +237,8 @@ analysis_agent = Agent(
         AgentTool(triage_agent),
         AgentTool(coverage_agent),
         AgentTool(diy_agent),
-        AgentTool(service_agent)
+        AgentTool(service_agent),
+        AgentTool(cost_agent)
     ],
     input_schema=DiagnosisInput,
     disallow_transfer_to_parent=True,

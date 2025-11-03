@@ -222,6 +222,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
     const diy = analysis?.diyResults || (data as any)?.diyResults;
     const service = analysis?.serviceResults || (data as any)?.serviceResults;
+    const cost = analysis?.costEstimationResults || (data as any)?.costEstimationResults;
 
     // Normalize and validate provider objects coming from various agents/APIs
     const normalizeProvider = (p: any): ServiceProvider | null => {
@@ -295,7 +296,11 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     ];
     
     // Filter providers to show only those with meaningful data
-    const allProviders = allProvidersRaw.filter(providerHasValidData).map(normalizeProvider).filter(Boolean) as ServiceProvider[];
+    const allProviders = (allProvidersRaw
+        .filter(providerHasValidData)
+        .map(normalizeProvider)
+        .filter(Boolean) as ServiceProvider[])
+        .slice(0, 10);
 
     const hasTriage = !!(triage?.diagnosis && typeof triage.diagnosis === 'string' && triage.diagnosis.trim() !== '');
     const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
@@ -305,50 +310,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
-    
-    // Cost Estimates support (handles many likely keys and nested JSON)
-    const findServiceCostEstimates = (): any => {
-        if (!service || typeof service !== 'object') return null;
-        const candidates = ['costEstimates','cost_estimates','estimates','estimate','costs','pricing','prices','priceEstimates','price_estimates'];
-        for (const key of candidates) {
-            const val = (service as any)[key];
-            if (val !== undefined && val !== null && !(typeof val === 'string' && String(val).trim() === '')) return val;
-        }
-        for (const [, v] of Object.entries(service)) {
-            if (!v || typeof v !== 'object') continue;
-            for (const key of candidates) {
-                const nested = (v as any)[key];
-                if (nested !== undefined && nested !== null && !(typeof nested === 'string' && String(nested).trim() === '')) return nested;
-            }
-        }
-        return null;
-    };
-
-    const serviceCostEstimatesRaw = findServiceCostEstimates();
-    const serviceCostEstimatesText = (() => {
-        if (!serviceCostEstimatesRaw) return null;
-        if (typeof serviceCostEstimatesRaw === 'string') {
-            const trimmed = serviceCostEstimatesRaw.trim();
-            return trimmed !== '' ? trimmed : null;
-        }
-        if (typeof serviceCostEstimatesRaw === 'object') {
-            return JSON.stringify(serviceCostEstimatesRaw, null, 2);
-        }
-        return null;
-    })();
-
-    const hasCostEstimates = !!serviceCostEstimatesText;
     const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
-    const hasService = !!(service && hasProviders); // Service section now only depends on providers
+    const hasService = !!(service && hasProviders); // Service section depends on providers
+    const hasCostEstimates = !!(cost && cost.costEstimates);
     
     // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
         console.log('Service Recommendations Debug:', {
             serviceExists: !!service,
-            hasCostEstimates,
-            costEstimatesType: serviceCostEstimatesRaw ? typeof serviceCostEstimatesRaw : 'null',
-            costEstimatesValue: serviceCostEstimatesRaw ? (typeof serviceCostEstimatesRaw === 'string' ? String(serviceCostEstimatesRaw).substring(0, 200) : JSON.stringify(serviceCostEstimatesRaw).substring(0, 200)) : 'null',
-            costEstimatesText: serviceCostEstimatesText ? serviceCostEstimatesText.substring(0, 100) : 'null',
             rawProvidersCount: allProvidersRaw.length,
             filteredProvidersCount: allProviders.length,
             hasProviders: hasProviders,
@@ -474,131 +443,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         );
     };
 
-    // Parse cost estimates data
-    const parseCostEstimates = () => {
-        if (!hasCostEstimates || !service) return { parsed: null, details: null, isValid: false, costEstimatesInDetails: null };
-        let raw = serviceCostEstimatesRaw as any;
-        let parsed: any = null;
-        if (typeof raw === 'string') {
-            let s = raw.trim();
-            const fenceMatch = s.match(/```(?:json)?\s*\n([\s\S]*?)```/);
-            if (fenceMatch && fenceMatch[1]) s = fenceMatch[1].trim();
-            if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
-                try { parsed = JSON.parse(s); } catch {}
-            }
-        } else if (typeof raw === 'object') {
-            parsed = raw;
-        }
-
-        if (!parsed) {
-            return { parsed: null, details: null, isValid: false, costEstimatesInDetails: null };
-        }
-
-        // Build dropdown accordion UI
-        const details: Record<string, any> = { ...(parsed || {}) };
-        delete details['summary'];
-        delete details['overview'];
-        delete details['steps'];
-        delete details['procedure'];
-        delete details['materials'];
-        delete details['parts'];
-        delete details['notes'];
-        delete details['recommendations'];
-        delete details['timeline'];
-        delete details['breakdown'];
-        delete details['items'];
-        delete details['estimates'];
-        delete details['line_items'];
-        delete details['costs'];
-        delete details['pricing'];
-        delete details['prices'];
-        delete details['totals'];
-        delete details['total'];
-        delete details['aggregate'];
-        
-        // Extract costEstimates if it exists in details
-        const costEstimatesInDetails = details['costEstimates'];
-        if (costEstimatesInDetails) {
-            delete details['costEstimates'];
-        }
-
-        const hasAdditionalDetails = Object.keys(details).length > 0;
-        return { parsed, details: hasAdditionalDetails ? details : null, isValid: true, costEstimatesInDetails };
-    };
-
-    const { parsed: costEstimatesParsed, details: costEstimatesAdditionalDetails, isValid: costEstimatesIsValid, costEstimatesInDetails } = parseCostEstimates();
-
-    const renderCostEstimatesSection = () => {
-        if (!costEstimatesIsValid || !costEstimatesParsed) {
-            return (
-                <div className="space-y-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{serviceCostEstimatesText!}</ReactMarkdown>
-                </div>
-            );
-        }
-
-        const summary: string | null = typeof costEstimatesParsed.summary === 'string' ? costEstimatesParsed.summary : (typeof costEstimatesParsed.overview === 'string' ? costEstimatesParsed.overview : null);
-        const steps: any[] = Array.isArray(costEstimatesParsed.steps) ? costEstimatesParsed.steps : Array.isArray(costEstimatesParsed.procedure) ? costEstimatesParsed.procedure : [];
-        const materials: any[] = Array.isArray(costEstimatesParsed.materials) ? costEstimatesParsed.materials : Array.isArray(costEstimatesParsed.parts) ? costEstimatesParsed.parts : [];
-        const notes: string | null = typeof costEstimatesParsed.notes === 'string' ? costEstimatesParsed.notes : (typeof costEstimatesParsed.recommendations === 'string' ? costEstimatesParsed.recommendations : null);
-        const timeline: string | null = typeof costEstimatesParsed.timeline === 'string' ? costEstimatesParsed.timeline : null;
-        const breakdownSource: any = costEstimatesParsed.breakdown || costEstimatesParsed.items || costEstimatesParsed.estimates || costEstimatesParsed.line_items || costEstimatesParsed.costs || costEstimatesParsed.pricing || costEstimatesParsed.prices;
-        const breakdown: any[] = Array.isArray(breakdownSource) ? breakdownSource : [];
-        const totals = costEstimatesParsed.totals || costEstimatesParsed.total || costEstimatesParsed.aggregate || null;
-
-        return (
-            <div className="space-y-2">
-                {summary && (<p className="text-sm">{summary}</p>)}
-                <Accordion type="multiple" className="space-y-2">
-                    {totals && (
-                        <AccordionItem value="totals" className="border rounded-lg">
-                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Totals</span></AccordionTrigger>
-                            <AccordionContent className="pt-0 pb-3 px-3">
-                                <ul className="list-disc pl-5 text-sm">
-                                    {typeof totals === 'object' ? (
-                                        <>
-                                            {totals.parts && <li>Parts: {toCurrency(totals.parts)}</li>}
-                                            {totals.labor && <li>Labor: {toCurrency(totals.labor)}</li>}
-                                            {totals.total && <li>Total: {toCurrency(totals.total)}</li>}
-                                        </>
-                                    ) : (
-                                        <li>Total: {toCurrency(totals)}</li>
-                                    )}
-                                </ul>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )}
-                    {breakdown.length > 0 && renderRecursiveDetails('Breakdown', breakdown, 'breakdown')}
-                    {steps.length > 0 && (
-                        <AccordionItem value="steps" className="border rounded-lg">
-                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Service Steps</span></AccordionTrigger>
-                            <AccordionContent className="pt-0 pb-3 px-3">
-                                <ol className="list-decimal pl-5 space-y-1 text-sm">
-                                    {steps.map((s: any, idx: number) => (
-                                        <li key={idx}>{typeof s === 'string' ? s : (s.description || s.step || JSON.stringify(s))}</li>
-                                    ))}
-                                </ol>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )}
-                    {materials.length > 0 && (
-                        <AccordionItem value="materials" className="border rounded-lg">
-                            <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">Parts/Materials</span></AccordionTrigger>
-                            <AccordionContent className="pt-0 pb-3 px-3">
-                                <ul className="list-disc pl-5 text-sm">
-                                    {materials.map((m: any, idx: number) => (
-                                        <li key={idx}>{typeof m === 'string' ? m : (m.name || m.part || JSON.stringify(m))}</li>
-                                    ))}
-                                </ul>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )}
-                    {timeline && renderRecursiveDetails('Timeline', timeline, 'timeline')}
-                    {notes && renderRecursiveDetails('Notes', notes, 'notes')}
-                </Accordion>
-            </div>
-        );
-    };
+    // Cost estimates removed from analysis output; related parsing/rendering omitted
 
     return (
         <Accordion type="multiple" className="w-full space-y-2">
@@ -656,7 +501,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
                             </div>
                         )}
-                        {/* DIY cost estimate now displayed above if present */}
+                        {/* DIY cost estimates removed */}
                         
                         {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
                             <div className="space-y-2">
@@ -758,24 +603,52 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                 </AccordionItem>
             )}
             
-            {costEstimatesInDetails && (
-                <AccordionItem value="costEstimatesFromDetails" className="border rounded-lg">
+            {hasCostEstimates && (
+                <AccordionItem value="cost-estimates" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 text-left">
                             <DollarSign className="h-5 w-5 text-purple-600" />
                             <span className="font-semibold">Cost Estimates</span>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
-                        <Accordion type="multiple" className="space-y-2">
-                            {renderRecursiveDetails('Details', costEstimatesInDetails, 'cost-estimates-from-details')}
-                        </Accordion>
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-3">
+                        {typeof cost.costEstimates === 'string' ? (
+                            <p className="text-sm whitespace-pre-wrap break-words">{cost.costEstimates}</p>
+                        ) : (
+                            <div className="text-sm space-y-2">
+                                {cost.costEstimates.repair_type && (
+                                    <p className="text-muted-foreground">{String(cost.costEstimates.repair_type)}</p>
+                                )}
+                                {cost.costEstimates.DIY?.cost_range && (
+                                    <p><span className="font-medium">DIY Range:</span> {String(cost.costEstimates.DIY.cost_range)}</p>
+                                )}
+                                {cost.costEstimates.Service?.cost_range && (
+                                    <p><span className="font-medium">Pro Range:</span> {String(cost.costEstimates.Service.cost_range)}</p>
+                                )}
+                                {Array.isArray(cost.costEstimates.DIY?.includes) && cost.costEstimates.DIY.includes.length > 0 && (
+                                    <div>
+                                        <p className="font-medium">DIY Includes:</p>
+                                        <ul className="list-disc pl-5">
+                                            {cost.costEstimates.DIY.includes.map((it: any, i: number) => (
+                                                <li key={i}>{String(it)}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {Array.isArray(cost.costEstimates.Service?.includes) && cost.costEstimates.Service.includes.length > 0 && (
+                                    <div>
+                                        <p className="font-medium">Pro Includes:</p>
+                                        <ul className="list-disc pl-5">
+                                            {cost.costEstimates.Service.includes.map((it: any, i: number) => (
+                                                <li key={i}>{String(it)}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
-            )}
-            
-            {costEstimatesAdditionalDetails && (
-                renderRecursiveDetails('Additional Details', costEstimatesAdditionalDetails, 'cost-estimates-additional-details')
             )}
         </Accordion>
     );

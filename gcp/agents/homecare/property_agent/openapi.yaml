@@ -108,10 +108,6 @@ components:
               type: object
               additionalProperties: false
               properties:
-                costEstimates:
-                  oneOf:
-                    - type: string
-                    - $ref: '#/components/schemas/CostEstimationResults'
                 localPros:
                   type: object
                   additionalProperties: false
@@ -124,6 +120,51 @@ components:
                       type: array
                       items:
                         type: object
+            costEstimationResults:
+              type: object
+              additionalProperties: false
+              properties:
+                costEstimates:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    repair_type:
+                      type: string
+                    DIY:
+                      type: object
+                      properties:
+                        cost_range:
+                          type: string
+                        includes:
+                          type: array
+                          items:
+                            type: string
+                        savings:
+                          type: string
+                        complexity:
+                          type: string
+                    Service:
+                      type: object
+                      properties:
+                        cost_range:
+                          type: string
+                        includes:
+                          type: array
+                          items:
+                            type: string
+                        benefits:
+                          type: string
+                        complexity:
+                          type: string
+                    comparison:
+                      type: object
+                      properties:
+                        diy_savings:
+                          type: string
+                        professional_benefits:
+                          type: string
+                        considerations:
+                          type: string
       description: Aggregated response with nested analysis results.
 
     ResearchResults:
@@ -181,28 +222,7 @@ components:
                 type: string
                 format: uri
 
-    CostEstimationResults:
-      type: object
-      additionalProperties: false
-      properties:
-        costEstimates:
-          type: object
-          additionalProperties: false
-          properties:
-            diy:
-              type: object
-              properties:
-                estimatedCost:
-                  type: number
-                notes:
-                  type: string
-            professional:
-              type: object
-              properties:
-                estimatedCost:
-                  type: number
-                notes:
-                  type: string
+    
 
     RetrievalResponse:
       type: object
@@ -251,7 +271,6 @@ components:
                   description: "Universal Faucet Cartridge"
                   price: "24.99"
           serviceResults:
-            costEstimates: "DIY: ~$35, Pro: ~$180"
             localPros:
               serpAPIResults:
                 - name: "Springfield Plumbing Co"
@@ -261,6 +280,23 @@ components:
                 - name: "Main St Plumbers"
                   rating: "4.3"
                   phone: "+1-555-987-6543"
+          costEstimationResults:
+            costEstimates:
+              repair_type: "Pipe Leak Repair"
+              DIY:
+                cost_range: "$20-100"
+                includes: ["Materials", "Tools", "Time"]
+                savings: "~60-80% on labor"
+                complexity: "Simple repairs may be cost-effective"
+              Service:
+                cost_range: "$200-500"
+                includes: ["Labor", "Expertise", "Warranty"]
+                benefits: "Expertise and warranty"
+                complexity: "Complex or safety-critical repairs recommended"
+              comparison:
+                diy_savings: "~60-80% on labor"
+                professional_benefits: "Expertise and warranty"
+                considerations: "Repair complexity and safety factors"
 
     ExampleRetrievalResponse:
       summary: Retrieval result from user documents
