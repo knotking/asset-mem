@@ -117,6 +117,12 @@ function DetailsTab({ property }: { property: any }) {
   const [successMessage, setSuccessMessage] = React.useState('');
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const [addressDialogOpen, setAddressDialogOpen] = React.useState(false);
+  const [addressDialogData, setAddressDialogData] = React.useState<{
+    newAddress: string;
+    currentAddress: string;
+    propertyRef: any;
+  } | null>(null);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = React.useState(false);
@@ -239,6 +245,36 @@ function DetailsTab({ property }: { property: any }) {
               summary: completedDoc.summary || 'No summary available',
             });
 
+            // If document has a valid address, consider updating property address
+            if (
+              completedDoc.propertyAddress &&
+              completedDoc.propertyAddress !== 'N/A' &&
+              completedDoc.propertyAddress !== 'Processing...'
+            ) {
+              const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
+              const propertyDoc = await getDoc(propertyRef);
+              const propertyData = propertyDoc.data();
+              const currentAddress = propertyData?.address;
+
+              // Auto-update if current address is "Processing..." (no confirmation needed)
+              if (currentAddress === 'Processing...') {
+                await updateDoc(propertyRef, {
+                  address: completedDoc.propertyAddress,
+                  name: completedDoc.propertyAddress,
+                });
+                console.log('Auto-updated property address to:', completedDoc.propertyAddress);
+              }
+              // Otherwise, ask for user confirmation
+              else if (currentAddress && currentAddress !== completedDoc.propertyAddress) {
+                setAddressDialogData({
+                  newAddress: completedDoc.propertyAddress,
+                  currentAddress: currentAddress,
+                  propertyRef: propertyRef,
+                });
+                setAddressDialogOpen(true);
+              }
+            }
+
             // Remove from uploading list after brief delay to show completion state
             // The document will appear in the permanent list via Firestore listener
             setTimeout(() => {
@@ -259,6 +295,23 @@ function DetailsTab({ property }: { property: any }) {
   const handleDeleteDocument = (document: Document) => {
     setDocumentToDelete(document);
     setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmAddressUpdate = async () => {
+    if (!addressDialogData) return;
+
+    try {
+      await updateDoc(addressDialogData.propertyRef, {
+        address: addressDialogData.newAddress,
+        name: addressDialogData.newAddress,
+      });
+      console.log('User confirmed: Updated property address to:', addressDialogData.newAddress);
+    } catch (error) {
+      console.error('Error updating property address:', error);
+    }
+
+    setAddressDialogOpen(false);
+    setAddressDialogData(null);
   };
 
   const confirmDeleteDocument = async () => {
@@ -439,13 +492,6 @@ function DetailsTab({ property }: { property: any }) {
                       </View>
                     )}
 
-                    {doc.status === 'complete' && (
-                      <View className="mt-2 flex-row items-center gap-1">
-                        <Icon as={CheckCircle} size={14} className="text-green-500" />
-                        <Text className="text-xs text-green-500">Complete</Text>
-                      </View>
-                    )}
-
                     {doc.status === 'failed' && (
                       <View className="mt-2 flex-row items-center gap-1">
                         <Icon as={AlertCircle} size={14} className="text-red-500" />
@@ -454,14 +500,33 @@ function DetailsTab({ property }: { property: any }) {
                     )}
                   </View>
 
-                  <Button
-                    onPress={() => removeUploadingDoc(doc.id)}
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2">
-                    <Icon as={X} size={18} className="text-muted-foreground" />
-                  </Button>
+                  {/* Only show X button if not complete */}
+                  {doc.status !== 'complete' && (
+                    <Button
+                      onPress={() => removeUploadingDoc(doc.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2">
+                      <Icon as={X} size={18} className="text-muted-foreground" />
+                    </Button>
+                  )}
                 </View>
+
+                {/* Show key entities when complete */}
+                {doc.status === 'complete' && doc.keyEntities && doc.keyEntities.length > 0 && (
+                  <View className="mt-3 space-y-2 border-t border-border pt-3">
+                    {doc.keyEntities.map((entity, index) => (
+                      <View key={index} className="flex-row justify-between gap-2">
+                        <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                        <Text
+                          className="flex-1 text-right font-semibold text-foreground"
+                          numberOfLines={2}>
+                          {entity.value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ))}
 
@@ -473,14 +538,21 @@ function DetailsTab({ property }: { property: any }) {
                 return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
               })
               .map((doc) => (
-                <View key={doc.id} className="mb-2 rounded-lg bg-secondary p-3">
-                  <View className="mb-3 flex-row items-start">
-                    <View className="rounded-md bg-red-100 p-2">
-                      <Icon as={FileText} size={20} className="text-red-500" />
+                <View key={doc.id} className="mb-2 rounded-lg border border-border bg-background p-3">
+                  <View className="flex-row items-start justify-between">
+                    <View className="flex-1">
+                      <Text className="font-medium text-foreground" numberOfLines={1}>
+                        {doc.name}
+                      </Text>
+                      <Text className="mt-1 text-xs text-muted-foreground">
+                        {doc.documentType && `${doc.documentType} • `}
+                        {doc.createdAt &&
+                          new Date(
+                            doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
+                          ).toLocaleDateString()}
+                      </Text>
                     </View>
-                    <View className="ml-2 flex-1">
-                      <Text className="font-semibold text-foreground">{doc.name}</Text>
-                    </View>
+
                     <Button
                       onPress={() => handleDeleteDocument(doc)}
                       variant="ghost"
@@ -489,18 +561,22 @@ function DetailsTab({ property }: { property: any }) {
                       <Icon as={Trash2} size={18} className="text-red-500" />
                     </Button>
                   </View>
-                  <View className="space-y-2 border-t border-gray-100 pt-3">
-                    {doc.keyEntities?.map((entity, index) => (
-                      <View key={index} className="flex-row justify-between gap-2">
-                        <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
-                        <Text
-                          className="flex-1 text-right font-semibold text-foreground"
-                          numberOfLines={2}>
-                          {entity.value}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+
+                  {/* Show key entities */}
+                  {doc.keyEntities && doc.keyEntities.length > 0 && (
+                    <View className="mt-3 space-y-2 border-t border-border pt-3">
+                      {doc.keyEntities.map((entity, index) => (
+                        <View key={index} className="flex-row justify-between gap-2">
+                          <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                          <Text
+                            className="flex-1 text-right font-semibold text-foreground"
+                            numberOfLines={2}>
+                            {entity.value}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               ))}
           </View>
@@ -557,6 +633,39 @@ function DetailsTab({ property }: { property: any }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Address Update Confirmation Dialog */}
+      <AlertDialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update Property Address?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {addressDialogData && (
+                <View>
+                  <Text className="mb-1 text-sm text-muted-foreground">
+                    A new address was detected:
+                  </Text>
+                  <Text className="mb-4 text-sm text-foreground">
+                    "{addressDialogData.newAddress}"
+                  </Text>
+                  <Text className="mb-1 text-sm text-muted-foreground">Current address:</Text>
+                  <Text className="text-sm text-foreground">
+                    "{addressDialogData.currentAddress}"
+                  </Text>
+                </View>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onPress={() => setAddressDialogOpen(false)}>
+              <Text>Keep Current</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction onPress={handleConfirmAddressUpdate}>
+              <Text>Update</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </View>
   );
 }
@@ -578,14 +687,19 @@ function ChatTab({ sessionId }: { sessionId: string | null }) {
 }
 
 export default function PropertyDetailsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, new: isNew, files } = useLocalSearchParams<{ id: string; new?: string; files?: string }>();
   const { properties } = usePropertiesList();
   const { draftsByProperty } = useSession();
   const { documents } = useProperty();
   const { user } = useAuth();
   const { db, storage } = useFirebase();
+  const { uploadDocuments } = useDocumentUpload();
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>('chat');
+  // If new property, show Details tab by default to see upload progress
+  // Otherwise show Chat tab for existing properties
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>(
+    isNew === 'true' ? 'details' : 'chat'
+  );
   const [message, setMessage] = React.useState('');
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
@@ -593,6 +707,89 @@ export default function PropertyDetailsScreen() {
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
   const [isSending, setIsSending] = React.useState(false);
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
+
+  // Handle automatic upload of files when navigating from AddPropertyModal
+  React.useEffect(() => {
+    if (!user || !id || !files) return;
+
+    const startUpload = async () => {
+      try {
+        const parsedFiles = JSON.parse(files);
+        if (!parsedFiles || parsedFiles.length === 0) return;
+
+        console.log('Starting upload for', parsedFiles.length, 'files');
+
+        // Start uploading using the common hook (same logic as in DetailsTab)
+        await uploadDocuments(parsedFiles, {
+          userId: user.uid,
+          storage,
+          onAnalyze: async (doc, gsURI) => {
+            // Run AI analysis and RAG upload in parallel
+            const [analysisResult] = await Promise.allSettled([
+              extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType }),
+              postFileToAgent(gsURI, user.uid),
+            ]);
+
+            if (analysisResult.status === 'fulfilled') {
+              return analysisResult.value;
+            } else {
+              console.warn('Analysis failed (non-blocking):', analysisResult.reason);
+              return { summary: 'Analysis failed' };
+            }
+          },
+          onComplete: async (completedDoc) => {
+            try {
+              // Save to Firestore
+              await addDoc(collection(db, 'users', user.uid, 'docs'), {
+                userId: user.uid,
+                propertyId: id,
+                name: completedDoc.name,
+                url: completedDoc.downloadURL,
+                storagePath: completedDoc.storagePath,
+                createdAt: serverTimestamp(),
+                gsURI: completedDoc.gsURI,
+                contentType: completedDoc.mimeType,
+                status: 'complete',
+                documentType: completedDoc.documentType || 'OTHER',
+                propertyAddress: completedDoc.propertyAddress || 'N/A',
+                keyEntities: completedDoc.keyEntities || [],
+                summary: completedDoc.summary || 'No summary available',
+              });
+
+              console.log('Document saved to Firestore:', completedDoc.name);
+
+              // If document has a valid address, auto-update property address
+              if (
+                completedDoc.propertyAddress &&
+                completedDoc.propertyAddress !== 'N/A' &&
+                completedDoc.propertyAddress !== 'Processing...'
+              ) {
+                const propertyRef = doc(db, 'users', user.uid, 'properties', id);
+                const propertyDoc = await getDoc(propertyRef);
+                const propertyData = propertyDoc.data();
+                const currentAddress = propertyData?.address;
+
+                // Auto-update if current address is "Processing..."
+                if (currentAddress === 'Processing...') {
+                  await updateDoc(propertyRef, {
+                    address: completedDoc.propertyAddress,
+                    name: completedDoc.propertyAddress,
+                  });
+                  console.log('Auto-updated property address to:', completedDoc.propertyAddress);
+                }
+              }
+            } catch (error) {
+              console.error('Error saving document to Firestore:', error);
+            }
+          },
+        });
+      } catch (error) {
+        console.error('Error parsing or uploading files:', error);
+      }
+    };
+
+    startUpload();
+  }, [user, id, files, storage, db, uploadDocuments]);
 
   // Auto-select draft session when property loads
   React.useEffect(() => {

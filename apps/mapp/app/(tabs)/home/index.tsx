@@ -13,10 +13,24 @@ export default function Screen() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = React.useState(false);
 
-  const handleAddPropertySuccess = (propertyId: string) => {
+  const handleAddPropertySuccess = (propertyId: string, selectedFiles: any[]) => {
     setModalVisible(false);
-    // Navigate to the newly created property
-    router.push(`/home/property-details?id=${propertyId}`);
+    // Navigate to the newly created property with new=true to show Details tab
+    // Pass selected files via router params (they will be handled by property-details)
+    router.push({
+      pathname: '/home/property-details',
+      params: {
+        id: propertyId,
+        new: 'true',
+        // Pass files as JSON string in params
+        files: JSON.stringify(selectedFiles.map((file) => ({
+          uri: file.uri,
+          name: file.name,
+          mimeType: file.mimeType,
+          size: file.size,
+        }))),
+      },
+    });
   };
 
   if (loading) {
