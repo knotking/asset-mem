@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Image, Linking, Alert } from 'react-native';
+import { View, Image, Linking } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   User,
   Bot,
@@ -23,6 +24,7 @@ import {
   Star,
   CheckCircle,
   Copy,
+  AlertCircle,
 } from 'lucide-react-native';
 import type {
   Message,
@@ -775,14 +777,19 @@ const DocumentsList = ({ documents }: { documents: NonNullable<Message['document
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
+  const [copyStatus, setCopyStatus] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleCopyMessage = async () => {
     try {
       const whatsappFormattedText = markdownToWhatsapp(message.content);
       await Clipboard.setStringAsync(whatsappFormattedText);
-      Alert.alert('Copied!', 'Message copied to clipboard');
+      setCopyStatus({ type: 'success', message: 'Message copied to clipboard' });
+      // Auto-dismiss after 2 seconds
+      setTimeout(() => setCopyStatus(null), 2000);
     } catch (error) {
-      Alert.alert('Error', 'Failed to copy message');
+      setCopyStatus({ type: 'error', message: 'Failed to copy message' });
+      // Auto-dismiss after 2 seconds
+      setTimeout(() => setCopyStatus(null), 2000);
     }
   };
 
@@ -810,14 +817,26 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             <MessageContent content={message.content} isUser={isUser} />
           )}
           {!isUser && message.content && !isLoading && (
-            <Button
-              onPress={handleCopyMessage}
-              variant="ghost"
-              size="sm"
-              className="mt-2 self-end">
-              <Icon as={Copy} size={14} className="text-muted-foreground" />
-              <Text className="text-xs">Copy</Text>
-            </Button>
+            <>
+              <Button
+                onPress={handleCopyMessage}
+                variant="ghost"
+                size="sm"
+                className="mt-2 self-end">
+                <Icon as={Copy} size={14} className="text-muted-foreground" />
+                <Text className="text-xs">Copy</Text>
+              </Button>
+              {copyStatus && (
+                <View className="mt-2">
+                  <Alert
+                    icon={copyStatus.type === 'success' ? CheckCircle : AlertCircle}
+                    variant={copyStatus.type === 'error' ? 'destructive' : 'default'}
+                    className="py-2">
+                    <AlertDescription className="text-xs">{copyStatus.message}</AlertDescription>
+                  </Alert>
+                </View>
+              )}
+            </>
           )}
         </View>
         {message.createdAt && (

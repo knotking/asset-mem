@@ -1,5 +1,5 @@
 import React, { useReducer } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { auth, firebaseConfig } from '@homeapp/common/firebase';
 import {
   signInWithEmailAndPassword,
@@ -17,6 +17,8 @@ import { Button } from '../../components/ui/button';
 import { Icon } from '../../components/ui/icon';
 import { Input } from 'components/ui/input';
 import { Text } from '../../components/ui/text';
+import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 const getErrorMessage = (errorCode: string) => {
   const errorMessages: { [key: string]: string } = {
@@ -39,7 +41,7 @@ export default function LoginScreen() {
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const [state, dispatch] = useReducer(
     (
-      prevState: { email: string; password: string; error: string | null },
+      prevState: { email: string; password: string; error: string | null; success: string | null },
       action: { type: string; payload: any }
     ) => {
       switch (action.type) {
@@ -48,12 +50,14 @@ export default function LoginScreen() {
         case 'SET_PASSWORD':
           return { ...prevState, password: action.payload };
         case 'SET_ERROR':
-          return { ...prevState, error: action.payload };
+          return { ...prevState, error: action.payload, success: null };
+        case 'SET_SUCCESS':
+          return { ...prevState, success: action.payload, error: null };
         default:
           return prevState;
       }
     },
-    { email: '', password: '', error: null }
+    { email: '', password: '', error: null, success: null }
   );
 
   const [requestGoogle, responseGoogle, promptAsyncGoogle] = Google.useAuthRequest({
@@ -81,12 +85,12 @@ export default function LoginScreen() {
 
   const handleForgotPassword = async () => {
     if (!state.email) {
-      Alert.alert('Forgot Password', 'Please enter your email address to reset your password.');
+      dispatch({ type: 'SET_ERROR', payload: 'Please enter your email address to reset your password.' });
       return;
     }
     try {
       await sendPasswordResetEmail(auth, state.email);
-      Alert.alert('Forgot Password', 'A password reset email has been sent to your email address.');
+      dispatch({ type: 'SET_SUCCESS', payload: 'A password reset email has been sent to your email address.' });
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
@@ -126,7 +130,22 @@ export default function LoginScreen() {
       <Button variant="link" className="mb-8 self-end" onPress={handleForgotPassword}>
         <Text className="text-blue-600">Forgot Password?</Text>
       </Button>
-      {state.error && <Text className="mb-4 text-red-500">{state.error}</Text>}
+      {state.error && (
+        <View className="mb-4 w-full max-w-sm">
+          <Alert icon={AlertCircle} variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        </View>
+      )}
+      {state.success && (
+        <View className="mb-4 w-full max-w-sm">
+          <Alert icon={CheckCircle} variant="default">
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{state.success}</AlertDescription>
+          </Alert>
+        </View>
+      )}
       <Button
         onPress={handleSignIn}
         className="h-12 w-full bg-black text-white hover:bg-gray-800 active:bg-gray-900">

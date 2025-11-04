@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +22,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Home, FileText, Briefcase, CheckCircle, Trash2, MoreVertical } from 'lucide-react-native';
+import {
+  Home,
+  FileText,
+  Briefcase,
+  CheckCircle,
+  Trash2,
+  MoreVertical,
+  AlertCircle,
+  X,
+} from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -57,6 +68,7 @@ export default function PropertyCard({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteProgress, setDeleteProgress] = React.useState(0);
   const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const handlePress = () => {
     if (onPress) {
@@ -89,7 +101,7 @@ export default function PropertyCard({
 
   const handleDelete = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to delete a property.');
+      setErrorMessage('You must be logged in to delete a property.');
       return;
     }
 
@@ -150,8 +162,8 @@ export default function PropertyCard({
       setSuccessDialogOpen(true);
     } catch (error) {
       console.error('Error deleting property:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      Alert.alert('Error', `Failed to delete property: ${errorMessage}`);
+      const errMsg = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setErrorMessage(`Failed to delete property: ${errMsg}`);
       setIsDeleting(false);
       setDeleteProgress(0);
     }
@@ -159,80 +171,101 @@ export default function PropertyCard({
 
   return (
     <>
-      <View className="relative mb-4">
-        <Pressable
-          onPress={handlePress}
-          disabled={isDeleting}
-          className="rounded-lg bg-background p-4 shadow-sm">
-          <View className="mb-4 flex-row items-center gap-2">
-            <View
-              className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
-              style={{ borderRadius: 9999 }}>
-              <Icon as={Home} size={24} className="text-secondary-foreground" />
-            </View>
-            <View className="flex-1">
-              <Text
-                className="text-base font-semibold text-foreground"
-                numberOfLines={1}
-                ellipsizeMode="tail">
-                {name}
-              </Text>
-              <Text className="text-sm text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
-                {address}
-              </Text>
-            </View>
+      {errorMessage && (
+        <View className="relative mb-4">
+          <Alert icon={AlertCircle} variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-6 w-6"
+            onPress={() => setErrorMessage(null)}>
+            <Icon as={X} size={16} className="text-destructive" />
+          </Button>
+        </View>
+      )}
 
-            {/* Menu Button */}
-            {!isDeleting && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="ml-2">
-                    <Icon as={MoreVertical} size={20} className="text-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onPress={handleDeletePress} variant="destructive">
-                    <Icon as={Trash2} size={16} className="text-destructive" />
-                    <Text>Delete Property</Text>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </View>
-          <View className="flex-row justify-around border-t border-border pt-4">
-            <View className="items-center">
-              <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-blue-100">
-                <Icon as={FileText} size={24} className="text-blue-500" />
+      <Pressable
+        onPress={handlePress}
+        disabled={isDeleting}
+        className="relative mb-4">
+        <Card>
+          <CardHeader>
+            <View className="flex-row items-center gap-2">
+              <View
+                className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
+                style={{ borderRadius: 9999 }}>
+                <Icon as={Home} size={24} className="text-secondary-foreground" />
               </View>
-              <Text className="text-lg font-semibold text-foreground">{docsCount}</Text>
-              <Text className="text-xs text-muted-foreground">Docs</Text>
-            </View>
-            <View className="items-center">
-              <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-green-100">
-                <Icon as={Briefcase} size={24} className="text-green-500" />
+              <View className="flex-1">
+                <Text
+                  className="text-base font-semibold text-foreground"
+                  numberOfLines={1}
+                  ellipsizeMode="tail">
+                  {name}
+                </Text>
+                <Text className="text-sm text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
+                  {address}
+                </Text>
               </View>
-              <Text className="text-lg font-semibold text-foreground">{servicesCount}</Text>
-              <Text className="text-xs text-muted-foreground">Services</Text>
-            </View>
-            <View className="items-center">
-              <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-purple-100">
-                <Icon as={CheckCircle} size={24} className="text-purple-500" />
-              </View>
-              <Text className="text-lg font-semibold text-foreground">{checksCount}</Text>
-              <Text className="text-xs text-muted-foreground">Checks</Text>
-            </View>
-          </View>
-        </Pressable>
 
-        {/* Deletion Overlay */}
-        {isDeleting && (
-          <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90 px-8">
-            <Text className="mb-4 text-sm font-medium text-foreground">Deleting property...</Text>
-            <Progress value={deleteProgress} className="w-full" />
-            <Text className="mt-2 text-xs text-muted-foreground">{deleteProgress}%</Text>
-          </View>
-        )}
-      </View>
+              {/* Menu Button */}
+              {!isDeleting && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="ml-2">
+                      <Icon as={MoreVertical} size={20} className="text-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onPress={handleDeletePress} variant="destructive">
+                      <Icon as={Trash2} size={16} className="text-destructive" />
+                      <Text>Delete Property</Text>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </View>
+          </CardHeader>
+
+          <CardContent>
+            <View className="flex-row justify-around border-t border-border pt-4">
+              <View className="items-center">
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-blue-100">
+                  <Icon as={FileText} size={24} className="text-blue-500" />
+                </View>
+                <Text className="text-lg font-semibold text-foreground">{docsCount}</Text>
+                <Text className="text-xs text-muted-foreground">Docs</Text>
+              </View>
+              <View className="items-center">
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-green-100">
+                  <Icon as={Briefcase} size={24} className="text-green-500" />
+                </View>
+                <Text className="text-lg font-semibold text-foreground">{servicesCount}</Text>
+                <Text className="text-xs text-muted-foreground">Services</Text>
+              </View>
+              <View className="items-center">
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-purple-100">
+                  <Icon as={CheckCircle} size={24} className="text-purple-500" />
+                </View>
+                <Text className="text-lg font-semibold text-foreground">{checksCount}</Text>
+                <Text className="text-xs text-muted-foreground">Checks</Text>
+              </View>
+            </View>
+          </CardContent>
+
+          {/* Deletion Overlay */}
+          {isDeleting && (
+            <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90 px-8">
+              <Text className="mb-4 text-sm font-medium text-foreground">Deleting property...</Text>
+              <Progress value={deleteProgress} className="w-full" />
+              <Text className="mt-2 text-xs text-muted-foreground">{deleteProgress}%</Text>
+            </View>
+          )}
+        </Card>
+      </Pressable>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

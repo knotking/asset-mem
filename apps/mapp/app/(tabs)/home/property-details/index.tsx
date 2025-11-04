@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Modal,
   Image,
-  Alert,
   Animated,
   Easing,
   Pressable,
@@ -150,17 +149,20 @@ function DetailsTab({ property }: { property: any }) {
 
   const handleSaveProperty = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to edit property');
+      setErrorMessage('You must be logged in to edit property');
+      setErrorAlertOpen(true);
       return;
     }
 
     if (!editedName.trim()) {
-      Alert.alert('Error', 'Property name is required');
+      setErrorMessage('Property name is required');
+      setErrorAlertOpen(true);
       return;
     }
 
     if (!editedAddress.trim()) {
-      Alert.alert('Error', 'Property address is required');
+      setErrorMessage('Property address is required');
+      setErrorAlertOpen(true);
       return;
     }
 
@@ -187,7 +189,8 @@ function DetailsTab({ property }: { property: any }) {
 
   const handlePickDocuments = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to upload documents');
+      setErrorMessage('You must be logged in to upload documents');
+      setErrorAlertOpen(true);
       return;
     }
 
@@ -288,7 +291,8 @@ function DetailsTab({ property }: { property: any }) {
       });
     } catch (error) {
       console.error('Error picking documents:', error);
-      Alert.alert('Error', 'Failed to pick documents');
+      setErrorMessage('Failed to pick documents');
+      setErrorAlertOpen(true);
     }
   };
 
@@ -707,6 +711,8 @@ export default function PropertyDetailsScreen() {
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
   const [isSending, setIsSending] = React.useState(false);
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
+  const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
 
   // Handle automatic upload of files when navigating from AddPropertyModal
   React.useEffect(() => {
@@ -812,7 +818,8 @@ export default function PropertyDetailsScreen() {
     // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant permission to access your media library.');
+      setErrorMessage('Please grant permission to access your media library.');
+      setErrorAlertOpen(true);
       return;
     }
 
@@ -917,7 +924,8 @@ export default function PropertyDetailsScreen() {
 
     // Don't allow sending if file is still uploading or has error
     if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
-      Alert.alert('Upload in progress', 'Please wait for the file to finish uploading.');
+      setErrorMessage('Please wait for the file to finish uploading.');
+      setErrorAlertOpen(true);
       return;
     }
 
@@ -1052,11 +1060,10 @@ export default function PropertyDetailsScreen() {
       // Keep documents selected for next message (removed automatic reset)
     } catch (error) {
       console.error('Error sending message:', error);
-      Alert.alert(
-        'Error',
-        `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        [{ text: 'OK' }]
+      setErrorMessage(
+        `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+      setErrorAlertOpen(true);
       // Restore message and file attachment if there was an error
       setMessage(userMessage);
       setFileAttachment(currentFileAttachment);
@@ -1470,6 +1477,21 @@ export default function PropertyDetailsScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Error Alert Dialog */}
+      <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error</AlertDialogTitle>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
+              <Text>OK</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SafeAreaView>
   );
 }
