@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Image, Linking, Alert } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import {
   User,
   Bot,
@@ -117,11 +118,12 @@ const ProductCard = ({ product }: { product: Product }) => {
       </View>
 
       {product.url && (
-        <TouchableOpacity
+        <Button
           onPress={() => Linking.openURL(product.url!)}
-          className="rounded-md border border-border bg-secondary px-3 py-2">
-          <Text className="text-center text-sm font-medium text-foreground">View Product</Text>
-        </TouchableOpacity>
+          variant="outline"
+          className="w-full">
+          <Text>View Product</Text>
+        </Button>
       )}
     </View>
   );
@@ -283,22 +285,24 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
       {(isPrimaryLinkValid || isDirectionsLinkValid) && (
         <View className="flex-row gap-2">
           {isPrimaryLinkValid && primaryLink && (
-            <TouchableOpacity
+            <Button
               onPress={() => Linking.openURL(primaryLink)}
-              className="flex-1 rounded-md border border-border bg-secondary px-3 py-2">
-              <Text className="text-center text-sm font-medium text-foreground">
+              variant="outline"
+              className="flex-1">
+              <Text>
                 {primaryLinkLabel}
               </Text>
-            </TouchableOpacity>
+            </Button>
           )}
           {isDirectionsLinkValid && provider.directions && (
-            <TouchableOpacity
+            <Button
               onPress={() => Linking.openURL(provider.directions!)}
-              className="flex-1 rounded-md bg-primary px-3 py-2">
-              <Text className="text-center text-sm font-medium text-primary-foreground">
+              variant="default"
+              className="flex-1">
+              <Text>
                 Directions
               </Text>
-            </TouchableOpacity>
+            </Button>
           )}
         </View>
       )}
@@ -518,13 +522,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         {video.description}
                       </Text>
                     )}
-                    <TouchableOpacity
+                    <Button
                       onPress={() => Linking.openURL(video.url)}
-                      className="mt-2 rounded-md border border-border bg-secondary px-3 py-2">
-                      <Text className="text-center text-sm font-medium text-foreground">
+                      variant="outline"
+                      className="mt-2 w-full">
+                      <Text>
                         Watch on YouTube
                       </Text>
-                    </TouchableOpacity>
+                    </Button>
                   </View>
                 ))}
               </View>
@@ -805,12 +810,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             <MessageContent content={message.content} isUser={isUser} />
           )}
           {!isUser && message.content && !isLoading && (
-            <TouchableOpacity
+            <Button
               onPress={handleCopyMessage}
-              className="mt-2 flex-row items-center gap-1 self-end rounded-md bg-background px-2 py-1">
+              variant="ghost"
+              size="sm"
+              className="mt-2 self-end">
               <Icon as={Copy} size={14} className="text-muted-foreground" />
-              <Text className="text-xs text-muted-foreground">Copy</Text>
-            </TouchableOpacity>
+              <Text className="text-xs">Copy</Text>
+            </Button>
           )}
         </View>
         {message.createdAt && (

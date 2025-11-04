@@ -18,7 +18,6 @@ import {
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
-import { Switch } from 'react-native';
 import { Button } from '@/components/ui/button';
 
 const getUserInitials = (user: User | null) => {
