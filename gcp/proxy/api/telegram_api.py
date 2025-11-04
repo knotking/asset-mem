@@ -17,6 +17,7 @@ import logging
 import re
 import asyncio
 import time
+import json
 from typing import Any, Dict, List, Union
 
 # aiogram imports
@@ -63,18 +64,6 @@ def escape_markdown(text: str) -> str:
     return re.sub(pattern, r'\\\1', text)
 
 
-def safe_markdown_format(text: str) -> str:
-    # First, apply specific link formatting
-    formatted_text = format_google_maps_links(text)
-    formatted_text = format_youtube_links(formatted_text)
-
-    try:
-        # Finally, use telegramify_markdown for general MarkdownV2 escaping
-        return telegramify_markdown.markdownify(formatted_text)
-    except Exception as e:
-        logger.warning(f"telegramify_markdown failed: {e}. Falling back to escape_markdown.")
-        return escape_markdown(formatted_text)
-
 def format_google_maps_links(text: str) -> str:
     # Regex to find Google Maps URLs
     # This regex looks for URLs starting with https://www.google.com/maps/dir/ or https://www.google.com/maps/place/
@@ -100,6 +89,171 @@ def format_youtube_links(text: str) -> str:
         return f"[Watch on YouTube]({url})"
 
     return re.sub(pattern, replace_link, text)
+
+def json_to_markdown(json_data: Union[str, dict]) -> str:
+    """
+    Converts JSON data (string or dict) to a readable markdown format for Telegram.
+    
+    Args:
+        json_data: Either a JSON string or a dict
+        
+    Returns:
+        Formatted markdown string
+    """
+    try:
+        # Try to parse if it's a string
+        if isinstance(json_data, str):
+            # Strip whitespace
+            text = json_data.strip()
+            
+            # Remove markdown code block markers if present
+            if text.startswith('```json'):
+                text = text[7:]
+            elif text.startswith('```'):
+                text = text[3:]
+            if text.endswith('```'):
+                text = text[:-3]
+            text = text.strip()
+            
+            # Try to find JSON object or array in the string
+            # Look for { ... } or [ ... ] patterns
+            json_match = re.search(r'(\{[\s\S]*\}|\[[\s\S]*\])', text)
+            if json_match:
+                json_str = json_match.group(1)
+                try:
+                    parsed = json.loads(json_str)
+                    # If we successfully parsed JSON, use it
+                    formatted = _format_json_as_markdown(parsed)
+                    # If there was text before or after the JSON, preserve it
+                    if json_match.start() > 0 or json_match.end() < len(text):
+                        prefix = text[:json_match.start()].strip()
+                        suffix = text[json_match.end():].strip()
+                        parts = []
+                        if prefix:
+                            parts.append(prefix)
+                        parts.append(formatted)
+                        if suffix:
+                            parts.append(suffix)
+                        return "\n\n".join(parts)
+                    return formatted
+                except json.JSONDecodeError:
+                    pass
+            
+            # Try parsing the whole string as JSON
+            parsed = json.loads(text)
+            return _format_json_as_markdown(parsed)
+        else:
+            # Already a dict/list, format it directly
+            return _format_json_as_markdown(json_data)
+    except (json.JSONDecodeError, ValueError, AttributeError) as e:
+        # If it's not valid JSON, return as-is
+        logger.debug(f"Could not parse as JSON: {e}")
+        return str(json_data)
+
+def _format_json_as_markdown(data: Any, indent: int = 0, max_depth: int = 5) -> str:
+    """
+    Recursively formats JSON data as markdown.
+    
+    Args:
+        data: The data to format (dict, list, or primitive)
+        indent: Current indentation level
+        max_depth: Maximum depth to recurse (prevents infinite loops)
+        
+    Returns:
+        Formatted markdown string
+    """
+    if max_depth <= 0:
+        return "..."
+    
+    indent_str = "  " * indent
+    
+    if isinstance(data, dict):
+        if not data:
+            return "*Empty*"
+        
+        lines = []
+        for key, value in data.items():
+            # Format key - use ** for bold (telegramify_markdown will convert to MarkdownV2)
+            formatted_key = f"**{key}**"
+            
+            # Format value
+            if isinstance(value, (dict, list)):
+                formatted_value = _format_json_as_markdown(value, indent + 1, max_depth - 1)
+                lines.append(f"{indent_str}• {formatted_key}:")
+                # Add the value on next line with indentation
+                value_lines = formatted_value.split('\n')
+                for line in value_lines:
+                    if line.strip():
+                        lines.append(f"{indent_str}  {line}")
+            else:
+                formatted_value = _format_value(value)
+                if formatted_value and formatted_value.strip():
+                    lines.append(f"{indent_str}• {formatted_key}: {formatted_value}")
+                else:
+                    lines.append(f"{indent_str}• {formatted_key}: *None*")
+        
+        return "\n".join(lines)
+    
+    elif isinstance(data, list):
+        if not data:
+            return "*Empty list*"
+        
+        lines = []
+        for i, item in enumerate(data):
+            if isinstance(item, (dict, list)):
+                lines.append(f"{indent_str}{i + 1}\\. ")
+                item_lines = _format_json_as_markdown(item, indent + 1, max_depth - 1).split('\n')
+                for line in item_lines:
+                    if line.strip():
+                        lines.append(f"{indent_str}   {line}")
+            else:
+                formatted_item = _format_value(item)
+                lines.append(f"{indent_str}{i + 1}\\. {formatted_item}")
+        
+        return "\n".join(lines)
+    
+    else:
+        return _format_value(data)
+
+def _format_value(value: Any) -> str:
+    """Formats a primitive value for markdown."""
+    if value is None:
+        return "*None*"
+    elif isinstance(value, bool):
+        return "✅ *True*" if value else "❌ *False*"
+    elif isinstance(value, str):
+        # Preserve URLs and format as links
+        if value.startswith(('http://', 'https://')):
+            return f"[Link]({value})"
+        # Limit very long strings to prevent message overflow
+        if len(value) > 500:
+            return f"{value[:497]}..."
+        # Return string as-is (telegramify_markdown will handle escaping)
+        return value
+    elif isinstance(value, (int, float)):
+        return str(value)
+    else:
+        # Convert other types to string
+        str_value = str(value)
+        # Limit length
+        if len(str_value) > 500:
+            return f"{str_value[:497]}..."
+        return str_value
+
+def safe_markdown_format(text: str) -> str:
+    # Check if text contains JSON and convert it to markdown first
+    text = json_to_markdown(text)
+    
+    # First, apply specific link formatting
+    formatted_text = format_google_maps_links(text)
+    formatted_text = format_youtube_links(formatted_text)
+
+    try:
+        # Finally, use telegramify_markdown for general MarkdownV2 escaping
+        return telegramify_markdown.markdownify(formatted_text)
+    except Exception as e:
+        logger.warning(f"telegramify_markdown failed: {e}. Falling back to escape_markdown.")
+        return escape_markdown(formatted_text)
 
 def parse_command(text: str) -> str:
     return text.strip().split()[0].lower()
