@@ -8,6 +8,7 @@ interface MessagesContextType {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
+  updateMessageLocally: (messageId: string, updates: Partial<Message>) => void;
 }
 
 interface MessagesProviderProps {
@@ -24,6 +25,13 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Function to update a message locally (in memory only, not in Firestore)
+  const updateMessageLocally = (messageId: string, updates: Partial<Message>) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
+    );
+  };
 
   useEffect(() => {
     if (!user || !sessionId) {
@@ -62,7 +70,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
   }, [user, sessionId, db, onError]);
 
   return (
-    <MessagesContext.Provider value={{ messages, isLoading, error }}>
+    <MessagesContext.Provider value={{ messages, isLoading, error, updateMessageLocally }}>
       {children}
     </MessagesContext.Provider>
   );

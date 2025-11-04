@@ -11,11 +11,7 @@ import {
   User,
   Bot,
   FileText,
-  Home,
   ShieldCheck,
-  Receipt,
-  Search,
-  FileKey,
   Info,
   Wrench,
   Users,
@@ -47,15 +43,6 @@ import { AgentStatus } from './AgentStatus';
 interface ChatMessageProps {
   message: Message;
 }
-
-const docTypeIcons = {
-  DEED: Home,
-  INSURANCE_POLICY: ShieldCheck,
-  UTILITY_BILL: Receipt,
-  INSPECTION_REPORT: Search,
-  MORTGAGE_STATEMENT: FileKey,
-  OTHER: FileText,
-};
 
 const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
   const isUser = role === 'user';
@@ -120,10 +107,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       </View>
 
       {product.url && (
-        <Button
-          onPress={() => Linking.openURL(product.url!)}
-          variant="outline"
-          className="w-full">
+        <Button onPress={() => Linking.openURL(product.url!)} variant="outline" className="w-full">
           <Text>View Product</Text>
         </Button>
       )}
@@ -291,9 +275,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
               onPress={() => Linking.openURL(primaryLink)}
               variant="outline"
               className="flex-1">
-              <Text>
-                {primaryLinkLabel}
-              </Text>
+              <Text>{primaryLinkLabel}</Text>
             </Button>
           )}
           {isDirectionsLinkValid && provider.directions && (
@@ -301,9 +283,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
               onPress={() => Linking.openURL(provider.directions!)}
               variant="default"
               className="flex-1">
-              <Text>
-                Directions
-              </Text>
+              <Text>Directions</Text>
             </Button>
           )}
         </View>
@@ -430,14 +410,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
   return (
     <Accordion type="single" collapsible defaultValue="triage" className="w-full">
       {hasTriage && (
-        <AccordionItem value="triage">
-          <AccordionTrigger className="px-2">
-            <View className="flex-1 flex-row items-center gap-2">
+        <AccordionItem value="triage" className="border-b border-border">
+          <AccordionTrigger className="px-2 py-3">
+            <View className="flex-row items-center gap-2">
               <Icon as={Info} size={16} className="text-blue-600" />
               <Text className="font-medium text-foreground">Triage Summary</Text>
             </View>
           </AccordionTrigger>
-          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
+          <AccordionContent className="border-t border-border bg-background p-4">
             <Markdown style={markdownStyles} rules={markdownRules}>
               {triage!.diagnosis!}
             </Markdown>
@@ -446,14 +426,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
       )}
 
       {hasCoverage && (
-        <AccordionItem value="coverage">
-          <AccordionTrigger className="px-2">
-            <View className="flex-1 flex-row items-center gap-2">
+        <AccordionItem value="coverage" className="border-b border-border">
+          <AccordionTrigger className="px-2 py-3">
+            <View className="flex-row items-center gap-2">
               <Icon as={ShieldCheck} size={16} className="text-green-600" />
               <Text className="font-medium text-foreground">Coverage Analysis</Text>
             </View>
           </AccordionTrigger>
-          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
+          <AccordionContent className="border-t border-border bg-background p-4">
             {coverage?.warrantyInfo && (
               <View className="mb-3">
                 <Text className="mb-1 text-sm font-semibold text-green-700">
@@ -479,14 +459,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
       )}
 
       {hasDIY && (
-        <AccordionItem value="diy">
-          <AccordionTrigger className="px-2">
-            <View className="flex-1 flex-row items-center gap-2">
+        <AccordionItem value="diy" className="border-b border-border">
+          <AccordionTrigger className="px-2 py-3">
+            <View className="flex-row items-center gap-2">
               <Icon as={Wrench} size={16} className="text-orange-600" />
               <Text className="font-medium text-foreground">DIY Recommendations</Text>
             </View>
           </AccordionTrigger>
-          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
+          <AccordionContent className="border-t border-border bg-background p-4">
             {diy?.diySteps?.summary && (
               <View className="mb-3">
                 <Text className="mb-1 text-sm font-semibold text-orange-700">Summary</Text>
@@ -528,9 +508,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                       onPress={() => Linking.openURL(video.url)}
                       variant="outline"
                       className="mt-2 w-full">
-                      <Text>
-                        Watch on YouTube
-                      </Text>
+                      <Text>Watch on YouTube</Text>
                     </Button>
                   </View>
                 ))}
@@ -552,14 +530,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
       )}
 
       {hasService && (
-        <AccordionItem value="service">
-          <AccordionTrigger className="px-2">
-            <View className="flex-1 flex-row items-center gap-2">
+        <AccordionItem value="service" className="border-b border-border">
+          <AccordionTrigger className="px-2 py-3">
+            <View className="flex-row items-center gap-2">
               <Icon as={Users} size={16} className="text-purple-600" />
               <Text className="font-medium text-foreground">Service Recommendations</Text>
             </View>
           </AccordionTrigger>
-          <AccordionContent className="rounded-b-lg border-t border-border bg-background p-4">
+          <AccordionContent className="border-t border-border bg-background p-4">
             <Text className="mb-2 text-sm font-semibold text-purple-700">
               Local Service Providers
             </Text>
@@ -620,9 +598,7 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
         if (hasStructuredDataKeys(parsed)) {
           structuredData = parsed;
           // Remove the markdown wrapper from plain content if it existed
-          plainContent = jsonMatch
-            ? contentToParse.replace(jsonMatch[0], '').trim()
-            : '';
+          plainContent = jsonMatch ? contentToParse.replace(jsonMatch[0], '').trim() : '';
           console.log('✓ Parsed structured JSON response');
         }
       } catch (e) {
@@ -755,29 +731,13 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
   );
 };
 
-const DocumentsList = ({ documents }: { documents: NonNullable<Message['documents']> }) => {
-  return (
-    <View className="mb-2 space-y-2">
-      <Text className="text-xs font-semibold text-muted-foreground">Context Documents:</Text>
-      {documents.map((doc, index) => {
-        const IconComponent = docTypeIcons[doc.type] || FileText;
-        return (
-          <View key={index} className="flex-row items-center gap-2 rounded-md bg-secondary p-2">
-            <Icon as={IconComponent} size={16} className="text-muted-foreground" />
-            <Text className="flex-1 text-xs text-foreground" numberOfLines={1}>
-              {doc.name}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-};
-
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
-  const [copyStatus, setCopyStatus] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [copyStatus, setCopyStatus] = React.useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const handleCopyMessage = async () => {
     try {
@@ -802,9 +762,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <View
           className={`rounded-lg p-3 ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
           {message.file && <FilePreview file={message.file} />}
-          {message.documents && message.documents.length > 0 && (
-            <DocumentsList documents={message.documents} />
-          )}
           {isLoading ? (
             <>
               {message.agentSteps && message.agentSteps.length > 0 ? (

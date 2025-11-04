@@ -33,10 +33,6 @@ export type Message = {
     url: string;
     gsURI?: string;
   };
-  documents?: {
-    name: string;
-    type: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
-  }[];
   agentSteps?: AgentStep[];
 };
 
