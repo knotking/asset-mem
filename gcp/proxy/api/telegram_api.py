@@ -133,16 +133,22 @@ def json_to_markdown(json_data: Union[str, dict]) -> str:
                         suffix = text[json_start + len(json_str):].strip()
                         parts = []
                         if prefix:
-                            parts.append(prefix)
+                            # Remove trailing colon if present (e.g., "Agent Name:" -> "Agent Name")
+                            prefix = prefix.rstrip(':').strip()
+                            if prefix:
+                                parts.append(prefix)
                         parts.append(formatted)
                         if suffix:
                             # Recursively check suffix for more JSON
                             suffix_formatted = json_to_markdown(suffix)
                             parts.append(suffix_formatted)
-                        return "\n\n".join(parts)
+                        result = "\n\n".join(parts)
+                        logger.debug(f"Successfully converted JSON to markdown (Method 1)")
+                        return result
+                    logger.debug(f"Successfully converted JSON to markdown (Method 1, no prefix)")
                     return formatted
                 except json.JSONDecodeError as e:
-                    logger.debug(f"Failed to parse extracted JSON: {e}")
+                    logger.debug(f"Failed to parse extracted JSON: {e}, JSON string length: {len(json_str)}")
             
             # Method 2: Try parsing the whole string as JSON
             try:
@@ -153,6 +159,7 @@ def json_to_markdown(json_data: Union[str, dict]) -> str:
             
             # Method 3: Try to find JSON-like structures even with minor formatting issues
             # Look for patterns that look like JSON but might have trailing commas or comments
+            # This regex is more aggressive - finds any opening brace followed by content
             json_like_pattern = re.search(r'\{[^}]*"[^"]*"[^}]*\}', text)
             if json_like_pattern:
                 potential_json = json_like_pattern.group(0)
@@ -169,14 +176,45 @@ def json_to_markdown(json_data: Union[str, dict]) -> str:
                             suffix = text[json_start + len(full_json):].strip()
                             parts = []
                             if prefix:
-                                parts.append(prefix)
+                                # Remove trailing colon if present
+                                prefix = prefix.rstrip(':').strip()
+                                if prefix:
+                                    parts.append(prefix)
                             parts.append(formatted)
                             if suffix:
-                                parts.append(suffix)
+                                suffix_formatted = json_to_markdown(suffix)
+                                parts.append(suffix_formatted)
                             return "\n\n".join(parts)
                         return formatted
                     except json.JSONDecodeError:
                         pass
+            
+            # Method 4: More aggressive search - look for any opening brace in the text
+            # and try to extract complete JSON from that point
+            brace_positions = [i for i, char in enumerate(text) if char == '{']
+            for pos in brace_positions:
+                # Try to extract JSON starting from this position
+                json_str = _extract_json_from_string(text[pos:])
+                if json_str:
+                    try:
+                        parsed = json.loads(json_str)
+                        formatted = _format_json_as_markdown(parsed)
+                        # Replace in original text
+                        prefix = text[:pos].strip()
+                        suffix = text[pos + len(json_str):].strip()
+                        parts = []
+                        if prefix:
+                            # Remove trailing colon if present
+                            prefix = prefix.rstrip(':').strip()
+                            if prefix:
+                                parts.append(prefix)
+                        parts.append(formatted)
+                        if suffix:
+                            suffix_formatted = json_to_markdown(suffix)
+                            parts.append(suffix_formatted)
+                        return "\n\n".join(parts)
+                    except json.JSONDecodeError:
+                        continue
         else:
             # Already a dict/list, format it directly
             return _format_json_as_markdown(json_data)
@@ -203,38 +241,62 @@ def _extract_json_from_string(text: str) -> str:
         if char == '{':
             # Find matching closing brace
             depth = 0
+            in_string = False
+            escape_next = False
             for j in range(i, len(text)):
-                if text[j] == '{':
-                    depth += 1
-                elif text[j] == '}':
-                    depth -= 1
-                    if depth == 0:
-                        # Found balanced JSON object
-                        json_str = text[i:j+1]
-                        try:
-                            # Validate it's valid JSON
-                            json.loads(json_str)
-                            return json_str
-                        except json.JSONDecodeError:
-                            break
+                if escape_next:
+                    escape_next = False
+                    continue
+                if text[j] == '\\':
+                    escape_next = True
+                    continue
+                if text[j] == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                if not in_string:
+                    if text[j] == '{':
+                        depth += 1
+                    elif text[j] == '}':
+                        depth -= 1
+                        if depth == 0:
+                            # Found balanced JSON object
+                            json_str = text[i:j+1]
+                            try:
+                                # Validate it's valid JSON
+                                json.loads(json_str)
+                                return json_str
+                            except json.JSONDecodeError:
+                                break
             break
         elif char == '[':
             # Find matching closing bracket
             depth = 0
+            in_string = False
+            escape_next = False
             for j in range(i, len(text)):
-                if text[j] == '[':
-                    depth += 1
-                elif text[j] == ']':
-                    depth -= 1
-                    if depth == 0:
-                        # Found balanced JSON array
-                        json_str = text[i:j+1]
-                        try:
-                            # Validate it's valid JSON
-                            json.loads(json_str)
-                            return json_str
-                        except json.JSONDecodeError:
-                            break
+                if escape_next:
+                    escape_next = False
+                    continue
+                if text[j] == '\\':
+                    escape_next = True
+                    continue
+                if text[j] == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                if not in_string:
+                    if text[j] == '[':
+                        depth += 1
+                    elif text[j] == ']':
+                        depth -= 1
+                        if depth == 0:
+                            # Found balanced JSON array
+                            json_str = text[i:j+1]
+                            try:
+                                # Validate it's valid JSON
+                                json.loads(json_str)
+                                return json_str
+                            except json.JSONDecodeError:
+                                break
             break
     return ""
 
@@ -347,17 +409,38 @@ def safe_markdown_format(text: str) -> str:
     """
     Formats text for Telegram MarkdownV2, ensuring JSON is converted to readable markdown.
     """
+    if not text or not isinstance(text, str):
+        return str(text)
+    
     # First, check if text contains JSON and convert it to markdown
     # This MUST happen first to remove all JSON syntax
     converted_text = json_to_markdown(text)
     
     # Verify no raw JSON structures remain (safety check)
-    if '{' in converted_text or '[' in converted_text:
+    # Check multiple times if needed to catch nested or embedded JSON
+    max_iterations = 3
+    iteration = 0
+    while iteration < max_iterations:
         # Check if there are JSON-like patterns that weren't converted
-        if re.search(r'\{[^}]*"[^"]*"[^}]*\}|\[[^\]]*"[^"]*"[^\]]*\]', converted_text):
-            logger.debug("Found potential unconverted JSON, attempting additional conversion")
-            # Try one more time to extract and convert
+        json_pattern = re.search(r'\{[^}]*"[^"]*"[^}]*\}|\[[^\]]*"[^"]*"[^\]]*\]', converted_text)
+        if json_pattern:
+            logger.info(f"Found potential unconverted JSON on iteration {iteration + 1}, attempting additional conversion")
+            prev_text = converted_text
             converted_text = json_to_markdown(converted_text)
+            # If conversion didn't change anything, break to avoid infinite loop
+            if prev_text == converted_text:
+                logger.warning("JSON conversion didn't change text, stopping to avoid infinite loop")
+                break
+            iteration += 1
+        else:
+            break
+    
+    # Final check: if JSON still appears after all attempts, log it
+    if '{' in converted_text and '"' in converted_text:
+        # Check if it looks like JSON (has quotes and braces)
+        json_like = re.search(r'\{[^}]*"[^"]*"[^}]*\}', converted_text)
+        if json_like:
+            logger.warning(f"Warning: JSON-like structure may still be present in converted text: {json_like.group(0)[:100]}...")
     
     # Apply specific link formatting
     formatted_text = format_google_maps_links(converted_text)
