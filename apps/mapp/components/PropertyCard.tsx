@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Home, FileText, Briefcase, Cloud, CheckCircle } from 'lucide-react-native';
@@ -37,7 +37,7 @@ export default function PropertyCard({
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} className="mb-4 rounded-lg bg-background p-4 shadow-sm">
+    <Pressable onPress={handlePress} className="mb-4 rounded-lg bg-background p-4 shadow-sm">
       <View className="mb-4 flex-row items-center gap-2">
         <View
           className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
@@ -79,6 +79,6 @@ export default function PropertyCard({
           <Text className="text-xs text-muted-foreground">Checks</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

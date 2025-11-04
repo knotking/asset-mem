@@ -4,17 +4,18 @@ import * as React from 'react';
 import {
   ScrollView,
   View,
-  TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Modal,
   Image,
   Alert,
   Animated,
   Easing,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -229,9 +230,9 @@ function DetailsTab({ property }: { property: any }) {
             <Icon as={FileText} size={18} className="text-muted-foreground" />
             <Text className="text-foreground">Basic Information</Text>
           </View>
-          <TouchableOpacity>
+          <Button variant="ghost" size="icon">
             <Icon as={Pencil} size={18} className="text-muted-foreground" />
-          </TouchableOpacity>
+          </Button>
         </View>
         <View className="space-y-4 border-t border-border pt-4">
           <View className="mb-2">
@@ -261,12 +262,10 @@ function DetailsTab({ property }: { property: any }) {
             <Icon as={FileText} size={18} className="text-muted-foreground" />
             <Text className="text-foreground">Property Documents</Text>
           </View>
-          <TouchableOpacity
-            onPress={handlePickDocuments}
-            className="flex-row items-center gap-2 rounded-md bg-primary px-3 py-2">
+          <Button onPress={handlePickDocuments} variant="default" className="flex-row items-center gap-2">
             <Icon as={Upload} size={16} className="text-primary-foreground" />
             <Text className="font-semibold text-primary-foreground">Upload</Text>
-          </TouchableOpacity>
+          </Button>
         </View>
         {documentsLoading ? (
           <ActivityIndicator />
@@ -321,11 +320,13 @@ function DetailsTab({ property }: { property: any }) {
                     )}
                   </View>
 
-                  <TouchableOpacity
+                  <Button
                     onPress={() => removeUploadingDoc(doc.id)}
-                    className="ml-2 p-1">
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2">
                     <Icon as={X} size={18} className="text-muted-foreground" />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
               </View>
             ))}
@@ -346,9 +347,9 @@ function DetailsTab({ property }: { property: any }) {
                   <View className="ml-2 flex-1">
                     <Text className="font-semibold text-foreground">{doc.name}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => handleDeleteDocument(doc)} className="ml-2 p-1">
+                  <Button onPress={() => handleDeleteDocument(doc)} variant="ghost" size="icon" className="ml-2">
                     <Icon as={Trash2} size={18} className="text-red-500" />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
                 <View className="space-y-2 border-t border-gray-100 pt-3">
                   {doc.keyEntities?.map((entity, index) => (
@@ -756,11 +757,12 @@ export default function PropertyDetailsScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <Text className="text-foreground">Property not found</Text>
-        <TouchableOpacity
+        <Button
           onPress={() => router.back()}
-          className="mt-4 rounded-lg bg-primary px-4 py-2">
+          variant="default"
+          className="mt-4">
           <Text className="text-primary-foreground">Go Back</Text>
-        </TouchableOpacity>
+        </Button>
       </View>
     );
   }
@@ -776,15 +778,16 @@ export default function PropertyDetailsScreen() {
       {/* Navigation Header */}
       <View className="bg-background px-4 py-3">
         <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
-          <TouchableOpacity onPress={() => router.back()} className="flex-row items-center gap-2">
+          <Button onPress={() => router.back()} variant="ghost" size="icon">
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
-          </TouchableOpacity>
+          </Button>
           <View className="flex-row items-center gap-3">
             {activeTab === 'chat' && (
               <>
-                <TouchableOpacity
+                <Button
                   onPress={() => setDocumentsDrawerVisible(true)}
-                  className="flex-row items-center gap-2 rounded-md bg-secondary px-3 py-2">
+                  variant="secondary"
+                  className="flex-row items-center gap-2">
                   <Icon as={File} size={18} className="text-foreground" />
                   <Text className="text-foreground">Docs</Text>
                   {selectedDocuments.length > 0 && (
@@ -794,13 +797,14 @@ export default function PropertyDetailsScreen() {
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Button>
+                <Button
                   onPress={() => setSessionsDrawerVisible(true)}
-                  className="flex-row items-center gap-2 rounded-md bg-secondary px-3 py-2">
+                  variant="secondary"
+                  className="flex-row items-center gap-2">
                   <Icon as={MessageSquare} size={18} className="text-foreground" />
                   <Text className="text-foreground">Sessions</Text>
-                </TouchableOpacity>
+                </Button>
               </>
             )}
           </View>
@@ -814,7 +818,7 @@ export default function PropertyDetailsScreen() {
 
       {/* Tabs */}
       <View className="flex-row border-b border-border px-4">
-        <TouchableOpacity
+        <Pressable
           onPress={() => setActiveTab('chat')}
           className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
           <Text
@@ -823,8 +827,8 @@ export default function PropertyDetailsScreen() {
             }`}>
             AI Chat
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => setActiveTab('details')}
           className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
           <Text
@@ -833,7 +837,7 @@ export default function PropertyDetailsScreen() {
             }`}>
             Details
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Selected Documents Display */}
@@ -845,21 +849,23 @@ export default function PropertyDetailsScreen() {
               {selectedDocuments.map((doc) => (
                 <View
                   key={doc.id}
-                  className="flex-row items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5">
-                  <Icon as={FileText} size={14} className="text-muted-foreground" />
+                  className="flex-row items-center gap-1 rounded-full border border-border bg-background px-2 py-1">
+                  <Icon as={FileText} size={12} className="text-muted-foreground" />
                   <Text className="max-w-32 text-xs text-foreground" numberOfLines={1}>
                     {doc.name}
                   </Text>
-                  <TouchableOpacity onPress={() => toggleDocumentSelection(doc)}>
-                    <Icon as={X} size={14} className="text-muted-foreground" />
-                  </TouchableOpacity>
+                  <Button onPress={() => toggleDocumentSelection(doc)} variant="ghost" size="icon" className="h-4 w-4">
+                    <Icon as={X} size={12} className="text-muted-foreground" />
+                  </Button>
                 </View>
               ))}
-              <TouchableOpacity
+              <Button
                 onPress={() => setSelectedDocuments([])}
-                className="items-center justify-center rounded-full bg-background px-3 py-1.5">
+                variant="ghost"
+                size="sm"
+                className="items-center justify-center">
                 <Text className="text-xs text-muted-foreground">Clear all</Text>
-              </TouchableOpacity>
+              </Button>
             </View>
           </ScrollView>
         </View>
@@ -930,48 +936,50 @@ export default function PropertyDetailsScreen() {
                       </View>
                     )}
                   </View>
-                  <TouchableOpacity
+                  <Button
                     onPress={removeFileAttachment}
-                    className="ml-2 rounded-full bg-background p-2">
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2">
                     <Icon as={X} size={16} className="text-foreground" />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
               </View>
             </View>
           )}
 
           {/* Input Row */}
-          <View className="flex-row items-center gap-3">
-            <TouchableOpacity onPress={handleFileUpload} disabled={isSending || !!fileAttachment}>
+          <View className="flex-row items-center gap-2">
+            <Button onPress={handleFileUpload} disabled={isSending || !!fileAttachment} variant="ghost" size="icon">
               <Icon
                 as={Paperclip}
                 size={20}
                 className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
               />
-            </TouchableOpacity>
-            <TextInput
+            </Button>
+            <Input
               value={message}
               onChangeText={setMessage}
               placeholder="Type a message..."
-              className="flex-1 rounded-lg border border-border bg-background px-3 text-foreground"
-              placeholderTextColor="#9CA3AF"
               multiline
+              editable={!isSending}
+              onSubmitEditing={handleSendMessage}
+              className="flex-1"
               style={{
                 maxHeight: 50,
                 paddingTop: 8,
                 paddingBottom: 8,
                 textAlignVertical: 'center',
               }}
-              editable={!isSending}
-              onSubmitEditing={handleSendMessage}
             />
-            <TouchableOpacity
-              className={`rounded-lg p-2 ${
+            <Button
+              variant={
                 (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
                 !isSending
-                  ? 'bg-primary'
-                  : 'bg-secondary'
-              }`}
+                  ? 'default'
+                  : 'ghost'
+              }
+              size="icon"
               onPress={handleSendMessage}
               disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}>
               {isSending ? (
@@ -987,7 +995,7 @@ export default function PropertyDetailsScreen() {
                   }
                 />
               )}
-            </TouchableOpacity>
+            </Button>
           </View>
         </View>
       )}
@@ -1007,11 +1015,13 @@ export default function PropertyDetailsScreen() {
                   {property.name}
                 </Text>
               </View>
-              <TouchableOpacity
+              <Button
                 onPress={() => setSessionsDrawerVisible(false)}
-                className="ml-2 p-2">
+                variant="ghost"
+                size="icon"
+                className="ml-2">
                 <Icon as={X} size={24} className="text-foreground" />
-              </TouchableOpacity>
+              </Button>
             </View>
           </View>
           <SessionsList
@@ -1044,11 +1054,13 @@ export default function PropertyDetailsScreen() {
                   {selectedDocuments.length} selected
                 </Text>
               </View>
-              <TouchableOpacity
+              <Button
                 onPress={() => setDocumentsDrawerVisible(false)}
-                className="ml-2 p-2">
+                variant="ghost"
+                size="icon"
+                className="ml-2">
                 <Icon as={X} size={24} className="text-foreground" />
-              </TouchableOpacity>
+              </Button>
             </View>
           </View>
           <ScrollView className="flex-1 px-4 py-4">
@@ -1066,7 +1078,7 @@ export default function PropertyDetailsScreen() {
                 {documents.map((document) => {
                   const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={document.id}
                       onPress={() => toggleDocumentSelection(document)}
                       className={`rounded-lg border p-4 ${
@@ -1108,7 +1120,7 @@ export default function PropertyDetailsScreen() {
                           </View>
                         )}
                       </View>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>

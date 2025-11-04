@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus } from 'lucide-react-native';
 import type { Session } from '@homeapp/common/types';
 import { useSession } from '@homeapp/common/contexts/session-context';
@@ -66,12 +67,13 @@ export default function SessionsList({
     <View className="flex-1">
       {/* Create New Session Button */}
       <View className="p-4">
-        <TouchableOpacity
+        <Button
           onPress={handleCreateSession}
-          className="flex-row items-center justify-center gap-2 rounded-lg bg-primary p-4">
+          variant="default"
+          className="w-full">
           <Icon as={Plus} size={20} className="text-primary-foreground" />
-          <Text className="font-semibold text-primary-foreground">New Session</Text>
-        </TouchableOpacity>
+          <Text>New Session</Text>
+        </Button>
       </View>
 
       {/* Sessions List */}
@@ -89,7 +91,7 @@ export default function SessionsList({
           <View className="space-y-3 pb-4">
             {/* Regular Sessions - Draft sessions are hidden */}
             {sessions.map((session) => (
-              <TouchableOpacity
+              <Pressable
                 key={session.id}
                 onPress={() => onSessionPress?.(session)}
                 className="mb-4 rounded-lg border border-border bg-background p-4">
@@ -114,7 +116,7 @@ export default function SessionsList({
                     )}
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         )}

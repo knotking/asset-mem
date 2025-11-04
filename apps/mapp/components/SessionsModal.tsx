@@ -1,7 +1,8 @@
 import React from 'react';
-import { Modal, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Modal, View, SafeAreaView } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react-native';
 import SessionsList from './SessionsList';
 import type { Session } from '@homeapp/common/types';
@@ -39,9 +40,9 @@ export default function SessionsModal({
                 {propertyName}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} className="ml-2 p-2">
+            <Button onPress={onClose} variant="ghost" size="icon" className="ml-2">
               <Icon as={X} size={24} className="text-foreground" />
-            </TouchableOpacity>
+            </Button>
           </View>
         </View>
 

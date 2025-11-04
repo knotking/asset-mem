@@ -2,8 +2,6 @@ import React from 'react';
 import {
   Modal,
   View,
-  TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -11,6 +9,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { X, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -225,9 +226,9 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         <View className="border-b border-border bg-background px-4 py-3">
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-foreground">Add New Property</Text>
-            <TouchableOpacity onPress={handleClose} className="p-2">
+            <Button onPress={handleClose} variant="ghost" size="icon">
               <Icon as={X} size={24} className="text-foreground" />
-            </TouchableOpacity>
+            </Button>
           </View>
         </View>
 
@@ -235,12 +236,10 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
           {/* Property Name Input */}
           <View className="mb-6">
             <Text className="mb-2 text-sm font-medium text-foreground">Property Name</Text>
-            <TextInput
+            <Input
               value={propertyName}
               onChangeText={setPropertyName}
               placeholder="Enter property name..."
-              className="rounded-lg border border-border bg-background px-4 py-3 text-foreground"
-              placeholderTextColor="#9CA3AF"
               editable={!isCreating}
             />
           </View>
@@ -249,13 +248,14 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
           <View className="mb-6">
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="text-sm font-medium text-foreground">Documents</Text>
-              <TouchableOpacity
+              <Button
                 onPress={handlePickDocuments}
                 disabled={isCreating}
-                className="flex-row items-center gap-2 rounded-md bg-secondary px-3 py-2">
+                variant="secondary"
+                size="sm">
                 <Icon as={Upload} size={16} className="text-foreground" />
-                <Text className="text-sm font-semibold text-foreground">Upload</Text>
-              </TouchableOpacity>
+                <Text>Upload</Text>
+              </Button>
             </View>
 
             {uploadingDocs.length === 0 ? (
@@ -284,12 +284,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
                             <Text className="text-xs text-muted-foreground">
                               Uploading... {Math.round(doc.progress || 0)}%
                             </Text>
-                            <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
-                              <View
-                                className="h-full bg-primary"
-                                style={{ width: `${doc.progress || 0}%` }}
-                              />
-                            </View>
+                            <Progress value={doc.progress || 0} className="mt-1" />
                           </View>
                         )}
 
@@ -331,11 +326,13 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
                       </View>
 
                       {!isCreating && (
-                        <TouchableOpacity
+                        <Button
                           onPress={() => removeUploadingDoc(doc.id)}
-                          className="ml-2 p-1">
+                          variant="ghost"
+                          size="icon"
+                          className="ml-2 h-6 w-6">
                           <Icon as={X} size={18} className="text-muted-foreground" />
-                        </TouchableOpacity>
+                        </Button>
                       )}
                     </View>
                   </View>
@@ -352,7 +349,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               Uploading files...
             </Text>
           )}
-          <TouchableOpacity
+          <Button
             onPress={() => {
               console.log('Create Property button pressed');
               handleCreate();
@@ -363,25 +360,16 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               uploadingDocs.length === 0 ||
               uploadingDocs.some((doc) => doc.status !== 'complete')
             }
-            className={`rounded-lg py-3 ${
-              isCreating ||
-              !propertyName.trim() ||
-              uploadingDocs.length === 0 ||
-              uploadingDocs.some((doc) => doc.status !== 'complete')
-                ? 'bg-secondary'
-                : 'bg-primary'
-            }`}>
+            className="w-full">
             {isCreating ? (
-              <View className="flex-row items-center justify-center gap-2">
+              <>
                 <ActivityIndicator size="small" color="#fff" />
-                <Text className="font-semibold text-primary-foreground">Creating...</Text>
-              </View>
+                <Text>Creating...</Text>
+              </>
             ) : (
-              <Text className="text-center font-semibold text-primary-foreground">
-                Create Property
-              </Text>
+              <Text>Create Property</Text>
             )}
-          </TouchableOpacity>
+          </Button>
         </View>
       </SafeAreaView>
     </Modal>
