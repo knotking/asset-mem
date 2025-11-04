@@ -49,7 +49,7 @@ TELEGRAM_BOT_TOKEN: str   = os.environ.get("TELEGRAM_BOT_TOKEN","")
 # --- aiogram Bot and Dispatcher Initialization ---
 bot = Bot(
     token=TELEGRAM_BOT_TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2)
+    default=DefaultBotProperties(parse_mode=None)  # No markdown parsing - return raw response
 )
 dp = Dispatcher()
 router = Router()
@@ -614,7 +614,8 @@ async def handle_attachment(message: aio_types.Message):
                     property_address=None,
                 )
             async for answer_part in stream_agent_answers(agent_request):
-                answer_str = safe_markdown_format(str(answer_part))
+                # Return response from analysis_agent without markdown conversion
+                answer_str = str(answer_part)
                 for part in split_message(answer_str):
                     await message.answer(part)
         except Exception as e:
@@ -642,7 +643,8 @@ async def handle_text_message(message: aio_types.Message):
         property_address=None,
     )
     async for answer_part in stream_agent_answers(agent_request):
-        answer_str = safe_markdown_format(str(answer_part))
+        # Return response from analysis_agent without markdown conversion
+        answer_str = str(answer_part)
         for part in split_message(answer_str):
             await message.answer(part)
 
