@@ -17,6 +17,15 @@ import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  NativeSelectScrollView,
+} from '@/components/ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -65,6 +74,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
 import type { Session, Document, AgentStep, FileAttachment } from '@homeapp/common/types';
+import { PROPERTY_TYPES } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
 
 // Rotating Sparkles Component
@@ -104,8 +114,70 @@ function DetailsTab({ property }: { property: any }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
   const [successAlertOpen, setSuccessAlertOpen] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState('');
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [editedName, setEditedName] = React.useState(property.name);
+  const [editedType, setEditedType] = React.useState(property.propertyType || '');
+  const [editedAddress, setEditedAddress] = React.useState(property.address);
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  // Update form fields when property changes
+  React.useEffect(() => {
+    setEditedName(property.name);
+    setEditedType(property.propertyType || '');
+    setEditedAddress(property.address);
+  }, [property.name, property.propertyType, property.address]);
+
+  const handleEditToggle = () => {
+    if (isEditMode) {
+      // Cancel editing - reset to original values
+      setEditedName(property.name);
+      setEditedType(property.propertyType || '');
+      setEditedAddress(property.address);
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  const handleSaveProperty = async () => {
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to edit property');
+      return;
+    }
+
+    if (!editedName.trim()) {
+      Alert.alert('Error', 'Property name is required');
+      return;
+    }
+
+    if (!editedAddress.trim()) {
+      Alert.alert('Error', 'Property address is required');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
+      await updateDoc(propertyRef, {
+        name: editedName.trim(),
+        propertyType: editedType.trim() || null,
+        address: editedAddress.trim(),
+      });
+
+      setIsEditMode(false);
+      setSuccessMessage('Property updated successfully.');
+      setSuccessAlertOpen(true);
+    } catch (error) {
+      console.error('Error updating property:', error);
+      setErrorMessage('Failed to update property. Please try again.');
+      setErrorAlertOpen(true);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handlePickDocuments = async () => {
     if (!user) {
@@ -214,6 +286,7 @@ function DetailsTab({ property }: { property: any }) {
 
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
+      setSuccessMessage('Document deleted successfully.');
       setSuccessAlertOpen(true);
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -230,27 +303,85 @@ function DetailsTab({ property }: { property: any }) {
             <Icon as={FileText} size={18} className="text-muted-foreground" />
             <Text className="text-foreground">Basic Information</Text>
           </View>
-          <Button variant="ghost" size="icon">
-            <Icon as={Pencil} size={18} className="text-muted-foreground" />
-          </Button>
+          {!isEditMode ? (
+            <Button variant="ghost" size="icon" onPress={handleEditToggle}>
+              <Icon as={Pencil} size={18} className="text-muted-foreground" />
+            </Button>
+          ) : (
+            <View className="flex-row gap-2">
+              <Button variant="ghost" size="sm" onPress={handleEditToggle} disabled={isSaving}>
+                <Text className="text-muted-foreground">Cancel</Text>
+              </Button>
+              <Button variant="default" size="sm" onPress={handleSaveProperty} disabled={isSaving}>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-primary-foreground">Save</Text>
+                )}
+              </Button>
+            </View>
+          )}
         </View>
         <View className="space-y-4 border-t border-border pt-4">
           <View className="mb-2">
             <Text className="text-sm text-muted-foreground">Property Name</Text>
-            <Text className="font-medium text-foreground">{property.name}</Text>
+            {isEditMode ? (
+              <Input
+                value={editedName}
+                onChangeText={setEditedName}
+                placeholder="Enter property name"
+                editable={!isSaving}
+                className="mt-1"
+              />
+            ) : (
+              <Text className="font-medium text-foreground">{property.name}</Text>
+            )}
           </View>
           <View className="mb-2">
             <Text className="text-sm text-muted-foreground">Property Type</Text>
-            <Text className="font-medium capitalize text-foreground">
-              {property.propertyType || 'Not set'}
-            </Text>
+            {isEditMode ? (
+              <Select
+                value={editedType ? { value: editedType, label: editedType } : undefined}
+                onValueChange={(option) => setEditedType(option?.value || '')}
+                disabled={isSaving}>
+                <SelectTrigger className="mt-1" style={{ alignSelf: 'stretch' }}>
+                  <SelectValue placeholder="Select property type" />
+                </SelectTrigger>
+                <SelectContent className="max-w-full">
+                  <NativeSelectScrollView>
+                    <SelectGroup>
+                      {PROPERTY_TYPES.map((type) => (
+                        <SelectItem key={type} label={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </NativeSelectScrollView>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Text className="font-medium text-foreground">
+                {property.propertyType || 'Not set'}
+              </Text>
+            )}
           </View>
           <View className="mb-2">
             <Text className="text-sm text-muted-foreground">Address</Text>
-            <View className="flex-row items-center gap-1">
-              <Icon as={MapPin} size={14} className="text-muted-foreground" />
-              <Text className="font-medium text-foreground">{property.address}</Text>
-            </View>
+            {isEditMode ? (
+              <Input
+                value={editedAddress}
+                onChangeText={setEditedAddress}
+                placeholder="Enter property address"
+                editable={!isSaving}
+                multiline
+                className="mt-1"
+              />
+            ) : (
+              <View className="flex-row items-center gap-1">
+                <Icon as={MapPin} size={14} className="text-muted-foreground" />
+                <Text className="font-medium text-foreground">{property.address}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -262,7 +393,10 @@ function DetailsTab({ property }: { property: any }) {
             <Icon as={FileText} size={18} className="text-muted-foreground" />
             <Text className="text-foreground">Property Documents</Text>
           </View>
-          <Button onPress={handlePickDocuments} variant="default" className="flex-row items-center gap-2">
+          <Button
+            onPress={handlePickDocuments}
+            variant="default"
+            className="flex-row items-center gap-2">
             <Icon as={Upload} size={16} className="text-primary-foreground" />
             <Text className="font-semibold text-primary-foreground">Upload</Text>
           </Button>
@@ -340,29 +474,35 @@ function DetailsTab({ property }: { property: any }) {
               })
               .map((doc) => (
                 <View key={doc.id} className="mb-2 rounded-lg bg-secondary p-3">
-                <View className="mb-3 flex-row items-start">
-                  <View className="rounded-md bg-red-100 p-2">
-                    <Icon as={FileText} size={20} className="text-red-500" />
-                  </View>
-                  <View className="ml-2 flex-1">
-                    <Text className="font-semibold text-foreground">{doc.name}</Text>
-                  </View>
-                  <Button onPress={() => handleDeleteDocument(doc)} variant="ghost" size="icon" className="ml-2">
-                    <Icon as={Trash2} size={18} className="text-red-500" />
-                  </Button>
-                </View>
-                <View className="space-y-2 border-t border-gray-100 pt-3">
-                  {doc.keyEntities?.map((entity, index) => (
-                    <View key={index} className="flex-row justify-between gap-2">
-                      <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
-                      <Text className="flex-1 text-right font-semibold text-foreground" numberOfLines={2}>
-                        {entity.value}
-                      </Text>
+                  <View className="mb-3 flex-row items-start">
+                    <View className="rounded-md bg-red-100 p-2">
+                      <Icon as={FileText} size={20} className="text-red-500" />
                     </View>
-                  ))}
+                    <View className="ml-2 flex-1">
+                      <Text className="font-semibold text-foreground">{doc.name}</Text>
+                    </View>
+                    <Button
+                      onPress={() => handleDeleteDocument(doc)}
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2">
+                      <Icon as={Trash2} size={18} className="text-red-500" />
+                    </Button>
+                  </View>
+                  <View className="space-y-2 border-t border-gray-100 pt-3">
+                    {doc.keyEntities?.map((entity, index) => (
+                      <View key={index} className="flex-row justify-between gap-2">
+                        <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                        <Text
+                          className="flex-1 text-right font-semibold text-foreground"
+                          numberOfLines={2}>
+                          {entity.value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
           </View>
         )}
       </View>
@@ -393,7 +533,7 @@ function DetailsTab({ property }: { property: any }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Success</AlertDialogTitle>
-            <AlertDialogDescription>Document deleted successfully.</AlertDialogDescription>
+            <AlertDialogDescription>{successMessage}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onPress={() => setSuccessAlertOpen(false)}>
@@ -757,10 +897,7 @@ export default function PropertyDetailsScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <Text className="text-foreground">Property not found</Text>
-        <Button
-          onPress={() => router.back()}
-          variant="default"
-          className="mt-4">
+        <Button onPress={() => router.back()} variant="default" className="mt-4">
           <Text className="text-primary-foreground">Go Back</Text>
         </Button>
       </View>
@@ -854,7 +991,11 @@ export default function PropertyDetailsScreen() {
                   <Text className="max-w-32 text-xs text-foreground" numberOfLines={1}>
                     {doc.name}
                   </Text>
-                  <Button onPress={() => toggleDocumentSelection(doc)} variant="ghost" size="icon" className="h-4 w-4">
+                  <Button
+                    onPress={() => toggleDocumentSelection(doc)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4">
                     <Icon as={X} size={12} className="text-muted-foreground" />
                   </Button>
                 </View>
@@ -950,7 +1091,11 @@ export default function PropertyDetailsScreen() {
 
           {/* Input Row */}
           <View className="flex-row items-center gap-2">
-            <Button onPress={handleFileUpload} disabled={isSending || !!fileAttachment} variant="ghost" size="icon">
+            <Button
+              onPress={handleFileUpload}
+              disabled={isSending || !!fileAttachment}
+              variant="ghost"
+              size="icon">
               <Icon
                 as={Paperclip}
                 size={20}

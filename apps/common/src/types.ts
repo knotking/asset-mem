@@ -1,5 +1,9 @@
 import type { Timestamp } from 'firebase/firestore';
 
+export const PROPERTY_TYPES = ['House', 'Apartment', 'Condo', 'Townhouse', 'Land', 'Other'] as const;
+
+export type PropertyType = typeof PROPERTY_TYPES[number];
+
 export type AgentStep = {
   name: string;
   status: 'transferredto' | 'executing' | 'completed' | 'failed';
