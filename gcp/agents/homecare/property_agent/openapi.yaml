@@ -1,17 +1,553 @@
 openapi: 3.1.0
 info:
   title: Property Agent API
-  version: 1.0.0
+  version: 2.0.0
   description: |
-    OpenAPI schema for the Property Agent response. The Property Agent returns
-    the sub-agent output verbatim. Depending on routing, the response can be a
-    structured object (multimodal analysis and aggregated results) or a direct
-    retrieval result. Casual, non-homecare queries may yield a simple string.
+    OpenAPI schema for the Property Agent and all sub-agents. The Property Agent 
+    orchestrates multiple specialized sub-agents for home care and vehicle diagnostics.
+    
+    **Sub-Agents:**
+    - Triage Agent: Multimodal analysis and diagnosis
+    - Coverage Agent: Warranty and insurance information
+    - DIY Agent: DIY repair steps, tutorials, and products
+    - Service Agent: Local service providers and cost estimates
+    - Shopping Agent: Product recommendations (reusable)
+    - Cost Agent: Structured cost estimates
+    - User Docs Agent: User document retrieval
+    - Knowledge Base Agent: General knowledge base retrieval
+    
+    Each sub-agent has defined input and output schemas documented below.
+    The Property Agent returns either a structured analysis/aggregation object,
+    a retrieval payload, or a simple text response for casual queries.
 
 paths: {}
 
 components:
   schemas:
+    # ============================================================================
+    # Input Schemas
+    # ============================================================================
+    
+    DiagnosisInput:
+      type: object
+      required:
+        - user_query
+      properties:
+        user_query:
+          type: string
+          description: The user query or question.
+        context_doc_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional list of context document URIs (GCS paths).
+          nullable: true
+        diagnosis_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional list of diagnosis document URIs (GCS paths for images, videos, documents).
+          nullable: true
+        property_address:
+          type: string
+          description: Optional property address for location-based searches.
+          nullable: true
+      description: Input schema for Triage Agent and Analysis Agent (orchestrator).
+
+    DocsInput:
+      type: object
+      required:
+        - user_query
+      properties:
+        user_query:
+          type: string
+          description: The user query for document retrieval or agent processing.
+        context_doc_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional list of context document URIs (GCS paths).
+          nullable: true
+        property_address:
+          type: string
+          description: Optional property address for location-based searches.
+          nullable: true
+      description: Input schema for Coverage, DIY, Service, Shopping, User Docs, and Knowledge Base agents.
+
+    # ============================================================================
+    # Sub-Agent Output Schemas
+    # ============================================================================
+
+    TriageAgentOutput:
+      type: object
+      required:
+        - triageResult
+      properties:
+        triageResult:
+          type: object
+          required:
+            - diagnosis
+          properties:
+            diagnosis:
+              type: string
+              description: Clear, factual diagnosis text derived from multimodal analysis or text-only triage.
+      description: Triage Agent output - provides diagnosis for downstream agents.
+      example:
+        triageResult:
+          diagnosis: "Significant white scratch marks and scuffing on the rear quarter panel and bumper of a red vehicle"
+
+    CoverageAgentOutput:
+      type: object
+      required:
+        - coverageResult
+      properties:
+        coverageResult:
+          type: object
+          properties:
+            warrantyInfo:
+              type: string
+              description: Warranty information extracted from user documents.
+              nullable: true
+            insuranceInfo:
+              type: string
+              description: Insurance information extracted from user documents.
+              nullable: true
+      description: Coverage Agent output - warranty and insurance information.
+      example:
+        coverageResult:
+          warrantyInfo: "Warranty covers parts for 5 years from purchase date."
+          insuranceInfo: "Home insurance does not cover routine maintenance or wear and tear."
+
+    DIYAgentOutput:
+      type: object
+      required:
+        - diyResults
+      properties:
+        diyResults:
+          type: object
+          properties:
+            diySteps:
+              type: object
+              properties:
+                summary:
+                  type: string
+                  description: Summary of DIY repair steps from Google search.
+                  nullable: true
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - stepNumber
+                      - description
+                    properties:
+                      stepNumber:
+                        type: integer
+                        description: Step number (1-indexed).
+                      description:
+                        type: string
+                        description: Description of the step.
+            youtubeSearch:
+              type: object
+              properties:
+                videos:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        description: Video title.
+                      url:
+                        type: string
+                        format: uri
+                        description: YouTube video URL.
+                      description:
+                        type: string
+                        description: Video description if available.
+                        nullable: true
+            recommendedProducts:
+              type: object
+              properties:
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+                DIY:
+                  type: object
+                  properties:
+                    products:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Product'
+                    description:
+                      type: string
+                Professional:
+                  type: object
+                  properties:
+                    products:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Product'
+                    description:
+                      type: string
+      description: DIY Agent output - DIY repair steps, YouTube tutorials, and product recommendations.
+      example:
+        diyResults:
+          diySteps:
+            summary: "Replace the faucet cartridge to stop the leak"
+            steps:
+              - stepNumber: 1
+                description: "Turn off water supply valves under the sink"
+              - stepNumber: 2
+                description: "Remove the faucet handle and bonnet nut"
+              - stepNumber: 3
+                description: "Replace the cartridge and reassemble"
+          youtubeSearch:
+            videos:
+              - title: "How to replace a kitchen faucet cartridge"
+                url: "https://www.youtube.com/watch?v=abc123"
+                description: "Step-by-step tutorial for faucet repair"
+          recommendedProducts:
+            products:
+              - item_name: "Universal Faucet Cartridge"
+                image_url: "https://example.com/image.jpg"
+                vendor: "Home Depot"
+                reviews: "120 reviews"
+                store_url: "https://homedepot.com/product/123"
+
+    ServiceAgentOutput:
+      type: object
+      required:
+        - serviceResults
+      properties:
+        serviceResults:
+          type: object
+          properties:
+            costEstimates:
+              type: string
+              description: Cost estimation text from cost_estimation tool.
+              nullable: true
+            localPros:
+              type: object
+              properties:
+                serpAPIResults:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ServiceProvider'
+                  description: Service providers from SerpAPI search.
+                yelpAPIResults:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ServiceProvider'
+                  description: Service providers from Yelp search.
+                googleSearchResults:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ServiceProvider'
+                  description: Service providers from Google search fallback.
+      description: Service Agent output - local professional service providers and cost estimates.
+      example:
+        serviceResults:
+          costEstimates: "Professional service: $200-500"
+          localPros:
+            serpAPIResults:
+              - name: "Springfield Plumbing Co"
+                rating: "4.6"
+                phone: "+1-555-123-4567"
+                location: "123 Main St, Springfield"
+            yelpAPIResults:
+              - name: "Main St Plumbers"
+                rating: "4.3"
+                phone: "+1-555-987-6543"
+                reviews: "150 reviews"
+
+    ShoppingAgentOutput:
+      type: object
+      required:
+        - recommendedProducts
+      properties:
+        recommendedProducts:
+          type: object
+          additionalProperties: true
+          properties:
+            DIY:
+              type: object
+              properties:
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+                description:
+                  type: string
+            Professional:
+              type: object
+              properties:
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+                description:
+                  type: string
+      description: Shopping Agent output - product recommendations with category-based structure.
+      example:
+        recommendedProducts:
+          DIY:
+            products:
+              - item_name: "Touch-Up Paint Kit"
+                image_url: "https://images.example.com/paint.jpg"
+                vendor: "AutoZone"
+                reviews: "120 reviews"
+                store_url: "https://autozone.com/paint"
+            description: "Essential products you'll need for diy repair"
+
+    CostAgentInput:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Query string describing the repair or service needed.
+      description: Input schema for Cost Agent - accepts a query string.
+      example:
+        query: "car scratch repair"
+
+    CostAgentOutput:
+      type: object
+      required:
+        - costEstimates
+      properties:
+        costEstimates:
+          type: object
+          properties:
+            repair_type:
+              type: string
+              description: Type of repair derived from query.
+            DIY:
+              type: object
+              properties:
+                cost_range:
+                  type: string
+                  description: Cost range for DIY repair (e.g., "$50-300").
+                includes:
+                  type: array
+                  items:
+                    type: string
+                  description: What is included in DIY cost.
+                savings:
+                  type: string
+                  description: Potential savings with DIY.
+                complexity:
+                  type: string
+                  description: Complexity assessment.
+            Service:
+              type: object
+              properties:
+                cost_range:
+                  type: string
+                  description: Cost range for professional service (e.g., "$200-800").
+                includes:
+                  type: array
+                  items:
+                    type: string
+                  description: What is included in professional service.
+                benefits:
+                  type: string
+                  description: Benefits of professional service.
+                complexity:
+                  type: string
+                  description: Complexity assessment.
+            comparison:
+              type: object
+              properties:
+                diy_savings:
+                  type: string
+                  description: Savings comparison text.
+                professional_benefits:
+                  type: string
+                  description: Professional benefits text.
+                considerations:
+                  type: string
+                  description: General considerations.
+            recommendation:
+              type: object
+              properties:
+                simple_repairs:
+                  type: string
+                  description: Recommendation for simple repairs.
+                complex_repairs:
+                  type: string
+                  description: Recommendation for complex repairs.
+                note:
+                  type: string
+                  description: Additional notes about cost estimates.
+              nullable: true
+      description: Cost Agent output - structured DIY vs Service cost estimates.
+      example:
+        costEstimates:
+          repair_type: "Paint Touch-Up And Scratch Repair"
+          DIY:
+            cost_range: "$20-50"
+            includes: ["Material/product costs", "Basic tools (if needed)", "Time investment required"]
+            savings: "60-80% on labor costs"
+            complexity: "Simple repairs may be cost-effective"
+          Service:
+            cost_range: "$200-500"
+            includes: ["Labor costs", "Professional expertise", "Warranty/guarantee included"]
+            benefits: "Expertise and warranty"
+            complexity: "Complex or safety-critical repairs recommended"
+          comparison:
+            diy_savings: "60-80% on labor costs"
+            professional_benefits: "Expertise and warranty"
+            considerations: "Complexity and skill level"
+          recommendation:
+            simple_repairs: "DIY may be cost-effective"
+            complex_repairs: "Professional service recommended"
+            note: "Estimates may vary by location and specific circumstances"
+
+    UserDocsAgentOutput:
+      type: object
+      properties:
+        user_docs_result:
+          type: string
+          description: Retrieved information from user-uploaded documents.
+      description: User Docs Agent output - retrieval results from user documents.
+      example:
+        user_docs_result: "Warranty covers parts for 5 years from purchase date. See section 3.2 of warranty document."
+
+    KnowledgeBaseAgentOutput:
+      type: object
+      properties:
+        knowledge_base_results:
+          type: string
+          description: Retrieved information from knowledge base RAG corpus.
+      description: Knowledge Base Agent output - retrieval results from general knowledge base.
+      example:
+        knowledge_base_results: "The E3 error code indicates an unbalanced load. See manual section 4.2 for troubleshooting steps."
+
+    Product:
+      type: object
+      properties:
+        item_name:
+          type: string
+          description: Product/item name.
+          nullable: true
+        image_url:
+          type: string
+          format: uri
+          description: Product image URL.
+          nullable: true
+        vendor:
+          type: string
+          description: Vendor/manufacturer/store name.
+          nullable: true
+        reviews:
+          type: string
+          description: Number of reviews or review text.
+          nullable: true
+        store_url:
+          type: string
+          format: uri
+          description: URL to product/store page.
+          nullable: true
+        product_name:
+          type: string
+          description: Legacy field - product name (use item_name instead).
+          nullable: true
+        url:
+          type: string
+          format: uri
+          description: Legacy field - product URL (use store_url instead).
+          nullable: true
+        item_price:
+          type: string
+          description: Legacy field - product price.
+          nullable: true
+        price:
+          type: string
+          description: Legacy field - product price.
+          nullable: true
+        rating:
+          type: string
+          description: Legacy field - product rating.
+          nullable: true
+        description:
+          type: string
+          description: Legacy field - product description.
+          nullable: true
+      description: Product schema matching shopping_agent output format.
+      example:
+        item_name: "Touch-Up Paint Kit"
+        image_url: "https://images.example.com/paint.jpg"
+        vendor: "AutoZone"
+        reviews: "120 reviews"
+        store_url: "https://autozone.com/touch-up-paint"
+
+    ServiceProvider:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Service provider business name.
+        contact_info:
+          type: string
+          description: Phone number or contact information.
+          nullable: true
+        location:
+          type: string
+          description: Address or location.
+          nullable: true
+        ratings:
+          type: string
+          description: Rating (e.g., "4.5" or "4.5/5").
+          nullable: true
+        reviews:
+          type: string
+          description: Number of reviews or review text.
+          nullable: true
+        website:
+          type: string
+          format: uri
+          description: Business website URL.
+          nullable: true
+        link:
+          type: string
+          format: uri
+          description: Business listing URL.
+          nullable: true
+        directions:
+          type: string
+          format: uri
+          description: Google Maps directions URL.
+          nullable: true
+        specialties:
+          type: string
+          description: Service specialties or services offered.
+          nullable: true
+        additional_information:
+          type: string
+          description: Additional provider information.
+          nullable: true
+        authorized:
+          type: string
+          description: Whether provider is authorized (e.g., "True", "False").
+          nullable: true
+      description: Service provider schema for local professional listings.
+      example:
+        name: "Springfield Plumbing Co"
+        contact_info: "+1-555-123-4567"
+        location: "123 Main St, Springfield, IL 62701"
+        ratings: "4.6"
+        reviews: "150 reviews"
+        website: "https://springfieldplumbing.example.com"
+        specialties: "Residential and commercial plumbing, emergency repairs"
+
+    # ============================================================================
+    # Main Agent Response Schemas
+    # ============================================================================
+
     PropertyAgentResponse:
       oneOf:
         - $ref: '#/components/schemas/StructuredResponse'
@@ -92,18 +628,25 @@ components:
                     products:
                       type: array
                       items:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          vendor:
-                            type: string
-                          url:
-                            type: string
-                            format: uri
-                          description:
-                            type: string
-                          price:
-                            type: string
+                        $ref: '#/components/schemas/Product'
+                    DIY:
+                      type: object
+                      properties:
+                        products:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Product'
+                        description:
+                          type: string
+                    Professional:
+                      type: object
+                      properties:
+                        products:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Product'
+                        description:
+                          type: string
             serviceResults:
               type: object
               additionalProperties: false
@@ -115,15 +658,15 @@ components:
                     serpAPIResults:
                       type: array
                       items:
-                        type: object
+                        $ref: '#/components/schemas/ServiceProvider'
                     yelpAPIResults:
                       type: array
                       items:
-                        type: object
+                        $ref: '#/components/schemas/ServiceProvider'
                     googleSearchResults:
                       type: array
                       items:
-                        type: object
+                        $ref: '#/components/schemas/ServiceProvider'
             costEstimationResults:
               type: object
               additionalProperties: false
@@ -270,10 +813,11 @@ components:
                   description: "Step-by-step tutorial"
             recommendedProducts:
               products:
-                - vendor: "ExampleStore"
-                  url: "https://example.com/product/123"
-                  description: "Universal Faucet Cartridge"
-                  price: "24.99"
+                - item_name: "Universal Faucet Cartridge"
+                  image_url: "https://example.com/images/cartridge.jpg"
+                  vendor: "Home Depot"
+                  reviews: "120 reviews"
+                  store_url: "https://homedepot.com/product/123"
           serviceResults:
             localPros:
               serpAPIResults:
@@ -305,6 +849,10 @@ components:
                 diy_savings: "~60-80% on labor"
                 professional_benefits: "Expertise and warranty"
                 considerations: "Repair complexity and safety factors"
+              recommendation:
+                simple_repairs: "DIY may be cost-effective"
+                complex_repairs: "Professional service recommended"
+                note: "Estimates may vary by location and specific circumstances"
 
     ExampleRetrievalResponse:
       summary: Retrieval result from user documents
@@ -314,5 +862,53 @@ components:
           The E3 error indicates an unbalanced load. See manual section 4.2.
           Citation: gs://my-bucket/manuals/washer.pdf#page=12
         noInformationFound: false
+
+  # ============================================================================
+  # Sub-Agent Summary
+  # ============================================================================
+  # The Property Agent orchestrates the following sub-agents:
+  #
+  # 1. Triage Agent (DiagnosisInput -> TriageAgentOutput)
+  #    - Input: DiagnosisInput (user_query, diagnosis_uris, context_doc_uris, property_address)
+  #    - Output: TriageAgentOutput (triageResult with diagnosis)
+  #    - Purpose: Analyzes multimodal data or performs text-only triage
+  #
+  # 2. Coverage Agent (DocsInput -> CoverageAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: CoverageAgentOutput (coverageResult with warrantyInfo, insuranceInfo)
+  #    - Purpose: Retrieves warranty and insurance information from user documents
+  #
+  # 3. DIY Agent (DocsInput -> DIYAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: DIYAgentOutput (diyResults with diySteps, youtubeSearch, recommendedProducts)
+  #    - Purpose: Provides DIY repair steps, YouTube tutorials, and product recommendations
+  #
+  # 4. Service Agent (DocsInput -> ServiceAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: ServiceAgentOutput (serviceResults with costEstimates, localPros)
+  #    - Purpose: Finds local service providers and provides cost estimates
+  #
+  # 5. Shopping Agent (DocsInput -> ShoppingAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: ShoppingAgentOutput (recommendedProducts with category-based structure)
+  #    - Purpose: Provides product recommendations (reusable across contexts)
+  #
+  # 6. Cost Agent (CostAgentInput -> CostAgentOutput)
+  #    - Input: CostAgentInput (query string describing the repair)
+  #    - Output: CostAgentOutput (costEstimates with DIY vs Service comparison and recommendation)
+  #    - Purpose: Provides structured DIY vs Service cost estimates
+  #
+  # 7. User Docs Agent (DocsInput -> UserDocsAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: UserDocsAgentOutput (user_docs_result)
+  #    - Purpose: Retrieves information from user-uploaded documents
+  #
+  # 8. Knowledge Base Agent (DocsInput -> KnowledgeBaseAgentOutput)
+  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
+  #    - Output: KnowledgeBaseAgentOutput (knowledge_base_results)
+  #    - Purpose: Retrieves information from general knowledge base RAG corpus
+  #
+  # All sub-agents are modular and can be used independently or orchestrated
+  # through the Analysis Agent.
 
 
