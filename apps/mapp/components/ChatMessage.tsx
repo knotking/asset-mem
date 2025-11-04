@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Image, Linking } from 'react-native';
+import { View, Image, Linking, Pressable, Share, Modal, TouchableOpacity } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   User,
   Bot,
@@ -21,6 +23,7 @@ import {
   CheckCircle,
   Copy,
   AlertCircle,
+  Share2,
 } from 'lucide-react-native';
 import type {
   Message,
@@ -36,7 +39,7 @@ import {
 } from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
-import { markdownToWhatsapp } from '@/lib/utils';
+import { markdownToWhatsapp, jsonToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 
@@ -633,6 +636,10 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
 };
 
 const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
+  // Media dimensions constants
+  const MEDIA_MAX_WIDTH = 350;
+  const MEDIA_FIXED_HEIGHT = 192;
+
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   const [imageError, setImageError] = React.useState(false);
@@ -640,6 +647,7 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
     width: number;
     height: number;
   } | null>(null);
+  const [videoReady, setVideoReady] = React.useState(false);
 
   // Video player hook - only create if video
   const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
@@ -647,30 +655,40 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
   });
 
   React.useEffect(() => {
+    if (isVideo && player) {
+      // Set video as ready when player status changes
+      const checkStatus = () => {
+        if (player.status === 'readyToPlay' || player.status === 'idle') {
+          setVideoReady(true);
+        }
+      };
+
+      // Check immediately
+      checkStatus();
+
+      // Set a timeout fallback to show video after 2 seconds regardless
+      const timeout = setTimeout(() => {
+        setVideoReady(true);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isVideo, player]);
+
+  React.useEffect(() => {
     if (isImage && file.url) {
       Image.getSize(
         file.url,
         (width, height) => {
-          // Calculate aspect ratio and set dimensions
-          // Max width is screen width minus padding, let's assume 350px
-          const maxWidth = 350;
-          const maxHeight = 400;
+          // Calculate width based on aspect ratio while maintaining fixed height
+          const aspectRatio = width / height;
+          let displayWidth = MEDIA_FIXED_HEIGHT * aspectRatio;
+          let displayHeight = MEDIA_FIXED_HEIGHT;
 
-          let displayWidth = width;
-          let displayHeight = height;
-
-          // Scale down if image is too wide
-          if (width > maxWidth) {
-            const ratio = maxWidth / width;
-            displayWidth = maxWidth;
-            displayHeight = height * ratio;
-          }
-
-          // Scale down if image is too tall
-          if (displayHeight > maxHeight) {
-            const ratio = maxHeight / displayHeight;
-            displayWidth = displayWidth * ratio;
-            displayHeight = maxHeight;
+          // If calculated width exceeds max, scale down both dimensions
+          if (displayWidth > MEDIA_MAX_WIDTH) {
+            displayWidth = MEDIA_MAX_WIDTH;
+            displayHeight = MEDIA_MAX_WIDTH / aspectRatio;
           }
 
           setImageDimensions({ width: displayWidth, height: displayHeight });
@@ -684,10 +702,10 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
   }, [isImage, file.url]);
 
   return (
-    <View className="mb-2 overflow-hidden rounded-lg border border-border bg-secondary/30">
+    <View>
       {isImage ? (
         imageError ? (
-          <View className="flex-row items-center gap-2 bg-secondary p-3">
+          <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
             <Icon as={FileText} size={20} className="text-muted-foreground" />
             <View className="flex-1">
               <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
@@ -699,7 +717,11 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
         ) : imageDimensions ? (
           <Image
             source={{ uri: file.url }}
-            style={{ width: imageDimensions.width, height: imageDimensions.height }}
+            style={{
+              width: imageDimensions.width,
+              height: imageDimensions.height,
+              borderRadius: 8,
+            }}
             resizeMode="contain"
             onError={(e) => {
               console.error('Image load error:', e.nativeEvent.error);
@@ -707,20 +729,38 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
             }}
           />
         ) : (
-          <View className="h-48 w-full items-center justify-center">
-            <Text className="text-sm text-muted-foreground">Loading image...</Text>
+          <View
+            style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
+            className="flex-col gap-2 rounded-lg bg-muted/30 p-3">
+            <Skeleton className="h-6 w-full rounded" />
+            <Skeleton className="h-6 w-[90%] rounded" />
+            <Skeleton className="h-6 w-full rounded" />
+            <Skeleton className="h-6 w-[70%] rounded" />
           </View>
         )
       ) : isVideo ? (
-        <VideoView
-          player={player}
-          style={{ width: 350, height: 300 }}
-          contentFit="contain"
-          allowsFullscreen
-          allowsPictureInPicture
-        />
+        videoReady ? (
+          <View className="overflow-hidden rounded-lg">
+            <VideoView
+              player={player}
+              style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
+              contentFit="contain"
+              allowsFullscreen
+              allowsPictureInPicture
+            />
+          </View>
+        ) : (
+          <View
+            style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
+            className="flex-col gap-2 rounded-lg bg-muted/30 p-3">
+            <Skeleton className="h-6 w-full rounded" />
+            <Skeleton className="h-6 w-[90%] rounded" />
+            <Skeleton className="h-6 w-full rounded" />
+            <Skeleton className="h-6 w-[70%] rounded" />
+          </View>
+        )
       ) : (
-        <View className="flex-row items-center gap-2 bg-secondary p-3">
+        <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
           <Icon as={FileText} size={20} className="text-muted-foreground" />
           <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
             {file.name}
@@ -734,22 +774,69 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
+  const [showContextMenu, setShowContextMenu] = React.useState(false);
   const [copyStatus, setCopyStatus] = React.useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
+  const handleLongPress = () => {
+    if (!isLoading && message.content) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setShowContextMenu(true);
+    }
+  };
+
+  const formatMessageContent = (content: string): string => {
+    // Convert JSON code blocks to WhatsApp-friendly format
+    // Matches ```json ... ``` or ``` ... ```
+    const convertedContent = content.replace(
+      /```(?:json)?\s*\n?([\s\S]*?)```/g,
+      (_match, jsonContent) => {
+        try {
+          // Try to parse the JSON and convert to WhatsApp format
+          const parsed = JSON.parse(jsonContent.trim());
+          const whatsappFormatted = jsonToWhatsapp(parsed);
+          return whatsappFormatted;
+        } catch (e) {
+          // If parsing fails, return the content without backticks
+          return jsonContent.trim();
+        }
+      }
+    );
+
+    return markdownToWhatsapp(convertedContent);
+  };
+
   const handleCopyMessage = async () => {
     try {
-      const whatsappFormattedText = markdownToWhatsapp(message.content);
-      await Clipboard.setStringAsync(whatsappFormattedText);
+      const formattedText = formatMessageContent(message.content);
+      await Clipboard.setStringAsync(formattedText);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCopyStatus({ type: 'success', message: 'Message copied to clipboard' });
+      setShowContextMenu(false);
       // Auto-dismiss after 2 seconds
       setTimeout(() => setCopyStatus(null), 2000);
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setCopyStatus({ type: 'error', message: 'Failed to copy message' });
+      setShowContextMenu(false);
       // Auto-dismiss after 2 seconds
       setTimeout(() => setCopyStatus(null), 2000);
+    }
+  };
+
+  const handleShareMessage = async () => {
+    try {
+      const formattedText = formatMessageContent(message.content);
+      await Share.share({
+        message: formattedText,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setShowContextMenu(false);
+    } catch (error) {
+      console.error('Failed to share message:', error);
+      setShowContextMenu(false);
     }
   };
 
@@ -759,43 +846,39 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <MessageAvatar role={message.role} />
       </View>
       <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
-        <View
-          className={`rounded-lg p-3 ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
-          {message.file && <FilePreview file={message.file} />}
-          {isLoading ? (
-            <>
-              {message.agentSteps && message.agentSteps.length > 0 ? (
-                <AgentStatus steps={message.agentSteps} />
-              ) : (
-                <TypingIndicator />
-              )}
-            </>
-          ) : (
-            <MessageContent content={message.content} isUser={isUser} />
-          )}
-          {!isUser && message.content && !isLoading && (
-            <>
-              <Button
-                onPress={handleCopyMessage}
-                variant="ghost"
-                size="sm"
-                className="mt-2 self-end">
-                <Icon as={Copy} size={14} className="text-muted-foreground" />
-                <Text className="text-xs">Copy</Text>
-              </Button>
-              {copyStatus && (
-                <View className="mt-2">
-                  <Alert
-                    icon={copyStatus.type === 'success' ? CheckCircle : AlertCircle}
-                    variant={copyStatus.type === 'error' ? 'destructive' : 'default'}
-                    className="py-2">
-                    <AlertDescription className="text-xs">{copyStatus.message}</AlertDescription>
-                  </Alert>
-                </View>
-              )}
-            </>
-          )}
-        </View>
+        <Pressable onLongPress={handleLongPress} delayLongPress={500}>
+          <View
+            className={`overflow-hidden rounded-lg ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
+            {message.file && <FilePreview file={message.file} />}
+            {isLoading ? (
+              <>
+                {message.agentSteps && message.agentSteps.length > 0 ? (
+                  <AgentStatus steps={message.agentSteps} />
+                ) : (
+                  <View className="p-3">
+                    <TypingIndicator />
+                  </View>
+                )}
+              </>
+            ) : message.content ? (
+              <View className="p-3">
+                <MessageContent content={message.content} isUser={isUser} />
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+
+        {copyStatus && (
+          <View className="mt-2">
+            <Alert
+              icon={copyStatus.type === 'success' ? CheckCircle : AlertCircle}
+              variant={copyStatus.type === 'error' ? 'destructive' : 'default'}
+              className="py-2">
+              <AlertDescription className="text-xs">{copyStatus.message}</AlertDescription>
+            </Alert>
+          </View>
+        )}
+
         {message.createdAt && (
           <Text className="mt-1 text-xs text-muted-foreground">
             {new Date(
@@ -807,6 +890,33 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </Text>
         )}
       </View>
+
+      {/* Contextual Menu Modal */}
+      <Modal
+        visible={showContextMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowContextMenu(false)}>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowContextMenu(false)}
+          className="flex-1 items-center justify-center bg-black/50">
+          <View className="w-64 overflow-hidden rounded-lg bg-background shadow-lg">
+            <TouchableOpacity
+              onPress={handleCopyMessage}
+              className="flex-row items-center gap-3 border-b border-border p-4 active:bg-secondary">
+              <Icon as={Copy} size={20} className="text-foreground" />
+              <Text className="text-base text-foreground">Copy Message</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleShareMessage}
+              className="flex-row items-center gap-3 p-4 active:bg-secondary">
+              <Icon as={Share2} size={20} className="text-foreground" />
+              <Text className="text-base text-foreground">Share</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
