@@ -1,11 +1,13 @@
 import React, { useReducer } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@homeapp/common/firebase';
 import { Link } from 'expo-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
+import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 export default function SignupScreen() {
   interface SignupState {
@@ -13,13 +15,15 @@ export default function SignupScreen() {
     password: string;
     confirmPassword: string;
     error: string | null;
+    success: string | null;
   }
 
   type SignupAction =
     | { type: 'SET_EMAIL'; payload: string }
     | { type: 'SET_PASSWORD'; payload: string }
     | { type: 'SET_CONFIRM_PASSWORD'; payload: string }
-    | { type: 'SET_ERROR'; payload: string | null };
+    | { type: 'SET_ERROR'; payload: string | null }
+    | { type: 'SET_SUCCESS'; payload: string | null };
 
   const reducer = (state: SignupState, action: SignupAction): SignupState => {
     switch (action.type) {
@@ -30,7 +34,9 @@ export default function SignupScreen() {
       case 'SET_CONFIRM_PASSWORD':
         return { ...state, confirmPassword: action.payload };
       case 'SET_ERROR':
-        return { ...state, error: action.payload };
+        return { ...state, error: action.payload, success: null };
+      case 'SET_SUCCESS':
+        return { ...state, success: action.payload, error: null };
       default:
         return state;
     }
@@ -41,6 +47,7 @@ export default function SignupScreen() {
     password: '',
     confirmPassword: '',
     error: null,
+    success: null,
   });
 
   const handleSignUp = async () => {
@@ -51,7 +58,7 @@ export default function SignupScreen() {
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
       await createUserWithEmailAndPassword(auth, state.email, state.password);
-      Alert.alert('Sign Up', 'Account created successfully!');
+      dispatch({ type: 'SET_SUCCESS', payload: 'Account created successfully!' });
       // Navigation to login or home will be handled by AuthContext listener in _layout.tsx
     } catch (err: any) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
@@ -83,7 +90,22 @@ export default function SignupScreen() {
         secureTextEntry
         className="mb-6 w-full max-w-sm rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground shadow-sm"
       />
-      {state.error && <Text className="mb-4 text-red-500">{state.error}</Text>}
+      {state.error && (
+        <View className="mb-4 w-full max-w-sm">
+          <Alert icon={AlertCircle} variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        </View>
+      )}
+      {state.success && (
+        <View className="mb-4 w-full max-w-sm">
+          <Alert icon={CheckCircle} variant="default">
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{state.success}</AlertDescription>
+          </Alert>
+        </View>
+      )}
       <Button onPress={handleSignUp} className="mb-4 w-full max-w-sm">
         <Text className="text-white">Sign Up</Text>
       </Button>

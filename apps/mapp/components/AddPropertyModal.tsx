@@ -1,10 +1,11 @@
 import React from 'react';
-import { Modal, View, Alert, Pressable } from 'react-native';
+import { Modal, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { X, Upload } from 'lucide-react-native';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { X, Upload, AlertCircle } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -23,19 +24,21 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
   const { createPropertyDraftSession } = useSession();
   const [selectedFiles, setSelectedFiles] = React.useState<any[]>([]);
   const [isCreating, setIsCreating] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const handleClose = () => {
     if (isCreating) {
-      Alert.alert('Processing', 'Please wait while we set up your property.');
+      setErrorMessage('Please wait while we set up your property.');
       return;
     }
     setSelectedFiles([]);
+    setErrorMessage(null);
     onClose();
   };
 
   const handleChooseFiles = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to upload documents');
+      setErrorMessage('You must be logged in to upload documents');
       return;
     }
 
@@ -59,7 +62,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       setSelectedFiles(result.assets);
     } catch (error) {
       console.error('Error picking documents:', error);
-      Alert.alert('Error', 'Failed to pick documents. Please try again.');
+      setErrorMessage('Failed to pick documents. Please try again.');
     }
   };
 
@@ -101,7 +104,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
     } catch (error) {
       console.error('Error creating property:', error);
       setIsCreating(false);
-      Alert.alert('Error', 'Failed to create property. Please try again.');
+      setErrorMessage('Failed to create property. Please try again.');
     }
   };
 
@@ -121,6 +124,23 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
             </Button>
           </View>
         </View>
+
+        {/* Error Alert */}
+        {errorMessage && (
+          <View className="mx-4 mt-4">
+            <Alert icon={AlertCircle} variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 h-6 w-6"
+              onPress={() => setErrorMessage(null)}>
+              <Icon as={X} size={16} className="text-destructive" />
+            </Button>
+          </View>
+        )}
 
         {/* Main Content */}
         <View className="flex-1 items-center justify-center px-6">
