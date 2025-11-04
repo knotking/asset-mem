@@ -72,7 +72,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
-import type { Session, Document, AgentStep, FileAttachment } from '@homeapp/common/types';
+import type { Session, Document, FileAttachment, AgentStep } from '@homeapp/common/types';
 import { PROPERTY_TYPES } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
 
@@ -674,8 +674,14 @@ function DetailsTab({ property }: { property: any }) {
   );
 }
 
-function ChatTab({ sessionId }: { sessionId: string | null }) {
-  const { messages, isLoading } = useMessages();
+function ChatTab({ sessionId, onMessagesReady }: { sessionId: string | null; onMessagesReady?: (updateFn: (messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) => void }) {
+  const { messages, isLoading, updateMessageLocally } = useMessages();
+
+  React.useEffect(() => {
+    if (onMessagesReady) {
+      onMessagesReady(updateMessageLocally);
+    }
+  }, [updateMessageLocally, onMessagesReady]);
 
   if (!sessionId) {
     return (
@@ -713,6 +719,7 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const updateMessageLocallyRef = React.useRef<((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null>(null);
 
   // Handle automatic upload of files when navigating from AddPropertyModal
   React.useEffect(() => {
@@ -977,12 +984,6 @@ export default function PropertyDetailsScreen() {
         role: 'user',
         content: userMessage,
         createdAt: serverTimestamp(),
-        ...(selectedDocuments.length > 0 && {
-          documents: selectedDocuments.map((doc) => ({
-            name: doc.name,
-            type: doc.documentType || 'OTHER',
-          })),
-        }),
         ...(fileData && { file: fileData }),
       });
 
@@ -993,7 +994,6 @@ export default function PropertyDetailsScreen() {
           role: 'assistant',
           content: '',
           createdAt: serverTimestamp(),
-          agentSteps: [],
         }
       );
 
@@ -1029,23 +1029,24 @@ export default function PropertyDetailsScreen() {
           assistantContent += chunk;
         },
         onAgentStep: (step) => {
-          // Update agent steps in real-time
+          // Update agent steps in memory only (not in Firestore)
           const existingStepIndex = agentSteps.findIndex((s) => s.name === step.name);
           if (existingStepIndex > -1) {
             agentSteps[existingStepIndex] = step;
           } else {
             agentSteps.push(step);
           }
-          // Immediate update for agent steps (important for UX)
-          updateDoc(assistantMessageRef, {
-            agentSteps: [...agentSteps],
-          }).catch((err) => console.error('Error updating agent steps:', err));
+          // Update message locally in context (in-memory only)
+          if (updateMessageLocallyRef.current) {
+            updateMessageLocallyRef.current(assistantMessageRef.id, {
+              agentSteps: [...agentSteps],
+            });
+          }
         },
-        onComplete: (finalResponse, finalSteps) => {
-          // Final update with complete response - this replaces AgentStatus
+        onComplete: (finalResponse) => {
+          // Final update with complete response (removes agent steps by replacing with content)
           updateDoc(assistantMessageRef, {
             content: finalResponse,
-            agentSteps: finalSteps,
           }).catch((err) => console.error('Error completing message:', err));
         },
         onError: (error) => {
@@ -1219,7 +1220,12 @@ export default function PropertyDetailsScreen() {
       {/* Main Content Area */}
       {activeTab === 'chat' ? (
         <MessagesProvider sessionId={selectedSessionId}>
-          <ChatTab sessionId={selectedSessionId} />
+          <ChatTab
+            sessionId={selectedSessionId}
+            onMessagesReady={(updateFn) => {
+              updateMessageLocallyRef.current = updateFn;
+            }}
+          />
         </MessagesProvider>
       ) : (
         <ScrollView className="flex-1 bg-background px-4 py-4">
