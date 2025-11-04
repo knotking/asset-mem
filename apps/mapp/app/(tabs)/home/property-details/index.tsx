@@ -859,8 +859,37 @@ export default function PropertyDetailsScreen() {
 
     const asset = result.assets[0];
     const attachmentId = `upload-${Date.now()}`;
-    const fileName =
-      asset.fileName || `file-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+
+    console.log('ASSET:', asset);
+    // Extract filename from URI if asset.fileName is not available or is numeric
+    let fileName = asset.fileName;
+    const fileNameWithoutExt = fileName ? fileName.replace(/\.[^/.]+$/, '') : '';
+
+    // Check if fileName is missing, is just a number, or has a numeric-only base name
+    if (!fileName || /^\d+$/.test(fileNameWithoutExt)) {
+      // If fileName is not available or base name is just a number, extract from URI
+      const uriParts = asset.uri.split('/');
+      const uriFileName = uriParts[uriParts.length - 1];
+
+      // Decode URI component in case it has encoded characters
+      const decodedFileName = uriFileName ? decodeURIComponent(uriFileName) : '';
+
+      // If URI has a proper filename with extension and not just numeric, use it
+      if (decodedFileName && decodedFileName.includes('.')) {
+        const uriFileNameWithoutExt = decodedFileName.replace(/\.[^/.]+$/, '');
+        // Only use URI filename if it's not purely numeric
+        if (!/^\d+$/.test(uriFileNameWithoutExt)) {
+          fileName = decodedFileName;
+        } else {
+          // Even URI has numeric name, create a meaningful name
+          fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+        }
+      } else {
+        // Fallback to timestamp-based name with proper extension
+        fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+      }
+    }
+
     const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
 
     // Create storage reference
