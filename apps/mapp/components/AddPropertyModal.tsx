@@ -1,95 +1,46 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Animated,
-  Easing,
-} from 'react-native';
+import { Modal, View, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { X, Upload, FileText, CheckCircle, AlertCircle, Sparkles } from 'lucide-react-native';
+import { X, Upload } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
-import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { extractDocInfo, postFileToAgent } from '@/lib/api';
-
-// Rotating Sparkles Component
-function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; color?: string }) {
-  const spinValue = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    const spin = Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-    spin.start();
-    return () => spin.stop();
-  }, [spinValue]);
-
-  const rotate = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  return (
-    <Animated.View style={{ transform: [{ rotate }] }}>
-      <Sparkles size={size} color={color} />
-    </Animated.View>
-  );
-}
 
 interface AddPropertyModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: (propertyId: string) => void;
+  onSuccess: (propertyId: string, selectedFiles: any[]) => void;
 }
 
 export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPropertyModalProps) {
   const { user } = useAuth();
-  const { db, storage } = useFirebase();
+  const { db } = useFirebase();
   const { createPropertyDraftSession } = useSession();
-  const { uploadingDocs, uploadDocuments, removeUploadingDoc, clearUploadingDocs } =
-    useDocumentUpload();
-
-  const [propertyName, setPropertyName] = React.useState('');
+  const [selectedFiles, setSelectedFiles] = React.useState<any[]>([]);
   const [isCreating, setIsCreating] = React.useState(false);
-
-  const handleReset = () => {
-    setPropertyName('');
-    clearUploadingDocs();
-    setIsCreating(false);
-  };
 
   const handleClose = () => {
     if (isCreating) {
-      Alert.alert('Upload in Progress', 'Please wait for the upload to complete.');
+      Alert.alert('Processing', 'Please wait while we set up your property.');
       return;
     }
-    handleReset();
+    setSelectedFiles([]);
     onClose();
   };
 
-  const handlePickDocuments = async () => {
+  const handleChooseFiles = async () => {
     if (!user) {
       Alert.alert('Error', 'You must be logged in to upload documents');
       return;
     }
 
     try {
+      // Open document picker
       const result = await DocumentPicker.getDocumentAsync({
         type: [
           'application/pdf',
@@ -101,149 +52,57 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled || !result.assets) {
+      if (result.canceled || !result.assets || result.assets.length === 0) {
         return;
       }
 
-      // If no property name set, use first file name
-      if (!propertyName && result.assets.length > 0) {
-        const fileName = result.assets[0].name.replace(/\.[^/.]+$/, ''); // Remove extension
-        setPropertyName(fileName);
-      }
-
-      // Start uploading using the common hook
-      console.log('Starting immediate upload of', result.assets.length, 'documents');
-      await uploadDocuments(result.assets, {
-        userId: user.uid,
-        storage,
-        onAnalyze: async (doc, gsURI) => {
-          // Run AI analysis and RAG upload in parallel
-          const [analysisResult] = await Promise.allSettled([
-            extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType }),
-            postFileToAgent(gsURI, user.uid),
-          ]);
-
-          if (analysisResult.status === 'fulfilled') {
-            return analysisResult.value;
-          } else {
-            console.warn('Analysis failed (non-blocking):', analysisResult.reason);
-            return { summary: 'Analysis failed' };
-          }
-        },
-      });
+      setSelectedFiles(result.assets);
     } catch (error) {
       console.error('Error picking documents:', error);
-      Alert.alert('Error', 'Failed to pick documents');
+      Alert.alert('Error', 'Failed to pick documents. Please try again.');
     }
   };
 
-  const handleCreate = async () => {
-    console.log('=== handleCreate called ===');
-    console.log('User:', user?.uid);
-    console.log('Property name:', propertyName);
-    console.log('Documents count:', uploadingDocs.length);
-
-    if (!user) {
-      Alert.alert('Error', 'You must be logged in to create a property');
-      return;
-    }
-
-    if (!propertyName.trim()) {
-      Alert.alert('Error', 'Please enter a property name');
-      return;
-    }
-
-    if (uploadingDocs.length === 0) {
-      Alert.alert('Error', 'Please upload at least one document');
+  const handleUploadDocuments = async () => {
+    if (!user || selectedFiles.length === 0 || isCreating) {
       return;
     }
 
     setIsCreating(true);
-    console.log('Creating property...');
 
     try {
-      // 1. Check all documents are uploaded
-      const allUploaded = uploadingDocs.every(
-        (doc) => doc.status === 'complete' && doc.downloadURL
-      );
-      if (!allUploaded) {
-        throw new Error('Not all documents have finished uploading');
-      }
+      // Use first document name as property name (remove extension)
+      const firstFileName = selectedFiles[0].name.replace(/\.[^/.]+$/, '');
+      const propertyName = firstFileName || 'New Property';
 
-      // 2. Find address from analyzed documents (use first valid address found)
-      const extractedAddress = uploadingDocs.find(
-        (doc) => doc.propertyAddress && doc.propertyAddress !== 'N/A'
-      )?.propertyAddress;
+      console.log('Creating property with name:', propertyName);
+      console.log('Documents selected:', selectedFiles.length);
 
-      // 3. Create property in Firestore
-      console.log('Step 1: Creating property in Firestore...');
+      // Create property in Firestore
       const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), {
         userId: user.uid,
-        name: extractedAddress || propertyName.trim(), // Use extracted address as name if available
-        address: extractedAddress || 'Pending address...',
+        name: propertyName,
+        address: 'Processing...', // Will be updated from document analysis
         createdAt: serverTimestamp(),
       });
+
       console.log('Property created with ID:', propRef.id);
 
-      // 4. Eagerly create draft session for the property
-      console.log('Step 2: Creating draft session...');
-      createPropertyDraftSession(user.uid, propRef.id).catch((err) => {
-        console.error('Failed to create draft session:', err);
-      });
+      // Create draft session for the property
+      await createPropertyDraftSession(user.uid, propRef.id);
+      console.log('Draft session created');
 
-      // 5. Save documents to Firestore
-      console.log('Step 3: Saving documents to Firestore...');
-      await saveDocumentsToFirestore(propRef.id);
-      console.log('All documents saved to Firestore');
-
-      // 6. Success - navigate to property
-      console.log('Step 4: Navigating to property...');
-      handleReset();
-      onSuccess(propRef.id);
-      console.log('Property creation complete!');
+      // Close modal and navigate with selected files
+      const filesToUpload = [...selectedFiles];
+      setSelectedFiles([]);
+      setIsCreating(false);
+      onClose();
+      onSuccess(propRef.id, filesToUpload);
     } catch (error) {
       console.error('Error creating property:', error);
-      Alert.alert('Error', 'Failed to create property. Please try again.');
       setIsCreating(false);
+      Alert.alert('Error', 'Failed to create property. Please try again.');
     }
-  };
-
-  // Save uploaded documents to Firestore
-  const saveDocumentsToFirestore = async (propertyId: string) => {
-    console.log('=== saveDocumentsToFirestore called ===');
-    console.log('Property ID:', propertyId);
-    console.log('Documents to save:', uploadingDocs.length);
-
-    for (const doc of uploadingDocs) {
-      if (doc.status === 'complete' && doc.downloadURL) {
-        console.log('Saving document to Firestore:', doc.name);
-
-        try {
-          await addDoc(collection(db, 'users', user!.uid, 'docs'), {
-            userId: user!.uid,
-            propertyId: propertyId,
-            name: doc.name,
-            url: doc.downloadURL,
-            storagePath: doc.storagePath!,
-            createdAt: serverTimestamp(),
-            gsURI: doc.gsURI!,
-            contentType: doc.mimeType,
-            status: 'complete',
-            // AI analysis results
-            documentType: doc.documentType || 'OTHER',
-            propertyAddress: doc.propertyAddress || 'N/A',
-            keyEntities: doc.keyEntities || [],
-            summary: doc.summary || 'No summary available',
-          });
-          console.log('✓ Saved:', doc.name);
-        } catch (error) {
-          console.error('Failed to save document to Firestore:', doc.name, error);
-          throw error;
-        }
-      }
-    }
-
-    console.log('All documents saved to Firestore');
   };
 
   return (
@@ -256,151 +115,65 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         {/* Header */}
         <View className="border-b border-border bg-background px-4 py-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-foreground">Add New Property</Text>
-            <Button onPress={handleClose} variant="ghost" size="icon">
+            <Text className="text-lg font-semibold text-foreground">Upload Property Documents</Text>
+            <Button onPress={handleClose} variant="ghost" size="icon" disabled={isCreating}>
               <Icon as={X} size={24} className="text-foreground" />
             </Button>
           </View>
         </View>
 
-        <ScrollView className="flex-1 px-4 py-4">
-          {/* Property Name Input */}
-          <View className="mb-6">
-            <Text className="mb-2 text-sm font-medium text-foreground">Property Name</Text>
-            <Input
-              value={propertyName}
-              onChangeText={setPropertyName}
-              placeholder="Enter property name..."
-              editable={!isCreating}
-            />
-          </View>
+        {/* Main Content */}
+        <View className="flex-1 items-center justify-center px-6">
+          <Pressable
+            onPress={handleChooseFiles}
+            disabled={isCreating}
+            className="w-full max-w-md rounded-2xl border-2 border-dashed border-border bg-secondary/30 px-8 py-16">
+            <View className="items-center">
+              {/* Upload Icon */}
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={Upload} size={40} className="text-primary" />
+              </View>
 
-          {/* Documents Section */}
-          <View className="mb-6">
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-sm font-medium text-foreground">Documents</Text>
-              <Button
-                onPress={handlePickDocuments}
-                disabled={isCreating}
-                variant="secondary"
-                size="sm">
-                <Icon as={Upload} size={16} className="text-foreground" />
-                <Text>Upload</Text>
-              </Button>
+              {/* Main Text */}
+              <Text className="mb-2 text-center text-lg font-semibold text-foreground">
+                {selectedFiles.length > 0
+                  ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`
+                  : 'Tap to select files'}
+              </Text>
+
+              {/* Subtext */}
+              <Text className="mb-6 text-center text-sm text-muted-foreground">
+                {selectedFiles.length > 0
+                  ? 'Tap here to choose different files or upload the selected files below'
+                  : 'Upload documents related to your property such as inspection reports, floor plans, permits, etc.'}
+              </Text>
+
+              {/* Supported Types */}
+              <Text className="text-center text-xs text-muted-foreground">
+                Supports PDF, DOC, DOCX, JPG, PNG files
+              </Text>
             </View>
+          </Pressable>
 
-            {uploadingDocs.length === 0 ? (
-              <View className="items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary/30 p-8">
-                <Icon as={FileText} size={32} className="text-muted-foreground" />
-                <Text className="mt-2 text-sm text-muted-foreground">
-                  No documents uploaded yet
-                </Text>
-              </View>
-            ) : (
-              <View className="space-y-2">
-                {uploadingDocs.map((doc) => (
-                  <View key={doc.id} className="rounded-lg border border-border bg-background p-3">
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-1">
-                        <Text className="font-medium text-foreground" numberOfLines={1}>
-                          {doc.name}
-                        </Text>
-                        <Text className="mt-1 text-xs text-muted-foreground">
-                          {(doc.size / 1024).toFixed(1)} KB
-                        </Text>
-
-                        {/* Status */}
-                        {doc.status === 'uploading' && (
-                          <View className="mt-2">
-                            <Text className="text-xs text-muted-foreground">
-                              Uploading... {Math.round(doc.progress || 0)}%
-                            </Text>
-                            <Progress value={doc.progress || 0} className="mt-1" />
-                          </View>
-                        )}
-
-                        {doc.status === 'analyzing' && (
-                          <View className="mt-2 flex-row items-center gap-1">
-                            <RotatingSparkles size={14} color="#3B82F6" />
-                            <Text className="text-xs text-muted-foreground">Analyzing...</Text>
-                          </View>
-                        )}
-
-                        {doc.status === 'complete' && (
-                          <View className="mt-2">
-                            <View className="flex-row items-center gap-1">
-                              <Icon as={CheckCircle} size={14} className="text-green-500" />
-                              <Text className="text-xs text-green-500">Complete</Text>
-                            </View>
-                            {doc.summary && (
-                              <View className="mt-2 rounded-md bg-secondary/50 p-2">
-                                <Text className="text-xs text-muted-foreground">
-                                  {doc.documentType && `${doc.documentType} • `}
-                                  {doc.summary}
-                                </Text>
-                                {doc.propertyAddress && doc.propertyAddress !== 'N/A' && (
-                                  <Text className="mt-1 text-xs font-medium text-foreground">
-                                    📍 {doc.propertyAddress}
-                                  </Text>
-                                )}
-                              </View>
-                            )}
-                          </View>
-                        )}
-
-                        {doc.status === 'failed' && (
-                          <View className="mt-2 flex-row items-center gap-1">
-                            <Icon as={AlertCircle} size={14} className="text-red-500" />
-                            <Text className="text-xs text-red-500">{doc.error || 'Failed'}</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {!isCreating && (
-                        <Button
-                          onPress={() => removeUploadingDoc(doc.id)}
-                          variant="ghost"
-                          size="icon"
-                          className="ml-2 h-6 w-6">
-                          <Icon as={X} size={18} className="text-muted-foreground" />
-                        </Button>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </ScrollView>
-
-        {/* Footer */}
-        <View className="border-t border-border bg-background px-4 py-3">
-          {uploadingDocs.some((doc) => doc.status === 'uploading') && (
-            <Text className="mb-2 text-center text-sm text-muted-foreground">
-              Uploading files...
-            </Text>
-          )}
+          {/* Upload Documents Button */}
           <Button
-            onPress={() => {
-              console.log('Create Property button pressed');
-              handleCreate();
-            }}
-            disabled={
-              isCreating ||
-              !propertyName.trim() ||
-              uploadingDocs.length === 0 ||
-              uploadingDocs.some((doc) => doc.status !== 'complete')
-            }
-            className="w-full">
-            {isCreating ? (
-              <>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text>Creating...</Text>
-              </>
-            ) : (
-              <Text>Create Property</Text>
-            )}
+            onPress={handleUploadDocuments}
+            disabled={selectedFiles.length === 0 || isCreating}
+            className="mt-6 w-full max-w-md"
+            size="lg">
+            <Text className="font-semibold text-primary-foreground">
+              {isCreating
+                ? 'Creating property...'
+                : `Upload ${selectedFiles.length} document${selectedFiles.length !== 1 ? 's' : ''}`}
+            </Text>
           </Button>
+        </View>
+
+        {/* Footer Note */}
+        <View className="border-t border-border bg-background px-6 py-4">
+          <Text className="text-center text-xs text-muted-foreground">
+            Select files first, then tap Upload to create your property
+          </Text>
         </View>
       </SafeAreaView>
     </Modal>
