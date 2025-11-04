@@ -635,7 +635,13 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
   );
 };
 
-const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
+const FilePreview = ({
+  file,
+  isUserMessage,
+}: {
+  file: NonNullable<Message['file']>;
+  isUserMessage?: boolean;
+}) => {
   // Media dimensions constants
   const MEDIA_MAX_WIDTH = 350;
   const MEDIA_FIXED_HEIGHT = 192;
@@ -647,33 +653,11 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
     width: number;
     height: number;
   } | null>(null);
-  const [videoReady, setVideoReady] = React.useState(false);
 
   // Video player hook - only create if video
   const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
     player.pause();
   });
-
-  React.useEffect(() => {
-    if (isVideo && player) {
-      // Set video as ready when player status changes
-      const checkStatus = () => {
-        if (player.status === 'readyToPlay' || player.status === 'idle') {
-          setVideoReady(true);
-        }
-      };
-
-      // Check immediately
-      checkStatus();
-
-      // Set a timeout fallback to show video after 2 seconds regardless
-      const timeout = setTimeout(() => {
-        setVideoReady(true);
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [isVideo, player]);
 
   React.useEffect(() => {
     if (isImage && file.url) {
@@ -739,26 +723,12 @@ const FilePreview = ({ file }: { file: NonNullable<Message['file']> }) => {
           </View>
         )
       ) : isVideo ? (
-        videoReady ? (
-          <View className="overflow-hidden rounded-lg">
-            <VideoView
-              player={player}
-              style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
-              contentFit="contain"
-              allowsFullscreen
-              allowsPictureInPicture
-            />
-          </View>
-        ) : (
-          <View
-            style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
-            className="flex-col gap-2 rounded-lg bg-muted/30 p-3">
-            <Skeleton className="h-6 w-full rounded" />
-            <Skeleton className="h-6 w-[90%] rounded" />
-            <Skeleton className="h-6 w-full rounded" />
-            <Skeleton className="h-6 w-[70%] rounded" />
-          </View>
-        )
+        <VideoView
+          player={player}
+          style={{ height: MEDIA_FIXED_HEIGHT, minWidth: 100, maxWidth: MEDIA_MAX_WIDTH }}
+          contentFit="contain"
+          allowsPictureInPicture
+        />
       ) : (
         <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
           <Icon as={FileText} size={20} className="text-muted-foreground" />
@@ -849,7 +819,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <Pressable onLongPress={handleLongPress} delayLongPress={500}>
           <View
             className={`overflow-hidden rounded-lg ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
-            {message.file && <FilePreview file={message.file} />}
+            {message.file && <FilePreview file={message.file} isUserMessage={isUser} />}
             {isLoading ? (
               <>
                 {message.agentSteps && message.agentSteps.length > 0 ? (
