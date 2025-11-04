@@ -151,14 +151,17 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
 )};
 
 const ProductCard = ({ product }: { product: Product }) => {
-    // Determine an image source: prefer explicit image_url; otherwise, if the url looks like an image, use it
-    const guessedImageFromUrl = typeof product.url === 'string' && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(product.url) ? product.url : null;
-    const imageSrc = product.image_url || guessedImageFromUrl || null;
+    // Use new fields first, fallback to legacy fields
+    const itemName = product.item_name || product.product_name || product.description || 'Product';
+    const imageSrc = product.image_url || null;
+    // store_url is the primary field, url is legacy fallback
+    const productUrl = product.store_url || product.url || null;
+    
     return (
         <Card className="flex flex-col h-full w-full">
         <CardHeader>
             <CardTitle className="text-base flex justify-between items-start">
-                <span className="line-clamp-2">{product.product_name || product.description || 'Product'}</span>
+                <span className="line-clamp-2">{itemName}</span>
             </CardTitle>
             {product.vendor && (
                 <CardDescription className="flex items-center gap-2 pt-1">
@@ -172,7 +175,7 @@ const ProductCard = ({ product }: { product: Product }) => {
                 <div className="relative w-full h-32 rounded-md overflow-hidden">
                     <Image
                         src={imageSrc}
-                        alt={product.product_name || product.description || 'Product'}
+                        alt={itemName}
                         fill
                         className="object-cover"
                     />
@@ -184,27 +187,25 @@ const ProductCard = ({ product }: { product: Product }) => {
                         <span className="font-semibold text-primary">{product.price || product.item_price}</span>
                     </div>
                 )}
-                {(product.rating || product.reviews) && (
+                {product.reviews && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="text-xs">
+                            {product.reviews}
+                        </span>
+                    </div>
+                )}
+                {product.rating && (
                     <div className="flex items-center gap-2 text-sm text-yellow-500">
-                        {product.rating && (
-                            <>
-                                <Star className="h-4 w-4 fill-current" />
-                                <span>{product.rating}</span>
-                            </>
-                        )}
-                        {product.reviews && (
-                            <span className="text-muted-foreground text-xs">
-                                ({product.reviews})
-                            </span>
-                        )}
+                        <Star className="h-4 w-4 fill-current" />
+                        <span>{product.rating}</span>
                     </div>
                 )}
             </div>
         </CardContent>
         <CardFooter className="flex gap-2 mt-auto pt-4">
-            {product.url && (
+            {productUrl && (
                 <Button variant="outline" size="sm" asChild>
-                    <a href={product.url} target="_blank" rel="noopener noreferrer">
+                    <a href={productUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View Product
                     </a>
@@ -554,18 +555,40 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                             </div>
                         )}
                         
-                        {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
-                            <div className="space-y-3">
-                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                                    <ShoppingCart className="h-4 w-4" /> Recommended Products
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {diy.recommendedProducts.products.map((product: Product, index: number) => (
-                                        <ProductCard key={index} product={product} />
-                                    ))}
+                        {(() => {
+                            // Handle both formats:
+                            // 1. Direct format: recommendedProducts.products (extracted by diy agent)
+                            // 2. Category format: recommendedProducts.DIY.products (direct from shopping agent)
+                            let products: Product[] = [];
+                            if (diy?.recommendedProducts?.products && Array.isArray(diy.recommendedProducts.products)) {
+                                products = diy.recommendedProducts.products;
+                            } else if (diy?.recommendedProducts?.DIY?.products && Array.isArray(diy.recommendedProducts.DIY.products)) {
+                                products = diy.recommendedProducts.DIY.products;
+                            } else if (diy?.recommendedProducts && typeof diy.recommendedProducts === 'object') {
+                                // Try to find any category with products
+                                const categoryKeys = Object.keys(diy.recommendedProducts);
+                                for (const key of categoryKeys) {
+                                    const category = (diy.recommendedProducts as any)[key];
+                                    if (category?.products && Array.isArray(category.products)) {
+                                        products = category.products;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            return products.length > 0 ? (
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                                        <ShoppingCart className="h-4 w-4" /> Recommended Products
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {products.map((product: Product, index: number) => (
+                                            <ProductCard key={index} product={product} />
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ) : null;
+                        })()}
                     </AccordionContent>
                 </AccordionItem>
             )}

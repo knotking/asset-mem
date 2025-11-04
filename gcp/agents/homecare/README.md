@@ -42,13 +42,15 @@ The main orchestrator manages the overall workflow and delegates tasks to approp
 
 ### Sub-Agents
 
-#### 1. Diagnostics Agent
-Comprehensive multimodal analysis system with multiple specialized sub-agents:
+#### 1. Analysis Agent
+Comprehensive multimodal analysis system with multiple specialized sub-agents organized as separate modules:
 
-- **Core Analysis**: Multimodal data analysis using Gemini 2.5 Flash
-- **Research Agent**: Combines Google Search, user documents, and YouTube videos
-- **Service Provider Agent**: Finds local service providers via SerpAPI and Yelp
-- **Product Recommendations Agent**: Searches multiple retailers (Amazon, Home Depot, Lowe's, Walmart)
+- **Triage Agent**: Multimodal data analysis using Gemini 2.5 Flash (or text-only triage when no media provided)
+- **Coverage Agent**: Retrieves warranty and insurance information from user documents
+- **DIY Agent**: Combines Google Search, YouTube videos, and product recommendations via Shopping Agent
+- **Service Agent**: Finds local service providers via SerpAPI and Yelp, provides cost estimates
+- **Shopping Agent**: Reusable product recommendations agent (used by DIY agent and can be used elsewhere)
+- **Cost Agent**: Provides structured DIY vs Service cost estimates
 
 #### 2. DocuLink Agent
 Document retrieval and knowledge base access:
@@ -77,13 +79,15 @@ Document retrieval and knowledge base access:
 - **Authorization Status**: Identifies authorized vs. non-authorized service centers
 
 ### Product Recommendations
-- **Dual Scenario Support**: Products for both DIY repair and professional service scenarios
-- **Targeted Retailer Selection**: Smart recommendations based on problem type
-  - Home repairs: Home Depot, Lowe's, Ace Hardware
-  - Automotive: AutoZone, Advance Auto, Costco (for tires)
-  - General: Amazon, Harbor Freight
+- **Shopping Agent**: Reusable agent for product recommendations across different contexts (DIY, Professional, etc.)
+- **Structured Product Data**: Each product includes:
+  - `item_name`: Product/item name
+  - `image_url`: Product image URL
+  - `vendor`: Vendor/manufacturer/store name
+  - `reviews`: Number of reviews
+  - `store_url`: URL to product/store page
+- **Category-Based**: Shopping agent adapts based on category (DIY, Professional, etc.) provided by calling agents
 - **Comprehensive Product Lists**: Essential items needed to fix specific problems
-- **Rich Product Data**: Current prices, ratings, reviews, and product images
 - **Shopping Guidance**: Tips for comparing prices and return policies
 
 
@@ -130,7 +134,19 @@ The system accepts various input types:
     "yelpAPIResults": [...]
   },
   "productRecommendationsResults": {
-    "recommendedProducts": "Product recommendations with links"
+    "recommendedProducts": {
+      "[category]": {
+        "products": [
+          {
+            "item_name": "string",
+            "image_url": "string",
+            "vendor": "string",
+            "reviews": "string",
+            "store_url": "string"
+          }
+        ]
+      }
+    }
   },
   
 }

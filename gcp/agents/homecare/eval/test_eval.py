@@ -42,7 +42,7 @@ async def test_eval_analysis_agent():
 async def test_eval_cost_estimation():
     """Test the cost estimation agent's ability to provide accurate cost estimates."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.analysis_agent.cost_estimation_agent",
+        agent_module="property_agent.sub_agents.cost_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/cost_estimation.test.json"
         ),
@@ -52,9 +52,9 @@ async def test_eval_cost_estimation():
 
 @pytest.mark.asyncio
 async def test_eval_product_recommendations():
-    """Test the product recommendations agent's ability to find relevant products."""
+    """Test the shopping agent's ability to find relevant products."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.analysis_agent.product_recommendations_agent",
+        agent_module="property_agent.sub_agents.shopping_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/product_recommendations.test.json"
         ),
@@ -64,9 +64,9 @@ async def test_eval_product_recommendations():
 
 @pytest.mark.asyncio
 async def test_eval_service_provider():
-    """Test the service provider agent's ability to find local services."""
+    """Test the service agent's ability to find local services."""
     await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.analysis_agent.service_provider_agent",
+        agent_module="property_agent.sub_agents.service_agent",
         eval_dataset_file_path_or_dir=str(
             pathlib.Path(__file__).parent / "data/conversation.test.json"
         ),

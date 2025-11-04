@@ -5,7 +5,8 @@
       {
         "tool_name": "product_recommendations",
         "tool_input": {
-          "query": "car scratch repair products"
+          "query": "car scratch repair products",
+          "category": "DIY"
         }
       }
     ],
@@ -14,70 +15,48 @@
         "DIY": {
           "products": [
             {
-              "product_name": "Touch-Up Paint Kit",
-              "vendor": "AutoZone",
-              "url": "https://autozone.com/touch-up-paint",
-              "item_price": "$25",
-              "rating": "4.5",
-              "reviews": "120 reviews",
+              "item_name": "Touch-Up Paint Kit",
               "image_url": "https://images.autozone.com/paint-kit.jpg",
-              "is_preferred_retailer": true
+              "vendor": "AutoZone",
+              "reviews": "120 reviews",
+              "store_url": "https://autozone.com/touch-up-paint"
             },
             {
-              "product_name": "Automotive Sandpaper Set",
-              "vendor": "Advance Auto",
-              "url": "https://advanceauto.com/sandpaper",
-              "item_price": "$15",
-              "rating": "4.2",
-              "reviews": "85 reviews",
+              "item_name": "Automotive Sandpaper Set",
               "image_url": "https://images.advanceauto.com/sandpaper.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Advance Auto",
+              "reviews": "85 reviews",
+              "store_url": "https://advanceauto.com/sandpaper"
             },
             {
-              "product_name": "Microfiber Cloths",
-              "vendor": "Amazon",
-              "url": "https://amazon.com/microfiber",
-              "item_price": "$10",
-              "rating": "4.3",
-              "reviews": "200 reviews",
+              "item_name": "Microfiber Cloths",
               "image_url": "https://images.amazon.com/microfiber.jpg",
-              "is_preferred_retailer": false
+              "vendor": "Amazon",
+              "reviews": "200 reviews",
+              "store_url": "https://amazon.com/microfiber"
             }
           ],
           "description": "Essential products you'll need to fix this yourself"
         },
-        "Service": {
+        "Professional": {
           "products": [
             {
-              "product_name": "Professional Touch-Up Paint",
-              "vendor": "AutoZone",
-              "url": "https://autozone.com/pro-paint",
-              "item_price": "$45",
-              "rating": "4.6",
-              "reviews": "180 reviews",
+              "item_name": "Professional Touch-Up Paint",
               "image_url": "https://images.autozone.com/pro-paint.jpg",
-              "is_preferred_retailer": true
+              "vendor": "AutoZone",
+              "reviews": "180 reviews",
+              "store_url": "https://autozone.com/pro-paint"
             },
             {
-              "product_name": "Automotive Primer",
-              "vendor": "Advance Auto",
-              "url": "https://advanceauto.com/primer",
-              "item_price": "$25",
-              "rating": "4.3",
-              "reviews": "120 reviews",
+              "item_name": "Automotive Primer",
               "image_url": "https://images.advanceauto.com/primer.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Advance Auto",
+              "reviews": "120 reviews",
+              "store_url": "https://advanceauto.com/primer"
             }
           ],
           "description": "Products typically used by professionals for this repair"
-        },
-        "recommended_retailers": ["AutoZone", "Advance Auto", "O'Reilly Auto", "Body Shop Supply"],
-        "shopping_tips": [
-          "★ indicates products from recommended retailers",
-          "Compare prices across multiple stores",
-          "Check return policies before purchasing",
-          "Consider buying extra supplies for future repairs"
-        ]
+        }
       }
     }
   },
@@ -87,7 +66,8 @@
       {
         "tool_name": "product_recommendations",
         "tool_input": {
-          "query": "faucet leak repair products"
+          "query": "faucet leak repair products",
+          "category": "DIY"
         }
       }
     ],
@@ -96,70 +76,48 @@
         "DIY": {
           "products": [
             {
-              "product_name": "Faucet Repair Kit",
-              "vendor": "Home Depot",
-              "url": "https://homedepot.com/faucet-repair",
-              "item_price": "$25",
-              "rating": "4.6",
-              "reviews": "180 reviews",
+              "item_name": "Faucet Repair Kit",
               "image_url": "https://images.homedepot.com/faucet-kit.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Home Depot",
+              "reviews": "180 reviews",
+              "store_url": "https://homedepot.com/faucet-repair"
             },
             {
-              "product_name": "O-Ring Assortment",
-              "vendor": "Lowe's",
-              "url": "https://lowes.com/o-rings",
-              "item_price": "$15",
-              "rating": "4.3",
-              "reviews": "120 reviews",
+              "item_name": "O-Ring Assortment",
               "image_url": "https://images.lowes.com/o-rings.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Lowe's",
+              "reviews": "120 reviews",
+              "store_url": "https://lowes.com/o-rings"
             },
             {
-              "product_name": "Plumber's Grease",
-              "vendor": "Ace Hardware",
-              "url": "https://acehardware.com/grease",
-              "item_price": "$12",
-              "rating": "4.2",
-              "reviews": "95 reviews",
+              "item_name": "Plumber's Grease",
               "image_url": "https://images.acehardware.com/grease.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Ace Hardware",
+              "reviews": "95 reviews",
+              "store_url": "https://acehardware.com/grease"
             }
           ],
           "description": "Essential products you'll need to fix this yourself"
         },
-        "Service": {
+        "Professional": {
           "products": [
             {
-              "product_name": "Professional Faucet Repair Kit",
-              "vendor": "Home Depot",
-              "url": "https://homedepot.com/pro-kit",
-              "item_price": "$45",
-              "rating": "4.7",
-              "reviews": "250 reviews",
+              "item_name": "Professional Faucet Repair Kit",
               "image_url": "https://images.homedepot.com/pro-kit.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Home Depot",
+              "reviews": "250 reviews",
+              "store_url": "https://homedepot.com/pro-kit"
             },
             {
-              "product_name": "Faucet Seat Dressing Tool",
-              "vendor": "Lowe's",
-              "url": "https://lowes.com/dressing-tool",
-              "item_price": "$20",
-              "rating": "4.5",
-              "reviews": "180 reviews",
+              "item_name": "Faucet Seat Dressing Tool",
               "image_url": "https://images.lowes.com/dressing-tool.jpg",
-              "is_preferred_retailer": true
+              "vendor": "Lowe's",
+              "reviews": "180 reviews",
+              "store_url": "https://lowes.com/dressing-tool"
             }
           ],
           "description": "Products typically used by professionals for this repair"
-        },
-        "recommended_retailers": ["Home Depot", "Lowe's", "Ace Hardware"],
-        "shopping_tips": [
-          "★ indicates products from recommended retailers",
-          "Compare prices across multiple stores",
-          "Check return policies before purchasing",
-          "Consider buying extra supplies for future repairs"
-        ]
+        }
       }
     }
   },
@@ -169,7 +127,8 @@
       {
         "tool_name": "product_recommendations",
         "tool_input": {
-          "query": "brake pad replacement parts"
+          "query": "brake pad replacement parts",
+          "category": "DIY"
         }
       }
     ],
@@ -181,7 +140,8 @@
       {
         "tool_name": "product_recommendations",
         "tool_input": {
-          "query": "drywall crack repair products"
+          "query": "drywall crack repair products",
+          "category": "DIY"
         }
       }
     ],
@@ -193,7 +153,8 @@
       {
         "tool_name": "product_recommendations",
         "tool_input": {
-          "query": "washing machine replacement parts"
+          "query": "washing machine replacement parts",
+          "category": "DIY"
         }
       }
     ],

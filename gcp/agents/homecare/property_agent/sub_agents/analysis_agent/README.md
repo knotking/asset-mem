@@ -6,22 +6,27 @@ The Analysis Agent orchestrates a diagnostic workflow for home care and vehicle 
 
 ## Architecture
 
-The Analysis Agent coordinates four specialized sub-agents:
+The Analysis Agent coordinates multiple specialized sub-agents, each defined in their own modules:
 
 ```
-Analysis Agent
-├── Triage Agent
+Analysis Agent (orchestrator)
+├── Triage Agent (in analysis_agent module)
 │   └── analyse_multimodal_data
-├── Coverage Agent
+├── Coverage Agent (separate module)
 │   └── ask_user_docs_retreival
-├── DIY Agent
+├── DIY Agent (separate module)
 │   ├── google_search_agent
 │   ├── youtube_search
-│   └── product_recommendations_diy
-└── Service Agent
-    ├── serpapi_search
-    └── yelpapi_search
-└── Cost Agent
+│   ├── shopping_agent (as tool)
+│   └── cost_estimation_diy
+├── Service Agent (separate module)
+│   ├── serpapi_search
+│   ├── yelpapi_search
+│   ├── google_search_agent
+│   └── cost_estimation
+├── Shopping Agent (separate module, reusable)
+│   └── product_recommendations
+└── Cost Agent (separate module)
     └── cost_estimation / cost_estimation_diy
 ```
 
@@ -33,37 +38,56 @@ Analysis Agent
 - **Tool (when media provided)**: `analyse_multimodal_data(user_query, gcs_url)`
 - **Output**: JSON containing a diagnosis text used by subsequent agents.
 
-### 2. Coverage Agent
+### 2. Coverage Agent (separate module: `coverage_agent`)
 
 - **Purpose**: Retrieve warranty and insurance coverage information from user-uploaded documents.
 - **Tool**: `ask_user_docs_retreival`
 - **Output**: JSON with warranty and insurance information relevant to the issue.
+- **Location**: `sub_agents/coverage_agent/`
 
-### 3. DIY Agent
+### 3. DIY Agent (separate module: `diy_agent`)
 
 - **Purpose**: Provide DIY repair recommendations including internet research, video tutorials, and DIY product suggestions.
 - **Tools**:
   - `google_search_agent`: Internet research for DIY steps
   - `youtube_search`: Relevant DIY video tutorials
-  - `product_recommendations_diy`: DIY-focused products across retailers
+  - `shopping_agent`: Product recommendations (uses "DIY" category)
+  - `cost_estimation_diy`: DIY cost estimates
 - **Output**: JSON with DIY steps, YouTube videos, and recommended products.
+- **Location**: `sub_agents/diy_agent/`
 
-### 4. Service Agent
+### 4. Service Agent (separate module: `service_agent`)
 
 - **Purpose**: Provide professional service provider options near the user.
 - **Tools**:
   - `serpapi_search`: Local service/business listings
   - `yelpapi_search`: Yelp listings with reviews and ratings
   - `google_search_agent` (fallback): General web search to extract providers when others return none
+  - `cost_estimation`: Professional service cost estimates
 - **Output**: JSON with local professional listings. Primary sources: SerpAPI and Yelp; fallback: `localPros.googleSearchResults`.
+- **Location**: `sub_agents/service_agent/`
 
-### 5. Cost Agent
+### 5. Shopping Agent (separate module: `shopping_agent`)
+
+- **Purpose**: Provide product recommendations for repairs. Reusable across different contexts (DIY, Professional, etc.).
+- **Tool**: `product_recommendations(query, category)`: Searches for products based on query and category
+- **Output**: JSON with product recommendations containing:
+  - `item_name`: Product/item name
+  - `image_url`: Product image URL
+  - `vendor`: Vendor/manufacturer/store name
+  - `reviews`: Number of reviews
+  - `store_url`: URL to product/store page
+- **Location**: `sub_agents/shopping_agent/`
+- **Usage**: Used by DIY Agent with "DIY" category. Can be used by other agents for different categories.
+
+### 6. Cost Agent (separate module: `cost_agent`)
 
 - **Purpose**: Provide structured DIY vs Service cost estimates.
 - **Tools**:
   - `cost_estimation`: High-level DIY vs professional cost ranges
   - `cost_estimation_diy`: DIY-only cost guidance
 - **Output**: JSON under `costEstimationResults.costEstimates`.
+- **Location**: `sub_agents/cost_agent/`
 
 ## Workflow
 
@@ -120,7 +144,13 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
       },
       "recommendedProducts": {
         "products": [
-          { "vendor": "string", "url": "string", "description": "string", "price": "string" }
+          {
+            "item_name": "string",
+            "image_url": "string",
+            "vendor": "string",
+            "reviews": "string",
+            "store_url": "string"
+          }
         ]
       }
     },
@@ -162,7 +192,24 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
 - Efficient API usage with rate-limiting considerations
 
 
+## Module Structure
+
+The Analysis Agent orchestrates sub-agents that are now organized as separate modules:
+
+- **`analysis_agent/`**: Contains the orchestrator and triage agent
+- **`coverage_agent/`**: Standalone module for coverage retrieval
+- **`diy_agent/`**: Standalone module for DIY recommendations
+- **`service_agent/`**: Standalone module for service provider discovery
+- **`shopping_agent/`**: Standalone reusable module for product recommendations
+- **`cost_agent/`**: Standalone module for cost estimation
+
+Each module follows a consistent structure:
+- `agent.py`: Agent definition and tools
+- `prompts.py`: Agent instructions
+- `__init__.py`: Module exports
+
 ## Notes
 
-- Function and tool names match the implementation in `agent.py` (e.g., `ask_user_docs_retreival`, `product_recommendations_diy`).
+- Sub-agents are imported and used as tools by the analysis agent orchestrator.
 - The triage diagnosis should be used to tailor both DIY and Service queries for higher relevance.
+- Shopping agent provides generic product recommendations; calling agents (like DIY agent) provide specific instructions about category and context.

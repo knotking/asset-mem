@@ -46,6 +46,15 @@ export type StructuredResponseData = {
       };
       recommendedProducts?: {
         products?: Product[];
+        DIY?: {
+          products?: Product[];
+          description?: string;
+        };
+        Professional?: {
+          products?: Product[];
+          description?: string;
+        };
+        [key: string]: any; // Allow other category keys
       };
     };
     serviceResults?: {
@@ -53,21 +62,46 @@ export type StructuredResponseData = {
       localPros?: {
         serpAPIResults?: ServiceProvider[];
         yelpAPIResults?: ServiceProvider[];
+        googleSearchResults?: ServiceProvider[];
       }
+    };
+    costEstimationResults?: {
+      costEstimates?: {
+        repair_type?: string;
+        DIY?: {
+          cost_range?: string;
+          includes?: string[];
+          savings?: string;
+          complexity?: string;
+        };
+        Service?: {
+          cost_range?: string;
+          includes?: string[];
+          benefits?: string;
+          complexity?: string;
+        };
+        comparison?: {
+          diy_savings?: string;
+          professional_benefits?: string;
+          considerations?: string;
+        };
+      };
     };
   };
 }
 
 export type Product = {
-  // legacy fields (kept for backward compatibility)
-  product_name?: string;
-  item_price?: string | null;
+  // Primary fields (from shopping_agent)
+  item_name?: string | null;
   image_url?: string | null;
-  rating?: string | null;
-  reviews?: string | null;
-  // new structured fields
   vendor?: string | null;
-  url?: string | null;
+  reviews?: string | null;
+  store_url?: string | null;
+  // Legacy fields (kept for backward compatibility)
+  product_name?: string | null;
+  url?: string | null; // Maps to store_url
+  item_price?: string | null;
+  rating?: string | null;
   description?: string | null;
   price?: string | null;
 }

@@ -106,11 +106,13 @@ Note: Tool calls may require environment variables and GCP auth (ADC). See paren
 
 ```
 property_agent (root orchestrator)
-├── analysis_agent           # Multimodal diagnostics workflow
-│   ├── triage_agent         # analyse_multimodal_data
-│   ├── coverage_agent       # ask_user_docs_retreival
-│   ├── diy_agent            # google_search_agent, youtube_search, product_recommendations_diy
-│   └── service_agent        # cost_estimation, serpapi_search, yelpapi_search
+├── analysis_agent           # Multimodal diagnostics workflow orchestrator
+│   ├── triage_agent         # analyse_multimodal_data (in analysis_agent module)
+│   ├── coverage_agent       # ask_user_docs_retreival (separate module)
+│   ├── diy_agent            # google_search_agent, youtube_search, shopping_agent (separate modules)
+│   ├── service_agent        # serpapi_search, yelpapi_search, cost_estimation (separate module)
+│   ├── shopping_agent      # product_recommendations (separate reusable module)
+│   └── cost_agent           # cost_estimation, cost_estimation_diy (separate module)
 └── doculink_agent           # Context and knowledge retrieval workflow
     ├── user_docs_agent      # user-specific docs and stores
     └── knowledge_base_agent # general knowledge base
@@ -164,7 +166,13 @@ DocuLink input (`DocsInput`):
 
 ## Sub-Agent Summaries
 
-- **analysis_agent**: Runs multimodal triage first; if valid diagnosis, proceeds with coverage retrieval, DIY (steps, videos, DIY products), and service (costs, local pros). Has a built-in triage guard to short-circuit on invalid inputs.
+- **analysis_agent**: Orchestrator that runs multimodal triage first; if valid diagnosis, proceeds with coverage retrieval, DIY (steps, videos, products), and service (costs, local pros). Has a built-in triage guard to short-circuit on invalid inputs. Coordinates the following sub-agents:
+  - **triage_agent**: Analyzes multimodal data or performs text-only triage
+  - **coverage_agent**: Retrieves warranty/insurance from user documents
+  - **diy_agent**: Provides DIY repair steps, YouTube tutorials, and product recommendations via shopping_agent
+  - **service_agent**: Finds local service providers and provides cost estimates
+  - **shopping_agent**: Reusable agent for product recommendations (used by DIY agent)
+  - **cost_agent**: Provides DIY vs Service cost estimates
 - **doculink_agent**: If `context_doc_uris` are provided, uses `user_docs_agent`; otherwise uses `knowledge_base_agent`. Returns results as-is without rewriting.
 
 ## Usage
