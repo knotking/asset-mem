@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
@@ -12,7 +14,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { X, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { X, Upload, FileText, CheckCircle, AlertCircle, Sparkles } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -20,6 +22,35 @@ import { useSession } from '@homeapp/common/contexts/session-context';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { extractDocInfo, postFileToAgent } from '@/lib/api';
+
+// Rotating Sparkles Component
+function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; color?: string }) {
+  const spinValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const spin = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    spin.start();
+    return () => spin.stop();
+  }, [spinValue]);
+
+  const rotate = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <Sparkles size={size} color={color} />
+    </Animated.View>
+  );
+}
 
 interface AddPropertyModalProps {
   visible: boolean;
@@ -290,7 +321,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
                         {doc.status === 'analyzing' && (
                           <View className="mt-2 flex-row items-center gap-1">
-                            <ActivityIndicator size="small" color="#3B82F6" />
+                            <RotatingSparkles size={14} color="#3B82F6" />
                             <Text className="text-xs text-muted-foreground">Analyzing...</Text>
                           </View>
                         )}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, SafeAreaView } from 'react-native';
+import { Modal, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
