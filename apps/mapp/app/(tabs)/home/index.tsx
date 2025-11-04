@@ -71,6 +71,7 @@ export default function Screen() {
               docsCount={property.docs || 0}
               servicesCount={property.services || 0}
               checksCount={property.checks || 0}
+              docGsURIs={property.docGsURIs || []}
             />
           ))}
         </View>
