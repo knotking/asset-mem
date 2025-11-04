@@ -542,7 +542,9 @@ function DetailsTab({ property }: { property: any }) {
                 return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
               })
               .map((doc) => (
-                <View key={doc.id} className="mb-2 rounded-lg border border-border bg-background p-3">
+                <View
+                  key={doc.id}
+                  className="mb-2 rounded-lg border border-border bg-background p-3">
                   <View className="flex-row items-start justify-between">
                     <View className="flex-1">
                       <Text className="font-medium text-foreground" numberOfLines={1}>
@@ -674,7 +676,15 @@ function DetailsTab({ property }: { property: any }) {
   );
 }
 
-function ChatTab({ sessionId, onMessagesReady }: { sessionId: string | null; onMessagesReady?: (updateFn: (messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) => void }) {
+function ChatTab({
+  sessionId,
+  onMessagesReady,
+}: {
+  sessionId: string | null;
+  onMessagesReady?: (
+    updateFn: (messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void
+  ) => void;
+}) {
   const { messages, isLoading, updateMessageLocally } = useMessages();
 
   React.useEffect(() => {
@@ -697,7 +707,11 @@ function ChatTab({ sessionId, onMessagesReady }: { sessionId: string | null; onM
 }
 
 export default function PropertyDetailsScreen() {
-  const { id, new: isNew, files } = useLocalSearchParams<{ id: string; new?: string; files?: string }>();
+  const {
+    id,
+    new: isNew,
+    files,
+  } = useLocalSearchParams<{ id: string; new?: string; files?: string }>();
   const { properties } = usePropertiesList();
   const { draftsByProperty } = useSession();
   const { documents } = useProperty();
@@ -719,7 +733,9 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
-  const updateMessageLocallyRef = React.useRef<((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null>(null);
+  const updateMessageLocallyRef = React.useRef<
+    ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
+  >(null);
 
   // Handle automatic upload of files when navigating from AddPropertyModal
   React.useEffect(() => {

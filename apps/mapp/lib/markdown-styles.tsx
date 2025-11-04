@@ -67,8 +67,8 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
   // So we need dark text in light mode and light text in dark mode for user messages
   const textColor = isUserMessage
     ? isDark
-      ? colors.dark.foreground  // Dark mode: gray-800 background, use light text
-      : colors.light.foreground  // Light mode: gray-200 background, use dark text
+      ? colors.dark.foreground // Dark mode: gray-800 background, use light text
+      : colors.light.foreground // Light mode: gray-200 background, use dark text
     : theme.foreground;
 
   return StyleSheet.create({
@@ -130,7 +130,7 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       fontSize: 15,
       lineHeight: 22,
       marginTop: 0,
-      marginBottom: 12,
+      marginBottom: 0,
     },
     strong: {
       fontWeight: '700',
@@ -313,9 +313,7 @@ export const markdownRules = {
     // Default list item rendering with flex wrapper for text content
     return (
       <View key={node.key} style={styles.list_item}>
-        <View style={{ flex: 1 }}>
-          {children}
-        </View>
+        <View style={{ flex: 1 }}>{children}</View>
       </View>
     );
   },
