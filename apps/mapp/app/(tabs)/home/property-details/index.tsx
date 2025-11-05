@@ -720,7 +720,8 @@ export default function PropertyDetailsScreen() {
     id,
     new: isNew,
     files,
-  } = useLocalSearchParams<{ id: string; new?: string; files?: string }>();
+    tab,
+  } = useLocalSearchParams<{ id: string; new?: string; files?: string; tab?: string }>();
   const { properties } = usePropertiesList();
   const { draftsByProperty } = useSession();
   const { documents } = useProperty();
@@ -729,9 +730,10 @@ export default function PropertyDetailsScreen() {
   const { uploadDocuments } = useDocumentUpload();
   const router = useRouter();
   // If new property, show Details tab by default to see upload progress
+  // If tab param is provided, use that
   // Otherwise show Chat tab for existing properties
   const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>(
-    isNew === 'true' ? 'details' : 'chat'
+    tab === 'details' ? 'details' : (isNew === 'true' ? 'details' : 'chat')
   );
   const [message, setMessage] = React.useState('');
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);

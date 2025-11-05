@@ -31,6 +31,7 @@ import {
   MoreVertical,
   AlertCircle,
   X,
+  Pencil,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -76,6 +77,10 @@ export default function PropertyCard({
     } else {
       router.push({ pathname: '/(tabs)/home/property-details', params: { id: id } });
     }
+  };
+
+  const handleEditPress = () => {
+    router.push({ pathname: '/(tabs)/home/property-details', params: { id: id, tab: 'details' } });
   };
 
   const handleDeletePress = (e: any) => {
@@ -215,14 +220,18 @@ export default function PropertyCard({
               {!isDeleting && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="ml-2">
-                      <Icon as={MoreVertical} size={20} className="text-foreground" />
+                    <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
+                      <Icon as={MoreVertical} size={18} className="text-foreground" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onPress={handleDeletePress} variant="destructive">
-                      <Icon as={Trash2} size={16} className="text-destructive" />
-                      <Text>Delete Property</Text>
+                  <DropdownMenuContent align="end" className="w-40 min-w-0">
+                    <DropdownMenuItem onPress={handleEditPress} className="py-2">
+                      <Icon as={Pencil} size={14} className="text-foreground" />
+                      <Text className="text-sm">Edit</Text>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onPress={handleDeletePress} variant="destructive" className="py-2">
+                      <Icon as={Trash2} size={14} className="text-destructive" />
+                      <Text className="text-sm">Delete</Text>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
