@@ -120,6 +120,11 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
 
 ## Output Schema
 
+The Analysis Agent **MUST** return responses in a dual format that includes both JSON and Markdown:
+
+### Response Format
+
+```
 ```json
 {
   "analysis": {
@@ -171,6 +176,31 @@ Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in tex
   }
 }
 ```
+
+[Markdown formatted human-readable response follows here]
+```
+
+### Format Requirements
+
+1. **JSON Code Block**: 
+   - Must be wrapped in a markdown code block with language tag `json`
+   - Contains the structured data matching the schema above
+   - Used by webapp (`chat-message.tsx`) for structured parsing and UI rendering
+
+2. **Markdown Text**:
+   - Must follow the JSON code block
+   - Contains a human-readable, well-formatted summary of the analysis
+   - Should include sections, bullet points, links, and formatting suitable for Telegram
+   - Used by Telegram API for display in Telegram messages
+
+### Client Consumption
+
+- **Webapp (chat-message.tsx)**: Extracts and parses the JSON from the code block for structured UI rendering
+- **Telegram API**: Extracts the Markdown text for display in Telegram messages (see `telegram_api.py`)
+
+This dual format ensures:
+- Structured data is available for programmatic consumption (webapp)
+- Human-readable content is available for messaging platforms (Telegram)
 
 ## Key Features
 

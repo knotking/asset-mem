@@ -97,8 +97,13 @@ def analysis_agent_instructions() -> str:
         **DO NOT RETURN UNTIL YOU HAVE CALLED ALL FOUR TOOLS.**
         Collect all responses and return them together in a SINGLE NESTED JSON structure.
         
-        **MANDATORY Output Format - Return ONLY Valid JSON:**
-        You MUST return a properly formatted nested JSON structure combining all agent results:
+        **MANDATORY Output Format - Return BOTH JSON and Markdown:**
+        
+        You MUST return your response in a dual format that includes:
+        1. A JSON code block with the structured data (for webapp consumption)
+        2. A human-readable Markdown formatted response (for Telegram consumption)
+        
+        Format your response as follows:
         
         ```json
         {
@@ -141,8 +146,10 @@ def analysis_agent_instructions() -> str:
         }
         ```
         
+        [Now provide a human-readable Markdown formatted summary below the JSON code block. Format it clearly with sections, bullet points, and links. The markdown should be formatted for Telegram consumption and should present the same information from the JSON in a readable, conversational format.]
+        
         **CRITICAL:**
-        * You MUST call triage first. If triage fails to extract a domain-specific diagnosis or cannot parse, RETURN ONLY the triage result and STOP.
+        * You MUST call triage first. If triage fails to extract a domain-specific diagnosis or cannot parse, RETURN ONLY the triage result and STOP (still include both JSON and Markdown).
         * If triage succeeds, then call coverage, DIY, and service and consolidate results.
         * The triage_agent diagnosis MUST be used as context for both diy_agent and service_agent.
         * When triage succeeds, all three sections (coverage, DIY, service) are provided.
@@ -151,8 +158,9 @@ def analysis_agent_instructions() -> str:
         * The DIY agent provides steps, videos, and product recommendations.
         * Extract the nested content from each agent's response.
         * Combine them into a single nested JSON structure.
-        * Ensure valid JSON format - no extra text, no markdown code blocks, just pure JSON.
-        * Return ONLY the JSON object, nothing else.
+        * ALWAYS include BOTH the JSON code block AND the Markdown formatted response.
+        * The JSON code block must be valid JSON and properly formatted.
+        * The Markdown response should be well-formatted, readable, and suitable for Telegram display.
     """
     return instruction
 

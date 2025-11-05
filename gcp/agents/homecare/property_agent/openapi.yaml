@@ -551,14 +551,31 @@ components:
     PropertyAgentResponse:
       oneOf:
         - $ref: '#/components/schemas/StructuredResponse'
+        - $ref: '#/components/schemas/StructuredResponseWithMarkdown'
         - $ref: '#/components/schemas/RetrievalResponse'
         - type: string
           description: Plain text response for casual or small-talk queries.
       description: |
         The root agent returns either a structured analysis/aggregation object,
+        a structured response with both JSON and Markdown (for Analysis Agent),
         a retrieval payload, or a simple text response.
+        
+        **Analysis Agent Response Format:**
+        The Analysis Agent MUST return responses in a dual format:
+        - JSON code block: Contains structured data for webapp consumption (parsed by chat-message.tsx)
+        - Markdown text: Contains human-readable formatted response for Telegram consumption
+        
+        The response format is:
+        ```
+        ```json
+        { ... structured JSON data ... }
+        ```
+        
+        [Markdown formatted human-readable response here]
+        ```
       examples:
         - $ref: '#/components/examples/ExampleStructuredResponse'
+        - $ref: '#/components/examples/ExampleStructuredResponseWithMarkdown'
         - $ref: '#/components/examples/ExampleRetrievalResponse'
         - 'Hello! How can I help you with your home care needs today?'
 
@@ -714,6 +731,27 @@ components:
                           type: string
       description: Aggregated response with nested analysis results.
 
+    StructuredResponseWithMarkdown:
+      type: string
+      description: |
+        Analysis Agent response format that includes both JSON and Markdown.
+        
+        The response MUST be formatted as:
+        ```
+        ```json
+        { ... structured JSON data matching StructuredResponse schema ... }
+        ```
+        
+        [Markdown formatted human-readable response]
+        ```
+        
+        - The JSON code block contains the structured data for webapp consumption (parsed by chat-message.tsx)
+        - The Markdown text below contains a human-readable formatted response for Telegram consumption
+        
+        Clients should:
+        - Extract the JSON from the code block for structured parsing
+        - Extract the Markdown text for display in Telegram or other markdown-aware clients
+
     ResearchResults:
       type: object
       additionalProperties: false
@@ -853,6 +891,116 @@ components:
                 simple_repairs: "DIY may be cost-effective"
                 complex_repairs: "Professional service recommended"
                 note: "Estimates may vary by location and specific circumstances"
+
+    ExampleStructuredResponseWithMarkdown:
+      summary: Analysis Agent response with both JSON and Markdown (required format)
+      value: |
+        ```json
+        {
+          "analysis": {
+            "triageResult": {
+              "diagnosis": "Leaking kitchen faucet due to worn cartridge"
+            },
+            "coverageResult": {
+              "warrantyInfo": "Warranty covers parts for 5 years.",
+              "insuranceInfo": "Insurance does not cover routine maintenance."
+            },
+            "diyResults": {
+              "diySteps": {
+                "summary": "Replace the faucet cartridge to stop the leak.",
+                "steps": [
+                  {"stepNumber": 1, "description": "Turn off water supply."},
+                  {"stepNumber": 2, "description": "Remove handle and bonnet nut."},
+                  {"stepNumber": 3, "description": "Replace the cartridge and reassemble."}
+                ]
+              },
+              "youtubeSearch": {
+                "videos": [
+                  {
+                    "title": "How to replace a kitchen faucet cartridge",
+                    "url": "https://example.com/video/abc",
+                    "description": "Step-by-step tutorial"
+                  }
+                ]
+              },
+              "recommendedProducts": {
+                "products": [
+                  {
+                    "item_name": "Universal Faucet Cartridge",
+                    "image_url": "https://example.com/images/cartridge.jpg",
+                    "vendor": "Home Depot",
+                    "reviews": "120 reviews",
+                    "store_url": "https://homedepot.com/product/123"
+                  }
+                ]
+              }
+            },
+            "serviceResults": {
+              "localPros": {
+                "serpAPIResults": [
+                  {
+                    "name": "Springfield Plumbing Co",
+                    "rating": "4.6",
+                    "phone": "+1-555-123-4567"
+                  }
+                ],
+                "yelpAPIResults": [
+                  {
+                    "name": "Main St Plumbers",
+                    "rating": "4.3",
+                    "phone": "+1-555-987-6543"
+                  }
+                ]
+              }
+            },
+            "costEstimationResults": {
+              "costEstimates": {
+                "repair_type": "Pipe Leak Repair",
+                "DIY": {
+                  "cost_range": "$20-100",
+                  "includes": ["Materials", "Tools", "Time"],
+                  "savings": "~60-80% on labor",
+                  "complexity": "Simple repairs may be cost-effective"
+                },
+                "Service": {
+                  "cost_range": "$200-500",
+                  "includes": ["Labor", "Expertise", "Warranty"],
+                  "benefits": "Expertise and warranty",
+                  "complexity": "Complex or safety-critical repairs recommended"
+                }
+              }
+            }
+          }
+        }
+        ```
+        
+        ## Analysis Summary
+        
+        **Diagnosis:** Leaking kitchen faucet due to worn cartridge
+        
+        ### Coverage Information
+        - **Warranty:** Covers parts for 5 years
+        - **Insurance:** Does not cover routine maintenance
+        
+        ### DIY Recommendations
+        **Summary:** Replace the faucet cartridge to stop the leak.
+        
+        **Steps:**
+        1. Turn off water supply
+        2. Remove handle and bonnet nut
+        3. Replace the cartridge and reassemble
+        
+        **Video Tutorial:** [How to replace a kitchen faucet cartridge](https://example.com/video/abc)
+        
+        **Recommended Product:** [Universal Faucet Cartridge](https://homedepot.com/product/123) from Home Depot (120 reviews)
+        
+        ### Professional Service Options
+        - **Springfield Plumbing Co** ⭐ 4.6 - Phone: +1-555-123-4567
+        - **Main St Plumbers** ⭐ 4.3 - Phone: +1-555-987-6543
+        
+        ### Cost Estimates
+        - **DIY Range:** $20-100 (may save ~60-80% on labor)
+        - **Professional Range:** $200-500 (includes expertise and warranty)
 
     ExampleRetrievalResponse:
       summary: Retrieval result from user documents

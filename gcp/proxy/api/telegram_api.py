@@ -18,7 +18,7 @@ import re
 import asyncio
 import time
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 # aiogram imports
 from aiogram.enums import ParseMode, ChatAction
@@ -405,13 +405,74 @@ def _format_value(value: Any) -> str:
             return f"{str_value[:497]}..."
         return str_value
 
+def extract_markdown_from_dual_format(text: str) -> Optional[str]:
+    """
+    Extracts the markdown portion from a dual-format response (JSON code block + Markdown).
+    
+    Analysis Agent responses should be in the format:
+    ```json
+    { ... JSON data ... }
+    ```
+    
+    [Markdown formatted response here]
+    
+    Args:
+        text: The full response text that may contain both JSON and Markdown
+        
+    Returns:
+        The extracted markdown text if dual format is detected, None otherwise
+    """
+    if not text or not isinstance(text, str):
+        return None
+    
+    # Pattern to match JSON code block followed by markdown
+    # Matches: ```json ... ``` followed by optional whitespace and then markdown content
+    # Uses DOTALL to match across newlines, and non-greedy match for the JSON block
+    pattern = r'```json\s*\n(.*?)\n```\s*\n\s*(.*)'
+    match = re.search(pattern, text, re.DOTALL)
+    
+    if match:
+        markdown_part = match.group(2).strip()  # Group 2 is the markdown after the JSON block
+        if markdown_part:
+            logger.debug("Extracted markdown from dual-format response")
+            return markdown_part
+    
+    # Also try a simpler pattern that matches anything after the closing ``` with optional whitespace
+    pattern2 = r'```json.*?```\s*\n\s*(.+)'
+    match2 = re.search(pattern2, text, re.DOTALL)
+    if match2:
+        markdown_part = match2.group(1).strip()
+        if markdown_part:
+            logger.debug("Extracted markdown from dual-format response (alternative pattern)")
+            return markdown_part
+    
+    return None
+
 def safe_markdown_format(text: str) -> str:
     """
     Formats text for Telegram MarkdownV2, ensuring JSON is converted to readable markdown.
+    
+    For Analysis Agent responses in dual format (JSON + Markdown), extracts the markdown portion.
+    For other responses, converts JSON to markdown format (backward compatible).
     """
     if not text or not isinstance(text, str):
         return str(text)
     
+    # First, check if this is a dual-format response (JSON code block + Markdown)
+    # If so, extract just the markdown portion
+    markdown_text = extract_markdown_from_dual_format(text)
+    if markdown_text:
+        # We have markdown from dual format, just format it for Telegram
+        formatted_text = format_google_maps_links(markdown_text)
+        formatted_text = format_youtube_links(formatted_text)
+        
+        try:
+            return telegramify_markdown.markdownify(formatted_text)
+        except Exception as e:
+            logger.warning(f"telegramify_markdown failed: {e}. Falling back to escape_markdown.")
+            return escape_markdown(formatted_text)
+    
+    # Not dual format - fall back to existing behavior (convert JSON to markdown)
     # First, check if text contains JSON and convert it to markdown
     # This MUST happen first to remove all JSON syntax
     converted_text = json_to_markdown(text)
@@ -614,10 +675,11 @@ async def handle_attachment(message: aio_types.Message):
                     property_address=None,
                 )
             async for answer_part in stream_agent_answers(agent_request):
-                # Return response from analysis_agent without markdown conversion
+                # Extract markdown from dual-format response if available, otherwise convert JSON to markdown
                 answer_str = str(answer_part)
-                for part in split_message(answer_str):
-                    await message.answer(part)
+                formatted_answer = safe_markdown_format(answer_str)
+                for part in split_message(formatted_answer):
+                    await message.answer(part, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as e:
             logger.error(f"Failed to get an answer: {e}")
             await message.reply(safe_markdown_format(f"Oops!! Please try later: {str(e)}"))
@@ -643,10 +705,11 @@ async def handle_text_message(message: aio_types.Message):
         property_address=None,
     )
     async for answer_part in stream_agent_answers(agent_request):
-        # Return response from analysis_agent without markdown conversion
+        # Extract markdown from dual-format response if available, otherwise convert JSON to markdown
         answer_str = str(answer_part)
-        for part in split_message(answer_str):
-            await message.answer(part)
+        formatted_answer = safe_markdown_format(answer_str)
+        for part in split_message(formatted_answer):
+            await message.answer(part, parse_mode=ParseMode.MARKDOWN_V2)
 
 @router.message()
 async def handle_non_text(message: aio_types.Message):

@@ -1154,14 +1154,64 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult);
           };
           
-          // Method 1: If the entire content is just JSON (starts with { and ends with }), try parsing directly
-          if (contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
+          // Method 1: PRIORITY - Extract JSON from ```json code block (for dual-format responses)
+          // This ensures we only read from the JSON code block and ignore any markdown that follows
+          const jsonCodeBlockRegex = /```json\s*\n?([\s\S]*?)```/;
+          const jsonCodeBlockMatch = contentToParse.match(jsonCodeBlockRegex);
+          if (jsonCodeBlockMatch) {
+              const codeContent = jsonCodeBlockMatch[1].trim();
+              if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
+                  try {
+                      const parsed = JSON.parse(codeContent);
+                      if (hasStructuredDataKeys(parsed)) {
+                          structuredData = parsed;
+                          if (process.env.NODE_ENV === 'development') {
+                              console.log('✓ Parsed JSON from ```json code block (Method 1 - Dual Format)');
+                          }
+                      } else if (parsed && typeof parsed === 'object') {
+                          fallbackParsedJson = parsed;
+                      }
+                  } catch (e) {
+                      if (process.env.NODE_ENV === 'development') {
+                          console.warn('Failed to parse JSON from ```json code block:', e);
+                      }
+                  }
+              }
+          }
+          
+          // Method 2: If no ```json code block found, try generic code blocks (``` ... ```)
+          if (!structuredData) {
+              const genericCodeBlockRegex = /```[^`]*\s*\n?([\s\S]*?)```/g;
+              let codeBlockMatch;
+              
+              // Try all code blocks (but skip if we already found JSON code block)
+              while ((codeBlockMatch = genericCodeBlockRegex.exec(contentToParse)) !== null) {
+                  const codeContent = codeBlockMatch[1].trim();
+                  if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
+                      try {
+                          const parsed = JSON.parse(codeContent);
+                          if (hasStructuredDataKeys(parsed)) {
+                              structuredData = parsed;
+                              if (process.env.NODE_ENV === 'development') {
+                                  console.log('✓ Parsed JSON from generic code block (Method 2)');
+                              }
+                              break; // Stop after finding valid JSON
+                          }
+                      } catch {
+                          // Not valid JSON in this block
+                      }
+                  }
+              }
+          }
+          
+          // Method 3: If no code block found, try direct JSON parsing (pure JSON response)
+          if (!structuredData && contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
               try {
                   const parsed = JSON.parse(contentToParse);
                   if (hasStructuredDataKeys(parsed)) {
                       structuredData = parsed;
                       if (process.env.NODE_ENV === 'development') {
-                          console.log('✓ Parsed JSON directly from content (Method 1)');
+                          console.log('✓ Parsed JSON directly from content (Method 3 - Pure JSON)');
                       }
                   } else if (parsed && typeof parsed === 'object') {
                       fallbackParsedJson = parsed;
@@ -1170,100 +1220,74 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                   // Not pure JSON, continue with other methods
               }
           }
-          
-          // Method 2: Try to extract JSON from markdown code block (```json ... ``` or ``` ... ```)
-          if (!structuredData) {
-              // Look for any code block that might contain JSON
-              const jsonCodeBlockRegex = /```(?:json)?\s*\n?([\s\S]*?)```/g;
-              let codeBlockMatch;
-              let foundValidJson = false;
               
-              // Try all code blocks
-              while ((codeBlockMatch = jsonCodeBlockRegex.exec(contentToParse)) !== null && !foundValidJson) {
-                  const codeContent = codeBlockMatch[1].trim();
-                  if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
-                      try {
-                          const parsed = JSON.parse(codeContent);
-                          if (hasStructuredDataKeys(parsed)) {
-                              structuredData = parsed;
-                              foundValidJson = true;
-                              if (process.env.NODE_ENV === 'development') {
-                                  console.log('✓ Parsed JSON from code block (Method 2)');
-                              }
-                          }
-                      } catch {
-                          // Not valid JSON in this block
-                      }
-                  }
-              }
+          // Method 4: Fallback - Try to find JSON object directly from content (only if no code block found)
+          // This is a fallback for responses that don't use code blocks
+          // NOTE: We only do this if we haven't found JSON in a code block to avoid parsing markdown
+          if (!structuredData && !jsonCodeBlockMatch) {
+              // More aggressive regex to match JSON objects with our keys
+              const patterns = [
+                  // Match complete JSON objects that might span multiple lines
+                  /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/s,
+                  // Try to find the first { and match until balanced closing }
+                  /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/s
+              ];
               
-              if (foundValidJson) {
-                  // Already parsed, skip remaining methods
-              } else {
-                  // Method 3: Try to find JSON object directly from content (look for { "analysis": ... } or similar)
-                  // More aggressive regex to match JSON objects with our keys
-                  const patterns = [
-                      // Match complete JSON objects that might span multiple lines
-                      /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/s,
-                      // Try to find the first { and match until balanced closing }
-                      /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/s
-                  ];
-                  
-                  for (const pattern of patterns) {
-                      const objectMatches = contentToParse.match(new RegExp(pattern.source, 'g'));
-                      if (objectMatches) {
-                          for (const match of objectMatches) {
-                              try {
-                                  const parsed = JSON.parse(match);
-                                  if (hasStructuredDataKeys(parsed)) {
-                                      structuredData = parsed;
-                                      if (process.env.NODE_ENV === 'development') {
-                                          console.log('✓ Parsed JSON from pattern match (Method 3)');
-                                      }
-                                      break;
-                                  }
-                              } catch {
-                                  // Continue trying
-                              }
-                          }
-                          if (structuredData) break;
-                      }
-                  }
-                  
-                  // Method 4: Try to extract JSON by finding the first { and last matching }
-                  if (!structuredData && contentToParse.includes('{')) {
-                      const firstBrace = contentToParse.indexOf('{');
-                      const lastBrace = contentToParse.lastIndexOf('}');
-                      if (firstBrace < lastBrace) {
-                          const potentialJson = contentToParse.substring(firstBrace, lastBrace + 1);
+              for (const pattern of patterns) {
+                  const objectMatches = contentToParse.match(new RegExp(pattern.source, 'g'));
+                  if (objectMatches) {
+                      for (const match of objectMatches) {
                           try {
-                              const parsed = JSON.parse(potentialJson);
+                              const parsed = JSON.parse(match);
                               if (hasStructuredDataKeys(parsed)) {
                                   structuredData = parsed;
                                   if (process.env.NODE_ENV === 'development') {
-                                      console.log('✓ Parsed JSON from brace matching (Method 4)');
+                                      console.log('✓ Parsed JSON from pattern match (Method 4 - Fallback)');
+                                  }
+                                  break;
+                              }
+                          } catch {
+                              // Continue trying
+                          }
+                      }
+                      if (structuredData) break;
+                  }
+              }
+              
+              // Method 5: Last resort - Try to extract JSON by finding the first { and last matching }
+              // Only if no code block was detected (to avoid parsing markdown)
+              if (!structuredData && contentToParse.includes('{')) {
+                  const firstBrace = contentToParse.indexOf('{');
+                  const lastBrace = contentToParse.lastIndexOf('}');
+                  if (firstBrace < lastBrace) {
+                      const potentialJson = contentToParse.substring(firstBrace, lastBrace + 1);
+                      try {
+                          const parsed = JSON.parse(potentialJson);
+                          if (hasStructuredDataKeys(parsed)) {
+                              structuredData = parsed;
+                              if (process.env.NODE_ENV === 'development') {
+                                  console.log('✓ Parsed JSON from brace matching (Method 5 - Last Resort)');
+                              }
+                          }
+                      } catch {
+                          // Try cleaning common issues
+                          try {
+                              // Remove comments, fix trailing commas, etc.
+                              let cleaned = potentialJson
+                                  .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+                                  .replace(/\/\/.*$/gm, '') // Remove line comments
+                                  .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+                                  .replace(/\\(?!["\\/bfnrtu])/g, '\\\\'); // Fix escape sequences
+                              
+                              const parsed = JSON.parse(cleaned);
+                              if (hasStructuredDataKeys(parsed)) {
+                                  structuredData = parsed;
+                                  if (process.env.NODE_ENV === 'development') {
+                                      console.log('✓ Parsed JSON after cleaning (Method 5b)');
                                   }
                               }
                           } catch {
-                              // Try cleaning common issues
-                              try {
-                                  // Remove comments, fix trailing commas, etc.
-                                  let cleaned = potentialJson
-                                      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
-                                      .replace(/\/\/.*$/gm, '') // Remove line comments
-                                      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-                                      .replace(/\\(?!["\\/bfnrtu])/g, '\\\\'); // Fix escape sequences
-                                  
-                                  const parsed = JSON.parse(cleaned);
-                                  if (hasStructuredDataKeys(parsed)) {
-                                      structuredData = parsed;
-                                      if (process.env.NODE_ENV === 'development') {
-                                          console.log('✓ Parsed JSON after cleaning (Method 4b)');
-                                      }
-                                  }
-                              } catch {
-                                  // Final fallback
-                              }
+                              // Final fallback - give up
                           }
                       }
                   }
