@@ -25,13 +25,14 @@ import {
 import {
   Home,
   FileText,
-  Briefcase,
-  CheckCircle,
+  Wrench,
+  CheckCircle2,
   Trash2,
   MoreVertical,
   AlertCircle,
   X,
   Pencil,
+  MapPin,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -192,16 +193,16 @@ export default function PropertyCard({
         </View>
       )}
 
-      <Pressable
-        onPress={handlePress}
-        disabled={isDeleting}
-        className="relative mb-4">
-        <Card>
-          <CardHeader>
-            <View className="flex-row items-center gap-2">
-              <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-secondary">
-                <Icon as={Home} size={24} className="text-secondary-foreground" />
+      <Pressable onPress={handlePress} disabled={isDeleting} className="relative mb-4">
+        <Card className="rounded-lg shadow-sm">
+          <CardHeader className="pb-3">
+            <View className="flex-row items-start gap-3">
+              {/* Property Icon */}
+              <View className="h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Icon as={Home} size={20} className="text-muted-foreground" />
               </View>
+
+              {/* Property Info */}
               <View className="flex-1">
                 <Text
                   className="text-base font-semibold text-foreground"
@@ -209,16 +210,22 @@ export default function PropertyCard({
                   ellipsizeMode="tail">
                   {name}
                 </Text>
-                <Text className="text-sm text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
-                  {address}
-                </Text>
+                <View className="mt-0.5 flex-row items-center gap-1">
+                  <Icon as={MapPin} size={12} className="text-muted-foreground" />
+                  <Text
+                    className="text-sm text-muted-foreground"
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                    {address}
+                  </Text>
+                </View>
               </View>
 
               {/* Menu Button */}
               {!isDeleting && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
+                    <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8">
                       <Icon as={MoreVertical} size={18} className="text-foreground" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -227,7 +234,10 @@ export default function PropertyCard({
                       <Icon as={Pencil} size={14} className="text-foreground" />
                       <Text className="text-sm">Edit</Text>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onPress={handleDeletePress} variant="destructive" className="py-2">
+                    <DropdownMenuItem
+                      onPress={handleDeletePress}
+                      variant="destructive"
+                      className="py-2">
                       <Icon as={Trash2} size={14} className="text-destructive" />
                       <Text className="text-sm">Delete</Text>
                     </DropdownMenuItem>
@@ -237,27 +247,27 @@ export default function PropertyCard({
             </View>
           </CardHeader>
 
-          <CardContent>
-            <View className="flex-row justify-around border-t border-border pt-4">
-              <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-info/20">
-                  <Icon as={FileText} size={24} className="text-info" />
+          <CardContent className="pt-0">
+            <View className="flex-row gap-2">
+              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+                <View className="h-5 w-5 items-center justify-center">
+                  <Icon as={FileText} size={20} className="text-info" />
                 </View>
-                <Text className="text-lg font-semibold text-foreground">{docsCount}</Text>
+                <Text className="text-sm font-semibold text-foreground">{docsCount}</Text>
                 <Text className="text-xs text-muted-foreground">Docs</Text>
               </View>
-              <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-success/20">
-                  <Icon as={Briefcase} size={24} className="text-success" />
+              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+                <View className="h-5 w-5 items-center justify-center">
+                  <Icon as={Wrench} size={20} className="text-warning" />
                 </View>
-                <Text className="text-lg font-semibold text-foreground">{servicesCount}</Text>
+                <Text className="text-sm font-semibold text-foreground">{servicesCount}</Text>
                 <Text className="text-xs text-muted-foreground">Services</Text>
               </View>
-              <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-warning/20">
-                  <Icon as={CheckCircle} size={24} className="text-warning" />
+              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+                <View className="h-5 w-5 items-center justify-center">
+                  <Icon as={CheckCircle2} size={20} className="text-success" />
                 </View>
-                <Text className="text-lg font-semibold text-foreground">{checksCount}</Text>
+                <Text className="text-sm font-semibold text-foreground">{checksCount}</Text>
                 <Text className="text-xs text-muted-foreground">Checks</Text>
               </View>
             </View>
