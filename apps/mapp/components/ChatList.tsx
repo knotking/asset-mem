@@ -14,12 +14,20 @@ interface ChatListProps {
 
 export default function ChatList({ messages, isLoading }: ChatListProps) {
   const scrollViewRef = useRef<ScrollView>(null);
+  const messageCountRef = useRef(messages.length);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messages.length > 0) {
+    const previousMessageCount = messageCountRef.current;
+    const currentMessageCount = messages.length;
+
+    // Only scroll if a new message was added
+    if (currentMessageCount > previousMessageCount) {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }
+
+    // Update the ref with current count
+    messageCountRef.current = currentMessageCount;
   }, [messages]);
 
   if (isLoading) {
@@ -62,8 +70,7 @@ export default function ChatList({ messages, isLoading }: ChatListProps) {
     <ScrollView
       ref={scrollViewRef}
       className="flex-1"
-      contentContainerStyle={{ padding: 16 }}
-      onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+      contentContainerStyle={{ padding: 16 }}>
       {messages.map((message) => (
         <ChatMessage key={message.id} message={message} />
       ))}
