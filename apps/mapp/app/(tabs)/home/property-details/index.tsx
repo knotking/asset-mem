@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -354,32 +355,34 @@ function DetailsTab({ property }: { property: any }) {
 
   return (
     <View className="mb-4 w-full">
-      <View className="mb-4 rounded-lg border border-gray-300 bg-background p-4">
-        <View className="mb-4 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <Icon as={FileText} size={18} className="text-muted-foreground" />
-            <Text className="text-foreground">Basic Information</Text>
-          </View>
-          {!isEditMode ? (
-            <Button variant="ghost" size="icon" onPress={handleEditToggle}>
-              <Icon as={Pencil} size={18} className="text-muted-foreground" />
-            </Button>
-          ) : (
-            <View className="flex-row gap-2">
-              <Button variant="ghost" size="sm" onPress={handleEditToggle} disabled={isSaving}>
-                <Text className="text-muted-foreground">Cancel</Text>
-              </Button>
-              <Button variant="default" size="sm" onPress={handleSaveProperty} disabled={isSaving}>
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text className="text-primary-foreground">Save</Text>
-                )}
-              </Button>
+      <Card className="mb-4">
+        <CardHeader>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <Icon as={FileText} size={18} className="text-muted-foreground" />
+              <CardTitle>Basic Information</CardTitle>
             </View>
-          )}
-        </View>
-        <View className="space-y-4 border-t border-border pt-4">
+            {!isEditMode ? (
+              <Button variant="ghost" size="icon" onPress={handleEditToggle}>
+                <Icon as={Pencil} size={18} className="text-muted-foreground" />
+              </Button>
+            ) : (
+              <View className="flex-row gap-2">
+                <Button variant="ghost" size="sm" onPress={handleEditToggle} disabled={isSaving}>
+                  <Text className="text-muted-foreground">Cancel</Text>
+                </Button>
+                <Button variant="default" size="sm" onPress={handleSaveProperty} disabled={isSaving}>
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-primary-foreground">Save</Text>
+                  )}
+                </Button>
+              </View>
+            )}
+          </View>
+        </CardHeader>
+        <CardContent className="space-y-4 border-t border-border pt-4">
           <View className="mb-2">
             <Text className="text-sm text-muted-foreground">Property Name</Text>
             {isEditMode ? (
@@ -440,136 +443,89 @@ function DetailsTab({ property }: { property: any }) {
               </View>
             )}
           </View>
-        </View>
-      </View>
+        </CardContent>
+      </Card>
 
       {/* Property Documents Card */}
-      <View className="rounded-lg border border-border bg-background p-4">
-        <View className="mb-4 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-2">
-            <Icon as={FileText} size={18} className="text-muted-foreground" />
-            <Text className="text-foreground">Property Documents</Text>
+      <Card>
+        <CardHeader>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <Icon as={FileText} size={18} className="text-muted-foreground" />
+              <CardTitle>Property Documents</CardTitle>
+            </View>
+            <Button
+              onPress={handlePickDocuments}
+              variant="default"
+              className="flex-row items-center gap-2">
+              <Icon as={Upload} size={16} className="text-primary-foreground" />
+              <Text className="font-semibold text-primary-foreground">Upload</Text>
+            </Button>
           </View>
-          <Button
-            onPress={handlePickDocuments}
-            variant="default"
-            className="flex-row items-center gap-2">
-            <Icon as={Upload} size={16} className="text-primary-foreground" />
-            <Text className="font-semibold text-primary-foreground">Upload</Text>
-          </Button>
-        </View>
+        </CardHeader>
         {documentsLoading ? (
-          <ActivityIndicator />
+          <CardContent>
+            <ActivityIndicator />
+          </CardContent>
         ) : (
-          <View className="space-y-3 border-t border-border pt-4">
+          <CardContent className="space-y-3 border-t border-border pt-4">
             {/* Uploading Documents */}
             {uploadingDocs.map((doc) => (
-              <View key={doc.id} className="mb-2 rounded-lg border border-border bg-background p-3">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1">
-                    <Text className="font-medium text-foreground" numberOfLines={1}>
-                      {doc.name}
-                    </Text>
-                    <Text className="mt-1 text-xs text-muted-foreground">
-                      {(doc.size / 1024).toFixed(1)} KB
-                    </Text>
-
-                    {/* Status */}
-                    {doc.status === 'uploading' && (
-                      <View className="mt-2">
-                        <Text className="text-xs text-muted-foreground">
-                          Uploading... {Math.round(doc.progress || 0)}%
-                        </Text>
-                        <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
-                          <View
-                            className="h-full bg-primary"
-                            style={{ width: `${doc.progress || 0}%` }}
-                          />
-                        </View>
-                      </View>
-                    )}
-
-                    {doc.status === 'analyzing' && (
-                      <View className="mt-2 flex-row items-center gap-1">
-                        <RotatingSparkles size={14} color="#3B82F6" />
-                        <Text className="text-xs text-muted-foreground">Analyzing...</Text>
-                      </View>
-                    )}
-
-                    {doc.status === 'failed' && (
-                      <View className="mt-2 flex-row items-center gap-1">
-                        <Icon as={AlertCircle} size={14} className="text-red-500" />
-                        <Text className="text-xs text-red-500">{doc.error || 'Failed'}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Only show X button if not complete */}
-                  {doc.status !== 'complete' && (
-                    <Button
-                      onPress={() => removeUploadingDoc(doc.id)}
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2">
-                      <Icon as={X} size={18} className="text-muted-foreground" />
-                    </Button>
-                  )}
-                </View>
-
-                {/* Show key entities when complete */}
-                {doc.status === 'complete' && doc.keyEntities && doc.keyEntities.length > 0 && (
-                  <View className="mt-3 space-y-2 border-t border-border pt-3">
-                    {doc.keyEntities.map((entity, index) => (
-                      <View key={index} className="flex-row justify-between gap-2">
-                        <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
-                        <Text
-                          className="flex-1 text-right font-semibold text-foreground"
-                          numberOfLines={2}>
-                          {entity.value}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))}
-
-            {/* Existing Documents */}
-            {documents
-              .filter((doc) => {
-                // Hide document if there's an uploading doc with the same name
-                // This prevents duplicate cards during upload
-                return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
-              })
-              .map((doc) => (
-                <View
-                  key={doc.id}
-                  className="mb-2 rounded-lg border border-border bg-background p-3">
+              <Card key={doc.id} className="mb-2">
+                <CardContent>
                   <View className="flex-row items-start justify-between">
                     <View className="flex-1">
                       <Text className="font-medium text-foreground" numberOfLines={1}>
                         {doc.name}
                       </Text>
                       <Text className="mt-1 text-xs text-muted-foreground">
-                        {doc.documentType && `${doc.documentType} • `}
-                        {doc.createdAt &&
-                          new Date(
-                            doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
-                          ).toLocaleDateString()}
+                        {(doc.size / 1024).toFixed(1)} KB
                       </Text>
+
+                      {/* Status */}
+                      {doc.status === 'uploading' && (
+                        <View className="mt-2">
+                          <Text className="text-xs text-muted-foreground">
+                            Uploading... {Math.round(doc.progress || 0)}%
+                          </Text>
+                          <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
+                            <View
+                              className="h-full bg-primary"
+                              style={{ width: `${doc.progress || 0}%` }}
+                            />
+                          </View>
+                        </View>
+                      )}
+
+                      {doc.status === 'analyzing' && (
+                        <View className="mt-2 flex-row items-center gap-1">
+                          <RotatingSparkles size={14} color="#3B82F6" />
+                          <Text className="text-xs text-muted-foreground">Analyzing...</Text>
+                        </View>
+                      )}
+
+                      {doc.status === 'failed' && (
+                        <View className="mt-2 flex-row items-center gap-1">
+                          <Icon as={AlertCircle} size={14} className="text-red-500" />
+                          <Text className="text-xs text-red-500">{doc.error || 'Failed'}</Text>
+                        </View>
+                      )}
                     </View>
 
-                    <Button
-                      onPress={() => handleDeleteDocument(doc)}
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2">
-                      <Icon as={Trash2} size={18} className="text-red-500" />
-                    </Button>
+                    {/* Only show X button if not complete */}
+                    {doc.status !== 'complete' && (
+                      <Button
+                        onPress={() => removeUploadingDoc(doc.id)}
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2">
+                        <Icon as={X} size={18} className="text-muted-foreground" />
+                      </Button>
+                    )}
                   </View>
 
-                  {/* Show key entities */}
-                  {doc.keyEntities && doc.keyEntities.length > 0 && (
+                  {/* Show key entities when complete */}
+                  {doc.status === 'complete' && doc.keyEntities && doc.keyEntities.length > 0 && (
                     <View className="mt-3 space-y-2 border-t border-border pt-3">
                       {doc.keyEntities.map((entity, index) => (
                         <View key={index} className="flex-row justify-between gap-2">
@@ -583,11 +539,64 @@ function DetailsTab({ property }: { property: any }) {
                       ))}
                     </View>
                   )}
-                </View>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* Existing Documents */}
+            {documents
+              .filter((doc) => {
+                // Hide document if there's an uploading doc with the same name
+                // This prevents duplicate cards during upload
+                return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
+              })
+              .map((doc) => (
+                <Card key={doc.id} className="mb-2">
+                  <CardContent>
+                    <View className="flex-row items-start justify-between">
+                      <View className="flex-1">
+                        <Text className="font-medium text-foreground" numberOfLines={1}>
+                          {doc.name}
+                        </Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">
+                          {doc.documentType && `${doc.documentType} • `}
+                          {doc.createdAt &&
+                            new Date(
+                              doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
+                            ).toLocaleDateString()}
+                        </Text>
+                      </View>
+
+                      <Button
+                        onPress={() => handleDeleteDocument(doc)}
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2">
+                        <Icon as={Trash2} size={18} className="text-red-500" />
+                      </Button>
+                    </View>
+
+                    {/* Show key entities */}
+                    {doc.keyEntities && doc.keyEntities.length > 0 && (
+                      <View className="mt-3 space-y-2 border-t border-border pt-3">
+                        {doc.keyEntities.map((entity, index) => (
+                          <View key={index} className="flex-row justify-between gap-2">
+                            <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                            <Text
+                              className="flex-1 text-right font-semibold text-foreground"
+                              numberOfLines={2}>
+                              {entity.value}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </CardContent>
+                </Card>
               ))}
-          </View>
+          </CardContent>
         )}
-      </View>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1168,39 +1177,39 @@ export default function PropertyDetailsScreen() {
           <Button onPress={() => router.back()} variant="ghost" size="icon">
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
           </Button>
-          <View className="flex-row items-center gap-3">
+          <View className="flex-1 mx-3">
+            <Text className="text-xl font-bold text-foreground text-center" numberOfLines={1}>
+              {property.name}
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            {/* Docs Button - Show on both tabs */}
+            <View className="relative">
+              <Button
+                onPress={() => setDocumentsDrawerVisible(true)}
+                variant="ghost"
+                size="icon">
+                <Icon as={File} size={20} className="text-foreground" />
+              </Button>
+              {documents.length > 0 && (
+                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                    {documents.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            {/* Sessions Button - Show only on chat tab */}
             {activeTab === 'chat' && (
-              <>
-                <Button
-                  onPress={() => setDocumentsDrawerVisible(true)}
-                  variant="secondary"
-                  className="flex-row items-center gap-2">
-                  <Icon as={File} size={18} className="text-foreground" />
-                  <Text className="text-foreground">Docs</Text>
-                  {selectedDocuments.length > 0 && (
-                    <View className="rounded-full bg-primary px-2 py-0.5">
-                      <Text className="text-xs font-semibold text-primary-foreground">
-                        {selectedDocuments.length}
-                      </Text>
-                    </View>
-                  )}
-                </Button>
-                <Button
-                  onPress={() => setSessionsDrawerVisible(true)}
-                  variant="secondary"
-                  className="flex-row items-center gap-2">
-                  <Icon as={MessageSquare} size={18} className="text-foreground" />
-                  <Text className="text-foreground">Sessions</Text>
-                </Button>
-              </>
+              <Button
+                onPress={() => setSessionsDrawerVisible(true)}
+                variant="ghost"
+                size="icon">
+                <Icon as={MessageSquare} size={20} className="text-foreground" />
+              </Button>
             )}
           </View>
         </View>
-      </View>
-
-      {/* Property Address */}
-      <View className="px-4 py-2">
-        <Text className="text-xl font-bold text-foreground">{property.name}</Text>
       </View>
 
       {/* Tabs */}
@@ -1227,36 +1236,33 @@ export default function PropertyDetailsScreen() {
         </Pressable>
       </View>
 
-      {/* Selected Documents Display */}
+      {/* Selected Documents Display - Compact */}
       {activeTab === 'chat' && selectedDocuments.length > 0 && (
-        <View className="border-b border-border bg-secondary px-4 py-2">
-          <Text className="mb-2 text-xs font-semibold text-muted-foreground">Resources:</Text>
+        <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-2">
+            <View className="flex-row items-center gap-1.5">
+              <View className="mr-1 flex-row items-center gap-1">
+                <Icon as={FileText} size={10} className="text-muted-foreground" />
+                <Text className="text-[10px] font-medium text-muted-foreground">
+                  {selectedDocuments.length}
+                </Text>
+              </View>
               {selectedDocuments.map((doc) => (
-                <View
+                <Pressable
                   key={doc.id}
-                  className="flex-row items-center gap-1 rounded-full border border-border bg-background px-2 py-1">
-                  <Icon as={FileText} size={12} className="text-muted-foreground" />
-                  <Text className="max-w-32 text-xs text-foreground" numberOfLines={1}>
+                  onPress={() => toggleDocumentSelection(doc)}
+                  className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
+                  <Text className="max-w-24 text-[11px] text-foreground" numberOfLines={1}>
                     {doc.name}
                   </Text>
-                  <Button
-                    onPress={() => toggleDocumentSelection(doc)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4">
-                    <Icon as={X} size={12} className="text-muted-foreground" />
-                  </Button>
-                </View>
+                  <Icon as={X} size={10} className="text-muted-foreground" />
+                </Pressable>
               ))}
-              <Button
+              <Pressable
                 onPress={() => setSelectedDocuments([])}
-                variant="ghost"
-                size="sm"
-                className="items-center justify-center">
-                <Text className="text-xs text-muted-foreground">Clear all</Text>
-              </Button>
+                className="ml-1 rounded-full bg-background px-2 py-0.5">
+                <Text className="text-[10px] text-muted-foreground">Clear</Text>
+              </Pressable>
             </View>
           </ScrollView>
         </View>
@@ -1344,50 +1350,55 @@ export default function PropertyDetailsScreen() {
             </View>
           )}
 
-          {/* Input Row */}
-          <View className="flex-row items-center gap-2">
-            <Button
+          {/* Input Row - Overlay Icons (Option 3) */}
+          <View className="relative flex-row items-center">
+            {/* Attachment Icon - Inside Left */}
+            <Pressable
               onPress={handleFileUpload}
               disabled={isSending || !!fileAttachment}
-              variant="ghost"
-              size="icon">
+              className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
               <Icon
                 as={Paperclip}
-                size={20}
+                size={18}
                 className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
               />
-            </Button>
-            <Input
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type a message..."
-              multiline
-              editable={!isSending}
-              onSubmitEditing={handleSendMessage}
-              className="flex-1"
-              style={{
-                maxHeight: 50,
-                paddingTop: 8,
-                paddingBottom: 8,
-                textAlignVertical: 'center',
-              }}
-            />
-            <Button
-              variant={
+            </Pressable>
+
+            {/* Input Field with Internal Padding for Icons */}
+            <View className="flex-1 rounded-full border border-border bg-background">
+              <Input
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Type a message..."
+                multiline
+                editable={!isSending}
+                onSubmitEditing={handleSendMessage}
+                className="border-0 bg-transparent pl-11 pr-11 text-sm"
+                style={{
+                  minHeight: 40,
+                  maxHeight: 80,
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                }}
+              />
+            </View>
+
+            {/* Send Button - Inside Right */}
+            <Pressable
+              onPress={handleSendMessage}
+              disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
+              className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
                 (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
                 !isSending
-                  ? 'default'
-                  : 'ghost'
-              }
-              size="icon"
-              onPress={handleSendMessage}
-              disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}>
+                  ? 'bg-primary'
+                  : 'bg-secondary'
+              }`}>
               {isSending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Icon
                   as={Send}
-                  size={20}
+                  size={15}
                   className={
                     message.trim() || fileAttachment?.downloadURL
                       ? 'text-primary-foreground'
@@ -1395,7 +1406,7 @@ export default function PropertyDetailsScreen() {
                   }
                 />
               )}
-            </Button>
+            </Pressable>
           </View>
         </View>
       )}
@@ -1439,7 +1450,7 @@ export default function PropertyDetailsScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Documents Selection Drawer */}
+      {/* Documents Drawer */}
       <Modal
         visible={documentsDrawerVisible}
         animationType="slide"
@@ -1449,10 +1460,18 @@ export default function PropertyDetailsScreen() {
           <View className="border-b border-border bg-background px-4 py-3">
             <View className="flex-row items-center justify-between">
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-foreground">Select Resources</Text>
-                <Text className="text-sm text-muted-foreground">
-                  {selectedDocuments.length} selected
+                <Text className="text-lg font-semibold text-foreground">
+                  {activeTab === 'chat' ? 'Select Resources' : 'Property Documents'}
                 </Text>
+                {activeTab === 'chat' ? (
+                  <Text className="text-sm text-muted-foreground">
+                    {selectedDocuments.length} selected for chat context
+                  </Text>
+                ) : (
+                  <Text className="text-sm text-muted-foreground">
+                    {documents.length} document{documents.length !== 1 ? 's' : ''}
+                  </Text>
+                )}
               </View>
               <Button
                 onPress={() => setDocumentsDrawerVisible(false)}
@@ -1472,28 +1491,44 @@ export default function PropertyDetailsScreen() {
                 <Text className="text-center text-muted-foreground">
                   No documents available for this property.
                 </Text>
+                {activeTab === 'details' && (
+                  <Text className="mt-2 text-center text-sm text-muted-foreground">
+                    Go to the Details tab to upload documents.
+                  </Text>
+                )}
               </View>
             ) : (
-              <View className="space-y-3">
+              <View className="gap-3">
+                {activeTab === 'chat' && (
+                  <View className="rounded-lg bg-secondary p-3">
+                    <Text className="text-sm text-muted-foreground">
+                      Select documents to provide context for your chat conversation
+                    </Text>
+                  </View>
+                )}
                 {documents.map((document) => {
                   const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
                   return (
                     <Pressable
                       key={document.id}
-                      onPress={() => toggleDocumentSelection(document)}
+                      onPress={() => activeTab === 'chat' && toggleDocumentSelection(document)}
                       className={`rounded-lg border p-4 ${
-                        isSelected ? 'border-primary bg-blue-50' : 'border-border bg-background'
+                        activeTab === 'chat' && isSelected
+                          ? 'border-primary bg-blue-50'
+                          : 'border-border bg-background'
                       }`}>
                       <View className="flex-row items-start gap-3">
                         <View
                           className={`h-10 w-10 items-center justify-center rounded-full ${
-                            isSelected ? 'bg-primary' : 'bg-secondary'
+                            activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
                           }`}>
                           <Icon
                             as={FileText}
                             size={20}
                             className={
-                              isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                              activeTab === 'chat' && isSelected
+                                ? 'text-primary-foreground'
+                                : 'text-muted-foreground'
                             }
                           />
                         </View>
@@ -1514,7 +1549,7 @@ export default function PropertyDetailsScreen() {
                             </Text>
                           )}
                         </View>
-                        {isSelected && (
+                        {activeTab === 'chat' && isSelected && (
                           <View className="rounded-full bg-primary p-1">
                             <Icon as={X} size={16} className="text-primary-foreground" />
                           </View>
