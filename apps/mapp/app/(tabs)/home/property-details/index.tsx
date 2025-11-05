@@ -1208,36 +1208,35 @@ export default function PropertyDetailsScreen() {
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
-            {/* Sessions Button - Show only on chat tab */}
+            {/* Chat Session Controls - Show only on chat tab */}
             {activeTab === 'chat' && (
-              <Button
-                onPress={() => setSessionsDrawerVisible(true)}
-                variant="ghost"
-                size="icon">
-                <Icon as={MessageSquare} size={20} className="text-foreground" />
-              </Button>
-            )}
-            {/* New Session Button - Show only on chat tab */}
-            {activeTab === 'chat' && (
-              <Button
-                onPress={async () => {
-                  if (!user) return;
-                  // Claim existing draft or create new one
-                  if (draftsByProperty[id]) {
-                    // Select the existing draft session
-                    setSelectedSessionId(draftsByProperty[id].id);
-                  } else {
-                    // Create a new draft session
-                    const newSessionId = await createPropertyDraftSession(user.uid, id);
-                    if (newSessionId) {
-                      setSelectedSessionId(newSessionId);
+              <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
+                <Button
+                  onPress={() => setSessionsDrawerVisible(true)}
+                  variant="ghost"
+                  size="icon">
+                  <Icon as={MessageSquare} size={20} className="text-foreground" />
+                </Button>
+                <Button
+                  onPress={async () => {
+                    if (!user) return;
+                    // Claim existing draft or create new one
+                    if (draftsByProperty[id]) {
+                      // Select the existing draft session
+                      setSelectedSessionId(draftsByProperty[id].id);
+                    } else {
+                      // Create a new draft session
+                      const newSessionId = await createPropertyDraftSession(user.uid, id);
+                      if (newSessionId) {
+                        setSelectedSessionId(newSessionId);
+                      }
                     }
-                  }
-                }}
-                variant="ghost"
-                size="icon">
-                <Icon as={Plus} size={20} className="text-foreground" />
-              </Button>
+                  }}
+                  variant="ghost"
+                  size="icon">
+                  <Icon as={Plus} size={20} className="text-foreground" />
+                </Button>
+              </View>
             )}
             {/* Docs Button - Show on both tabs */}
             <View className="relative">
