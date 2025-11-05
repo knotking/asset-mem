@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { ScrollView, View } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { FlatList, View, type ListRenderItemInfo } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,22 +13,60 @@ interface ChatListProps {
 }
 
 export default function ChatList({ messages, isLoading }: ChatListProps) {
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
   const messageCountRef = useRef(messages.length);
+  const isNearBottomRef = useRef(true); // Track if user is near bottom
 
-  // Auto-scroll to bottom when new messages arrive
+  // Memoized render function for FlatList
+  const renderMessage = useCallback(
+    ({ item }: ListRenderItemInfo<Message>) => <ChatMessage message={item} />,
+    []
+  );
+
+  // Memoized key extractor
+  const keyExtractor = useCallback((item: Message) => item.id, []);
+
+  // Track scroll position to determine if user is near bottom
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    // Consider "near bottom" if within 100 pixels
+    isNearBottomRef.current = distanceFromBottom < 100;
+  }, []);
+
+  // Handle content size change - only auto-scroll for new messages when near bottom
+  const handleContentSizeChange = useCallback(
+    (contentWidth: number, contentHeight: number) => {
+      const previousMessageCount = messageCountRef.current;
+      const currentMessageCount = messages.length;
+
+      // Only auto-scroll if user is near bottom AND a new message was added
+      if (
+        currentMessageCount > previousMessageCount &&
+        isNearBottomRef.current &&
+        currentMessageCount > 0
+      ) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+
+      messageCountRef.current = currentMessageCount;
+    },
+    [messages.length]
+  );
+
+  // Auto-scroll to bottom when new messages arrive (initial load)
   useEffect(() => {
     const previousMessageCount = messageCountRef.current;
     const currentMessageCount = messages.length;
 
-    // Only scroll if a new message was added
-    if (currentMessageCount > previousMessageCount) {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+    // Only scroll on initial load or when first message arrives
+    if (previousMessageCount === 0 && currentMessageCount > 0) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+      messageCountRef.current = currentMessageCount;
     }
-
-    // Update the ref with current count
-    messageCountRef.current = currentMessageCount;
-  }, [messages]);
+  }, [messages.length]);
 
   if (isLoading) {
     return (
@@ -67,13 +105,20 @@ export default function ChatList({ messages, isLoading }: ChatListProps) {
   }
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
+    <FlatList
+      ref={flatListRef}
+      data={messages}
+      renderItem={renderMessage}
+      keyExtractor={keyExtractor}
       className="flex-1"
-      contentContainerStyle={{ padding: 16 }}>
-      {messages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
-      ))}
-    </ScrollView>
+      contentContainerStyle={{ padding: 16 }}
+      onScroll={handleScroll}
+      onContentSizeChange={handleContentSizeChange}
+      scrollEventThrottle={16}
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={50}
+      windowSize={10}
+    />
   );
 }
