@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react-native';
 import SessionsList from './SessionsList';
 import type { Session } from '@homeapp/common/types';
+import { PortalHost } from '@rn-primitives/portal';
 
 interface SessionsModalProps {
   visible: boolean;
@@ -31,6 +32,7 @@ export default function SessionsModal({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
+      <PortalHost name="sessions-modal" />
       <SafeAreaView className="flex-1 bg-background">
         {/* Header */}
         <View className="border-b border-border bg-background px-4 py-3">
