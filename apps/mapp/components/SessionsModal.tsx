@@ -34,15 +34,15 @@ export default function SessionsModal({
       <SafeAreaView className="flex-1 bg-background">
         {/* Header */}
         <View className="border-b border-border bg-background px-4 py-3">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
+          <View className="flex-row items-center justify-between gap-2">
+            <View className="flex-1 gap-1">
               <Text className="text-lg font-semibold text-foreground">Sessions</Text>
               <Text className="text-sm text-muted-foreground" numberOfLines={1}>
                 {propertyName}
               </Text>
             </View>
-            <Button onPress={onClose} variant="ghost" size="icon" className="ml-2">
-              <Icon as={X} size={24} className="text-foreground" />
+            <Button onPress={onClose} variant="ghost" size="icon">
+              <Icon as={X} size={20} className="text-foreground" />
             </Button>
           </View>
         </View>

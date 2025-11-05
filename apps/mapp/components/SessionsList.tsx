@@ -70,9 +70,9 @@ export default function SessionsList({
         <Button
           onPress={handleCreateSession}
           variant="default"
-          className="w-full">
+          className="flex-row items-center gap-2">
           <Icon as={Plus} size={20} className="text-primary-foreground" />
-          <Text>New Session</Text>
+          <Text className="text-primary-foreground">New Session</Text>
         </Button>
       </View>
 
@@ -83,34 +83,34 @@ export default function SessionsList({
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
               <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
             </View>
-            <Text className="text-center text-muted-foreground">
+            <Text className="text-center text-sm text-muted-foreground">
               No sessions yet. Create one to start chatting about this property.
             </Text>
           </View>
         ) : (
-          <View className="space-y-3 pb-4">
+          <View className="gap-4 pb-4">
             {/* Regular Sessions - Draft sessions are hidden */}
             {sessions.map((session) => (
               <Pressable
                 key={session.id}
                 onPress={() => onSessionPress?.(session)}
-                className="mb-4 rounded-lg border border-border bg-background p-4">
+                className="rounded-lg border border-border bg-card p-4">
                 <View className="flex-row items-start gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                    <Icon as={MessageSquare} size={20} className="text-green-500" />
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-success/10">
+                    <Icon as={MessageSquare} size={20} className="text-success" />
                   </View>
-                  <View className="flex-1">
-                    <Text className="mb-1 font-semibold text-foreground">{session.name}</Text>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-foreground">{session.name}</Text>
                     <Text className="text-xs text-muted-foreground">
                       {formatDate(session.createdAt)}
                     </Text>
                     {session.messageCount !== undefined && session.messageCount > 0 && (
-                      <Text className="mt-1 text-xs text-muted-foreground">
+                      <Text className="text-xs text-muted-foreground">
                         {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
                       </Text>
                     )}
                     {session.lastMessageAt && (
-                      <Text className="mt-1 text-xs text-muted-foreground">
+                      <Text className="text-xs text-muted-foreground">
                         Last active: {formatDate(session.lastMessageAt)}
                       </Text>
                     )}
