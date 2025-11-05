@@ -199,9 +199,7 @@ export default function PropertyCard({
         <Card>
           <CardHeader>
             <View className="flex-row items-center gap-2">
-              <View
-                className="h-12 w-12 items-center justify-center overflow-hidden bg-secondary"
-                style={{ borderRadius: 9999 }}>
+              <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-secondary">
                 <Icon as={Home} size={24} className="text-secondary-foreground" />
               </View>
               <View className="flex-1">
@@ -242,22 +240,22 @@ export default function PropertyCard({
           <CardContent>
             <View className="flex-row justify-around border-t border-border pt-4">
               <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-blue-100">
-                  <Icon as={FileText} size={24} className="text-blue-500" />
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-info/20">
+                  <Icon as={FileText} size={24} className="text-info" />
                 </View>
                 <Text className="text-lg font-semibold text-foreground">{docsCount}</Text>
                 <Text className="text-xs text-muted-foreground">Docs</Text>
               </View>
               <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-green-100">
-                  <Icon as={Briefcase} size={24} className="text-green-500" />
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-success/20">
+                  <Icon as={Briefcase} size={24} className="text-success" />
                 </View>
                 <Text className="text-lg font-semibold text-foreground">{servicesCount}</Text>
                 <Text className="text-xs text-muted-foreground">Services</Text>
               </View>
               <View className="items-center">
-                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-purple-100">
-                  <Icon as={CheckCircle} size={24} className="text-purple-500" />
+                <View className="mb-2 h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-warning/20">
+                  <Icon as={CheckCircle} size={24} className="text-warning" />
                 </View>
                 <Text className="text-lg font-semibold text-foreground">{checksCount}</Text>
                 <Text className="text-xs text-muted-foreground">Checks</Text>

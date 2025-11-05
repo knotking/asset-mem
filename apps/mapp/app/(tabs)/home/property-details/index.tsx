@@ -359,12 +359,12 @@ function DetailsTab({ property }: { property: any }) {
         <CardHeader>
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
-              <Icon as={FileText} size={18} className="text-muted-foreground" />
+              <Icon as={FileText} size={20} className="text-muted-foreground" />
               <CardTitle>Basic Information</CardTitle>
             </View>
             {!isEditMode ? (
               <Button variant="ghost" size="icon" onPress={handleEditToggle}>
-                <Icon as={Pencil} size={18} className="text-muted-foreground" />
+                <Icon as={Pencil} size={20} className="text-muted-foreground" />
               </Button>
             ) : (
               <View className="flex-row gap-2">
@@ -438,7 +438,7 @@ function DetailsTab({ property }: { property: any }) {
               />
             ) : (
               <View className="flex-row items-center gap-1">
-                <Icon as={MapPin} size={14} className="text-muted-foreground" />
+                <Icon as={MapPin} size={16} className="text-muted-foreground" />
                 <Text className="font-medium text-foreground">{property.address}</Text>
               </View>
             )}
@@ -451,7 +451,7 @@ function DetailsTab({ property }: { property: any }) {
         <CardHeader>
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
-              <Icon as={FileText} size={18} className="text-muted-foreground" />
+              <Icon as={FileText} size={20} className="text-muted-foreground" />
               <CardTitle>Property Documents</CardTitle>
             </View>
             <Button
@@ -499,15 +499,15 @@ function DetailsTab({ property }: { property: any }) {
 
                       {doc.status === 'analyzing' && (
                         <View className="mt-2 flex-row items-center gap-1">
-                          <RotatingSparkles size={14} color="#3B82F6" />
+                          <RotatingSparkles size={16} color="#3B82F6" />
                           <Text className="text-xs text-muted-foreground">Analyzing...</Text>
                         </View>
                       )}
 
                       {doc.status === 'failed' && (
                         <View className="mt-2 flex-row items-center gap-1">
-                          <Icon as={AlertCircle} size={14} className="text-red-500" />
-                          <Text className="text-xs text-red-500">{doc.error || 'Failed'}</Text>
+                          <Icon as={AlertCircle} size={16} className="text-destructive" />
+                          <Text className="text-xs text-destructive">{doc.error || 'Failed'}</Text>
                         </View>
                       )}
                     </View>
@@ -572,7 +572,7 @@ function DetailsTab({ property }: { property: any }) {
                         variant="ghost"
                         size="icon"
                         className="ml-2">
-                        <Icon as={Trash2} size={18} className="text-red-500" />
+                        <Icon as={Trash2} size={20} className="text-destructive" />
                       </Button>
                     </View>
 
@@ -1244,8 +1244,8 @@ export default function PropertyDetailsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row items-center gap-1.5">
               <View className="mr-1 flex-row items-center gap-1">
-                <Icon as={FileText} size={10} className="text-muted-foreground" />
-                <Text className="text-[10px] font-medium text-muted-foreground">
+                <Icon as={FileText} size={12} className="text-muted-foreground" />
+                <Text className="text-xs font-medium text-muted-foreground">
                   {selectedDocuments.length}
                 </Text>
               </View>
@@ -1254,16 +1254,16 @@ export default function PropertyDetailsScreen() {
                   key={doc.id}
                   onPress={() => toggleDocumentSelection(doc)}
                   className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
-                  <Text className="max-w-24 text-[11px] text-foreground" numberOfLines={1}>
+                  <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
                     {doc.name}
                   </Text>
-                  <Icon as={X} size={10} className="text-muted-foreground" />
+                  <Icon as={X} size={12} className="text-muted-foreground" />
                 </Pressable>
               ))}
               <Pressable
                 onPress={() => setSelectedDocuments([])}
                 className="ml-1 rounded-full bg-background px-2 py-0.5">
-                <Text className="text-[10px] text-muted-foreground">Clear</Text>
+                <Text className="text-xs text-muted-foreground">Clear</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -1318,8 +1318,8 @@ export default function PropertyDetailsScreen() {
                     </Text>
                     {fileAttachment.error ? (
                       <View className="mt-1 flex-row items-center gap-1">
-                        <Icon as={AlertCircle} size={14} className="text-red-500" />
-                        <Text className="text-xs text-red-500">{fileAttachment.error}</Text>
+                        <Icon as={AlertCircle} size={16} className="text-destructive" />
+                        <Text className="text-xs text-destructive">{fileAttachment.error}</Text>
                       </View>
                     ) : fileAttachment.progress < 100 ? (
                       <View className="mt-1">
@@ -1335,8 +1335,8 @@ export default function PropertyDetailsScreen() {
                       </View>
                     ) : (
                       <View className="mt-1 flex-row items-center gap-1">
-                        <Icon as={CheckCircle} size={14} className="text-green-500" />
-                        <Text className="text-xs text-green-500">Upload complete</Text>
+                        <Icon as={CheckCircle} size={16} className="text-success" />
+                        <Text className="text-xs text-success">Upload complete</Text>
                       </View>
                     )}
                   </View>
@@ -1361,7 +1361,7 @@ export default function PropertyDetailsScreen() {
               className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
               <Icon
                 as={Paperclip}
-                size={18}
+                size={20}
                 className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
               />
             </Pressable>
@@ -1400,7 +1400,7 @@ export default function PropertyDetailsScreen() {
               ) : (
                 <Icon
                   as={Send}
-                  size={15}
+                  size={16}
                   className={
                     message.trim() || fileAttachment?.downloadURL
                       ? 'text-primary-foreground'
