@@ -425,27 +425,42 @@ def extract_markdown_from_dual_format(text: str) -> Optional[str]:
     if not text or not isinstance(text, str):
         return None
     
-    # Pattern to match JSON code block followed by markdown
-    # Matches: ```json ... ``` followed by optional whitespace and then markdown content
-    # Uses DOTALL to match across newlines, and non-greedy match for the JSON block
-    pattern = r'```json\s*\n(.*?)\n```\s*\n\s*(.*)'
-    match = re.search(pattern, text, re.DOTALL)
+    # Check if response contains a JSON code block marker
+    if '```json' not in text:
+        return None
     
-    if match:
-        markdown_part = match.group(2).strip()  # Group 2 is the markdown after the JSON block
+    # Pattern 1: Match ```json ... ``` followed by markdown content
+    # This handles multi-line JSON blocks and captures everything after the closing ```
+    # Uses non-greedy match to stop at the first closing ```
+    pattern1 = r'```json\s*\n(.*?)\n```\s*\n\s*(.+)'
+    match1 = re.search(pattern1, text, re.DOTALL)
+    
+    if match1:
+        markdown_part = match1.group(2).strip()  # Group 2 is the markdown after the JSON block
         if markdown_part:
-            logger.debug("Extracted markdown from dual-format response")
+            logger.info("✓ Extracted markdown from dual-format response (Pattern 1)")
             return markdown_part
     
-    # Also try a simpler pattern that matches anything after the closing ``` with optional whitespace
+    # Pattern 2: More flexible - matches ```json ... ``` and captures everything after
+    # Handles cases where there might not be a newline after the closing ```
     pattern2 = r'```json.*?```\s*\n\s*(.+)'
     match2 = re.search(pattern2, text, re.DOTALL)
     if match2:
         markdown_part = match2.group(1).strip()
         if markdown_part:
-            logger.debug("Extracted markdown from dual-format response (alternative pattern)")
+            logger.info("✓ Extracted markdown from dual-format response (Pattern 2)")
             return markdown_part
     
+    # Pattern 3: Even more flexible - handles cases with minimal whitespace
+    pattern3 = r'```json.*?```\s+(.+)'
+    match3 = re.search(pattern3, text, re.DOTALL)
+    if match3:
+        markdown_part = match3.group(1).strip()
+        if markdown_part:
+            logger.info("✓ Extracted markdown from dual-format response (Pattern 3)")
+            return markdown_part
+    
+    logger.debug("No markdown found after JSON code block - response may be JSON-only")
     return None
 
 def safe_markdown_format(text: str) -> str:
@@ -454,25 +469,35 @@ def safe_markdown_format(text: str) -> str:
     
     For Analysis Agent responses in dual format (JSON + Markdown), extracts the markdown portion.
     For other responses, converts JSON to markdown format (backward compatible).
+    
+    Args:
+        text: The response text that may be in dual format (JSON + Markdown) or JSON-only
+        
+    Returns:
+        Formatted markdown text ready for Telegram MarkdownV2
     """
     if not text or not isinstance(text, str):
         return str(text)
     
     # First, check if this is a dual-format response (JSON code block + Markdown)
-    # If so, extract just the markdown portion
+    # If so, extract just the markdown portion and use it directly
     markdown_text = extract_markdown_from_dual_format(text)
     if markdown_text:
-        # We have markdown from dual format, just format it for Telegram
+        logger.info(f"Using extracted markdown from dual-format response (length: {len(markdown_text)} chars)")
+        # We have markdown from dual format, format it for Telegram
         formatted_text = format_google_maps_links(markdown_text)
         formatted_text = format_youtube_links(formatted_text)
         
         try:
-            return telegramify_markdown.markdownify(formatted_text)
+            telegram_formatted = telegramify_markdown.markdownify(formatted_text)
+            logger.debug("Successfully formatted markdown for Telegram")
+            return telegram_formatted
         except Exception as e:
             logger.warning(f"telegramify_markdown failed: {e}. Falling back to escape_markdown.")
             return escape_markdown(formatted_text)
     
     # Not dual format - fall back to existing behavior (convert JSON to markdown)
+    logger.debug("No dual-format detected, converting JSON to markdown")
     # First, check if text contains JSON and convert it to markdown
     # This MUST happen first to remove all JSON syntax
     converted_text = json_to_markdown(text)
