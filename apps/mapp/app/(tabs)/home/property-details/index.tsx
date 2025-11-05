@@ -50,6 +50,7 @@ import {
   CheckCircle,
   Trash2,
   Sparkles,
+  Plus,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -71,9 +72,10 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import SessionsList from '@/components/SessionsList';
 import ChatList from '@/components/ChatList';
-import type { Session, Document, FileAttachment, AgentStep } from '@homeapp/common/types';
+import SessionsList from '@/components/SessionsList';
+import PushDrawer from '@/components/PushDrawer';
+import type { Document, FileAttachment, AgentStep, Session } from '@homeapp/common/types';
 import { PROPERTY_TYPES } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
 
@@ -721,9 +723,10 @@ export default function PropertyDetailsScreen() {
     new: isNew,
     files,
     tab,
-  } = useLocalSearchParams<{ id: string; new?: string; files?: string; tab?: string }>();
+    sessionId,
+  } = useLocalSearchParams<{ id: string; new?: string; files?: string; tab?: string; sessionId?: string }>();
   const { properties } = usePropertiesList();
-  const { draftsByProperty } = useSession();
+  const { draftsByProperty, createPropertyDraftSession } = useSession();
   const { documents } = useProperty();
   const { user } = useAuth();
   const { db, storage } = useFirebase();
@@ -736,8 +739,8 @@ export default function PropertyDetailsScreen() {
     tab === 'details' ? 'details' : (isNew === 'true' ? 'details' : 'chat')
   );
   const [message, setMessage] = React.useState('');
-  const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
+  const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
   const [isSending, setIsSending] = React.useState(false);
@@ -830,6 +833,14 @@ export default function PropertyDetailsScreen() {
 
     startUpload();
   }, [user, id, files, storage, db, uploadDocuments]);
+
+  // Handle incoming session selection from sessions screen
+  React.useEffect(() => {
+    if (sessionId) {
+      setSelectedSessionId(sessionId);
+      setActiveTab('chat');
+    }
+  }, [sessionId]);
 
   // Auto-select draft session when property loads
   React.useEffect(() => {
@@ -1166,12 +1177,24 @@ export default function PropertyDetailsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <PushDrawer
+      visible={documentsDrawerVisible}
+      onClose={() => setDocumentsDrawerVisible(false)}
+      width={75}
+      direction="right"
+      mainContent={
+        <PushDrawer
+          visible={sessionsDrawerVisible}
+          onClose={() => setSessionsDrawerVisible(false)}
+          width={80}
+          direction="left"
+          mainContent={
+            <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+              <Stack.Screen
+                options={{
+                  headerShown: false,
+                }}
+              />
 
       {/* Navigation Header */}
       <View className="bg-background px-4 py-3">
@@ -1185,6 +1208,37 @@ export default function PropertyDetailsScreen() {
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
+            {/* Sessions Button - Show only on chat tab */}
+            {activeTab === 'chat' && (
+              <Button
+                onPress={() => setSessionsDrawerVisible(true)}
+                variant="ghost"
+                size="icon">
+                <Icon as={MessageSquare} size={20} className="text-foreground" />
+              </Button>
+            )}
+            {/* New Session Button - Show only on chat tab */}
+            {activeTab === 'chat' && (
+              <Button
+                onPress={async () => {
+                  if (!user) return;
+                  // Claim existing draft or create new one
+                  if (draftsByProperty[id]) {
+                    // Select the existing draft session
+                    setSelectedSessionId(draftsByProperty[id].id);
+                  } else {
+                    // Create a new draft session
+                    const newSessionId = await createPropertyDraftSession(user.uid, id);
+                    if (newSessionId) {
+                      setSelectedSessionId(newSessionId);
+                    }
+                  }
+                }}
+                variant="ghost"
+                size="icon">
+                <Icon as={Plus} size={20} className="text-foreground" />
+              </Button>
+            )}
             {/* Docs Button - Show on both tabs */}
             <View className="relative">
               <Button
@@ -1201,15 +1255,6 @@ export default function PropertyDetailsScreen() {
                 </View>
               )}
             </View>
-            {/* Sessions Button - Show only on chat tab */}
-            {activeTab === 'chat' && (
-              <Button
-                onPress={() => setSessionsDrawerVisible(true)}
-                variant="ghost"
-                size="icon">
-                <Icon as={MessageSquare} size={20} className="text-foreground" />
-              </Button>
-            )}
           </View>
         </View>
       </View>
@@ -1413,78 +1458,80 @@ export default function PropertyDetailsScreen() {
         </View>
       )}
 
-      {/* Sessions Drawer */}
-      <Modal
-        visible={sessionsDrawerVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSessionsDrawerVisible(false)}>
-        <SafeAreaView className="flex-1 bg-background">
-          <View className="border-b border-border bg-background px-4 py-3">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-1">
-                <Text className="text-lg font-semibold text-foreground">Sessions</Text>
-                <Text className="text-sm text-muted-foreground" numberOfLines={1}>
-                  {property.name}
-                </Text>
-              </View>
-              <Button
-                onPress={() => setSessionsDrawerVisible(false)}
-                variant="ghost"
-                size="icon"
-                className="ml-2">
-                <Icon as={X} size={24} className="text-foreground" />
-              </Button>
-            </View>
-          </View>
-          <SessionsList
-            propertyId={id}
-            onSessionPress={(session: Session) => {
-              setSelectedSessionId(session.id);
-              setActiveTab('chat');
-              setSessionsDrawerVisible(false);
-            }}
-            onCreateSession={() => {
-              setActiveTab('chat');
-              setSessionsDrawerVisible(false);
-            }}
-          />
-        </SafeAreaView>
-      </Modal>
+      {/* Error Alert Dialog */}
+      <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Error</AlertDialogTitle>
+            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
+              <Text>OK</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Documents Drawer */}
-      <Modal
-        visible={documentsDrawerVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setDocumentsDrawerVisible(false)}>
-        <SafeAreaView className="flex-1 bg-background">
-          <View className="border-b border-border bg-background px-4 py-3">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-1">
-                <Text className="text-lg font-semibold text-foreground">
-                  {activeTab === 'chat' ? 'Select Resources' : 'Property Documents'}
-                </Text>
-                {activeTab === 'chat' ? (
-                  <Text className="text-sm text-muted-foreground">
-                    {selectedDocuments.length} selected for chat context
+              </SafeAreaView>
+            }
+          >
+            {/* Sessions Drawer Content */}
+            <View className="border-b border-border bg-background px-4 py-3">
+              <View className="flex-row items-center gap-3">
+                <View className="flex-1 gap-1">
+                  <Text className="text-lg font-semibold text-foreground">Sessions</Text>
+                  <Text className="text-sm text-muted-foreground" numberOfLines={1}>
+                    {property.name}
                   </Text>
-                ) : (
-                  <Text className="text-sm text-muted-foreground">
-                    {documents.length} document{documents.length !== 1 ? 's' : ''}
-                  </Text>
-                )}
+                </View>
+                <Button onPress={() => setSessionsDrawerVisible(false)} variant="ghost" size="icon">
+                  <Icon as={X} size={24} className="text-foreground" />
+                </Button>
               </View>
-              <Button
-                onPress={() => setDocumentsDrawerVisible(false)}
-                variant="ghost"
-                size="icon"
-                className="ml-2">
-                <Icon as={X} size={24} className="text-foreground" />
-              </Button>
             </View>
+            <SessionsList
+              propertyId={id}
+              onSessionPress={(session: Session) => {
+                setSelectedSessionId(session.id);
+                setActiveTab('chat');
+                setSessionsDrawerVisible(false);
+              }}
+              onCreateSession={() => {
+                setActiveTab('chat');
+                setSessionsDrawerVisible(false);
+              }}
+            />
+          </PushDrawer>
+        }
+      >
+        {/* Documents Drawer Content */}
+        <View className="border-b border-border bg-background px-4 py-3">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text className="text-lg font-semibold text-foreground">
+                {activeTab === 'chat' ? 'Select Resources' : 'Property Documents'}
+              </Text>
+              {activeTab === 'chat' ? (
+                <Text className="text-sm text-muted-foreground">
+                  {selectedDocuments.length} selected for chat context
+                </Text>
+              ) : (
+                <Text className="text-sm text-muted-foreground">
+                  {documents.length} document{documents.length !== 1 ? 's' : ''}
+                </Text>
+              )}
+            </View>
+            <Button
+              onPress={() => setDocumentsDrawerVisible(false)}
+              variant="ghost"
+              size="icon"
+              className="ml-2">
+              <Icon as={X} size={24} className="text-foreground" />
+            </Button>
           </View>
-          <ScrollView className="flex-1 px-4 py-4">
+        </View>
+        <ScrollView className="flex-1 px-4 py-4">
             {documents.length === 0 ? (
               <View className="items-center py-8">
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
@@ -1562,24 +1609,7 @@ export default function PropertyDetailsScreen() {
                 })}
               </View>
             )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Error Alert Dialog */}
-      <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Error</AlertDialogTitle>
-            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
-              <Text>OK</Text>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </SafeAreaView>
+        </ScrollView>
+      </PushDrawer>
   );
 }

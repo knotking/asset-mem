@@ -10,6 +10,9 @@ const RAG_FILE_UPLOAD_URL =
 const DOCUMENT_ANALYSIS_URL =
   'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info';
 
+// TODO: Web app URL for sharing links
+export const WEB_APP_URL = 'https://staging--goggle-gab.us-central1.hosted.app';
+
 export async function createAgentSession(
   userId: string
 ): Promise<{ agentSessionId?: string; error?: string }> {
@@ -46,6 +49,47 @@ export async function createAgentSession(
     console.error('Error creating agent session:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: `Failed to create agent session: ${errorMessage}` };
+  }
+}
+
+/**
+ * Delete an agent session from the backend
+ */
+export async function deleteAgentSession(
+  userId: string,
+  agentSessionId: string
+): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const url = AGENT_SESSION_URL;
+    if (!url) {
+      console.warn('AGENT_SESSION_URL not set, skipping agent session deletion');
+      return { success: true };
+    }
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId, session_id: agentSessionId }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn(
+          `Agent session ${agentSessionId} not found on backend, but proceeding with UI deletion.`
+        );
+        return { success: true };
+      }
+      const errorBody = await response.text();
+      throw new Error(`Failed to delete session, status: ${response.status}, body: ${errorBody}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting agent session:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { error: `Failed to delete agent session: ${errorMessage}` };
   }
 }
 
