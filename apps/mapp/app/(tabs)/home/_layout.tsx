@@ -5,12 +5,17 @@ export default function HomeLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 300,
+        contentStyle: { backgroundColor: 'transparent' },
       }}>
       <Stack.Screen name="index" />
       <Stack.Screen
         name="property-details"
         options={{
           headerShown: false,
+          animation: 'slide_from_right',
+          animationDuration: 300,
         }}
       />
     </Stack>

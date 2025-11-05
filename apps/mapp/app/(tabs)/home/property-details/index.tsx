@@ -1167,12 +1167,15 @@ export default function PropertyDetailsScreen() {
 
   if (!property) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-foreground">Property not found</Text>
-        <Button onPress={() => router.back()} variant="default" className="mt-4">
-          <Text className="text-primary-foreground">Go Back</Text>
-        </Button>
-      </View>
+      <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-foreground">Property not found</Text>
+          <Button onPress={() => router.back()} variant="default" className="mt-4">
+            <Text className="text-primary-foreground">Go Back</Text>
+          </Button>
+        </View>
+      </SafeAreaView>
     );
   }
 

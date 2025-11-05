@@ -34,21 +34,29 @@ export default function Screen() {
   };
 
   if (loading) {
-    return <PropertyListSkeleton />;
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <PropertyListSkeleton />
+      </>
+    );
   }
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-red-500">Error: {error}</Text>
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className="flex-1 items-center justify-center bg-light-background-alt">
+          <Text className="text-red-500">Error: {error}</Text>
+        </View>
+      </>
     );
   }
 
   return (
     <>
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView className="flex-1 bg-light-background-alt">
-        <Stack.Screen options={{ headerShown: false }} />
         <View className="mt-4 px-4">
           <Text className="text-lg font-semibold text-foreground">Property AI Agent</Text>
           <Text className="mb-4 text-muted-foreground">
@@ -60,7 +68,7 @@ export default function Screen() {
           <AddNewProperty onPress={() => setModalVisible(true)} />
         </View>
         {/* Property Cards */}
-        <View className="mt-4 px-4">
+        <View className="mt-4 px-4 pb-4">
           {properties.map((property) => (
             <PropertyCard
               key={property.id}
