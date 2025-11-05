@@ -56,7 +56,7 @@ const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
       }`}>
       <Icon
         as={isUser ? User : Bot}
-        size={18}
+        size={16}
         className={isUser ? 'text-primary-foreground' : 'text-secondary-foreground'}
       />
     </View>
@@ -98,7 +98,7 @@ const ProductCard = ({ product }: { product: Product }) => {
           <View className="flex-row items-center gap-2">
             {product.rating && (
               <>
-                <Icon as={Star} size={14} className="text-yellow-500" />
+                <Icon as={Star} size={16} className="text-warning" />
                 <Text className="text-sm text-foreground">{product.rating}</Text>
               </>
             )}
@@ -214,9 +214,9 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
           {provider.name}
         </Text>
         {provider.authorized === 'True' && (
-          <View className="ml-2 flex-row items-center gap-1 rounded-full bg-blue-100 px-2 py-1">
-            <Icon as={CheckCircle} size={12} className="text-blue-800" />
-            <Text className="text-xs text-blue-800">Authorized</Text>
+          <View className="bg-info/10 ml-2 flex-row items-center gap-1 rounded-full px-2 py-1">
+            <Icon as={CheckCircle} size={16} className="text-info" />
+            <Text className="text-info text-xs">Authorized</Text>
           </View>
         )}
       </View>
@@ -225,7 +225,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         <View className="mb-2 flex-row items-center gap-2">
           {hasRating && (
             <>
-              <Icon as={Star} size={14} className="text-yellow-500" />
+              <Icon as={Star} size={16} className="text-warning" />
               <Text className="text-sm text-foreground">{ratingValue}</Text>
             </>
           )}
@@ -250,13 +250,13 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
       <View className="mb-2 space-y-1">
         {hasContact && (
           <View className="flex-row items-center gap-2">
-            <Icon as={Phone} size={14} className="text-muted-foreground" />
+            <Icon as={Phone} size={16} className="text-muted-foreground" />
             <Text className="flex-1 text-sm text-foreground">{provider.contact_info}</Text>
           </View>
         )}
         {hasLocation && (
           <View className="flex-row items-center gap-2">
-            <Icon as={Map} size={14} className="text-muted-foreground" />
+            <Icon as={Map} size={16} className="text-muted-foreground" />
             <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
               {provider.location}
             </Text>
@@ -416,7 +416,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         <AccordionItem value="triage" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={Info} size={16} className="text-blue-600" />
+              <Icon as={Info} size={16} className="text-info" />
               <Text className="font-medium text-foreground">Triage Summary</Text>
             </View>
           </AccordionTrigger>
@@ -432,14 +432,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         <AccordionItem value="coverage" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={ShieldCheck} size={16} className="text-green-600" />
+              <Icon as={ShieldCheck} size={16} className="text-success" />
               <Text className="font-medium text-foreground">Coverage Analysis</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="border-t border-border bg-background p-4">
             {coverage?.warrantyInfo && (
               <View className="mb-3">
-                <Text className="mb-1 text-sm font-semibold text-green-700">
+                <Text className="text-success mb-1 text-sm font-semibold">
                   Warranty Information
                 </Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
@@ -449,7 +449,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             )}
             {coverage?.insuranceInfo && (
               <View>
-                <Text className="mb-1 text-sm font-semibold text-green-700">
+                <Text className="text-success mb-1 text-sm font-semibold">
                   Insurance Information
                 </Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
@@ -465,14 +465,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         <AccordionItem value="diy" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={Wrench} size={16} className="text-orange-600" />
+              <Icon as={Wrench} size={16} className="text-warning" />
               <Text className="font-medium text-foreground">DIY Recommendations</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="border-t border-border bg-background p-4">
             {diy?.diySteps?.summary && (
               <View className="mb-3">
-                <Text className="mb-1 text-sm font-semibold text-orange-700">Summary</Text>
+                <Text className="text-warning mb-1 text-sm font-semibold">Summary</Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
                   {diy.diySteps.summary}
                 </Markdown>
@@ -481,7 +481,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
             {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
               <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-orange-700">
+                <Text className="text-warning mb-2 text-sm font-semibold">
                   Step-by-Step Instructions
                 </Text>
                 {diy.diySteps.steps.map((step: any, idx: number) => (
@@ -495,7 +495,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
             {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
               <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-orange-700">Video Tutorials</Text>
+                <Text className="text-warning mb-2 text-sm font-semibold">Video Tutorials</Text>
                 {diy.youtubeSearch.videos.map((video: any, i: number) => (
                   <View key={i} className="mb-3">
                     <YouTubeEmbed videoUrl={video.url} />
@@ -520,7 +520,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
             {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
               <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-orange-700">
+                <Text className="text-warning mb-2 text-sm font-semibold">
                   Recommended Products
                 </Text>
                 {diy.recommendedProducts.products.map((product: Product, index: number) => (
@@ -536,12 +536,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         <AccordionItem value="service" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={Users} size={16} className="text-purple-600" />
+              <Icon as={Users} size={16} className="text-accent-foreground" />
               <Text className="font-medium text-foreground">Service Recommendations</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="border-t border-border bg-background p-4">
-            <Text className="mb-2 text-sm font-semibold text-purple-700">
+            <Text className="mb-2 text-sm font-semibold text-foreground">
               Local Service Providers
             </Text>
             {allProviders.length > 0 ? (
@@ -695,7 +695,7 @@ const FilePreview = ({
               <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
                 {file.name}
               </Text>
-              <Text className="text-xs text-red-500">Failed to load image</Text>
+              <Text className="text-xs text-destructive">Failed to load image</Text>
             </View>
           </View>
         ) : imageDimensions ? (
@@ -704,8 +704,8 @@ const FilePreview = ({
             style={{
               width: imageDimensions.width,
               height: imageDimensions.height,
-              borderRadius: 8,
             }}
+            className="rounded-lg"
             resizeMode="contain"
             onError={(e) => {
               console.error('Image load error:', e.nativeEvent.error);
@@ -817,8 +817,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       </View>
       <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
         <Pressable onLongPress={handleLongPress} delayLongPress={500}>
-          <View
-            className={`overflow-hidden rounded-lg ${isUser ? 'bg-gray-200 dark:bg-gray-800' : 'bg-secondary'}`}>
+          <View className={`overflow-hidden rounded-lg ${isUser ? 'bg-muted' : 'bg-secondary'}`}>
             {message.file && <FilePreview file={message.file} isUserMessage={isUser} />}
             {isLoading ? (
               <>
