@@ -193,7 +193,13 @@ export default function PropertyCard({
         </View>
       )}
 
-      <Pressable onPress={handlePress} disabled={isDeleting} className="relative mb-4">
+      <Pressable
+        onPress={handlePress}
+        disabled={isDeleting}
+        className="relative mb-4"
+        android_ripple={{ color: 'rgba(0, 0, 0, 0.05)' }}
+        style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+      >
         <Card className="rounded-lg shadow-sm">
           <CardHeader className="pb-3">
             <View className="flex-row items-start gap-3">
