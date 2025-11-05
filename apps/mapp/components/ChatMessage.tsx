@@ -411,7 +411,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
   const hasService = allProviders.length > 0;
 
   return (
-    <Accordion type="single" collapsible defaultValue="triage" className="w-full">
+    <Accordion type="single" collapsible defaultValue="triage">
       {hasTriage && (
         <AccordionItem value="triage" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
@@ -616,7 +616,7 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
 
   if (structuredData) {
     return (
-      <View className="w-full">
+      <View className="w-full min-w-full">
         {plainContent && (
           <Markdown style={markdownStyles} rules={markdownRules}>
             {plainContent}
@@ -627,7 +627,7 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
     );
   }
 
-  // Render content with markdown support
+  // Render content with markdown support - natural width for text messages
   return (
     <Markdown style={markdownStyles} rules={markdownRules}>
       {content}
