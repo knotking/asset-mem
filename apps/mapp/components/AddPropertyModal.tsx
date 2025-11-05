@@ -147,11 +147,11 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
           <Pressable
             onPress={handleChooseFiles}
             disabled={isCreating}
-            className="w-full max-w-md rounded-2xl border-2 border-dashed border-border bg-secondary/30 px-8 py-16">
+            className="w-full max-w-md rounded-xl border-2 border-dashed border-border bg-secondary/30 px-8 py-16">
             <View className="items-center">
               {/* Upload Icon */}
-              <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                <Icon as={Upload} size={40} className="text-primary" />
+              <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={Upload} size={32} className="text-primary" />
               </View>
 
               {/* Main Text */}
