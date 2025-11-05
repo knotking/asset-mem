@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { View, Image, Linking, Pressable, Share, Modal, TouchableOpacity } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -47,7 +47,136 @@ interface ChatMessageProps {
   message: Message;
 }
 
-const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
+// Helper functions moved outside components
+const hasValue = (val: any): boolean => {
+  if (!val) return false;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    return (
+      trimmed !== '' &&
+      trimmed.toLowerCase() !== 'n/a' &&
+      trimmed.toLowerCase() !== 'not available' &&
+      trimmed.toLowerCase() !== 'none' &&
+      trimmed.toLowerCase() !== 'null'
+    );
+  }
+  return true;
+};
+
+const normalizeProvider = (p: any): ServiceProvider | null => {
+  if (!p || typeof p !== 'object') return null;
+  const nameCandidate =
+    p.name ||
+    p.business_name ||
+    p.businessName ||
+    p.title ||
+    p.company ||
+    p.provider ||
+    p.store ||
+    '';
+  const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
+  if (!name.trim()) return null;
+
+  const website = p.website || p.url || p.link || undefined;
+  const link = p.link || p.url || p.website || undefined;
+  const directions = p.directions || p.directions_url || p.map_link || undefined;
+  const contact_info =
+    p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
+  const location = p.location || p.address || p.address_line || undefined;
+  const ratings = p.ratings || p.rating || undefined;
+  const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
+  const specialties = p.specialties || p.services || undefined;
+  const additional_information =
+    p.additional_information || p.description || p.about || undefined;
+  const authorized = p.authorized || p.verified || undefined;
+
+  return {
+    name,
+    website,
+    link,
+    directions,
+    contact_info,
+    location,
+    ratings: ratings != null ? String(ratings) : '',
+    reviews: reviews != null ? String(reviews) : '',
+    specialties: specialties != null ? String(specialties) : undefined,
+    additional_information: additional_information != null ? String(additional_information) : '',
+    authorized: authorized != null ? String(authorized) : '',
+  } as ServiceProvider;
+};
+
+const providerHasValidData = (provider: any): boolean => {
+  const nameCandidate =
+    provider?.name ||
+    provider?.business_name ||
+    provider?.businessName ||
+    provider?.title ||
+    provider?.company ||
+    provider?.provider ||
+    provider?.store;
+  return !!(nameCandidate && String(nameCandidate).trim() !== '');
+};
+
+const getProvidersArray = (providers: any): ServiceProvider[] => {
+  if (!providers) return [];
+  if (Array.isArray(providers)) return providers as ServiceProvider[];
+  if (typeof providers === 'string') {
+    try {
+      const parsed = JSON.parse(providers);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  if (typeof providers === 'object') {
+    const keys = ['providers', 'results', 'items', 'pros', 'list'];
+    for (const k of keys) {
+      if (Array.isArray((providers as any)[k])) return (providers as any)[k];
+    }
+  }
+  return [];
+};
+
+const getYouTubeVideoId = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+};
+
+const normalizeUrl = (u?: string): string | undefined => {
+  if (!u || typeof u !== 'string') return undefined;
+  const trimmed = u.trim();
+  if (trimmed === '') return undefined;
+  const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withProto);
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
+
+const hasStructuredDataKeys = (parsed: any): boolean => {
+  if (!parsed || typeof parsed !== 'object') return false;
+  // Check for nested structure (analysis.*)
+  if (parsed.analysis && typeof parsed.analysis === 'object') {
+    return !!(
+      parsed.analysis.triageResult ||
+      parsed.analysis.coverageResult ||
+      parsed.analysis.diyResults ||
+      parsed.analysis.serviceResults
+    );
+  }
+  // Check for flat structure
+  return !!(
+    parsed.triageResult ||
+    parsed.diyResults ||
+    parsed.serviceResults ||
+    parsed.coverageResult
+  );
+};
+
+const MessageAvatar = React.memo(({ role }: { role: 'user' | 'assistant' }) => {
   const isUser = role === 'user';
   return (
     <View
@@ -61,11 +190,17 @@ const MessageAvatar = ({ role }: { role: 'user' | 'assistant' }) => {
       />
     </View>
   );
-};
+});
 
-const ProductCard = ({ product }: { product: Product }) => {
+const ProductCard = React.memo(({ product }: { product: Product }) => {
   // Determine an image source: prefer explicit image_url
   const imageSrc = product.image_url || null;
+
+  const handleViewProduct = useCallback(() => {
+    if (product.url) {
+      Linking.openURL(product.url);
+    }
+  }, [product.url]);
 
   return (
     <View className="mb-3 w-full rounded-lg border border-border bg-background p-3">
@@ -110,23 +245,16 @@ const ProductCard = ({ product }: { product: Product }) => {
       </View>
 
       {product.url && (
-        <Button onPress={() => Linking.openURL(product.url!)} variant="outline" className="w-full">
+        <Button onPress={handleViewProduct} variant="outline" className="w-full">
           <Text>View Product</Text>
         </Button>
       )}
     </View>
   );
-};
+});
 
-const YouTubeEmbed = ({ videoUrl }: { videoUrl: string }) => {
-  // Extract video ID from YouTube URL
-  const getYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : null;
-  };
-
-  const videoId = getYouTubeVideoId(videoUrl);
+const YouTubeEmbed = React.memo(({ videoUrl }: { videoUrl: string }) => {
+  const videoId = useMemo(() => getYouTubeVideoId(videoUrl), [videoUrl]);
 
   if (!videoId) {
     return null;
@@ -144,49 +272,26 @@ const YouTubeEmbed = ({ videoUrl }: { videoUrl: string }) => {
       />
     </View>
   );
-};
+});
 
-const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
+const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvider }) => {
   const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
   const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
 
-  const normalizeUrl = (u?: string): string | undefined => {
-    if (!u || typeof u !== 'string') return undefined;
-    const trimmed = u.trim();
-    if (trimmed === '') return undefined;
-    const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-    try {
-      const url = new URL(withProto);
-      return url.toString();
-    } catch {
-      return undefined;
-    }
-  };
-
-  const primaryLink = normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined;
-  const isYelp = !!primaryLink && primaryLink.includes('yelp.com');
+  const primaryLink = useMemo(
+    () => normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined,
+    [linkStr, websiteStr]
+  );
+  const isYelp = useMemo(
+    () => !!primaryLink && primaryLink.includes('yelp.com'),
+    [primaryLink]
+  );
   const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
 
   const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
   const isDirectionsLinkValid =
     typeof provider.directions === 'string' &&
     (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
-
-  // Helper function to check if a value is meaningful
-  const hasValue = (val: any): boolean => {
-    if (!val) return false;
-    if (typeof val === 'string') {
-      const trimmed = val.trim();
-      return (
-        trimmed !== '' &&
-        trimmed.toLowerCase() !== 'n/a' &&
-        trimmed.toLowerCase() !== 'not available' &&
-        trimmed.toLowerCase() !== 'none' &&
-        trimmed.toLowerCase() !== 'null'
-      );
-    }
-    return true;
-  };
 
   // Extract rating number if available
   const ratingValue =
@@ -201,6 +306,18 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     hasValue(provider.additional_information) &&
     provider.additional_information?.toLowerCase() !== 'no additional information available.';
   const hasSpecialties = hasValue(provider.specialties);
+
+  const handlePrimaryLink = useCallback(() => {
+    if (primaryLink) {
+      Linking.openURL(primaryLink);
+    }
+  }, [primaryLink]);
+
+  const handleDirections = useCallback(() => {
+    if (provider.directions) {
+      Linking.openURL(provider.directions);
+    }
+  }, [provider.directions]);
 
   // Show card if provider has a name
   if (!provider.name) {
@@ -275,7 +392,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         <View className="flex-row gap-2">
           {isPrimaryLinkValid && primaryLink && (
             <Button
-              onPress={() => Linking.openURL(primaryLink)}
+              onPress={handlePrimaryLink}
               variant="outline"
               className="flex-1">
               <Text>{primaryLinkLabel}</Text>
@@ -283,7 +400,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
           )}
           {isDirectionsLinkValid && provider.directions && (
             <Button
-              onPress={() => Linking.openURL(provider.directions!)}
+              onPress={handleDirections}
               variant="default"
               className="flex-1">
               <Text>Directions</Text>
@@ -293,9 +410,9 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
       )}
     </View>
   );
-};
+});
 
-const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
+const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData }) => {
   const markdownStyles = useMarkdownStyles(false);
 
   // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -305,110 +422,53 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
   const diy = analysis?.diyResults || (data as any)?.diyResults;
   const service = analysis?.serviceResults || (data as any)?.serviceResults;
 
-  // Normalize provider objects
-  const normalizeProvider = (p: any): ServiceProvider | null => {
-    if (!p || typeof p !== 'object') return null;
-    const nameCandidate =
-      p.name ||
-      p.business_name ||
-      p.businessName ||
-      p.title ||
-      p.company ||
-      p.provider ||
-      p.store ||
-      '';
-    const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
-    if (!name.trim()) return null;
+  // Memoize allProviders array processing
+  const allProviders = useMemo(() => {
+    const allProvidersRaw = [
+      ...getProvidersArray(service?.localPros?.yelpAPIResults),
+      ...getProvidersArray(service?.localPros?.serpAPIResults),
+      ...getProvidersArray(service?.providers),
+      ...getProvidersArray(service?.localProviders),
+      ...getProvidersArray(service?.local_pros),
+      ...getProvidersArray(service?.results),
+      ...getProvidersArray(service?.nearbyProviders),
+    ];
 
-    const website = p.website || p.url || p.link || undefined;
-    const link = p.link || p.url || p.website || undefined;
-    const directions = p.directions || p.directions_url || p.map_link || undefined;
-    const contact_info =
-      p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
-    const location = p.location || p.address || p.address_line || undefined;
-    const ratings = p.ratings || p.rating || undefined;
-    const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
-    const specialties = p.specialties || p.services || undefined;
-    const additional_information =
-      p.additional_information || p.description || p.about || undefined;
-    const authorized = p.authorized || p.verified || undefined;
+    return allProvidersRaw
+      .filter(providerHasValidData)
+      .map(normalizeProvider)
+      .filter(Boolean) as ServiceProvider[];
+  }, [service]);
 
-    return {
-      name,
-      website,
-      link,
-      directions,
-      contact_info,
-      location,
-      ratings: ratings != null ? String(ratings) : '',
-      reviews: reviews != null ? String(reviews) : '',
-      specialties: specialties != null ? String(specialties) : undefined,
-      additional_information: additional_information != null ? String(additional_information) : '',
-      authorized: authorized != null ? String(authorized) : '',
-    } as ServiceProvider;
-  };
-
-  const providerHasValidData = (provider: any): boolean => {
-    const nameCandidate =
-      provider?.name ||
-      provider?.business_name ||
-      provider?.businessName ||
-      provider?.title ||
-      provider?.company ||
-      provider?.provider ||
-      provider?.store;
-    return !!(nameCandidate && String(nameCandidate).trim() !== '');
-  };
-
-  const getProvidersArray = (providers: any): ServiceProvider[] => {
-    if (!providers) return [];
-    if (Array.isArray(providers)) return providers as ServiceProvider[];
-    if (typeof providers === 'string') {
-      try {
-        const parsed = JSON.parse(providers);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    if (typeof providers === 'object') {
-      const keys = ['providers', 'results', 'items', 'pros', 'list'];
-      for (const k of keys) {
-        if (Array.isArray((providers as any)[k])) return (providers as any)[k];
-      }
-    }
-    return [];
-  };
-
-  const allProvidersRaw = [
-    ...getProvidersArray(service?.localPros?.yelpAPIResults),
-    ...getProvidersArray(service?.localPros?.serpAPIResults),
-    ...getProvidersArray(service?.providers),
-    ...getProvidersArray(service?.localProviders),
-    ...getProvidersArray(service?.local_pros),
-    ...getProvidersArray(service?.results),
-    ...getProvidersArray(service?.nearbyProviders),
-  ];
-
-  const allProviders = allProvidersRaw
-    .filter(providerHasValidData)
-    .map(normalizeProvider)
-    .filter(Boolean) as ServiceProvider[];
-
-  const hasTriage = !!(
-    triage?.diagnosis &&
-    typeof triage.diagnosis === 'string' &&
-    triage.diagnosis.trim() !== ''
+  // Memoize section flags
+  const hasTriage = useMemo(
+    () =>
+      !!(
+        triage?.diagnosis &&
+        typeof triage.diagnosis === 'string' &&
+        triage.diagnosis.trim() !== ''
+      ),
+    [triage]
   );
-  const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
-  const hasDIY = !!(
-    diy &&
-    (diy.diySteps?.summary ||
-      (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
-      (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
-      (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0))
+
+  const hasCoverage = useMemo(
+    () => !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo)),
+    [coverage]
   );
-  const hasService = allProviders.length > 0;
+
+  const hasDIY = useMemo(
+    () =>
+      !!(
+        diy &&
+        (diy.diySteps?.summary ||
+          (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
+          (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
+          (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0))
+      ),
+    [diy]
+  );
+
+  const hasService = useMemo(() => allProviders.length > 0, [allProviders]);
 
   return (
     <Accordion type="single" collapsible defaultValue="triage">
@@ -558,61 +618,44 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
       )}
     </Accordion>
   );
-};
+});
 
-const MessageContent = ({ content, isUser }: { content: string; isUser: boolean }) => {
+const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
   const markdownStyles = useMarkdownStyles(isUser);
 
-  // Try to parse structured JSON response (assistant only)
-  let structuredData: StructuredResponseData | null = null;
-  let plainContent = content;
+  // Memoize structured data and plain content parsing
+  const { structuredData, plainContent } = useMemo(() => {
+    let parsedData: StructuredResponseData | null = null;
+    let remainingContent = content;
 
-  if (!isUser && content) {
-    try {
-      const contentToParse = content.trim();
-
-      // Helper function to check if parsed JSON has structured data keys
-      const hasStructuredDataKeys = (parsed: any): boolean => {
-        if (!parsed || typeof parsed !== 'object') return false;
-        // Check for nested structure (analysis.*)
-        if (parsed.analysis && typeof parsed.analysis === 'object') {
-          return !!(
-            parsed.analysis.triageResult ||
-            parsed.analysis.coverageResult ||
-            parsed.analysis.diyResults ||
-            parsed.analysis.serviceResults
-          );
-        }
-        // Check for flat structure
-        return !!(
-          parsed.triageResult ||
-          parsed.diyResults ||
-          parsed.serviceResults ||
-          parsed.coverageResult
-        );
-      };
-
-      // Single parsing method: Extract JSON from markdown code block or parse directly
-      const jsonMatch = contentToParse.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
-      const jsonStr = jsonMatch ? jsonMatch[1].trim() : contentToParse.trim();
-
+    if (!isUser && content) {
       try {
-        const parsed = JSON.parse(jsonStr);
-        if (hasStructuredDataKeys(parsed)) {
-          structuredData = parsed;
-          // Remove the markdown wrapper from plain content if it existed
-          plainContent = jsonMatch ? contentToParse.replace(jsonMatch[0], '').trim() : '';
-          console.log('✓ Parsed structured JSON response');
+        const contentToParse = content.trim();
+
+        // Single parsing method: Extract JSON from markdown code block or parse directly
+        const jsonMatch = contentToParse.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+        const jsonStr = jsonMatch ? jsonMatch[1].trim() : contentToParse.trim();
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (hasStructuredDataKeys(parsed)) {
+            parsedData = parsed;
+            // Remove the markdown wrapper from plain content if it existed
+            remainingContent = jsonMatch ? contentToParse.replace(jsonMatch[0], '').trim() : '';
+            console.log('✓ Parsed structured JSON response');
+          }
+        } catch (e) {
+          // Not valid JSON, treat as plain text
+          console.log('Failed to parse structured data:', e);
         }
       } catch (e) {
-        // Not valid JSON, treat as plain text
-        console.log('Failed to parse structured data:', e);
+        console.log('Error in content parsing:', e);
+        // Not a JSON object, treat as plain text
       }
-    } catch (e) {
-      console.log('Error in content parsing:', e);
-      // Not a JSON object, treat as plain text
     }
-  }
+
+    return { structuredData: parsedData, plainContent: remainingContent };
+  }, [content, isUser]);
 
   if (structuredData) {
     return (
@@ -633,9 +676,9 @@ const MessageContent = ({ content, isUser }: { content: string; isUser: boolean 
       {content}
     </Markdown>
   );
-};
+});
 
-const FilePreview = ({
+const FilePreview = React.memo(({
   file,
   isUserMessage,
 }: {
@@ -648,8 +691,8 @@ const FilePreview = ({
 
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
-  const [imageError, setImageError] = React.useState(false);
-  const [imageDimensions, setImageDimensions] = React.useState<{
+  const [imageError, setImageError] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{
     width: number;
     height: number;
   } | null>(null);
@@ -739,25 +782,25 @@ const FilePreview = ({
       )}
     </View>
   );
-};
+});
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
-  const [showContextMenu, setShowContextMenu] = React.useState(false);
-  const [copyStatus, setCopyStatus] = React.useState<{
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
 
-  const handleLongPress = () => {
+  const handleLongPress = useCallback(() => {
     if (!isLoading && message.content) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setShowContextMenu(true);
     }
-  };
+  }, [isLoading, message.content]);
 
-  const formatMessageContent = (content: string): string => {
+  const formatMessageContent = useCallback((content: string): string => {
     // Convert JSON code blocks to WhatsApp-friendly format
     // Matches ```json ... ``` or ``` ... ```
     const convertedContent = content.replace(
@@ -776,9 +819,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     );
 
     return markdownToWhatsapp(convertedContent);
-  };
+  }, []);
 
-  const handleCopyMessage = async () => {
+  const handleCopyMessage = useCallback(async () => {
     try {
       const formattedText = formatMessageContent(message.content);
       await Clipboard.setStringAsync(formattedText);
@@ -794,9 +837,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       // Auto-dismiss after 2 seconds
       setTimeout(() => setCopyStatus(null), 2000);
     }
-  };
+  }, [formatMessageContent, message.content]);
 
-  const handleShareMessage = async () => {
+  const handleShareMessage = useCallback(async () => {
     try {
       const formattedText = formatMessageContent(message.content);
       await Share.share({
@@ -808,7 +851,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       console.error('Failed to share message:', error);
       setShowContextMenu(false);
     }
-  };
+  }, [formatMessageContent, message.content]);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setShowContextMenu(false);
+  }, []);
 
   return (
     <View className={`mb-4 flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -865,10 +912,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         visible={showContextMenu}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowContextMenu(false)}>
+        onRequestClose={handleCloseContextMenu}>
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => setShowContextMenu(false)}
+          onPress={handleCloseContextMenu}
           className="flex-1 items-center justify-center bg-black/50">
           <View className="w-64 overflow-hidden rounded-lg bg-background shadow-lg">
             <TouchableOpacity
@@ -889,3 +936,5 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     </View>
   );
 }
+
+export default React.memo(ChatMessage);
