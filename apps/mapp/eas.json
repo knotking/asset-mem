@@ -7,15 +7,36 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "AGENT_SESSION_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session",
+        "AGENT_SSE_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream",
+        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload",
+        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info",
+        "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
+      }
     },
-    "preview": {
+    "staging": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "staging",
+      "env": {
+        "AGENT_SESSION_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/YOUR_STAGING_TOKEN/agent-session",
+        "AGENT_SSE_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/YOUR_STAGING_TOKEN/firebase-agent-stream",
+        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/YOUR_STAGING_TOKEN/rag-file-upload",
+        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/YOUR_STAGING_TOKEN/extract-doc-info",
+        "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "AGENT_SESSION_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/agent-session",
+        "AGENT_SSE_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/firebase-agent-stream",
+        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/rag-file-upload",
+        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/extract-doc-info",
+        "WEB_APP_URL": "https://prod--goggle-gab.us-central1.hosted.app"
+      }
     }
   },
   "submit": {

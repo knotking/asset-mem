@@ -1,17 +1,17 @@
 import { fetch } from 'expo/fetch';
+import Constants from 'expo-constants';
 import type { AgentStep } from '@homeapp/common/types';
 
-const AGENT_SESSION_URL =
-  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session';
-const AGENT_SSE_URL =
-  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream';
-const RAG_FILE_UPLOAD_URL =
-  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload';
-const DOCUMENT_ANALYSIS_URL =
-  'https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info';
+// Get environment-specific URLs from EAS build configuration
+const extra = Constants.expoConfig?.extra || {};
 
-// TODO: Web app URL for sharing links
-export const WEB_APP_URL = 'https://staging--goggle-gab.us-central1.hosted.app';
+const AGENT_SESSION_URL = extra.agentSessionUrl || '';
+const AGENT_SSE_URL = extra.agentSseUrl || '';
+const RAG_FILE_UPLOAD_URL = extra.ragFileUploadUrl || '';
+const DOCUMENT_ANALYSIS_URL = extra.documentAnalysisUrl || '';
+
+// Web app URL for sharing links
+export const WEB_APP_URL = extra.webAppUrl || '';
 
 export async function createAgentSession(
   userId: string
