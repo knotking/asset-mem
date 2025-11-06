@@ -10,7 +10,7 @@ import {
 import GoogleSvg from '../assets/images/google-icon.svg';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Home, Eye, EyeOff } from 'lucide-react-native';
 
 import { Button } from '../../components/ui/button';
@@ -38,6 +38,7 @@ const getErrorMessage = (errorCode: string) => {
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const [state, dispatch] = useReducer(
     (
@@ -68,18 +69,23 @@ export default function LoginScreen() {
     if (responseGoogle?.type === 'success') {
       const { id_token } = responseGoogle.params;
       const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential);
+      signInWithCredential(auth, credential).then(() => {
+        console.log('[LOGIN] Google sign-in successful, navigating to home');
+        router.replace('/(tabs)/home');
+      });
     }
-  }, [responseGoogle]);
+  }, [responseGoogle, router]);
 
   const handleSignIn = async () => {
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
       await signInWithEmailAndPassword(auth, state.email, state.password);
-      // Navigation will be handled by AuthContext listener in _layout.tsx
+      console.log('[LOGIN] Sign-in successful, navigating to home');
+      router.replace('/(tabs)/home');
     } catch (err: any) {
       const errorMessage = getErrorMessage(err.code);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      console.log('[LOGIN] Sign-in failed:', errorMessage);
     }
   };
 
