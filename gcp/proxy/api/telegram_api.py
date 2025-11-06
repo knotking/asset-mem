@@ -407,17 +407,17 @@ def _format_value(value: Any) -> str:
 
 def extract_markdown_from_dual_format(text: str) -> Optional[str]:
     """
-    Extracts the markdown portion from a dual-format response (JSON code block + Markdown).
+    Extracts the markdown portion from a dual-format response (Markdown + JSON code block).
     
     Analysis Agent responses should be in the format:
+    [Markdown formatted response here]
+    
     ```json
     { ... JSON data ... }
     ```
     
-    [Markdown formatted response here]
-    
     Args:
-        text: The full response text that may contain both JSON and Markdown
+        text: The full response text that may contain both Markdown and JSON
         
     Returns:
         The extracted markdown text if dual format is detected, None otherwise
@@ -429,21 +429,21 @@ def extract_markdown_from_dual_format(text: str) -> Optional[str]:
     if '```json' not in text:
         return None
     
-    # Pattern 1: Match ```json ... ``` followed by markdown content
-    # This handles multi-line JSON blocks and captures everything after the closing ```
-    # Uses non-greedy match to stop at the first closing ```
-    pattern1 = r'```json\s*\n(.*?)\n```\s*\n\s*(.+)'
+    # Pattern 1: Match markdown content before ```json ... ```
+    # This handles multi-line markdown before the JSON block
+    # Uses non-greedy match to stop at the first ```json
+    pattern1 = r'(.+?)\s*```json\s*\n.*?```'
     match1 = re.search(pattern1, text, re.DOTALL)
     
     if match1:
-        markdown_part = match1.group(2).strip()  # Group 2 is the markdown after the JSON block
+        markdown_part = match1.group(1).strip()  # Group 1 is the markdown before the JSON block
         if markdown_part:
             logger.info("✓ Extracted markdown from dual-format response (Pattern 1)")
             return markdown_part
     
-    # Pattern 2: More flexible - matches ```json ... ``` and captures everything after
-    # Handles cases where there might not be a newline after the closing ```
-    pattern2 = r'```json.*?```\s*\n\s*(.+)'
+    # Pattern 2: More flexible - captures everything before ```json
+    # Handles cases where there might be minimal whitespace
+    pattern2 = r'(.+?)\s*```json'
     match2 = re.search(pattern2, text, re.DOTALL)
     if match2:
         markdown_part = match2.group(1).strip()
@@ -451,16 +451,15 @@ def extract_markdown_from_dual_format(text: str) -> Optional[str]:
             logger.info("✓ Extracted markdown from dual-format response (Pattern 2)")
             return markdown_part
     
-    # Pattern 3: Even more flexible - handles cases with minimal whitespace
-    pattern3 = r'```json.*?```\s+(.+)'
-    match3 = re.search(pattern3, text, re.DOTALL)
-    if match3:
-        markdown_part = match3.group(1).strip()
+    # Pattern 3: Split by ```json and take the first part
+    parts = text.split('```json')
+    if len(parts) > 1:
+        markdown_part = parts[0].strip()
         if markdown_part:
             logger.info("✓ Extracted markdown from dual-format response (Pattern 3)")
             return markdown_part
     
-    logger.debug("No markdown found after JSON code block - response may be JSON-only")
+    logger.debug("No markdown found before JSON code block - response may be JSON-only")
     return None
 
 def safe_markdown_format(text: str) -> str:

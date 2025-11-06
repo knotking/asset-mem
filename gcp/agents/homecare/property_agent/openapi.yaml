@@ -623,16 +623,16 @@ components:
         
         **Analysis Agent Response Format:**
         The Analysis Agent MUST return responses in a dual format:
-        - JSON code block: Contains structured data for webapp consumption (parsed by chat-message.tsx)
-        - Markdown text: Contains human-readable formatted response for Telegram consumption
+        - Markdown text (FIRST): Contains human-readable formatted response for Telegram consumption
+        - JSON code block (SECOND): Contains structured data for webapp consumption (parsed by chat-message.tsx)
         
         The response format is:
         ```
+        [Markdown formatted human-readable response here]
+        
         ```json
         { ... structured JSON data ... }
         ```
-        
-        [Markdown formatted human-readable response here]
         ```
       examples:
         - $ref: '#/components/examples/ExampleStructuredResponse'
