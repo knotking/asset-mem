@@ -49,28 +49,31 @@ function Routes() {
   const isLoaded = !loading;
 
   React.useEffect(() => {
+    console.log('[ROUTES] Auth state changed:', {
+      user: user?.email || 'none',
+      loading,
+      isSignedIn,
+      isLoaded
+    });
     if (isLoaded) {
+      console.log('[ROUTES] Hiding splash screen');
       SplashScreen.hideAsync();
     }
-  }, [isLoaded]);
+  }, [isLoaded, user, loading, isSignedIn]);
+
+  console.log('[ROUTES] Rendering with:', { isSignedIn, isLoaded, loading });
 
   if (!isLoaded) {
+    console.log('[ROUTES] Not loaded yet, returning null');
     return null;
   }
 
+  console.log('[ROUTES] Stack rendering - isSignedIn:', isSignedIn, '- Should show:', isSignedIn ? '(tabs)' : 'auth');
+
   return (
-    <Stack>
-      {/* Screens only shown when the user is NOT signed in */}
-      <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-      </Stack.Protected>
-
-      {/* Screens only shown when the user IS signed in */}
-      <Stack.Protected guard={isSignedIn}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack.Protected>
-
-      {/* Screens outside the guards are accessible to everyone (e.g. not found) */}
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

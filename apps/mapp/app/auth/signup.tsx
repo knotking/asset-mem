@@ -2,7 +2,7 @@ import React, { useReducer } from 'react';
 import { View } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@homeapp/common/firebase';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
@@ -10,6 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
 import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 export default function SignupScreen() {
+  const router = useRouter();
   interface SignupState {
     email: string;
     password: string;
@@ -58,10 +59,11 @@ export default function SignupScreen() {
     dispatch({ type: 'SET_ERROR', payload: null });
     try {
       await createUserWithEmailAndPassword(auth, state.email, state.password);
-      dispatch({ type: 'SET_SUCCESS', payload: 'Account created successfully!' });
-      // Navigation to login or home will be handled by AuthContext listener in _layout.tsx
+      console.log('[SIGNUP] Sign-up successful, navigating to home');
+      router.replace('/(tabs)/home');
     } catch (err: any) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
+      console.log('[SIGNUP] Sign-up failed:', err.message);
     }
   };
 
