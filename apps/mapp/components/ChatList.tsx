@@ -16,6 +16,9 @@ export default function ChatList({ messages, isLoading }: ChatListProps) {
   const flatListRef = useRef<FlatList>(null);
   const messageCountRef = useRef(messages.length);
   const isNearBottomRef = useRef(true); // Track if user is near bottom
+  const lastMessageIdRef = useRef<string | null>(null);
+  const lastMessageContentRef = useRef<string | null>(null);
+  const lastMessageAgentStepsCountRef = useRef<number>(0);
 
   // Memoized render function for FlatList
   const renderMessage = useCallback(
@@ -40,20 +43,51 @@ export default function ChatList({ messages, isLoading }: ChatListProps) {
       const previousMessageCount = messageCountRef.current;
       const currentMessageCount = messages.length;
 
-      // Only auto-scroll if user is near bottom AND a new message was added
+      // Check if the last message just received content (transition from loading to content)
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageId = lastMessage?.id || null;
+      const lastMessageContent = lastMessage?.content || null;
+      const lastMessageAgentStepsCount = lastMessage?.agentSteps?.length || 0;
+
+      const isLastMessageContentNew =
+        lastMessageId === lastMessageIdRef.current &&
+        lastMessageContent &&
+        lastMessageContent !== lastMessageContentRef.current;
+
+      // Check if agent steps were updated (added or changed)
+      const areAgentStepsUpdated =
+        lastMessageId === lastMessageIdRef.current &&
+        lastMessageAgentStepsCount > 0 &&
+        lastMessageAgentStepsCount !== lastMessageAgentStepsCountRef.current;
+
+      // Check if the last message is currently loading (no content but might have agent steps or typing indicator)
+      const isLastMessageLoading = lastMessage?.role === 'assistant' && !lastMessage?.content;
+
+      // Auto-scroll if:
+      // 1. User is near bottom AND a new message was added, OR
+      // 2. The last message just received content (was loading, now has content), OR
+      // 3. Agent steps were updated on the last message, OR
+      // 4. Last message is loading and near bottom (handles typing indicator and initial agent steps)
       if (
-        currentMessageCount > previousMessageCount &&
+        currentMessageCount > 0 &&
         isNearBottomRef.current &&
-        currentMessageCount > 0
+        ((currentMessageCount > previousMessageCount) ||
+          isLastMessageContentNew ||
+          areAgentStepsUpdated ||
+          isLastMessageLoading)
       ) {
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       }
 
+      // Update refs
       messageCountRef.current = currentMessageCount;
+      lastMessageIdRef.current = lastMessageId;
+      lastMessageContentRef.current = lastMessageContent;
+      lastMessageAgentStepsCountRef.current = lastMessageAgentStepsCount;
     },
-    [messages.length]
+    [messages, messages.length]
   );
 
   // Auto-scroll to bottom when new messages arrive (initial load)
