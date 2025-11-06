@@ -23,12 +23,14 @@ export default function Screen() {
         id: propertyId,
         new: 'true',
         // Pass files as JSON string in params
-        files: JSON.stringify(selectedFiles.map((file) => ({
-          uri: file.uri,
-          name: file.name,
-          mimeType: file.mimeType,
-          size: file.size,
-        }))),
+        files: JSON.stringify(
+          selectedFiles.map((file) => ({
+            uri: file.uri,
+            name: file.name,
+            mimeType: file.mimeType,
+            size: file.size,
+          }))
+        ),
       },
     });
   };
@@ -36,7 +38,7 @@ export default function Screen() {
   if (loading) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: true }} />
         <PropertyListSkeleton />
       </>
     );
@@ -45,7 +47,7 @@ export default function Screen() {
   if (error) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: true }} />
         <View className="flex-1 items-center justify-center bg-light-background-alt">
           <Text className="text-red-500">Error: {error}</Text>
         </View>
@@ -55,7 +57,7 @@ export default function Screen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: true }} />
       <ScrollView className="flex-1 bg-light-background-alt">
         <View className="mt-4 px-4">
           <Text className="text-lg font-semibold text-foreground">Property AI Agent</Text>
