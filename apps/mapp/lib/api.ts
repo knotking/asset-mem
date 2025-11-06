@@ -215,7 +215,7 @@ export async function streamAgentResponse({
       if (done) break;
 
       const rawChunk = decoder.decode(value, { stream: true });
-      console.log('RAW CHUNK:', rawChunk);
+
       // Check for error prefix
       if (rawChunk.startsWith('STREAM_ERROR:')) {
         throw new Error(rawChunk.substring('STREAM_ERROR:'.length));

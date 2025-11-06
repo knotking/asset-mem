@@ -1167,7 +1167,7 @@ export default function PropertyDetailsScreen() {
 
   if (!property) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <SafeAreaView className="flex-1 bg-light-background-alt" edges={['top', 'left', 'right']}>
         <Stack.Screen options={{ headerShown: false }} />
         <View className="flex-1 items-center justify-center">
           <Text className="text-foreground">Property not found</Text>
@@ -1192,7 +1192,7 @@ export default function PropertyDetailsScreen() {
           width={80}
           direction="left"
           mainContent={
-            <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+            <SafeAreaView className="flex-1 bg-light-background-alt" edges={['top', 'left', 'right']}>
               <Stack.Screen
                 options={{
                   headerShown: false,
@@ -1200,7 +1200,7 @@ export default function PropertyDetailsScreen() {
               />
 
       {/* Navigation Header */}
-      <View className="bg-background px-4 py-3">
+      <View className="bg-light-background-alt px-4 py-3">
         <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
           <Button onPress={() => router.back()} variant="ghost" size="icon">
             <Icon as={ArrowLeft} size={24} className="text-foreground" />
@@ -1328,14 +1328,14 @@ export default function PropertyDetailsScreen() {
           />
         </MessagesProvider>
       ) : (
-        <ScrollView className="flex-1 bg-background px-4 py-4">
+        <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
           <DetailsTab property={property} />
         </ScrollView>
       )}
 
       {/* Bottom Input Bar */}
       {activeTab === 'chat' && selectedSessionId && (
-        <View className="border-t border-border bg-background px-4 py-3">
+        <View className="border-t border-border bg-light-background-alt px-4 py-3">
           {/* File Attachment Preview */}
           {fileAttachment && (
             <View className="mb-3 overflow-hidden rounded-lg border border-border">
@@ -1479,7 +1479,7 @@ export default function PropertyDetailsScreen() {
             }
           >
             {/* Sessions Drawer Content */}
-            <View className="border-b border-border bg-background px-4 py-3">
+            <View className="border-b border-border bg-light-background-alt px-4 py-3">
               <View className="flex-row items-center gap-3">
                 <View className="flex-1 gap-1">
                   <Text className="text-lg font-semibold text-foreground">Sessions</Text>
@@ -1508,7 +1508,7 @@ export default function PropertyDetailsScreen() {
         }
       >
         {/* Documents Drawer Content */}
-        <View className="border-b border-border bg-background px-4 py-3">
+        <View className="border-b border-border bg-light-background-alt px-4 py-3">
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
               <Text className="text-lg font-semibold text-foreground">
@@ -1565,8 +1565,8 @@ export default function PropertyDetailsScreen() {
                       onPress={() => activeTab === 'chat' && toggleDocumentSelection(document)}
                       className={`rounded-lg border p-4 ${
                         activeTab === 'chat' && isSelected
-                          ? 'border-primary bg-blue-50'
-                          : 'border-border bg-background'
+                          ? 'border-primary bg-secondary'
+                          : 'border-border bg-card'
                       }`}>
                       <View className="flex-row items-start gap-3">
                         <View
