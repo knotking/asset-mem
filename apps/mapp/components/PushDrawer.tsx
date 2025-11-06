@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, Pressable, Dimensions, StyleSheet } from 'react-native';
+import { View, Animated, Pressable, Dimensions, StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface PushDrawerProps {
@@ -21,6 +21,8 @@ export default function PushDrawer({
   width = 80,
   direction = 'right',
 }: PushDrawerProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const contentSlideAnim = useRef(new Animated.Value(0)).current;
   const drawerSlideAnim = useRef(
     new Animated.Value(direction === 'right' ? SCREEN_WIDTH : -SCREEN_WIDTH)
@@ -67,7 +69,24 @@ export default function PushDrawer({
   const drawerWidth = (SCREEN_WIDTH * width) / 100;
 
   const safeAreaEdges = direction === 'right' ? ['top', 'right', 'bottom'] : ['top', 'left', 'bottom'];
-  const drawerPositionStyle = direction === 'right' ? styles.drawerRight : styles.drawerLeft;
+
+  // Dynamic colors based on theme
+  const backgroundColor = isDark ? 'hsl(0, 0%, 8%)' : '#fff';
+  const borderColor = isDark ? 'hsl(0, 0%, 28%)' : '#e5e5e5';
+
+  const drawerPositionStyle = direction === 'right'
+    ? {
+        right: 0,
+        borderLeftWidth: 1,
+        borderLeftColor: borderColor,
+        shadowOffset: { width: -2, height: 0 }
+      }
+    : {
+        left: 0,
+        borderRightWidth: 1,
+        borderRightColor: borderColor,
+        shadowOffset: { width: 2, height: 0 }
+      };
 
   return (
     <View style={styles.container}>
@@ -76,6 +95,7 @@ export default function PushDrawer({
         style={[
           styles.mainContent,
           {
+            backgroundColor,
             transform: [{ translateX: contentSlideAnim }],
           },
         ]}>
@@ -88,6 +108,7 @@ export default function PushDrawer({
           styles.drawer,
           drawerPositionStyle,
           {
+            backgroundColor,
             width: drawerWidth,
             transform: [{ translateX: drawerSlideAnim }],
           },
@@ -122,35 +143,15 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   drawer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-  },
-  drawerRight: {
-    right: 0,
-    borderLeftWidth: 1,
-    borderLeftColor: '#e5e5e5',
-    shadowOffset: {
-      width: -2,
-      height: 0,
-    },
-  },
-  drawerLeft: {
-    left: 0,
-    borderRightWidth: 1,
-    borderRightColor: '#e5e5e5',
-    shadowOffset: {
-      width: 2,
-      height: 0,
-    },
   },
   drawerContent: {
     flex: 1,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   overlayPressable: {
     flex: 1,
