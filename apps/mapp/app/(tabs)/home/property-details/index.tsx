@@ -743,6 +743,7 @@ export default function PropertyDetailsScreen() {
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
+  const [hasManuallyInteracted, setHasManuallyInteracted] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
@@ -849,12 +850,12 @@ export default function PropertyDetailsScreen() {
     }
   }, [id, draftsByProperty, selectedSessionId]);
 
-  // Auto-select all documents by default when documents are loaded
+  // Auto-select all documents by default when documents are loaded (only if user hasn't manually interacted)
   React.useEffect(() => {
-    if (documents && documents.length > 0 && selectedDocuments.length === 0) {
+    if (documents && documents.length > 0 && selectedDocuments.length === 0 && !hasManuallyInteracted) {
       setSelectedDocuments(documents);
     }
-  }, [documents, selectedDocuments.length]);
+  }, [documents, selectedDocuments.length, hasManuallyInteracted]);
 
   // Handle file selection and upload
   const handleFileUpload = React.useCallback(async () => {
@@ -1152,6 +1153,7 @@ export default function PropertyDetailsScreen() {
   ]);
 
   const toggleDocumentSelection = (document: Document) => {
+    setHasManuallyInteracted(true);
     setSelectedDocuments((prev) => {
       const isSelected = prev.some((doc) => doc.id === document.id);
       if (isSelected) {
@@ -1308,7 +1310,10 @@ export default function PropertyDetailsScreen() {
                 </Pressable>
               ))}
               <Pressable
-                onPress={() => setSelectedDocuments([])}
+                onPress={() => {
+                  setHasManuallyInteracted(true);
+                  setSelectedDocuments([]);
+                }}
                 className="ml-1 rounded-full bg-background px-2 py-0.5">
                 <Text className="text-xs text-muted-foreground">Clear</Text>
               </Pressable>
@@ -1562,7 +1567,11 @@ export default function PropertyDetailsScreen() {
                   return (
                     <Pressable
                       key={document.id}
-                      onPress={() => activeTab === 'chat' && toggleDocumentSelection(document)}
+                      onPress={() => {
+                        if (activeTab === 'chat') {
+                          toggleDocumentSelection(document);
+                        }
+                      }}
                       className={`rounded-lg border p-4 ${
                         activeTab === 'chat' && isSelected
                           ? 'border-primary bg-secondary'
