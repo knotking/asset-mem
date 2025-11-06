@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Image, Linking, Pressable, Share, Modal, TouchableOpacity } from 'react-native';
+import { View, Linking, Pressable, Share, Modal, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
@@ -86,8 +87,7 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
   const ratings = p.ratings || p.rating || undefined;
   const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
   const specialties = p.specialties || p.services || undefined;
-  const additional_information =
-    p.additional_information || p.description || p.about || undefined;
+  const additional_information = p.additional_information || p.description || p.about || undefined;
   const authorized = p.authorized || p.verified || undefined;
 
   return {
@@ -195,6 +195,8 @@ const MessageAvatar = React.memo(({ role }: { role: 'user' | 'assistant' }) => {
 const ProductCard = React.memo(({ product }: { product: Product }) => {
   // Determine an image source: prefer explicit image_url
   const imageSrc = product.image_url || null;
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const handleViewProduct = useCallback(() => {
     if (product.url) {
@@ -215,11 +217,35 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
 
       {imageSrc && (
         <View className="mb-2 h-32 w-full overflow-hidden rounded-md">
-          <Image
-            source={{ uri: imageSrc }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
+          {imageLoading && !imageError && (
+            <View className="absolute inset-0 z-10 flex-col gap-2 bg-muted/30 p-2">
+              <Skeleton className="h-6 w-full rounded" />
+              <Skeleton className="h-6 w-[90%] rounded" />
+              <Skeleton className="h-6 w-full rounded" />
+              <Skeleton className="h-6 w-[70%] rounded" />
+            </View>
+          )}
+          {imageError ? (
+            <View className="flex h-full w-full items-center justify-center bg-muted">
+              <Icon as={FileText} size={24} className="text-muted-foreground" />
+              <Text className="mt-1 text-xs text-muted-foreground">Image unavailable</Text>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: imageSrc }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              priority="normal"
+              cachePolicy="memory-disk"
+              transition={200}
+              onLoadStart={() => setImageLoading(true)}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageLoading(false);
+                setImageError(true);
+              }}
+            />
+          )}
         </View>
       )}
 
@@ -282,10 +308,7 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
     () => normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined,
     [linkStr, websiteStr]
   );
-  const isYelp = useMemo(
-    () => !!primaryLink && primaryLink.includes('yelp.com'),
-    [primaryLink]
-  );
+  const isYelp = useMemo(() => !!primaryLink && primaryLink.includes('yelp.com'), [primaryLink]);
   const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
 
   const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
@@ -331,9 +354,9 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
           {provider.name}
         </Text>
         {provider.authorized === 'True' && (
-          <View className="bg-info/10 ml-2 flex-row items-center gap-1 rounded-full px-2 py-1">
+          <View className="ml-2 flex-row items-center gap-1 rounded-full bg-info/10 px-2 py-1">
             <Icon as={CheckCircle} size={16} className="text-info" />
-            <Text className="text-info text-xs">Authorized</Text>
+            <Text className="text-xs text-info">Authorized</Text>
           </View>
         )}
       </View>
@@ -391,18 +414,12 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
       {(isPrimaryLinkValid || isDirectionsLinkValid) && (
         <View className="flex-row gap-2">
           {isPrimaryLinkValid && primaryLink && (
-            <Button
-              onPress={handlePrimaryLink}
-              variant="outline"
-              className="flex-1">
+            <Button onPress={handlePrimaryLink} variant="outline" className="flex-1">
               <Text>{primaryLinkLabel}</Text>
             </Button>
           )}
           {isDirectionsLinkValid && provider.directions && (
-            <Button
-              onPress={handleDirections}
-              variant="default"
-              className="flex-1">
+            <Button onPress={handleDirections} variant="default" className="flex-1">
               <Text>Directions</Text>
             </Button>
           )}
@@ -499,7 +516,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
           <AccordionContent className="border-t border-border bg-background p-4">
             {coverage?.warrantyInfo && (
               <View className="mb-3">
-                <Text className="text-success mb-1 text-sm font-semibold">
+                <Text className="mb-1 text-sm font-semibold text-success">
                   Warranty Information
                 </Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
@@ -509,7 +526,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
             )}
             {coverage?.insuranceInfo && (
               <View>
-                <Text className="text-success mb-1 text-sm font-semibold">
+                <Text className="mb-1 text-sm font-semibold text-success">
                   Insurance Information
                 </Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
@@ -532,7 +549,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
           <AccordionContent className="border-t border-border bg-background p-4">
             {diy?.diySteps?.summary && (
               <View className="mb-3">
-                <Text className="text-warning mb-1 text-sm font-semibold">Summary</Text>
+                <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>
                 <Markdown style={markdownStyles} rules={markdownRules}>
                   {diy.diySteps.summary}
                 </Markdown>
@@ -541,7 +558,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
             {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
               <View className="mb-3">
-                <Text className="text-warning mb-2 text-sm font-semibold">
+                <Text className="mb-2 text-sm font-semibold text-warning">
                   Step-by-Step Instructions
                 </Text>
                 {diy.diySteps.steps.map((step: any, idx: number) => (
@@ -555,7 +572,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
             {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
               <View className="mb-3">
-                <Text className="text-warning mb-2 text-sm font-semibold">Video Tutorials</Text>
+                <Text className="mb-2 text-sm font-semibold text-warning">Video Tutorials</Text>
                 {diy.youtubeSearch.videos.map((video: any, i: number) => (
                   <View key={i} className="mb-3">
                     <YouTubeEmbed videoUrl={video.url} />
@@ -580,7 +597,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
             {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
               <View className="mb-3">
-                <Text className="text-warning mb-2 text-sm font-semibold">
+                <Text className="mb-2 text-sm font-semibold text-warning">
                   Recommended Products
                 </Text>
                 {diy.recommendedProducts.products.map((product: Product, index: number) => (
@@ -622,7 +639,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
 const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
   const markdownStyles = useMarkdownStyles(isUser);
-
+  console.log('CONTENT:', content);
   // Memoize structured data and plain content parsing
   const { structuredData, plainContent } = useMemo(() => {
     let parsedData: StructuredResponseData | null = null;
@@ -678,111 +695,123 @@ const MessageContent = React.memo(({ content, isUser }: { content: string; isUse
   );
 });
 
-const FilePreview = React.memo(({
-  file,
-  isUserMessage,
-}: {
-  file: NonNullable<Message['file']>;
-  isUserMessage?: boolean;
-}) => {
-  // Media dimensions constants
-  const MEDIA_MAX_WIDTH = 350;
-  const MEDIA_FIXED_HEIGHT = 192;
+const FilePreview = React.memo(
+  ({ file, isUserMessage }: { file: NonNullable<Message['file']>; isUserMessage?: boolean }) => {
+    // Media dimensions constants
+    const MEDIA_MAX_WIDTH = 350;
+    const MEDIA_MAX_HEIGHT = 250;
 
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  const [imageError, setImageError] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    const [imageError, setImageError] = useState(false);
+    const [imageLoading, setImageLoading] = useState(true);
+    const [imageDimensions, setImageDimensions] = useState<{
+      width: number;
+      height: number;
+    } | null>(null);
 
-  // Video player hook - only create if video
-  const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
-    player.pause();
-  });
+    // Video player hook - only create if video
+    const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
+      player.pause();
+    });
 
-  React.useEffect(() => {
-    if (isImage && file.url) {
-      Image.getSize(
-        file.url,
-        (width, height) => {
-          // Calculate width based on aspect ratio while maintaining fixed height
-          const aspectRatio = width / height;
-          let displayWidth = MEDIA_FIXED_HEIGHT * aspectRatio;
-          let displayHeight = MEDIA_FIXED_HEIGHT;
+    const handleImageLoad = useCallback((event: { source: { width: number; height: number } }) => {
+      const { width, height } = event.source;
 
-          // If calculated width exceeds max, scale down both dimensions
-          if (displayWidth > MEDIA_MAX_WIDTH) {
-            displayWidth = MEDIA_MAX_WIDTH;
-            displayHeight = MEDIA_MAX_WIDTH / aspectRatio;
-          }
+      // Calculate dimensions to fit within max constraints while maintaining aspect ratio
+      let displayWidth = width;
+      let displayHeight = height;
 
-          setImageDimensions({ width: displayWidth, height: displayHeight });
-        },
-        (error) => {
-          console.error('Failed to get image size:', error);
-          setImageError(true);
-        }
-      );
-    }
-  }, [isImage, file.url]);
+      if (width > MEDIA_MAX_WIDTH || height > MEDIA_MAX_HEIGHT) {
+        const widthRatio = MEDIA_MAX_WIDTH / width;
+        const heightRatio = MEDIA_MAX_HEIGHT / height;
+        const ratio = Math.min(widthRatio, heightRatio);
 
-  return (
-    <View>
-      {isImage ? (
-        imageError ? (
-          <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
-            <Icon as={FileText} size={20} className="text-muted-foreground" />
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
-                {file.name}
-              </Text>
-              <Text className="text-xs text-destructive">Failed to load image</Text>
+        displayWidth = width * ratio;
+        displayHeight = height * ratio;
+      }
+
+      setImageDimensions({ width: displayWidth, height: displayHeight });
+      setImageLoading(false);
+    }, []);
+
+    return (
+      <View style={{ alignSelf: isUserMessage ? 'flex-end' : 'flex-start' }}>
+        {isImage ? (
+          imageError ? (
+            <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
+              <Icon as={FileText} size={20} className="text-muted-foreground" />
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                  {file.name}
+                </Text>
+                <Text className="text-xs text-destructive">Failed to load image</Text>
+              </View>
             </View>
-          </View>
-        ) : imageDimensions ? (
-          <Image
-            source={{ uri: file.url }}
-            style={{
-              width: imageDimensions.width,
-              height: imageDimensions.height,
-            }}
-            className="rounded-lg"
-            resizeMode="contain"
-            onError={(e) => {
-              console.error('Image load error:', e.nativeEvent.error);
-              setImageError(true);
-            }}
+          ) : (
+            <View
+              style={
+                imageDimensions
+                  ? {
+                      width: imageDimensions.width,
+                      height: imageDimensions.height,
+                    }
+                  : { width: MEDIA_MAX_WIDTH, height: 200 }
+              }>
+              {imageLoading && (
+                <View
+                  style={{
+                    width: imageDimensions?.width || MEDIA_MAX_WIDTH,
+                    height: imageDimensions?.height || 200,
+                  }}
+                  className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted/30 p-3">
+                  <Skeleton className="h-6 w-full rounded" />
+                  <Skeleton className="h-6 w-[90%] rounded" />
+                  <Skeleton className="h-6 w-full rounded" />
+                  <Skeleton className="h-6 w-[70%] rounded" />
+                </View>
+              )}
+              <Image
+                source={{ uri: file.url }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+                className="rounded-lg"
+                contentFit="contain"
+                priority="high"
+                cachePolicy="memory-disk"
+                transition={300}
+                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+                onLoadStart={() => setImageLoading(true)}
+                onLoad={handleImageLoad}
+                onError={(e) => {
+                  console.error('Image load error:', e.error);
+                  setImageLoading(false);
+                  setImageError(true);
+                }}
+              />
+            </View>
+          )
+        ) : isVideo ? (
+          <VideoView
+            player={player}
+            style={{ height: 200, minWidth: 100, maxWidth: MEDIA_MAX_WIDTH }}
+            contentFit="contain"
+            allowsPictureInPicture
           />
         ) : (
-          <View
-            style={{ width: MEDIA_MAX_WIDTH, height: MEDIA_FIXED_HEIGHT }}
-            className="flex-col gap-2 rounded-lg bg-muted/30 p-3">
-            <Skeleton className="h-6 w-full rounded" />
-            <Skeleton className="h-6 w-[90%] rounded" />
-            <Skeleton className="h-6 w-full rounded" />
-            <Skeleton className="h-6 w-[70%] rounded" />
+          <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
+            <Icon as={FileText} size={20} className="text-muted-foreground" />
+            <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+              {file.name}
+            </Text>
           </View>
-        )
-      ) : isVideo ? (
-        <VideoView
-          player={player}
-          style={{ height: MEDIA_FIXED_HEIGHT, minWidth: 100, maxWidth: MEDIA_MAX_WIDTH }}
-          contentFit="contain"
-          allowsPictureInPicture
-        />
-      ) : (
-        <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
-          <Icon as={FileText} size={20} className="text-muted-foreground" />
-          <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
-            {file.name}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-});
+        )}
+      </View>
+    );
+  }
+);
 
 function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
