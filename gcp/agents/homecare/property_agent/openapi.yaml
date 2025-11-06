@@ -4,10 +4,18 @@ info:
   version: 2.0.0
   description: |
     OpenAPI schema for the Property Agent and all sub-agents. The Property Agent 
-    orchestrates multiple specialized sub-agents for home care and vehicle diagnostics.
+    orchestrates multiple specialized sub-agents for comprehensive property care.
+    
+    **Property Agent Scope:**
+    The Property Agent handles a wide range of property-related queries:
+    - **Repairs and Maintenance**: Plumbing, electrical, HVAC, appliances, vehicle issues, structural problems
+    - **Pest Control**: Insect infestations, rodent problems, wildlife issues, pest prevention and treatment
+    - **Service Recommendations**: Finding and recommending local service providers, contractors, professionals
+    - **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
+    - **General Property Care**: Home improvement, maintenance tips, property management, preventive care
     
     **Sub-Agents:**
-    - Triage Agent: Multimodal analysis and diagnosis
+    - Triage Agent: Multimodal analysis and diagnosis for property-related needs
     - Coverage Agent: Warranty and insurance information
     - DIY Agent: DIY repair steps, tutorials, and products
     - Service Agent: Local service providers and cost estimates
@@ -35,26 +43,32 @@ components:
       properties:
         user_query:
           type: string
-          description: The user query or question.
+          description: The user query or question. **This is the only required field - the triage agent can work with just this.**
         context_doc_uris:
           type: array
           items:
             type: string
             format: uri
-          description: Optional list of context document URIs (GCS paths).
+          description: Optional list of context document URIs (GCS paths). May be omitted, null, or empty.
           nullable: true
         diagnosis_uris:
           type: array
           items:
             type: string
             format: uri
-          description: Optional list of diagnosis document URIs (GCS paths for images, videos, documents).
+          description: Optional list of diagnosis document URIs (GCS paths for images, videos, documents). May be omitted, null, or empty. If missing or empty, triage runs in text-only mode.
           nullable: true
         property_address:
           type: string
-          description: Optional property address for location-based searches.
+          description: Optional property address for location-based searches. May be omitted, null, or empty.
           nullable: true
-      description: Input schema for Triage Agent and Analysis Agent (orchestrator).
+      description: |
+        Input schema for Triage Agent and Analysis Agent (orchestrator).
+        
+        **Key Points:**
+        - Only `user_query` is required. The triage agent will never fail due to missing optional fields.
+        - If `diagnosis_uris` is missing, null, or empty, the agent performs text-only triage using `user_query`.
+        - All optional fields may be omitted entirely - the agent gracefully handles their absence.
 
     DocsInput:
       type: object
@@ -87,17 +101,64 @@ components:
         - triageResult
       properties:
         triageResult:
-          type: object
-          required:
-            - diagnosis
-          properties:
-            diagnosis:
-              type: string
-              description: Clear, factual diagnosis text derived from multimodal analysis or text-only triage.
-      description: Triage Agent output - provides diagnosis for downstream agents.
-      example:
-        triageResult:
-          diagnosis: "Significant white scratch marks and scuffing on the rear quarter panel and bumper of a red vehicle"
+          oneOf:
+            - type: object
+              required:
+                - diagnosis
+              properties:
+                diagnosis:
+                  type: string
+                  description: Clear, factual diagnosis text derived from multimodal analysis or text-only triage.
+                needs_clarification:
+                  type: boolean
+                  description: Always false when diagnosis is provided.
+                  default: false
+            - type: object
+              required:
+                - needs_clarification
+                - clarification_questions
+              properties:
+                needs_clarification:
+                  type: boolean
+                  description: Indicates that clarification is needed from the user.
+                  const: true
+                clarification_questions:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of 1-3 targeted questions to help understand the issue better.
+                  minItems: 1
+                  maxItems: 3
+                message:
+                  type: string
+                  description: Optional friendly message explaining why clarification is needed.
+                  nullable: true
+      description: |
+        Triage Agent output - provides diagnosis for downstream agents, or asks clarification questions when the issue is unclear.
+        
+        **Behavior:**
+        - When media is provided: Returns diagnosis from multimodal analysis
+        - When text-only query is clear: Returns diagnosis from user_query analysis
+        - When text-only query is unclear: Returns needs_clarification=true with targeted questions
+        - Iterative: Continues asking questions until a clear diagnosis is obtained
+      examples:
+        - summary: Diagnosis from multimodal analysis
+          value:
+            triageResult:
+              diagnosis: "Significant white scratch marks and scuffing on the rear quarter panel and bumper of a red vehicle"
+        - summary: Diagnosis from clear text query
+          value:
+            triageResult:
+              diagnosis: "Leaking kitchen faucet due to worn cartridge"
+        - summary: Clarification needed
+          value:
+            triageResult:
+              needs_clarification: true
+              clarification_questions:
+                - "What specific issue are you experiencing?"
+                - "Is this related to a home appliance or vehicle?"
+                - "Can you describe any visible symptoms or error messages?"
+              message: "I need a bit more information to help you effectively."
 
     CoverageAgentOutput:
       type: object
@@ -588,11 +649,33 @@ components:
           additionalProperties: false
           properties:
             triageResult:
-              type: object
-              additionalProperties: false
-              properties:
-                diagnosis:
-                  type: string
+              oneOf:
+                - type: object
+                  additionalProperties: false
+                  properties:
+                    diagnosis:
+                      type: string
+                    needs_clarification:
+                      type: boolean
+                      default: false
+                - type: object
+                  additionalProperties: false
+                  required:
+                    - needs_clarification
+                    - clarification_questions
+                  properties:
+                    needs_clarification:
+                      type: boolean
+                      const: true
+                    clarification_questions:
+                      type: array
+                      items:
+                        type: string
+                      minItems: 1
+                      maxItems: 3
+                    message:
+                      type: string
+                      nullable: true
             coverageResult:
               type: object
               additionalProperties: false

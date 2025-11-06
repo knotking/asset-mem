@@ -1,13 +1,22 @@
 # Property Agent
 
-The Property Agent is the orchestrator for home-care support within the Homecare AI system. It routes user requests to the right specialized capability: either retrieving answers from documents/knowledge bases or performing multimodal diagnostics when users provide media for analysis.
+The Property Agent is the orchestrator for comprehensive property care support within the Homecare AI system. It routes user requests to the right specialized capability: either retrieving answers from documents/knowledge bases or performing multimodal diagnostics when users provide media for analysis.
+
+## Scope
+
+The Property Agent handles a wide range of property-related queries:
+- **Repairs and Maintenance**: Plumbing, electrical, HVAC, appliances, vehicle issues, structural problems
+- **Pest Control**: Insect infestations, rodent problems, wildlife issues, pest prevention and treatment
+- **Service Recommendations**: Finding and recommending local service providers, contractors, professionals
+- **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
+- **General Property Care**: Home improvement, maintenance tips, property management, preventive care
 
 ## What it does
 - Routes queries based on inputs using strict rules
   - If `diagnosis_uris` are present → delegate to the Analysis Agent
   - Otherwise → delegate to the DocuLink Agent for retrieval from user docs or the general knowledge base
-- Returns the sub‑agent’s response verbatim without modification
-- Handles simple, non-homecare small‑talk directly
+- Returns the sub‑agent's response verbatim without modification
+- Handles simple, non-property-care small‑talk directly
 
 ## Architecture
 - Root agent defined in `agent.py` constructs two agents:
@@ -132,7 +141,7 @@ The root agent inspects inputs and chooses the correct sub-agent:
 
 - If `diagnosis_uris` exist and are non-empty: delegate to `analysis_agent`
 - If `diagnosis_uris` are absent/empty: delegate to `analysis_agent` for text‑only triage, then coverage, DIY, service
-- If the query is casual/non-homecare, respond directly without delegation
+- If the query is casual/non-property-care, respond directly without delegation
 
 See `root_agent_instructions()` in `prompts.py` for the precise decision tree.
 

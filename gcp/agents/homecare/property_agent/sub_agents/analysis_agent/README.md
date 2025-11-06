@@ -2,7 +2,16 @@
 
 ## Overview
 
-The Analysis Agent orchestrates a diagnostic workflow for home care and vehicle issues. It can analyze uploaded media when available, or perform text‑only triage from the user’s query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service provider options.
+The Analysis Agent orchestrates a comprehensive workflow for property-related needs. It handles repairs, maintenance, pest control, service recommendations, and product requests. It can analyze uploaded media when available, or perform text‑only triage from the user's query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service provider options.
+
+## Scope
+
+The Property Agent addresses a wide range of property-related queries:
+- **Repairs and Maintenance**: Plumbing, electrical, HVAC, appliances, vehicle issues, structural problems
+- **Pest Control**: Insect infestations, rodent problems, wildlife issues, pest prevention and treatment recommendations
+- **Service Recommendations**: Finding and recommending local service providers, contractors, professionals
+- **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
+- **General Property Care**: Home improvement, maintenance tips, property management, preventive care
 
 ## Architecture
 
@@ -34,9 +43,17 @@ Analysis Agent (orchestrator)
 
 ### 1. Triage Agent
 
-- **Purpose**: Produce a clear diagnosis either by analyzing multimodal data (images, documents, videos) when provided, or by deriving a concise diagnosis from text when no media is available.
+- **Purpose**: Produce a clear diagnosis or need description either by analyzing multimodal data (images, documents, videos) when provided, or by deriving a concise diagnosis from text when no media is available. Handles repairs, maintenance, pest control, service requests, and product queries. When text-only triage is unclear, asks targeted clarification questions until a clear diagnosis can be determined.
 - **Tool (when media provided)**: `analyse_multimodal_data(user_query, gcs_url)`
-- **Output**: JSON containing a diagnosis text used by subsequent agents.
+- **Output**: 
+  - JSON containing a diagnosis text when the issue is clear
+  - JSON with `needs_clarification: true` and `clarification_questions` array when more information is needed
+  - Used by subsequent agents only after a clear diagnosis is obtained
+- **Behavior**:
+  - **With media**: Analyzes the media and returns diagnosis
+  - **Text-only (clear)**: Returns diagnosis from user_query
+  - **Text-only (unclear)**: Asks 1-3 targeted clarification questions
+  - **Iterative**: Continues asking questions until a clear, actionable diagnosis is obtained
 
 ### 2. Coverage Agent (separate module: `coverage_agent`)
 
@@ -93,8 +110,13 @@ Analysis Agent (orchestrator)
 
 1. Triage (mandatory first step)
    - If media is provided, analyze the first URI to produce a domain-specific diagnosis.
-   - If no media is provided, perform text-only triage from `user_query` (and `property_address` if present) to produce a concise diagnosis.
+   - If no media is provided, perform text-only triage from `user_query` (and `property_address` if present):
+     * **Clear query**: Produce a concise diagnosis from the user_query
+     * **Unclear query**: Ask 1-3 targeted clarification questions and wait for user response
+     * **Iterative**: Continue asking questions until a clear, actionable diagnosis is obtained
+   - If triage returns `needs_clarification: true`, return ONLY the clarification questions and stop (wait for user response).
    - If triage fails or diagnosis is invalid/empty, return ONLY the triage result and stop.
+   - Only proceed to steps 2-5 when triage returns a valid, actionable diagnosis.
 2. Coverage
    - Retrieve warranty/insurance information from user docs.
 3. DIY
@@ -110,13 +132,18 @@ Analysis Agent (orchestrator)
 
 ```json
 {
-  "user_query": "string",
-  "diagnosis_uris": ["string"],
-  "context_doc_uris": ["string"],
-  "property_address": "string"
+  "user_query": "string",  // REQUIRED - minimum required field
+  "diagnosis_uris": ["string"],  // Optional - may be omitted, null, or empty
+  "context_doc_uris": ["string"],  // Optional - may be omitted, null, or empty
+  "property_address": "string"  // Optional - may be omitted, null, or empty
 }
 ```
-Note: `diagnosis_uris` may be omitted or empty; in that case, triage runs in text‑only mode.
+
+**Important Notes:**
+- `user_query` is the **only required field**. The triage agent can work with just this field.
+- `diagnosis_uris` may be omitted, null, or empty; in that case, triage runs in text‑only mode.
+- All other fields are optional and the agent will gracefully handle their absence.
+- The triage agent will **never fail** due to missing optional fields - it will always work with `user_query` as the minimum.
 
 ## Output Schema
 
@@ -129,7 +156,14 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
 {
   "analysis": {
     "triageResult": {
-      "diagnosis": "string"
+      "diagnosis": "string",
+      "needs_clarification": false
+    },
+    // OR when clarification is needed:
+    "triageResult": {
+      "needs_clarification": true,
+      "clarification_questions": ["question 1", "question 2", "question 3"],
+      "message": "optional friendly message"
     },
     "coverageResult": {
       "warrantyInfo": "string",
@@ -204,10 +238,13 @@ This dual format ensures:
 
 ## Key Features
 
+- **Comprehensive scope**: Handles repairs, maintenance, pest control, service recommendations, and product requests
 - **Multimodal analysis**: Images, videos, and documents via Gemini 2.5 Flash
 - **Coverage retrieval**: Warranty and insurance details from user documents
 - **DIY guidance**: Steps, videos, and DIY product recommendations
-- **Service options**: Cost estimates and local pros from multiple sources
+- **Service options**: Cost estimates and local pros from multiple sources (plumbers, electricians, pest control, contractors, etc.)
+- **Product recommendations**: Shopping agent provides product suggestions for property-related needs
+- **Pest control support**: Specialized handling for pest control queries with appropriate service providers
 - **Parallelism**: DIY and Service sub-steps leverage multiple tools
 
 ## Error Handling

@@ -304,6 +304,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         .filter(Boolean) as ServiceProvider[])
         .slice(0, 10);
 
+    const needsClarification = !!(triage?.needs_clarification === true);
+    const hasClarificationQuestions = !!(needsClarification && Array.isArray(triage?.clarification_questions) && triage.clarification_questions.length > 0);
     const hasTriage = !!(triage?.diagnosis && typeof triage.diagnosis === 'string' && triage.diagnosis.trim() !== '');
     const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
     const hasDIY = !!(diy && (
@@ -449,16 +451,38 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
     return (
         <Accordion type="multiple" className="w-full space-y-2">
-            {hasTriage && (
+            {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
                         <div className="flex items-center gap-2 flex-1 text-left">
                             <Stethoscope className="h-5 w-5 text-blue-600" />
-                            <span className="font-semibold">Triage Summary</span>
+                            <span className="font-semibold">
+                                {needsClarification ? "Clarification Needed" : "Triage Summary"}
+                            </span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{triage!.diagnosis!}</ReactMarkdown>
+                        {needsClarification && hasClarificationQuestions ? (
+                            <div className="space-y-4">
+                                {triage.message && (
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        {triage.message}
+                                    </p>
+                                )}
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Please provide more information:</h4>
+                                    <ol className="list-decimal pl-6 space-y-2">
+                                        {triage.clarification_questions.map((question: string, index: number) => (
+                                            <li key={index} className="text-sm">
+                                                {question}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            </div>
+                        ) : hasTriage ? (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{triage!.diagnosis!}</ReactMarkdown>
+                        ) : null}
                     </AccordionContent>
                 </AccordionItem>
             )}

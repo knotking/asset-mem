@@ -4,8 +4,12 @@ from typing import List, Optional
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
-    diagnosis_uris: Optional[List[str]] = Field(description="The diagnosis document URIs.")
+    diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    
+    class Config:
+        # Allow extra fields to be ignored, making the schema more flexible
+        extra = "ignore"
 
 class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
