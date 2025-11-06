@@ -639,7 +639,6 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
 const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
   const markdownStyles = useMarkdownStyles(isUser);
-  console.log('CONTENT:', content);
   // Memoize structured data and plain content parsing
   const { structuredData, plainContent } = useMemo(() => {
     let parsedData: StructuredResponseData | null = null;
