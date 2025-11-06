@@ -14,8 +14,8 @@ module.exports = {
     privacy: 'hidden',
     splash: {
       image: './assets/images/splash.png',
-      resizeMode: 'contain',
-      backgroundColor: '#ffffff',
+      resizeMode: 'cover',
+      backgroundColor: '#1a2332',
     },
     assetBundlePatterns: ['**/*'],
     ios: {
