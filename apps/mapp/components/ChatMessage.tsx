@@ -177,6 +177,22 @@ const hasStructuredDataKeys = (parsed: any): boolean => {
   );
 };
 
+const getPreviewText = (value?: string, max = 240): string | undefined => {
+  if (!value) return undefined;
+  const plain = value
+    .replace(/[`*_>#]/g, '')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain.length <= max) return plain;
+  return (
+    plain
+      .slice(0, max)
+      .trim()
+      .replace(/[.,!?;:]?$/, '') + '…'
+  );
+};
+
 const MessageAvatar = React.memo(({ role }: { role: 'user' | 'assistant' }) => {
   const isUser = role === 'user';
   return (
@@ -442,6 +458,33 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   const costEstimation =
     (data as any)?.costEstimationResults || (data as any)?.analysis?.costEstimationResults;
 
+  // Check for clarification needs
+  const needsClarification = !!(triage?.needs_clarification === true);
+  const hasClarificationQuestions = !!(
+    needsClarification &&
+    Array.isArray(triage?.clarification_questions) &&
+    triage.clarification_questions.length > 0
+  );
+
+  // Get title text (check both nested and flat structures)
+  const rawTitle =
+    typeof analysis?.title === 'string' && analysis.title.trim()
+      ? analysis.title.trim()
+      : typeof data?.title === 'string' && data.title.trim()
+        ? data.title.trim()
+        : undefined;
+
+  const diagnosisPreview =
+    !needsClarification && typeof triage?.diagnosis === 'string'
+      ? getPreviewText(triage.diagnosis)
+      : undefined;
+
+  const clarificationPreview = needsClarification
+    ? getPreviewText(triage?.message || triage?.diagnosis)
+    : undefined;
+
+  const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
+
   // Memoize allProviders array processing
   const allProviders = useMemo(() => {
     const allProvidersRaw = [
@@ -472,12 +515,13 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   );
 
   const hasCoverage = useMemo(
-    () => !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo)),
-    [coverage]
+    () => !needsClarification && !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo)),
+    [needsClarification, coverage]
   );
 
   const hasDIY = useMemo(
     () =>
+      !needsClarification &&
       !!(
         diy &&
         (diy.diySteps?.summary ||
@@ -485,327 +529,363 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
           (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
           (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0))
       ),
-    [diy]
+    [needsClarification, diy]
   );
 
-  const hasService = useMemo(() => allProviders.length > 0, [allProviders]);
+  const hasService = useMemo(
+    () => !needsClarification && allProviders.length > 0,
+    [needsClarification, allProviders]
+  );
 
   const hasCostEstimates = useMemo(
-    () => !!(costEstimation && costEstimation.costEstimates),
-    [costEstimation]
+    () => !needsClarification && !!(costEstimation && costEstimation.costEstimates),
+    [needsClarification, costEstimation]
   );
 
   return (
-    <Accordion type="single" collapsible defaultValue="triage">
-      {hasTriage && (
-        <AccordionItem value="triage" className="border-b border-border">
-          <AccordionTrigger className="px-2 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Stethoscope} size={16} className="text-info" />
-              <Text className="font-medium text-foreground">Triage Summary</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="border-t border-border bg-background p-4">
-            <Markdown style={markdownStyles} rules={markdownRules}>
-              {triage!.diagnosis!}
-            </Markdown>
-          </AccordionContent>
-        </AccordionItem>
+    <View className="w-full space-y-3">
+      {displayTitle && (
+        <View className="rounded-lg border border-border bg-muted/40 px-4 py-3">
+          <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
+        </View>
       )}
-
-      {hasCoverage && (
-        <AccordionItem value="coverage" className="border-b border-border">
-          <AccordionTrigger className="px-2 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={ShieldCheck} size={16} className="text-success" />
-              <Text className="font-medium text-foreground">Coverage Analysis</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="border-t border-border bg-background p-4">
-            {coverage?.warrantyInfo && (
-              <View className="mb-3">
-                <Text className="mb-1 text-sm font-semibold text-success">
-                  Warranty Information
+      <Accordion type="single" collapsible defaultValue="triage">
+        {(hasTriage || needsClarification) && (
+          <AccordionItem value="triage" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Stethoscope} size={16} className="text-info" />
+                <Text className="font-medium text-foreground">
+                  {needsClarification ? 'Clarification Needed' : 'Triage Summary'}
                 </Text>
-                <Markdown style={markdownStyles} rules={markdownRules}>
-                  {coverage.warrantyInfo}
-                </Markdown>
               </View>
-            )}
-            {coverage?.insuranceInfo && (
-              <View>
-                <Text className="mb-1 text-sm font-semibold text-success">
-                  Insurance Information
-                </Text>
-                <Markdown style={markdownStyles} rules={markdownRules}>
-                  {coverage.insuranceInfo}
-                </Markdown>
-              </View>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
-      {hasDIY && (
-        <AccordionItem value="diy" className="border-b border-border">
-          <AccordionTrigger className="px-2 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Wrench} size={16} className="text-warning" />
-              <Text className="font-medium text-foreground">DIY Recommendations</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="border-t border-border bg-background p-4">
-            {diy?.diySteps?.summary && (
-              <View className="mb-3">
-                <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>
-                <Markdown style={markdownStyles} rules={markdownRules}>
-                  {diy.diySteps.summary}
-                </Markdown>
-              </View>
-            )}
-
-            {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
-              <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-warning">
-                  Step-by-Step Instructions
-                </Text>
-                {diy.diySteps.steps.map((step: any, idx: number) => (
-                  <View key={idx} className="mb-2 flex-row gap-2">
-                    <Text className="text-sm font-medium text-foreground">{idx + 1}.</Text>
-                    <Text className="flex-1 text-sm text-foreground">{step.description}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
-              <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-warning">Video Tutorials</Text>
-                {diy.youtubeSearch.videos.map((video: any, i: number) => (
-                  <View key={i} className="mb-3">
-                    <YouTubeEmbed videoUrl={video.url} />
-                    <Text className="mt-1 text-sm font-medium text-foreground" numberOfLines={2}>
-                      {video.title || 'Video'}
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              {needsClarification && hasClarificationQuestions ? (
+                <View className="space-y-3">
+                  {triage.message && (
+                    <Text className="mb-2 text-sm text-muted-foreground">{triage.message}</Text>
+                  )}
+                  <View className="space-y-2">
+                    <Text className="text-sm font-semibold text-foreground">
+                      Please provide more information:
                     </Text>
-                    {video.description && (
-                      <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
-                        {video.description}
+                    {triage.clarification_questions.map((question: string, index: number) => (
+                      <View key={index} className="flex-row gap-2">
+                        <Text className="text-sm font-medium text-foreground">{index + 1}.</Text>
+                        <Text className="flex-1 text-sm text-foreground">{question}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : hasTriage ? (
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {triage!.diagnosis!}
+                </Markdown>
+              ) : null}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {hasCoverage && (
+          <AccordionItem value="coverage" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={ShieldCheck} size={16} className="text-success" />
+                <Text className="font-medium text-foreground">Coverage Analysis</Text>
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              {coverage?.warrantyInfo && (
+                <View className="mb-3">
+                  <Text className="mb-1 text-sm font-semibold text-success">
+                    Warranty Information
+                  </Text>
+                  <Markdown style={markdownStyles} rules={markdownRules}>
+                    {coverage.warrantyInfo}
+                  </Markdown>
+                </View>
+              )}
+              {coverage?.insuranceInfo && (
+                <View>
+                  <Text className="mb-1 text-sm font-semibold text-success">
+                    Insurance Information
+                  </Text>
+                  <Markdown style={markdownStyles} rules={markdownRules}>
+                    {coverage.insuranceInfo}
+                  </Markdown>
+                </View>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {hasDIY && (
+          <AccordionItem value="diy" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Wrench} size={16} className="text-warning" />
+                <Text className="font-medium text-foreground">DIY Recommendations</Text>
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              {diy?.diySteps?.summary && (
+                <View className="mb-3">
+                  <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>
+                  <Markdown style={markdownStyles} rules={markdownRules}>
+                    {diy.diySteps.summary}
+                  </Markdown>
+                </View>
+              )}
+
+              {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
+                <View className="mb-3">
+                  <Text className="mb-2 text-sm font-semibold text-warning">
+                    Step-by-Step Instructions
+                  </Text>
+                  {diy.diySteps.steps.map((step: any, idx: number) => (
+                    <View key={idx} className="mb-2 flex-row gap-2">
+                      <Text className="text-sm font-medium text-foreground">{idx + 1}.</Text>
+                      <Text className="flex-1 text-sm text-foreground">{step.description}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
+                <View className="mb-3">
+                  <Text className="mb-2 text-sm font-semibold text-warning">Video Tutorials</Text>
+                  {diy.youtubeSearch.videos.map((video: any, i: number) => (
+                    <View key={i} className="mb-3">
+                      <YouTubeEmbed videoUrl={video.url} />
+                      <Text className="mt-1 text-sm font-medium text-foreground" numberOfLines={2}>
+                        {video.title || 'Video'}
                       </Text>
-                    )}
-                    <Button
-                      onPress={() => Linking.openURL(video.url)}
-                      variant="outline"
-                      className="mt-2 w-full">
-                      <Text>Watch on YouTube</Text>
-                    </Button>
+                      {video.description && (
+                        <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
+                          {video.description}
+                        </Text>
+                      )}
+                      <Button
+                        onPress={() => Linking.openURL(video.url)}
+                        variant="outline"
+                        className="mt-2 w-full">
+                        <Text>Watch on YouTube</Text>
+                      </Button>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {diy?.recommendedProducts?.products &&
+                diy.recommendedProducts.products.length > 0 && (
+                  <View className="mb-3">
+                    <Text className="mb-2 text-sm font-semibold text-warning">
+                      Recommended Products
+                    </Text>
+                    {diy.recommendedProducts.products.map((product: Product, index: number) => (
+                      <ProductCard key={index} product={product} />
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
+                )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
-            {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
-              <View className="mb-3">
-                <Text className="mb-2 text-sm font-semibold text-warning">
-                  Recommended Products
-                </Text>
-                {diy.recommendedProducts.products.map((product: Product, index: number) => (
-                  <ProductCard key={index} product={product} />
-                ))}
+        {hasService && (
+          <AccordionItem value="service" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Users} size={16} className="text-indigo-600" />
+                <Text className="font-medium text-foreground">Service Recommendations</Text>
               </View>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
-      {hasService && (
-        <AccordionItem value="service" className="border-b border-border">
-          <AccordionTrigger className="px-2 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Users} size={16} className="text-indigo-600" />
-              <Text className="font-medium text-foreground">Service Recommendations</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="border-t border-border bg-background p-4">
-            <Text className="mb-2 text-sm font-semibold text-indigo-600">
-              Local Service Providers
-            </Text>
-            {allProviders.length > 0 ? (
-              allProviders.map((provider, index) => (
-                <ServiceProviderCard key={index} provider={provider} />
-              ))
-            ) : (
-              <Text className="text-sm italic text-muted-foreground">
-                No service providers found for this location.
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              <Text className="mb-2 text-sm font-semibold text-indigo-600">
+                Local Service Providers
               </Text>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
+              {allProviders.length > 0 ? (
+                allProviders.map((provider, index) => (
+                  <ServiceProviderCard key={index} provider={provider} />
+                ))
+              ) : (
+                <Text className="text-sm italic text-muted-foreground">
+                  No service providers found for this location.
+                </Text>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
-      {hasCostEstimates && (
-        <AccordionItem value="cost-estimates" className="border-b border-border">
-          <AccordionTrigger className="px-2 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={DollarSign} size={16} className="text-purple-600" />
-              <Text className="font-medium text-foreground">Cost Estimates</Text>
-            </View>
-          </AccordionTrigger>
-          <AccordionContent className="border-t border-border bg-background p-4">
-            {typeof costEstimation.costEstimates === 'string' ? (
-              <Text className="text-sm text-foreground">{costEstimation.costEstimates}</Text>
-            ) : (
-              <View className="space-y-3">
-                {costEstimation.costEstimates.repair_type && (
-                  <View className="mb-2">
-                    <Text className="text-sm font-semibold text-purple-600">Repair Type</Text>
-                    <Text className="text-sm text-foreground">
-                      {costEstimation.costEstimates.repair_type}
-                    </Text>
-                  </View>
-                )}
-
-                {costEstimation.costEstimates.DIY && (
-                  <View className="mb-3 rounded-lg border border-border bg-background p-3">
-                    <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
-                    {costEstimation.costEstimates.DIY.cost_range && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">
-                          Cost Range:
-                        </Text>
-                        <Text className="flex-1 text-sm font-semibold text-purple-600">
-                          {costEstimation.costEstimates.DIY.cost_range}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.DIY.savings && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">Savings:</Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          {costEstimation.costEstimates.DIY.savings}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.DIY.complexity && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">
-                          Complexity:
-                        </Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          {costEstimation.costEstimates.DIY.complexity}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.DIY.includes &&
-                      Array.isArray(costEstimation.costEstimates.DIY.includes) &&
-                      costEstimation.costEstimates.DIY.includes.length > 0 && (
-                        <View className="mt-2">
-                          <Text className="mb-1 text-sm font-medium text-muted-foreground">
-                            Includes:
-                          </Text>
-                          {costEstimation.costEstimates.DIY.includes.map(
-                            (item: string, idx: number) => (
-                              <View key={idx} className="mb-1 flex-row gap-2">
-                                <Text className="text-sm text-foreground">•</Text>
-                                <Text className="flex-1 text-sm text-foreground">{item}</Text>
-                              </View>
-                            )
-                          )}
-                        </View>
-                      )}
-                  </View>
-                )}
-
-                {costEstimation.costEstimates.Service && (
-                  <View className="mb-3 rounded-lg border border-border bg-background p-3">
-                    <Text className="mb-2 text-sm font-semibold text-foreground">
-                      Professional Service
-                    </Text>
-                    {costEstimation.costEstimates.Service.cost_range && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">
-                          Cost Range:
-                        </Text>
-                        <Text className="flex-1 text-sm font-semibold text-purple-600">
-                          {costEstimation.costEstimates.Service.cost_range}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.Service.benefits && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">Benefits:</Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          {costEstimation.costEstimates.Service.benefits}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.Service.complexity && (
-                      <View className="mb-2 flex-row items-start gap-2">
-                        <Text className="text-sm font-medium text-muted-foreground">
-                          Complexity:
-                        </Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          {costEstimation.costEstimates.Service.complexity}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.Service.includes &&
-                      Array.isArray(costEstimation.costEstimates.Service.includes) &&
-                      costEstimation.costEstimates.Service.includes.length > 0 && (
-                        <View className="mt-2">
-                          <Text className="mb-1 text-sm font-medium text-muted-foreground">
-                            Includes:
-                          </Text>
-                          {costEstimation.costEstimates.Service.includes.map(
-                            (item: string, idx: number) => (
-                              <View key={idx} className="mb-1 flex-row gap-2">
-                                <Text className="text-sm text-foreground">•</Text>
-                                <Text className="flex-1 text-sm text-foreground">{item}</Text>
-                              </View>
-                            )
-                          )}
-                        </View>
-                      )}
-                  </View>
-                )}
-
-                {costEstimation.costEstimates.comparison && (
-                  <View className="mt-3 rounded-lg bg-muted p-3">
-                    <Text className="mb-2 text-sm font-semibold text-foreground">
-                      Comparison & Considerations
-                    </Text>
-                    {costEstimation.costEstimates.comparison.diy_savings && (
-                      <View className="mb-1 flex-row items-start gap-2">
-                        <Text className="text-sm text-foreground">•</Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          DIY Savings: {costEstimation.costEstimates.comparison.diy_savings}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.comparison.professional_benefits && (
-                      <View className="mb-1 flex-row items-start gap-2">
-                        <Text className="text-sm text-foreground">•</Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          Professional Benefits:{' '}
-                          {costEstimation.costEstimates.comparison.professional_benefits}
-                        </Text>
-                      </View>
-                    )}
-                    {costEstimation.costEstimates.comparison.considerations && (
-                      <View className="mb-1 flex-row items-start gap-2">
-                        <Text className="text-sm text-foreground">•</Text>
-                        <Text className="flex-1 text-sm text-foreground">
-                          Considerations: {costEstimation.costEstimates.comparison.considerations}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                )}
+        {hasCostEstimates && (
+          <AccordionItem value="cost-estimates" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={DollarSign} size={16} className="text-purple-600" />
+                <Text className="font-medium text-foreground">Cost Estimates</Text>
               </View>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
-    </Accordion>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              {typeof costEstimation.costEstimates === 'string' ? (
+                <Text className="text-sm text-foreground">{costEstimation.costEstimates}</Text>
+              ) : (
+                <View className="space-y-3">
+                  {costEstimation.costEstimates.repair_type && (
+                    <View className="mb-2">
+                      <Text className="text-sm font-semibold text-purple-600">Repair Type</Text>
+                      <Text className="text-sm text-foreground">
+                        {costEstimation.costEstimates.repair_type}
+                      </Text>
+                    </View>
+                  )}
+
+                  {costEstimation.costEstimates.DIY && (
+                    <View className="mb-3 rounded-lg border border-border bg-background p-3">
+                      <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
+                      {costEstimation.costEstimates.DIY.cost_range && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Cost Range:
+                          </Text>
+                          <Text className="flex-1 text-sm font-semibold text-purple-600">
+                            {costEstimation.costEstimates.DIY.cost_range}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.DIY.savings && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Savings:
+                          </Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            {costEstimation.costEstimates.DIY.savings}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.DIY.complexity && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Complexity:
+                          </Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            {costEstimation.costEstimates.DIY.complexity}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.DIY.includes &&
+                        Array.isArray(costEstimation.costEstimates.DIY.includes) &&
+                        costEstimation.costEstimates.DIY.includes.length > 0 && (
+                          <View className="mt-2">
+                            <Text className="mb-1 text-sm font-medium text-muted-foreground">
+                              Includes:
+                            </Text>
+                            {costEstimation.costEstimates.DIY.includes.map(
+                              (item: string, idx: number) => (
+                                <View key={idx} className="mb-1 flex-row gap-2">
+                                  <Text className="text-sm text-foreground">•</Text>
+                                  <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                                </View>
+                              )
+                            )}
+                          </View>
+                        )}
+                    </View>
+                  )}
+
+                  {costEstimation.costEstimates.Service && (
+                    <View className="mb-3 rounded-lg border border-border bg-background p-3">
+                      <Text className="mb-2 text-sm font-semibold text-foreground">
+                        Professional Service
+                      </Text>
+                      {costEstimation.costEstimates.Service.cost_range && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Cost Range:
+                          </Text>
+                          <Text className="flex-1 text-sm font-semibold text-purple-600">
+                            {costEstimation.costEstimates.Service.cost_range}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.Service.benefits && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Benefits:
+                          </Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            {costEstimation.costEstimates.Service.benefits}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.Service.complexity && (
+                        <View className="mb-2 flex-row items-start gap-2">
+                          <Text className="text-sm font-medium text-muted-foreground">
+                            Complexity:
+                          </Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            {costEstimation.costEstimates.Service.complexity}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.Service.includes &&
+                        Array.isArray(costEstimation.costEstimates.Service.includes) &&
+                        costEstimation.costEstimates.Service.includes.length > 0 && (
+                          <View className="mt-2">
+                            <Text className="mb-1 text-sm font-medium text-muted-foreground">
+                              Includes:
+                            </Text>
+                            {costEstimation.costEstimates.Service.includes.map(
+                              (item: string, idx: number) => (
+                                <View key={idx} className="mb-1 flex-row gap-2">
+                                  <Text className="text-sm text-foreground">•</Text>
+                                  <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                                </View>
+                              )
+                            )}
+                          </View>
+                        )}
+                    </View>
+                  )}
+
+                  {costEstimation.costEstimates.comparison && (
+                    <View className="mt-3 rounded-lg bg-muted p-3">
+                      <Text className="mb-2 text-sm font-semibold text-foreground">
+                        Comparison & Considerations
+                      </Text>
+                      {costEstimation.costEstimates.comparison.diy_savings && (
+                        <View className="mb-1 flex-row items-start gap-2">
+                          <Text className="text-sm text-foreground">•</Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            DIY Savings: {costEstimation.costEstimates.comparison.diy_savings}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.comparison.professional_benefits && (
+                        <View className="mb-1 flex-row items-start gap-2">
+                          <Text className="text-sm text-foreground">•</Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            Professional Benefits:{' '}
+                            {costEstimation.costEstimates.comparison.professional_benefits}
+                          </Text>
+                        </View>
+                      )}
+                      {costEstimation.costEstimates.comparison.considerations && (
+                        <View className="mb-1 flex-row items-start gap-2">
+                          <Text className="text-sm text-foreground">•</Text>
+                          <Text className="flex-1 text-sm text-foreground">
+                            Considerations: {costEstimation.costEstimates.comparison.considerations}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+    </View>
   );
 });
 

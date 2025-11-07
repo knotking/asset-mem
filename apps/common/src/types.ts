@@ -75,6 +75,9 @@ export type Product = {
 }
 
 export type StructuredResponseData = {
+  // Top-level fields (for backward compatibility and flat structures)
+  title?: string;
+
   // Legacy format (backward compatibility)
   researchResults?: {
     summaryOfFindings?: string;
@@ -86,10 +89,46 @@ export type StructuredResponseData = {
     serpAPIResults?: ServiceProvider[];
     yelpAPIResults?: ServiceProvider[];
   };
+
+  // Flat structure fields (alternative to nested analysis structure)
+  triageResult?: {
+    diagnosis?: string;
+    needs_clarification?: boolean;
+    message?: string;
+    clarification_questions?: string[];
+  };
+  coverageResult?: {
+    warrantyInfo?: string;
+    insuranceInfo?: string;
+  };
+  diyResults?: {
+    diySteps?: {
+      summary?: string;
+      steps?: Array<{ stepNumber: number; description: string }>;
+    };
+    youtubeSearch?: {
+      videos?: Array<{ title: string; url: string; description?: string }>;
+    };
+    recommendedProducts?: {
+      products?: Product[];
+    };
+  };
+  serviceResults?: {
+    costEstimates?: string;
+    localPros?: {
+      serpAPIResults?: ServiceProvider[];
+      yelpAPIResults?: ServiceProvider[];
+    };
+  };
+
   // New format (nested structure)
   analysis?: {
+    title?: string;
     triageResult?: {
       diagnosis?: string;
+      needs_clarification?: boolean;
+      message?: string;
+      clarification_questions?: string[];
     };
     coverageResult?: {
       warrantyInfo?: string;
