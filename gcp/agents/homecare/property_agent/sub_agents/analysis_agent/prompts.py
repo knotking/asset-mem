@@ -211,13 +211,20 @@ def analysis_agent_instructions() -> str:
         1. A human-readable Markdown formatted response (for Telegram consumption) - FIRST
         2. A JSON code block with the structured data (for webapp consumption) - SECOND
         
+        **Title Requirement:**
+        - Create a concise, user-friendly `analysis.title` that summarizes the main diagnosis or objective (e.g., "Restore Hot Water Pressure" or "Clarification Needed: HVAC Not Cooling").
+        - The Markdown response MUST begin with a level-one heading (`#`) using the same title.
+        - When triage requires clarification, craft the title to reflect that state (e.g., "Need Clarification: Describe Leak Location").
+        - Derive the title primarily from the triage agent's diagnosis text (or clarification message). If additional agents add crucial context, append brief qualifiers (e.g., "... – Coverage Review").
+        
         Format your response as follows:
         
-        [First, provide a human-readable Markdown formatted summary. Format it clearly with sections, bullet points, and links. The markdown should be formatted for Telegram consumption and should present the information in a readable, conversational format.]
+        [First, provide a human-readable Markdown formatted summary. Start with `# {analysis.title}` followed by well-structured sections, bullet points, and links.]
         
         ```json
         {
           "analysis": {
+            "title": "[Concise title derived from the diagnosis/user request]",
             "triageResult": {
               "diagnosis": "[diagnosis from triage_agent]"
             },
@@ -268,8 +275,8 @@ def analysis_agent_instructions() -> str:
           - For pest control queries, service agent will find pest control professionals.
           - For product requests, shopping agent provides product recommendations.
         * Extract the nested content from each agent's response.
-        * Combine them into a single nested JSON structure **only when triage returns a valid diagnosis**.
-        * When `needs_clarification` is true, return ONLY the triage clarification section (Markdown + JSON) and omit all other sections.
+        * Combine them into a single nested JSON structure **only when triage returns a valid diagnosis**. Always include `analysis.title`.
+        * When `needs_clarification` is true, set `analysis.title` to reflect the clarification request, return ONLY the triage clarification section (Markdown + JSON), and omit all other sections.
         * ALWAYS include BOTH the Markdown formatted response (FIRST) AND the JSON code block (SECOND).
         * The Markdown response should be well-formatted, readable, and suitable for Telegram display.
         * The JSON code block must be valid JSON and properly formatted.

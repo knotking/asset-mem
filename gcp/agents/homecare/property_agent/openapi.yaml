@@ -623,15 +623,16 @@ components:
         
         **Analysis Agent Response Format:**
         The Analysis Agent MUST return responses in a dual format:
-        - Markdown text (FIRST): Contains human-readable formatted response for Telegram consumption
-        - JSON code block (SECOND): Contains structured data for webapp consumption (parsed by chat-message.tsx)
+        - Markdown text (FIRST): Contains human-readable formatted response for Telegram consumption and must start with `# {analysis.title}`
+        - JSON code block (SECOND): Contains structured data for webapp consumption (parsed by chat-message.tsx) and must include `analysis.title`
         
         The response format is:
         ```
+        # {analysis.title}
         [Markdown formatted human-readable response here]
         
         ```json
-        { ... structured JSON data ... }
+        { ... structured JSON data including "analysis": { "title": "..." } ... }
         ```
         ```
       examples:
@@ -648,6 +649,9 @@ components:
           type: object
           additionalProperties: false
           properties:
+            title:
+              type: string
+              description: Concise headline summarizing the analysis outcome or clarification request.
             triageResult:
               oneOf:
                 - type: object
@@ -812,6 +816,9 @@ components:
                           type: string
                         considerations:
                           type: string
+        title:
+          type: string
+          description: Optional top-level title mirroring `analysis.title` for legacy clients.
       description: Aggregated response with nested analysis results.
 
     StructuredResponseWithMarkdown:
@@ -821,15 +828,16 @@ components:
         
         The response MUST be formatted as:
         ```
-        ```json
-        { ... structured JSON data matching StructuredResponse schema ... }
-        ```
-        
+        # {analysis.title}
         [Markdown formatted human-readable response]
+        
+        ```json
+        { ... structured JSON data matching StructuredResponse schema including "analysis": { "title": "..." } ... }
+        ```
         ```
         
         - The JSON code block contains the structured data for webapp consumption (parsed by chat-message.tsx)
-        - The Markdown text below contains a human-readable formatted response for Telegram consumption
+        - The Markdown text above contains a human-readable formatted response for Telegram consumption
         
         Clients should:
         - Extract the JSON from the code block for structured parsing

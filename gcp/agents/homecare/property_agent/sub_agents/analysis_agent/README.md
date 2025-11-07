@@ -104,6 +104,7 @@ Analysis Agent (orchestrator)
   - `cost_estimation`: High-level DIY vs professional cost ranges
   - `cost_estimation_diy`: DIY-only cost guidance
 - **Output**: JSON under `costEstimationResults.costEstimates`.
+- **Context Requirement**: Always read the triage diagnosis and tailor cost ranges to that specific problem before returning a response.
 - **Location**: `sub_agents/cost_agent/`
 
 ## Workflow
@@ -152,11 +153,12 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
 ### Response Format
 
 ```
-[Markdown formatted human-readable response appears here first]
+# {analysis.title goes here}
 
 ```json
 {
   "analysis": {
+    "title": "string",
     "triageResult": {
       "diagnosis": "string",
       "needs_clarification": false
@@ -218,12 +220,14 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
 
 1. **Markdown Text** (FIRST):
    - Must appear before the JSON code block
-   - Contains a human-readable, well-formatted summary of the analysis
+   - Must begin with `# {analysis.title}` as the first line
+   - Should summarize the outcome using the triage diagnosis (or clarification message) as the anchor
    - Should include sections, bullet points, links, and formatting suitable for Telegram
    - Used by Telegram API for display in Telegram messages
 
 2. **JSON Code Block** (SECOND):
    - Must be wrapped in a markdown code block with language tag `json`
+   - Must include the `analysis.title` field mirroring the Markdown heading and derived from the triage diagnosis
    - Contains the structured data matching the schema above
    - Used by webapp (`chat-message.tsx`) for structured parsing and UI rendering
 

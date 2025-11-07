@@ -29,6 +29,7 @@ export type Message = {
 
 export type StructuredResponseData = {
   analysis?: {
+    title?: string;
     triageResult?: {
       diagnosis?: string;
     };
@@ -88,6 +89,7 @@ export type StructuredResponseData = {
       };
     };
   };
+  title?: string;
 }
 
 export type Product = {

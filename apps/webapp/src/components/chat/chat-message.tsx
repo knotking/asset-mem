@@ -216,6 +216,17 @@ const ProductCard = ({ product }: { product: Product }) => {
     );
 };
 
+const getPreviewText = (value?: string, max = 240) => {
+    if (!value) return undefined;
+    const plain = value
+        .replace(/[`*_>#]/g, '')
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (plain.length <= max) return plain;
+    return plain.slice(0, max).trim().replace(/[.,!?;:]?$/, '') + '…';
+};
+
 const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
     // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -224,6 +235,9 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const diy = analysis?.diyResults || (data as any)?.diyResults;
     const service = analysis?.serviceResults || (data as any)?.serviceResults || {};
     const cost = analysis?.costEstimationResults || (data as any)?.costEstimationResults;
+    const rawTitle = (typeof analysis?.title === 'string' && analysis.title.trim())
+        ? analysis.title.trim()
+        : (typeof (data as any)?.title === 'string' && (data as any).title.trim() ? (data as any).title.trim() : undefined);
 
     // Normalize and validate provider objects coming from various agents/APIs
     const normalizeProvider = (p: any): ServiceProvider | null => {
@@ -377,7 +391,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                             <table className="w-full text-sm border rounded">
                                 <thead>
                                     <tr className="bg-muted/40">
-                                        {headers.map(h => (<th key={h} className="text-left p-2 capitalize">{h.replaceAll('_',' ')}</th>))}
+                                        {headers.map(h => (<th key={h} className="text-left p-2 capitalize">{h.split('_').join(' ')}</th>))}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -424,11 +438,11 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 <div key={k}>
                                     {isPrimitive(v) ? (
                                         <div className="flex items-start justify-between py-1 text-sm">
-                                            <span className="font-medium mr-3 capitalize">{k.replaceAll('_',' ')}</span>
+                                            <span className="font-medium mr-3 capitalize">{k.split('_').join(' ')}</span>
                                             <span className="text-right">{renderPrimitive(v)}</span>
                                         </div>
                                     ) : (
-                                        renderRecursiveDetails(k.replaceAll('_',' '), v, `${keyPath}-${k}`)
+                                        renderRecursiveDetails(k.split('_').join(' '), v, `${keyPath}-${k}`)
                                     )}
                                 </div>
                             ))}
@@ -449,7 +463,36 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
     // Cost estimates removed from analysis output; related parsing/rendering omitted
 
+    const diagnosisPreview = !needsClarification && typeof triage?.diagnosis === 'string'
+        ? getPreviewText(triage.diagnosis)
+        : undefined;
+    const clarificationPreview = needsClarification
+        ? getPreviewText(triage?.message || triage?.diagnosis)
+        : undefined;
+    const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
+
     return (
+        <div className="space-y-4">
+            {displayTitle && (
+                <div className="rounded-lg border bg-muted/40 px-4 py-3">
+                    <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                        {displayTitle}
+                    </h2>
+                    {needsClarification ? (
+                        clarificationPreview && (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {clarificationPreview}
+                            </p>
+                        )
+                    ) : (
+                        diagnosisPreview && (
+                            <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
+                                {diagnosisPreview}
+                            </p>
+                        )
+                    )}
+                </div>
+            )}
         <Accordion type="multiple" className="w-full space-y-2">
             {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
@@ -699,6 +742,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                 </AccordionItem>
             )}
         </Accordion>
+        </div>
     );
 };
 
@@ -1252,9 +1296,9 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               // More aggressive regex to match JSON objects with our keys
               const patterns = [
                   // Match complete JSON objects that might span multiple lines
-                  /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/s,
+                  /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/,
                   // Try to find the first { and match until balanced closing }
-                  /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/s
+                  /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/
               ];
               
               for (const pattern of patterns) {
@@ -1319,26 +1363,27 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
           }
           
           // Debug logging
-          if (structuredData) {
-              if (process.env.NODE_ENV === 'development') {
-                  const serviceData = structuredData.analysis?.serviceResults || structuredData.serviceResults;
-                  console.log('✓ Successfully parsed structured data:', {
-                      hasAnalysis: !!structuredData.analysis,
-                      hasTriage: !!(structuredData.analysis?.triageResult || structuredData.triageResult),
-                      hasDiy: !!(structuredData.analysis?.diyResults || structuredData.diyResults),
-                      hasService: !!(structuredData.analysis?.serviceResults || structuredData.serviceResults),
-                      hasCoverage: !!(structuredData.analysis?.coverageResult || structuredData.coverageResult),
-                      structure: structuredData.analysis ? 'nested' : 'flat',
-                      serviceDataDetails: serviceData ? {
-                          hasCostEstimates: !!serviceData.costEstimates,
-                          hasLocalPros: !!serviceData.localPros,
-                          localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
-                          yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
-                          serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
-                      } : null
-                  });
-              }
-          } else if (process.env.NODE_ENV === 'development') {
+        if (structuredData) {
+            if (process.env.NODE_ENV === 'development') {
+                const sd: any = structuredData;
+                const serviceData = sd?.analysis?.serviceResults || sd?.serviceResults;
+                console.log('✓ Successfully parsed structured data:', {
+                    hasAnalysis: !!sd?.analysis,
+                    hasTriage: !!(sd?.analysis?.triageResult || sd?.triageResult),
+                    hasDiy: !!(sd?.analysis?.diyResults || sd?.diyResults),
+                    hasService: !!(sd?.analysis?.serviceResults || sd?.serviceResults),
+                    hasCoverage: !!(sd?.analysis?.coverageResult || sd?.coverageResult),
+                    structure: sd?.analysis ? 'nested' : 'flat',
+                    serviceDataDetails: serviceData ? {
+                        hasCostEstimates: !!serviceData.costEstimates,
+                        hasLocalPros: !!serviceData.localPros,
+                        localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
+                        yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
+                        serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
+                    } : null
+                });
+            }
+        } else if (process.env.NODE_ENV === 'development') {
               const hasJsonMarkers = message.content.includes('"analysis"') || 
                                      message.content.includes('"triageResult"') || 
                                      message.content.includes('"serviceResults"') ||
