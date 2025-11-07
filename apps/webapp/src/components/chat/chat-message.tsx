@@ -478,19 +478,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     <h2 className="text-base sm:text-lg font-semibold text-foreground">
                         {displayTitle}
                     </h2>
-                    {needsClarification ? (
-                        clarificationPreview && (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {clarificationPreview}
-                            </p>
-                        )
-                    ) : (
-                        diagnosisPreview && (
-                            <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-                                {diagnosisPreview}
-                            </p>
-                        )
-                    )}
                 </div>
             )}
         <Accordion type="multiple" className="w-full space-y-2">
