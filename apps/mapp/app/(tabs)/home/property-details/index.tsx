@@ -283,11 +283,9 @@ function DetailsTab({ property }: { property: any }) {
               }
             }
 
-            // Remove from uploading list after brief delay to show completion state
-            // The document will appear in the permanent list via Firestore listener
-            setTimeout(() => {
-              removeUploadingDoc(completedDoc.id);
-            }, 800);
+            // Remove from uploading list immediately
+            // The document will now be shown via Firestore listener in the merged list
+            removeUploadingDoc(completedDoc.id);
           } catch (error) {
             console.error('Error saving document to Firestore:', error);
             // Keep the uploading doc visible on error so user can see what failed
@@ -477,129 +475,105 @@ function DetailsTab({ property }: { property: any }) {
           </CardContent>
         ) : (
           <CardContent className="space-y-3 border-t border-border pt-4">
-            {/* Uploading Documents */}
-            {uploadingDocs.map((doc) => (
-              <Card key={doc.id} className="mb-2">
-                <CardContent>
-                  <View className="flex-row items-start justify-between">
-                    <View className="flex-1">
-                      <Text className="font-medium text-foreground" numberOfLines={1}>
-                        {doc.name}
-                      </Text>
-                      <Text className="mt-1 text-xs text-muted-foreground">
-                        {(doc.size / 1024).toFixed(1)} KB
-                      </Text>
+            {/* Merged Documents List - Optimistic UI with Overlay */}
+            {(() => {
+              // Create a merged list - show ALL documents (uploading + existing)
+              // No name-based filtering to allow duplicate filenames
+              const mergedDocs = [
+                ...uploadingDocs.map((doc) => ({ ...doc, source: 'uploading' as const })),
+                ...documents.map((doc) => ({ ...doc, source: 'firestore' as const })),
+              ];
 
-                      {/* Status */}
-                      {doc.status === 'uploading' && (
-                        <View className="mt-2">
-                          <Text className="text-xs text-muted-foreground">
-                            Uploading... {Math.round(doc.progress || 0)}%
+              return mergedDocs.map((doc) => {
+                const isUploading = doc.source === 'uploading';
+                const uploadDoc = isUploading ? doc : null;
+
+                return (
+                  <Card key={doc.id} className="mb-2">
+                    <CardContent>
+                      <View className="flex-row items-start justify-between">
+                        <View className="flex-1">
+                          <Text className="font-medium text-foreground" numberOfLines={1}>
+                            {doc.name}
                           </Text>
-                          <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
-                            <View
-                              className="h-full bg-primary"
-                              style={{ width: `${doc.progress || 0}%` }}
-                            />
-                          </View>
-                        </View>
-                      )}
-
-                      {doc.status === 'analyzing' && (
-                        <View className="mt-2 flex-row items-center gap-1">
-                          <RotatingSparkles size={16} color="#3B82F6" />
-                          <Text className="text-xs text-muted-foreground">Analyzing...</Text>
-                        </View>
-                      )}
-
-                      {doc.status === 'failed' && (
-                        <View className="mt-2 flex-row items-center gap-1">
-                          <Icon as={AlertCircle} size={16} className="text-destructive" />
-                          <Text className="text-xs text-destructive">{doc.error || 'Failed'}</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Show X button for all statuses */}
-                    <Pressable
-                      onPress={() => removeUploadingDoc(doc.id)}
-                      className="ml-2 p-2">
-                      <Icon as={X} size={18} className="text-muted-foreground" />
-                    </Pressable>
-                  </View>
-
-                  {/* Show key entities when complete */}
-                  {doc.status === 'complete' && doc.keyEntities && doc.keyEntities.length > 0 && (
-                    <View className="mt-3 space-y-2 border-t border-border pt-3">
-                      {doc.keyEntities.map((entity, index) => (
-                        <View key={index} className="flex-row justify-between gap-2">
-                          <Text className="flex-shrink-0 text-sm text-muted-foreground">
-                            {entity.name}
+                          <Text className="mt-1 text-xs text-muted-foreground">
+                            {isUploading && uploadDoc
+                              ? `${(uploadDoc.size / 1024).toFixed(1)} KB`
+                              : doc.documentType && `${doc.documentType} • `}
+                            {!isUploading &&
+                              doc.createdAt &&
+                              new Date(
+                                doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
+                              ).toLocaleDateString()}
                           </Text>
-                          <Text
-                            className="text-md flex-1 text-right font-semibold text-foreground"
-                            numberOfLines={2}>
-                            {entity.value}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
 
-            {/* Existing Documents */}
-            {documents
-              .filter((doc) => {
-                // Hide document if there's an uploading doc with the same name
-                // This prevents duplicate cards during upload
-                return !uploadingDocs.some((uploadingDoc) => uploadingDoc.name === doc.name);
-              })
-              .map((doc) => (
-                <Card key={doc.id} className="mb-2">
-                  <CardContent>
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-1">
-                        <Text className="font-medium text-foreground" numberOfLines={1}>
-                          {doc.name}
-                        </Text>
-                        <Text className="mt-1 text-xs text-muted-foreground">
-                          {doc.documentType && `${doc.documentType} • `}
-                          {doc.createdAt &&
-                            new Date(
-                              doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
-                            ).toLocaleDateString()}
-                        </Text>
+                          {/* Upload Status - Inline (original style) */}
+                          {isUploading && uploadDoc?.status === 'uploading' && (
+                            <View className="mt-2">
+                              <Text className="text-xs text-muted-foreground">
+                                Uploading... {Math.round(uploadDoc.progress || 0)}%
+                              </Text>
+                              <View className="mt-1 h-1 overflow-hidden rounded-full bg-border">
+                                <View
+                                  className="h-full bg-primary"
+                                  style={{ width: `${uploadDoc.progress || 0}%` }}
+                                />
+                              </View>
+                            </View>
+                          )}
+
+                          {isUploading && uploadDoc?.status === 'analyzing' && (
+                            <View className="mt-2 flex-row items-center gap-1">
+                              <RotatingSparkles size={16} color="#3B82F6" />
+                              <Text className="text-xs text-muted-foreground">Analyzing...</Text>
+                            </View>
+                          )}
+
+                          {isUploading && uploadDoc?.status === 'failed' && (
+                            <View className="mt-2 flex-row items-center gap-1">
+                              <Icon as={AlertCircle} size={16} className="text-destructive" />
+                              <Text className="text-xs text-destructive">
+                                {uploadDoc.error || 'Upload failed'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Pressable
+                          onPress={() => {
+                            if (isUploading) {
+                              removeUploadingDoc(doc.id);
+                            } else {
+                              handleDeleteDocument(doc as Document);
+                            }
+                          }}
+                          className="ml-2 p-2">
+                          <Icon as={Trash2} size={20} color="#ef4444" />
+                        </Pressable>
                       </View>
 
-                      <Pressable
-                        onPress={() => handleDeleteDocument(doc)}
-                        className="ml-2 p-2">
-                        <Icon as={Trash2} size={20} color="#ef4444" />
-                      </Pressable>
-                    </View>
-
-                    {/* Show key entities */}
-                    {doc.keyEntities && doc.keyEntities.length > 0 && (
-                      <View className="mt-3 space-y-2 border-t border-border pt-3">
-                        {doc.keyEntities.map((entity, index) => (
-                          <View key={index} className="flex-row justify-between gap-2">
-                            <Text className="flex-shrink-0 text-sm text-muted-foreground">
-                              {entity.name}
-                            </Text>
-                            <Text
-                              className="text-md flex-1 text-right font-semibold text-foreground"
-                              numberOfLines={2}>
-                              {entity.value}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {/* Show key entities */}
+                      {doc.keyEntities && doc.keyEntities.length > 0 && (
+                        <View className="mt-3 space-y-2 border-t border-border pt-3">
+                          {doc.keyEntities.map((entity, index) => (
+                            <View key={index} className="flex-row justify-between gap-2">
+                              <Text className="flex-shrink-0 text-sm text-muted-foreground">
+                                {entity.name}
+                              </Text>
+                              <Text
+                                className="text-md flex-1 text-right font-semibold text-foreground"
+                                numberOfLines={2}>
+                                {entity.value}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              });
+            })()}
           </CardContent>
         )}
       </Card>
@@ -740,7 +714,7 @@ export default function PropertyDetailsScreen() {
   const { documents } = useProperty();
   const { user } = useAuth();
   const { db, storage } = useFirebase();
-  const { uploadDocuments } = useDocumentUpload();
+  const { uploadDocuments, removeUploadingDoc } = useDocumentUpload();
   const router = useRouter();
   // If new property, show Details tab by default to see upload progress
   // If tab param is provided, use that
@@ -848,6 +822,10 @@ export default function PropertyDetailsScreen() {
                   console.log('Auto-updated property address to:', completedDoc.propertyAddress);
                 }
               }
+
+              // Remove from uploading list immediately
+              // The document will now be shown via Firestore listener in the merged list
+              removeUploadingDoc(completedDoc.id);
             } catch (error) {
               console.error('Error saving document to Firestore:', error);
             }
