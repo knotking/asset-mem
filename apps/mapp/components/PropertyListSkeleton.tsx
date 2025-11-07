@@ -15,7 +15,7 @@ export default function PropertyListSkeleton() {
       </View>
       {/* Search/Filter Section */}
       <View className="px-4 pt-6">
-        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-3/4 rounded-lg bg-background" />
       </View>
       {/* Property Card Skeletons */}
       <View className="gap-4 px-4 pt-6">
