@@ -361,7 +361,7 @@ function DetailsTab({ property }: { property: any }) {
     <View className="mb-4 w-full">
       <Card className="mb-4">
         <CardHeader>
-          <View className="flex-row items-center justify-between">
+          <View className="mb-1 flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
               <Icon as={FileText} size={20} className="text-muted-foreground" />
               <CardTitle>Basic Information</CardTitle>
@@ -375,7 +375,11 @@ function DetailsTab({ property }: { property: any }) {
                 <Button variant="ghost" size="sm" onPress={handleEditToggle} disabled={isSaving}>
                   <Text className="text-muted-foreground">Cancel</Text>
                 </Button>
-                <Button variant="default" size="sm" onPress={handleSaveProperty} disabled={isSaving}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onPress={handleSaveProperty}
+                  disabled={isSaving}>
                   {isSaving ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
@@ -395,10 +399,10 @@ function DetailsTab({ property }: { property: any }) {
                 onChangeText={setEditedName}
                 placeholder="Enter property name"
                 editable={!isSaving}
-                className="mt-1"
+                className="text-md mt-1"
               />
             ) : (
-              <Text className="font-medium text-foreground">{property.name}</Text>
+              <Text className="text-md font-medium text-foreground">{property.name}</Text>
             )}
           </View>
           <View className="mb-2">
@@ -424,7 +428,7 @@ function DetailsTab({ property }: { property: any }) {
                 </SelectContent>
               </Select>
             ) : (
-              <Text className="font-medium text-foreground">
+              <Text className="text-md font-medium text-foreground">
                 {property.propertyType || 'Not set'}
               </Text>
             )}
@@ -438,12 +442,12 @@ function DetailsTab({ property }: { property: any }) {
                 placeholder="Enter property address"
                 editable={!isSaving}
                 multiline
-                className="mt-1"
+                className="text-md mt-1"
               />
             ) : (
               <View className="flex-row items-center gap-1">
                 <Icon as={MapPin} size={16} className="text-muted-foreground" />
-                <Text className="font-medium text-foreground">{property.address}</Text>
+                <Text className="text-md font-medium text-foreground">{property.address}</Text>
               </View>
             )}
           </View>
@@ -533,9 +537,11 @@ function DetailsTab({ property }: { property: any }) {
                     <View className="mt-3 space-y-2 border-t border-border pt-3">
                       {doc.keyEntities.map((entity, index) => (
                         <View key={index} className="flex-row justify-between gap-2">
-                          <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                          <Text className="flex-shrink-0 text-sm text-muted-foreground">
+                            {entity.name}
+                          </Text>
                           <Text
-                            className="flex-1 text-right font-semibold text-foreground"
+                            className="text-md flex-1 text-right font-semibold text-foreground"
                             numberOfLines={2}>
                             {entity.value}
                           </Text>
@@ -585,9 +591,11 @@ function DetailsTab({ property }: { property: any }) {
                       <View className="mt-3 space-y-2 border-t border-border pt-3">
                         {doc.keyEntities.map((entity, index) => (
                           <View key={index} className="flex-row justify-between gap-2">
-                            <Text className="flex-shrink-0 text-muted-foreground">{entity.name}</Text>
+                            <Text className="flex-shrink-0 text-sm text-muted-foreground">
+                              {entity.name}
+                            </Text>
                             <Text
-                              className="flex-1 text-right font-semibold text-foreground"
+                              className="text-md flex-1 text-right font-semibold text-foreground"
                               numberOfLines={2}>
                               {entity.value}
                             </Text>
@@ -726,7 +734,13 @@ export default function PropertyDetailsScreen() {
     files,
     tab,
     sessionId,
-  } = useLocalSearchParams<{ id: string; new?: string; files?: string; tab?: string; sessionId?: string }>();
+  } = useLocalSearchParams<{
+    id: string;
+    new?: string;
+    files?: string;
+    tab?: string;
+    sessionId?: string;
+  }>();
   const { properties } = usePropertiesList();
   const { draftsByProperty, createPropertyDraftSession, sessionsByProperty } = useSession();
   const { documents } = useProperty();
@@ -738,7 +752,7 @@ export default function PropertyDetailsScreen() {
   // If tab param is provided, use that
   // Otherwise show Chat tab for existing properties
   const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>(
-    tab === 'details' ? 'details' : (isNew === 'true' ? 'details' : 'chat')
+    tab === 'details' ? 'details' : isNew === 'true' ? 'details' : 'chat'
   );
   const [message, setMessage] = React.useState('');
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
@@ -854,7 +868,12 @@ export default function PropertyDetailsScreen() {
 
   // Auto-select all documents by default when documents are loaded (only if user hasn't manually interacted)
   React.useEffect(() => {
-    if (documents && documents.length > 0 && selectedDocuments.length === 0 && !hasManuallyInteracted) {
+    if (
+      documents &&
+      documents.length > 0 &&
+      selectedDocuments.length === 0 &&
+      !hasManuallyInteracted
+    ) {
       setSelectedDocuments(documents);
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
@@ -1196,446 +1215,454 @@ export default function PropertyDetailsScreen() {
           width={80}
           direction="left"
           mainContent={
-            <SafeAreaView className="flex-1 bg-light-background-alt" edges={['top', 'left', 'right']}>
+            <SafeAreaView
+              className="flex-1 bg-light-background-alt"
+              edges={['top', 'left', 'right']}>
               <Stack.Screen
                 options={{
                   headerShown: false,
                 }}
               />
 
-      {/* Navigation Header */}
-      <View className="bg-light-background-alt px-4 py-3">
-        <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
-          <Button onPress={() => router.back()} variant="ghost" size="icon">
-            <Icon as={ArrowLeft} size={24} className="text-foreground" />
-          </Button>
-          <View className="flex-1 mx-3">
-            <Text className="text-xl font-bold text-foreground text-center" numberOfLines={1}>
-              {property.name}
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            {/* Chat Session Controls - Show only on chat tab */}
-            {activeTab === 'chat' && (
-              <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
-                <View className="relative">
-                  <Button
-                    onPress={() => setSessionsDrawerVisible(true)}
-                    variant="ghost"
-                    size="icon">
-                    <Icon as={MessageSquare} size={20} className="text-foreground" />
+              {/* Navigation Header */}
+              <View className="bg-light-background-alt px-4 py-3">
+                <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
+                  <Button onPress={() => router.back()} variant="ghost" size="icon">
+                    <Icon as={ArrowLeft} size={24} className="text-foreground" />
                   </Button>
-                  {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
-                    <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                      <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                        {sessionsByProperty[id].length}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Button
-                  onPress={async () => {
-                    if (!user) return;
-                    // Claim existing draft or create new one
-                    if (draftsByProperty[id]) {
-                      // Select the existing draft session
-                      setSelectedSessionId(draftsByProperty[id].id);
-                    } else {
-                      // Create a new draft session
-                      const newSessionId = await createPropertyDraftSession(user.uid, id);
-                      if (newSessionId) {
-                        setSelectedSessionId(newSessionId);
-                      }
-                    }
-                  }}
-                  variant="ghost"
-                  size="icon">
-                  <Icon as={Plus} size={20} className="text-foreground" />
-                </Button>
-              </View>
-            )}
-            {/* Docs Button - Show on both tabs */}
-            <View className="relative">
-              <Button
-                onPress={() => setDocumentsDrawerVisible(true)}
-                variant="ghost"
-                size="icon">
-                <Icon as={File} size={20} className="text-foreground" />
-              </Button>
-              {documents.length > 0 && (
-                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                    {documents.length}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View className="flex-row border-b border-border px-4">
-        <Pressable
-          onPress={() => setActiveTab('chat')}
-          className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
-          <Text
-            className={`text-center font-medium ${
-              activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-            AI Chat
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setActiveTab('details')}
-          className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
-          <Text
-            className={`text-center font-medium ${
-              activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-            Details
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Selected Documents Display - Compact */}
-      {activeTab === 'chat' && selectedDocuments.length > 0 && (
-        <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row items-center gap-1.5">
-              <View className="mr-1 flex-row items-center gap-1">
-                <Icon as={FileText} size={12} className="text-muted-foreground" />
-                <Text className="text-xs font-medium text-muted-foreground">
-                  {selectedDocuments.length}
-                </Text>
-              </View>
-              {selectedDocuments.map((doc) => (
-                <Pressable
-                  key={doc.id}
-                  onPress={() => toggleDocumentSelection(doc)}
-                  className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
-                  <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
-                    {doc.name}
-                  </Text>
-                  <Icon as={X} size={12} className="text-muted-foreground" />
-                </Pressable>
-              ))}
-              <Pressable
-                onPress={() => {
-                  setHasManuallyInteracted(true);
-                  setSelectedDocuments([]);
-                }}
-                className="ml-1 rounded-full bg-background px-2 py-0.5">
-                <Text className="text-xs text-muted-foreground">Clear</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Main Content Area */}
-      {activeTab === 'chat' ? (
-        <MessagesProvider sessionId={selectedSessionId}>
-          <ChatTab
-            sessionId={selectedSessionId}
-            onMessagesReady={(updateFn) => {
-              updateMessageLocallyRef.current = updateFn;
-            }}
-          />
-        </MessagesProvider>
-      ) : (
-        <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
-          <DetailsTab property={property} />
-        </ScrollView>
-      )}
-
-      {/* Bottom Input Bar */}
-      {activeTab === 'chat' && selectedSessionId && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}>
-          <View className="border-t border-border bg-light-background-alt px-4 py-3">
-            {/* File Attachment Preview */}
-            {fileAttachment && (
-              <View className="mb-3 overflow-hidden rounded-lg border border-border">
-                {/* Image Preview */}
-                {fileAttachment.fileType.startsWith('image/') && (
-                  <Image
-                    source={{ uri: fileAttachment.uri }}
-                    className="h-32 w-full"
-                    resizeMode="cover"
-                  />
-                )}
-
-                {/* Video Preview */}
-                {fileAttachment.fileType.startsWith('video/') && (
-                  <View className="h-32 w-full items-center justify-center bg-secondary">
-                    <Icon as={FileText} size={32} className="text-muted-foreground" />
-                    <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
+                  <View className="mx-3 flex-1">
+                    <Text
+                      className="text-center text-xl font-bold text-foreground"
+                      numberOfLines={1}>
+                      {property.name}
+                    </Text>
                   </View>
-                )}
-
-                {/* File Info */}
-                <View className="bg-secondary p-3">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
-                      <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
-                        {fileAttachment.fileName}
-                      </Text>
-                      {fileAttachment.error ? (
-                        <View className="mt-1 flex-row items-center gap-1">
-                          <Icon as={AlertCircle} size={16} className="text-destructive" />
-                          <Text className="text-xs text-destructive">{fileAttachment.error}</Text>
+                  <View className="flex-row items-center gap-2">
+                    {/* Chat Session Controls - Show only on chat tab */}
+                    {activeTab === 'chat' && (
+                      <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
+                        <View className="relative">
+                          <Button
+                            onPress={() => setSessionsDrawerVisible(true)}
+                            variant="ghost"
+                            size="icon">
+                            <Icon as={MessageSquare} size={20} className="text-foreground" />
+                          </Button>
+                          {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
+                            <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                              <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                {sessionsByProperty[id].length}
+                              </Text>
+                            </View>
+                          )}
                         </View>
-                      ) : fileAttachment.progress < 100 ? (
-                        <View className="mt-1">
-                          <Text className="text-xs text-muted-foreground">
-                            Uploading... {Math.round(fileAttachment.progress)}%
+                        <Button
+                          onPress={async () => {
+                            if (!user) return;
+                            // Claim existing draft or create new one
+                            if (draftsByProperty[id]) {
+                              // Select the existing draft session
+                              setSelectedSessionId(draftsByProperty[id].id);
+                            } else {
+                              // Create a new draft session
+                              const newSessionId = await createPropertyDraftSession(user.uid, id);
+                              if (newSessionId) {
+                                setSelectedSessionId(newSessionId);
+                              }
+                            }
+                          }}
+                          variant="ghost"
+                          size="icon">
+                          <Icon as={Plus} size={20} className="text-foreground" />
+                        </Button>
+                      </View>
+                    )}
+                    {/* Docs Button - Show on both tabs */}
+                    <View className="relative">
+                      <Button
+                        onPress={() => setDocumentsDrawerVisible(true)}
+                        variant="ghost"
+                        size="icon">
+                        <Icon as={File} size={20} className="text-foreground" />
+                      </Button>
+                      {documents.length > 0 && (
+                        <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                          <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                            {documents.length}
                           </Text>
-                          <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
-                            <View
-                              className="h-full bg-primary"
-                              style={{ width: `${fileAttachment.progress}%` }}
-                            />
-                          </View>
-                        </View>
-                      ) : (
-                        <View className="mt-1 flex-row items-center gap-1">
-                          <Icon as={CheckCircle} size={16} className="text-success" />
-                          <Text className="text-xs text-success">Upload complete</Text>
                         </View>
                       )}
                     </View>
-                    <Button
-                      onPress={removeFileAttachment}
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2">
-                      <Icon as={X} size={16} className="text-foreground" />
-                    </Button>
                   </View>
                 </View>
               </View>
-            )}
 
-            {/* Input Row - Overlay Icons (Option 3) */}
-            <View className="relative flex-row items-center">
-              {/* Attachment Icon - Inside Left */}
-              <Pressable
-                onPress={handleFileUpload}
-                disabled={isSending || !!fileAttachment}
-                className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
-                <Icon
-                  as={Paperclip}
-                  size={20}
-                  className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
-                />
-              </Pressable>
-
-              {/* Input Field with Internal Padding for Icons */}
-              <View className="flex-1 rounded-full border border-border bg-background">
-                <Input
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Type a message..."
-                  multiline
-                  editable={!isSending}
-                  onSubmitEditing={handleSendMessage}
-                  className="border-0 bg-transparent pl-11 pr-11 text-sm"
-                  style={{
-                    minHeight: 40,
-                    maxHeight: 80,
-                    paddingTop: 10,
-                    paddingBottom: 10,
-                  }}
-                />
-              </View>
-
-              {/* Send Button - Inside Right */}
-              <Pressable
-                onPress={handleSendMessage}
-                disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
-                className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
-                  (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
-                  !isSending
-                    ? 'bg-primary'
-                    : 'bg-secondary'
-                }`}>
-                {isSending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Icon
-                    as={Send}
-                    size={16}
-                    className={
-                      message.trim() || fileAttachment?.downloadURL
-                        ? 'text-primary-foreground'
-                        : 'text-muted-foreground'
-                    }
-                  />
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      )}
-
-      {/* Error Alert Dialog */}
-      <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Error</AlertDialogTitle>
-            <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
-              <Text>OK</Text>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-              </SafeAreaView>
-            }
-          >
-            {/* Sessions Drawer Content */}
-            <View className="border-b border-border bg-light-background-alt px-4 py-3">
-              <View className="flex-row items-center gap-3">
-                <View className="flex-1 gap-1">
-                  <Text className="text-lg font-semibold text-foreground">Sessions</Text>
-                  <Text className="text-sm text-muted-foreground" numberOfLines={1}>
-                    {property.name}
+              {/* Tabs */}
+              <View className="flex-row border-b border-border px-4">
+                <Pressable
+                  onPress={() => setActiveTab('chat')}
+                  className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
+                  <Text
+                    className={`text-center font-medium ${
+                      activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                    AI Chat
                   </Text>
-                </View>
-                <Button onPress={() => setSessionsDrawerVisible(false)} variant="ghost" size="icon">
-                  <Icon as={X} size={24} className="text-foreground" />
-                </Button>
+                </Pressable>
+                <Pressable
+                  onPress={() => setActiveTab('details')}
+                  className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
+                  <Text
+                    className={`text-center font-medium ${
+                      activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                    Details
+                  </Text>
+                </Pressable>
               </View>
-            </View>
-            <SessionsList
-              propertyId={id}
-              onSessionPress={(session: Session) => {
-                setSelectedSessionId(session.id);
-                setActiveTab('chat');
-                setSessionsDrawerVisible(false);
-              }}
-              onCreateSession={() => {
-                setActiveTab('chat');
-                setSessionsDrawerVisible(false);
-              }}
-            />
-          </PushDrawer>
-        }
-      >
-        {/* Documents Drawer Content */}
-        <View className="border-b border-border bg-light-background-alt px-4 py-3">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-lg font-semibold text-foreground">
-                {activeTab === 'chat' ? 'Select Resources' : 'Property Documents'}
-              </Text>
-              {activeTab === 'chat' ? (
-                <Text className="text-sm text-muted-foreground">
-                  {selectedDocuments.length} selected for chat context
-                </Text>
-              ) : (
-                <Text className="text-sm text-muted-foreground">
-                  {documents.length} document{documents.length !== 1 ? 's' : ''}
-                </Text>
+
+              {/* Selected Documents Display - Compact */}
+              {activeTab === 'chat' && selectedDocuments.length > 0 && (
+                <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row items-center gap-1.5">
+                      <View className="mr-1 flex-row items-center gap-1">
+                        <Icon as={FileText} size={12} className="text-muted-foreground" />
+                        <Text className="text-xs font-medium text-muted-foreground">
+                          {selectedDocuments.length}
+                        </Text>
+                      </View>
+                      {selectedDocuments.map((doc) => (
+                        <Pressable
+                          key={doc.id}
+                          onPress={() => toggleDocumentSelection(doc)}
+                          className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
+                          <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
+                            {doc.name}
+                          </Text>
+                          <Icon as={X} size={12} className="text-muted-foreground" />
+                        </Pressable>
+                      ))}
+                      <Pressable
+                        onPress={() => {
+                          setHasManuallyInteracted(true);
+                          setSelectedDocuments([]);
+                        }}
+                        className="ml-1 rounded-full bg-background px-2 py-0.5">
+                        <Text className="text-xs text-muted-foreground">Clear</Text>
+                      </Pressable>
+                    </View>
+                  </ScrollView>
+                </View>
               )}
-            </View>
-            <Button
-              onPress={() => setDocumentsDrawerVisible(false)}
-              variant="ghost"
-              size="icon"
-              className="ml-2">
-              <Icon as={X} size={24} className="text-foreground" />
-            </Button>
-          </View>
-        </View>
-        <ScrollView className="flex-1 px-4 py-4">
-            {documents.length === 0 ? (
-              <View className="items-center py-8">
-                <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
-                  <Icon as={FileText} size={32} className="text-muted-foreground" />
-                </View>
-                <Text className="text-center text-muted-foreground">
-                  No documents available for this property.
-                </Text>
-                {activeTab === 'details' && (
-                  <Text className="mt-2 text-center text-sm text-muted-foreground">
-                    Go to the Details tab to upload documents.
-                  </Text>
-                )}
-              </View>
-            ) : (
-              <View className="gap-3">
-                {activeTab === 'chat' && (
-                  <View className="rounded-lg bg-secondary p-3">
-                    <Text className="text-sm text-muted-foreground">
-                      Select documents to provide context for your chat conversation
-                    </Text>
-                  </View>
-                )}
-                {documents.map((document) => {
-                  const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
-                  return (
-                    <Pressable
-                      key={document.id}
-                      onPress={() => {
-                        if (activeTab === 'chat') {
-                          toggleDocumentSelection(document);
-                        }
-                      }}
-                      className={`rounded-lg border p-4 ${
-                        activeTab === 'chat' && isSelected
-                          ? 'border-primary bg-secondary'
-                          : 'border-border bg-card'
-                      }`}>
-                      <View className="flex-row items-start gap-3">
-                        <View
-                          className={`h-10 w-10 items-center justify-center rounded-full ${
-                            activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
-                          }`}>
+
+              {/* Main Content Area */}
+              {activeTab === 'chat' ? (
+                <MessagesProvider sessionId={selectedSessionId}>
+                  <ChatTab
+                    sessionId={selectedSessionId}
+                    onMessagesReady={(updateFn) => {
+                      updateMessageLocallyRef.current = updateFn;
+                    }}
+                  />
+                </MessagesProvider>
+              ) : (
+                <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
+                  <DetailsTab property={property} />
+                </ScrollView>
+              )}
+
+              {/* Bottom Input Bar */}
+              {activeTab === 'chat' && selectedSessionId && (
+                <KeyboardAvoidingView
+                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                  keyboardVerticalOffset={0}>
+                  <View className="border-t border-border bg-light-background-alt px-4 py-3">
+                    {/* File Attachment Preview */}
+                    {fileAttachment && (
+                      <View className="mb-3 overflow-hidden rounded-lg border border-border">
+                        {/* Image Preview */}
+                        {fileAttachment.fileType.startsWith('image/') && (
+                          <Image
+                            source={{ uri: fileAttachment.uri }}
+                            className="h-32 w-full"
+                            resizeMode="cover"
+                          />
+                        )}
+
+                        {/* Video Preview */}
+                        {fileAttachment.fileType.startsWith('video/') && (
+                          <View className="h-32 w-full items-center justify-center bg-secondary">
+                            <Icon as={FileText} size={32} className="text-muted-foreground" />
+                            <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
+                          </View>
+                        )}
+
+                        {/* File Info */}
+                        <View className="bg-secondary p-3">
+                          <View className="flex-row items-center justify-between">
+                            <View className="flex-1">
+                              <Text
+                                className="text-sm font-medium text-foreground"
+                                numberOfLines={1}>
+                                {fileAttachment.fileName}
+                              </Text>
+                              {fileAttachment.error ? (
+                                <View className="mt-1 flex-row items-center gap-1">
+                                  <Icon as={AlertCircle} size={16} className="text-destructive" />
+                                  <Text className="text-xs text-destructive">
+                                    {fileAttachment.error}
+                                  </Text>
+                                </View>
+                              ) : fileAttachment.progress < 100 ? (
+                                <View className="mt-1">
+                                  <Text className="text-xs text-muted-foreground">
+                                    Uploading... {Math.round(fileAttachment.progress)}%
+                                  </Text>
+                                  <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
+                                    <View
+                                      className="h-full bg-primary"
+                                      style={{ width: `${fileAttachment.progress}%` }}
+                                    />
+                                  </View>
+                                </View>
+                              ) : (
+                                <View className="mt-1 flex-row items-center gap-1">
+                                  <Icon as={CheckCircle} size={16} className="text-success" />
+                                  <Text className="text-xs text-success">Upload complete</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Button
+                              onPress={removeFileAttachment}
+                              variant="ghost"
+                              size="icon"
+                              className="ml-2">
+                              <Icon as={X} size={16} className="text-foreground" />
+                            </Button>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Input Row - Overlay Icons (Option 3) */}
+                    <View className="relative flex-row items-center">
+                      {/* Attachment Icon - Inside Left */}
+                      <Pressable
+                        onPress={handleFileUpload}
+                        disabled={isSending || !!fileAttachment}
+                        className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
+                        <Icon
+                          as={Paperclip}
+                          size={20}
+                          className={
+                            fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'
+                          }
+                        />
+                      </Pressable>
+
+                      {/* Input Field with Internal Padding for Icons */}
+                      <View className="flex-1 rounded-full border border-border bg-background">
+                        <Input
+                          value={message}
+                          onChangeText={setMessage}
+                          placeholder="Type a message..."
+                          multiline
+                          editable={!isSending}
+                          onSubmitEditing={handleSendMessage}
+                          className="border-0 bg-transparent pl-11 pr-11 text-sm"
+                          style={{
+                            minHeight: 40,
+                            maxHeight: 80,
+                            paddingTop: 10,
+                            paddingBottom: 10,
+                          }}
+                        />
+                      </View>
+
+                      {/* Send Button - Inside Right */}
+                      <Pressable
+                        onPress={handleSendMessage}
+                        disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
+                        className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
+                          (message.trim() ||
+                            (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
+                          !isSending
+                            ? 'bg-primary'
+                            : 'bg-secondary'
+                        }`}>
+                        {isSending ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
                           <Icon
-                            as={FileText}
-                            size={20}
+                            as={Send}
+                            size={16}
                             className={
-                              activeTab === 'chat' && isSelected
+                              message.trim() || fileAttachment?.downloadURL
                                 ? 'text-primary-foreground'
                                 : 'text-muted-foreground'
                             }
                           />
-                        </View>
-                        <View className="flex-1">
-                          <Text className="font-semibold text-foreground">{document.name}</Text>
-                          {document.documentType && (
-                            <Text className="mt-1 text-xs capitalize text-muted-foreground">
-                              {document.documentType.replace(/_/g, ' ').toLowerCase()}
-                            </Text>
-                          )}
-                          {document.createdAt && (
-                            <Text className="mt-1 text-xs text-muted-foreground">
-                              {new Date(
-                                document.createdAt instanceof Date
-                                  ? document.createdAt
-                                  : document.createdAt.toDate()
-                              ).toLocaleDateString()}
-                            </Text>
-                          )}
-                        </View>
-                        {activeTab === 'chat' && isSelected && (
-                          <View className="rounded-full bg-primary p-1">
-                            <Icon as={X} size={16} className="text-primary-foreground" />
-                          </View>
                         )}
-                      </View>
-                    </Pressable>
-                  );
-                })}
+                      </Pressable>
+                    </View>
+                  </View>
+                </KeyboardAvoidingView>
+              )}
+
+              {/* Error Alert Dialog */}
+              <AlertDialog open={errorAlertOpen} onOpenChange={setErrorAlertOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Error</AlertDialogTitle>
+                    <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction onPress={() => setErrorAlertOpen(false)}>
+                      <Text>OK</Text>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </SafeAreaView>
+          }>
+          {/* Sessions Drawer Content */}
+          <View className="border-b border-border bg-light-background-alt px-4 py-3">
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1 gap-1">
+                <Text className="text-lg font-semibold text-foreground">Sessions</Text>
+                <Text className="text-sm text-muted-foreground" numberOfLines={1}>
+                  {property.name}
+                </Text>
+              </View>
+              <Button onPress={() => setSessionsDrawerVisible(false)} variant="ghost" size="icon">
+                <Icon as={X} size={24} className="text-foreground" />
+              </Button>
+            </View>
+          </View>
+          <SessionsList
+            propertyId={id}
+            onSessionPress={(session: Session) => {
+              setSelectedSessionId(session.id);
+              setActiveTab('chat');
+              setSessionsDrawerVisible(false);
+            }}
+            onCreateSession={() => {
+              setActiveTab('chat');
+              setSessionsDrawerVisible(false);
+            }}
+          />
+        </PushDrawer>
+      }>
+      {/* Documents Drawer Content */}
+      <View className="border-b border-border bg-light-background-alt px-4 py-3">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-foreground">
+              {activeTab === 'chat' ? 'Select Resources' : 'Property Documents'}
+            </Text>
+            {activeTab === 'chat' ? (
+              <Text className="text-sm text-muted-foreground">
+                {selectedDocuments.length} selected for chat context
+              </Text>
+            ) : (
+              <Text className="text-sm text-muted-foreground">
+                {documents.length} document{documents.length !== 1 ? 's' : ''}
+              </Text>
+            )}
+          </View>
+          <Button
+            onPress={() => setDocumentsDrawerVisible(false)}
+            variant="ghost"
+            size="icon"
+            className="ml-2">
+            <Icon as={X} size={24} className="text-foreground" />
+          </Button>
+        </View>
+      </View>
+      <ScrollView className="flex-1 px-4 py-4">
+        {documents.length === 0 ? (
+          <View className="items-center py-8">
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
+              <Icon as={FileText} size={32} className="text-muted-foreground" />
+            </View>
+            <Text className="text-center text-muted-foreground">
+              No documents available for this property.
+            </Text>
+            {activeTab === 'details' && (
+              <Text className="mt-2 text-center text-sm text-muted-foreground">
+                Go to the Details tab to upload documents.
+              </Text>
+            )}
+          </View>
+        ) : (
+          <View className="gap-3">
+            {activeTab === 'chat' && (
+              <View className="rounded-lg bg-secondary p-3">
+                <Text className="text-sm text-muted-foreground">
+                  Select documents to provide context for your chat conversation
+                </Text>
               </View>
             )}
-        </ScrollView>
-      </PushDrawer>
+            {documents.map((document) => {
+              const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
+              return (
+                <Pressable
+                  key={document.id}
+                  onPress={() => {
+                    if (activeTab === 'chat') {
+                      toggleDocumentSelection(document);
+                    }
+                  }}
+                  className={`rounded-lg border p-4 ${
+                    activeTab === 'chat' && isSelected
+                      ? 'border-primary bg-secondary'
+                      : 'border-border bg-card'
+                  }`}>
+                  <View className="flex-row items-start gap-3">
+                    <View
+                      className={`h-10 w-10 items-center justify-center rounded-full ${
+                        activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
+                      }`}>
+                      <Icon
+                        as={FileText}
+                        size={20}
+                        className={
+                          activeTab === 'chat' && isSelected
+                            ? 'text-primary-foreground'
+                            : 'text-muted-foreground'
+                        }
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-semibold text-foreground">{document.name}</Text>
+                      {document.documentType && (
+                        <Text className="mt-1 text-xs capitalize text-muted-foreground">
+                          {document.documentType.replace(/_/g, ' ').toLowerCase()}
+                        </Text>
+                      )}
+                      {document.createdAt && (
+                        <Text className="mt-1 text-xs text-muted-foreground">
+                          {new Date(
+                            document.createdAt instanceof Date
+                              ? document.createdAt
+                              : document.createdAt.toDate()
+                          ).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+                    {activeTab === 'chat' && isSelected && (
+                      <View className="rounded-full bg-primary p-1">
+                        <Icon as={X} size={16} className="text-primary-foreground" />
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+    </PushDrawer>
   );
 }
