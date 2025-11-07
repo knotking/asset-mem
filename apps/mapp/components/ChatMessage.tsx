@@ -15,7 +15,7 @@ import {
   Bot,
   FileText,
   ShieldCheck,
-  Info,
+  Stethoscope,
   Wrench,
   Users,
   Phone,
@@ -25,6 +25,7 @@ import {
   Copy,
   AlertCircle,
   Share2,
+  DollarSign,
 } from 'lucide-react-native';
 import type {
   Message,
@@ -40,7 +41,7 @@ import {
 } from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
-import { markdownToWhatsapp, jsonToWhatsapp } from '@/lib/utils';
+import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 
@@ -438,6 +439,8 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
   const diy = analysis?.diyResults || (data as any)?.diyResults;
   const service = analysis?.serviceResults || (data as any)?.serviceResults;
+  const costEstimation =
+    (data as any)?.costEstimationResults || (data as any)?.analysis?.costEstimationResults;
 
   // Memoize allProviders array processing
   const allProviders = useMemo(() => {
@@ -487,13 +490,18 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
 
   const hasService = useMemo(() => allProviders.length > 0, [allProviders]);
 
+  const hasCostEstimates = useMemo(
+    () => !!(costEstimation && costEstimation.costEstimates),
+    [costEstimation]
+  );
+
   return (
     <Accordion type="single" collapsible defaultValue="triage">
       {hasTriage && (
         <AccordionItem value="triage" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={Info} size={16} className="text-info" />
+              <Icon as={Stethoscope} size={16} className="text-info" />
               <Text className="font-medium text-foreground">Triage Summary</Text>
             </View>
           </AccordionTrigger>
@@ -613,12 +621,12 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         <AccordionItem value="service" className="border-b border-border">
           <AccordionTrigger className="px-2 py-3">
             <View className="flex-row items-center gap-2">
-              <Icon as={Users} size={16} className="text-accent-foreground" />
+              <Icon as={Users} size={16} className="text-indigo-600" />
               <Text className="font-medium text-foreground">Service Recommendations</Text>
             </View>
           </AccordionTrigger>
           <AccordionContent className="border-t border-border bg-background p-4">
-            <Text className="mb-2 text-sm font-semibold text-foreground">
+            <Text className="mb-2 text-sm font-semibold text-indigo-600">
               Local Service Providers
             </Text>
             {allProviders.length > 0 ? (
@@ -633,55 +641,290 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
           </AccordionContent>
         </AccordionItem>
       )}
+
+      {hasCostEstimates && (
+        <AccordionItem value="cost-estimates" className="border-b border-border">
+          <AccordionTrigger className="px-2 py-3">
+            <View className="flex-row items-center gap-2">
+              <Icon as={DollarSign} size={16} className="text-purple-600" />
+              <Text className="font-medium text-foreground">Cost Estimates</Text>
+            </View>
+          </AccordionTrigger>
+          <AccordionContent className="border-t border-border bg-background p-4">
+            {typeof costEstimation.costEstimates === 'string' ? (
+              <Text className="text-sm text-foreground">{costEstimation.costEstimates}</Text>
+            ) : (
+              <View className="space-y-3">
+                {costEstimation.costEstimates.repair_type && (
+                  <View className="mb-2">
+                    <Text className="text-sm font-semibold text-purple-600">Repair Type</Text>
+                    <Text className="text-sm text-foreground">
+                      {costEstimation.costEstimates.repair_type}
+                    </Text>
+                  </View>
+                )}
+
+                {costEstimation.costEstimates.DIY && (
+                  <View className="mb-3 rounded-lg border border-border bg-background p-3">
+                    <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
+                    {costEstimation.costEstimates.DIY.cost_range && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">
+                          Cost Range:
+                        </Text>
+                        <Text className="text-sm font-semibold text-purple-600">
+                          {costEstimation.costEstimates.DIY.cost_range}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.DIY.savings && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">Savings:</Text>
+                        <Text className="text-sm text-foreground">
+                          {costEstimation.costEstimates.DIY.savings}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.DIY.complexity && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">
+                          Complexity:
+                        </Text>
+                        <Text className="text-sm text-foreground">
+                          {costEstimation.costEstimates.DIY.complexity}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.DIY.includes &&
+                      Array.isArray(costEstimation.costEstimates.DIY.includes) &&
+                      costEstimation.costEstimates.DIY.includes.length > 0 && (
+                        <View className="mt-2">
+                          <Text className="mb-1 text-sm font-medium text-muted-foreground">
+                            Includes:
+                          </Text>
+                          {costEstimation.costEstimates.DIY.includes.map(
+                            (item: string, idx: number) => (
+                              <View key={idx} className="mb-1 flex-row gap-2">
+                                <Text className="text-sm text-foreground">•</Text>
+                                <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                              </View>
+                            )
+                          )}
+                        </View>
+                      )}
+                  </View>
+                )}
+
+                {costEstimation.costEstimates.Service && (
+                  <View className="mb-3 rounded-lg border border-border bg-background p-3">
+                    <Text className="mb-2 text-sm font-semibold text-foreground">
+                      Professional Service
+                    </Text>
+                    {costEstimation.costEstimates.Service.cost_range && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">
+                          Cost Range:
+                        </Text>
+                        <Text className="text-sm font-semibold text-purple-600">
+                          {costEstimation.costEstimates.Service.cost_range}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.Service.benefits && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">Benefits:</Text>
+                        <Text className="text-sm text-foreground">
+                          {costEstimation.costEstimates.Service.benefits}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.Service.complexity && (
+                      <View className="mb-2 flex-row items-center gap-2">
+                        <Text className="text-sm font-medium text-muted-foreground">
+                          Complexity:
+                        </Text>
+                        <Text className="text-sm text-foreground">
+                          {costEstimation.costEstimates.Service.complexity}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.Service.includes &&
+                      Array.isArray(costEstimation.costEstimates.Service.includes) &&
+                      costEstimation.costEstimates.Service.includes.length > 0 && (
+                        <View className="mt-2">
+                          <Text className="mb-1 text-sm font-medium text-muted-foreground">
+                            Includes:
+                          </Text>
+                          {costEstimation.costEstimates.Service.includes.map(
+                            (item: string, idx: number) => (
+                              <View key={idx} className="mb-1 flex-row gap-2">
+                                <Text className="text-sm text-foreground">•</Text>
+                                <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                              </View>
+                            )
+                          )}
+                        </View>
+                      )}
+                  </View>
+                )}
+
+                {costEstimation.costEstimates.comparison && (
+                  <View className="mt-3 rounded-lg bg-muted p-3">
+                    <Text className="mb-2 text-sm font-semibold text-foreground">
+                      Comparison & Considerations
+                    </Text>
+                    {costEstimation.costEstimates.comparison.diy_savings && (
+                      <View className="mb-1 flex-row items-start gap-2">
+                        <Text className="text-sm text-foreground">•</Text>
+                        <Text className="flex-1 text-sm text-foreground">
+                          DIY Savings: {costEstimation.costEstimates.comparison.diy_savings}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.comparison.professional_benefits && (
+                      <View className="mb-1 flex-row items-start gap-2">
+                        <Text className="text-sm text-foreground">•</Text>
+                        <Text className="flex-1 text-sm text-foreground">
+                          Professional Benefits:{' '}
+                          {costEstimation.costEstimates.comparison.professional_benefits}
+                        </Text>
+                      </View>
+                    )}
+                    {costEstimation.costEstimates.comparison.considerations && (
+                      <View className="mb-1 flex-row items-start gap-2">
+                        <Text className="text-sm text-foreground">•</Text>
+                        <Text className="flex-1 text-sm text-foreground">
+                          Considerations: {costEstimation.costEstimates.comparison.considerations}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      )}
     </Accordion>
   );
 });
 
-const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
-  const markdownStyles = useMarkdownStyles(isUser);
-  console.log('MESSAGE:', content);
-  // Memoize structured data and plain content parsing
-  const { structuredData, plainContent } = useMemo(() => {
-    let parsedData: StructuredResponseData | null = null;
-    let remainingContent = content;
+// Helper to extract markdown and JSON from content
+const extractContentParts = (
+  content: string,
+  isUser: boolean
+): { structuredData: StructuredResponseData | null; markdownContent: string } => {
+  if (isUser || !content) {
+    return { structuredData: null, markdownContent: content };
+  }
 
-    if (!isUser && content) {
+  try {
+    const contentToParse = content.trim();
+
+    // First, look for markdown code block followed by a JSON code block
+    // This handles: **Agent**: ```markdown ... ``` ```json ... ```
+    // Try multiple patterns to handle different newline variations
+
+    let combinedMatch = contentToParse.match(
+      /```markdown\s*\n([\s\S]*?)\n```\s*\n?```json\s*\n([\s\S]*?)\n```/
+    );
+
+    if (!combinedMatch) {
+      // Try without requiring newline after closing markdown backticks
+      combinedMatch = contentToParse.match(
+        /```markdown\s*\n([\s\S]*?)```\s*\n?```json\s*\n([\s\S]*?)```/
+      );
+    }
+
+    if (combinedMatch) {
+      const markdownText = combinedMatch[1].trim();
+      const jsonStr = combinedMatch[2].trim();
+
       try {
-        const contentToParse = content.trim();
-
-        // Single parsing method: Extract JSON from markdown code block or parse directly
-        const jsonMatch = contentToParse.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
-        const jsonStr = jsonMatch ? jsonMatch[1].trim() : contentToParse.trim();
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (hasStructuredDataKeys(parsed)) {
-            parsedData = parsed;
-            // Remove the markdown wrapper from plain content if it existed
-            remainingContent = jsonMatch ? contentToParse.replace(jsonMatch[0], '').trim() : '';
-            console.log('✓ Parsed structured JSON response');
-          }
-        } catch (e) {
-          // Not valid JSON, treat as plain text
-          console.log('Failed to parse structured data:', e);
+        const parsed = JSON.parse(jsonStr);
+        if (hasStructuredDataKeys(parsed)) {
+          // Extract any text before the markdown block (like "**Analysis Agent**:")
+          const preMarkdownText = contentToParse
+            .substring(0, contentToParse.indexOf(combinedMatch[0]))
+            .trim();
+          // Don't include the markdown code block wrapper, just the content
+          const fullMarkdownContent = preMarkdownText
+            ? `${preMarkdownText}\n\n${markdownText}`
+            : markdownText;
+          return { structuredData: parsed, markdownContent: fullMarkdownContent };
         }
       } catch (e) {
-        console.log('Error in content parsing:', e);
-        // Not a JSON object, treat as plain text
+        // Failed to parse JSON from combined blocks
       }
     }
 
-    return { structuredData: parsedData, plainContent: remainingContent };
+    // Second, try to find just a JSON code block (no markdown wrapper)
+    const jsonMatch = contentToParse.match(/```json\s*\n?([\s\S]*?)```/);
+
+    if (jsonMatch) {
+      const jsonStr = jsonMatch[1].trim();
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (hasStructuredDataKeys(parsed)) {
+          // Remove the JSON code block from content to get markdown
+          const markdownContent = contentToParse.replace(jsonMatch[0], '').trim();
+          return { structuredData: parsed, markdownContent };
+        }
+      } catch (e) {
+        // Failed to parse JSON from code block
+      }
+    }
+
+    // Third, try to find any code block and see if it contains JSON
+    const anyCodeBlockMatch = contentToParse.match(/```\s*\n?([\s\S]*?)```/);
+
+    if (anyCodeBlockMatch) {
+      const codeBlockContent = anyCodeBlockMatch[1].trim();
+      try {
+        const parsed = JSON.parse(codeBlockContent);
+        if (hasStructuredDataKeys(parsed)) {
+          const markdownContent = contentToParse.replace(anyCodeBlockMatch[0], '').trim();
+          return { structuredData: parsed, markdownContent };
+        }
+      } catch (e) {
+        // Not JSON, continue
+      }
+    }
+
+    // Finally, try parsing the entire content as JSON (fallback for non-markdown wrapped JSON)
+    try {
+      const parsed = JSON.parse(contentToParse);
+      if (hasStructuredDataKeys(parsed)) {
+        return { structuredData: parsed, markdownContent: '' };
+      }
+    } catch (e) {
+      // Not valid JSON, treat as plain markdown
+    }
+  } catch (e) {
+    // Error in content parsing
+  }
+
+  return { structuredData: null, markdownContent: content };
+};
+
+const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
+  const markdownStyles = useMarkdownStyles(isUser);
+
+  // Memoize structured data and markdown content parsing
+  const { structuredData, plainContent } = useMemo(() => {
+    const { structuredData, markdownContent } = extractContentParts(content, isUser);
+    return { structuredData, plainContent: markdownContent };
   }, [content, isUser]);
 
   if (structuredData) {
+    // console.log('STRUCTURED DATA:', structuredData);
     return (
       <View className="w-full min-w-full">
-        {plainContent && (
+        {/* {plainContent && (
           <Markdown style={markdownStyles} rules={markdownRules}>
             {plainContent}
           </Markdown>
-        )}
+        )} */}
         <StructuredResponse data={structuredData} />
       </View>
     );
@@ -759,12 +1002,7 @@ const FilePreview = React.memo(
                   : { width: MEDIA_MAX_WIDTH, height: 200 }
               }>
               {imageLoading && (
-                <View
-                  style={{
-                    width: imageDimensions?.width || MEDIA_MAX_WIDTH,
-                    height: imageDimensions?.height || 200,
-                  }}
-                  className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted/30 p-3">
+                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted/30 p-3">
                   <Skeleton className="h-6 w-full rounded" />
                   <Skeleton className="h-6 w-[90%] rounded" />
                   <Skeleton className="h-6 w-full rounded" />
@@ -822,6 +1060,11 @@ function ChatMessage({ message }: ChatMessageProps) {
     message: string;
   } | null>(null);
 
+  // Extract content parts once and memoize for both display and copy operations
+  const extractedParts = useMemo(() => {
+    return extractContentParts(message.content, isUser);
+  }, [message.content, isUser]);
+
   const handleLongPress = useCallback(() => {
     if (!isLoading && message.content) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -830,29 +1073,38 @@ function ChatMessage({ message }: ChatMessageProps) {
   }, [isLoading, message.content]);
 
   const formatMessageContent = useCallback((content: string): string => {
-    // Convert JSON code blocks to WhatsApp-friendly format
-    // Matches ```json ... ``` or ``` ... ```
-    const convertedContent = content.replace(
-      /```(?:json)?\s*\n?([\s\S]*?)```/g,
-      (_match, jsonContent) => {
-        try {
-          // Try to parse the JSON and convert to WhatsApp format
-          const parsed = JSON.parse(jsonContent.trim());
-          const whatsappFormatted = jsonToWhatsapp(parsed);
-          return whatsappFormatted;
-        } catch (e) {
-          // If parsing fails, return the content without backticks
-          return jsonContent.trim();
-        }
-      }
-    );
-
-    return markdownToWhatsapp(convertedContent);
+    // Since we now extract markdown content separately,
+    // we just need to convert it to WhatsApp format
+    return markdownToWhatsapp(content);
   }, []);
+
+  // Use the memoized extracted markdown content
+  const getMarkdownContent = useCallback(() => {
+    let markdown = extractedParts.markdownContent || message.content;
+
+    // Final safety check: strip any remaining ```markdown wrappers
+    if (markdown.includes('```markdown')) {
+      const markdownWrapperMatch = markdown.match(/```markdown\s*\n([\s\S]*?)```/);
+      if (markdownWrapperMatch) {
+        const innerContent = markdownWrapperMatch[1].trim();
+        const prefix = markdown.substring(0, markdown.indexOf(markdownWrapperMatch[0])).trim();
+        markdown = prefix ? `${prefix}\n\n${innerContent}` : innerContent;
+      } else {
+        // Fallback: just remove the ```markdown and closing ```
+        markdown = markdown
+          .replace(/```markdown\s*\n/g, '')
+          .replace(/\n```\s*$/g, '')
+          .trim();
+      }
+    }
+
+    return markdown;
+  }, [extractedParts.markdownContent, message.content]);
 
   const handleCopyMessage = useCallback(async () => {
     try {
-      const formattedText = formatMessageContent(message.content);
+      const markdownContent = getMarkdownContent();
+      const formattedText = formatMessageContent(markdownContent);
       await Clipboard.setStringAsync(formattedText);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCopyStatus({ type: 'success', message: 'Message copied to clipboard' });
@@ -866,11 +1118,12 @@ function ChatMessage({ message }: ChatMessageProps) {
       // Auto-dismiss after 2 seconds
       setTimeout(() => setCopyStatus(null), 2000);
     }
-  }, [formatMessageContent, message.content]);
+  }, [formatMessageContent, getMarkdownContent]);
 
   const handleShareMessage = useCallback(async () => {
     try {
-      const formattedText = formatMessageContent(message.content);
+      const markdownContent = getMarkdownContent();
+      const formattedText = formatMessageContent(markdownContent);
       await Share.share({
         message: formattedText,
       });
@@ -880,7 +1133,7 @@ function ChatMessage({ message }: ChatMessageProps) {
       console.error('Failed to share message:', error);
       setShowContextMenu(false);
     }
-  }, [formatMessageContent, message.content]);
+  }, [formatMessageContent, getMarkdownContent]);
 
   const handleCloseContextMenu = useCallback(() => {
     setShowContextMenu(false);
