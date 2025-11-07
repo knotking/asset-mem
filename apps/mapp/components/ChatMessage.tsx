@@ -1000,10 +1000,10 @@ const FilePreview = React.memo(
                       width: imageDimensions.width,
                       height: imageDimensions.height,
                     }
-                  : { minWidth: MEDIA_MIN_WIDTH, height: MEDIA_MAX_HEIGHT }
+                  : { width: MEDIA_MIN_WIDTH, height: MEDIA_MAX_HEIGHT }
               }>
               {imageLoading && (
-                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg p-3">
+                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted p-3">
                   <Skeleton className="h-6 w-full rounded bg-background" />
                   <Skeleton className="h-6 w-[90%] rounded bg-background" />
                   <Skeleton className="h-6 w-full rounded bg-background" />
