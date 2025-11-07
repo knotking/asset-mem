@@ -19,6 +19,7 @@ import {
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'expo-router';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -37,12 +38,13 @@ const getUserInitials = (user: User | null) => {
 export default function SettingsScreen() {
   const { user, loading, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useColorScheme();
+  const router = useRouter();
   const userInitials = getUserInitials(user);
 
   const handleSignOut = async () => {
     try {
       await logout();
-      // Optionally, navigate to the login screen or show a success message
+      router.replace('/auth/login');
     } catch (error) {
       console.error('Error signing out:', error);
       // Optionally, show an error message to the user

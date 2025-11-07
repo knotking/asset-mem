@@ -10,6 +10,8 @@ import {
   Animated,
   Easing,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
@@ -1340,129 +1342,133 @@ export default function PropertyDetailsScreen() {
 
       {/* Bottom Input Bar */}
       {activeTab === 'chat' && selectedSessionId && (
-        <View className="border-t border-border bg-light-background-alt px-4 py-3">
-          {/* File Attachment Preview */}
-          {fileAttachment && (
-            <View className="mb-3 overflow-hidden rounded-lg border border-border">
-              {/* Image Preview */}
-              {fileAttachment.fileType.startsWith('image/') && (
-                <Image
-                  source={{ uri: fileAttachment.uri }}
-                  className="h-32 w-full"
-                  resizeMode="cover"
-                />
-              )}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}>
+          <View className="border-t border-border bg-light-background-alt px-4 py-3">
+            {/* File Attachment Preview */}
+            {fileAttachment && (
+              <View className="mb-3 overflow-hidden rounded-lg border border-border">
+                {/* Image Preview */}
+                {fileAttachment.fileType.startsWith('image/') && (
+                  <Image
+                    source={{ uri: fileAttachment.uri }}
+                    className="h-32 w-full"
+                    resizeMode="cover"
+                  />
+                )}
 
-              {/* Video Preview */}
-              {fileAttachment.fileType.startsWith('video/') && (
-                <View className="h-32 w-full items-center justify-center bg-secondary">
-                  <Icon as={FileText} size={32} className="text-muted-foreground" />
-                  <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
-                </View>
-              )}
-
-              {/* File Info */}
-              <View className="bg-secondary p-3">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
-                      {fileAttachment.fileName}
-                    </Text>
-                    {fileAttachment.error ? (
-                      <View className="mt-1 flex-row items-center gap-1">
-                        <Icon as={AlertCircle} size={16} className="text-destructive" />
-                        <Text className="text-xs text-destructive">{fileAttachment.error}</Text>
-                      </View>
-                    ) : fileAttachment.progress < 100 ? (
-                      <View className="mt-1">
-                        <Text className="text-xs text-muted-foreground">
-                          Uploading... {Math.round(fileAttachment.progress)}%
-                        </Text>
-                        <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
-                          <View
-                            className="h-full bg-primary"
-                            style={{ width: `${fileAttachment.progress}%` }}
-                          />
-                        </View>
-                      </View>
-                    ) : (
-                      <View className="mt-1 flex-row items-center gap-1">
-                        <Icon as={CheckCircle} size={16} className="text-success" />
-                        <Text className="text-xs text-success">Upload complete</Text>
-                      </View>
-                    )}
+                {/* Video Preview */}
+                {fileAttachment.fileType.startsWith('video/') && (
+                  <View className="h-32 w-full items-center justify-center bg-secondary">
+                    <Icon as={FileText} size={32} className="text-muted-foreground" />
+                    <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
                   </View>
-                  <Button
-                    onPress={removeFileAttachment}
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2">
-                    <Icon as={X} size={16} className="text-foreground" />
-                  </Button>
+                )}
+
+                {/* File Info */}
+                <View className="bg-secondary p-3">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                        {fileAttachment.fileName}
+                      </Text>
+                      {fileAttachment.error ? (
+                        <View className="mt-1 flex-row items-center gap-1">
+                          <Icon as={AlertCircle} size={16} className="text-destructive" />
+                          <Text className="text-xs text-destructive">{fileAttachment.error}</Text>
+                        </View>
+                      ) : fileAttachment.progress < 100 ? (
+                        <View className="mt-1">
+                          <Text className="text-xs text-muted-foreground">
+                            Uploading... {Math.round(fileAttachment.progress)}%
+                          </Text>
+                          <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
+                            <View
+                              className="h-full bg-primary"
+                              style={{ width: `${fileAttachment.progress}%` }}
+                            />
+                          </View>
+                        </View>
+                      ) : (
+                        <View className="mt-1 flex-row items-center gap-1">
+                          <Icon as={CheckCircle} size={16} className="text-success" />
+                          <Text className="text-xs text-success">Upload complete</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Button
+                      onPress={removeFileAttachment}
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2">
+                      <Icon as={X} size={16} className="text-foreground" />
+                    </Button>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {/* Input Row - Overlay Icons (Option 3) */}
-          <View className="relative flex-row items-center">
-            {/* Attachment Icon - Inside Left */}
-            <Pressable
-              onPress={handleFileUpload}
-              disabled={isSending || !!fileAttachment}
-              className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
-              <Icon
-                as={Paperclip}
-                size={20}
-                className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
-              />
-            </Pressable>
-
-            {/* Input Field with Internal Padding for Icons */}
-            <View className="flex-1 rounded-full border border-border bg-background">
-              <Input
-                value={message}
-                onChangeText={setMessage}
-                placeholder="Type a message..."
-                multiline
-                editable={!isSending}
-                onSubmitEditing={handleSendMessage}
-                className="border-0 bg-transparent pl-11 pr-11 text-sm"
-                style={{
-                  minHeight: 40,
-                  maxHeight: 80,
-                  paddingTop: 10,
-                  paddingBottom: 10,
-                }}
-              />
-            </View>
-
-            {/* Send Button - Inside Right */}
-            <Pressable
-              onPress={handleSendMessage}
-              disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
-              className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
-                (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
-                !isSending
-                  ? 'bg-primary'
-                  : 'bg-secondary'
-              }`}>
-              {isSending ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
+            {/* Input Row - Overlay Icons (Option 3) */}
+            <View className="relative flex-row items-center">
+              {/* Attachment Icon - Inside Left */}
+              <Pressable
+                onPress={handleFileUpload}
+                disabled={isSending || !!fileAttachment}
+                className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
                 <Icon
-                  as={Send}
-                  size={16}
-                  className={
-                    message.trim() || fileAttachment?.downloadURL
-                      ? 'text-primary-foreground'
-                      : 'text-muted-foreground'
-                  }
+                  as={Paperclip}
+                  size={20}
+                  className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
                 />
-              )}
-            </Pressable>
+              </Pressable>
+
+              {/* Input Field with Internal Padding for Icons */}
+              <View className="flex-1 rounded-full border border-border bg-background">
+                <Input
+                  value={message}
+                  onChangeText={setMessage}
+                  placeholder="Type a message..."
+                  multiline
+                  editable={!isSending}
+                  onSubmitEditing={handleSendMessage}
+                  className="border-0 bg-transparent pl-11 pr-11 text-sm"
+                  style={{
+                    minHeight: 40,
+                    maxHeight: 80,
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                  }}
+                />
+              </View>
+
+              {/* Send Button - Inside Right */}
+              <Pressable
+                onPress={handleSendMessage}
+                disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
+                className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
+                  (message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
+                  !isSending
+                    ? 'bg-primary'
+                    : 'bg-secondary'
+                }`}>
+                {isSending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Icon
+                    as={Send}
+                    size={16}
+                    className={
+                      message.trim() || fileAttachment?.downloadURL
+                        ? 'text-primary-foreground'
+                        : 'text-muted-foreground'
+                    }
+                  />
+                )}
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       )}
 
       {/* Error Alert Dialog */}

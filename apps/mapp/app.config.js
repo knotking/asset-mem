@@ -26,7 +26,7 @@ module.exports = {
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#1a2332',
       },
       package: 'com.homegeekai.demo',
     },
