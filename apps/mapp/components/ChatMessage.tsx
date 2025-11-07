@@ -1028,7 +1028,6 @@ const FilePreview = React.memo(
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     const [imageError, setImageError] = useState(false);
-    const [imageLoading, setImageLoading] = useState(true);
     const [imageDimensions, setImageDimensions] = useState<{
       width: number;
       height: number;
@@ -1056,7 +1055,6 @@ const FilePreview = React.memo(
       }
 
       setImageDimensions({ width: displayWidth, height: displayHeight });
-      setImageLoading(false);
     }, []);
 
     return (
@@ -1081,17 +1079,8 @@ const FilePreview = React.memo(
                       height: imageDimensions.height,
                     }
                   : { width: MEDIA_MIN_WIDTH, height: MEDIA_MAX_HEIGHT }
-              }>
-              {imageLoading && (
-                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted p-3">
-                  <Skeleton className="h-6 w-full rounded bg-background" />
-                  <Skeleton className="h-6 w-[90%] rounded bg-background" />
-                  <Skeleton className="h-6 w-full rounded bg-background" />
-                  <Skeleton className="h-6 w-[70%] rounded bg-background" />
-                  <Skeleton className="h-6 w-[90%] rounded bg-background" />
-                  <Skeleton className="h-6 w-[70%] rounded bg-background" />
-                </View>
-              )}
+              }
+              className="rounded-lg bg-muted">
               <Image
                 source={{ uri: file.url }}
                 style={{
@@ -1099,16 +1088,15 @@ const FilePreview = React.memo(
                   height: '100%',
                 }}
                 className="rounded-lg"
-                contentFit="contain"
+                contentFit="cover"
                 priority="high"
                 cachePolicy="memory-disk"
-                transition={300}
+                transition={200}
                 placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-                onLoadStart={() => setImageLoading(true)}
+                placeholderContentFit="cover"
                 onLoad={handleImageLoad}
                 onError={(e) => {
                   console.error('Image load error:', e.error);
-                  setImageLoading(false);
                   setImageError(true);
                 }}
               />
