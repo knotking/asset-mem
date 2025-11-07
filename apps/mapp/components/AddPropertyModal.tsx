@@ -91,11 +91,15 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
       console.log('Property created with ID:', propRef.id);
 
-      // Create draft session for the property
-      await createPropertyDraftSession(user.uid, propRef.id);
-      console.log('Draft session created');
+      // Create draft session in background (non-blocking)
+      // The session context will auto-create it if it doesn't exist when needed
+      createPropertyDraftSession(user.uid, propRef.id).then(() => {
+        console.log('Draft session created in background');
+      }).catch((err) => {
+        console.error('Background draft creation failed (will retry later):', err);
+      });
 
-      // Close modal and navigate with selected files
+      // Close modal and navigate immediately with selected files
       const filesToUpload = [...selectedFiles];
       setSelectedFiles([]);
       setIsCreating(false);
