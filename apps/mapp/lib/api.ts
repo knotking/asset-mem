@@ -100,6 +100,7 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
+  signal?: AbortSignal;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -113,6 +114,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
+  signal,
   onChunk,
   onAgentStep,
   onComplete,
@@ -139,6 +141,7 @@ export async function streamAgentResponse({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (!response.ok) {
@@ -266,6 +269,12 @@ export async function streamAgentResponse({
       onComplete(finalResponse, agentSteps);
     }
   } catch (error) {
+    // Don't log or propagate AbortError - it's expected when user stops
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Agent request was cancelled by user');
+      return;
+    }
+
     console.error('Error streaming agent response:', error);
     if (onError) {
       onError(error instanceof Error ? error : new Error('Unknown error occurred'));

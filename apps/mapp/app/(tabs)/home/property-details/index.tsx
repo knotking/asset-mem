@@ -53,6 +53,7 @@ import {
   Trash2,
   Sparkles,
   Plus,
+  Square,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -503,7 +504,9 @@ function DetailsTab({ property }: { property: any }) {
                             {!isUploading &&
                               doc.createdAt &&
                               new Date(
-                                doc.createdAt instanceof Date ? doc.createdAt : doc.createdAt.toDate()
+                                doc.createdAt instanceof Date
+                                  ? doc.createdAt
+                                  : doc.createdAt.toDate()
                               ).toLocaleDateString()}
                           </Text>
 
@@ -735,6 +738,7 @@ export default function PropertyDetailsScreen() {
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Track if files have been uploaded to prevent duplicates on remount
   const hasUploadedFilesRef = React.useRef(false);
@@ -1001,6 +1005,14 @@ export default function PropertyDetailsScreen() {
     setFileAttachment(null);
   }, [fileAttachment, storage]);
 
+  const handleStop = React.useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsSending(false);
+    }
+  }, []);
+
   const handleSendMessage = React.useCallback(async () => {
     // Check if there's content to send (message text OR file attachment)
     const hasContent = message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
@@ -1090,6 +1102,10 @@ export default function PropertyDetailsScreen() {
       let assistantContent = '';
       let agentSteps: AgentStep[] = [];
 
+      // Create abort controller for this request
+      abortControllerRef.current = new AbortController();
+      const { signal } = abortControllerRef.current;
+
       // If no message text, provide a default query for file-only messages
       const queryText = userMessage || 'What can you tell me about this?';
 
@@ -1100,6 +1116,7 @@ export default function PropertyDetailsScreen() {
         contextDocURIs,
         diagnosisURIs,
         propertyAddress,
+        signal,
         onChunk: (chunk) => {
           // Accumulate content but don't update Firestore yet
           // This keeps the message in "loading" state
@@ -1137,6 +1154,12 @@ export default function PropertyDetailsScreen() {
 
       // Keep documents selected for next message (removed automatic reset)
     } catch (error) {
+      // Don't show error for abort - user intentionally stopped
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Message sending was stopped by user');
+        return;
+      }
+
       console.error('Error sending message:', error);
       setErrorMessage(
         `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1147,6 +1170,7 @@ export default function PropertyDetailsScreen() {
       setFileAttachment(currentFileAttachment);
     } finally {
       setIsSending(false);
+      abortControllerRef.current = null;
     }
   }, [
     user,
@@ -1468,20 +1492,22 @@ export default function PropertyDetailsScreen() {
                         />
                       </View>
 
-                      {/* Send Button - Inside Right */}
-                      <Pressable
-                        onPress={handleSendMessage}
-                        disabled={(!message.trim() && !fileAttachment?.downloadURL) || isSending}
-                        className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
-                          (message.trim() ||
-                            (fileAttachment?.downloadURL && !fileAttachment?.error)) &&
-                          !isSending
-                            ? 'bg-primary'
-                            : 'bg-secondary'
-                        }`}>
-                        {isSending ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
+                      {/* Send/Stop Button - Inside Right */}
+                      {isSending ? (
+                        <Pressable
+                          onPress={handleStop}
+                          className="absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full bg-destructive">
+                          <Icon as={Square} size={16} className="text-primary-foreground" />
+                        </Pressable>
+                      ) : (
+                        <Pressable
+                          onPress={handleSendMessage}
+                          disabled={!message.trim() && !fileAttachment?.downloadURL}
+                          className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
+                            message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)
+                              ? 'bg-primary'
+                              : 'bg-secondary'
+                          }`}>
                           <Icon
                             as={Send}
                             size={16}
@@ -1491,8 +1517,8 @@ export default function PropertyDetailsScreen() {
                                 : 'text-muted-foreground'
                             }
                           />
-                        )}
-                      </Pressable>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
                 </KeyboardAvoidingView>
