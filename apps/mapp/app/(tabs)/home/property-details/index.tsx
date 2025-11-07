@@ -728,7 +728,7 @@ export default function PropertyDetailsScreen() {
     sessionId,
   } = useLocalSearchParams<{ id: string; new?: string; files?: string; tab?: string; sessionId?: string }>();
   const { properties } = usePropertiesList();
-  const { draftsByProperty, createPropertyDraftSession } = useSession();
+  const { draftsByProperty, createPropertyDraftSession, sessionsByProperty } = useSession();
   const { documents } = useProperty();
   const { user } = useAuth();
   const { db, storage } = useFirebase();
@@ -1218,12 +1218,21 @@ export default function PropertyDetailsScreen() {
             {/* Chat Session Controls - Show only on chat tab */}
             {activeTab === 'chat' && (
               <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
-                <Button
-                  onPress={() => setSessionsDrawerVisible(true)}
-                  variant="ghost"
-                  size="icon">
-                  <Icon as={MessageSquare} size={20} className="text-foreground" />
-                </Button>
+                <View className="relative">
+                  <Button
+                    onPress={() => setSessionsDrawerVisible(true)}
+                    variant="ghost"
+                    size="icon">
+                    <Icon as={MessageSquare} size={20} className="text-foreground" />
+                  </Button>
+                  {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
+                    <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                      <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                        {sessionsByProperty[id].length}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <Button
                   onPress={async () => {
                     if (!user) return;
