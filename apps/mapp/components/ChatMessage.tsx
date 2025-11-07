@@ -668,29 +668,29 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                   <View className="mb-3 rounded-lg border border-border bg-background p-3">
                     <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
                     {costEstimation.costEstimates.DIY.cost_range && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">
                           Cost Range:
                         </Text>
-                        <Text className="text-sm font-semibold text-purple-600">
+                        <Text className="flex-1 text-sm font-semibold text-purple-600">
                           {costEstimation.costEstimates.DIY.cost_range}
                         </Text>
                       </View>
                     )}
                     {costEstimation.costEstimates.DIY.savings && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">Savings:</Text>
-                        <Text className="text-sm text-foreground">
+                        <Text className="flex-1 text-sm text-foreground">
                           {costEstimation.costEstimates.DIY.savings}
                         </Text>
                       </View>
                     )}
                     {costEstimation.costEstimates.DIY.complexity && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">
                           Complexity:
                         </Text>
-                        <Text className="text-sm text-foreground">
+                        <Text className="flex-1 text-sm text-foreground">
                           {costEstimation.costEstimates.DIY.complexity}
                         </Text>
                       </View>
@@ -721,29 +721,29 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                       Professional Service
                     </Text>
                     {costEstimation.costEstimates.Service.cost_range && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">
                           Cost Range:
                         </Text>
-                        <Text className="text-sm font-semibold text-purple-600">
+                        <Text className="flex-1 text-sm font-semibold text-purple-600">
                           {costEstimation.costEstimates.Service.cost_range}
                         </Text>
                       </View>
                     )}
                     {costEstimation.costEstimates.Service.benefits && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">Benefits:</Text>
-                        <Text className="text-sm text-foreground">
+                        <Text className="flex-1 text-sm text-foreground">
                           {costEstimation.costEstimates.Service.benefits}
                         </Text>
                       </View>
                     )}
                     {costEstimation.costEstimates.Service.complexity && (
-                      <View className="mb-2 flex-row items-center gap-2">
+                      <View className="mb-2 flex-row items-start gap-2">
                         <Text className="text-sm font-medium text-muted-foreground">
                           Complexity:
                         </Text>
-                        <Text className="text-sm text-foreground">
+                        <Text className="flex-1 text-sm text-foreground">
                           {costEstimation.costEstimates.Service.complexity}
                         </Text>
                       </View>
@@ -942,6 +942,7 @@ const FilePreview = React.memo(
   ({ file, isUserMessage }: { file: NonNullable<Message['file']>; isUserMessage?: boolean }) => {
     // Media dimensions constants
     const MEDIA_MAX_WIDTH = 350;
+    const MEDIA_MIN_WIDTH = 200;
     const MEDIA_MAX_HEIGHT = 250;
 
     const isImage = file.type.startsWith('image/');
@@ -999,14 +1000,16 @@ const FilePreview = React.memo(
                       width: imageDimensions.width,
                       height: imageDimensions.height,
                     }
-                  : { width: MEDIA_MAX_WIDTH, height: 200 }
+                  : { minWidth: MEDIA_MIN_WIDTH, height: MEDIA_MAX_HEIGHT }
               }>
               {imageLoading && (
-                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg bg-muted/30 p-3">
-                  <Skeleton className="h-6 w-full rounded" />
-                  <Skeleton className="h-6 w-[90%] rounded" />
-                  <Skeleton className="h-6 w-full rounded" />
-                  <Skeleton className="h-6 w-[70%] rounded" />
+                <View className="absolute inset-0 z-10 flex-col gap-2 rounded-lg p-3">
+                  <Skeleton className="h-6 w-full rounded bg-background" />
+                  <Skeleton className="h-6 w-[90%] rounded bg-background" />
+                  <Skeleton className="h-6 w-full rounded bg-background" />
+                  <Skeleton className="h-6 w-[70%] rounded bg-background" />
+                  <Skeleton className="h-6 w-[90%] rounded bg-background" />
+                  <Skeleton className="h-6 w-[70%] rounded bg-background" />
                 </View>
               )}
               <Image
