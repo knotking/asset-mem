@@ -520,16 +520,12 @@ function DetailsTab({ property }: { property: any }) {
                       )}
                     </View>
 
-                    {/* Only show X button if not complete */}
-                    {doc.status !== 'complete' && (
-                      <Button
-                        onPress={() => removeUploadingDoc(doc.id)}
-                        variant="ghost"
-                        size="icon"
-                        className="ml-2">
-                        <Icon as={X} size={18} className="text-muted-foreground" />
-                      </Button>
-                    )}
+                    {/* Show X button for all statuses */}
+                    <Pressable
+                      onPress={() => removeUploadingDoc(doc.id)}
+                      className="ml-2 p-2">
+                      <Icon as={X} size={18} className="text-muted-foreground" />
+                    </Pressable>
                   </View>
 
                   {/* Show key entities when complete */}
@@ -577,13 +573,11 @@ function DetailsTab({ property }: { property: any }) {
                         </Text>
                       </View>
 
-                      <Button
+                      <Pressable
                         onPress={() => handleDeleteDocument(doc)}
-                        variant="ghost"
-                        size="icon"
-                        className="ml-2">
-                        <Icon as={Trash2} size={20} className="text-destructive" />
-                      </Button>
+                        className="ml-2 p-2">
+                        <Icon as={Trash2} size={20} color="#ef4444" />
+                      </Pressable>
                     </View>
 
                     {/* Show key entities */}
@@ -768,9 +762,18 @@ export default function PropertyDetailsScreen() {
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
 
+  // Track if files have been uploaded to prevent duplicates on remount
+  const hasUploadedFilesRef = React.useRef(false);
+
   // Handle automatic upload of files when navigating from AddPropertyModal
   React.useEffect(() => {
     if (!user || !id || !files) return;
+
+    // Prevent duplicate uploads on remount/refresh
+    if (hasUploadedFilesRef.current) {
+      console.log('Files already uploaded, skipping duplicate upload');
+      return;
+    }
 
     const startUpload = async () => {
       try {
@@ -778,6 +781,13 @@ export default function PropertyDetailsScreen() {
         if (!parsedFiles || parsedFiles.length === 0) return;
 
         console.log('Starting upload for', parsedFiles.length, 'files');
+
+        // Mark as uploaded to prevent duplicates
+        hasUploadedFilesRef.current = true;
+
+        // Clear the files parameter from route to prevent re-upload on remount
+        // Keep other params intact
+        router.setParams({ files: undefined } as any);
 
         // Start uploading using the common hook (same logic as in DetailsTab)
         await uploadDocuments(parsedFiles, {
