@@ -114,7 +114,7 @@ Analysis Agent (orchestrator)
      * **Clear query**: Produce a concise diagnosis from the user_query
      * **Unclear query**: Ask 1-3 targeted clarification questions and wait for user response
      * **Iterative**: Continue asking questions until a clear, actionable diagnosis is obtained
-   - If triage returns `needs_clarification: true`, return ONLY the clarification questions and stop (wait for user response).
+- If triage returns `needs_clarification: true`, return ONLY the clarification questions and stop (wait for user response). Do **not** provide service recommendations, DIY content, coverage summaries, or cost estimates until the user responds with more details.
    - If triage fails or diagnosis is invalid/empty, return ONLY the triage result and stop.
    - Only proceed to steps 2-5 when triage returns a valid, actionable diagnosis.
 2. Coverage

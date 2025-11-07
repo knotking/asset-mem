@@ -319,6 +319,17 @@ def _format_json_as_markdown(data: Any, indent: int = 0, max_depth: int = 5) -> 
     indent_str = "  " * indent
     
     if isinstance(data, dict):
+        # Sanitize analysis payloads when clarification is required
+        if 'analysis' in data and isinstance(data['analysis'], dict):
+            analysis_section = data['analysis']
+            triage_section = analysis_section.get('triageResult')
+            if isinstance(triage_section, dict) and triage_section.get('needs_clarification') is True:
+                # Keep only triageResult to avoid leaking service recommendations or other sections
+                data = {
+                    'analysis': {
+                        'triageResult': triage_section
+                    }
+                }
         if not data:
             return ""
         

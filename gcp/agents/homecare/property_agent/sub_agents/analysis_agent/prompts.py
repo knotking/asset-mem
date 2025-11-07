@@ -146,12 +146,14 @@ def analysis_agent_instructions() -> str:
            SAVE the result and extract the diagnosis text
            AFTER triage completes, check the triage result:
              
-             **If triage returns `needs_clarification: true`:**
-               - The triage agent needs more information from the user
-               - Extract the `clarification_questions` and `message` from the triage result
-               - Return ONLY the triage result with clarification questions and STOP. Do NOT call other agents.
-               - Format the response to present the clarification questions clearly to the user.
-               - Return format:
+            **If triage returns `needs_clarification: true`:**
+              - The triage agent needs more information from the user
+              - Extract the `clarification_questions` and `message` from the triage result
+              - Return ONLY the triage result with clarification questions and STOP. Do **NOT** call coverage, DIY, service, or cost agents.
+              - Do **NOT** provide any service recommendations, provider listings, coverage summaries, DIY tips, or cost estimates in either Markdown or JSON when clarification is required.
+              - Your Markdown response should politely ask the clarification questions and explain that recommendations will be provided after the follow-up information.
+              - The JSON response MUST contain only the `triageResult` object (no coverage, diyResults, serviceResults, or costEstimationResults keys).
+              - Return format:
                {
                  "analysis": {
                    "triageResult": {
@@ -200,8 +202,8 @@ def analysis_agent_instructions() -> str:
            Use the diagnosis to help the service agent understand the problem better
            ALWAYS call this agent - service information with cost estimates and local pros is always provided
         
-        **DO NOT RETURN UNTIL YOU HAVE CALLED ALL FOUR TOOLS.**
-        Collect all responses and return them together in a SINGLE NESTED JSON structure.
+        **DO NOT RETURN UNTIL YOU HAVE CALLED ALL FOUR TOOLS, UNLESS triage requires clarification.**
+        Collect all responses and return them together in a SINGLE NESTED JSON structure when a valid diagnosis exists.
         
         **MANDATORY Output Format - Return BOTH Markdown and JSON:**
         
@@ -266,7 +268,8 @@ def analysis_agent_instructions() -> str:
           - For pest control queries, service agent will find pest control professionals.
           - For product requests, shopping agent provides product recommendations.
         * Extract the nested content from each agent's response.
-        * Combine them into a single nested JSON structure.
+        * Combine them into a single nested JSON structure **only when triage returns a valid diagnosis**.
+        * When `needs_clarification` is true, return ONLY the triage clarification section (Markdown + JSON) and omit all other sections.
         * ALWAYS include BOTH the Markdown formatted response (FIRST) AND the JSON code block (SECOND).
         * The Markdown response should be well-formatted, readable, and suitable for Telegram display.
         * The JSON code block must be valid JSON and properly formatted.

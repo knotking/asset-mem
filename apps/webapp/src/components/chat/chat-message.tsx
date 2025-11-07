@@ -307,16 +307,16 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const needsClarification = !!(triage?.needs_clarification === true);
     const hasClarificationQuestions = !!(needsClarification && Array.isArray(triage?.clarification_questions) && triage.clarification_questions.length > 0);
     const hasTriage = !!(triage?.diagnosis && typeof triage.diagnosis === 'string' && triage.diagnosis.trim() !== '');
-    const hasCoverage = !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
-    const hasDIY = !!(diy && (
+    const hasCoverage = !needsClarification && !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
+    const hasDIY = !needsClarification && !!(diy && (
         diy.diySteps?.summary || 
         (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
         (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
     const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
-    const hasService = true; // Always show Service Recommendations section
-    const hasCostEstimates = !!(cost && cost.costEstimates);
+    const hasService = !needsClarification && hasProviders;
+    const hasCostEstimates = !needsClarification && !!(cost && cost.costEstimates);
     
     // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
