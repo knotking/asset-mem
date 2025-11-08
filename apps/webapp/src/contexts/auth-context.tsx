@@ -1,18 +1,11 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  type User,
-  type Auth,
-} from "firebase/auth";
-import { app, auth } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, type User, type Auth } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
-// const auth = getAuth(app);
+const auth = getAuth(app);
 
 interface AuthContextType {
   user: User | null;
@@ -38,22 +31,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => unsubscribe();
   }, []);
-
+  
   const logout = async () => {
     await signOut(auth);
   };
 
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        auth,
-        signUp: createUserWithEmailAndPassword.bind(null, auth),
-        login: signInWithEmailAndPassword.bind(null, auth),
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, auth, signUp: createUserWithEmailAndPassword.bind(null, auth), login: signInWithEmailAndPassword.bind(null, auth), logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -62,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
