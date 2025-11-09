@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [sessionToShare, setSessionToShare] = useState<Session | null>(null);
   const [shareState, setShareState] = useState<ShareState>('idle');
@@ -70,6 +71,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
   const sessionId = params.sessionId as string;
   const propertyId = params.propertyId as string;
+
+  useEffect(() => {
+    setSearchTerm('');
+  }, [propertyId, isMobileOpen]);
 
   const handleNewChat = useCallback(() => {
     if (!propertyId) return;
@@ -96,7 +101,28 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     );
     
     const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
-        const userSessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session));
+        const getTimestampValue = (value: any): number => {
+            if (!value) return 0;
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+                const parsed = Date.parse(value);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }
+            if (value instanceof Date) return value.getTime();
+            if (typeof value.toMillis === 'function') return value.toMillis();
+            if (typeof value.toDate === 'function') {
+                const date = value.toDate();
+                return date instanceof Date ? date.getTime() : 0;
+            }
+            return 0;
+        };
+        const userSessions = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Session))
+            .sort((a, b) => {
+                const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
+                const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
+                return bTime - aTime;
+            });
         setSessions(userSessions);
         setIsInitialLoading(false);
     }, (error) => {
@@ -107,6 +133,16 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
     return () => unsubscribe();
   }, [user, toast, propertyId]);
+
+  const filteredSessions = useMemo(() => {
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    if (!normalizedTerm) {
+      return sessions;
+    }
+    return sessions.filter((session) =>
+      session.name?.toLowerCase().includes(normalizedTerm)
+    );
+  }, [sessions, searchTerm]);
 
 
   const handleDeleteSession = async () => {
@@ -207,7 +243,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
               return {
                   ...data,
                   createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-              } as Message;
+              } as unknown as Message;
           });
 
           let shareId: string;
@@ -295,6 +331,17 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
             </Button>
           </div>
       </header>
+        {!isCollapsed && (
+          <div className="px-4 py-3 border-b">
+            <Input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search sessions"
+              className="h-9"
+              aria-label="Search chat sessions by issue name"
+            />
+          </div>
+        )}
         <ScrollArea className="flex-1 w-full whitespace-nowrap">
             <TooltipProvider>
                 <div className="flex flex-col w-full space-y-2 p-2">
@@ -304,8 +351,14 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                             <Skeleton key={i} className={cn("h-16 w-full", isCollapsed && "h-10")} />
                         ))}
                     </div>
+                ) : filteredSessions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center px-4 py-6 text-center text-sm text-muted-foreground">
+                      {searchTerm.trim().length > 0
+                        ? 'No sessions match your search.'
+                        : 'No sessions yet. Start a new chat to get started.'}
+                    </div>
                 ) : (
-                    sessions.map((session) => {
+                    filteredSessions.map((session) => {
                     const route = `/home/properties/${propertyId}/chat/${session.id}`;
                     const isActive = sessionId === session.id;
                     const sessionDate = session.createdAt?.toDate ? format(session.createdAt.toDate(), 'M/d/yyyy') : '...';
@@ -445,9 +498,13 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                     Copy
                     </Button>
                 </div>
-            ) : shareState === 'prompt_update' ? (
+            ) : shareState === 'prompt_update' || shareState === 'creating' || shareState === 'updating' ? (
                 <div className="flex justify-end gap-2 pt-2">
-                     <Button variant="outline" onClick={() => performShareAction(false)} disabled={shareState === 'creating' || shareState === 'updating'}>
+                     <Button
+                        variant="outline"
+                        onClick={() => performShareAction(false)}
+                        disabled={shareState === 'creating' || shareState === 'updating'}
+                    >
                         {shareState === 'creating' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create New Link
                     </Button>
@@ -460,7 +517,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                 <div className="flex justify-end gap-2 pt-2">
                     <Button variant="outline" onClick={handleCloseShareDialog}>Cancel</Button>
                     <Button onClick={checkForExistingShare} disabled={shareState !== 'idle'}>
-                        {(shareState === 'checking' || shareState === 'creating') && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {shareState === 'checking' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create public link
                     </Button>
                 </div>

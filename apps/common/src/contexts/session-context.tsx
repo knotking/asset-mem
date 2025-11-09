@@ -111,6 +111,30 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
         }
       });
       
+      const getTimestampValue = (value: any): number => {
+        if (!value) return 0;
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const parsed = Date.parse(value);
+          return Number.isNaN(parsed) ? 0 : parsed;
+        }
+        if (value instanceof Date) return value.getTime();
+        if (typeof value.toMillis === 'function') return value.toMillis();
+        if (typeof value.toDate === 'function') {
+          const date = value.toDate();
+          return date instanceof Date ? date.getTime() : 0;
+        }
+        return 0;
+      };
+
+      Object.keys(newSessionsByProperty).forEach(propId => {
+        newSessionsByProperty[propId].sort((a, b) => {
+          const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
+          const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
+          return bTime - aTime;
+        });
+      });
+      
       setGlobalDraft(foundGlobalDraft);
       setSessionsByProperty(newSessionsByProperty);
       setDraftsByProperty(newDraftsByProperty);

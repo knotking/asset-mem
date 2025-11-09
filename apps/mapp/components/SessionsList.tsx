@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
@@ -51,6 +51,7 @@ import {
   serverTimestamp,
   type Timestamp,
 } from 'firebase/firestore';
+import { Input } from '@/components/ui/input';
 
 interface SessionsListProps {
   propertyId: string;
@@ -84,6 +85,38 @@ export default function SessionsList({
   const [alertMessage, setAlertMessage] = useState('');
 
   const sessions = sessionsByProperty[propertyId] || [];
+  const [searchTerm, setSearchTerm] = useState('');
+  useEffect(() => {
+    setSearchTerm('');
+  }, [propertyId]);
+  const filteredSessions = useMemo(() => {
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    const getTimestampValue = (value: any): number => {
+      if (!value) return 0;
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
+      if (value instanceof Date) return value.getTime();
+      if (typeof value.toMillis === 'function') return value.toMillis();
+      if (typeof value.toDate === 'function') {
+        const date = value.toDate();
+        return date instanceof Date ? date.getTime() : 0;
+      }
+      return 0;
+    };
+
+    const base = normalizedTerm
+      ? sessions.filter((session) => session.name?.toLowerCase().includes(normalizedTerm))
+      : sessions;
+
+    return [...base].sort((a, b) => {
+      const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
+      const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
+      return bTime - aTime;
+    });
+  }, [sessions, searchTerm]);
   const draftSession = draftsByProperty[propertyId];
   // Draft sessions are hidden from the list (similar to webapp)
   // They are auto-selected on property load and transition to regular sessions on first message
@@ -288,7 +321,15 @@ export default function SessionsList({
   return (
     <View className="flex-1">
       {/* Create New Session Button */}
-      <View className="p-4">
+      <View className="p-4 gap-3">
+        <Input
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+          placeholder="Search sessions"
+          accessibilityLabel="Search sessions by issue name"
+          returnKeyType="search"
+          className="bg-background border border-border text-foreground px-3 py-2 rounded-lg"
+        />
         <Button
           onPress={handleCreateSession}
           variant="default"
@@ -300,19 +341,21 @@ export default function SessionsList({
 
       {/* Sessions List */}
       <ScrollView className="flex-1 px-4">
-        {sessions.length === 0 ? (
+        {filteredSessions.length === 0 ? (
           <View className="items-center py-8">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
               <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
             </View>
             <Text className="text-center text-sm text-muted-foreground">
-              No sessions yet. Create one to start chatting about this property.
+              {searchTerm.trim().length > 0
+                ? 'No sessions match your search.'
+                : 'No sessions yet. Create one to start chatting about this property.'}
             </Text>
           </View>
         ) : (
           <View className="gap-4 pb-4">
             {/* Regular Sessions - Draft sessions are hidden */}
-            {sessions.map((session) => (
+            {filteredSessions.map((session) => (
               <View
                 key={session.id}
                 className="rounded-lg border border-border bg-card p-4">
