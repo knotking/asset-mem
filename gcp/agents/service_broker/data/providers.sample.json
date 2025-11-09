@@ -1,0 +1,45 @@
+[
+  {
+    "provider_id": "hvac_cool_co",
+    "display_name": "Cool Comfort HVAC",
+    "categories": ["hvac", "maintenance"],
+    "service_types": ["ac_repair", "thermostat_install"],
+    "coverage_zip_codes": ["94016", "94017", "94018"],
+    "coverage_cities": ["San Francisco", "Daly City"],
+    "rating": 4.8,
+    "response_time_minutes": 20,
+    "phone_number": "+14155550111",
+    "email": "dispatch@coolcomfort.example",
+    "messaging_channel": "sms",
+    "notes": "Premium partner with same-day appointments."
+  },
+  {
+    "provider_id": "plumb_fast",
+    "display_name": "PlumbFast Services",
+    "categories": ["plumbing"],
+    "service_types": ["emergency_plumbing", "leak_repair"],
+    "coverage_zip_codes": ["94016", "94040", "94041"],
+    "coverage_cities": ["San Francisco", "Mountain View"],
+    "rating": 4.6,
+    "response_time_minutes": 15,
+    "phone_number": "+14155550222",
+    "email": "support@plumbfast.example",
+    "messaging_channel": "sms",
+    "notes": "24/7 emergency coverage."
+  },
+  {
+    "provider_id": "sparkle_clean",
+    "display_name": "Sparkle Clean Pros",
+    "categories": ["cleaning"],
+    "service_types": ["deep_clean", "move_out_clean"],
+    "coverage_zip_codes": ["94016", "94019"],
+    "coverage_cities": ["San Francisco", "Pacifica"],
+    "rating": 4.4,
+    "response_time_minutes": 60,
+    "phone_number": "+14155550333",
+    "email": "hello@sparkleclean.example",
+    "messaging_channel": "whatsapp",
+    "notes": "Offers eco-friendly cleaning supplies."
+  }
+]
+
