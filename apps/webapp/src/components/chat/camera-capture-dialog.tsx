@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Camera as CameraIcon, Circle, StopCircle, Video } from "lucide-react";
+import { AlertCircle, Camera as CameraIcon, Circle, RefreshCw, StopCircle, Video } from "lucide-react";
 
 type CameraCaptureDialogProps = {
   open: boolean;
@@ -34,6 +34,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
   const shouldSaveRecordingRef = useRef(false);
 
   const [mode, setMode] = useState<"photo" | "video">("photo");
+  const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("user");
   const [isRecording, setIsRecording] = useState(false);
   const [isStreamLoading, setIsStreamLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: { facingMode: { ideal: selectedFacingMode } },
           audio: captureMode === "video" && canRecordVideo,
         });
 
@@ -107,7 +108,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
         setIsStreamLoading(false);
       }
     },
-    [canRecordVideo, stopStream]
+    [canRecordVideo, selectedFacingMode, stopStream]
   );
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       setError(null);
       setIsStreamLoading(false);
       setHasCameraAccess(true);
+      setSelectedFacingMode("user");
       if (mode !== "photo") {
         setMode("photo");
       }
@@ -266,7 +268,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -287,12 +289,29 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
                 Video
               </Button>
             </div>
-            {isRecording && (
-              <div className="flex items-center gap-1 text-sm font-medium text-destructive">
-                <Circle className="h-3 w-3 fill-destructive stroke-destructive" />
-                Recording…
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedFacingMode === "user" ? "Front camera" : "Rear camera"}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSelectedFacingMode((prev) => (prev === "user" ? "environment" : "user"))
+                }
+                disabled={isStreamLoading || isRecording}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Switch camera
+              </Button>
+              {isRecording && (
+                <div className="flex items-center gap-1 text-sm font-medium text-destructive">
+                  <Circle className="h-3 w-3 fill-destructive stroke-destructive" />
+                  Recording…
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
