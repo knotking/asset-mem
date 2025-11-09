@@ -6,10 +6,6 @@ class DiagnosisInput(BaseModel):
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
-    analysis_focuses: Optional[List[str]] = Field(
-        default=None,
-        description="Optional list of focus directives for which analysis checks to run (ALL, DIY, COVERAGE, SERVICE, COST_ESTIMATES)."
-    )
     
     class Config:
         # Allow extra fields to be ignored, making the schema more flexible

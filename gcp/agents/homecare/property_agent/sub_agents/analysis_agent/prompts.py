@@ -124,7 +124,7 @@ def triage_agent_instructions() -> str:
 def analysis_agent_instructions() -> str:
     """Main instructions for the Analysis Agent that orchestrates sub-agents."""
     instruction = """
-        You are the Analysis Agent orchestrator. You have access to four tool-agents that you call after triage based on the user-selected focus.
+        You are the Analysis Agent orchestrator. You have access to four tool-agents that you must call in sequence.
         
         **Property Agent Scope:**
         The Analysis Agent handles a comprehensive range of property-related queries:
@@ -134,12 +134,7 @@ def analysis_agent_instructions() -> str:
         - **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
         - **General Property Care**: Home improvement, maintenance tips, property management, preventive care
         
-        You will receive an optional field `analysis_focuses` (array of strings) in the input payload. Interpret it as follows (case-insensitive):
-        - When the array is missing, empty, or contains `ALL`, run all available checks (Coverage, DIY, Service, and Cost Estimates) after a successful triage.
-        - Otherwise, run each agent whose identifier appears in the array (`COVERAGE`, `DIY`, `SERVICE`, `COST_ESTIMATES`).
-        - Ignore unrecognized values. Do **not** call agents whose identifiers are absent.
-
-        **CRITICAL - TRIAGE FIRST WITH A GUARD:**
+        **CRITICAL - CALL AGENTS IN ORDER WITH A TRIAGE GUARD:**
         
         **IMPORTANT:** You MUST call `triage_agent` first. If triage cannot extract a domain-specific diagnosis or cannot parse the input, you MUST immediately RETURN ONLY the triage result and STOP. Do NOT call coverage, DIY, or service agents in this case.
         If triage succeeds with a valid diagnosis, proceed to call coverage, DIY, and service in sequence and consolidate results.
@@ -182,22 +177,33 @@ def analysis_agent_instructions() -> str:
              **If triage succeeds with a valid, actionable diagnosis:**
                - Proceed to call coverage, DIY, service, and cost agents (steps 2-5)
         
-        2. If `analysis_focuses` requires coverage (contains `ALL` or `COVERAGE`), call `coverage_agent`.
-           Pass: user_query, context_doc_uris, property_address. Include the triage diagnosis as context.
+        2. Call `coverage_agent` tool - This retrieves warranty and insurance coverage
+           Pass: user_query, context_doc_uris, property_address
+           ALWAYS call this agent - coverage information is always provided
         
-        3. If `analysis_focuses` requires DIY (contains `ALL` or `DIY`), call `diy_agent`.
-           Pass: user_query, context_doc_uris, property_address and include the triage diagnosis context.
+        3. Call `diy_agent` tool - This provides DIY solutions, YouTube tutorials, and product recommendations
+           Pass: user_query, context_doc_uris, property_address
+           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
+           Use the diagnosis to help the DIY agent understand the problem better
+           ALWAYS call this agent - DIY information is always provided
         
-        4. If `analysis_focuses` requires service recommendations (contains `ALL` or `SERVICE`), call `service_agent`.
-           Pass: user_query, context_doc_uris, property_address plus the triage diagnosis context.
+        4. Call `service_agent` tool - This provides local professional listings
+           Pass: user_query, context_doc_uris, property_address
+           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
+           ALWAYS call this agent - service information with local pros is always provided
            SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
            FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         
-        5. If `analysis_focuses` requires cost estimates (contains `ALL` or `COST_ESTIMATES`), call `cost_agent`.
-           Pass: user_query, context_doc_uris, property_address, and the triage diagnosis context.
+        5. Call `cost_agent` tool - This provides DIY vs Service cost estimates as a separate section
+           Pass: user_query and include the diagnosis context from triage_agent
+           Pass: user_query, context_doc_uris, property_address
+           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
+           Use the diagnosis to help the service agent understand the problem better
+           ALWAYS call this agent - service information with cost estimates and local pros is always provided
         
-        **DO NOT call tools that are not requested by `analysis_focuses`.** Collect responses from the tools you call and return them together in a SINGLE NESTED JSON structure when a valid diagnosis exists.
+        **DO NOT RETURN UNTIL YOU HAVE CALLED ALL FOUR TOOLS, UNLESS triage requires clarification.**
+        Collect all responses and return them together in a SINGLE NESTED JSON structure when a valid diagnosis exists.
         
         **MANDATORY Output Format - Return BOTH Markdown and JSON:**
         
@@ -222,27 +228,58 @@ def analysis_agent_instructions() -> str:
             "triageResult": {
               "diagnosis": "[diagnosis from triage_agent]"
             },
-            "coverageResult": {"warrantyInfo": "...", "insuranceInfo": "..."},
-            "diyResults": {"diySteps": {"summary": "...", "steps": [...]}, "youtubeSearch": {"videos": [...]}, "recommendedProducts": {"products": [...]}},
-            "serviceResults": {"localPros": {"serpAPIResults": [...], "yelpAPIResults": [...], "googleSearchResults": [...]}},
-            "costEstimationResults": {"costEstimates": {"repair_type": "...", "DIY": {...}, "Service": {...}, "comparison": {...}}}
+            "coverageResult": {
+              "warrantyInfo": "[warranty information]",
+              "insuranceInfo": "[insurance information]"
+            },
+            "diyResults": {
+              "diySteps": {
+                "summary": "[Google search summary]",
+                "steps": "[array of numbered steps]"
+              },
+              "youtubeSearch": {
+                "videos": "[array of video objects with title, url, description]"
+              },
+              "recommendedProducts": {
+                "products": "[array of product objects with vendor, url, description, price]"
+              }
+            },
+            "serviceResults": {
+              "localPros": {
+                "serpAPIResults": "[local professional listings from serpapi_search]",
+                "yelpAPIResults": "[local professional listings from yelpapi_search]"
+                ,"googleSearchResults": "[parsed providers from google_search_agent when needed]"
+              }
+            },
+            "costEstimationResults": {
+              "costEstimates": {
+                "repair_type": "[derived from diagnosis]",
+                "DIY": { "cost_range": "[e.g., $50-300]", "includes": ["Material/product costs", "Basic tools", "Time"], "savings": "[text]", "complexity": "[text]" },
+                "Service": { "cost_range": "[e.g., $200-800]", "includes": ["Labor", "Expertise", "Warranty"], "benefits": "[text]", "complexity": "[text]" },
+                "comparison": { "diy_savings": "[text]", "professional_benefits": "[text]", "considerations": "[text]" }
+              }
+            }
           }
         }
         ```
         
         **CRITICAL:**
         * You MUST call triage first. If triage fails to extract a domain-specific diagnosis or cannot parse, RETURN ONLY the triage result and STOP (still include both JSON and Markdown).
-        * If triage succeeds, call only the agents permitted by `analysis_focuses` and consolidate their results. Do not call or reference agents that were not executed.
+        * If triage succeeds, then call coverage, DIY, and service and consolidate results.
         * The triage_agent diagnosis MUST be used as context for both diy_agent and service_agent.
         * **For all property-related queries** (repairs, maintenance, pest control, service recommendations, product requests):
-          - When triage succeeds and `analysis_focuses` contains `ALL`, include coverage, DIY, service, and cost sections.
-          - When a specific focus is requested (e.g., `DIY` only), include only the relevant section(s) plus triage in both Markdown and JSON.
+          - When triage succeeds, all three sections (coverage, DIY, service) are provided.
+          - The service agent provides local professional listings (plumbers, electricians, pest control, contractors, etc.).
+          - The cost agent provides structured cost estimates in a separate section.
+          - The DIY agent provides steps, videos, and product recommendations.
+          - For pest control queries, service agent will find pest control professionals.
+          - For product requests, shopping agent provides product recommendations.
         * Extract the nested content from each agent's response.
-        * Combine them into a single nested JSON structure **only when triage returns a valid diagnosis**. Always include `analysis.title`. Omit keys for sections that were not requested or were not executed.
+        * Combine them into a single nested JSON structure **only when triage returns a valid diagnosis**. Always include `analysis.title`.
         * When `needs_clarification` is true, set `analysis.title` to reflect the clarification request, return ONLY the triage clarification section (Markdown + JSON), and omit all other sections.
         * ALWAYS include BOTH the Markdown formatted response (FIRST) AND the JSON code block (SECOND).
         * The Markdown response should be well-formatted, readable, and suitable for Telegram display.
-        * The JSON code block must be valid JSON and properly formatted. Exclude keys for sections you did not populate.
+        * The JSON code block must be valid JSON and properly formatted.
     """
     return instruction
 

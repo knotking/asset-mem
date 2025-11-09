@@ -71,7 +71,7 @@ Requirements: Python 3.9+, UV, Google Cloud auth if using Vertex RAG/Search or d
 
 ## How delegation works (at a glance)
 - If `diagnosis_uris` provided: `analysis_agent` performs multimodal analysis (images/videos/docs)
-- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with the requested checks (coverage, DIY, service, cost) based on `analysis_focuses`
+- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with coverage, DIY, and service
 - The root returns the sub‑agent response as‑is
 
 ## Programmatic use
@@ -92,7 +92,7 @@ print(response)
 Note: Tool calls may require environment variables and GCP auth (ADC). See parent README for `.env` and permission setup.
 
 ## Sub‑agents
-- `sub_agents/analysis_agent/` – multimodal or text-only diagnostics followed by optional coverage, DIY, service, and cost checks (driven by `analysis_focuses`)
+- `sub_agents/analysis_agent/` – multimodal or text‑only diagnostics followed by coverage, DIY, and service
 - `sub_agents/user_docs_agent/` – retrieval over user‑uploaded docs (used by coverage and other flows)
 - `sub_agents/knowledge_base_agent/` – retrieval over general knowledge base (used when needed)
 
@@ -131,7 +131,7 @@ Key files:
 - `agent.py`: defines `property_agent` and its sub-agents
 - `prompts.py`: system instructions for routing and doculink behavior
 - `agent_inputs.py`: Pydantic input models for root and sub-agents
-- `sub_agents/analysis_agent`: complete analysis workflow supporting optional checks via `analysis_focuses`
+- `sub_agents/analysis_agent`: complete analysis workflow and README
 - `sub_agents/user_docs_agent`: user document retrieval logic
 - `sub_agents/knowledge_base_agent`: general knowledge retrieval logic
 
@@ -140,7 +140,7 @@ Key files:
 The root agent inspects inputs and chooses the correct sub-agent:
 
 - If `diagnosis_uris` exist and are non-empty: delegate to `analysis_agent`
-- If `diagnosis_uris` are absent/empty: delegate to `analysis_agent` for text-only triage, then execute the requested checks based on `analysis_focuses`
+- If `diagnosis_uris` are absent/empty: delegate to `analysis_agent` for text‑only triage, then coverage, DIY, service
 - If the query is casual/non-property-care, respond directly without delegation
 
 See `root_agent_instructions()` in `prompts.py` for the precise decision tree.
@@ -170,12 +170,12 @@ DocuLink input (`DocsInput`):
 
 ## Output Shapes
 
-- From `analysis_agent`: nested `analysis` object that includes triage (from media or text) plus whichever sections were requested via `analysis_focuses` (see `sub_agents/analysis_agent/README.md`).
+- From `analysis_agent`: nested `analysis` object that includes triage (from media or text), coverage, DIY, and service sections (see `sub_agents/analysis_agent/README.md`).
 - From `doculink_agent` (if invoked in custom flows): the direct output of either `user_docs_agent` or `knowledge_base_agent` (unmodified), or a best‑effort answer clearly prefaced when retrieval yields nothing.
 
 ## Sub-Agent Summaries
 
-- **analysis_agent**: Orchestrator that runs multimodal triage first; if valid diagnosis, proceeds with any requested checks (coverage, DIY, service, cost estimations). Has a built-in triage guard to short-circuit on invalid inputs. Coordinates the following sub-agents:
+- **analysis_agent**: Orchestrator that runs multimodal triage first; if valid diagnosis, proceeds with coverage retrieval, DIY (steps, videos, products), and service (costs, local pros). Has a built-in triage guard to short-circuit on invalid inputs. Coordinates the following sub-agents:
   - **triage_agent**: Analyzes multimodal data or performs text-only triage
   - **coverage_agent**: Retrieves warranty/insurance from user documents
   - **diy_agent**: Provides DIY repair steps, YouTube tutorials, and product recommendations via shopping_agent

@@ -100,7 +100,6 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
-  analysisFocuses?: string[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
@@ -115,7 +114,6 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
-  analysisFocuses,
   signal,
   onChunk,
   onAgentStep,
@@ -135,7 +133,6 @@ export async function streamAgentResponse({
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
       property_address: propertyAddress,
-      analysis_focuses: analysisFocuses,
     };
 
     const response = await fetch(url, {
