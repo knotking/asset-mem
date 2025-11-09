@@ -54,7 +54,10 @@ import {
   Sparkles,
   Plus,
   Square,
+  Camera as CameraIcon,
+  Video,
 } from 'lucide-react-native';
+import { Camera, CameraType } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
 import { useProperty } from '@homeapp/common/contexts/property';
@@ -735,6 +738,15 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const cameraRef = React.useRef<Camera | null>(null);
+  const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
+  const [microphonePermission, requestMicrophonePermission] = Camera.useMicrophonePermissions();
+  const [isCameraModalVisible, setIsCameraModalVisible] = React.useState(false);
+  const [cameraMode, setCameraMode] = React.useState<'photo' | 'video'>('photo');
+  const [cameraFacing, setCameraFacing] = React.useState(CameraType.back);
+  const [cameraError, setCameraError] = React.useState<string | null>(null);
+  const [isRecording, setIsRecording] = React.useState(false);
+  const shouldAttachRecordingRef = React.useRef(false);
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -870,11 +882,115 @@ export default function PropertyDetailsScreen() {
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
 
+  const processAsset = React.useCallback(
+    async (asset: {
+      uri: string;
+      type?: string | null;
+      mimeType?: string | null;
+      fileName?: string | null;
+      fileSize?: number | null;
+    }) => {
+      if (!user) {
+        setErrorMessage('You must be logged in to upload files.');
+        setErrorAlertOpen(true);
+        return;
+      }
+
+      const timestamp = Date.now();
+      let fileName = asset.fileName ?? '';
+      const fileNameWithoutExt = fileName ? fileName.replace(/\.[^/.]+$/, '') : '';
+      const inferredVideo =
+        asset.type === 'video' ||
+        asset.mimeType?.startsWith('video/') ||
+        (!!fileName && /\.(mp4|mov|mkv|3gp)$/i.test(fileName));
+      const fileExtension =
+        inferredVideo ? 'mp4' : fileName.split('.').pop() || 'jpg';
+      const defaultFileName = `${inferredVideo ? 'video' : 'photo'}-${timestamp}.${fileExtension}`;
+
+      if (!fileName || /^\d+$/.test(fileNameWithoutExt)) {
+        const uriParts = asset.uri.split('/');
+        const uriFileName = uriParts[uriParts.length - 1];
+        const decodedFileName = uriFileName ? decodeURIComponent(uriFileName) : '';
+        if (decodedFileName && decodedFileName.includes('.')) {
+          const uriBaseName = decodedFileName.replace(/\.[^/.]+$/, '');
+          fileName = /^\d+$/.test(uriBaseName) ? defaultFileName : decodedFileName;
+        } else {
+          fileName = defaultFileName;
+        }
+      }
+
+      const mimeType =
+        asset.mimeType || (inferredVideo ? 'video/mp4' : 'image/jpeg');
+
+      const storageRef = ref(storage, `uploads/${user.uid}/${timestamp}_${fileName}`);
+      const attachmentId = `upload-${timestamp}`;
+
+      setFileAttachment({
+        id: attachmentId,
+        uri: asset.uri,
+        progress: 0,
+        downloadURL: null,
+        error: null,
+        storagePath: storageRef.fullPath,
+        fileName,
+        fileType: mimeType,
+        fileSize: asset.fileSize ?? 0,
+      });
+
+      try {
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev && prev.id === attachmentId ? { ...prev, progress } : prev
+            );
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev && prev.id === attachmentId
+                ? { ...prev, error: 'Upload failed. Please try again.' }
+                : prev
+            );
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              setFileAttachment((prev: FileAttachment | null) =>
+                prev && prev.id === attachmentId ? { ...prev, progress: 100, downloadURL } : prev
+              );
+            } catch (error) {
+              console.error('Error getting download URL:', error);
+              setFileAttachment((prev: FileAttachment | null) =>
+                prev && prev.id === attachmentId
+                  ? { ...prev, error: 'Failed to process file.' }
+                  : prev
+              );
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setFileAttachment((prev: FileAttachment | null) =>
+          prev && prev.id === attachmentId
+            ? { ...prev, error: 'Failed to upload file.' }
+            : prev
+        );
+      }
+    },
+    [user, storage, setErrorMessage, setErrorAlertOpen]
+  );
+
   // Handle file selection and upload
   const handleFileUpload = React.useCallback(async () => {
     if (!user) return;
 
-    // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       setErrorMessage('Please grant permission to access your media library.');
@@ -882,7 +998,6 @@ export default function PropertyDetailsScreen() {
       return;
     }
 
-    // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
       allowsEditing: false,
@@ -894,97 +1009,175 @@ export default function PropertyDetailsScreen() {
     }
 
     const asset = result.assets[0];
-    const attachmentId = `upload-${Date.now()}`;
+    await processAsset({
+      uri: asset.uri,
+      type: asset.type,
+      mimeType: asset.mimeType,
+      fileName: asset.fileName,
+      fileSize: asset.fileSize,
+    });
+  }, [user, processAsset]);
 
-    console.log('ASSET:', asset);
-    // Extract filename from URI if asset.fileName is not available or is numeric
-    let fileName = asset.fileName;
-    const fileNameWithoutExt = fileName ? fileName.replace(/\.[^/.]+$/, '') : '';
+  const ensureCameraPermissions = React.useCallback(async () => {
+    if (cameraPermission?.granted) {
+      return true;
+    }
+    const permission = await requestCameraPermission();
+    if (!permission?.granted) {
+      setErrorMessage('Camera permission is required to capture media.');
+      setErrorAlertOpen(true);
+      return false;
+    }
+    return true;
+  }, [cameraPermission, requestCameraPermission, setErrorMessage, setErrorAlertOpen]);
 
-    // Check if fileName is missing, is just a number, or has a numeric-only base name
-    if (!fileName || /^\d+$/.test(fileNameWithoutExt)) {
-      // If fileName is not available or base name is just a number, extract from URI
-      const uriParts = asset.uri.split('/');
-      const uriFileName = uriParts[uriParts.length - 1];
+  const ensureMicrophonePermissions = React.useCallback(async () => {
+    if (microphonePermission?.granted) {
+      return true;
+    }
+    const permission = await requestMicrophonePermission();
+    if (!permission?.granted) {
+      setErrorMessage('Microphone permission is required to record video.');
+      setErrorAlertOpen(true);
+      return false;
+    }
+    return true;
+  }, [microphonePermission, requestMicrophonePermission, setErrorMessage, setErrorAlertOpen]);
 
-      // Decode URI component in case it has encoded characters
-      const decodedFileName = uriFileName ? decodeURIComponent(uriFileName) : '';
+  const handleOpenCamera = React.useCallback(async () => {
+    if (isSending || fileAttachment) return;
+    const granted = await ensureCameraPermissions();
+    if (!granted) return;
+    setCameraMode('photo');
+    setCameraError(null);
+    setIsCameraModalVisible(true);
+  }, [ensureCameraPermissions, isSending, fileAttachment]);
 
-      // If URI has a proper filename with extension and not just numeric, use it
-      if (decodedFileName && decodedFileName.includes('.')) {
-        const uriFileNameWithoutExt = decodedFileName.replace(/\.[^/.]+$/, '');
-        // Only use URI filename if it's not purely numeric
-        if (!/^\d+$/.test(uriFileNameWithoutExt)) {
-          fileName = decodedFileName;
-        } else {
-          // Even URI has numeric name, create a meaningful name
-          fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+  const handleSetCameraMode = React.useCallback(
+    async (mode: 'photo' | 'video') => {
+      if (mode === cameraMode || isRecording) return;
+      if (mode === 'video') {
+        const granted = await ensureMicrophonePermissions();
+        if (!granted) {
+          setCameraError('Microphone permission is required for recording video.');
+          return;
         }
-      } else {
-        // Fallback to timestamp-based name with proper extension
-        fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+      }
+      setCameraError(null);
+      setCameraMode(mode);
+    },
+    [cameraMode, ensureMicrophonePermissions, isRecording]
+  );
+
+  const toggleCameraFacing = React.useCallback(() => {
+    setCameraFacing((prev) => (prev === CameraType.back ? CameraType.front : CameraType.back));
+  }, []);
+
+  const handleCancelCamera = React.useCallback(() => {
+    if (isRecording && cameraRef.current) {
+      shouldAttachRecordingRef.current = false;
+      try {
+        cameraRef.current.stopRecording();
+      } catch (error) {
+        console.warn('Error stopping recording on cancel:', error);
       }
     }
+    setIsCameraModalVisible(false);
+    setCameraMode('photo');
+    setCameraError(null);
+  }, [isRecording]);
 
-    const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-
-    // Create storage reference
-    const storageRef = ref(storage, `uploads/${user.uid}/${Date.now()}_${fileName}`);
-
-    // Initialize attachment state
-    setFileAttachment({
-      id: attachmentId,
-      uri: asset.uri,
-      progress: 0,
-      downloadURL: null,
-      error: null,
-      storagePath: storageRef.fullPath,
-      fileName,
-      fileType,
-      fileSize: asset.fileSize || 0,
-    });
-
+  const capturePhoto = React.useCallback(async () => {
+    if (!cameraRef.current) return;
     try {
-      // Fetch the file blob from URI
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-
-      // Upload to Firebase Storage
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress } : null));
-        },
-        (error) => {
-          console.error('Upload error:', error);
-          setFileAttachment((prev: FileAttachment | null) =>
-            prev ? { ...prev, error: 'Upload failed. Please try again.' } : null
-          );
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setFileAttachment((prev: FileAttachment | null) =>
-              prev ? { ...prev, progress: 100, downloadURL } : null
-            );
-          } catch (error) {
-            console.error('Error getting download URL:', error);
-            setFileAttachment((prev: FileAttachment | null) =>
-              prev ? { ...prev, error: 'Failed to process file.' } : null
-            );
-          }
-        }
-      );
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        skipProcessing: false,
+      });
+      if (photo?.uri) {
+        await processAsset({
+          uri: photo.uri,
+          type: 'image',
+          mimeType: 'image/jpeg',
+          fileName: `photo-${Date.now()}.jpg`,
+        });
+        setIsCameraModalVisible(false);
+      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setFileAttachment((prev: FileAttachment | null) =>
-        prev ? { ...prev, error: 'Failed to upload file.' } : null
-      );
+      console.error('Error capturing photo:', error);
+      setCameraError('Failed to capture photo. Please try again.');
     }
-  }, [user, storage]);
+  }, [processAsset]);
+
+  const startVideoRecording = React.useCallback(async () => {
+    if (!cameraRef.current || isRecording) return;
+    const micGranted = await ensureMicrophonePermissions();
+    if (!micGranted) {
+      setCameraError('Microphone permission is required for recording video.');
+      return;
+    }
+    setCameraError(null);
+    shouldAttachRecordingRef.current = false;
+    setIsRecording(true);
+    try {
+      const recording = await cameraRef.current.recordAsync({
+        maxDuration: 60,
+        quality: Camera.Constants.VideoQuality['480p'],
+      });
+      if (recording?.uri && shouldAttachRecordingRef.current) {
+        await processAsset({
+          uri: recording.uri,
+          type: 'video',
+          mimeType: 'video/mp4',
+          fileName: `video-${Date.now()}.mp4`,
+        });
+        setIsCameraModalVisible(false);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes('stop')) {
+        console.error('Error recording video:', error);
+        setCameraError('Failed to record video. Please try again.');
+      }
+    } finally {
+      setIsRecording(false);
+      shouldAttachRecordingRef.current = false;
+    }
+  }, [ensureMicrophonePermissions, processAsset, isRecording]);
+
+  const stopVideoRecordingAndAttach = React.useCallback(() => {
+    if (!cameraRef.current) return;
+    shouldAttachRecordingRef.current = true;
+    try {
+      cameraRef.current.stopRecording();
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      setCameraError('Failed to stop recording.');
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!isCameraModalVisible && isRecording && cameraRef.current) {
+      shouldAttachRecordingRef.current = false;
+      try {
+        cameraRef.current.stopRecording();
+      } catch (error) {
+        console.warn('Error stopping recording during modal close:', error);
+      }
+    }
+  }, [isCameraModalVisible, isRecording]);
+
+  React.useEffect(() => {
+    return () => {
+      if (cameraRef.current) {
+        try {
+          cameraRef.current.stopRecording();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
 
   // Remove file attachment
   const removeFileAttachment = React.useCallback(async () => {
@@ -1235,6 +1428,118 @@ export default function PropertyDetailsScreen() {
                   headerShown: false,
                 }}
               />
+              <Modal
+                visible={isCameraModalVisible}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={handleCancelCamera}>
+                <SafeAreaView className="flex-1 bg-black" edges={['top', 'left', 'right']}>
+                  <View className="flex-1">
+                    <Camera
+                      ref={cameraRef}
+                      style={{ flex: 1 }}
+                      type={cameraFacing}
+                      ratio="16:9"
+                    />
+                    {isRecording && (
+                      <View className="absolute left-0 right-0 top-16 items-center">
+                        <View className="flex-row items-center gap-2 rounded-full bg-red-600/80 px-3 py-1">
+                          <View className="h-2 w-2 rounded-full bg-white" />
+                          <Text className="text-xs text-white">Recording...</Text>
+                        </View>
+                      </View>
+                    )}
+                    <View className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-4 py-4">
+                      <Button
+                        onPress={handleCancelCamera}
+                        variant="ghost"
+                        size="sm"
+                        className="bg-black/40">
+                        <Text className="text-white">Close</Text>
+                      </Button>
+                      <Button
+                        onPress={toggleCameraFacing}
+                        variant="ghost"
+                        size="icon"
+                        className="bg-black/40"
+                        disabled={isRecording}>
+                        <Icon as={CameraIcon} size={20} className="text-white" />
+                      </Button>
+                    </View>
+                    <View className="absolute inset-x-0 bottom-0 bg-black/60 px-6 pb-10 pt-6">
+                      {cameraError && (
+                        <Text className="mb-3 text-center text-sm text-destructive">{cameraError}</Text>
+                      )}
+                      <View className="flex-row items-center justify-center gap-2">
+                        <Button
+                          onPress={() => handleSetCameraMode('photo')}
+                          variant={cameraMode === 'photo' ? 'default' : 'secondary'}
+                          size="sm"
+                          disabled={isRecording}
+                          className="flex-row items-center gap-2 px-4">
+                          <Icon
+                            as={CameraIcon}
+                            size={16}
+                            className={
+                              cameraMode === 'photo' ? 'text-primary-foreground' : 'text-foreground'
+                            }
+                          />
+                          <Text
+                            className={
+                              cameraMode === 'photo' ? 'text-primary-foreground' : 'text-foreground'
+                            }>
+                            Photo
+                          </Text>
+                        </Button>
+                        <Button
+                          onPress={() => handleSetCameraMode('video')}
+                          variant={cameraMode === 'video' ? 'default' : 'secondary'}
+                          size="sm"
+                          disabled={isRecording}
+                          className="flex-row items-center gap-2 px-4">
+                          <Icon
+                            as={Video}
+                            size={16}
+                            className={
+                              cameraMode === 'video' ? 'text-primary-foreground' : 'text-foreground'
+                            }
+                          />
+                          <Text
+                            className={
+                              cameraMode === 'video' ? 'text-primary-foreground' : 'text-foreground'
+                            }>
+                            Video
+                          </Text>
+                        </Button>
+                      </View>
+                      <Pressable
+                        onPress={
+                          cameraMode === 'photo'
+                            ? capturePhoto
+                            : isRecording
+                            ? stopVideoRecordingAndAttach
+                            : startVideoRecording
+                        }
+                        className="mx-auto mt-6 h-20 w-20 items-center justify-center rounded-full border-4 border-white">
+                        {cameraMode === 'photo' ? (
+                          <View className="h-12 w-12 rounded-full bg-white" />
+                        ) : isRecording ? (
+                          <View className="h-8 w-8 rounded-sm bg-red-500" />
+                        ) : (
+                          <View className="h-12 w-12 rounded-full bg-red-500" />
+                        )}
+                      </Pressable>
+                      <Text className="mt-4 text-center text-sm text-white">
+                        {cameraMode === 'photo'
+                          ? 'Tap to capture a photo'
+                          : isRecording
+                          ? 'Tap to stop and attach'
+                          : 'Tap to start recording'}
+                      </Text>
+                    </View>
+                  </View>
+                </SafeAreaView>
+              </Modal>
 
               {/* Navigation Header */}
               <View className="bg-light-background-alt px-4 py-3">
@@ -1457,21 +1762,33 @@ export default function PropertyDetailsScreen() {
                       </View>
                     )}
 
-                    {/* Input Row - Overlay Icons (Option 3) */}
                     <View className="relative flex-row items-center">
-                      {/* Attachment Icon - Inside Left */}
-                      <Pressable
-                        onPress={handleFileUpload}
-                        disabled={isSending || !!fileAttachment}
-                        className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
-                        <Icon
-                          as={Paperclip}
-                          size={20}
-                          className={
-                            fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'
-                          }
-                        />
-                      </Pressable>
+                      <View className="absolute left-2 z-10 flex-row items-center gap-2">
+                        <Pressable
+                          onPress={handleFileUpload}
+                          disabled={isSending || !!fileAttachment}
+                          className="h-8 w-8 items-center justify-center">
+                          <Icon
+                            as={Paperclip}
+                            size={20}
+                            className={
+                              fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'
+                            }
+                          />
+                        </Pressable>
+                        <Pressable
+                          onPress={handleOpenCamera}
+                          disabled={isSending || !!fileAttachment}
+                          className="h-8 w-8 items-center justify-center">
+                          <Icon
+                            as={CameraIcon}
+                            size={20}
+                            className={
+                              fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'
+                            }
+                          />
+                        </Pressable>
+                      </View>
 
                       {/* Input Field with Internal Padding for Icons */}
                       <View className="flex-1 rounded-full border border-border bg-background">
@@ -1482,7 +1799,7 @@ export default function PropertyDetailsScreen() {
                           multiline
                           editable={!isSending}
                           onSubmitEditing={handleSendMessage}
-                          className="border-0 bg-transparent pl-11 pr-11 text-sm"
+                          className="border-0 bg-transparent pl-20 pr-11 text-sm"
                           style={{
                             minHeight: 40,
                             maxHeight: 80,
