@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { deleteCollection } from '@/lib/utils';
+import { deleteCollection, cn } from '@/lib/utils';
 import { deleteAgentSession, WEB_APP_URL } from '@/lib/api';
 import {
   collection,
@@ -52,6 +52,7 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface SessionsListProps {
   propertyId: string;
@@ -86,9 +87,19 @@ export default function SessionsList({
 
   const sessions = sessionsByProperty[propertyId] || [];
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const selectedCount = selectedSessionIds.length;
+  const exitSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedSessionIds([]);
+  }, []);
   useEffect(() => {
     setSearchTerm('');
-  }, [propertyId]);
+    exitSelectionMode();
+  }, [propertyId, exitSelectionMode]);
   const filteredSessions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
     const getTimestampValue = (value: any): number => {
@@ -117,15 +128,82 @@ export default function SessionsList({
       return bTime - aTime;
     });
   }, [sessions, searchTerm]);
-  const draftSession = draftsByProperty[propertyId];
-  // Draft sessions are hidden from the list (similar to webapp)
-  // They are auto-selected on property load and transition to regular sessions on first message
+  useEffect(() => {
+    setSelectedSessionIds((prev) => prev.filter((id) => sessions.some((session) => session.id === id)));
+  }, [sessions]);
+  const selectedSessions = useMemo(
+    () => sessions.filter((session) => selectedSessionIds.includes(session.id)),
+    [sessions, selectedSessionIds]
+  );
+  const isAllSelected = filteredSessions.length > 0 && selectedCount === filteredSessions.length;
 
-  const showAlert = (title: string, message: string) => {
+  const toggleSessionSelection = useCallback((sessionId: string) => {
+    setSelectedSessionIds((prev) =>
+      prev.includes(sessionId)
+        ? prev.filter((id) => id !== sessionId)
+        : [...prev, sessionId]
+    );
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedSessionIds([]);
+      return;
+    }
+    setSelectedSessionIds(filteredSessions.map((session) => session.id));
+  }, [filteredSessions, isAllSelected]);
+
+  const handleToggleSelectionMode = useCallback(() => {
+    if (isSelectionMode) {
+      exitSelectionMode();
+    } else {
+      setIsSelectionMode(true);
+    }
+  }, [exitSelectionMode, isSelectionMode]);
+
+  const showAlert = useCallback((title: string, message: string) => {
     setAlertTitle(title);
     setAlertMessage(message);
     setAlertOpen(true);
-  };
+  }, []);
+
+  const handleBulkDeleteSessions = useCallback(async () => {
+    if (!user || selectedSessions.length === 0) return;
+
+    setIsBulkDeleting(true);
+    try {
+      for (const sessionItem of selectedSessions) {
+        const sessionRef = doc(db, 'users', user.uid, 'chats', sessionItem.id);
+        const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionItem.id, 'messages');
+
+        if (sessionItem.agentSessionId) {
+          try {
+            await deleteAgentSession(user.uid, sessionItem.agentSessionId);
+          } catch (error) {
+            console.error('Failed to delete agent session from backend:', error);
+          }
+        }
+
+        await deleteCollection(db, messagesColRef);
+        await deleteDoc(sessionRef);
+      }
+
+      showAlert(
+        'Success',
+        `${selectedSessions.length} chat session${selectedSessions.length === 1 ? '' : 's'} deleted successfully.`
+      );
+      exitSelectionMode();
+    } catch (error) {
+      console.error('Error deleting sessions:', error);
+      showAlert('Error', 'Could not delete the selected chat sessions. Please try again.');
+    } finally {
+      setIsBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  }, [user, selectedSessions, db, deleteAgentSession, exitSelectionMode, showAlert]);
+  const draftSession = draftsByProperty[propertyId];
+  // Draft sessions are hidden from the list (similar to webapp)
+  // They are auto-selected on property load and transition to regular sessions on first message
 
   const handleCreateSession = async () => {
     if (!user) return;
@@ -330,13 +408,47 @@ export default function SessionsList({
           returnKeyType="search"
           className="bg-background border border-border text-foreground px-3 py-2 rounded-lg"
         />
-        <Button
-          onPress={handleCreateSession}
-          variant="default"
-          className="flex-row items-center gap-2">
-          <Icon as={Plus} size={20} className="text-primary-foreground" />
-          <Text className="text-primary-foreground">New Session</Text>
-        </Button>
+        <View className="flex-row flex-wrap items-center gap-2">
+          <Button
+            onPress={handleCreateSession}
+            variant="default"
+            className="flex-row items-center gap-2"
+            disabled={isSelectionMode}>
+            <Icon as={Plus} size={20} className="text-primary-foreground" />
+            <Text className="text-primary-foreground">New Session</Text>
+          </Button>
+          <Button
+            variant={isSelectionMode ? 'secondary' : 'outline'}
+            className="flex-row items-center gap-2"
+            onPress={handleToggleSelectionMode}
+            disabled={filteredSessions.length === 0}>
+            <Text className="text-sm text-foreground">
+              {isSelectionMode ? 'Cancel' : 'Select'}
+            </Text>
+          </Button>
+          {isSelectionMode && (
+            <>
+              <Button
+                variant="outline"
+                className="flex-row items-center gap-2"
+                onPress={handleSelectAll}>
+                <Text className="text-sm text-foreground">
+                  {isAllSelected ? 'Clear all' : 'Select all'}
+                </Text>
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-row items-center gap-2"
+                onPress={() => setBulkDeleteOpen(true)}
+                disabled={selectedCount === 0 || isBulkDeleting}>
+                <Icon as={Trash2} size={16} className="text-destructive-foreground" />
+                <Text className="text-sm text-destructive-foreground">
+                  Delete ({selectedCount})
+                </Text>
+              </Button>
+            </>
+          )}
+        </View>
       </View>
 
       {/* Sessions List */}
@@ -355,58 +467,84 @@ export default function SessionsList({
         ) : (
           <View className="gap-4 pb-4">
             {/* Regular Sessions - Draft sessions are hidden */}
-            {filteredSessions.map((session) => (
-              <View
-                key={session.id}
-                className="rounded-lg border border-border bg-card p-4">
-                <View className="flex-row items-start gap-3">
-                  <Pressable
-                    onPress={() => onSessionPress?.(session)}
-                    className="flex-1 flex-row items-start gap-3">
-                    <View className="h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                      <Icon as={MessageSquare} size={20} className="text-success" />
-                    </View>
-                    <View className="flex-1 gap-1">
-                      <Text className="text-base font-semibold text-foreground">{session.name}</Text>
-                      <Text className="text-xs text-muted-foreground">
-                        {formatDate(session.createdAt)}
-                      </Text>
-                      {session.messageCount !== undefined && session.messageCount > 0 && (
-                        <Text className="text-xs text-muted-foreground">
-                          {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
-                        </Text>
-                      )}
-                      {session.lastMessageAt && (
-                        <Text className="text-xs text-muted-foreground">
-                          Last active: {formatDate(session.lastMessageAt)}
-                        </Text>
-                      )}
-                    </View>
-                  </Pressable>
+            {filteredSessions.map((session) => {
+              const isSelected = selectedSessionIds.includes(session.id);
+              const handleRowPress = () => {
+                if (isSelectionMode) {
+                  toggleSessionSelection(session.id);
+                  return;
+                }
+                onSessionPress?.(session);
+              };
+              const handleRowLongPress = () => {
+                if (!isSelectionMode) {
+                  setIsSelectionMode(true);
+                  setSelectedSessionIds([session.id]);
+                }
+              };
 
-                  {/* Dropdown Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Icon as={MoreVertical} size={20} className="text-foreground" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onPress={() => handleOpenShareDialog(session)}>
-                        <Icon as={Share2} size={20} className="text-foreground" />
-                        <Text>Share</Text>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onPress={() => setSessionToDelete(session)}>
-                        <Icon as={Trash2} size={20} />
-                        <Text>Delete</Text>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </View>
-              </View>
-            ))}
+              return (
+                <Pressable
+                  key={session.id}
+                  onPress={handleRowPress}
+                  onLongPress={handleRowLongPress}
+                  className={cn(
+                    'rounded-lg border bg-card p-4',
+                    isSelected ? 'border-primary' : 'border-border'
+                  )}>
+                  <View className="flex-row items-start gap-3">
+                    {isSelectionMode && (
+                      <View pointerEvents="none" className="mt-1">
+                        <Checkbox checked={isSelected} onCheckedChange={() => {}} />
+                      </View>
+                    )}
+                    <View className="flex-row flex-1 items-start gap-3">
+                      <View className="h-10 w-10 items-center justify-center rounded-full bg-success/10">
+                        <Icon as={MessageSquare} size={20} className="text-success" />
+                      </View>
+                      <View className="flex-1 gap-1">
+                        <Text className="text-base font-semibold text-foreground">{session.name}</Text>
+                        <Text className="text-xs text-muted-foreground">
+                          {formatDate(session.createdAt)}
+                        </Text>
+                        {session.messageCount !== undefined && session.messageCount > 0 && (
+                          <Text className="text-xs text-muted-foreground">
+                            {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
+                          </Text>
+                        )}
+                        {session.lastMessageAt && (
+                          <Text className="text-xs text-muted-foreground">
+                            Last active: {formatDate(session.lastMessageAt)}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {!isSelectionMode && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Icon as={MoreVertical} size={20} className="text-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onPress={() => handleOpenShareDialog(session)}>
+                            <Icon as={Share2} size={20} className="text-foreground" />
+                            <Text>Share</Text>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onPress={() => setSessionToDelete(session)}>
+                            <Icon as={Trash2} size={20} />
+                            <Text>Delete</Text>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -426,6 +564,41 @@ export default function SessionsList({
               <Text className="text-sm">Cancel</Text>
             </AlertDialogCancel>
             <AlertDialogAction onPress={handleDeleteSession}>
+              <Text className="text-sm text-destructive-foreground">Delete</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open && !isBulkDeleting) {
+            setBulkDeleteOpen(false);
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedCount} session{selectedCount === 1 ? '' : 's'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected chat session{selectedCount === 1 ? '' : 's'} and all associated
+              messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>
+              <Text className="text-sm">Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onPress={handleBulkDeleteSessions}
+              disabled={selectedCount === 0 || isBulkDeleting}
+              className="bg-destructive">
+              {isBulkDeleting && (
+                <Icon as={Loader2} size={16} className="mr-2 text-destructive-foreground" />
+              )}
               <Text className="text-sm text-destructive-foreground">Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>

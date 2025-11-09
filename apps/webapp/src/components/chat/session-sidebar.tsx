@@ -37,6 +37,7 @@ import { Skeleton } from '../ui/skeleton';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Input } from '../ui/input';
+import { Checkbox } from '../ui/checkbox';
 
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -67,14 +68,24 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const [shareState, setShareState] = useState<ShareState>('idle');
   const [sharedLink, setSharedLink] = useState<string | null>(null);
   const [existingShareId, setExistingShareId] = useState<string | null>(null);
-
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const sessionId = params.sessionId as string;
   const propertyId = params.propertyId as string;
+  const selectedCount = selectedSessionIds.length;
+
+  const exitSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedSessionIds([]);
+  }, []);
 
   useEffect(() => {
     setSearchTerm('');
-  }, [propertyId, isMobileOpen]);
+    exitSelectionMode();
+  }, [propertyId, isMobileOpen, exitSelectionMode]);
 
   const handleNewChat = useCallback(() => {
     if (!propertyId) return;
@@ -134,6 +145,12 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     return () => unsubscribe();
   }, [user, toast, propertyId]);
 
+  useEffect(() => {
+    setSelectedSessionIds((previous) =>
+      previous.filter((id) => sessions.some((session) => session.id === id))
+    );
+  }, [sessions]);
+
   const filteredSessions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
     if (!normalizedTerm) {
@@ -143,6 +160,81 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
       session.name?.toLowerCase().includes(normalizedTerm)
     );
   }, [sessions, searchTerm]);
+
+  const selectedSessions = useMemo(
+    () => sessions.filter((session) => selectedSessionIds.includes(session.id)),
+    [sessions, selectedSessionIds]
+  );
+
+  const toggleSessionSelection = useCallback((sessionIdentifier: string) => {
+    setSelectedSessionIds((previous) =>
+      previous.includes(sessionIdentifier)
+        ? previous.filter((id) => id !== sessionIdentifier)
+        : [...previous, sessionIdentifier]
+    );
+  }, []);
+
+  const isAllSelected =
+    filteredSessions.length > 0 && selectedSessionIds.length === filteredSessions.length;
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedSessionIds([]);
+      return;
+    }
+    setSelectedSessionIds(filteredSessions.map((session) => session.id));
+  }, [filteredSessions, isAllSelected]);
+
+  const handleToggleSelectionMode = useCallback(() => {
+    if (isSelectionMode) {
+      exitSelectionMode();
+    } else {
+      setIsSelectionMode(true);
+    }
+  }, [exitSelectionMode, isSelectionMode]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!user || selectedSessions.length === 0) return;
+
+    setIsBulkDeleting(true);
+    try {
+      for (const sessionItem of selectedSessions) {
+        const sessionRef = doc(db, 'users', user.uid, 'chats', sessionItem.id);
+        const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionItem.id, 'messages');
+
+        if (sessionItem.agentSessionId) {
+          try {
+            await deleteAgentSessionAction(user.uid, sessionItem.agentSessionId);
+          } catch (error) {
+            console.error('Failed to delete agent session from backend:', error);
+          }
+        }
+
+        await deleteCollection(messagesColRef);
+        await deleteDoc(sessionRef);
+
+        if (sessionId === sessionItem.id) {
+          router.replace(`/home/properties/${propertyId}/chat`);
+        }
+      }
+
+      toast({
+        title: 'Sessions deleted',
+        description: `${selectedSessions.length} chat session${selectedSessions.length === 1 ? '' : 's'} deleted.`,
+      });
+      exitSelectionMode();
+    } catch (error) {
+      console.error('Error deleting selected sessions:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not delete the selected chat sessions.',
+      });
+    } finally {
+      setIsBulkDeleting(false);
+      setIsBulkDeleteDialogOpen(false);
+    }
+  }, [user, selectedSessions, sessionId, router, propertyId, toast, exitSelectionMode]);
 
 
   const handleDeleteSession = async () => {
@@ -302,34 +394,73 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
   return (
     <>
-      <header className={cn("flex items-center p-4 border-b shrink-0 h-[65px]", isCollapsed ? "justify-center px-2" : "justify-between")}>
-          <h2 className={cn('text-lg font-semibold', isCollapsed && "sr-only")}>Chat Sessions</h2>
-          <div className={cn("flex items-center gap-2", isCollapsed && "w-full justify-center")}>
+      <header
+        className={cn(
+          "flex items-center p-4 border-b shrink-0 h-[65px]",
+          isCollapsed ? "justify-center px-2" : "justify-between"
+        )}
+      >
+        <h2 className={cn('text-lg font-semibold', isCollapsed && "sr-only")}>Chat Sessions</h2>
+        <div className={cn("flex items-center gap-2 flex-wrap justify-end", isCollapsed && "w-full justify-center")}>
+          {!isCollapsed && (
             <Button
-                className={cn("flex-shrink-0 h-8 w-8 rounded-lg p-0", isCollapsed && "hidden")}
-                onClick={handleNewChat}
-                disabled={isInitialLoading}
-                aria-label="New Session"
+              variant={isSelectionMode ? "secondary" : "ghost"}
+              size="sm"
+              className="flex-shrink-0 h-8 rounded-lg px-3"
+              onClick={handleToggleSelectionMode}
+              disabled={isInitialLoading || filteredSessions.length === 0}
+              aria-pressed={isSelectionMode}
             >
-                <Plus className="h-4 w-4" />
+              {isSelectionMode ? "Cancel" : "Select"}
             </Button>
-            <Button
-                variant="ghost"
-                className="flex-shrink-0 h-8 w-8 rounded-lg p-0 hidden lg:flex items-center justify-center"
-                onClick={onToggleCollapse}
-                aria-label="Toggle sidebar"
-            >
-                <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
-            </Button>
-             <Button
-                variant="ghost"
-                className="flex-shrink-0 h-8 w-8 rounded-lg p-0 lg:hidden"
-                onClick={onMobileClose}
-                aria-label="Close sidebar"
-            >
-                <X className="h-4 w-4" />
-            </Button>
-          </div>
+          )}
+          {isSelectionMode && !isCollapsed && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-shrink-0 h-8 rounded-lg px-3"
+                onClick={handleSelectAll}
+              >
+                {isAllSelected ? "Clear all" : "Select all"}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-shrink-0 h-8 rounded-lg px-3"
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+                disabled={selectedCount === 0}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete ({selectedCount})
+              </Button>
+            </>
+          )}
+          <Button
+            className={cn("flex-shrink-0 h-8 w-8 rounded-lg p-0", isCollapsed && "hidden")}
+            onClick={handleNewChat}
+            disabled={isInitialLoading || isSelectionMode}
+            aria-label="New Session"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 hidden lg:flex items-center justify-center"
+            onClick={onToggleCollapse}
+            aria-label="Toggle sidebar"
+          >
+            <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex-shrink-0 h-8 w-8 rounded-lg p-0 lg:hidden"
+            onClick={onMobileClose}
+            aria-label="Close sidebar"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </header>
         {!isCollapsed && (
           <div className="px-4 py-3 border-b">
@@ -363,43 +494,71 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                     const isActive = sessionId === session.id;
                     const sessionDate = session.createdAt?.toDate ? format(session.createdAt.toDate(), 'M/d/yyyy') : '...';
                     
-                    const handleSessionClick = () => {
-                        router.push(route);
-                        if(isMobileOpen) onMobileClose();
-                    }
-
                     if (isCollapsed) {
+                        const isSelected = selectedSessionIds.includes(session.id);
+                        const handleItemInteraction = () => {
+                            if (isSelectionMode) {
+                                toggleSessionSelection(session.id);
+                                return;
+                            }
+                            router.push(route);
+                            if(isMobileOpen) onMobileClose();
+                        };
+                        const handleItemKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleItemInteraction();
+                            }
+                        };
+
                         return (
                              <Tooltip key={session.id} delayDuration={0}>
                                 <TooltipTrigger asChild>
                                     <div
                                         role="button"
                                         tabIndex={0}
-                                        onClick={handleSessionClick}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSessionClick()}}
+                                        onClick={handleItemInteraction}
+                                        onKeyDown={handleItemKeyDown}
                                         className={cn(
                                             "group relative flex items-center justify-center w-full p-3 rounded-lg cursor-pointer transition-colors h-10",
-                                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50"
+                                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
+                                            isSelectionMode && "pl-8",
+                                            isSelected && "ring-2 ring-primary"
                                         )}
                                     >
+                                        {isSelectionMode && (
+                                            <div
+                                                className="absolute left-2 top-1/2 -translate-y-1/2"
+                                                onClick={(event) => event.stopPropagation()}
+                                                onKeyDown={(event) => event.stopPropagation()}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={() => toggleSessionSelection(session.id)}
+                                                    aria-label={isSelected ? "Deselect session" : "Select session"}
+                                                />
+                                            </div>
+                                        )}
                                         <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
-                                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent side="right" align="start" onClick={e => e.stopPropagation()}>
-                                                    <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
-                                                        <Share2 className="mr-2 h-4 w-4" /> Share
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
+                                        {!isSelectionMode && (
+                                            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent side="right" align="start" onClick={e => e.stopPropagation()}>
+                                                        <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
+                                                            <Share2 className="mr-2 h-4 w-4" /> Share
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        )}
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent side="right">
@@ -410,40 +569,72 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         )
                     }
 
+                    const isSelected = selectedSessionIds.includes(session.id);
+                    const handleItemInteraction = () => {
+                        if (isSelectionMode) {
+                            toggleSessionSelection(session.id);
+                            return;
+                        }
+                        router.push(route);
+                        if(isMobileOpen) onMobileClose();
+                    };
+                    const handleItemKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            handleItemInteraction();
+                        }
+                    };
+
                     return (
                         <div
                         key={session.id}
                         role="button"
                         tabIndex={0}
-                        onClick={handleSessionClick}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSessionClick()}}
+                        onClick={handleItemInteraction}
+                        onKeyDown={handleItemKeyDown}
                         className={cn(
                             "group flex items-center justify-between w-[90%] p-3 rounded-lg cursor-pointer transition-colors",
-                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50"
+                            isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
+                            isSelected && "ring-2 ring-primary"
                         )}
                         >
                         <div className='flex-1 flex items-start gap-3 min-w-0'>
+                            {isSelectionMode && (
+                                <div
+                                    className="mt-0.5"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onKeyDown={(event) => event.stopPropagation()}
+                                >
+                                    <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={() => toggleSessionSelection(session.id)}
+                                        aria-label={isSelected ? "Deselect session" : "Select session"}
+                                    />
+                                </div>
+                            )}
                             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                             <div className='flex-1 flex flex-col gap-1 min-w-0'>
                                 <p className="text-sm font-medium truncate text-foreground">{session.name}</p>
                                 <p className="text-xs text-muted-foreground">{sessionDate}</p>
                             </div>
                         </div>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={e => e.stopPropagation()}>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent side="right" align="end" onClick={e => e.stopPropagation()}>
-                                <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
-                                    <Share2 className="mr-2 h-4 w-4" /> Share
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {!isSelectionMode && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={e => e.stopPropagation()}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent side="right" align="end" onClick={e => e.stopPropagation()}>
+                                    <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
+                                        <Share2 className="mr-2 h-4 w-4" /> Share
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                         </div>
                     )
                     })
@@ -452,7 +643,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
             </TooltipProvider>
         </ScrollArea>
         <footer className={cn('h-[84px] flex items-center p-2 border-t shrink-0', isCollapsed && "justify-center")}>
-            <Button variant="outline" className={cn('w-full', isCollapsed && "w-10 h-10 p-0")} onClick={handleNewChat} disabled={isInitialLoading}>
+            <Button variant="outline" className={cn('w-full', isCollapsed && "w-10 h-10 p-0")} onClick={handleNewChat} disabled={isInitialLoading || isSelectionMode}>
                 <Plus className='h-4 w-4' />
                 <span className={cn(isCollapsed && "sr-only", "ml-2")}>New Session</span>
             </Button>
@@ -469,6 +660,36 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteSession} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isBulkDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isBulkDeleting) {
+            setIsBulkDeleteDialogOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedCount} session{selectedCount === 1 ? '' : 's'}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected chat session{selectedCount === 1 ? '' : 's'} and all related
+              messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting || selectedCount === 0}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isBulkDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
