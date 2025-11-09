@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Analysis Agent orchestrates a comprehensive workflow for property-related needs. It handles repairs, maintenance, pest control, service recommendations, and product requests. It can analyze uploaded media when available, or perform text‑only triage from the user's query when no media is provided. After triage, it checks coverage in user documents, provides DIY guidance with products and videos, and offers professional service provider options.
+The Analysis Agent orchestrates a comprehensive workflow for property-related needs. It handles repairs, maintenance, pest control, service recommendations, and product requests. It can analyze uploaded media when available, or perform text‑only triage from the user's query when no media is provided. After triage, it can optionally run targeted checks (Coverage, DIY, Service Recommendations, Cost Estimates) based on the user's multi-select choices—defaulting to "All" when no preference is provided.
 
 ## Scope
 
@@ -118,16 +118,15 @@ Analysis Agent (orchestrator)
 - If triage returns `needs_clarification: true`, return ONLY the clarification questions and stop (wait for user response). Do **not** provide service recommendations, DIY content, coverage summaries, or cost estimates until the user responds with more details.
    - If triage fails or diagnosis is invalid/empty, return ONLY the triage result and stop.
    - Only proceed to steps 2-5 when triage returns a valid, actionable diagnosis.
-2. Coverage
-   - Retrieve warranty/insurance information from user docs.
-3. DIY
-   - Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
-4. Service
-   - Use the triage diagnosis to find local pros via SerpAPI and Yelp (within 50 miles, top 10). If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
-5. Cost Estimation
-   - Use the triage diagnosis to generate cost estimates via Cost Agent.
-5. Response Assembly
-   - Combine all results into one nested JSON object.
+2. Optional Checks (driven by `analysis_focuses`)
+   - `analysis_focuses` is an optional array. When absent, empty, or containing `ALL`, run every check. Otherwise run each agent listed (any combination of `COVERAGE`, `DIY`, `SERVICE`, `COST_ESTIMATES`).
+   - Run only the agents requested:
+     * **Coverage** – Retrieve warranty/insurance information from user docs.
+     * **DIY** – Provide DIY steps, videos, and product recommendations informed by the triage diagnosis.
+     * **Service** – Find local pros via SerpAPI/Yelp within 50 miles (fallback to Google search when needed).
+     * **Cost Estimation** – Generate DIY vs. professional cost comparisons via the Cost Agent.
+3. Response Assembly
+   - Combine triage plus any executed checks into one nested JSON object. Omit sections for agents that were not run.
 
 ## Input Schema
 
@@ -136,7 +135,8 @@ Analysis Agent (orchestrator)
   "user_query": "string",  // REQUIRED - minimum required field
   "diagnosis_uris": ["string"],  // Optional - may be omitted, null, or empty
   "context_doc_uris": ["string"],  // Optional - may be omitted, null, or empty
-  "property_address": "string"  // Optional - may be omitted, null, or empty
+  "property_address": "string",  // Optional - may be omitted, null, or empty
+  "analysis_focuses": ["ALL" | "COVERAGE" | "DIY" | "SERVICE" | "COST_ESTIMATES"]  // Optional - defaults to ["ALL"] when omitted
 }
 ```
 
@@ -169,6 +169,7 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
       "clarification_questions": ["question 1", "question 2", "question 3"],
       "message": "optional friendly message"
     },
+    // Optional sections below are included only if the corresponding agent was executed.
     "coverageResult": {
       "warrantyInfo": "string",
       "insuranceInfo": "string"
@@ -213,7 +214,6 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
     }
   }
 }
-```
 ```
 
 ### Format Requirements

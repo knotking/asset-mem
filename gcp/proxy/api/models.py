@@ -9,6 +9,7 @@ class AgentRequest(BaseModel):
     context_doc_uris: Optional[List[str]] = None
     diagnosis_uris: Optional[List[str]] = None
     property_address: Optional[str] = None
+    analysis_focuses: Optional[List[str]] = None
 
 class DocumentType(str, Enum):
     DEED = "DEED"

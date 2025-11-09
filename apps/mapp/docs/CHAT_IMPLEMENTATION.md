@@ -153,6 +153,7 @@ users/
 ## UI Components
 
 ### Chat Input Bar
+- **Checks selector**: Dropdown to choose which follow-up analysis to run (`All`, `DIY`, `Coverage`, `Service`, `Cost Estimates`). Defaults to `All` for full responses.
 - **Attachment button**: Paperclip icon (currently disabled)
 - **Text input**: Multiline with max height of 100px
 - **Send button**:

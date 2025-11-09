@@ -93,6 +93,17 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
     context_doc_uris = data.get("context_doc_uris", [])
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")
+    analysis_focuses = data.get("analysis_focuses")
+    if analysis_focuses is None:
+        single_focus = data.get("analysis_focus")
+        if isinstance(single_focus, str) and single_focus.strip():
+            analysis_focuses = [single_focus]
+    if isinstance(analysis_focuses, str):
+        analysis_focuses = [analysis_focuses]
+    if isinstance(analysis_focuses, list):
+        analysis_focuses = [str(focus) for focus in analysis_focuses if isinstance(focus, str) and focus.strip()]
+        if not analysis_focuses:
+            analysis_focuses = None
     return AgentRequest(
         user_id=user_id,
         user_query=user_query,
@@ -100,6 +111,7 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
         diagnosis_uris=diagnosis_uris,
         session_id=session_id,
         property_address=property_address,
+        analysis_focuses=analysis_focuses,
     )
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query")
