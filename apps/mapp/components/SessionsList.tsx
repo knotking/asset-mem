@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, MoreVertical, Share2, Trash2, Copy, Loader2 } from 'lucide-react-native';
+import { MessageSquare, Plus, MoreVertical, Share2, Trash2, Copy, Loader2, Pencil } from 'lucide-react-native';
 import type { Session, Message } from '@homeapp/common/types';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -91,6 +91,10 @@ export default function SessionsList({
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [sessionBeingRenamed, setSessionBeingRenamed] = useState<Session | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const selectedCount = selectedSessionIds.length;
   const exitSelectionMode = useCallback(() => {
     setIsSelectionMode(false);
@@ -99,6 +103,10 @@ export default function SessionsList({
   useEffect(() => {
     setSearchTerm('');
     exitSelectionMode();
+    setRenameDialogOpen(false);
+    setSessionBeingRenamed(null);
+    setRenameValue('');
+    setIsRenaming(false);
   }, [propertyId, exitSelectionMode]);
   const filteredSessions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
@@ -136,6 +144,9 @@ export default function SessionsList({
     [sessions, selectedSessionIds]
   );
   const isAllSelected = filteredSessions.length > 0 && selectedCount === filteredSessions.length;
+  const trimmedRenameValue = renameValue.trim();
+  const isRenameDisabled =
+    isRenaming || !trimmedRenameValue || trimmedRenameValue === sessionBeingRenamed?.name;
 
   const toggleSessionSelection = useCallback((sessionId: string) => {
     setSelectedSessionIds((prev) =>
@@ -166,6 +177,48 @@ export default function SessionsList({
     setAlertMessage(message);
     setAlertOpen(true);
   }, []);
+
+  const handleOpenRenameDialog = useCallback((session: Session) => {
+    if (isSelectionMode) {
+      exitSelectionMode();
+    }
+    setSessionBeingRenamed(session);
+    setRenameValue(session.name ?? '');
+    setRenameDialogOpen(true);
+  }, [exitSelectionMode, isSelectionMode]);
+
+  const handleRenameDialogClose = useCallback(() => {
+    if (isRenaming) return;
+    setRenameDialogOpen(false);
+    setSessionBeingRenamed(null);
+    setRenameValue('');
+  }, [isRenaming]);
+
+  const handleSubmitRename = useCallback(async () => {
+    if (!user || !sessionBeingRenamed) return;
+    const trimmedName = renameValue.trim();
+    if (!trimmedName || trimmedName === sessionBeingRenamed.name) {
+      setRenameDialogOpen(false);
+      setSessionBeingRenamed(null);
+      setRenameValue('');
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const sessionRef = doc(db, 'users', user.uid, 'chats', sessionBeingRenamed.id);
+      await updateDoc(sessionRef, { name: trimmedName, updatedAt: serverTimestamp() });
+      showAlert('Success', 'Chat session renamed successfully.');
+      setRenameDialogOpen(false);
+      setSessionBeingRenamed(null);
+      setRenameValue('');
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      showAlert('Error', 'Could not rename the chat session. Please try again.');
+    } finally {
+      setIsRenaming(false);
+    }
+  }, [db, renameValue, sessionBeingRenamed, showAlert, user]);
 
   const handleBulkDeleteSessions = useCallback(async () => {
     if (!user || selectedSessions.length === 0) return;
@@ -532,6 +585,10 @@ export default function SessionsList({
                             <Icon as={Share2} size={20} className="text-foreground" />
                             <Text>Share</Text>
                           </DropdownMenuItem>
+                          <DropdownMenuItem onPress={() => handleOpenRenameDialog(session)}>
+                            <Icon as={Pencil} size={20} className="text-foreground" />
+                            <Text>Rename</Text>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
                             onPress={() => setSessionToDelete(session)}>
@@ -604,6 +661,39 @@ export default function SessionsList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={(open) => !open && handleRenameDialogClose()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Chat Session</DialogTitle>
+            <DialogDescription>
+              Update the session name to better reflect the topic of your conversation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-foreground">Session name</Text>
+            <Input
+              value={renameValue}
+              onChangeText={setRenameValue}
+              placeholder="Enter a new session name"
+              autoFocus
+              editable={!isRenaming}
+            />
+          </View>
+
+          <DialogFooter>
+            <Button variant="outline" onPress={handleRenameDialogClose} disabled={isRenaming}>
+              <Text className="text-sm">Cancel</Text>
+            </Button>
+            <Button onPress={handleSubmitRename} disabled={isRenameDisabled} className="flex-row items-center gap-2">
+              {isRenaming && <Icon as={Loader2} size={16} className="text-primary-foreground" />}
+              <Text className="text-sm text-primary-foreground">Save</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Share Dialog */}
       <Dialog open={!!sessionToShare} onOpenChange={(open) => !open && handleCloseShareDialog()}>

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal } from 'lucide-react';
 import type { Session, Message } from '@/lib/types';
@@ -72,6 +73,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [sessionBeingRenamed, setSessionBeingRenamed] = useState<Session | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const sessionId = params.sessionId as string;
   const propertyId = params.propertyId as string;
@@ -85,6 +90,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   useEffect(() => {
     setSearchTerm('');
     exitSelectionMode();
+    setIsRenameDialogOpen(false);
+    setSessionBeingRenamed(null);
+    setRenameValue('');
+    setIsRenaming(false);
   }, [propertyId, isMobileOpen, exitSelectionMode]);
 
   const handleNewChat = useCallback(() => {
@@ -235,6 +244,52 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
       setIsBulkDeleteDialogOpen(false);
     }
   }, [user, selectedSessions, sessionId, router, propertyId, toast, exitSelectionMode]);
+
+  const handleRenameSession = useCallback((session: Session) => {
+    if (isSelectionMode) {
+      exitSelectionMode();
+    }
+    setSessionBeingRenamed(session);
+    setRenameValue(session.name ?? '');
+    setIsRenameDialogOpen(true);
+  }, [exitSelectionMode, isSelectionMode]);
+
+  const submitRename = useCallback(async () => {
+    if (!user || !sessionBeingRenamed) return;
+    const trimmedName = renameValue.trim();
+    if (!trimmedName || trimmedName === sessionBeingRenamed.name) {
+      setIsRenameDialogOpen(false);
+      setSessionBeingRenamed(null);
+      setRenameValue('');
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const sessionRef = doc(db, 'users', user.uid, 'chats', sessionBeingRenamed.id);
+      await updateDoc(sessionRef, { name: trimmedName, updatedAt: serverTimestamp() });
+      toast({ title: 'Session updated', description: 'Chat session name has been updated.' });
+      setIsRenameDialogOpen(false);
+      setSessionBeingRenamed(null);
+      setRenameValue('');
+    } catch (error) {
+      console.error('Failed to rename session:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not update the chat session name.',
+      });
+    } finally {
+      setIsRenaming(false);
+    }
+  }, [db, renameValue, sessionBeingRenamed, toast, user]);
+
+  const handleRenameDialogClose = useCallback(() => {
+    if (isRenaming) return;
+    setIsRenameDialogOpen(false);
+    setSessionBeingRenamed(null);
+    setRenameValue('');
+  }, [isRenaming]);
 
 
   const handleDeleteSession = async () => {
@@ -552,6 +607,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                                         <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
                                                             <Share2 className="mr-2 h-4 w-4" /> Share
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleRenameSession(session)}>
+                                                            Rename
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
                                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
@@ -629,6 +687,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                     <DropdownMenuItem onClick={() => handleOpenShareDialog(session)}>
                                         <Share2 className="mr-2 h-4 w-4" /> Share
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRenameSession(session)}>
+                                        Rename
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
@@ -693,6 +754,51 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={isRenameDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleRenameDialogClose();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Chat Session</DialogTitle>
+            <DialogDescription>Update the session name to keep your chats organized.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="session-rename">Session name</Label>
+              <Input
+                id="session-rename"
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                placeholder="Enter a new session name"
+                disabled={isRenaming}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleRenameDialogClose} disabled={isRenaming}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitRename}
+              disabled={
+                isRenaming ||
+                !renameValue.trim() ||
+                renameValue.trim() === sessionBeingRenamed?.name
+              }
+            >
+              {isRenaming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!sessionToShare} onOpenChange={(open) => !open && handleCloseShareDialog()}>
         <DialogContent>
