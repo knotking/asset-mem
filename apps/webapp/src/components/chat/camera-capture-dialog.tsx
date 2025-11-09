@@ -34,7 +34,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
   const shouldSaveRecordingRef = useRef(false);
 
   const [mode, setMode] = useState<"photo" | "video">("photo");
-  const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("user");
+  const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("environment");
   const [isRecording, setIsRecording] = useState(false);
   const [isStreamLoading, setIsStreamLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       setError(null);
       setIsStreamLoading(false);
       setHasCameraAccess(true);
-      setSelectedFacingMode("user");
+      setSelectedFacingMode("environment");
       if (mode !== "photo") {
         setMode("photo");
       }
