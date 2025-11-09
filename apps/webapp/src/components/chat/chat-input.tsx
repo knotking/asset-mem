@@ -1,15 +1,15 @@
 
-import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle, useEffect, useCallback } from "react";
+import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Camera, Building, Check, FileText, Send } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Video, Building, Check, ChevronsUpDown, FileText, Send } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 import type { FileAttachment, Property, Document as DocumentType } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Badge } from "../ui/badge";
 
 type Props = {
   onSend: (message: string) => void;
@@ -47,222 +47,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const shouldSaveRecordingRef = useRef(false);
-  const latestOnFileChangeRef = useRef(onFileChange);
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
-  useEffect(() => {
-    latestOnFileChangeRef.current = onFileChange;
-  }, [onFileChange]);
-
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [captureMode, setCaptureMode] = useState<"photo" | "video">("photo");
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-
-  const stopCamera = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (error) {
-        console.error("Error stopping media recorder:", error);
-      }
-    }
-    mediaRecorderRef.current = null;
-    recordedChunksRef.current = [];
-    shouldSaveRecordingRef.current = false;
-    mediaStreamRef.current?.getTracks().forEach(track => track.stop());
-    mediaStreamRef.current = null;
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsRecording(false);
-  }, []);
-
-  const getCameraUnavailableMessage = useCallback(() => {
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      const host = window.location.hostname;
-      const isLocalHost =
-        host === "localhost" ||
-        host === "127.0.0.1" ||
-        host === "::1" ||
-        host.endsWith(".local");
-      if (!isLocalHost) {
-        return "Camera capture requires a secure (https) connection. Please reload the app over https or use a trusted certificate.";
-      }
-    }
-    return "Camera access is unavailable. Check browser permissions and ensure no other app is using the camera.";
-  }, []);
-
-  const startCamera = useCallback(async () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setCameraError(getCameraUnavailableMessage());
-      return;
-    }
-    setCameraError(null);
-
-    try {
-      stopCamera();
-      const constraints: MediaStreamConstraints = {
-        video: { facingMode: "environment" },
-        audio: captureMode === "video",
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
-    } catch (error) {
-      console.error("Camera access error:", error);
-      setCameraError("Unable to access camera. Please check permissions and try again.");
-      stopCamera();
-    }
-  }, [captureMode, stopCamera, getCameraUnavailableMessage]);
-
-  useEffect(() => {
-    if (!isCameraOpen) {
-      stopCamera();
-      return;
-    }
-
-    startCamera();
-    return () => {
-      stopCamera();
-    };
-  }, [isCameraOpen, captureMode, startCamera, stopCamera]);
-
-  const getSupportedMimeType = () => {
-    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
-      return "";
-    }
-    const mimeTypes = [
-      "video/webm;codecs=vp9",
-      "video/webm;codecs=vp8",
-      "video/webm",
-      "video/mp4",
-    ];
-    for (const type of mimeTypes) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        return type;
-      }
-    }
-    return "";
-  };
-
-  const startRecording = useCallback(() => {
-    if (!mediaStreamRef.current) {
-      setCameraError("Camera is not ready yet.");
-      return;
-    }
-
-    try {
-      const mimeType = getSupportedMimeType();
-      const recorder = mimeType
-        ? new MediaRecorder(mediaStreamRef.current, { mimeType })
-        : new MediaRecorder(mediaStreamRef.current);
-
-      mediaRecorderRef.current = recorder;
-      recordedChunksRef.current = [];
-      shouldSaveRecordingRef.current = false;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onerror = (event) => {
-        console.error("MediaRecorder error:", event);
-        setCameraError("Recording failed. Please try again.");
-      };
-
-      recorder.onstop = () => {
-        const shouldSave = shouldSaveRecordingRef.current;
-        const chunks = recordedChunksRef.current;
-        setIsRecording(false);
-
-        if (shouldSave && chunks.length > 0) {
-          const mime = recorder.mimeType || mimeType || "video/webm";
-          const extension = mime.includes("mp4") ? "mp4" : "webm";
-          const recordedBlob = new Blob(chunks, { type: mime });
-          const fileName = `ai-chat-${Date.now()}.${extension}`;
-          const file = new File([recordedBlob], fileName, { type: mime });
-          latestOnFileChangeRef.current(file);
-          setIsCameraOpen(false);
-        }
-
-        recordedChunksRef.current = [];
-        shouldSaveRecordingRef.current = false;
-      };
-
-      recorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Failed to start recording:", error);
-      setCameraError("Unable to start recording on this device.");
-    }
-  }, []);
-
-  const stopRecording = useCallback((save: boolean) => {
-    if (!mediaRecorderRef.current) return;
-    shouldSaveRecordingRef.current = save;
-    if (mediaRecorderRef.current.state !== "inactive") {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (error) {
-        console.error("Error stopping recording:", error);
-        setCameraError("Failed to stop recording.");
-      }
-    }
-  }, []);
-
-  const handleCapturePhoto = useCallback(async () => {
-    if (!videoRef.current) {
-      setCameraError("Camera preview is not available yet.");
-      return;
-    }
-
-    const videoElement = videoRef.current;
-    const width = videoElement.videoWidth;
-    const height = videoElement.videoHeight;
-
-    if (!width || !height) {
-      setCameraError("Camera is still initializing. Please wait and try again.");
-      return;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      setCameraError("Unable to capture photo on this device.");
-      return;
-    }
-
-    context.drawImage(videoElement, 0, 0, width, height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.9)
-    );
-
-    if (!blob) {
-      setCameraError("Failed to capture photo. Please try again.");
-      return;
-    }
-
-    const fileName = `ai-chat-${Date.now()}.jpg`;
-    const file = new File([blob], fileName, { type: blob.type });
-    latestOnFileChangeRef.current(file);
-    setIsCameraOpen(false);
-  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -365,115 +152,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   return (
     <div className="w-full relative">
-       <Dialog
-          open={isCameraOpen}
-          onOpenChange={(open) => {
-            if (!open && isRecording) {
-              stopRecording(false);
-            }
-            if (!open) {
-              setIsCameraOpen(false);
-              setCameraError(null);
-              return;
-            }
-            if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-              setCameraError(getCameraUnavailableMessage());
-              setIsCameraOpen(true);
-              return;
-            }
-            setCaptureMode("photo");
-            setIsCameraOpen(true);
-          }}
-        >
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Capture media</DialogTitle>
-              <DialogDescription>
-                Use your camera to attach a photo or video to the chat.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="relative overflow-hidden rounded-lg bg-black aspect-video">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted={captureMode === "photo" || !isRecording}
-                  className="h-full w-full object-cover"
-                />
-                {isRecording && (
-                  <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-600/80 px-3 py-1 text-xs font-semibold text-white">
-                    <span className="block h-2 w-2 rounded-full bg-white animate-pulse" />
-                    Recording…
-                  </div>
-                )}
-              </div>
-              {cameraError && (
-                <p className="text-sm text-destructive">{cameraError}</p>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={captureMode === "photo" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCaptureMode("photo")}
-                    disabled={isRecording}
-                  >
-                    Photo
-                  </Button>
-                  <Button
-                    variant={captureMode === "video" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCaptureMode("video")}
-                    disabled={isRecording}
-                  >
-                    Video
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (isRecording) {
-                        stopRecording(false);
-                      }
-                      setIsCameraOpen(false);
-                      setCameraError(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  {captureMode === "photo" ? (
-                    <Button
-                      size="sm"
-                      onClick={handleCapturePhoto}
-                      disabled={!!cameraError || isRecording}
-                    >
-                      Capture Photo
-                    </Button>
-                  ) : !isRecording ? (
-                    <Button
-                      size="sm"
-                      onClick={startRecording}
-                      disabled={!!cameraError}
-                    >
-                      Start Recording
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => stopRecording(true)}
-                    >
-                      Stop &amp; Attach
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
        {hasFileAttached && (
             <div className="absolute bottom-full mb-2 w-full max-w-md">
                 <div className="relative p-2 border rounded-lg bg-card shadow-lg">
@@ -521,7 +199,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-28"
+                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-12"
                 rows={1}
                 disabled={isLoading}
                 aria-label="Chat input"
@@ -625,40 +303,17 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             )}
 
             {allowFileAttachment && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="flex-shrink-0"
-                    onClick={() => internalFileInputRef.current?.click()}
-                    disabled={isLoading || hasFileAttached}
-                    type="button"
-                    aria-label="Attach file"
-                    >
-                    <Paperclip className="h-5 w-5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="flex-shrink-0"
-                    onClick={() => {
-                        if (isLoading || hasFileAttached) return;
-                        if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-                            setCameraError(getCameraUnavailableMessage());
-                            setIsCameraOpen(true);
-                            return;
-                        }
-                        setCameraError(null);
-                        setCaptureMode("photo");
-                        setIsCameraOpen(true);
-                    }}
-                    disabled={isLoading || hasFileAttached}
-                    type="button"
-                    aria-label="Open camera"
+             <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex-shrink-0"
+                onClick={() => internalFileInputRef.current?.click()}
+                disabled={isLoading || hasFileAttached}
+                type="button"
+                aria-label="Attach file"
                 >
-                    <Camera className="h-5 w-5" />
-                </Button>
-            </div>
+                <Paperclip className="h-5 w-5" />
+            </Button>
             )}
         </div>
         {isLoading ? (
