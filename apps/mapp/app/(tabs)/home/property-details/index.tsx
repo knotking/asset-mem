@@ -54,6 +54,9 @@ import {
   Sparkles,
   Plus,
   Square,
+  Camera,
+  Video,
+  Images,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -735,6 +738,7 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const [attachmentOptionsVisible, setAttachmentOptionsVisible] = React.useState(false);
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -870,11 +874,93 @@ export default function PropertyDetailsScreen() {
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
 
-  // Handle file selection and upload
-  const handleFileUpload = React.useCallback(async () => {
+  const handleAssetUpload = React.useCallback(
+    async (asset: ImagePicker.ImagePickerAsset) => {
+      if (!user) return;
+
+      const timestamp = Date.now();
+      let fileName = asset.fileName;
+      const fileNameWithoutExt = fileName ? fileName.replace(/\.[^/.]+$/, '') : '';
+
+      if (!fileName || /^\d+$/.test(fileNameWithoutExt)) {
+        const uriParts = asset.uri.split('/');
+        const uriFileName = uriParts[uriParts.length - 1];
+        const decodedFileName = uriFileName ? decodeURIComponent(uriFileName) : '';
+
+        if (decodedFileName && decodedFileName.includes('.')) {
+          const uriFileNameWithoutExt = decodedFileName.replace(/\.[^/.]+$/, '');
+          if (!/^\d+$/.test(uriFileNameWithoutExt)) {
+            fileName = decodedFileName;
+          } else {
+            fileName = `photo-${timestamp}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+          }
+        } else {
+          fileName = `photo-${timestamp}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
+        }
+      }
+
+      const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+      const storageRef = ref(storage, `uploads/${user.uid}/${timestamp}_${fileName}`);
+      const attachmentId = `upload-${timestamp}`;
+
+      setFileAttachment({
+        id: attachmentId,
+        uri: asset.uri,
+        progress: 0,
+        downloadURL: null,
+        error: null,
+        storagePath: storageRef.fullPath,
+        fileName,
+        fileType,
+        fileSize: asset.fileSize || 0,
+      });
+
+      try {
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress } : null));
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, error: 'Upload failed. Please try again.' } : null
+            );
+          },
+          async () => {
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              setFileAttachment((prev: FileAttachment | null) =>
+                prev ? { ...prev, progress: 100, downloadURL } : null
+              );
+            } catch (error) {
+              console.error('Error getting download URL:', error);
+              setFileAttachment((prev: FileAttachment | null) =>
+                prev ? { ...prev, error: 'Failed to process file.' } : null
+              );
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setFileAttachment((prev: FileAttachment | null) =>
+          prev ? { ...prev, error: 'Failed to upload file.' } : null
+        );
+      }
+    },
+    [user, storage]
+  );
+
+  const handleSelectFromLibrary = React.useCallback(async () => {
+    setAttachmentOptionsVisible(false);
     if (!user) return;
 
-    // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       setErrorMessage('Please grant permission to access your media library.');
@@ -882,9 +968,33 @@ export default function PropertyDetailsScreen() {
       return;
     }
 
-    // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      quality: 0.8,
+      videoMaxDuration: 60,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    await handleAssetUpload(result.assets[0]);
+  }, [user, handleAssetUpload]);
+
+  const handleTakePhoto = React.useCallback(async () => {
+    setAttachmentOptionsVisible(false);
+    if (!user) return;
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setErrorMessage('Please grant permission to access your camera.');
+      setErrorAlertOpen(true);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 0.8,
     });
@@ -893,98 +1003,47 @@ export default function PropertyDetailsScreen() {
       return;
     }
 
-    const asset = result.assets[0];
-    const attachmentId = `upload-${Date.now()}`;
+    await handleAssetUpload(result.assets[0]);
+  }, [user, handleAssetUpload]);
 
-    console.log('ASSET:', asset);
-    // Extract filename from URI if asset.fileName is not available or is numeric
-    let fileName = asset.fileName;
-    const fileNameWithoutExt = fileName ? fileName.replace(/\.[^/.]+$/, '') : '';
+  const handleRecordVideo = React.useCallback(async () => {
+    setAttachmentOptionsVisible(false);
+    if (!user) return;
 
-    // Check if fileName is missing, is just a number, or has a numeric-only base name
-    if (!fileName || /^\d+$/.test(fileNameWithoutExt)) {
-      // If fileName is not available or base name is just a number, extract from URI
-      const uriParts = asset.uri.split('/');
-      const uriFileName = uriParts[uriParts.length - 1];
-
-      // Decode URI component in case it has encoded characters
-      const decodedFileName = uriFileName ? decodeURIComponent(uriFileName) : '';
-
-      // If URI has a proper filename with extension and not just numeric, use it
-      if (decodedFileName && decodedFileName.includes('.')) {
-        const uriFileNameWithoutExt = decodedFileName.replace(/\.[^/.]+$/, '');
-        // Only use URI filename if it's not purely numeric
-        if (!/^\d+$/.test(uriFileNameWithoutExt)) {
-          fileName = decodedFileName;
-        } else {
-          // Even URI has numeric name, create a meaningful name
-          fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
-        }
-      } else {
-        // Fallback to timestamp-based name with proper extension
-        fileName = `photo-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`;
-      }
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    if (cameraPermission.status !== 'granted') {
+      setErrorMessage('Please grant permission to access your camera.');
+      setErrorAlertOpen(true);
+      return;
     }
 
-    const fileType = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+    const microphonePermission = await ImagePicker.requestMicrophonePermissionsAsync();
+    if (microphonePermission.status !== 'granted') {
+      setErrorMessage('Please grant permission to access your microphone.');
+      setErrorAlertOpen(true);
+      return;
+    }
 
-    // Create storage reference
-    const storageRef = ref(storage, `uploads/${user.uid}/${Date.now()}_${fileName}`);
-
-    // Initialize attachment state
-    setFileAttachment({
-      id: attachmentId,
-      uri: asset.uri,
-      progress: 0,
-      downloadURL: null,
-      error: null,
-      storagePath: storageRef.fullPath,
-      fileName,
-      fileType,
-      fileSize: asset.fileSize || 0,
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.8,
+      videoMaxDuration: 60,
     });
 
-    try {
-      // Fetch the file blob from URI
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-
-      // Upload to Firebase Storage
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress } : null));
-        },
-        (error) => {
-          console.error('Upload error:', error);
-          setFileAttachment((prev: FileAttachment | null) =>
-            prev ? { ...prev, error: 'Upload failed. Please try again.' } : null
-          );
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setFileAttachment((prev: FileAttachment | null) =>
-              prev ? { ...prev, progress: 100, downloadURL } : null
-            );
-          } catch (error) {
-            console.error('Error getting download URL:', error);
-            setFileAttachment((prev: FileAttachment | null) =>
-              prev ? { ...prev, error: 'Failed to process file.' } : null
-            );
-          }
-        }
-      );
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setFileAttachment((prev: FileAttachment | null) =>
-        prev ? { ...prev, error: 'Failed to upload file.' } : null
-      );
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
     }
-  }, [user, storage]);
+
+    await handleAssetUpload(result.assets[0]);
+  }, [user, handleAssetUpload]);
+
+  const handleAttachmentPress = React.useCallback(() => {
+    if (isSending || fileAttachment) {
+      return;
+    }
+    setAttachmentOptionsVisible(true);
+  }, [isSending, fileAttachment]);
 
   // Remove file attachment
   const removeFileAttachment = React.useCallback(async () => {
@@ -1389,6 +1448,42 @@ export default function PropertyDetailsScreen() {
                 <KeyboardAvoidingView
                   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                   keyboardVerticalOffset={0}>
+                  <Modal
+                    visible={attachmentOptionsVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setAttachmentOptionsVisible(false)}>
+                    <View className="flex-1 justify-end bg-black/40">
+                      <Pressable
+                        className="flex-1"
+                        onPress={() => setAttachmentOptionsVisible(false)}
+                      />
+                      <View className="space-y-3 rounded-t-3xl bg-background px-4 pt-4 pb-6">
+                        <Text className="text-base font-semibold text-foreground">Attach media</Text>
+                        <Button
+                          variant="outline"
+                          className="justify-start gap-3"
+                          onPress={handleTakePhoto}>
+                          <Icon as={Camera} size={20} className="text-foreground" />
+                          <Text className="text-sm text-foreground">Take photo</Text>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="justify-start gap-3"
+                          onPress={handleRecordVideo}>
+                          <Icon as={Video} size={20} className="text-foreground" />
+                          <Text className="text-sm text-foreground">Record video</Text>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="justify-start gap-3"
+                          onPress={handleSelectFromLibrary}>
+                          <Icon as={Images} size={20} className="text-foreground" />
+                          <Text className="text-sm text-foreground">Choose from library</Text>
+                        </Button>
+                      </View>
+                    </View>
+                  </Modal>
                   <View className="border-t border-border bg-light-background-alt px-4 py-3">
                     {/* File Attachment Preview */}
                     {fileAttachment && (
@@ -1461,7 +1556,7 @@ export default function PropertyDetailsScreen() {
                     <View className="relative flex-row items-center">
                       {/* Attachment Icon - Inside Left */}
                       <Pressable
-                        onPress={handleFileUpload}
+                        onPress={handleAttachmentPress}
                         disabled={isSending || !!fileAttachment}
                         className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
                         <Icon

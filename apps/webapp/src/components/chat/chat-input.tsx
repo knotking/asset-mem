@@ -2,7 +2,7 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Video, Building, Check, ChevronsUpDown, FileText, Send } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Video, Building, Check, ChevronsUpDown, FileText, Send, Camera } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 import type { FileAttachment, Property, Document as DocumentType } from "@/lib/types";
@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import { CameraCaptureDialog } from "./camera-capture-dialog";
 
 type Props = {
   onSend: (message: string) => void;
@@ -47,6 +48,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
+  const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -149,6 +151,10 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const showDocumentSelector = false; // Disabled for now
   const allowFileAttachment = !!onFileChange;
   const hasFileAttached = !!fileAttachment;
+  const handleCameraCapture = (file: File) => {
+    onFileChange(file);
+    setCameraDialogOpen(false);
+  };
 
   return (
     <div className="w-full relative">
@@ -199,7 +205,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-12"
+                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-24"
                 rows={1}
                 disabled={isLoading}
                 aria-label="Chat input"
@@ -303,17 +309,30 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             )}
 
             {allowFileAttachment && (
-             <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex-shrink-0"
-                onClick={() => internalFileInputRef.current?.click()}
-                disabled={isLoading || hasFileAttached}
-                type="button"
-                aria-label="Attach file"
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => internalFileInputRef.current?.click()}
+                  disabled={isLoading || hasFileAttached}
+                  type="button"
+                  aria-label="Attach file"
                 >
-                <Paperclip className="h-5 w-5" />
-            </Button>
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => setCameraDialogOpen(true)}
+                  disabled={isLoading || hasFileAttached}
+                  type="button"
+                  aria-label="Open camera"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+              </div>
             )}
         </div>
         {isLoading ? (
@@ -339,6 +358,13 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             </Button>
         )}
       </form>
+      {allowFileAttachment && (
+        <CameraCaptureDialog
+          open={cameraDialogOpen}
+          onOpenChange={setCameraDialogOpen}
+          onCapture={handleCameraCapture}
+        />
+      )}
     </div>
   );
 });
