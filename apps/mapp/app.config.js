@@ -66,7 +66,7 @@ module.exports = {
       policy: 'appVersion',
     },
     updates: {
-      url: 'https://u.expo.dev/cc06df81-5ad0-4fc3-ad59-6294c95e4614',
+      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614'}`,
     },
   },
 };
