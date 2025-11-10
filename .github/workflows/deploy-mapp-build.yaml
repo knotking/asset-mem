@@ -105,38 +105,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd apps/mapp
-          npm ci
-
-      - name: Generate app version
-        id: version
-        run: |
-          # Use manual version input if provided, otherwise auto-increment
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-            echo "Using manual version: $VERSION"
-          else
-            VERSION="0.0.${{ github.run_number }}"
-            echo "Using auto-incremented version: $VERSION"
-          fi
-          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Validate Environment Configuration
         run: |
           echo "Validating environment-specific configuration..."
@@ -169,6 +137,38 @@ jobs:
           fi
 
           echo "Environment configuration validated successfully"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/mapp
+          npm ci
+
+      - name: Generate app version
+        id: version
+        run: |
+          # Use manual version input if provided, otherwise auto-increment
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using manual version: $VERSION"
+          else
+            VERSION="0.0.${{ github.run_number }}"
+            echo "Using auto-incremented version: $VERSION"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build for iOS
         if: ${{ needs.validate.outputs.platform == 'ios' || needs.validate.outputs.platform == 'all' }}
