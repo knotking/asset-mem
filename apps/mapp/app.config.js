@@ -29,7 +29,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.homegeekai.demo',
+      bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.homegeekai.staging',
     },
     android: {
       edgeToEdgeEnabled: true,
@@ -37,7 +37,7 @@ module.exports = {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#1a2332',
       },
-      package: 'com.homegeekai.demo',
+      package: process.env.ANDROID_PACKAGE || 'com.homegeekai.staging',
     },
     web: {
       bundler: 'metro',
@@ -51,7 +51,7 @@ module.exports = {
     extra: {
       router: {},
       eas: {
-        projectId: 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
+        projectId: process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
       },
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)

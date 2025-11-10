@@ -10,6 +10,9 @@
       "channel": "development",
       "env": {
         "APP_SLUG": "homegeekai-development",
+        "IOS_BUNDLE_ID": "com.homegeekai.dev",
+        "ANDROID_PACKAGE": "com.homegeekai.dev",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
@@ -28,13 +31,15 @@
       "channel": "staging",
       "env": {
         "APP_SLUG": "homegeekai-staging",
+        "IOS_BUNDLE_ID": "com.homegeekai.staging",
+        "ANDROID_PACKAGE": "com.homegeekai.staging",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
       },
       "ios": {
-        "resourceClass": "m-medium",
-        "bundleIdentifier": "com.homegeekai.staging"
+        "resourceClass": "m-medium"
       },
       "android": {
         "buildType": "apk",
@@ -48,16 +53,18 @@
       "env": {
         "APP_ENV": "production",
         "APP_SLUG": "homegeekai-prod",
+        "IOS_BUNDLE_ID": "com.homegeekai.prod",
+        "ANDROID_PACKAGE": "com.homegeekai.prod",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://prod--goggle-gab.us-central1.hosted.app"
       },
       "ios": {
-        "resourceClass": "m-medium",
-        "bundleIdentifier": "com.homegeekai.prod"
+        "resourceClass": "m-medium"
       },
       "android": {
-        "buildType": "aab"
+        "buildType": "app-bundle"
       }
     }
   },
@@ -72,14 +79,6 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
       }
-    }
-  },
-  "update": {
-    "staging": {
-      "channel": "staging"
-    },
-    "production": {
-      "channel": "production"
     }
   }
 }

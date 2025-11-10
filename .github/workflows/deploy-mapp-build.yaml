@@ -176,11 +176,13 @@ jobs:
         run: |
           echo "Building iOS app for ${{ needs.validate.outputs.profile }} profile..."
           echo "App version: $APP_VERSION"
+          echo "Expo Project ID: $EXPO_PROJECT_ID"
           eas build --platform ios --profile ${{ needs.validate.outputs.profile }} --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           APP_VERSION: ${{ env.APP_VERSION }}
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
 
       - name: Build for Android
         if: ${{ needs.validate.outputs.platform == 'android' || needs.validate.outputs.platform == 'all' }}
@@ -188,11 +190,13 @@ jobs:
         run: |
           echo "Building Android app for ${{ needs.validate.outputs.profile }} profile..."
           echo "App version: $APP_VERSION"
+          echo "Expo Project ID: $EXPO_PROJECT_ID"
           eas build --platform android --profile ${{ needs.validate.outputs.profile }} --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           APP_VERSION: ${{ env.APP_VERSION }}
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
 
       - name: Summary
         run: |

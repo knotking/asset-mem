@@ -316,6 +316,76 @@ apps/mapp/deploy.sh
 - ✅ Colorized output for better readability
 - ✅ Error handling and validation
 
+## Environment Configuration Flow
+
+### How Environment Variables Work
+
+The deployment system uses a layered approach for environment configuration:
+
+#### 1. GitHub Environment Variables (Workflow Level)
+Set in: **Settings → Environments → [staging/production] → Environment variables**
+
+These override values during GitHub Actions workflows:
+- `EXPO_PROJECT_ID` - Passed to EAS commands
+- `EXPO_ACCOUNT` - Used in workflow summaries
+
+#### 2. EAS Build Profile (eas.json)
+Set in: [eas.json](./eas.json) under each profile's `env` section
+
+These are used during EAS builds (both GitHub and local):
+- `APP_SLUG` - App identifier/slug
+- `IOS_BUNDLE_ID` - iOS bundle identifier
+- `ANDROID_PACKAGE` - Android package name
+- `EXPO_PROJECT_ID` - Expo project ID (fallback)
+- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL` - API endpoints
+
+#### 3. App Configuration (app.config.js)
+Reads from: `process.env.*` with fallback values
+
+The app config reads environment variables set by either:
+- GitHub workflows → EAS build
+- eas.json → EAS build
+- Local .env file → Local development
+
+**Example Flow for GitHub Workflow Build:**
+```
+GitHub Env Var (EXPO_PROJECT_ID)
+  ↓ (passed to workflow)
+Workflow sets environment
+  ↓ (passed to EAS command)
+EAS build runs with env vars from both GitHub + eas.json
+  ↓ (environment variables available)
+app.config.js reads process.env.EXPO_PROJECT_ID
+  ↓ (configuration applied)
+App builds with correct settings
+```
+
+**Example Flow for Local Build:**
+```
+eas.json profile env values
+  ↓ (EAS reads profile)
+Local EAS build uses eas.json env
+  ↓ (environment variables available)
+app.config.js reads process.env.IOS_BUNDLE_ID
+  ↓ (configuration applied)
+App builds with profile-specific settings
+```
+
+### Bundle Identifier Strategy
+
+Each environment uses a unique bundle identifier, allowing multiple versions to be installed side-by-side on the same device:
+
+| Environment | iOS Bundle ID | Android Package | Purpose |
+|-------------|--------------|-----------------|---------|
+| Development | `com.homegeekai.dev` | `com.homegeekai.dev` | Local dev builds |
+| Staging | `com.homegeekai.staging` | `com.homegeekai.staging` | Internal testing |
+| Production | `com.homegeekai.prod` | `com.homegeekai.prod` | App store releases |
+
+**Benefits:**
+- Test production and staging builds on the same device
+- No conflicts between different environments
+- Clear separation of app data per environment
+
 ## Build Profiles
 
 Defined in [eas.json](./eas.json)
@@ -355,7 +425,9 @@ Defined in [eas.json](./eas.json)
 
 **Configuration**:
 - Internal distribution
-- Separate bundle ID: `com.homegeekai.demo.staging`
+- Separate bundle IDs:
+  - iOS: `com.homegeekai.staging`
+  - Android: `com.homegeekai.staging`
 - Staging update channel
 - Release build with staging environment variables
 
@@ -364,8 +436,12 @@ Defined in [eas.json](./eas.json)
 ./deploy.sh build --platform all --profile staging
 ```
 
-**Environment Variables**:
-- `APP_ENV=staging`
+**Environment Variables** (from eas.json):
+- `APP_SLUG=homegeekai-staging`
+- `IOS_BUNDLE_ID=com.homegeekai.staging`
+- `ANDROID_PACKAGE=com.homegeekai.staging`
+- `EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614`
+- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
 
 ### Production
 
@@ -373,7 +449,9 @@ Defined in [eas.json](./eas.json)
 
 **Configuration**:
 - Store distribution
-- Production bundle ID: `com.homegeekai.demo`
+- Production bundle IDs:
+  - iOS: `com.homegeekai.prod`
+  - Android: `com.homegeekai.prod`
 - Production update channel
 - Auto-increment build numbers
 - AAB for Android (required by Google Play)
@@ -383,8 +461,13 @@ Defined in [eas.json](./eas.json)
 ./deploy.sh build --platform all --profile production
 ```
 
-**Environment Variables**:
+**Environment Variables** (from eas.json):
 - `APP_ENV=production`
+- `APP_SLUG=homegeekai-prod`
+- `IOS_BUNDLE_ID=com.homegeekai.prod`
+- `ANDROID_PACKAGE=com.homegeekai.prod`
+- `EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614`
+- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
 
 ## Deployment Workflows
 

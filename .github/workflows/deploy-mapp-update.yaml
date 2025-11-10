@@ -169,11 +169,13 @@ jobs:
         run: |
           echo "Publishing OTA update to ${{ needs.validate.outputs.channel }} channel..."
           echo "App version: $APP_VERSION"
+          echo "Expo Project ID: $EXPO_PROJECT_ID"
           eas update --channel ${{ needs.validate.outputs.channel }} --message "${{ needs.validate.outputs.message }}" --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           APP_VERSION: ${{ env.APP_VERSION }}
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
 
       - name: Summary
         run: |
