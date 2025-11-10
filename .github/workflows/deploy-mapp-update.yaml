@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - develop
+      - deploy_mapp
     paths:
       - "apps/mapp/**"
       - "apps/common/**"
@@ -75,14 +75,11 @@ jobs:
       - name: Validate GitHub Variables
         run: |
           echo "Validating required GitHub variables..."
-          REQUIRED_VARS=("EXPO_PROJECT_ID")
           MISSING_VARS=()
 
-          for var in "${REQUIRED_VARS[@]}"; do
-            if [ -z "${{ vars[var] }}" ]; then
-              MISSING_VARS+=("$var")
-            fi
-          done
+          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
+            MISSING_VARS+=("EXPO_PROJECT_ID")
+          fi
 
           if [ ${#MISSING_VARS[@]} -ne 0 ]; then
             echo "Error: Missing required GitHub variables:"
