@@ -20,6 +20,7 @@ import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -77,6 +78,12 @@ export default function SettingsScreen() {
         <Icon as={LogOut} size={20} className="mr-2 text-destructive" />
         <Text className="font-semibold text-destructive">Sign Out</Text>
       </Button>
+
+      <View className="flex-1 items-center justify-end pb-8">
+        <Text className="text-xs text-muted-foreground">
+          Version {Constants.expoConfig?.version || '0.0.1'}
+        </Text>
+      </View>
     </View>
   );
 }
