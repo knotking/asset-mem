@@ -72,23 +72,6 @@ jobs:
             echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
           fi
 
-      - name: Validate GitHub Variables
-        run: |
-          echo "Validating required GitHub variables..."
-          MISSING_VARS=()
-
-          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
-            MISSING_VARS+=("EXPO_PROJECT_ID")
-          fi
-
-          if [ ${#MISSING_VARS[@]} -ne 0 ]; then
-            echo "Error: Missing required GitHub variables:"
-            printf '%s\n' "${MISSING_VARS[@]}"
-            exit 1
-          fi
-
-          echo "All required variables are present"
-
       - name: Validate GitHub Secrets
         run: |
           echo "Validating required GitHub secrets..."
@@ -148,15 +131,38 @@ jobs:
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Validate Environment Secrets
+      - name: Validate Environment Configuration
         run: |
-          echo "Validating environment-specific secrets..."
+          echo "Validating environment-specific configuration..."
+          MISSING_ITEMS=()
+
+          # Check environment secrets
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            MISSING_ITEMS+=("EXPO_TOKEN (secret)")
+          fi
+
           if [ -z "${{ secrets.PROXY_TOKEN }}" ]; then
-            echo "Error: PROXY_TOKEN secret is not set for the ${{ needs.validate.outputs.environment }} environment"
-            echo "Please add PROXY_TOKEN to Settings → Environments → ${{ needs.validate.outputs.environment }} → Secrets"
+            MISSING_ITEMS+=("PROXY_TOKEN (secret)")
+          fi
+
+          # Check environment variables
+          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
+            MISSING_ITEMS+=("EXPO_PROJECT_ID (variable)")
+          fi
+
+          if [ -z "${{ vars.EXPO_ACCOUNT }}" ]; then
+            MISSING_ITEMS+=("EXPO_ACCOUNT (variable)")
+          fi
+
+          if [ ${#MISSING_ITEMS[@]} -ne 0 ]; then
+            echo "Error: Missing required environment configuration for '${{ needs.validate.outputs.environment }}' environment:"
+            printf '%s\n' "${MISSING_ITEMS[@]}"
+            echo ""
+            echo "Please configure these in Settings → Environments → ${{ needs.validate.outputs.environment }}"
             exit 1
           fi
-          echo "Environment secrets validated successfully"
+
+          echo "Environment configuration validated successfully"
 
       - name: Publish update
         working-directory: apps/mapp

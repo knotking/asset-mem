@@ -93,11 +93,13 @@ Navigate to: **Settings → Environments → [staging/production] → Environmen
 |-------------|-------------|-------------|
 | `PROXY_TOKEN` | API proxy authentication token | staging, production |
 
-#### Required Variables
+#### Required Variables (Environment Level)
+
+Navigate to: **Settings → Environments → [staging/production] → Environment variables**
 
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
-| `EXPO_PROJECT_ID` | `4d090ffd-6554-4652-9cb5-0ca6f02fb167` | From app.json |
+| `EXPO_PROJECT_ID` | `cc06df81-5ad0-4fc3-ad59-6294c95e4614` | From app.config.js extra.eas.projectId |
 | `EXPO_ACCOUNT` | Your Expo username | From `eas whoami` |
 
 ### Step 3: Configure App Store Credentials (Production Only)
@@ -631,16 +633,15 @@ npm install
 
 **Solution**:
 ```bash
-# Check all required variables are set:
-# Settings → Secrets and variables → Actions
+# Check all required secrets and variables are set:
 
-# Required secrets (repository level):
+# Repository-level secrets (Settings → Secrets and variables → Actions):
 # - EXPO_TOKEN
 
-# Required secrets (environment level - staging/production):
+# Environment-level secrets (Settings → Environments → [staging/production] → Environment secrets):
 # - PROXY_TOKEN
 
-# Required variables:
+# Environment-level variables (Settings → Environments → [staging/production] → Environment variables):
 # - EXPO_PROJECT_ID
 # - EXPO_ACCOUNT
 ```
