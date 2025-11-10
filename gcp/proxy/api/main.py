@@ -19,7 +19,10 @@ import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
 from models import AgentRequest, ExtractDocInfoRequest
-from gcp.agents.homecare.property_agent.agent_inputs import DEFAULT_ANALYSIS_OPTIONAL_AGENTS
+from optional_agents import (
+    ANALYSIS_OPTIONAL_AGENT_ORDER,
+    normalize_analysis_optional_agents,
+)
 
 
 from dotenv import load_dotenv
@@ -71,38 +74,6 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
 
 FIREBASE_WEBHOOK_SECRET = os.environ.get("FIREBASE_WEBHOOK_SECRET")
 
-_OPTIONAL_AGENT_ORDER: List[str] = list(DEFAULT_ANALYSIS_OPTIONAL_AGENTS)
-_OPTIONAL_AGENT_SET = set(DEFAULT_ANALYSIS_OPTIONAL_AGENTS)
-
-
-def _normalize_analysis_optional_agents(value: Union[None, str, List[str]]) -> List[str]:
-    """
-    Normalizes the analysis_optional_agents field to an ordered list of allowed agent identifiers.
-    Defaults to the full optional agent order when the input is missing, empty, or invalid.
-    """
-    if value is None:
-        return _OPTIONAL_AGENT_ORDER.copy()
-
-    if isinstance(value, str):
-        candidates = [value]
-    elif isinstance(value, (list, tuple, set)):
-        candidates = list(value)
-    else:
-        candidates = []
-
-    normalized: List[str] = []
-    for candidate in candidates:
-        if isinstance(candidate, str):
-            key = candidate.strip().lower()
-            if key in _OPTIONAL_AGENT_SET and key not in normalized:
-                normalized.append(key)
-
-    if not normalized:
-        return _OPTIONAL_AGENT_ORDER.copy()
-
-    ordered = [agent for agent in _OPTIONAL_AGENT_ORDER if agent in normalized]
-    return ordered if ordered else _OPTIONAL_AGENT_ORDER.copy()
-
 @app.get("/health")
 async def health_check():
     status_msg = "ok"
@@ -126,7 +97,7 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
     context_doc_uris = data.get("context_doc_uris", [])
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")
-    analysis_optional_agents = _normalize_analysis_optional_agents(data.get("analysis_optional_agents"))
+    analysis_optional_agents = normalize_analysis_optional_agents(data.get("analysis_optional_agents"))
     return AgentRequest(
         user_id=user_id,
         user_query=user_query,

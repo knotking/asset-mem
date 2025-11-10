@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, List, Callable
 import json
 # from pydantic import BaseModel
 from models import AgentRequest
-from gcp.agents.homecare.property_agent.agent_inputs import DEFAULT_ANALYSIS_OPTIONAL_AGENTS
+from optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ async def stream_agent_answers(
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
     property_address = request.property_address
-    analysis_optional_agents = request.analysis_optional_agents or DEFAULT_ANALYSIS_OPTIONAL_AGENTS
+    analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(user_id)
