@@ -62,6 +62,12 @@ components:
           type: string
           description: Optional property address for location-based searches. May be omitted, null, or empty.
           nullable: true
+        analysis_optional_agents:
+          type: array
+          items:
+            type: string
+          description: Optional list of analysis sub-agents to run after triage (allowed values: coverage, diy, service, cost). Defaults to all optional agents when omitted or empty.
+          nullable: true
       description: |
         Input schema for Triage Agent and Analysis Agent (orchestrator).
         

@@ -2,7 +2,8 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Video, Building, Check, ChevronsUpDown, FileText, Send, Camera } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 import type { FileAttachment, Property, Document as DocumentType } from "@/lib/types";
@@ -11,6 +12,20 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
+import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+
+type OptionalAgentOption = {
+  id: AnalysisOptionalAgent;
+  label: string;
+  icon: LucideIcon;
+};
+
+const OPTIONAL_AGENT_OPTIONS: OptionalAgentOption[] = [
+  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
+  { id: 'diy', label: 'DIY', icon: Hammer },
+  { id: 'service', label: 'Service', icon: Wrench },
+  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
+];
 
 type Props = {
   onSend: (message: string) => void;
@@ -28,6 +43,8 @@ type Props = {
   selectedDocuments?: DocumentType[];
   onDocumentSelect?: (doc: DocumentType) => void;
   placeholder?: string;
+  selectedOptionalAgents: AnalysisOptionalAgent[];
+  onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(({ 
@@ -43,7 +60,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     documents = [],
     selectedDocuments = [],
     onDocumentSelect,
-    placeholder = "Ask about your property..." 
+    placeholder = "Ask about your property...",
+    selectedOptionalAgents,
+    onOptionalAgentsChange,
 }, ref) => {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -87,6 +106,14 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0);
   
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const handleOptionalAgentToggle = (agent: AnalysisOptionalAgent) => {
+    const isSelected = selectedOptionalAgents.includes(agent);
+    const nextSelection = isSelected
+      ? selectedOptionalAgents.filter((item) => item !== agent)
+      : [...selectedOptionalAgents, agent];
+    const canonicalSelection = ANALYSIS_OPTIONAL_AGENTS.filter((item) => nextSelection.includes(item));
+    onOptionalAgentsChange(canonicalSelection);
+  };
   
   const handlePropertySelect = (property: Property) => {
     if (onPropertySelect) {
@@ -198,67 +225,98 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
         )}
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
-        <div className="relative flex-1 flex items-center rounded-lg bg-muted">
+        <div className="flex flex-1 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+              Triage required
+            </Badge>
+            {OPTIONAL_AGENT_OPTIONS.map((option) => {
+              const isSelected = selectedOptionalAgents.includes(option.id);
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleOptionalAgentToggle(option.id)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {option.label}
+                </button>
+              );
+            })}
+            {selectedOptionalAgents.length === 0 && (
+              <span className="text-xs text-muted-foreground">Only triage will run</span>
+            )}
+          </div>
+
+          <div className="relative flex w-full items-center rounded-lg bg-muted">
             <Textarea
-                ref={textareaRef}
-                value={content}
-                onInput={handleInput}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-24"
-                rows={1}
-                disabled={isLoading}
-                aria-label="Chat input"
+              ref={textareaRef}
+              value={content}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className="flex-1 resize-none max-h-48 overflow-y-auto bg-transparent border-0 shadow-none focus-visible:ring-0 pl-4 py-2.5 pr-24"
+              rows={1}
+              disabled={isLoading}
+              aria-label="Chat input"
             />
             <input
-                type="file"
-                ref={internalFileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-                disabled={isLoading || hasFileAttached}
-                id="file-input"
-                accept="image/*,video/*"
+              type="file"
+              ref={internalFileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={isLoading || hasFileAttached}
+              id="file-input"
+              accept="image/*,video/*"
             />
-            
+
             {showPropertySelector && (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
-                   <Button
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0"
-                      disabled={isLoading}
-                      type="button"
-                      aria-label="Set property context"
-                    >
-                      <Building className="h-5 w-5" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="flex-shrink-0"
+                    disabled={isLoading}
+                    type="button"
+                    aria-label="Set property context"
+                  >
+                    <Building className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[300px] p-0 mb-2" side="top" align="end">
-                    <Command>
-                        <CommandInput placeholder="Filter properties..." />
-                        <CommandList>
-                            <CommandEmpty>No properties found.</CommandEmpty>
-                            <CommandGroup>
-                                {properties.map((prop) => (
-                                  <CommandItem
-                                      key={prop.address}
-                                      value={prop.address}
-                                      onSelect={() => handlePropertySelect(prop)}
-                                      className="cursor-pointer"
-                                  >
-                                      <Check
-                                          className={cn(
-                                          "mr-2 h-4 w-4",
-                                          selectedProperty?.address === prop.address ? "opacity-100" : "opacity-0"
-                                          )}
-                                      />
-                                      {prop.address}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
+                  <Command>
+                    <CommandInput placeholder="Filter properties..." />
+                    <CommandList>
+                      <CommandEmpty>No properties found.</CommandEmpty>
+                      <CommandGroup>
+                        {properties.map((prop) => (
+                          <CommandItem
+                            key={prop.address}
+                            value={prop.address}
+                            onSelect={() => handlePropertySelect(prop)}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedProperty?.address === prop.address ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {prop.address}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
                 </PopoverContent>
               </Popover>
             )}
@@ -266,44 +324,45 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             {showDocumentSelector && (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
-                   <Button
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0"
-                      disabled={isLoading}
-                      type="button"
-                      aria-label="Set document context"
-                    >
-                      <FileText className="h-5 w-5" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="flex-shrink-0"
+                    disabled={isLoading}
+                    type="button"
+                    aria-label="Set document context"
+                  >
+                    <FileText className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[350px] p-0 mb-2" side="top" align="end">
-                    <Command>
-                        <CommandInput placeholder="Filter documents..." />
-                        <CommandList>
-                            <CommandEmpty>No documents found.</CommandEmpty>
-                            <CommandGroup>
-                                {documents.map((doc) => {
-                                  const isSelected = selectedDocuments.some(d => d.id === doc.id);
-                                  return (
-                                  <CommandItem
-                                      key={doc.id}
-                                      value={doc.name}
-                                      onSelect={() => handleDocumentSelect(doc)}
-                                      className="cursor-pointer"
-                                  >
-                                      <Check
-                                          className={cn(
-                                          "mr-2 h-4 w-4",
-                                          isSelected ? "opacity-100" : "opacity-0"
-                                          )}
-                                      />
-                                      <div className="flex-1 truncate">{doc.name}</div>
-                                  </CommandItem>
-                                )})}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
+                  <Command>
+                    <CommandInput placeholder="Filter documents..." />
+                    <CommandList>
+                      <CommandEmpty>No documents found.</CommandEmpty>
+                      <CommandGroup>
+                        {documents.map((doc) => {
+                          const isSelected = selectedDocuments.some((d) => d.id === doc.id);
+                          return (
+                            <CommandItem
+                              key={doc.id}
+                              value={doc.name}
+                              onSelect={() => handleDocumentSelect(doc)}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  isSelected ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex-1 truncate">{doc.name}</div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
                 </PopoverContent>
               </Popover>
             )}
@@ -334,6 +393,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 </Button>
               </div>
             )}
+          </div>
         </div>
         {isLoading ? (
             <Button

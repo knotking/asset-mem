@@ -134,10 +134,16 @@ def analysis_agent_instructions() -> str:
         - **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
         - **General Property Care**: Home improvement, maintenance tips, property management, preventive care
         
+        **Optional Agent Selection (`analysis_optional_agents` field):**
+        - The input schema may include `analysis_optional_agents`, a list of optional sub-agents to invoke *after* triage.
+        - Allowed values: `"coverage"`, `"diy"`, `"service"`, `"cost"`.
+        - When the field is missing, null, empty, or contains only invalid entries, treat it as `["coverage", "diy", "service", "cost"]`.
+        - Always execute optional agents in the canonical order: coverage → diy → service → cost. Skip any agents that are not listed.
+        
         **CRITICAL - CALL AGENTS IN ORDER WITH A TRIAGE GUARD:**
         
-        **IMPORTANT:** You MUST call `triage_agent` first. If triage cannot extract a domain-specific diagnosis or cannot parse the input, you MUST immediately RETURN ONLY the triage result and STOP. Do NOT call coverage, DIY, or service agents in this case.
-        If triage succeeds with a valid diagnosis, proceed to call coverage, DIY, and service in sequence and consolidate results.
+        **IMPORTANT:** You MUST call `triage_agent` first. If triage cannot extract a domain-specific diagnosis or cannot parse the input, you MUST immediately RETURN ONLY the triage result and STOP. Do NOT call coverage, DIY, service, or cost agents in this case.
+        If triage succeeds with a valid diagnosis, check `analysis_optional_agents` to determine which optional tools to call next.
         
         1. Call `triage_agent` tool - Prefer multimodal analysis when media is provided; otherwise perform text-only triage
            Pass: user_query (REQUIRED), diagnosis_uris (may be None, empty, or missing), context_doc_uris (may be None, empty, or missing), property_address (may be None, empty, or missing)
@@ -175,34 +181,26 @@ def analysis_agent_instructions() -> str:
                }
              
              **If triage succeeds with a valid, actionable diagnosis:**
-               - Proceed to call coverage, DIY, service, and cost agents (steps 2-5)
+               - Continue by calling each optional agent listed in `analysis_optional_agents` (steps 2-5), in canonical order.
         
-        2. Call `coverage_agent` tool - This retrieves warranty and insurance coverage
+        2. If `"coverage"` is in `analysis_optional_agents`, call `coverage_agent` to retrieve warranty and insurance coverage.
            Pass: user_query, context_doc_uris, property_address
-           ALWAYS call this agent - coverage information is always provided
         
-        3. Call `diy_agent` tool - This provides DIY solutions, YouTube tutorials, and product recommendations
+        3. If `"diy"` is in `analysis_optional_agents`, call `diy_agent` to provide DIY solutions, tutorials, and product recommendations.
            Pass: user_query, context_doc_uris, property_address
-           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
-           Use the diagnosis to help the DIY agent understand the problem better
-           ALWAYS call this agent - DIY information is always provided
+           IMPORTANT: Include the diagnosis from the triage result as context in your query so the DIY agent understands the problem.
         
-        4. Call `service_agent` tool - This provides local professional listings
+        4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
            Pass: user_query, context_doc_uris, property_address
-           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
-           ALWAYS call this agent - service information with local pros is always provided
+           IMPORTANT: Include the diagnosis from the triage result as context.
            SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
            FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         
-        5. Call `cost_agent` tool - This provides DIY vs Service cost estimates as a separate section
-           Pass: user_query and include the diagnosis context from triage_agent
-           Pass: user_query, context_doc_uris, property_address
-           IMPORTANT: Include the diagnosis from triage_agent result as context in your query
-           Use the diagnosis to help the service agent understand the problem better
-           ALWAYS call this agent - service information with cost estimates and local pros is always provided
+        5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.
+           Pass: user_query, context_doc_uris, property_address, and include the triage diagnosis for context.
         
-        **DO NOT RETURN UNTIL YOU HAVE CALLED ALL FOUR TOOLS, UNLESS triage requires clarification.**
+        **DO NOT RETURN UNTIL YOU HAVE COMPLETED TRIAGE AND ALL SELECTED OPTIONAL TOOLS, UNLESS triage requires clarification.**
         Collect all responses and return them together in a SINGLE NESTED JSON structure when a valid diagnosis exists.
         
         **MANDATORY Output Format - Return BOTH Markdown and JSON:**
@@ -265,10 +263,11 @@ def analysis_agent_instructions() -> str:
         
         **CRITICAL:**
         * You MUST call triage first. If triage fails to extract a domain-specific diagnosis or cannot parse, RETURN ONLY the triage result and STOP (still include both JSON and Markdown).
-        * If triage succeeds, then call coverage, DIY, and service and consolidate results.
-        * The triage_agent diagnosis MUST be used as context for both diy_agent and service_agent.
-        * **For all property-related queries** (repairs, maintenance, pest control, service recommendations, product requests):
-          - When triage succeeds, all three sections (coverage, DIY, service) are provided.
+        * If triage succeeds, call each optional agent specified in `analysis_optional_agents` (default: coverage, DIY, service, cost) and consolidate their results. Do not fabricate sections for agents that were not invoked.
+        * The triage diagnosis MUST be used as context for every optional agent you call (DIY, service, and cost).
+        * **For property-related queries** (repairs, maintenance, pest control, service recommendations, product requests):
+          - By default, the optional agent list includes coverage, DIY, service, and cost, so provide all four sections unless explicitly omitted.
+          - When an agent is omitted from `analysis_optional_agents`, skip its section entirely in both Markdown and JSON.
           - The service agent provides local professional listings (plumbers, electricians, pest control, contractors, etc.).
           - The cost agent provides structured cost estimates in a separate section.
           - The DIY agent provides steps, videos, and product recommendations.

@@ -1,11 +1,22 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
+
+AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
+
+DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
 
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    analysis_optional_agents: Optional[List[AnalysisOptionalAgent]] = Field(
+        default=None,
+        description=(
+            "Optional list of analysis sub-agents to run after triage. "
+            "Allowed values: coverage, diy, service, cost. Defaults to all when missing or empty."
+        ),
+    )
     
     class Config:
         # Allow extra fields to be ignored, making the schema more flexible

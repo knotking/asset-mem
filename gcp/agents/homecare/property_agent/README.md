@@ -71,7 +71,7 @@ Requirements: Python 3.9+, UV, Google Cloud auth if using Vertex RAG/Search or d
 
 ## How delegation works (at a glance)
 - If `diagnosis_uris` provided: `analysis_agent` performs multimodal analysis (images/videos/docs)
-- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with coverage, DIY, and service
+- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with the optional agents listed in `analysis_optional_agents` (defaults to coverage, DIY, service, and cost)
 - The root returns the sub‑agent response as‑is
 
 ## Programmatic use
@@ -92,7 +92,7 @@ print(response)
 Note: Tool calls may require environment variables and GCP auth (ADC). See parent README for `.env` and permission setup.
 
 ## Sub‑agents
-- `sub_agents/analysis_agent/` – multimodal or text‑only diagnostics followed by coverage, DIY, and service
+- `sub_agents/analysis_agent/` – multimodal or text‑only diagnostics followed by the optional agents selected via `analysis_optional_agents` (default coverage, DIY, service, cost)
 - `sub_agents/user_docs_agent/` – retrieval over user‑uploaded docs (used by coverage and other flows)
 - `sub_agents/knowledge_base_agent/` – retrieval over general knowledge base (used when needed)
 
@@ -170,7 +170,7 @@ DocuLink input (`DocsInput`):
 
 ## Output Shapes
 
-- From `analysis_agent`: nested `analysis` object that includes triage (from media or text), coverage, DIY, and service sections (see `sub_agents/analysis_agent/README.md`).
+- From `analysis_agent`: nested `analysis` object that includes triage (from media or text) plus whichever optional sections were requested (coverage, DIY, service, cost). See `sub_agents/analysis_agent/README.md`.
 - From `doculink_agent` (if invoked in custom flows): the direct output of either `user_docs_agent` or `knowledge_base_agent` (unmodified), or a best‑effort answer clearly prefaced when retrieval yields nothing.
 
 ## Sub-Agent Summaries

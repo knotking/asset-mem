@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep } from '@/lib/types';
+import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent } from '@/lib/types';
+import { ANALYSIS_OPTIONAL_AGENTS } from '@/lib/types';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useAuth } from '@/contexts/auth-context';
@@ -36,6 +37,7 @@ export default function PropertyChatSessionPage() {
   const { selectedDocuments, handleDocumentSelect, clearSelectedDocuments } = usePropertyDocuments();
 
   const [isNewSession, setIsNewSession] = useState(false);
+  const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -185,6 +187,10 @@ export default function PropertyChatSessionPage() {
     setFileAttachment(null);
   }, [fileAttachment, toast]);
 
+  const handleOptionalAgentsChange = useCallback((agents: AnalysisOptionalAgent[]) => {
+    setSelectedOptionalAgents(agents);
+  }, []);
+
   const handleSend = useCallback(async (content: string) => {
     if (!user) return;
     
@@ -265,7 +271,8 @@ export default function PropertyChatSessionPage() {
                 user_query: content,
                 context_doc_uris: contextDocURIs,
                 diagnosis_uris: diagnosisURIs,
-                property_address: property?.address
+                property_address: property?.address,
+                analysis_optional_agents: selectedOptionalAgents,
             }),
             signal,
         });
@@ -346,7 +353,7 @@ export default function PropertyChatSessionPage() {
         setIsLoading(false);
         abortControllerRef.current = null;
     }
-  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments]);
+  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents]);
 
 
   if (authLoading || isMessagesLoading || isDocsLoading) {
@@ -373,6 +380,8 @@ export default function PropertyChatSessionPage() {
                 onFileChange={handleFileUpload}
                 onFileRemove={removeFileAttachment}
                 placeholder="Type a message or attach image/video to diagnose an issue..."
+                selectedOptionalAgents={selectedOptionalAgents}
+                onOptionalAgentsChange={handleOptionalAgentsChange}
             />
         </footer>
       </div>

@@ -1,6 +1,7 @@
 import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
-import type { AgentStep } from '@homeapp/common/types';
+import type { AgentStep, AnalysisOptionalAgent } from '@homeapp/common/types';
+import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 // Get environment-specific URLs from EAS build configuration
 const extra = Constants.expoConfig?.extra || {};
@@ -100,6 +101,7 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
+  analysisOptionalAgents?: AnalysisOptionalAgent[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
@@ -114,6 +116,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
+  analysisOptionalAgents = ANALYSIS_OPTIONAL_AGENTS,
   signal,
   onChunk,
   onAgentStep,
@@ -133,6 +136,7 @@ export async function streamAgentResponse({
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
       property_address: propertyAddress,
+      analysis_optional_agents: analysisOptionalAgents,
     };
 
     const response = await fetch(url, {

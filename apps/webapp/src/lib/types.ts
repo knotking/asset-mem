@@ -8,6 +8,10 @@ export type AgentStep = {
   status: 'transferredto' | 'executing' | 'completed' | 'failed';
 };
 
+export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] as const;
+
+export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
+
 export type Message = {
   id: string;
   role: 'user' | 'assistant';

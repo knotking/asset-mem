@@ -118,15 +118,13 @@ Analysis Agent (orchestrator)
 - If triage returns `needs_clarification: true`, return ONLY the clarification questions and stop (wait for user response). Do **not** provide service recommendations, DIY content, coverage summaries, or cost estimates until the user responds with more details.
    - If triage fails or diagnosis is invalid/empty, return ONLY the triage result and stop.
    - Only proceed to steps 2-5 when triage returns a valid, actionable diagnosis.
-2. Coverage
-   - Retrieve warranty/insurance information from user docs.
-3. DIY
-   - Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
-4. Service
-   - Use the triage diagnosis to find local pros via SerpAPI and Yelp (within 50 miles, top 10). If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
-5. Cost Estimation
-   - Use the triage diagnosis to generate cost estimates via Cost Agent.
-5. Response Assembly
+2. Optional Agents (Coverage, DIY, Service, Cost)
+   - Consult `analysis_optional_agents` to determine which optional sections to produce (default order: coverage → DIY → service → cost).
+   - Coverage: Retrieve warranty/insurance information from user docs.
+   - DIY: Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
+   - Service: Use the triage diagnosis to find local pros via SerpAPI and Yelp (within 50 miles, top 10). If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
+   - Cost: Use the triage diagnosis to generate DIY vs service cost estimates via the cost agent.
+3. Response Assembly
    - Combine all results into one nested JSON object.
 
 ## Input Schema
@@ -136,13 +134,15 @@ Analysis Agent (orchestrator)
   "user_query": "string",  // REQUIRED - minimum required field
   "diagnosis_uris": ["string"],  // Optional - may be omitted, null, or empty
   "context_doc_uris": ["string"],  // Optional - may be omitted, null, or empty
-  "property_address": "string"  // Optional - may be omitted, null, or empty
+  "property_address": "string",  // Optional - may be omitted, null, or empty
+  "analysis_optional_agents": ["coverage", "diy", "service", "cost"]  // Optional - defaults to all when omitted or empty
 }
 ```
 
 **Important Notes:**
 - `user_query` is the **only required field**. The triage agent can work with just this field.
 - `diagnosis_uris` may be omitted, null, or empty; in that case, triage runs in text‑only mode.
+- `analysis_optional_agents` limits which optional sub-agents run after triage. Allowed values are `coverage`, `diy`, `service`, and `cost`. If the list is missing, null, empty, or invalid, all optional agents run in the canonical order.
 - All other fields are optional and the agent will gracefully handle their absence.
 - The triage agent will **never fail** due to missing optional fields - it will always work with `user_query` as the minimum.
 

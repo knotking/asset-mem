@@ -57,6 +57,10 @@ import {
   Camera,
   Video,
   Images,
+  ShieldCheck,
+  Hammer,
+  Wrench,
+  BadgeDollarSign,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -81,9 +85,16 @@ import * as DocumentPicker from 'expo-document-picker';
 import ChatList from '@/components/ChatList';
 import SessionsList from '@/components/SessionsList';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, FileAttachment, AgentStep, Session } from '@homeapp/common/types';
-import { PROPERTY_TYPES } from '@homeapp/common/types';
+import type { Document, FileAttachment, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
+import { PROPERTY_TYPES, ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
+
+const OPTIONAL_AGENT_OPTIONS: { id: AnalysisOptionalAgent; label: string; icon: typeof ShieldCheck }[] = [
+  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
+  { id: 'diy', label: 'DIY', icon: Hammer },
+  { id: 'service', label: 'Service', icon: Wrench },
+  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
+];
 
 // Rotating Sparkles Component
 function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; color?: string }) {
@@ -733,6 +744,7 @@ export default function PropertyDetailsScreen() {
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
+  const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
   const [hasManuallyInteracted, setHasManuallyInteracted] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
@@ -1064,6 +1076,14 @@ export default function PropertyDetailsScreen() {
     setFileAttachment(null);
   }, [fileAttachment, storage]);
 
+  const toggleOptionalAgent = React.useCallback((agent: AnalysisOptionalAgent) => {
+    setSelectedOptionalAgents((prev) => {
+      const isSelected = prev.includes(agent);
+      const next = isSelected ? prev.filter((item) => item !== agent) : [...prev, agent];
+      return ANALYSIS_OPTIONAL_AGENTS.filter((item) => next.includes(item));
+    });
+  }, []);
+
   const handleStop = React.useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -1175,6 +1195,7 @@ export default function PropertyDetailsScreen() {
         contextDocURIs,
         diagnosisURIs,
         propertyAddress,
+        analysisOptionalAgents: selectedOptionalAgents,
         signal,
         onChunk: (chunk) => {
           // Accumulate content but don't update Firestore yet
@@ -1242,6 +1263,7 @@ export default function PropertyDetailsScreen() {
     id,
     selectedDocuments,
     properties,
+    selectedOptionalAgents,
   ]);
 
   const toggleDocumentSelection = (document: Document) => {
@@ -1551,6 +1573,47 @@ export default function PropertyDetailsScreen() {
                         </View>
                       </View>
                     )}
+
+                    {/* Optional Agent Toggles */}
+                    <View className="mb-3">
+                      <View className="flex-row flex-wrap items-center gap-2">
+                        <View className="rounded-full border border-border bg-background px-3 py-1">
+                          <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
+                            Triage required
+                          </Text>
+                        </View>
+                        {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                          const isSelected = selectedOptionalAgents.includes(option.id);
+                          return (
+                            <Pressable
+                              key={option.id}
+                              onPress={() => toggleOptionalAgent(option.id)}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected: isSelected }}
+                              className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
+                                isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                              }`}
+                            >
+                              <Icon
+                                as={option.icon}
+                                size={14}
+                                className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                              />
+                              <Text
+                                className={`text-xs font-medium ${
+                                  isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                                }`}
+                              >
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      {selectedOptionalAgents.length === 0 && (
+                        <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
+                      )}
+                    </View>
 
                     {/* Input Row - Overlay Icons (Option 3) */}
                     <View className="relative flex-row items-center">
