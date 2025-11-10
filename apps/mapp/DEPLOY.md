@@ -79,11 +79,19 @@ eas build:configure
 
 Navigate to your GitHub repository: **Settings → Secrets and variables → Actions**
 
-#### Required Secrets
+#### Required Secrets (Repository Level)
 
 | Secret Name | Description | How to Get |
 |-------------|-------------|------------|
 | `EXPO_TOKEN` | Expo access token | Run `eas login` then create token at [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens) |
+
+#### Required Secrets (Environment Level)
+
+Navigate to: **Settings → Environments → [staging/production] → Environment secrets**
+
+| Secret Name | Description | Environment |
+|-------------|-------------|-------------|
+| `PROXY_TOKEN` | API proxy authentication token | staging, production |
 
 #### Required Variables
 
@@ -159,24 +167,28 @@ Automated deployments triggered by code changes or manual workflows.
 - **Environment**: `staging` or `production`
 - **Platform**: `ios`, `android`, or `all`
 - **Profile**: Build profile (optional, defaults to environment)
+- **Version**: App version (optional, auto-increments if not specified)
 
 **Example Scenarios**:
 
 ```yaml
-# Scenario 1: Production iOS build for App Store
+# Scenario 1: Production iOS build for App Store with auto-increment version
 Environment: production
 Platform: ios
 Profile: (leave empty)
+Version: (leave empty for auto-increment)
 
-# Scenario 2: Staging Android APK for testing
+# Scenario 2: Staging Android APK with specific version
 Environment: staging
 Platform: android
 Profile: staging
+Version: 1.0.0
 
-# Scenario 3: Build both platforms for production
+# Scenario 3: Build both platforms for production with auto-increment
 Environment: production
 Platform: all
 Profile: (leave empty)
+Version: (leave empty for auto-increment)
 ```
 
 **Steps**:
@@ -195,21 +207,25 @@ Profile: (leave empty)
 
 **Parameters**:
 - **Environment**: `staging` or `production`
+- **Version**: App version (optional, auto-increments if not specified)
 - **Message**: Description of changes (optional)
 
 **Example Scenarios**:
 
 ```yaml
-# Scenario 1: Staging update with bug fixes
+# Scenario 1: Staging update with auto-increment version
 Environment: staging
+Version: (leave empty for auto-increment)
 Message: "Fixed login bug and improved performance"
 
-# Scenario 2: Production hotfix
+# Scenario 2: Production hotfix with specific version
 Environment: production
+Version: 1.2.1
 Message: "Critical security patch"
 
-# Scenario 3: Feature update
+# Scenario 3: Feature update with auto-increment
 Environment: staging
+Version: (leave empty for auto-increment)
 Message: "Added new dashboard widgets"
 ```
 
@@ -406,30 +422,23 @@ git push origin main
 git checkout main
 git pull origin main
 
-# 2. Update version in app.json
-# Edit: "version": "1.0.1" → "1.0.2"
-
-# 3. Commit version bump
-git add apps/mapp/app.json
-git commit -m "Bump version to 1.0.2"
-git push origin main
-
-# 4. Trigger production build via GitHub Actions
+# 2. Trigger production build via GitHub Actions
 # Actions → Deploy Mapp - EAS Build
 # Environment: production
 # Platform: all
+# Version: 1.0.2 (or leave empty to auto-increment)
 
-# 5. Wait for builds to complete (~15-30 minutes)
+# 3. Wait for builds to complete (~15-30 minutes)
 # Monitor at: https://expo.dev/accounts/[account]/projects/homegeek-ai/builds
 
-# 6. Download and test builds
+# 4. Download and test builds
 
-# 7. Submit to stores via GitHub Actions
+# 5. Submit to stores via GitHub Actions
 # Actions → Deploy Mapp - EAS Build
 # Or use local script:
 ./deploy.sh submit --platform all
 
-# 8. Monitor app store review process
+# 6. Monitor app store review process
 ```
 
 ### Workflow 3: Hotfix via OTA Update
@@ -625,12 +634,28 @@ npm install
 # Check all required variables are set:
 # Settings → Secrets and variables → Actions
 
-# Required secrets:
+# Required secrets (repository level):
 # - EXPO_TOKEN
+
+# Required secrets (environment level - staging/production):
+# - PROXY_TOKEN
 
 # Required variables:
 # - EXPO_PROJECT_ID
 # - EXPO_ACCOUNT
+```
+
+#### Issue 7: "PROXY_TOKEN not found"
+
+**Symptom**: Workflow fails with "PROXY_TOKEN secret is not set" error
+
+**Solution**:
+```bash
+# PROXY_TOKEN is environment-specific
+# 1. Go to Settings → Environments
+# 2. Select the environment (staging or production)
+# 3. Add PROXY_TOKEN to Environment secrets
+# 4. Repeat for each environment you use
 ```
 
 ### Getting Help
@@ -660,16 +685,24 @@ eas build:configure --check
 
 ### Version Management
 
-1. **Update version in app.json before production builds**
-   ```json
-   {
-     "expo": {
-       "version": "1.0.2"  // Increment before release
-     }
-   }
+1. **Automatic Version Management**
+   - GitHub workflows now auto-increment versions using workflow run numbers (e.g., `0.0.123`)
+   - You can also specify a custom version when manually triggering workflows
+   - Local development uses fallback version `0.0.1` from [app.config.js](./app.config.js)
+
+2. **Custom Versioning**
+   - For production releases, specify semantic versions: `1.0.0`, `1.1.0`, `1.0.1`
+   - When triggering workflows manually, use the version input field
+   - Example: Trigger with version `1.2.0` for a major feature release
+
+3. **Version via Environment Variable (Local)**
+   ```bash
+   # Set custom version locally
+   APP_VERSION=1.0.0 ./deploy.sh build --platform ios --profile production
+   APP_VERSION=1.0.1 ./deploy.sh update --channel production
    ```
 
-2. **Use semantic versioning**: `MAJOR.MINOR.PATCH`
+4. **Use semantic versioning**: `MAJOR.MINOR.PATCH`
    - MAJOR: Breaking changes
    - MINOR: New features
    - PATCH: Bug fixes

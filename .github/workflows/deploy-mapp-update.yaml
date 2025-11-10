@@ -18,6 +18,10 @@ on:
         options:
           - staging
           - production
+      version:
+        description: "App version (e.g., 0.0.3). Leave empty to auto-increment."
+        required: false
+        type: string
       message:
         description: "Update message/description"
         required: false
@@ -91,7 +95,6 @@ jobs:
       - name: Validate GitHub Secrets
         run: |
           echo "Validating required GitHub secrets..."
-          REQUIRED_SECRETS=("EXPO_TOKEN")
           MISSING_SECRETS=()
 
           if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
@@ -105,6 +108,7 @@ jobs:
           fi
 
           echo "All required secrets are present"
+          echo "Note: PROXY_TOKEN will be validated at the environment level in the update job"
 
   update:
     name: Publish OTA Update - ${{ needs.validate.outputs.channel }}
@@ -133,13 +137,40 @@ jobs:
           cd apps/mapp
           npm ci
 
+      - name: Generate app version
+        id: version
+        run: |
+          # Use manual version input if provided, otherwise auto-increment
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using manual version: $VERSION"
+          else
+            VERSION="0.0.${{ github.run_number }}"
+            echo "Using auto-incremented version: $VERSION"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate Environment Secrets
+        run: |
+          echo "Validating environment-specific secrets..."
+          if [ -z "${{ secrets.PROXY_TOKEN }}" ]; then
+            echo "Error: PROXY_TOKEN secret is not set for the ${{ needs.validate.outputs.environment }} environment"
+            echo "Please add PROXY_TOKEN to Settings → Environments → ${{ needs.validate.outputs.environment }} → Secrets"
+            exit 1
+          fi
+          echo "Environment secrets validated successfully"
+
       - name: Publish update
         working-directory: apps/mapp
         run: |
           echo "Publishing OTA update to ${{ needs.validate.outputs.channel }} channel..."
+          echo "App version: $APP_VERSION"
           eas update --channel ${{ needs.validate.outputs.channel }} --message "${{ needs.validate.outputs.message }}" --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
+          APP_VERSION: ${{ env.APP_VERSION }}
 
       - name: Summary
         run: |
@@ -148,6 +179,7 @@ jobs:
           echo "**Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Channel:** ${{ needs.validate.outputs.channel }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ needs.validate.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Message:** ${{ needs.validate.outputs.message }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check update status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/homegeek-ai/updates" >> $GITHUB_STEP_SUMMARY
+          echo "Check update status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/homegeekai-${{needs.validate.outputs.environment}}/updates" >> $GITHUB_STEP_SUMMARY

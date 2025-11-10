@@ -1,11 +1,20 @@
 // Load environment variables from .env file for local development
 require('dotenv').config();
 
+// Helper function to build proxy URLs
+const buildProxyUrl = (baseUrl, token, endpoint) => {
+  if (!baseUrl || !token) return undefined;
+  return `${baseUrl}/${token}/${endpoint}`;
+};
+
+const proxyBaseUrl = process.env.PROXY_BASE_URL;
+const proxyToken = process.env.PROXY_TOKEN;
+
 module.exports = {
   expo: {
     name: 'HomeGeekAI',
-    slug: 'homegeekai-staging',
-    version: '0.0.2',
+    slug: process.env.APP_SLUG || 'homegeekai-staging',
+    version: process.env.APP_VERSION || '0.0.1',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'homegeekai',
@@ -46,11 +55,11 @@ module.exports = {
       },
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
-      // EAS builds: Loaded from eas.json env configuration
-      agentSessionUrl: process.env.AGENT_SESSION_URL,
-      agentSseUrl: process.env.AGENT_SSE_URL,
-      ragFileUploadUrl: process.env.RAG_FILE_UPLOAD_URL,
-      documentAnalysisUrl: process.env.DOCUMENT_ANALYSIS_URL,
+      // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json
+      agentSessionUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'agent-session'),
+      agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase-agent-stream'),
+      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
+      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {
