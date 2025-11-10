@@ -4,8 +4,8 @@ require('dotenv').config();
 module.exports = {
   expo: {
     name: 'HomeGeekAI',
-    slug: 'homegeek-ai',
-    version: '0.0.1',
+    slug: 'homegeekai-staging',
+    version: '0.0.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'homegeekai',
@@ -42,7 +42,7 @@ module.exports = {
     extra: {
       router: {},
       eas: {
-        projectId: '4d090ffd-6554-4652-9cb5-0ca6f02fb167',
+        projectId: 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
       },
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
@@ -57,7 +57,7 @@ module.exports = {
       policy: 'appVersion',
     },
     updates: {
-      url: 'https://u.expo.dev/4d090ffd-6554-4652-9cb5-0ca6f02fb167',
+      url: 'https://u.expo.dev/cc06df81-5ad0-4fc3-ad59-6294c95e4614',
     },
   },
 };
