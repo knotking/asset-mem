@@ -1,11 +1,20 @@
 // Load environment variables from .env file for local development
 require('dotenv').config();
 
+// Helper function to build proxy URLs
+const buildProxyUrl = (baseUrl, token, endpoint) => {
+  if (!baseUrl || !token) return undefined;
+  return `${baseUrl}/${token}/${endpoint}`;
+};
+
+const proxyBaseUrl = process.env.PROXY_BASE_URL;
+const proxyToken = process.env.PROXY_TOKEN;
+
 module.exports = {
   expo: {
     name: 'HomeGeekAI',
-    slug: 'homegeekai-staging',
-    version: '0.0.2',
+    slug: process.env.APP_SLUG || 'homegeekai-staging',
+    version: process.env.APP_VERSION || '0.0.1',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'homegeekai',
@@ -20,7 +29,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.homegeekai.demo',
+      bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.homegeekai.staging',
     },
     android: {
       edgeToEdgeEnabled: true,
@@ -28,7 +37,7 @@ module.exports = {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#1a2332',
       },
-      package: 'com.homegeekai.demo',
+      package: process.env.ANDROID_PACKAGE || 'com.homegeekai.staging',
     },
     web: {
       bundler: 'metro',
@@ -42,22 +51,22 @@ module.exports = {
     extra: {
       router: {},
       eas: {
-        projectId: 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
+        projectId: process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
       },
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
-      // EAS builds: Loaded from eas.json env configuration
-      agentSessionUrl: process.env.AGENT_SESSION_URL,
-      agentSseUrl: process.env.AGENT_SSE_URL,
-      ragFileUploadUrl: process.env.RAG_FILE_UPLOAD_URL,
-      documentAnalysisUrl: process.env.DOCUMENT_ANALYSIS_URL,
+      // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json
+      agentSessionUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'agent-session'),
+      agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase-agent-stream'),
+      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
+      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {
       policy: 'appVersion',
     },
     updates: {
-      url: 'https://u.expo.dev/cc06df81-5ad0-4fc3-ad59-6294c95e4614',
+      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614'}`,
     },
   },
 };

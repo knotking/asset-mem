@@ -9,37 +9,76 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-        "AGENT_SESSION_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session",
-        "AGENT_SSE_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream",
-        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload",
-        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info",
+        "APP_SLUG": "homegeekai-development",
+        "IOS_BUNDLE_ID": "com.homegeekai.dev",
+        "ANDROID_PACKAGE": "com.homegeekai.dev",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
+        "PROXY_BASE_URL": "https://homecare-agent-proxy-dev-321433914812.us-central1.run.app",
+        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
       }
     },
     "staging": {
       "distribution": "internal",
       "channel": "staging",
       "env": {
-        "AGENT_SESSION_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/agent-session",
-        "AGENT_SSE_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/firebase-agent-stream",
-        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/rag-file-upload",
-        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376/extract-doc-info",
+        "APP_SLUG": "homegeekai-staging",
+        "IOS_BUNDLE_ID": "com.homegeekai.staging",
+        "ANDROID_PACKAGE": "com.homegeekai.staging",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
+        "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-321433914812.us-central1.run.app",
+        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--goggle-gab.us-central1.hosted.app"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       }
     },
     "production": {
+      "distribution": "store",
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "AGENT_SESSION_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/agent-session",
-        "AGENT_SSE_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/firebase-agent-stream",
-        "RAG_FILE_UPLOAD_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/rag-file-upload",
-        "DOCUMENT_ANALYSIS_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app/YOUR_PROD_TOKEN/extract-doc-info",
+        "APP_ENV": "production",
+        "APP_SLUG": "homegeekai-prod",
+        "IOS_BUNDLE_ID": "com.homegeekai.prod",
+        "ANDROID_PACKAGE": "com.homegeekai.prod",
+        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
+        "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app",
+        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://prod--goggle-gab.us-central1.hosted.app"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "your-app-store-connect-id",
+        "appleTeamId": "your-apple-team-id"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      }
+    }
   }
 }

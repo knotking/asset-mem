@@ -1,0 +1,189 @@
+name: Deploy Mapp - EAS Update (OTA)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/mapp/**"
+      - "apps/common/**"
+      - ".github/workflows/deploy-mapp-update.yaml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select deployment environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "App version (e.g., 0.0.3). Leave empty to auto-increment."
+        required: false
+        type: string
+      message:
+        description: "Update message/description"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      branch: ${{ steps.set-env.outputs.branch }}
+      channel: ${{ steps.set-env.outputs.channel }}
+      message: ${{ steps.set-message.outputs.message }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment and channel
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+            echo "environment=$ENV" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "channel=$ENV" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "main" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "branch=main" >> $GITHUB_OUTPUT
+            echo "channel=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "channel=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set update message
+        id: set-message
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.message }}" ]; then
+            echo "message=${{ github.event.inputs.message }}" >> $GITHUB_OUTPUT
+          else
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate GitHub Secrets
+        run: |
+          echo "Validating required GitHub secrets..."
+          MISSING_SECRETS=()
+
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            MISSING_SECRETS+=("EXPO_TOKEN")
+          fi
+
+          if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
+            echo "Error: Missing required GitHub secrets:"
+            printf '%s\n' "${MISSING_SECRETS[@]}"
+            exit 1
+          fi
+
+          echo "All required secrets are present"
+          echo "Note: PROXY_TOKEN will be validated at the environment level in the update job"
+
+  update:
+    name: Publish OTA Update - ${{ needs.validate.outputs.channel }}
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: ${{ needs.validate.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Environment Configuration
+        run: |
+          echo "Validating environment-specific configuration..."
+          MISSING_ITEMS=()
+
+          # Check environment secrets
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            MISSING_ITEMS+=("EXPO_TOKEN (secret)")
+          fi
+
+          if [ -z "${{ secrets.PROXY_TOKEN }}" ]; then
+            MISSING_ITEMS+=("PROXY_TOKEN (secret)")
+          fi
+
+          # Check environment variables
+          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
+            MISSING_ITEMS+=("EXPO_PROJECT_ID (variable)")
+          fi
+
+          if [ -z "${{ vars.EXPO_ACCOUNT }}" ]; then
+            MISSING_ITEMS+=("EXPO_ACCOUNT (variable)")
+          fi
+
+          if [ ${#MISSING_ITEMS[@]} -ne 0 ]; then
+            echo "Error: Missing required environment configuration for '${{ needs.validate.outputs.environment }}' environment:"
+            printf '%s\n' "${MISSING_ITEMS[@]}"
+            echo ""
+            echo "Please configure these in Settings → Environments → ${{ needs.validate.outputs.environment }}"
+            exit 1
+          fi
+
+          echo "Environment configuration validated successfully"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/mapp
+          npm ci
+
+      - name: Generate app version
+        id: version
+        run: |
+          # Use manual version input if provided, otherwise auto-increment
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using manual version: $VERSION"
+          else
+            VERSION="0.0.${{ github.run_number }}"
+            echo "Using auto-incremented version: $VERSION"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Publish update
+        working-directory: apps/mapp
+        run: |
+          echo "Publishing OTA update to ${{ needs.validate.outputs.channel }} channel..."
+          echo "App version: $APP_VERSION"
+          echo "Expo Project ID: $EXPO_PROJECT_ID"
+          eas update --channel ${{ needs.validate.outputs.channel }} --message "${{ needs.validate.outputs.message }}" --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
+          APP_VERSION: ${{ env.APP_VERSION }}
+          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+
+      - name: Summary
+        run: |
+          echo "### OTA Update Published Successfully! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Channel:** ${{ needs.validate.outputs.channel }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ needs.validate.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Message:** ${{ needs.validate.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check update status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/homegeekai-${{needs.validate.outputs.environment}}/updates" >> $GITHUB_STEP_SUMMARY
