@@ -1485,23 +1485,29 @@ export default function PropertyDetailsScreen() {
                         <Button
                           variant="outline"
                           className="justify-start gap-3"
-                          onPress={handleTakePhoto}>
+                          onPress={handleTakePhoto}
+                          accessibilityRole="button"
+                          accessibilityLabel="Take photo attachment">
                           <Icon as={Camera} size={20} className="text-foreground" />
                           <Text className="text-sm text-foreground">Take photo</Text>
                         </Button>
                         <Button
                           variant="outline"
                           className="justify-start gap-3"
-                          onPress={handleRecordVideo}>
+                          onPress={handleRecordVideo}
+                          accessibilityRole="button"
+                          accessibilityLabel="Record video attachment">
                           <Icon as={Video} size={20} className="text-foreground" />
                           <Text className="text-sm text-foreground">Record video</Text>
                         </Button>
                         <Button
                           variant="outline"
                           className="justify-start gap-3"
-                          onPress={handleSelectFromLibrary}>
+                          onPress={handleSelectFromLibrary}
+                          accessibilityRole="button"
+                          accessibilityLabel="Choose media from device">
                           <Icon as={Images} size={20} className="text-foreground" />
-                          <Text className="text-sm text-foreground">Choose from library</Text>
+                          <Text className="text-sm text-foreground">Choose from device</Text>
                         </Button>
                       </View>
                     </View>
@@ -1522,7 +1528,7 @@ export default function PropertyDetailsScreen() {
                         {/* Video Preview */}
                         {fileAttachment.fileType.startsWith('video/') && (
                           <View className="h-32 w-full items-center justify-center bg-secondary">
-                            <Icon as={FileText} size={32} className="text-muted-foreground" />
+                            <Icon as={Video} size={32} className="text-muted-foreground" />
                             <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
                           </View>
                         )}
@@ -1621,6 +1627,8 @@ export default function PropertyDetailsScreen() {
                       <Pressable
                         onPress={handleAttachmentPress}
                         disabled={isSending || !!fileAttachment}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open attachment options"
                         className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
                         <Icon
                           as={Paperclip}

@@ -124,18 +124,27 @@ export default function PropertyChatSessionPage() {
   const handleFileUpload = useCallback((file: File) => {
     if (!user) return;
 
+    const timestamp = Date.now();
     const previewUrl = URL.createObjectURL(file);
-    const attachmentId = `upload-${Date.now()}`;
-    const storageRef = ref(storage, `uploads/${user.uid}/${Date.now()}_${file.name}`);
+    const attachmentId = `upload-${timestamp}`;
+    const storageRef = ref(storage, `uploads/${user.uid}/${timestamp}_${file.name}`);
 
-    setFileAttachment({
-      id: attachmentId,
-      file: file,
-      previewUrl: previewUrl,
-      progress: 0,
-      downloadURL: null,
-      error: null,
-      storagePath: storageRef.fullPath
+    setFileAttachment((prev) => {
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return {
+        id: attachmentId,
+        file,
+        previewUrl,
+        progress: 0,
+        downloadURL: null,
+        error: null,
+        storagePath: storageRef.fullPath,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      };
     });
 
     const uploadTask = uploadBytesResumable(storageRef, file);
@@ -160,7 +169,7 @@ export default function PropertyChatSessionPage() {
         }
       }
     );
-  }, [user]);
+  }, [user, storage]);
 
   const removeFileAttachment = useCallback(async () => {
     if (!fileAttachment) return;
@@ -210,7 +219,7 @@ export default function PropertyChatSessionPage() {
     // Claim draft session if it's a new one
     if (isNewSession) {
         const sessionRef = doc(db, 'users', user.uid, 'chats', activeSessionId);
-        const newName = content.substring(0, 30) || fileAttachment?.file.name || 'New Chat';
+        const newName = content.substring(0, 30) || fileAttachment?.fileName || 'New Chat';
         await updateDoc(sessionRef, { 
             name: newName,
             propertyId: propertyId, // Explicitly link to property
@@ -227,8 +236,8 @@ export default function PropertyChatSessionPage() {
     if (fileAttachment && fileAttachment.downloadURL) {
         const snapshotRef = ref(storage, fileAttachment.storagePath);
         userMessage.file = {
-          name: fileAttachment.file.name,
-          type: fileAttachment.file.type,
+          name: fileAttachment.fileName,
+          type: fileAttachment.fileType,
           url: fileAttachment.downloadURL,
           gsURI: `gs://${snapshotRef.bucket}/${snapshotRef.fullPath}`,
         };
@@ -241,6 +250,9 @@ export default function PropertyChatSessionPage() {
     });
 
     setMessages(prev => [...prev, userMessage]);
+    if (fileAttachment?.previewUrl) {
+        URL.revokeObjectURL(fileAttachment.previewUrl);
+    }
     setFileAttachment(null); 
 
     const assistantPlaceholderId = `local-assistant-${Date.now()}`;
