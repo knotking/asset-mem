@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Camera,
-  CameraType,
-  VideoQuality,
-  type CameraCapturedPicture,
-  type CameraRecordingOptions,
-} from 'expo-camera';
+import { Camera, CameraType, VideoQuality, type CameraCapturedPicture, type CameraRecordingOptions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
 import { AlertCircle, Camera as CameraIcon, Circle, RefreshCw, StopCircle, Video as VideoIcon } from 'lucide-react-native';
 
 type CameraMode = 'photo' | 'video';
@@ -31,11 +24,16 @@ export function CameraCaptureModal({
   onCapture,
   onError,
 }: CameraCaptureModalProps) {
+  const defaultCameraType =
+    (CameraType?.back as CameraType | undefined) ??
+    (Camera?.Constants?.Type?.back as CameraType | undefined) ??
+    ('back' as CameraType);
+
   const cameraRef = useRef<Camera | null>(null);
   const shouldSaveRecordingRef = useRef(true);
 
   const [mode, setMode] = useState<CameraMode>(initialMode);
-  const [cameraType, setCameraType] = useState<CameraType>(CameraType.back);
+  const [cameraType, setCameraType] = useState<CameraType>(defaultCameraType);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
@@ -273,7 +271,13 @@ export function CameraCaptureModal({
               <Button
                 variant="outline"
                 size="sm"
-                onPress={() => setCameraType((prev) => (prev === CameraType.back ? CameraType.front : CameraType.back))}
+                onPress={() =>
+                  setCameraType((prev) =>
+                    (prev ?? defaultCameraType) === (CameraType?.back ?? 'back')
+                      ? ((CameraType?.front ?? 'front') as CameraType)
+                      : ((CameraType?.back ?? 'back') as CameraType)
+                  )
+                }
                 disabled={isRecording}
                 className="border-white/30 bg-white/10"
               >
