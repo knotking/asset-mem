@@ -18,6 +18,7 @@ import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CameraCaptureModal } from '@/components/CameraCaptureModal';
 import {
   Select,
   SelectContent,
@@ -54,7 +55,7 @@ import {
   Sparkles,
   Plus,
   Square,
-  Camera,
+  Camera as CameraIcon,
   Video,
   Images,
   ShieldCheck,
@@ -62,6 +63,7 @@ import {
   Wrench,
   BadgeDollarSign,
 } from 'lucide-react-native';
+import * as ExpoCamera from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
 import { useProperty } from '@homeapp/common/contexts/property';
@@ -751,6 +753,8 @@ export default function PropertyDetailsScreen() {
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [attachmentOptionsVisible, setAttachmentOptionsVisible] = React.useState(false);
+  const [cameraCaptureVisible, setCameraCaptureVisible] = React.useState(false);
+  const [cameraCaptureMode, setCameraCaptureMode] = React.useState<'photo' | 'video'>('photo');
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -969,6 +973,13 @@ export default function PropertyDetailsScreen() {
     [user, storage]
   );
 
+  const handleCameraCapture = React.useCallback(
+    async (asset: ImagePicker.ImagePickerAsset) => {
+      await handleAssetUpload(asset);
+    },
+    [handleAssetUpload]
+  );
+
   const handleSelectFromLibrary = React.useCallback(async () => {
     setAttachmentOptionsVisible(false);
     if (!user) return;
@@ -998,57 +1009,50 @@ export default function PropertyDetailsScreen() {
     setAttachmentOptionsVisible(false);
     if (!user) return;
 
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status } = await ExpoCamera.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       setErrorMessage('Please grant permission to access your camera.');
       setErrorAlertOpen(true);
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    await handleAssetUpload(result.assets[0]);
-  }, [user, handleAssetUpload]);
+    setCameraCaptureMode('photo');
+    setCameraCaptureVisible(true);
+  }, [
+    user,
+    setCameraCaptureMode,
+    setCameraCaptureVisible,
+    setErrorAlertOpen,
+    setErrorMessage,
+  ]);
 
   const handleRecordVideo = React.useCallback(async () => {
     setAttachmentOptionsVisible(false);
     if (!user) return;
 
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    const cameraPermission = await ExpoCamera.requestCameraPermissionsAsync();
     if (cameraPermission.status !== 'granted') {
       setErrorMessage('Please grant permission to access your camera.');
       setErrorAlertOpen(true);
       return;
     }
 
-    const microphonePermission = await ImagePicker.requestMicrophonePermissionsAsync();
+    const microphonePermission = await ExpoCamera.requestMicrophonePermissionsAsync();
     if (microphonePermission.status !== 'granted') {
       setErrorMessage('Please grant permission to access your microphone.');
       setErrorAlertOpen(true);
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: false,
-      quality: 0.8,
-      videoMaxDuration: 60,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    await handleAssetUpload(result.assets[0]);
-  }, [user, handleAssetUpload]);
+    setCameraCaptureMode('video');
+    setCameraCaptureVisible(true);
+  }, [
+    user,
+    setCameraCaptureMode,
+    setCameraCaptureVisible,
+    setErrorAlertOpen,
+    setErrorMessage,
+  ]);
 
   const handleAttachmentPress = React.useCallback(() => {
     if (isSending || fileAttachment) {
@@ -1486,7 +1490,7 @@ export default function PropertyDetailsScreen() {
                           variant="outline"
                           className="justify-start gap-3"
                           onPress={handleTakePhoto}>
-                          <Icon as={Camera} size={20} className="text-foreground" />
+                          <Icon as={CameraIcon} size={20} className="text-foreground" />
                           <Text className="text-sm text-foreground">Take photo</Text>
                         </Button>
                         <Button
@@ -1506,6 +1510,12 @@ export default function PropertyDetailsScreen() {
                       </View>
                     </View>
                   </Modal>
+                  <CameraCaptureModal
+                    visible={cameraCaptureVisible}
+                    initialMode={cameraCaptureMode}
+                    onClose={() => setCameraCaptureVisible(false)}
+                    onCapture={handleCameraCapture}
+                  />
                   <View className="border-t border-border bg-light-background-alt px-4 py-3">
                     {/* File Attachment Preview */}
                     {fileAttachment && (
