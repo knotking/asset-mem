@@ -1021,9 +1021,9 @@ const MessageContent = React.memo(({ content, isUser }: { content: string; isUse
 const FilePreview = React.memo(
   ({ file, isUserMessage }: { file: NonNullable<Message['file']>; isUserMessage?: boolean }) => {
     // Media dimensions constants
-    const MEDIA_MAX_WIDTH = 350;
+    const MEDIA_MAX_WIDTH = 200;
     const MEDIA_MIN_WIDTH = 200;
-    const MEDIA_MAX_HEIGHT = 250;
+    const MEDIA_MAX_HEIGHT = 200;
 
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
@@ -1031,7 +1031,12 @@ const FilePreview = React.memo(
 
     // Use stored dimensions if available, otherwise calculate on load
     const imageDimensions = useMemo(() => {
-      if (!isImage || !file.width || !file.height) return null;
+      if (!isImage) return null;
+
+      // If dimensions are not available, return fixed size
+      if (!file.width || !file.height) {
+        return { width: MEDIA_MAX_WIDTH, height: MEDIA_MAX_HEIGHT };
+      }
 
       // Calculate dimensions to fit within max constraints while maintaining aspect ratio
       let displayWidth = file.width;
@@ -1069,14 +1074,10 @@ const FilePreview = React.memo(
             </View>
           ) : (
             <View
-              style={
-                imageDimensions
-                  ? {
-                      width: imageDimensions.width,
-                      height: imageDimensions.height,
-                    }
-                  : { width: MEDIA_MIN_WIDTH, height: MEDIA_MAX_HEIGHT }
-              }
+              style={{
+                width: imageDimensions?.width ?? MEDIA_MIN_WIDTH,
+                height: imageDimensions?.height ?? MEDIA_MAX_HEIGHT,
+              }}
               className="rounded-lg bg-muted">
               <Image
                 source={{ uri: file.url }}
