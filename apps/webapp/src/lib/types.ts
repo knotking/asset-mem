@@ -134,9 +134,6 @@ export type FileAttachment = {
   downloadURL: string | null;
   error: string | null;
   storagePath: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
 };
 
 export type Session = {
