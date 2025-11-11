@@ -23,6 +23,8 @@ export type FileAttachment = {
   fileName: string;
   fileType: string;
   fileSize: number;
+  width?: number;
+  height?: number;
 };
 
 export type Message = {
@@ -36,6 +38,8 @@ export type Message = {
     type: string;
     url: string;
     gsURI?: string;
+    width?: number;
+    height?: number;
   };
   agentSteps?: AgentStep[];
 };
