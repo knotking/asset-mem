@@ -85,7 +85,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import ChatList from '@/components/ChatList';
 import SessionsList from '@/components/SessionsList';
 import PushDrawer from '@/components/PushDrawer';
-import { CameraCaptureModal } from '@/components/CameraCaptureModal';
 import type { Document, FileAttachment, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
 import { PROPERTY_TYPES, ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
@@ -752,8 +751,6 @@ export default function PropertyDetailsScreen() {
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [attachmentOptionsVisible, setAttachmentOptionsVisible] = React.useState(false);
-  const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
-  const [cameraInitialMode, setCameraInitialMode] = React.useState<'photo' | 'video'>('photo');
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -997,27 +994,61 @@ export default function PropertyDetailsScreen() {
     await handleAssetUpload(result.assets[0]);
   }, [user, handleAssetUpload]);
 
-  const handleOpenCamera = React.useCallback(
-    (mode: 'photo' | 'video') => {
-      setAttachmentOptionsVisible(false);
-      setCameraInitialMode(mode);
-      setCameraModalVisible(true);
-    },
-    [setAttachmentOptionsVisible, setCameraInitialMode, setCameraModalVisible]
-  );
+  const handleTakePhoto = React.useCallback(async () => {
+    setAttachmentOptionsVisible(false);
+    if (!user) return;
 
-  const handleCameraCapture = React.useCallback(
-    async (asset: ImagePicker.ImagePickerAsset) => {
-      setCameraModalVisible(false);
-      await handleAssetUpload(asset);
-    },
-    [handleAssetUpload, setCameraModalVisible]
-  );
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setErrorMessage('Please grant permission to access your camera.');
+      setErrorAlertOpen(true);
+      return;
+    }
 
-  const handleCameraError = React.useCallback((message: string) => {
-    setErrorMessage(message);
-    setErrorAlertOpen(true);
-  }, [setErrorAlertOpen, setErrorMessage]);
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    await handleAssetUpload(result.assets[0]);
+  }, [user, handleAssetUpload]);
+
+  const handleRecordVideo = React.useCallback(async () => {
+    setAttachmentOptionsVisible(false);
+    if (!user) return;
+
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    if (cameraPermission.status !== 'granted') {
+      setErrorMessage('Please grant permission to access your camera.');
+      setErrorAlertOpen(true);
+      return;
+    }
+
+    const microphonePermission = await ImagePicker.requestMicrophonePermissionsAsync();
+    if (microphonePermission.status !== 'granted') {
+      setErrorMessage('Please grant permission to access your microphone.');
+      setErrorAlertOpen(true);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.8,
+      videoMaxDuration: 60,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+
+    await handleAssetUpload(result.assets[0]);
+  }, [user, handleAssetUpload]);
 
   const handleAttachmentPress = React.useCallback(() => {
     if (isSending || fileAttachment) {
@@ -1454,14 +1485,14 @@ export default function PropertyDetailsScreen() {
                         <Button
                           variant="outline"
                           className="justify-start gap-3"
-                          onPress={() => handleOpenCamera('photo')}>
+                          onPress={handleTakePhoto}>
                           <Icon as={Camera} size={20} className="text-foreground" />
                           <Text className="text-sm text-foreground">Take photo</Text>
                         </Button>
                         <Button
                           variant="outline"
                           className="justify-start gap-3"
-                          onPress={() => handleOpenCamera('video')}>
+                          onPress={handleRecordVideo}>
                           <Icon as={Video} size={20} className="text-foreground" />
                           <Text className="text-sm text-foreground">Record video</Text>
                         </Button>
@@ -1475,13 +1506,6 @@ export default function PropertyDetailsScreen() {
                       </View>
                     </View>
                   </Modal>
-                  <CameraCaptureModal
-                    visible={cameraModalVisible}
-                    initialMode={cameraInitialMode}
-                    onClose={() => setCameraModalVisible(false)}
-                    onCapture={handleCameraCapture}
-                    onError={handleCameraError}
-                  />
                   <View className="border-t border-border bg-light-background-alt px-4 py-3">
                     {/* File Attachment Preview */}
                     {fileAttachment && (
