@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mapp_deploy_error
     paths:
       - "apps/mapp/**"
       - "apps/common/**"
@@ -65,10 +66,18 @@ jobs:
         id: set-message
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.message }}" ]; then
-            echo "message=${{ github.event.inputs.message }}" >> $GITHUB_OUTPUT
+            {
+              echo "message<<EOF"
+              echo "${{ github.event.inputs.message }}"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
           else
             COMMIT_MSG=$(git log -1 --pretty=%B)
-            echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+            {
+              echo "message<<EOF"
+              echo "$COMMIT_MSG"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
           fi
 
       - name: Validate GitHub Secrets
