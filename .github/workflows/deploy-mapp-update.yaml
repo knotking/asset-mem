@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - mapp_deploy_error
     paths:
       - "apps/mapp/**"
       - "apps/common/**"
