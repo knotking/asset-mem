@@ -40,6 +40,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "^54.0.0",
+    "expo-camera": "~15.0.8",
     "expo-auth-session": "~7.0.8",
     "expo-av": "~16.0.7",
     "expo-clipboard": "~8.0.7",
