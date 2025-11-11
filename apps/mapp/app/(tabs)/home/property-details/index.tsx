@@ -49,7 +49,6 @@ import {
   X,
   File,
   AlertCircle,
-  CheckCircle,
   Trash2,
   Sparkles,
   Plus,
@@ -925,6 +924,8 @@ export default function PropertyDetailsScreen() {
         fileName,
         fileType,
         fileSize: asset.fileSize || 0,
+        width: asset.width,
+        height: asset.height,
       });
 
       try {
@@ -1144,6 +1145,8 @@ export default function PropertyDetailsScreen() {
           type: currentFileAttachment.fileType,
           url: currentFileAttachment.downloadURL,
           gsURI: `gs://${storageRef.bucket}/${storageRef.fullPath}`,
+          width: currentFileAttachment.width,
+          height: currentFileAttachment.height,
         };
       }
 
@@ -1509,67 +1512,46 @@ export default function PropertyDetailsScreen() {
                   <View className="border-t border-border bg-light-background-alt px-4 py-3">
                     {/* File Attachment Preview */}
                     {fileAttachment && (
-                      <View className="mb-3 overflow-hidden rounded-lg border border-border">
-                        {/* Image Preview */}
-                        {fileAttachment.fileType.startsWith('image/') && (
-                          <Image
-                            source={{ uri: fileAttachment.uri }}
-                            className="h-32 w-full"
-                            resizeMode="cover"
-                          />
-                        )}
+                      <View className="mb-3">
+                        <View className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-secondary">
+                          {/* Image Preview */}
+                          {fileAttachment.fileType.startsWith('image/') && (
+                            <Image
+                              source={{ uri: fileAttachment.uri }}
+                              className="h-full w-full"
+                              resizeMode="cover"
+                            />
+                          )}
 
-                        {/* Video Preview */}
-                        {fileAttachment.fileType.startsWith('video/') && (
-                          <View className="h-32 w-full items-center justify-center bg-secondary">
-                            <Icon as={FileText} size={32} className="text-muted-foreground" />
-                            <Text className="mt-2 text-sm text-muted-foreground">Video</Text>
-                          </View>
-                        )}
-
-                        {/* File Info */}
-                        <View className="bg-secondary p-3">
-                          <View className="flex-row items-center justify-between">
-                            <View className="flex-1">
-                              <Text
-                                className="text-sm font-medium text-foreground"
-                                numberOfLines={1}>
-                                {fileAttachment.fileName}
-                              </Text>
-                              {fileAttachment.error ? (
-                                <View className="mt-1 flex-row items-center gap-1">
-                                  <Icon as={AlertCircle} size={16} className="text-destructive" />
-                                  <Text className="text-xs text-destructive">
-                                    {fileAttachment.error}
-                                  </Text>
-                                </View>
-                              ) : fileAttachment.progress < 100 ? (
-                                <View className="mt-1">
-                                  <Text className="text-xs text-muted-foreground">
-                                    Uploading... {Math.round(fileAttachment.progress)}%
-                                  </Text>
-                                  <View className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border">
-                                    <View
-                                      className="h-full bg-primary"
-                                      style={{ width: `${fileAttachment.progress}%` }}
-                                    />
-                                  </View>
-                                </View>
-                              ) : (
-                                <View className="mt-1 flex-row items-center gap-1">
-                                  <Icon as={CheckCircle} size={16} className="text-success" />
-                                  <Text className="text-xs text-success">Upload complete</Text>
-                                </View>
-                              )}
+                          {/* Video Preview */}
+                          {fileAttachment.fileType.startsWith('video/') && (
+                            <View className="h-full w-full items-center justify-center">
+                              <Icon as={FileText} size={24} className="text-muted-foreground" />
                             </View>
-                            <Button
-                              onPress={removeFileAttachment}
-                              variant="ghost"
-                              size="icon"
-                              className="ml-2">
-                              <Icon as={X} size={16} className="text-foreground" />
-                            </Button>
-                          </View>
+                          )}
+
+                          {/* Loading Indicator */}
+                          {fileAttachment.progress < 100 && !fileAttachment.error && (
+                            <View className="absolute inset-0 items-center justify-center bg-black/40">
+                              <ActivityIndicator size="large" color="#ffffff" />
+                            </View>
+                          )}
+
+                          {/* Delete Button Overlay */}
+                          <Pressable
+                            onPress={removeFileAttachment}
+                            className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full bg-gray-500/80"
+                            accessibilityRole="button"
+                            accessibilityLabel="Remove attachment">
+                            <Icon as={X} size={14} className="text-white" />
+                          </Pressable>
+
+                          {/* Error Indicator */}
+                          {fileAttachment.error && (
+                            <View className="absolute inset-0 items-center justify-center bg-destructive/20">
+                              <Icon as={AlertCircle} size={24} className="text-destructive" />
+                            </View>
+                          )}
                         </View>
                       </View>
                     )}

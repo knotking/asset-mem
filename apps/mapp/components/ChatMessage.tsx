@@ -1028,34 +1028,31 @@ const FilePreview = React.memo(
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     const [imageError, setImageError] = useState(false);
-    const [imageDimensions, setImageDimensions] = useState<{
-      width: number;
-      height: number;
-    } | null>(null);
+
+    // Use stored dimensions if available, otherwise calculate on load
+    const imageDimensions = useMemo(() => {
+      if (!isImage || !file.width || !file.height) return null;
+
+      // Calculate dimensions to fit within max constraints while maintaining aspect ratio
+      let displayWidth = file.width;
+      let displayHeight = file.height;
+
+      if (file.width > MEDIA_MAX_WIDTH || file.height > MEDIA_MAX_HEIGHT) {
+        const widthRatio = MEDIA_MAX_WIDTH / file.width;
+        const heightRatio = MEDIA_MAX_HEIGHT / file.height;
+        const ratio = Math.min(widthRatio, heightRatio);
+
+        displayWidth = file.width * ratio;
+        displayHeight = file.height * ratio;
+      }
+
+      return { width: displayWidth, height: displayHeight };
+    }, [isImage, file.width, file.height]);
 
     // Video player hook - only create if video
     const player = useVideoPlayer(isVideo ? file.url : '', (player) => {
       player.pause();
     });
-
-    const handleImageLoad = useCallback((event: { source: { width: number; height: number } }) => {
-      const { width, height } = event.source;
-
-      // Calculate dimensions to fit within max constraints while maintaining aspect ratio
-      let displayWidth = width;
-      let displayHeight = height;
-
-      if (width > MEDIA_MAX_WIDTH || height > MEDIA_MAX_HEIGHT) {
-        const widthRatio = MEDIA_MAX_WIDTH / width;
-        const heightRatio = MEDIA_MAX_HEIGHT / height;
-        const ratio = Math.min(widthRatio, heightRatio);
-
-        displayWidth = width * ratio;
-        displayHeight = height * ratio;
-      }
-
-      setImageDimensions({ width: displayWidth, height: displayHeight });
-    }, []);
 
     return (
       <View style={{ alignSelf: isUserMessage ? 'flex-end' : 'flex-start' }}>
@@ -1094,7 +1091,6 @@ const FilePreview = React.memo(
                 transition={200}
                 placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
                 placeholderContentFit="cover"
-                onLoad={handleImageLoad}
                 onError={(e) => {
                   console.error('Image load error:', e.error);
                   setImageError(true);
