@@ -5,13 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera as CameraIcon, Circle, RefreshCw, StopCircle, Video } from "lucide-react";
 
-type CameraMode = "photo" | "video";
-
 type CameraCaptureDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCapture: (file: File) => void;
-  initialMode?: CameraMode;
 };
 
 const getSupportedMimeType = (): string | null => {
@@ -29,14 +26,14 @@ const getSupportedMimeType = (): string | null => {
   return null;
 };
 
-export function CameraCaptureDialog({ open, onOpenChange, onCapture, initialMode = "photo" }: CameraCaptureDialogProps) {
+export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCaptureDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const shouldSaveRecordingRef = useRef(false);
 
-  const [mode, setMode] = useState<CameraMode>(initialMode);
+  const [mode, setMode] = useState<"photo" | "video">("photo");
   const [selectedFacingMode, setSelectedFacingMode] = useState<"user" | "environment">("environment");
   const [isRecording, setIsRecording] = useState(false);
   const [isStreamLoading, setIsStreamLoading] = useState(false);
@@ -121,18 +118,18 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture, initialMode
       setIsStreamLoading(false);
       setHasCameraAccess(true);
       setSelectedFacingMode("environment");
-      setMode(initialMode);
+      if (mode !== "photo") {
+        setMode("photo");
+      }
       return;
     }
 
-    const nextMode: CameraMode = initialMode;
-    setMode(nextMode);
-    initStream(nextMode);
+    initStream(mode);
 
     return () => {
       stopStream();
     };
-  }, [open, initialMode, initStream, stopStream]);
+  }, [open, mode, initStream, stopStream]);
 
   useEffect(() => {
     if (!canRecordVideo && mode === "video") {

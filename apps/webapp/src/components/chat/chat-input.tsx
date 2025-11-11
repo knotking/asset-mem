@@ -2,7 +2,7 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, Video, Images, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
@@ -68,8 +68,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
-  const [cameraDialogMode, setCameraDialogMode] = useState<"photo" | "video">("photo");
-  const [attachmentOptionsOpen, setAttachmentOptionsOpen] = useState(false);
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -79,10 +77,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     if (selectedFile) {
         onFileChange(selectedFile);
     }
-    if (internalFileInputRef.current) {
-      internalFileInputRef.current.value = "";
-    }
-    setAttachmentOptionsOpen(false);
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -143,14 +137,14 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const renderPreview = () => {
     if (!fileAttachment) return null;
 
-    const fileType = fileAttachment.fileType;
+    const fileType = fileAttachment.file.type;
 
     if (fileType.startsWith("image/")) {
       return (
         <div className="relative h-24 w-24">
           <Image
             src={fileAttachment.previewUrl}
-            alt={fileAttachment.fileName}
+            alt={fileAttachment.file.name}
             fill
             className="rounded-md object-cover"
           />
@@ -160,9 +154,15 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
     if (fileType.startsWith("video/")) {
       return (
-        <div className="flex h-24 w-24 flex-col items-center justify-center rounded-md bg-primary/10">
-          <Video className="h-10 w-10 text-primary" />
-          <p className="mt-2 text-xs font-medium text-muted-foreground">Video</p>
+        <div className="relative h-24 w-24">
+          <video
+            src={fileAttachment.previewUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="rounded-md object-cover h-full w-full"
+          />
         </div>
       );
     }
@@ -181,23 +181,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const handleCameraCapture = (file: File) => {
     onFileChange(file);
     setCameraDialogOpen(false);
-    setAttachmentOptionsOpen(false);
-  };
-  const handleCameraDialogOpenChange = (open: boolean) => {
-    setCameraDialogOpen(open);
-    if (!open) {
-      setAttachmentOptionsOpen(false);
-    }
-  };
-  const handleSelectAttachmentOption = (option: "photo" | "video" | "library") => {
-    if (option === "library") {
-      setAttachmentOptionsOpen(false);
-      internalFileInputRef.current?.click();
-      return;
-    }
-    setAttachmentOptionsOpen(false);
-    setCameraDialogMode(option);
-    setCameraDialogOpen(true);
   };
 
   return (
@@ -219,7 +202,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                             {renderPreview()}
                         </div>
                         <div className="flex flex-col justify-center flex-grow min-w-0 pt-2">
-                            <p className="text-sm font-medium text-foreground break-words truncate">{fileAttachment.fileName}</p>
+                            <p className="text-sm font-medium text-foreground break-words truncate">{fileAttachment.file.name}</p>
                             {isUploading && (
                                 <div className="mt-2">
                                     <Progress value={fileAttachment.progress} className="h-2" />
@@ -385,50 +368,29 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             )}
 
             {allowFileAttachment && (
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <Popover open={attachmentOptionsOpen} onOpenChange={(open) => setAttachmentOptionsOpen(open)}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0"
-                      disabled={isLoading || hasFileAttached}
-                      type="button"
-                      aria-label="Open attachment options"
-                    >
-                      <Paperclip className="h-5 w-5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 space-y-1 p-2" side="top" align="end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
-                      onClick={() => handleSelectAttachmentOption("photo")}
-                    >
-                      <Camera className="h-4 w-4" />
-                      Take photo
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
-                      onClick={() => handleSelectAttachmentOption("video")}
-                    >
-                      <Video className="h-4 w-4" />
-                      Record video
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full justify-start gap-2"
-                      onClick={() => handleSelectAttachmentOption("library")}
-                    >
-                      <Images className="h-4 w-4" />
-                      Choose from device
-                    </Button>
-                  </PopoverContent>
-                </Popover>
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => internalFileInputRef.current?.click()}
+                  disabled={isLoading || hasFileAttached}
+                  type="button"
+                  aria-label="Attach file"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0"
+                  onClick={() => setCameraDialogOpen(true)}
+                  disabled={isLoading || hasFileAttached}
+                  type="button"
+                  aria-label="Open camera"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
               </div>
             )}
           </div>
@@ -459,9 +421,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
       {allowFileAttachment && (
         <CameraCaptureDialog
           open={cameraDialogOpen}
-          onOpenChange={handleCameraDialogOpenChange}
+          onOpenChange={setCameraDialogOpen}
           onCapture={handleCameraCapture}
-          initialMode={cameraDialogMode}
         />
       )}
     </div>
