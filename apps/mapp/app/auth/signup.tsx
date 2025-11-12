@@ -94,7 +94,7 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={0}
       className="flex-1 bg-background">
       <ScrollView
@@ -143,6 +143,8 @@ export default function SignupScreen() {
               onChangeText={(text) => dispatch({ type: 'SET_CONFIRM_PASSWORD', payload: text })}
               secureTextEntry={!confirmPasswordVisible}
               textAlignVertical="center"
+              returnKeyType="done"
+              onSubmitEditing={handleSignUp}
               className="shadow-xs w-full rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground"
             />
             <Button

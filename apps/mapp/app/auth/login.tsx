@@ -123,7 +123,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
       keyboardVerticalOffset={0}
       className="flex-1 bg-background">
       <ScrollView
@@ -152,6 +152,8 @@ export default function LoginScreen() {
               onChangeText={(text: string) => dispatch({ type: 'SET_PASSWORD', payload: text })}
               secureTextEntry={!passwordVisible}
               textAlignVertical="center"
+              returnKeyType="done"
+              onSubmitEditing={handleSignIn}
               className="shadow-xs w-full rounded-md border border-input bg-gray-100 px-3 py-2 pr-10 text-base text-foreground"
             />
             <Button
