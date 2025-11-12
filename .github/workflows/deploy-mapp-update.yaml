@@ -122,10 +122,6 @@ jobs:
           fi
 
           # Check environment variables
-          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
-            MISSING_ITEMS+=("EXPO_PROJECT_ID (variable)")
-          fi
-
           if [ -z "${{ vars.EXPO_ACCOUNT }}" ]; then
             MISSING_ITEMS+=("EXPO_ACCOUNT (variable)")
           fi
@@ -169,15 +165,18 @@ jobs:
           PROXY_BASE_URL=$(node -pe "require('./eas.json').build['$ENV'].env.PROXY_BASE_URL")
           WEB_APP_URL=$(node -pe "require('./eas.json').build['$ENV'].env.WEB_APP_URL")
           APP_SLUG=$(node -pe "require('./eas.json').build['$ENV'].env.APP_SLUG")
+          EXPO_PROJECT_ID=$(node -pe "require('./eas.json').build['$ENV'].env.EXPO_PROJECT_ID")
 
           echo "PROXY_BASE_URL=$PROXY_BASE_URL" >> $GITHUB_ENV
           echo "WEB_APP_URL=$WEB_APP_URL" >> $GITHUB_ENV
           echo "APP_SLUG=$APP_SLUG" >> $GITHUB_ENV
+          echo "EXPO_PROJECT_ID=$EXPO_PROJECT_ID" >> $GITHUB_ENV
 
           echo "Loaded environment variables:"
           echo "  PROXY_BASE_URL: $PROXY_BASE_URL"
           echo "  WEB_APP_URL: $WEB_APP_URL"
           echo "  APP_SLUG: $APP_SLUG"
+          echo "  EXPO_PROJECT_ID: $EXPO_PROJECT_ID"
 
       - name: Generate app version
         id: version
@@ -209,7 +208,7 @@ jobs:
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           WEB_APP_URL: ${{ env.WEB_APP_URL }}
           APP_VERSION: ${{ env.APP_VERSION }}
-          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+          EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}
 
       - name: Summary
         run: |
