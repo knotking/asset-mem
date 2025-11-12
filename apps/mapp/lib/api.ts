@@ -274,7 +274,14 @@ export async function streamAgentResponse({
     }
   } catch (error) {
     // Don't log or propagate AbortError - it's expected when user stops
-    if (error instanceof Error && error.name === 'AbortError') {
+    // Check for abort/cancellation errors from various sources
+    if (
+      error instanceof Error &&
+      (error.name === 'AbortError' ||
+        error.message.includes('FetchRequestCanceledException') ||
+        error.message.includes('Fetch request has been canceled') ||
+        error.message.includes('fetch failed'))
+    ) {
       console.log('Agent request was cancelled by user');
       return;
     }
