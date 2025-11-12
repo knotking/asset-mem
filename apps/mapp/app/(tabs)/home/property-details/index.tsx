@@ -785,7 +785,9 @@ function ChatTab({
               alignItems: 'center',
               justifyContent: 'flex-end',
               paddingBottom: '50%',
-              transform: [{ rotate: '180deg' }],
+              transform: Platform.OS === 'ios'
+                ? [{ rotate: '180deg' }, { scaleX: -1 }]
+                : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
             }}>
             <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
               <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">

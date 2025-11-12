@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - mapp_keyboard
     paths:
       - "apps/mapp/**"
       - "apps/common/**"
