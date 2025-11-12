@@ -26,12 +26,83 @@ export type Message = {
     type: string;
     url: string;
     gsURI?: string;
+    width?: number;  // Image dimensions for aspect ratio preservation
+    height?: number;
   };
   documents?: {
     name: string;
     type: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
   }[];
   agentSteps?: AgentStep[];
+};
+
+export type ServiceProvider = {
+  name: string;
+  website?: string;
+  link?: string;
+  directions?: string;
+  contact_info?: string;
+  location?: string;
+  ratings?: string;
+  reviews?: string;
+  specialties?: string;
+  additional_information?: string;
+  authorized?: string;
+};
+
+export type Product = {
+  product_name?: string;
+  description?: string;
+  vendor?: string;
+  price?: string;
+  item_price?: string;
+  rating?: string;
+  reviews?: string;
+  url?: string;
+  image_url?: string;
+};
+
+export type StructuredResponseData = {
+  title?: string;
+  analysis?: {
+    title?: string;
+    triageResult?: {
+      diagnosis?: string;
+      needs_clarification?: boolean;
+      clarification_questions?: string[];
+      message?: string;
+    };
+    coverageResult?: {
+      warrantyInfo?: string;
+      insuranceInfo?: string;
+    };
+    diyResults?: {
+      diySteps?: {
+        summary?: string;
+        steps?: Array<{ description: string }>;
+      };
+      youtubeSearch?: {
+        videos?: Array<{ url: string; title?: string; description?: string }>;
+      };
+      recommendedProducts?: {
+        products?: Product[];
+      };
+    };
+    serviceResults?: {
+      providers?: any;
+      localPros?: {
+        yelpAPIResults?: any;
+        serpAPIResults?: any;
+      };
+      localProviders?: any;
+      local_pros?: any;
+      results?: any;
+      nearbyProviders?: any;
+    };
+    costEstimationResults?: {
+      costEstimates: any;
+    };
+  };
 };
 ```
 
@@ -51,14 +122,73 @@ The context:
 ### 3. Components
 
 #### ChatMessage (`apps/mapp/components/ChatMessage.tsx`)
-Renders individual messages with:
+The main message rendering component with comprehensive features:
+
+**Core Features:**
 - **Avatar**: User or Bot icon with different colors
 - **Message bubble**: Different styles for user vs assistant
-- **File previews**: Images, videos, and documents
-- **Context documents**: Shows which documents were used
-- **Agent steps**: Visual indicators of agent execution status
-- **Loading state**: Shows "Thinking..." for incomplete assistant messages
+- **Markdown rendering**: Full markdown support with custom styles using `react-native-markdown-display`
+- **File previews**: Images with aspect ratio preservation, videos with controls, and document icons
+- **Typing indicators**: Shows animated typing dots when assistant is processing
+- **Agent steps**: Visual indicators showing agent execution status
 - **Timestamps**: Formatted time for each message
+- **Long-press menu**: Context menu with copy and share options
+- **Haptic feedback**: Touch feedback for interactions
+
+**Structured Response Rendering:**
+When the assistant returns structured data (JSON format), the component renders an accordion-based UI with:
+
+1. **Triage Summary** (Stethoscope icon, blue)
+   - Primary diagnosis or problem assessment
+   - Clarification questions when more info is needed
+   - Markdown-formatted detailed explanation
+
+2. **Coverage Analysis** (Shield icon, green)
+   - Warranty information
+   - Insurance coverage details
+   - Policy recommendations
+
+3. **DIY Recommendations** (Wrench icon, yellow)
+   - Step-by-step instructions
+   - Embedded YouTube video tutorials with `react-native-youtube-iframe`
+   - Recommended products with:
+     - Product images with loading states and error handling
+     - Pricing and ratings
+     - Vendor information
+     - Direct purchase links
+
+4. **Service Recommendations** (Users icon, indigo)
+   - Service provider cards with:
+     - Business name and authorization badges
+     - Star ratings and review counts
+     - Contact information (phone, address)
+     - Yelp integration for reviews
+     - Google Maps directions
+     - Specialties and additional info
+
+5. **Cost Estimates** (Dollar icon, purple)
+   - DIY cost breakdown with complexity ratings
+   - Professional service cost ranges
+   - Comparison analysis with savings calculations
+   - What's included in each option
+
+**Message Content Extraction:**
+The component intelligently parses assistant messages that contain both markdown and JSON:
+- Extracts structured data from code blocks (```json ... ```)
+- Preserves markdown content for display
+- Handles various formats (nested analysis objects, flat structures)
+- Strips wrapper code blocks for clean display
+
+**File Preview Component:**
+- **Images**: Aspect ratio preservation, lazy loading with skeleton, error fallback
+- **Videos**: `expo-video` player with controls, Picture-in-Picture support
+- **Documents**: Icon with filename display
+
+**Copy/Share Functionality:**
+- Long-press message to show context menu
+- **Copy**: Converts markdown to WhatsApp-formatted text, copies to clipboard with haptic feedback
+- **Share**: Uses native share sheet with formatted text
+- Success/error alerts with auto-dismiss
 
 #### GiftedChat Integration
 > **Replaced ChatList**: The app now uses `react-native-gifted-chat` for message list management.
@@ -178,29 +308,53 @@ users/
 
 ## Features Implemented
 
-✅ Real-time message loading from Firestore
-✅ Message display with proper styling
-✅ Send text messages
-✅ Draft session claiming
+### Core Messaging
+✅ Real-time message loading from Firestore with listeners
+✅ Message display with proper styling and animations
+✅ Send text messages with server timestamps
+✅ Draft session claiming on first message
 ✅ Auto-scroll to latest message
-✅ Loading states and empty states
+✅ Loading states with typing indicators
 ✅ Session selection and switching
-✅ File and document display in messages
-✅ Agent step indicators
+✅ Agent step indicators with status visualization
+
+### Rich Content
+✅ **Markdown Rendering**: Full markdown support with custom styles
+✅ **File Attachments**: Camera, video, and library picker integration
+✅ **Image Previews**: Aspect ratio preservation, lazy loading with skeletons
+✅ **Video Playback**: Expo-video player with controls and PiP support
+✅ **YouTube Embeds**: Inline video players for tutorial content
+✅ **Document Icons**: Visual indicators for file attachments
+
+### Structured Responses
+✅ **Accordion UI**: Collapsible sections for organized content
+✅ **Triage Summary**: Problem diagnosis and clarification handling
+✅ **Coverage Analysis**: Warranty and insurance information display
+✅ **DIY Recommendations**: Step-by-step instructions with videos and products
+✅ **Service Provider Cards**: Business listings with ratings, contact info, and directions
+✅ **Product Cards**: E-commerce style product display with images and pricing
+✅ **Cost Estimates**: Detailed breakdowns for DIY vs professional service options
+
+### User Experience
+✅ **Copy Message**: Long-press to copy with WhatsApp-style formatting
+✅ **Share Message**: Native share sheet integration
+✅ **Haptic Feedback**: Touch feedback for all interactions
+✅ **Context Menu**: Modal with copy/share actions
+✅ **Error Handling**: Graceful fallbacks for image/video loading failures
+✅ **Dark Mode**: Full theming support across all components
 
 ## TODO: Future Enhancements
 
-- [ ] **Agent Response Streaming**: Implement SSE connection to agent API
-- [ ] **File Attachments**: Allow users to attach photos/videos to messages
-- [ ] **Markdown Rendering**: Use react-native-markdown-display for rich text
-- [ ] **Copy Message**: Long-press to copy message content
+- [ ] **Agent Response Streaming**: Implement SSE connection to agent API for real-time responses
 - [ ] **Message Actions**: Reply, react, or delete messages
-- [ ] **Typing Indicators**: Show when assistant is typing
-- [ ] **Message Search**: Search within conversation
+- [ ] **Message Search**: Search within conversation history
 - [ ] **Voice Messages**: Record and send audio messages
 - [ ] **Push Notifications**: Notify when assistant responds
-- [ ] **Offline Support**: Queue messages when offline
-- [ ] **Message Retry**: Retry failed messages
+- [ ] **Offline Support**: Queue messages when offline and sync when online
+- [ ] **Message Retry**: Retry failed messages with error indicators
+- [ ] **Message Editing**: Edit sent messages within a time window
+- [ ] **Pagination**: Load older messages on scroll
+- [ ] **Message Reactions**: Quick emoji reactions to messages
 
 ## Environment Variables Required
 
@@ -208,26 +362,213 @@ users/
 EXPO_PUBLIC_AGENT_SSE_URL=<your-agent-streaming-endpoint>
 ```
 
+## Dependencies
+
+### Core Dependencies
+- `react-native-gifted-chat` - Main chat UI framework
+- `react-native-markdown-display` - Markdown rendering with custom styles
+- `expo-image` - Optimized image loading with caching and transitions
+- `expo-video` - Video playback with native controls
+- `react-native-youtube-iframe` - YouTube video embeds
+- `expo-clipboard` - Copy to clipboard functionality
+- `expo-haptics` - Haptic feedback for interactions
+- `lucide-react-native` - Icon library
+
+### UI Components (from local UI library)
+- `Accordion` - Collapsible sections for structured responses
+- `Button`, `Text`, `Icon` - Styled base components
+- `Alert` - Status messages for copy/share feedback
+- `Skeleton` - Loading placeholders for images
+
 ## Files Created/Modified
 
 ### Created:
-- `apps/common/src/contexts/messages-context.tsx` - Messages loading context with pagination
-- `apps/mapp/components/ChatMessage.tsx` - Individual message component
+- `apps/common/src/contexts/messages-context.tsx` - Messages loading context with real-time listeners
+- `apps/mapp/components/ChatMessage.tsx` - Individual message component with structured response rendering
 - `apps/mapp/components/GiftedChatBubble.tsx` - GiftedChat bubble wrapper
-- `apps/mapp/components/GiftedChatInputToolbar.tsx` - Custom input toolbar
+- `apps/mapp/components/GiftedChatInputToolbar.tsx` - Custom input toolbar with attachments
+- `apps/mapp/components/TypingIndicator.tsx` - Animated typing indicator
+- `apps/mapp/components/AgentStatus.tsx` - Agent step visualization
 - `apps/mapp/lib/gifted-chat-utils.ts` - Message transformation utilities
+- `apps/mapp/lib/markdown-styles.ts` - Custom markdown styling
+- `apps/mapp/lib/utils.ts` - Utility functions including `markdownToWhatsapp` converter
 
 ### Modified:
-- `apps/common/src/types.ts` - Added Message and AgentStep types
+- `apps/common/src/types.ts` - Added Message, AgentStep, ServiceProvider, Product, and StructuredResponseData types
 - `apps/mapp/app/(tabs)/home/property-details/index.tsx` - Integrated GiftedChat UI
 
 ### Removed:
 - ~~`apps/mapp/components/ChatList.tsx`~~ - Replaced by react-native-gifted-chat
 
+## Implementation Details
+
+### Message Content Parsing
+The `ChatMessage` component includes sophisticated content parsing logic:
+
+1. **Content Extraction** (`extractContentParts` function):
+   - Detects and parses JSON code blocks within assistant messages
+   - Supports multiple formats: ````markdown ... ``` ```json ... ````, ````json ... ````, or plain JSON
+   - Validates structured data by checking for specific keys (triageResult, coverageResult, diyResults, etc.)
+   - Preserves markdown content separate from structured data
+
+2. **Structured Data Keys**:
+   - Supports both nested (`analysis.triageResult`) and flat (`triageResult`) structures
+   - Handles various provider array locations (providers, localPros, yelpAPIResults, etc.)
+
+3. **Provider Normalization**:
+   - Maps multiple field name variations (name/business_name/businessName/title/company)
+   - Filters out invalid or empty providers
+   - Normalizes URLs with protocol handling
+
+### Helper Functions
+The component includes several utility functions moved outside components for performance:
+
+- **`hasValue(val)`**: Validates if a value exists and is not a placeholder (N/A, null, none, etc.)
+- **`normalizeProvider(p)`**: Converts various provider data formats into standardized ServiceProvider type
+- **`providerHasValidData(provider)`**: Checks if provider has minimum required data (name)
+- **`getProvidersArray(providers)`**: Extracts provider arrays from various nested structures
+- **`getYouTubeVideoId(url)`**: Extracts 11-character video ID from YouTube URLs
+- **`normalizeUrl(u)`**: Adds https:// protocol and validates URL format
+- **`hasStructuredDataKeys(parsed)`**: Validates if parsed JSON contains expected structured data keys
+- **`getPreviewText(value, max)`**: Generates truncated preview text from markdown (max 240 chars)
+
+### Performance Optimizations
+- **React.memo**: All sub-components wrapped for render optimization (MessageAvatar, ProductCard, YouTubeEmbed, ServiceProviderCard, StructuredResponse, MessageContent, FilePreview)
+- **useMemo**: Expensive computations cached (provider arrays, dimensions, content parsing, section visibility flags)
+- **useCallback**: Event handlers memoized to prevent re-renders (copy, share, long-press, link opening)
+- **Lazy Loading**: Images load with skeleton placeholders using expo-image transitions
+- **Image Caching**: Expo-image configured with memory-disk cache policy for offline access
+- **Conditional Rendering**: Accordion sections only render if they have data to display
+
+### UI/UX Patterns
+
+**Message Display:**
+- User messages: Right-aligned with muted background (`bg-muted`)
+- Assistant messages: Left-aligned with secondary background (`bg-secondary`)
+- Full-width content for structured responses
+- Natural text width for simple text messages
+
+**Interaction Patterns:**
+- Long-press (500ms) to open context menu
+- Haptic feedback on menu open (light impact)
+- Success haptic on successful copy (notification)
+- Error haptic on copy failure (notification)
+- Modal overlay for context menu with blur background
+- Touch outside modal to dismiss
+
+**Loading States:**
+- Typing indicator (3 animated dots) for simple assistant thinking
+- Agent status component when agent steps are available
+- Image skeleton with animated pulse during image load
+- "Image unavailable" fallback with file icon
+
+**Visual Hierarchy:**
+- Accordion default opens on "triage" section (most important)
+- Color-coded sections (blue=triage, green=coverage, yellow=DIY, indigo=service, purple=cost)
+- Icon indicators for each section type
+- Authorization badges for verified providers
+- Star ratings with warning color for visibility
+
+### Accessibility
+- Haptic feedback for all interactive elements (copy, share, link navigation)
+- Error states with clear messaging and fallback UI
+- Long-press for context menu with 500ms delay (not too sensitive)
+- Auto-dismiss alerts after 2 seconds (non-intrusive)
+- Proper text truncation with ellipsis (`numberOfLines` prop)
+- Touch targets sized appropriately for mobile (buttons, cards)
+- Semantic color coding (success=green, warning=yellow, destructive=red)
+
+## Example Structured Response Format
+
+Assistant messages can include structured data for rich UI rendering:
+
+```markdown
+**Analysis Agent**: Here's what I found...
+
+\```json
+{
+  "title": "Leaky Faucet Repair Options",
+  "analysis": {
+    "triageResult": {
+      "diagnosis": "Your kitchen faucet has a worn O-ring causing the leak..."
+    },
+    "coverageResult": {
+      "warrantyInfo": "Plumbing fixtures typically have a 1-year manufacturer warranty...",
+      "insuranceInfo": "Standard homeowners insurance generally doesn't cover wear and tear..."
+    },
+    "diyResults": {
+      "diySteps": {
+        "summary": "This is a beginner-friendly repair...",
+        "steps": [
+          { "description": "Turn off water supply under sink" },
+          { "description": "Remove faucet handle..." }
+        ]
+      },
+      "youtubeSearch": {
+        "videos": [
+          { "url": "https://youtube.com/watch?v=...", "title": "How to Fix..." }
+        ]
+      },
+      "recommendedProducts": {
+        "products": [
+          {
+            "product_name": "Universal Faucet Repair Kit",
+            "vendor": "Home Depot",
+            "price": "$12.99",
+            "rating": "4.5",
+            "url": "https://...",
+            "image_url": "https://..."
+          }
+        ]
+      }
+    },
+    "serviceResults": {
+      "localPros": {
+        "yelpAPIResults": [
+          {
+            "name": "ABC Plumbing",
+            "ratings": "4.8/5",
+            "reviews": "127 reviews",
+            "contact_info": "(555) 123-4567",
+            "location": "123 Main St, City, ST",
+            "link": "https://yelp.com/...",
+            "directions": "https://maps.google.com/...",
+            "authorized": "True"
+          }
+        ]
+      }
+    },
+    "costEstimationResults": {
+      "costEstimates": {
+        "repair_type": "Faucet O-ring Replacement",
+        "DIY": {
+          "cost_range": "$10-$25",
+          "complexity": "Easy",
+          "savings": "70-85% compared to professional service"
+        },
+        "Service": {
+          "cost_range": "$100-$150",
+          "complexity": "Quick repair",
+          "benefits": "Warranty on work, professional guarantee"
+        }
+      }
+    }
+  }
+}
+\```
+```
+
+The component automatically detects this format and renders the structured UI.
+
 ## Notes
 
 - Messages are loaded in real-time using Firestore onSnapshot listeners
-- Currently only user messages are sent (assistant responses need agent API integration)
+- Assistant responses with structured data are automatically parsed and rendered in accordion UI
 - The chat automatically claims draft sessions on first message
 - All messages are persisted in Firestore for history
 - The UI is designed to be similar to the webapp implementation but optimized for mobile
+- Image dimensions are stored in Firestore for instant aspect ratio calculations
+- YouTube videos are embedded inline using the video ID extracted from URLs
+- Service provider data supports multiple API sources (Yelp, SERP, custom providers)
+- The component gracefully handles missing or incomplete structured data sections
+- Both nested (`analysis.*`) and flat (top-level) structured data formats are supported

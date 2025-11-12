@@ -1,35 +1,72 @@
 # Environment Configuration Guide
 
-This document explains how environment-specific URLs are configured for different deployment environments.
+This document explains how environment-specific configuration is managed for different deployment environments.
 
 ## Overview
 
-The app uses different API endpoints depending on the environment:
+The app uses a **proxy-based architecture** where all API endpoints are constructed from a base URL and token:
 
-- **Local Development**: Uses `.env` file
-- **EAS Builds**: Uses `eas.json` configuration
+- **Local Development**: Uses `.env` file with `PROXY_BASE_URL` and `PROXY_TOKEN`
+- **EAS Builds**: Uses `eas.json` configuration for each build profile
+- **CI/CD Deployment**: Uses GitHub Actions with environment-level secrets
+
+## Architecture
+
+### Proxy URL Construction
+
+Instead of managing individual endpoint URLs, the app uses a proxy pattern:
+
+```
+{PROXY_BASE_URL}/{PROXY_TOKEN}/{endpoint}
+```
+
+**Example:**
+```
+Base: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app
+Token: abc123xyz
+Endpoint: agent-session
+Result: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/abc123xyz/agent-session
+```
+
+The [app.config.js:5-8](apps/mapp/app.config.js#L5-L8) `buildProxyUrl()` helper constructs these URLs automatically.
+
+### API Endpoints
+
+The following endpoints are constructed from the proxy base URL:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `agent-session` | Agent session creation |
+| `firebase-agent-stream` | Agent SSE streaming |
+| `rag-file-upload` | RAG file upload |
+| `extract-doc-info` | Document analysis |
+
+These are exposed in [app.config.js:76-79](apps/mapp/app.config.js#L76-L79) via `expo.extra`.
 
 ## Setup for Local Development
 
 ### 1. Create your `.env` file
 
 ```bash
+cd apps/mapp
 cp .env.example .env
 ```
 
-### 2. Configure your environment variables
+### 2. Configure environment variables
 
-Edit `.env` and set your development URLs:
+Edit `.env` with your development proxy configuration:
 
 ```env
-# Agent API URLs
-AGENT_SESSION_URL=https://your-dev-proxy-url.com/agent-session
-AGENT_SSE_URL=https://your-dev-proxy-url.com/firebase-agent-stream
-RAG_FILE_UPLOAD_URL=https://your-dev-proxy-url.com/rag-file-upload
-DOCUMENT_ANALYSIS_URL=https://your-dev-proxy-url.com/extract-doc-info
+# Proxy Configuration
+PROXY_BASE_URL=https://homecare-agent-proxy-dev-321433914812.us-central1.run.app
+PROXY_TOKEN=your-dev-proxy-token
 
 # Web App URL
-WEB_APP_URL=https://your-dev-web-app.com
+WEB_APP_URL=https://staging--goggle-gab.us-central1.hosted.app
+
+# Optional: App identification (defaults set in app.config.js)
+APP_SLUG=homegeekai-staging
+EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614
 ```
 
 ### 3. Start the development server
@@ -40,347 +77,449 @@ npm run dev
 npx expo start
 ```
 
-The `.env` file will be automatically loaded by `dotenv`.
+The `.env` file is automatically loaded by `dotenv` in [app.config.js:2](apps/mapp/app.config.js#L2).
 
 ## EAS Build Profiles
 
-For EAS builds, environment variables are configured in `eas.json` for each build profile.
+Environment configuration for EAS builds is managed in [eas.json](../eas.json).
 
 ### Available Profiles
 
-#### Development
+#### Development Profile
 
 ```bash
 eas build --profile development --platform ios
 ```
 
-- Uses development/staging URLs
-- Includes development client
-- Internal distribution
+**Configuration** ([eas.json:7-28](../eas.json#L7-L28)):
+- App Slug: `homegeekai-development`
+- Bundle ID: `com.homegeekai.dev`
+- Proxy: Development environment
+- Channel: `development`
+- Development client enabled
+- iOS simulator builds supported
 
-#### Staging
+#### Staging Profile
 
 ```bash
 eas build --profile staging --platform ios
 ```
 
-- Uses staging environment URLs
+**Configuration** ([eas.json:29-48](../eas.json#L29-L48)):
+- App Slug: `homegeekai-staging`
+- Bundle ID: `com.homegeekai.staging`
+- Proxy: Staging environment
+- Channel: `staging`
 - Internal distribution
-- **Note**: Update `YOUR_STAGING_TOKEN` in `eas.json` before building
 
-#### Production
+#### Production Profile
 
 ```bash
 eas build --profile production --platform ios
 ```
 
-- Uses production URLs
-- App Store/Play Store distribution
-- **Note**: Update `YOUR_PROD_TOKEN` in `eas.json` before building
+**Configuration** ([eas.json:49-69](../eas.json#L49-L69)):
+- App Slug: `homegeekai-prod`
+- Bundle ID: `com.homegeekai.prod`
+- Proxy: Production environment
+- Channel: `production`
+- Store distribution
+- Auto-increment build numbers
 
-### Updating EAS Environment Variables
+### Environment Variables in eas.json
 
-Edit `eas.json` to update URLs for each profile:
+Each profile defines these environment variables:
 
-```json
-{
-  "build": {
-    "development": {
-      "env": {
-        "AGENT_SESSION_URL": "https://...",
-        "AGENT_SSE_URL": "https://...",
-        ...
-      }
-    }
-  }
-}
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `APP_SLUG` | Expo app slug for the environment | `homegeekai-staging` |
+| `IOS_BUNDLE_ID` | iOS bundle identifier | `com.homegeekai.staging` |
+| `ANDROID_PACKAGE` | Android package name | `com.homegeekai.staging` |
+| `EXPO_PROJECT_ID` | Expo project ID | `cc06df81-5ad0-4fc3-ad59-6294c95e4614` |
+| `PROXY_BASE_URL` | Proxy base URL | `https://homecare-agent-proxy-staging-...` |
+| `PROXY_TOKEN` | Proxy authentication token (placeholder) | `${PROXY_TOKEN}` |
+| `WEB_APP_URL` | Web app URL | `https://staging--goggle-gab...` |
+| `APP_ENV` | App environment (production only) | `production` |
+
+**Important**: `PROXY_TOKEN` uses placeholder syntax `${PROXY_TOKEN}` and must be provided at build time via EAS Secrets or CI/CD secrets.
+
+## CI/CD Deployment with GitHub Actions
+
+The app uses automated deployment via GitHub Actions for OTA updates.
+
+### Workflow: Deploy OTA Updates
+
+**File**: [.github/workflows/deploy-mapp-update.yaml](../../../.github/workflows/deploy-mapp-update.yaml)
+
+#### Automatic Deployment
+
+**Trigger**: Push to `main` branch with changes to:
+- `apps/mapp/**`
+- `apps/common/**`
+- Workflow file itself
+
+**Behavior** ([deploy-mapp-update.yaml:54-57](../../../.github/workflows/deploy-mapp-update.yaml#L54-L57)):
+- Automatically deploys to **staging** environment
+- Uses staging channel
+- Version auto-increments: `0.0.{run_number}`
+- Commit message used as update message
+
+#### Manual Deployment
+
+**Trigger**: Manual workflow dispatch via GitHub UI
+
+**Options**:
+- **Environment**: `staging` or `production`
+- **Version**: Custom version (e.g., `0.0.5`) or auto-increment
+- **Message**: Custom update message
+
+### Required GitHub Configuration
+
+#### Repository Secrets
+
+Set in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description | Used By |
+|--------|-------------|---------|
+| `EXPO_TOKEN` | Expo authentication token | All builds/updates |
+
+#### Environment-Level Configuration
+
+Set in **Settings → Environments → [staging/production]**:
+
+**Secrets**:
+| Secret | Description |
+|--------|-------------|
+| `PROXY_TOKEN` | Proxy authentication token for the environment |
+
+**Variables**:
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `EXPO_ACCOUNT` | Expo account name | `your-expo-account` |
+
+### How CI/CD Works
+
+1. **Validation** ([deploy-mapp-update.yaml:34-99](../../../.github/workflows/deploy-mapp-update.yaml#L34-L99)):
+   - Determines environment (staging/production)
+   - Validates required secrets exist
+   - Sets update message from commit or manual input
+
+2. **Environment Loading** ([deploy-mapp-update.yaml:156-178](../../../.github/workflows/deploy-mapp-update.yaml#L156-L178)):
+   - Extracts env vars from `eas.json` for selected environment
+   - Sets `PROXY_BASE_URL`, `WEB_APP_URL`, `APP_SLUG`, `EXPO_PROJECT_ID`
+
+3. **Version Generation** ([deploy-mapp-update.yaml:180-192](../../../.github/workflows/deploy-mapp-update.yaml#L180-L192)):
+   - Manual input: Uses provided version
+   - Auto: `0.0.{github.run_number}`
+
+4. **Publish Update** ([deploy-mapp-update.yaml:194-210](../../../.github/workflows/deploy-mapp-update.yaml#L194-L210)):
+   - Runs `eas update --channel {channel}`
+   - Injects environment variables from GitHub secrets
+   - Publishes OTA update to the channel
+
+5. **Summary** ([deploy-mapp-update.yaml:212-222](../../../.github/workflows/deploy-mapp-update.yaml#L212-L222)):
+   - Posts summary with environment, version, message
+   - Links to Expo dashboard
+
+## Publishing OTA Updates
+
+### Automatic (Recommended)
+
+Simply push changes to the `main` branch:
+
+```bash
+git add .
+git commit -m "Fix chat message rendering"
+git push origin main
 ```
 
-## How It Works
+The GitHub Action automatically:
+- Publishes to staging channel
+- Auto-increments version
+- Uses commit message as update description
 
-### Configuration Flow
+### Manual via GitHub UI
+
+1. Go to **Actions** tab in GitHub
+2. Select **Deploy Mapp - EAS Update (OTA)** workflow
+3. Click **Run workflow**
+4. Select:
+   - **Environment**: staging or production
+   - **Version**: Custom or leave empty for auto-increment
+   - **Message**: Update description
+5. Click **Run workflow**
+
+### Manual via CLI (Local)
+
+If you need to publish manually from your local machine:
+
+```bash
+# Login to Expo
+eas login
+
+# Configure environment variables in .env
+# Make sure PROXY_BASE_URL, PROXY_TOKEN, etc. are set
+
+# Publish to staging
+eas update --channel staging --message "Your update message"
+
+# Publish to production
+eas update --channel production --message "Production release v1.2.0"
+```
+
+**Note**: When publishing via CLI, environment variables come from your local `.env` file. For production releases, use the GitHub Actions workflow to ensure correct configuration.
+
+## How Environment Variables Flow
+
+### Local Development
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     app.config.js                           │
-│  Loads environment variables via dotenv                     │
-│  Exposes them in expo.extra                                 │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     lib/api.ts                              │
-│  Reads URLs from Constants.expoConfig.extra                 │
-│  Uses them for API calls                                    │
-└─────────────────────────────────────────────────────────────┘
+.env file
+  ↓
+dotenv loads variables (app.config.js:2)
+  ↓
+buildProxyUrl() constructs URLs (app.config.js:5-8)
+  ↓
+expo.extra.{agentSessionUrl, etc.} (app.config.js:76-79)
+  ↓
+App reads via Constants.expoConfig.extra
 ```
 
-### Environment Variable Priority
+### EAS Builds
 
-| Context   | Source                | Priority    |
-| --------- | --------------------- | ----------- |
-| Local Dev | `.env` file           | 1 (highest) |
-| EAS Build | `eas.json` env config | 1 (highest) |
-| Fallback  | Empty string `''`     | 2 (lowest)  |
+```
+eas.json profile env vars
+  ↓
+EAS CLI sets process.env during build
+  ↓
+app.config.js reads from process.env
+  ↓
+buildProxyUrl() constructs URLs
+  ↓
+expo.extra.{agentSessionUrl, etc.}
+  ↓
+Bundled into app binary
+```
 
-**Note**: There are no hardcoded fallback URLs. You must provide environment variables via `.env` (local) or `eas.json` (EAS builds).
+### CI/CD OTA Updates
+
+```
+eas.json → Extract env vars (deploy-mapp-update.yaml:164-172)
+GitHub Environment Secrets → PROXY_TOKEN
+  ↓
+Set as process.env in workflow (deploy-mapp-update.yaml:203-210)
+  ↓
+eas update command runs
+  ↓
+app.config.js evaluates with env vars
+  ↓
+OTA bundle published with URLs
+```
 
 ## Environment Variables Reference
 
-| Variable                | Description                     | Example                                   |
-| ----------------------- | ------------------------------- | ----------------------------------------- |
-| `AGENT_SESSION_URL`     | Agent session creation endpoint | `https://proxy.com/agent-session`         |
-| `AGENT_SSE_URL`         | Agent streaming endpoint        | `https://proxy.com/firebase-agent-stream` |
-| `RAG_FILE_UPLOAD_URL`   | RAG file upload endpoint        | `https://proxy.com/rag-file-upload`       |
-| `DOCUMENT_ANALYSIS_URL` | Document analysis endpoint      | `https://proxy.com/extract-doc-info`      |
-| `WEB_APP_URL`           | Web app URL for sharing links   | `https://app.example.com`                 |
+### Required Variables
 
-## Troubleshooting
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `PROXY_BASE_URL` | Base URL for proxy endpoints | `.env` or `eas.json` |
+| `PROXY_TOKEN` | Authentication token for proxy | `.env` or GitHub/EAS Secrets |
+| `WEB_APP_URL` | Web application URL | `.env` or `eas.json` |
 
-### Error: "AGENT_SESSION_URL not set"
+### Optional Variables
 
-**Cause**: Missing `.env` file or empty environment variables.
+| Variable | Description | Default | Source |
+|----------|-------------|---------|--------|
+| `APP_SLUG` | Expo app slug | `homegeekai-staging` | `eas.json` |
+| `APP_VERSION` | App version | `0.0.1` | Auto-generated in CI |
+| `IOS_BUNDLE_ID` | iOS bundle ID | `com.homegeekai.staging` | `eas.json` |
+| `ANDROID_PACKAGE` | Android package | `com.homegeekai.staging` | `eas.json` |
+| `EXPO_PROJECT_ID` | Expo project ID | (set in eas.json) | `eas.json` |
+| `APP_ENV` | Environment name | (not set) | `eas.json` (production) |
 
-**Solution**:
+### Constructed URLs (in expo.extra)
 
-1. Ensure `.env` file exists in `apps/mapp/`
-2. Verify all required variables are set in `.env`
-3. Restart the Expo dev server
+These are built automatically by [app.config.js:76-79](apps/mapp/app.config.js#L76-L79):
 
-### EAS Build: URLs not working
+| Property | Constructed From | Example |
+|----------|------------------|---------|
+| `agentSessionUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/agent-session` | Full proxy URL |
+| `agentSseUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/firebase-agent-stream` | Full proxy URL |
+| `ragFileUploadUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/rag-file-upload` | Full proxy URL |
+| `documentAnalysisUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/extract-doc-info` | Full proxy URL |
+| `webAppUrl` | `WEB_APP_URL` | Direct value |
 
-**Cause**: Environment variables in `eas.json` not configured correctly.
+## Security Best Practices
 
-**Solution**:
-
-1. Check `eas.json` has correct URLs for your build profile
-2. Replace placeholder tokens (`YOUR_STAGING_TOKEN`, `YOUR_PROD_TOKEN`)
-3. Rebuild with `eas build --profile <profile-name>`
-
-## Security Notes
+### Local Development
 
 - ✅ `.env` is in `.gitignore` - never commit it
 - ✅ `.env.example` is safe to commit (contains no secrets)
-- ✅ `eas.json` can be committed if URLs are not sensitive
-- ⚠️ If your URLs contain sensitive tokens, consider using [EAS Secrets](https://docs.expo.dev/build-reference/variables/#using-secrets-in-environment-variables)
+- ✅ Use development/staging proxy tokens, never production
 
-### Using EAS Secrets (Recommended for Sensitive Data)
+### EAS Builds
 
+- ✅ `eas.json` can be committed (uses `${PROXY_TOKEN}` placeholder)
+- ✅ Real tokens provided via EAS Secrets or CI/CD secrets
+- ⚠️ Never hardcode `PROXY_TOKEN` in `eas.json`
+
+### GitHub Actions
+
+- ✅ Use GitHub Environment-level secrets for `PROXY_TOKEN`
+- ✅ Use repository secret for `EXPO_TOKEN`
+- ✅ Separate staging and production environments
+- ✅ Use environment protection rules for production
+
+### Managing Secrets
+
+**For local development:**
 ```bash
-# Set secrets
-eas secret:create --scope project --name AGENT_SESSION_URL --value "your-url"
-
-# Reference in eas.json
-{
-  "build": {
-    "production": {
-      "env": {
-        "AGENT_SESSION_URL": "$AGENT_SESSION_URL"
-      }
-    }
-  }
-}
+# Add to your .env file (never commit)
+echo "PROXY_TOKEN=your-token-here" >> .env
 ```
+
+**For GitHub Actions:**
+1. Go to **Settings → Environments**
+2. Create/edit `staging` and `production` environments
+3. Add `PROXY_TOKEN` secret for each environment
+4. Add `EXPO_ACCOUNT` variable for each environment
+
+**For manual EAS builds:**
+```bash
+# Option 1: Use .env file
+echo "PROXY_TOKEN=your-token" >> .env
+eas build --profile staging --platform ios
+
+# Option 2: Use EAS Secrets (recommended for shared projects)
+eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type string
+```
+
+## Troubleshooting
+
+### Error: "agentSessionUrl not set" or undefined URLs
+
+**Cause**: Missing `PROXY_BASE_URL` or `PROXY_TOKEN`.
+
+**Solution**:
+1. Check `.env` file exists and contains both variables
+2. Verify no typos in variable names
+3. Restart Expo dev server: `npm run dev`
+4. Check that `buildProxyUrl()` is being called (see [app.config.js:76](apps/mapp/app.config.js#L76))
+
+### EAS Build: API calls failing with 401/403
+
+**Cause**: `PROXY_TOKEN` not set or incorrect during build.
+
+**Solution**:
+1. Check `PROXY_TOKEN` in your `.env` file (for local builds)
+2. For CI/CD builds, verify GitHub Environment secret is set correctly
+3. Rebuild: `eas build --profile staging --platform ios`
+
+### GitHub Actions: Workflow failing validation
+
+**Cause**: Missing secrets or environment variables.
+
+**Solution**:
+1. Check error message for which secret/variable is missing
+2. Go to **Settings → Environments → [environment-name]**
+3. Ensure these exist:
+   - Secret: `PROXY_TOKEN`
+   - Variable: `EXPO_ACCOUNT`
+4. Check repository-level secret: `EXPO_TOKEN`
+
+### OTA Update not appearing in app
+
+**Cause**: Channel mismatch or update not reaching device.
+
+**Solution**:
+1. Verify your build's channel matches update channel
+   - Check [eas.json](../eas.json) for build profile's `channel` field
+2. Restart the app completely (force close and reopen)
+3. Check update was published: `eas update:list --channel staging`
+4. Verify app is configured for OTA updates ([app.config.js:82-87](apps/mapp/app.config.js#L82-L87))
+
+### Environment variables not updating after OTA
+
+**Cause**: OTA updates use config from publish time.
+
+**Solution**:
+1. For GitHub Actions: Secrets are injected at publish time automatically
+2. For manual CLI: Update `.env` before running `eas update`
+3. Republish: `eas update --channel staging --message "Updated config"`
+4. If still failing, create a new build (native config can't be updated via OTA)
 
 ## Files Overview
 
-| File            | Purpose                                 | Committed to Git |
-| --------------- | --------------------------------------- | ---------------- |
-| `.env`          | Local development environment variables | ❌ No            |
-| `.env.example`  | Template for `.env`                     | ✅ Yes           |
-| `eas.json`      | EAS build environment configuration     | ✅ Yes           |
-| `app.config.js` | Expo configuration, loads env vars      | ✅ Yes           |
-| `lib/api.ts`    | Consumes environment variables          | ✅ Yes           |
+| File | Purpose | Committed to Git |
+|------|---------|------------------|
+| `.env` | Local development environment variables | ❌ No (in .gitignore) |
+| `.env.example` | Template showing required variables | ✅ Yes |
+| `eas.json` | EAS build profiles and environment config | ✅ Yes |
+| `app.config.js` | Expo config, loads env vars, builds proxy URLs | ✅ Yes |
+| `deploy-mapp-update.yaml` | GitHub Actions workflow for OTA updates | ✅ Yes |
 
-## Publishing Updates with EAS Update
+## Environment URLs Reference
 
-EAS Update allows you to push over-the-air (OTA) updates to your app. This is useful for quick bug fixes and updates without requiring a full rebuild.
+### Development Environment
 
-### Prerequisites
+- **Proxy Base URL**: `https://homecare-agent-proxy-dev-321433914812.us-central1.run.app`
+- **Web App URL**: `https://staging--goggle-gab.us-central1.hosted.app`
+- **App Slug**: `homegeekai-development`
+- **Bundle ID**: `com.homegeekai.dev`
 
-1. Install EAS CLI if you haven't already:
+### Staging Environment
 
-```bash
-npm install -g eas-cli
-```
+- **Proxy Base URL**: `https://homecare-agent-proxy-staging-321433914812.us-central1.run.app`
+- **Web App URL**: `https://staging--goggle-gab.us-central1.hosted.app`
+- **App Slug**: `homegeekai-staging`
+- **Bundle ID**: `com.homegeekai.staging`
 
-2. Login to your Expo account:
+### Production Environment
 
-```bash
-eas login
-```
-
-3. Configure EAS Update in your project (if not already configured):
-
-```bash
-eas update:configure
-```
-
-### Publishing Updates
-
-#### 1. Update Environment Configuration
-
-Ensure your `.env` file has the correct environment variables for the environment you want to publish:
-
-```bash
-# Make sure .env is configured
-cat .env
-```
-
-#### 2. Publish an Update
-
-```bash
-# Publish to the default branch (usually tied to your current git branch)
-eas update --auto
-
-# Publish to a specific branch
-eas update --branch staging --message "Bug fixes for chat feature"
-eas update --branch production --message "Production release v1.2.0"
-
-# Publish to a specific channel (used by builds)
-eas update --channel staging --message "Staging update"
-eas update --channel production --message "Production update"
-```
-
-#### 3. Testing Updates
-
-**On Expo Go (development):**
-- Open your app in Expo Go
-- Pull down to refresh to fetch the latest update
-- Or restart the app
-
-**On Development/Production Builds:**
-- Open your app
-- The update will be downloaded in the background
-- Restart the app to apply the update
-
-### Publishing with Different Environments
-
-To publish with different environment configurations:
-
-```bash
-# Staging environment
-# First update your .env with staging URLs, then:
-eas update --channel staging --message "Staging update"
-
-# Production environment
-# First update your .env with production URLs, then:
-eas update --channel production --message "Production release"
-```
-
-**Note**: EAS Update uses your `.env` file at publish time. Make sure to update `.env` with the appropriate URLs before publishing to different channels.
-
-### Managing Published Updates
-
-```bash
-# View all updates
-eas update:list
-
-# View updates for a specific branch
-eas update:list --branch staging
-
-# View update details
-eas update:view [update-id]
-
-# Delete an update
-eas update:delete [update-id]
-
-# Republish a previous update
-eas update:republish [update-id]
-```
-
-### Understanding Branches vs Channels
-
-- **Branches**: Organize updates by development workflow (e.g., main, staging, production)
-- **Channels**: Link your builds to update branches (configured in `eas.json`)
-
-Example `eas.json` configuration:
-
-```json
-{
-  "build": {
-    "development": {
-      "channel": "development",
-      "developmentClient": true
-    },
-    "staging": {
-      "channel": "staging"
-    },
-    "production": {
-      "channel": "production"
-    }
-  }
-}
-```
-
-### Important Notes
-
-- **Environment Variables**: Updates will use environment variables from your `.env` file at publish time
-- **Channels**: Each build profile should have a corresponding channel for receiving updates
-- **OTA Updates**: Only JavaScript and asset changes can be updated. Native code changes require a new build
-- **Automatic Updates**: By default, updates are fetched automatically when the app starts
-- **Rollbacks**: You can roll back by republishing a previous update
-
-### Sharing Updates with Your Team
-
-After publishing an update, share the details:
-
-```bash
-# Get update group ID from the publish output, then share:
-Update group ID: <update-group-id>
-Branch: staging
-Message: "Bug fixes for chat feature"
-```
-
-Team members with builds configured to the same channel will automatically receive the update.
-
-### Troubleshooting
-
-#### "No builds found for this project"
-
-- You need to create at least one build with `eas build` before publishing updates
-- Make sure your builds are configured with channels in `eas.json`
-
-#### Updates not appearing
-
-- Check that your build's channel matches the update channel
-- Verify the update was published successfully with `eas update:list`
-- Try restarting the app completely
-
-#### Environment variables not updating
-
-- Remember to update `.env` before publishing the update
-- Republish with `eas update` after changing environment variables
-- Clear app data and reinstall if issues persist
+- **Proxy Base URL**: `https://homecare-agent-proxy-prod-321433914812.us-central1.run.app`
+- **Web App URL**: `https://prod--goggle-gab.us-central1.hosted.app`
+- **App Slug**: `homegeekai-prod`
+- **Bundle ID**: `com.homegeekai.prod`
 
 ## Quick Reference
 
 ```bash
 # Local development
-npm run dev                                    # Uses .env
-
-# Publishing updates with EAS Update
-eas login                                      # Login to Expo account
-eas update:configure                           # Configure EAS Update (first time)
-eas update --auto                              # Publish to default branch
-eas update --channel staging                   # Publish to staging channel
-eas update --channel production                # Publish to production channel
-eas update:list                                # View update history
-eas update:list --branch staging               # View updates for specific branch
+cd apps/mapp
+cp .env.example .env          # First time setup
+# Edit .env with your PROXY_BASE_URL and PROXY_TOKEN
+npm run dev                   # Start dev server
 
 # EAS builds
-eas build --profile development --platform ios # Uses eas.json (development)
-eas build --profile staging --platform ios     # Uses eas.json (staging)
-eas build --profile production --platform ios  # Uses eas.json (production)
+eas login                                           # First time
+eas build --profile development --platform ios      # Dev build
+eas build --profile staging --platform ios          # Staging build
+eas build --profile production --platform ios       # Production build
 
-# Managing EAS secrets
-eas secret:list                                # List all secrets
-eas secret:create --scope project              # Create new secret
-eas secret:delete --name SECRET_NAME           # Delete a secret
+# OTA updates via CLI
+eas update --channel staging --message "Bug fix"
+eas update --channel production --message "v1.2.0"
+
+# View updates
+eas update:list
+eas update:list --channel staging
+
+# CI/CD (automated via GitHub Actions)
+git push origin main          # Auto-deploys to staging
+# Or use GitHub UI: Actions → Deploy Mapp - EAS Update (OTA) → Run workflow
+
+# Managing secrets
+# For GitHub: Use UI (Settings → Environments)
+# For EAS: Use CLI
+eas secret:create --scope project --name PROXY_TOKEN --value "token"
+eas secret:list
+eas secret:delete --name PROXY_TOKEN
 ```
 
 ## Additional Resources
 
 - [Expo Environment Variables](https://docs.expo.dev/guides/environment-variables/)
 - [EAS Build Configuration](https://docs.expo.dev/build/eas-json/)
-- [EAS Secrets](https://docs.expo.dev/build-reference/variables/)
+- [EAS Update](https://docs.expo.dev/eas-update/introduction/)
+- [GitHub Actions with EAS](https://docs.expo.dev/build/building-on-ci/)
+- [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)

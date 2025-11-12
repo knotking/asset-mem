@@ -1,13 +1,13 @@
 # Markdown Rendering Implementation for Mobile App
 
 ## Overview
-This document describes the implementation of rich text markdown rendering in the mobile app (mapp) chat messages, providing support for bold, italic, lists, code blocks, links, and more.
+This document describes the implementation of rich text markdown rendering in the mobile app (mapp) chat messages, providing support for bold, italic, lists, code blocks, links, YouTube video embeds, and more.
 
 ## Architecture
 
 ### 1. Markdown Library
 
-**Package:** `react-native-markdown-display` (v7.0.2)
+**Package:** `react-native-markdown-display` (^7.0.2)
 
 This is the most popular and well-maintained markdown rendering library for React Native, providing:
 - Full CommonMark spec support
@@ -16,7 +16,7 @@ This is the most popular and well-maintained markdown rendering library for Reac
 - Native rendering (no WebView)
 - Proper text selection support
 
-### 2. Markdown Styles Configuration (`apps/mapp/lib/markdown-styles.ts`)
+### 2. Markdown Styles Configuration (`apps/mapp/lib/markdown-styles.tsx`)
 
 #### Color System
 
@@ -78,32 +78,48 @@ Returns dynamically styled markdown configurations based on:
 | **Tables** | Bordered with header styling |
 | **Horizontal Rule** | 1px line with margin |
 | **Images** | Rounded corners, margin |
+| **YouTube Videos** | Embedded responsive player |
 
 #### Custom Rules (`markdownRules`)
 
 Special handling for:
 - **Soft breaks** - Single newline
 - **Hard breaks** - Double newline
+- **YouTube links** - Automatically embedded as responsive video players
+- **Paragraph links** - Standalone YouTube links in paragraphs are embedded
+- **List item links** - YouTube links in list items are embedded
+
+#### YouTube Video Embedding
+
+The implementation includes a `ResponsiveYouTubePlayer` component that:
+- Automatically detects YouTube links in markdown
+- Embeds videos with responsive 16:9 aspect ratio
+- Supports both `youtube.com` and `youtu.be` URLs
+- Works in paragraphs, list items, and standalone links
+- Uses `react-native-youtube-iframe` for native playback
 
 ### 3. ChatMessage Component Integration
 
-The markdown rendering is integrated in three places:
+The markdown rendering is integrated throughout the message flow:
 
-#### A. MessageContent Component (lines 204-251)
+#### A. MessageContent Component
+
+The main `MessageContent` component handles both regular messages and structured data:
 
 ```typescript
 const MessageContent = ({ content, isUser }) => {
   const markdownStyles = useMarkdownStyles(isUser);
 
+  // Extract structured data and markdown content
+  const { structuredData, plainContent } = useMemo(() => {
+    const { structuredData, markdownContent } = extractContentParts(content, isUser);
+    return { structuredData, plainContent: markdownContent };
+  }, [content, isUser]);
+
   // For structured responses with JSON
   if (structuredData) {
     return (
-      <View>
-        {plainContent && (
-          <Markdown style={markdownStyles} rules={markdownRules}>
-            {plainContent}
-          </Markdown>
-        )}
+      <View className="w-full min-w-full">
         <StructuredResponse data={structuredData} />
       </View>
     );
@@ -118,20 +134,30 @@ const MessageContent = ({ content, isUser }) => {
 };
 ```
 
-#### B. StructuredResponse Sections (lines 117-185)
+#### B. StructuredResponse Sections
 
-Markdown is used in accordion content sections:
-- **Summary** section
-- **Coverage** section
-- **DIY Solutions** section (both Google and YouTube)
+Markdown is used in accordion content sections within the `StructuredResponse` component:
+
+- **Triage Summary** - Diagnosis information with markdown formatting
+- **Coverage Analysis** - Warranty and insurance information
+- **DIY Recommendations** - DIY summaries and instructions
 
 ```typescript
-<AccordionContent>
+<AccordionContent className="border-t border-border bg-background p-4">
   <Markdown style={markdownStyles} rules={markdownRules}>
-    {data.researchResults!.summaryOfFindings!}
+    {triage!.diagnosis!}
   </Markdown>
 </AccordionContent>
 ```
+
+#### C. Content Parsing
+
+The `extractContentParts` helper function intelligently separates markdown content from JSON structured data:
+
+- Handles multiple formats: markdown code blocks with JSON, standalone JSON blocks, mixed content
+- Supports nested structures (`analysis.*`) and flat structures
+- Removes code block wrappers for clean rendering
+- Preserves markdown formatting in plain text sections
 
 ## Supported Markdown Features
 
@@ -236,6 +262,35 @@ Images are rendered with:
 - Vertical margin
 - Proper sizing
 
+### YouTube Videos
+
+YouTube videos are automatically embedded when you include YouTube links in your markdown:
+
+**Standalone YouTube link:**
+```markdown
+https://www.youtube.com/watch?v=VIDEO_ID
+```
+
+**YouTube link in a list:**
+```markdown
+- https://www.youtube.com/watch?v=VIDEO_ID
+- Another video: https://youtu.be/VIDEO_ID
+```
+
+**YouTube link in a paragraph (standalone):**
+```markdown
+Check out this tutorial:
+
+https://www.youtube.com/watch?v=VIDEO_ID
+```
+
+Features:
+- Automatically detects both `youtube.com/watch?v=` and `youtu.be/` formats
+- Embeds as responsive 16:9 video player
+- Works in paragraphs, lists, and standalone links
+- Native playback using `react-native-youtube-iframe`
+- Only standalone YouTube links are embedded (links with custom text remain as regular links)
+
 ## Usage Examples
 
 ### Basic Message
@@ -263,15 +318,34 @@ Visit [this guide](https://example.com) for more details.`
 ### Structured Response with Markdown
 
 ```typescript
-const content = `**Structured Data**: \`\`\`json
+const content = `\`\`\`json
 {
-  "researchResults": {
-    "summaryOfFindings": "Your **insurance policy** covers water damage up to *$50,000*. Here's what you need to know:\n\n- Deductible: $500\n- Coverage: Flood and pipe damage\n- Claim process: [File online](https://example.com)"
+  "analysis": {
+    "triageResult": {
+      "diagnosis": "Your **insurance policy** covers water damage up to *$50,000*. Here's what you need to know:\n\n- Deductible: $500\n- Coverage: Flood and pipe damage\n- Claim process: [File online](https://example.com)"
+    }
   }
 }
 \`\`\``;
 
 <ChatMessage message={{ role: 'assistant', content }} />
+```
+
+### YouTube Video Embedding
+
+```typescript
+// Assistant message with YouTube video
+<ChatMessage message={{
+  role: 'assistant',
+  content: `Here's a helpful tutorial on fixing water damage:
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+Follow these steps after watching the video:
+1. Assess the damage
+2. Remove standing water
+3. Dry the area`
+}} />
 ```
 
 ## Styling Customization
@@ -341,9 +415,11 @@ with Markdown
 ### Optimizations
 
 1. **Style memoization**: `useMarkdownStyles` hook caches styles
-2. **Native rendering**: No WebView overhead
+2. **Native rendering**: No WebView overhead (except YouTube embeds which use native player)
 3. **Selective parsing**: Only parses markdown when needed
 4. **Lazy accordion**: Content only rendered when expanded
+5. **Content extraction memoization**: Structured data parsing is memoized with `useMemo`
+6. **Responsive YouTube player**: Uses layout measurements for optimal sizing
 
 ### Text Selection
 
@@ -434,7 +510,7 @@ import { Linking } from 'react-native';
 **Problem:** Code blocks appear as plain text without background.
 
 **Solution:**
-Check that code styles are defined in `markdown-styles.ts`:
+Check that code styles are defined in `markdown-styles.tsx`:
 ```typescript
 code_block: {
   backgroundColor: theme.accent,
@@ -442,6 +518,16 @@ code_block: {
   // ...
 }
 ```
+
+### YouTube Videos Not Embedding
+
+**Problem:** YouTube links show as regular links instead of embedded videos.
+
+**Solution:**
+1. Ensure `react-native-youtube-iframe` is installed
+2. Check that the YouTube link is standalone (not wrapped with custom link text)
+3. Verify the link format is valid (`youtube.com/watch?v=` or `youtu.be/`)
+4. For links in paragraphs, ensure the link is the only content in the paragraph
 
 ### Dark Mode Colors Wrong
 
@@ -457,15 +543,20 @@ const { colorScheme } = useColorScheme();
 ## Files Created/Modified
 
 ### Created:
-- [markdown-styles.ts](apps/mapp/lib/markdown-styles.ts) - Styles configuration and hook
+- [markdown-styles.tsx](apps/mapp/lib/markdown-styles.tsx) - Styles configuration, YouTube player component, and markdown rules
+- [youtube-utils.ts](apps/mapp/lib/youtube-utils.ts) - YouTube video ID extraction utilities
 
 ### Modified:
-- [ChatMessage.tsx](apps/mapp/components/ChatMessage.tsx) - Integrated Markdown component
-  - Lines 11-12: Imports
-  - Lines 118, 205: useMarkdownStyles hook usage
-  - Lines 140-142, 156-158, 174-176, 180-182: Accordion sections
-  - Lines 236-238, 247-249: MessageContent rendering
-- [package.json](apps/mapp/package.json) - Added `react-native-markdown-display` dependency
+- [ChatMessage.tsx](apps/mapp/components/ChatMessage.tsx) - Integrated Markdown component throughout
+  - Line 42-43: Imports for Markdown and markdown styles
+  - Line 450: useMarkdownStyles hook in StructuredResponse
+  - Lines 582-584, 604-606, 614-616, 635-637: Markdown rendering in accordion sections
+  - Line 991: useMarkdownStyles hook in MessageContent
+  - Lines 1003-1010: Structured data rendering with StructuredResponse
+  - Lines 1014-1017: Regular message rendering with Markdown
+- [package.json](apps/mapp/package.json) - Added dependencies:
+  - `react-native-markdown-display` (^7.0.2)
+  - `react-native-youtube-iframe` (^2.4.1)
 
 ## Testing
 
@@ -506,22 +597,38 @@ const { colorScheme } = useColorScheme();
    - Contact adjuster
    ```
 
+6. **YouTube Video Embedding**
+   ```markdown
+   Watch this tutorial:
+
+   https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+   Or check out this alternative:
+   - https://youtu.be/VIDEO_ID
+   ```
+
 ## Future Enhancements
 
-- [ ] **Syntax highlighting** - Add language-specific code highlighting
+- [ ] **Syntax highlighting** - Add language-specific code highlighting for code blocks
 - [ ] **Custom link handler** - In-app navigation for certain URLs
-- [ ] **Image optimization** - Lazy loading and caching
-- [ ] **Math rendering** - LaTeX/KaTeX support for equations
-- [ ] **Mermaid diagrams** - Render diagrams from markdown
-- [ ] **Copy code button** - Quick copy for code blocks
+- [ ] **Image optimization** - Lazy loading and caching for embedded images
+- [ ] **Math rendering** - LaTeX/KaTeX support for mathematical equations
+- [ ] **Mermaid diagrams** - Render diagrams from markdown code blocks
+- [ ] **Copy code button** - Quick copy button for code blocks
 - [ ] **Emoji picker** - Autocomplete for emoji shortcuts
+- [ ] **Vimeo support** - Add support for Vimeo video embeds similar to YouTube
+- [ ] **Video thumbnails** - Show thumbnails for YouTube videos before loading
+- [ ] **Playlist support** - Support for YouTube playlist embeds
 
 ## Notes
 
 - Markdown rendering is now enabled by default for all messages
 - The implementation is theme-aware and adapts to light/dark mode
 - Text selection works natively across all markdown content
-- Performance is excellent - no WebView overhead
-- Styles match the app's design system perfectly
+- Performance is excellent - minimal WebView overhead (only for YouTube player)
+- Styles match the app's design system perfectly using HSL to RGB conversion
 - Links are automatically tappable and open in the system browser
+- YouTube videos are automatically embedded when standalone links are detected
 - The feature works identically across iOS and Android
+- Content parsing intelligently separates markdown from structured JSON data
+- Supports both nested (`analysis.*`) and flat structured data formats
