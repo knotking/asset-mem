@@ -749,6 +749,28 @@ function ChatTab({
         _id: userId,
       }}
       renderBubble={(props) => <GiftedChatBubble {...props} />}
+      renderChatEmpty={() => (
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingBottom: '50%',
+            transform: [{ rotate: '180deg' }],
+          }}>
+          <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+            </View>
+            <Text className="mb-2 text-center text-xl font-semibold text-foreground">
+              Start a Conversation
+            </Text>
+            <Text className="text-center text-sm text-muted-foreground">
+              Ask questions about this property's{'\n'}documents, services, and history
+            </Text>
+          </View>
+        </View>
+      )}
       renderInputToolbar={(props) => (
         <GiftedChatInputToolbar
           {...props}
