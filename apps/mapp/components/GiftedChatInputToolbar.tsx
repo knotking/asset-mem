@@ -53,6 +53,8 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   isSending: boolean;
   onStop: () => void;
+  attachmentOptionsVisible: boolean;
+  onCloseAttachmentOptions: () => void;
   onTakePhoto: () => void;
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
@@ -68,6 +70,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onToggleOptionalAgent,
     isSending,
     onStop,
+    attachmentOptionsVisible,
+    onCloseAttachmentOptions,
     onTakePhoto,
     onRecordVideo,
     onSelectFromLibrary,
@@ -236,8 +240,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           disabled={!canSend}
           containerStyle={{
             position: 'absolute',
-            right: 2,
-            marginBottom: 3,
+            right: 3,
+            marginBottom: 1,
             marginLeft: 4,
             justifyContent: 'center',
             alignItems: 'center',
@@ -443,57 +447,57 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         }}
         className="rounded-t-3xl bg-background px-4 pb-4 pt-3 shadow-2xl"
         pointerEvents={showMenu ? 'auto' : 'none'}>
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-foreground">Add Attachment</Text>
-            <Pressable onPress={handleMenuClose} className="h-7 w-7 items-center justify-center">
-              <Icon as={X} size={18} className="text-muted-foreground" />
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-foreground">Add Attachment</Text>
+          <Pressable onPress={handleMenuClose} className="h-7 w-7 items-center justify-center">
+            <Icon as={X} size={18} className="text-muted-foreground" />
+          </Pressable>
+        </View>
+
+        <View className="gap-2">
+          {/* Row 1: Take Photo & Record Video */}
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => handleMenuOption(onTakePhoto)}
+              className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={Camera} size={20} className="text-primary" />
+              </View>
+              <Text className="text-xs font-semibold text-foreground">Take Photo</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleMenuOption(onRecordVideo)}
+              className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={Video} size={20} className="text-primary" />
+              </View>
+              <Text className="text-xs font-semibold text-foreground">Record Video</Text>
             </Pressable>
           </View>
 
-          <View className="gap-2">
-            {/* Row 1: Take Photo & Record Video */}
-            <View className="flex-row gap-2">
-              <Pressable
-                onPress={() => handleMenuOption(onTakePhoto)}
-                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon as={Camera} size={20} className="text-primary" />
-                </View>
-                <Text className="text-xs font-semibold text-foreground">Take Photo</Text>
-              </Pressable>
+          {/* Row 2: Gallery & Files */}
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => handleMenuOption(onSelectFromLibrary)}
+              className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={Images} size={20} className="text-primary" />
+              </View>
+              <Text className="text-xs font-semibold text-foreground">Gallery</Text>
+            </Pressable>
 
-              <Pressable
-                onPress={() => handleMenuOption(onRecordVideo)}
-                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon as={Video} size={20} className="text-primary" />
-                </View>
-                <Text className="text-xs font-semibold text-foreground">Record Video</Text>
-              </Pressable>
-            </View>
-
-            {/* Row 2: Gallery & Files */}
-            <View className="flex-row gap-2">
-              <Pressable
-                onPress={() => handleMenuOption(onSelectFromLibrary)}
-                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon as={Images} size={20} className="text-primary" />
-                </View>
-                <Text className="text-xs font-semibold text-foreground">Gallery</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => handleMenuOption(onSelectFiles)}
-                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon as={FileText} size={20} className="text-primary" />
-                </View>
-                <Text className="text-xs font-semibold text-foreground">Files</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={() => handleMenuOption(onSelectFiles)}
+              className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Icon as={FileText} size={20} className="text-primary" />
+              </View>
+              <Text className="text-xs font-semibold text-foreground">Files</Text>
+            </Pressable>
           </View>
-        </Animated.View>
+        </View>
+      </Animated.View>
     </View>
   );
 }

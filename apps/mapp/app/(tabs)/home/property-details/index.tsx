@@ -1712,6 +1712,8 @@ export default function PropertyDetailsScreen() {
                     onToggleOptionalAgent={toggleOptionalAgent}
                     isSending={isSending}
                     onStop={handleStop}
+                    attachmentOptionsVisible={false}
+                    onCloseAttachmentOptions={() => {}}
                     onTakePhoto={handleTakePhoto}
                     onRecordVideo={handleRecordVideo}
                     onSelectFromLibrary={handleSelectFromLibrary}

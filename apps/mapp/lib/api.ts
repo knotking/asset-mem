@@ -116,7 +116,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
-  analysisOptionalAgents = ANALYSIS_OPTIONAL_AGENTS,
+  analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   signal,
   onChunk,
   onAgentStep,
