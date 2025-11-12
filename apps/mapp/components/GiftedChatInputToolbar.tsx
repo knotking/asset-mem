@@ -10,6 +10,7 @@ import {
   useColorScheme,
   Keyboard,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
@@ -44,6 +45,8 @@ const OPTIONAL_AGENT_OPTIONS: {
   { id: 'service', label: 'Service', icon: Wrench },
   { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
 ];
+
+const MAX_MESSAGE_LENGTH = 2000;
 
 interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   fileAttachment: FileAttachment | null;
@@ -86,12 +89,15 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   // Light mode: --border: 0 0% 89.8%, --muted-foreground: 0 0% 45.1%
   // Dark mode: --border: 0 0% 28%, --muted-foreground: 0 0% 70%
 
-  const colors = {
-    background: isDark ? 'hsl(0, 0%, 8%)' : 'hsl(0, 0%, 100%)',
-    foreground: isDark ? 'hsl(0, 0%, 98%)' : 'hsl(0, 0%, 3.9%)',
-    border: isDark ? 'hsl(0, 0%, 28%)' : 'hsl(0, 0%, 89.8%)',
-    mutedForeground: isDark ? 'hsl(0, 0%, 70%)' : 'hsl(0, 0%, 45.1%)',
-  };
+  const colors = React.useMemo(
+    () => ({
+      background: isDark ? 'hsl(0, 0%, 8%)' : 'hsl(0, 0%, 100%)',
+      foreground: isDark ? 'hsl(0, 0%, 98%)' : 'hsl(0, 0%, 3.9%)',
+      border: isDark ? 'hsl(0, 0%, 28%)' : 'hsl(0, 0%, 89.8%)',
+      mutedForeground: isDark ? 'hsl(0, 0%, 70%)' : 'hsl(0, 0%, 45.1%)',
+    }),
+    [isDark]
+  );
 
   return (
     <>
@@ -210,7 +216,10 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         <View style={{ position: 'relative' }}>
           {/* Attachment Icon Overlay */}
           <Pressable
-            onPress={onAttachmentPress}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onAttachmentPress();
+            }}
             disabled={isSending || !!fileAttachment}
             style={{
               position: 'absolute',
@@ -238,37 +247,62 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             primaryStyle={{
               alignItems: 'flex-end',
             }}
-            renderComposer={(composerProps) => (
-              <Composer
-                {...composerProps}
-                textInputStyle={{
-                  marginLeft: 2,
-                  backgroundColor: colors.background,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 16,
-                  paddingLeft: 34,
-                  paddingRight: 12,
-                  paddingTop: 10,
-                  paddingBottom: 10,
-                  fontSize: 14,
-                  minHeight: 40,
-                  maxHeight: 120,
-                  lineHeight: 20,
-                  color: colors.foreground,
-                }}
-                textInputAutoFocus={false}
-                placeholder="Type a message..."
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-              />
-            )}
+            renderComposer={(composerProps) => {
+              const textLength = composerProps.text?.length || 0;
+              const isNearLimit = textLength > MAX_MESSAGE_LENGTH * 0.9;
+              const isOverLimit = textLength > MAX_MESSAGE_LENGTH;
+
+              return (
+                <>
+                  <Composer
+                    {...composerProps}
+                    textInputStyle={{
+                      marginLeft: 2,
+                      backgroundColor: colors.background,
+                      borderWidth: 1,
+                      borderColor: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.border,
+                      borderRadius: 16,
+                      paddingLeft: 34,
+                      paddingRight: 12,
+                      paddingTop: 10,
+                      paddingBottom: 10,
+                      fontSize: 14,
+                      minHeight: 40,
+                      maxHeight: 120,
+                      lineHeight: 20,
+                      color: colors.foreground,
+                    }}
+                    textInputProps={{
+                      maxLength: MAX_MESSAGE_LENGTH,
+                    }}
+                    textInputAutoFocus={false}
+                    placeholder="Type a message..."
+                    placeholderTextColor={colors.mutedForeground}
+                    multiline
+                  />
+                  {isNearLimit && (
+                    <Text
+                      style={{
+                        position: 'absolute',
+                        bottom: -20,
+                        right: 35,
+                        fontSize: 12,
+                        color: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.mutedForeground,
+                      }}>
+                      {textLength}/{MAX_MESSAGE_LENGTH}
+                    </Text>
+                  )}
+                </>
+              );
+            }}
             renderSend={(sendProps) => {
               const originalOnSend = sendProps.onSend;
               const wrappedSendProps = {
                 ...sendProps,
                 onSend: (messages: any, shouldResetInputToolbar: boolean) => {
                   if (originalOnSend) {
+                    // Haptic feedback on send
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     originalOnSend(messages, shouldResetInputToolbar);
                     // Delay keyboard dismissal to ensure send completes first
                     requestAnimationFrame(() => {

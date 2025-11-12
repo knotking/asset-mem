@@ -14,6 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
+import * as Haptics from 'expo-haptics';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -719,6 +721,17 @@ function ChatTab({
     loadEarlierMessages,
   } = useMessages();
 
+  // Network state
+  const [isOnline, setIsOnline] = React.useState(true);
+
+  React.useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOnline(state.isConnected ?? true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   React.useEffect(() => {
     if (onMessagesReady) {
       onMessagesReady(updateMessageLocally);
@@ -742,13 +755,23 @@ function ChatTab({
   }
 
   return (
-    <GiftedChat
-      messages={giftedMessages}
-      onSend={onSend}
-      user={{
-        _id: userId,
-      }}
-      renderBubble={(props) => <GiftedChatBubble {...props} />}
+    <>
+      {/* Offline Banner */}
+      {!isOnline && (
+        <View className="bg-warning px-4 py-2">
+          <Text className="text-center text-sm font-medium text-warning-foreground">
+            You're offline. Messages will be sent when connection is restored.
+          </Text>
+        </View>
+      )}
+
+      <GiftedChat
+        messages={giftedMessages}
+        onSend={onSend}
+        user={{
+          _id: userId,
+        }}
+        renderBubble={(props) => <GiftedChatBubble {...props} />}
       renderChatEmpty={() => (
         <View
           style={{
@@ -806,6 +829,7 @@ function ChatTab({
       minInputToolbarHeight={44}
       infiniteScroll
     />
+    </>
   );
 }
 
