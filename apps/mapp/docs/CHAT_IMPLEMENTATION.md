@@ -3,6 +3,8 @@
 ## Overview
 This document describes the implementation of chat messages functionality in the mobile app (mapp), allowing users to have conversations about their properties with an AI assistant.
 
+> **Note**: This app now uses `react-native-gifted-chat` for the chat UI. See [GIFTED_CHAT_MIGRATION.md](../GIFTED_CHAT_MIGRATION.md) for migration details.
+
 ## Architecture
 
 ### 1. Message Types (`@homeapp/common/types.ts`)
@@ -58,12 +60,21 @@ Renders individual messages with:
 - **Loading state**: Shows "Thinking..." for incomplete assistant messages
 - **Timestamps**: Formatted time for each message
 
-#### ChatList (`apps/mapp/components/ChatList.tsx`)
-Manages the message list:
-- **Auto-scroll**: Scrolls to bottom when new messages arrive
-- **Loading state**: Shows spinner while messages load
-- **Empty state**: Welcoming message for new chats
-- **ScrollView**: Scrollable container for all messages
+#### GiftedChat Integration
+> **Replaced ChatList**: The app now uses `react-native-gifted-chat` for message list management.
+
+**GiftedChatBubble** (`apps/mapp/components/GiftedChatBubble.tsx`)
+- Wraps the existing `ChatMessage` component
+- Transforms GiftedChat's IMessage format to our Message type
+- Preserves all existing UI and functionality
+
+**GiftedChatInputToolbar** (`apps/mapp/components/GiftedChatInputToolbar.tsx`)
+- Custom input toolbar with all features:
+  - File attachments (camera, video, library)
+  - Optional agent toggles
+  - Document context display
+  - Send/Stop buttons
+  - Dark mode support
 
 ### 4. Integration in Property Details
 
@@ -200,13 +211,18 @@ EXPO_PUBLIC_AGENT_SSE_URL=<your-agent-streaming-endpoint>
 ## Files Created/Modified
 
 ### Created:
-- `apps/common/src/contexts/messages-context.tsx` - Messages loading context
+- `apps/common/src/contexts/messages-context.tsx` - Messages loading context with pagination
 - `apps/mapp/components/ChatMessage.tsx` - Individual message component
-- `apps/mapp/components/ChatList.tsx` - Message list component
+- `apps/mapp/components/GiftedChatBubble.tsx` - GiftedChat bubble wrapper
+- `apps/mapp/components/GiftedChatInputToolbar.tsx` - Custom input toolbar
+- `apps/mapp/lib/gifted-chat-utils.ts` - Message transformation utilities
 
 ### Modified:
 - `apps/common/src/types.ts` - Added Message and AgentStep types
-- `apps/mapp/app/(tabs)/home/property-details/index.tsx` - Integrated chat UI and send functionality
+- `apps/mapp/app/(tabs)/home/property-details/index.tsx` - Integrated GiftedChat UI
+
+### Removed:
+- ~~`apps/mapp/components/ChatList.tsx`~~ - Replaced by react-native-gifted-chat
 
 ## Notes
 
