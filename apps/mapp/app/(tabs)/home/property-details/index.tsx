@@ -12,6 +12,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
@@ -52,6 +53,7 @@ import {
   Trash2,
   Sparkles,
   Plus,
+  ChevronDown,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -721,6 +723,10 @@ function ChatTab({
     loadEarlierMessages,
   } = useMessages();
 
+  // Theme
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   // Network state
   const [isOnline, setIsOnline] = React.useState(true);
 
@@ -772,63 +778,75 @@ function ChatTab({
           _id: userId,
         }}
         renderBubble={(props) => <GiftedChatBubble {...props} />}
-      renderChatEmpty={() => (
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            paddingBottom: '50%',
-            transform: [{ rotate: '180deg' }],
-          }}>
-          <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+        renderChatEmpty={() => (
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              paddingBottom: '50%',
+              transform: [{ rotate: '180deg' }],
+            }}>
+            <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+              </View>
+              <Text className="mb-2 text-center text-xl font-semibold text-foreground">
+                Start a Conversation
+              </Text>
+              <Text className="text-center text-sm text-muted-foreground">
+                Ask questions about this property's{'\n'}documents, services, and history
+              </Text>
             </View>
-            <Text className="mb-2 text-center text-xl font-semibold text-foreground">
-              Start a Conversation
-            </Text>
-            <Text className="text-center text-sm text-muted-foreground">
-              Ask questions about this property's{'\n'}documents, services, and history
-            </Text>
           </View>
-        </View>
-      )}
-      renderInputToolbar={(props) => (
-        <GiftedChatInputToolbar
-          {...props}
-          fileAttachment={fileAttachment}
-          onAttachmentPress={onAttachmentPress}
-          onRemoveAttachment={onRemoveAttachment}
-          selectedOptionalAgents={selectedOptionalAgents}
-          onToggleOptionalAgent={onToggleOptionalAgent}
-          isSending={isSending}
-          onStop={onStop}
-          attachmentOptionsVisible={attachmentOptionsVisible}
-          onCloseAttachmentOptions={onCloseAttachmentOptions}
-          onTakePhoto={onTakePhoto}
-          onRecordVideo={onRecordVideo}
-          onSelectFromLibrary={onSelectFromLibrary}
-        />
-      )}
-      renderActions={() => null}
-      renderAvatar={null}
-      isLoadingEarlier={isLoadingEarlier}
-      loadEarlier={hasMoreMessages}
-      onLoadEarlier={loadEarlierMessages}
-      alwaysShowSend={true}
-      keyboardShouldPersistTaps="never"
-      messagesContainerStyle={{
-        backgroundColor: 'transparent',
-      }}
-      textInputProps={{
-        autoCapitalize: 'sentences',
-        autoCorrect: true,
-      }}
-      bottomOffset={-84}
-      minInputToolbarHeight={44}
-      infiniteScroll
-    />
+        )}
+        renderInputToolbar={(props) => (
+          <GiftedChatInputToolbar
+            {...props}
+            fileAttachment={fileAttachment}
+            onAttachmentPress={onAttachmentPress}
+            onRemoveAttachment={onRemoveAttachment}
+            selectedOptionalAgents={selectedOptionalAgents}
+            onToggleOptionalAgent={onToggleOptionalAgent}
+            isSending={isSending}
+            onStop={onStop}
+            attachmentOptionsVisible={attachmentOptionsVisible}
+            onCloseAttachmentOptions={onCloseAttachmentOptions}
+            onTakePhoto={onTakePhoto}
+            onRecordVideo={onRecordVideo}
+            onSelectFromLibrary={onSelectFromLibrary}
+          />
+        )}
+        scrollToBottomComponent={() => (
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-primary shadow-lg">
+            <Icon as={ChevronDown} size={22} className="text-primary-foreground" />
+          </View>
+        )}
+        scrollToBottomStyle={{
+          bottom: 10,
+          right: 16,
+          zIndex: 1000,
+        }}
+        scrollToBottomOffset={200}
+        isScrollToBottomEnabled={true}
+        renderActions={() => null}
+        renderAvatar={null}
+        isLoadingEarlier={isLoadingEarlier}
+        loadEarlier={hasMoreMessages}
+        onLoadEarlier={loadEarlierMessages}
+        alwaysShowSend={true}
+        keyboardShouldPersistTaps="never"
+        messagesContainerStyle={{
+          backgroundColor: 'transparent',
+        }}
+        textInputProps={{
+          autoCapitalize: 'sentences',
+          autoCorrect: true,
+        }}
+        bottomOffset={-84}
+        minInputToolbarHeight={44}
+        infiniteScroll
+      />
     </>
   );
 }
@@ -1219,183 +1237,187 @@ export default function PropertyDetailsScreen() {
     }
   }, []);
 
-  const handleSendMessage = React.useCallback(async (textOverride?: string) => {
-    // Use textOverride if provided, otherwise use message state
-    const messageText = textOverride !== undefined ? textOverride : message;
-    // Check if there's content to send (message text OR file attachment)
-    const hasContent = messageText.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
-    if (!user || !selectedSessionId || !hasContent || isSending) return;
+  const handleSendMessage = React.useCallback(
+    async (textOverride?: string) => {
+      // Use textOverride if provided, otherwise use message state
+      const messageText = textOverride !== undefined ? textOverride : message;
+      // Check if there's content to send (message text OR file attachment)
+      const hasContent =
+        messageText.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
+      if (!user || !selectedSessionId || !hasContent || isSending) return;
 
-    // Don't allow sending if file is still uploading or has error
-    if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
-      setErrorMessage('Please wait for the file to finish uploading.');
-      setErrorAlertOpen(true);
-      return;
-    }
-
-    setIsSending(true);
-    const userMessage = messageText;
-    const currentFileAttachment = fileAttachment;
-    setMessage(''); // Clear input immediately
-    setFileAttachment(null); // Clear file attachment
-
-    try {
-      // Check if this is a draft session and claim it
-      const sessionRef = doc(db, 'users', user.uid, 'chats', selectedSessionId);
-      const sessionDoc = await getDoc(sessionRef);
-      const sessionData = sessionDoc.data();
-
-      if (sessionDoc.exists() && sessionData?.name === 'draft') {
-        // Use message text if available, otherwise use file name, or fallback to 'New Chat'
-        const newName =
-          userMessage.substring(0, 30) ||
-          (currentFileAttachment
-            ? `File: ${currentFileAttachment.fileName.substring(0, 20)}`
-            : 'New Chat');
-        await updateDoc(sessionRef, {
-          name: newName,
-          propertyId: id,
-        });
-      }
-
-      // Get agentSessionId from session
-      const agentSessionId = sessionData?.agentSessionId;
-      if (!agentSessionId) {
-        throw new Error('Agent session ID not found');
-      }
-
-      // Prepare file data if attachment exists
-      let fileData = undefined;
-      if (currentFileAttachment && currentFileAttachment.downloadURL) {
-        const storageRef = ref(storage, currentFileAttachment.storagePath);
-        fileData = {
-          name: currentFileAttachment.fileName,
-          type: currentFileAttachment.fileType,
-          url: currentFileAttachment.downloadURL,
-          gsURI: `gs://${storageRef.bucket}/${storageRef.fullPath}`,
-          width: currentFileAttachment.width,
-          height: currentFileAttachment.height,
-        };
-      }
-
-      // Add user message to Firestore
-      await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
-        role: 'user',
-        content: userMessage,
-        createdAt: serverTimestamp(),
-        ...(fileData && { file: fileData }),
-      });
-
-      // Create placeholder for assistant message
-      const assistantMessageRef = await addDoc(
-        collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'),
-        {
-          role: 'assistant',
-          content: '',
-          createdAt: serverTimestamp(),
-        }
-      );
-
-      // Prepare context document URIs
-      const contextDocURIs = selectedDocuments
-        .map((doc) => doc.gsURI)
-        .filter((uri): uri is string => !!uri);
-
-      // Prepare diagnosis URIs from file attachment
-      const diagnosisURIs = fileData?.gsURI ? [fileData.gsURI] : [];
-
-      // Get property address
-      const currentProperty = properties.find((p: any) => p.id === id);
-      const propertyAddress = currentProperty?.address;
-
-      // Stream agent response
-      let assistantContent = '';
-      let agentSteps: AgentStep[] = [];
-
-      // Create abort controller for this request
-      abortControllerRef.current = new AbortController();
-      const { signal } = abortControllerRef.current;
-
-      // If no message text, provide a default query for file-only messages
-      const queryText = userMessage || 'What can you tell me about this?';
-
-      await streamAgentResponse({
-        userId: user.uid,
-        agentSessionId,
-        userQuery: queryText,
-        contextDocURIs,
-        diagnosisURIs,
-        propertyAddress,
-        analysisOptionalAgents: selectedOptionalAgents,
-        signal,
-        onChunk: (chunk) => {
-          // Accumulate content but don't update Firestore yet
-          // This keeps the message in "loading" state
-          assistantContent += chunk;
-        },
-        onAgentStep: (step) => {
-          // Update agent steps in memory only (not in Firestore)
-          const existingStepIndex = agentSteps.findIndex((s) => s.name === step.name);
-          if (existingStepIndex > -1) {
-            agentSteps[existingStepIndex] = step;
-          } else {
-            agentSteps.push(step);
-          }
-          // Update message locally in context (in-memory only)
-          if (updateMessageLocallyRef.current) {
-            updateMessageLocallyRef.current(assistantMessageRef.id, {
-              agentSteps: [...agentSteps],
-            });
-          }
-        },
-        onComplete: (finalResponse) => {
-          // Final update with complete response (removes agent steps by replacing with content)
-          updateDoc(assistantMessageRef, {
-            content: finalResponse,
-          }).catch((err) => console.error('Error completing message:', err));
-        },
-        onError: (error) => {
-          // Update message to show error
-          updateDoc(assistantMessageRef, {
-            content: `Error: ${error.message}`,
-          }).catch((err) => console.error('Error updating error message:', err));
-          throw error;
-        },
-      });
-
-      // Keep documents selected for next message (removed automatic reset)
-    } catch (error) {
-      // Don't show error for abort - user intentionally stopped
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Message sending was stopped by user');
+      // Don't allow sending if file is still uploading or has error
+      if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
+        setErrorMessage('Please wait for the file to finish uploading.');
+        setErrorAlertOpen(true);
         return;
       }
 
-      console.error('Error sending message:', error);
-      setErrorMessage(
-        `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-      setErrorAlertOpen(true);
-      // Restore message and file attachment if there was an error
-      setMessage(userMessage);
-      setFileAttachment(currentFileAttachment);
-    } finally {
-      setIsSending(false);
-      abortControllerRef.current = null;
-    }
-  }, [
-    user,
-    selectedSessionId,
-    message,
-    isSending,
-    fileAttachment,
-    db,
-    storage,
-    id,
-    selectedDocuments,
-    properties,
-    selectedOptionalAgents,
-  ]);
+      setIsSending(true);
+      const userMessage = messageText;
+      const currentFileAttachment = fileAttachment;
+      setMessage(''); // Clear input immediately
+      setFileAttachment(null); // Clear file attachment
+
+      try {
+        // Check if this is a draft session and claim it
+        const sessionRef = doc(db, 'users', user.uid, 'chats', selectedSessionId);
+        const sessionDoc = await getDoc(sessionRef);
+        const sessionData = sessionDoc.data();
+
+        if (sessionDoc.exists() && sessionData?.name === 'draft') {
+          // Use message text if available, otherwise use file name, or fallback to 'New Chat'
+          const newName =
+            userMessage.substring(0, 30) ||
+            (currentFileAttachment
+              ? `File: ${currentFileAttachment.fileName.substring(0, 20)}`
+              : 'New Chat');
+          await updateDoc(sessionRef, {
+            name: newName,
+            propertyId: id,
+          });
+        }
+
+        // Get agentSessionId from session
+        const agentSessionId = sessionData?.agentSessionId;
+        if (!agentSessionId) {
+          throw new Error('Agent session ID not found');
+        }
+
+        // Prepare file data if attachment exists
+        let fileData = undefined;
+        if (currentFileAttachment && currentFileAttachment.downloadURL) {
+          const storageRef = ref(storage, currentFileAttachment.storagePath);
+          fileData = {
+            name: currentFileAttachment.fileName,
+            type: currentFileAttachment.fileType,
+            url: currentFileAttachment.downloadURL,
+            gsURI: `gs://${storageRef.bucket}/${storageRef.fullPath}`,
+            width: currentFileAttachment.width,
+            height: currentFileAttachment.height,
+          };
+        }
+
+        // Add user message to Firestore
+        await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
+          role: 'user',
+          content: userMessage,
+          createdAt: serverTimestamp(),
+          ...(fileData && { file: fileData }),
+        });
+
+        // Create placeholder for assistant message
+        const assistantMessageRef = await addDoc(
+          collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'),
+          {
+            role: 'assistant',
+            content: '',
+            createdAt: serverTimestamp(),
+          }
+        );
+
+        // Prepare context document URIs
+        const contextDocURIs = selectedDocuments
+          .map((doc) => doc.gsURI)
+          .filter((uri): uri is string => !!uri);
+
+        // Prepare diagnosis URIs from file attachment
+        const diagnosisURIs = fileData?.gsURI ? [fileData.gsURI] : [];
+
+        // Get property address
+        const currentProperty = properties.find((p: any) => p.id === id);
+        const propertyAddress = currentProperty?.address;
+
+        // Stream agent response
+        let assistantContent = '';
+        let agentSteps: AgentStep[] = [];
+
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+        const { signal } = abortControllerRef.current;
+
+        // If no message text, provide a default query for file-only messages
+        const queryText = userMessage || 'What can you tell me about this?';
+
+        await streamAgentResponse({
+          userId: user.uid,
+          agentSessionId,
+          userQuery: queryText,
+          contextDocURIs,
+          diagnosisURIs,
+          propertyAddress,
+          analysisOptionalAgents: selectedOptionalAgents,
+          signal,
+          onChunk: (chunk) => {
+            // Accumulate content but don't update Firestore yet
+            // This keeps the message in "loading" state
+            assistantContent += chunk;
+          },
+          onAgentStep: (step) => {
+            // Update agent steps in memory only (not in Firestore)
+            const existingStepIndex = agentSteps.findIndex((s) => s.name === step.name);
+            if (existingStepIndex > -1) {
+              agentSteps[existingStepIndex] = step;
+            } else {
+              agentSteps.push(step);
+            }
+            // Update message locally in context (in-memory only)
+            if (updateMessageLocallyRef.current) {
+              updateMessageLocallyRef.current(assistantMessageRef.id, {
+                agentSteps: [...agentSteps],
+              });
+            }
+          },
+          onComplete: (finalResponse) => {
+            // Final update with complete response (removes agent steps by replacing with content)
+            updateDoc(assistantMessageRef, {
+              content: finalResponse,
+            }).catch((err) => console.error('Error completing message:', err));
+          },
+          onError: (error) => {
+            // Update message to show error
+            updateDoc(assistantMessageRef, {
+              content: `Error: ${error.message}`,
+            }).catch((err) => console.error('Error updating error message:', err));
+            throw error;
+          },
+        });
+
+        // Keep documents selected for next message (removed automatic reset)
+      } catch (error) {
+        // Don't show error for abort - user intentionally stopped
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Message sending was stopped by user');
+          return;
+        }
+
+        console.error('Error sending message:', error);
+        setErrorMessage(
+          `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        setErrorAlertOpen(true);
+        // Restore message and file attachment if there was an error
+        setMessage(userMessage);
+        setFileAttachment(currentFileAttachment);
+      } finally {
+        setIsSending(false);
+        abortControllerRef.current = null;
+      }
+    },
+    [
+      user,
+      selectedSessionId,
+      message,
+      isSending,
+      fileAttachment,
+      db,
+      storage,
+      id,
+      selectedDocuments,
+      properties,
+      selectedOptionalAgents,
+    ]
+  );
 
   const toggleDocumentSelection = (document: Document) => {
     setHasManuallyInteracted(true);
