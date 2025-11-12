@@ -8,8 +8,9 @@ import {
   Platform,
   ScrollView,
   useColorScheme,
+  Keyboard,
 } from 'react-native';
-import { InputToolbar, InputToolbarProps, Composer } from 'react-native-gifted-chat';
+import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -262,45 +263,61 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                 multiline
               />
             )}
-            renderSend={(sendProps) => (
-              <View style={{ marginBottom: 5, marginLeft: 4 }}>
-                {isSending ? (
-                  <Pressable
-                    onPress={onStop}
-                    className="h-8 w-8 items-center justify-center rounded-full bg-destructive"
-                    accessibilityRole="button"
-                    accessibilityLabel="Stop sending">
-                    <Icon as={Square} size={16} className="text-primary-foreground" />
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    onPress={() => {
-                      const hasContent = sendProps.text?.trim() || fileAttachment?.downloadURL;
-                      if (hasContent && sendProps.onSend) {
-                        sendProps.onSend({ text: sendProps.text?.trim() || '' } as any, true);
-                      }
-                    }}
-                    disabled={!sendProps.text?.trim() && !fileAttachment?.downloadURL}
-                    className={`h-8 w-8 items-center justify-center rounded-full ${
-                      sendProps.text?.trim() || fileAttachment?.downloadURL
-                        ? 'bg-primary'
-                        : 'bg-secondary'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel="Send message">
-                    <Icon
-                      as={SendIcon}
-                      size={16}
-                      className={
-                        sendProps.text?.trim() || fileAttachment?.downloadURL
-                          ? 'text-primary-foreground'
-                          : 'text-muted-foreground'
-                      }
-                    />
-                  </Pressable>
-                )}
-              </View>
-            )}
+            renderSend={(sendProps) => {
+              const originalOnSend = sendProps.onSend;
+              const wrappedSendProps = {
+                ...sendProps,
+                onSend: (messages: any, shouldResetInputToolbar: boolean) => {
+                  if (originalOnSend) {
+                    originalOnSend(messages, shouldResetInputToolbar);
+                    // Delay keyboard dismissal to ensure send completes first
+                    requestAnimationFrame(() => {
+                      Keyboard.dismiss();
+                    });
+                  }
+                },
+              };
+
+              return (
+                <Send
+                  {...wrappedSendProps}
+                  containerStyle={{
+                    marginBottom: 0,
+                    marginLeft: 4,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <View>
+                    {isSending ? (
+                      <Pressable
+                        onPress={onStop}
+                        className="h-8 w-8 items-center justify-center rounded-full bg-destructive"
+                        accessibilityRole="button"
+                        accessibilityLabel="Stop sending">
+                        <Icon as={Square} size={16} className="text-primary-foreground" />
+                      </Pressable>
+                    ) : (
+                      <View
+                        className={`h-8 w-8 items-center justify-center rounded-full ${
+                          sendProps.text?.trim() || fileAttachment?.downloadURL
+                            ? 'bg-primary'
+                            : 'bg-secondary'
+                        }`}>
+                        <Icon
+                          as={SendIcon}
+                          size={16}
+                          className={
+                            sendProps.text?.trim() || fileAttachment?.downloadURL
+                              ? 'text-primary-foreground'
+                              : 'text-muted-foreground'
+                          }
+                        />
+                      </View>
+                    )}
+                  </View>
+                </Send>
+              );
+            }}
           />
         </View>
       </View>
