@@ -99,6 +99,127 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     [isDark]
   );
 
+  // Memoize attachment press handler to prevent recreation
+  const handleAttachmentPressWithHaptic = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onAttachmentPress();
+  }, [onAttachmentPress]);
+
+  // Memoize renderComposer to prevent recreation on every render
+  const renderComposer = React.useCallback(
+    (composerProps: any) => {
+      const textLength = composerProps.text?.length || 0;
+      const isNearLimit = textLength > MAX_MESSAGE_LENGTH * 0.9;
+      const isOverLimit = textLength > MAX_MESSAGE_LENGTH;
+
+      return (
+        <>
+          <Composer
+            {...composerProps}
+            textInputStyle={{
+              marginLeft: 2,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.border,
+              borderRadius: 16,
+              paddingLeft: 34,
+              paddingRight: 12,
+              paddingTop: 10,
+              paddingBottom: 10,
+              fontSize: 14,
+              minHeight: 40,
+              maxHeight: 120,
+              lineHeight: 20,
+              color: colors.foreground,
+            }}
+            textInputProps={{
+              maxLength: MAX_MESSAGE_LENGTH,
+            }}
+            textInputAutoFocus={false}
+            placeholder="Type a message..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+          />
+          {isNearLimit && (
+            <Text
+              style={{
+                position: 'absolute',
+                bottom: -20,
+                right: 35,
+                fontSize: 12,
+                color: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.mutedForeground,
+              }}>
+              {textLength}/{MAX_MESSAGE_LENGTH}
+            </Text>
+          )}
+        </>
+      );
+    },
+    [colors]
+  );
+
+  // Memoize renderSend to prevent recreation on every render
+  const renderSend = React.useCallback(
+    (sendProps: any) => {
+      const originalOnSend = sendProps.onSend;
+      const wrappedSendProps = {
+        ...sendProps,
+        onSend: (messages: any, shouldResetInputToolbar: boolean) => {
+          if (originalOnSend) {
+            // Haptic feedback on send
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            originalOnSend(messages, shouldResetInputToolbar);
+            // Delay keyboard dismissal to ensure send completes first
+            requestAnimationFrame(() => {
+              Keyboard.dismiss();
+            });
+          }
+        },
+      };
+
+      return (
+        <Send
+          {...wrappedSendProps}
+          containerStyle={{
+            marginBottom: 0,
+            marginLeft: 4,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <View>
+            {isSending ? (
+              <Pressable
+                onPress={onStop}
+                className="h-8 w-8 items-center justify-center rounded-full bg-destructive"
+                accessibilityRole="button"
+                accessibilityLabel="Stop sending">
+                <Icon as={Square} size={16} className="text-primary-foreground" />
+              </Pressable>
+            ) : (
+              <View
+                className={`h-8 w-8 items-center justify-center rounded-full ${
+                  sendProps.text?.trim() || fileAttachment?.downloadURL
+                    ? 'bg-primary'
+                    : 'bg-secondary'
+                }`}>
+                <Icon
+                  as={SendIcon}
+                  size={16}
+                  className={
+                    sendProps.text?.trim() || fileAttachment?.downloadURL
+                      ? 'text-primary-foreground'
+                      : 'text-muted-foreground'
+                  }
+                />
+              </View>
+            )}
+          </View>
+        </Send>
+      );
+    },
+    [isSending, onStop, fileAttachment]
+  );
+
   return (
     <>
       <Modal
@@ -216,10 +337,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         <View style={{ position: 'relative' }}>
           {/* Attachment Icon Overlay */}
           <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onAttachmentPress();
-            }}
+            onPress={handleAttachmentPressWithHaptic}
             disabled={isSending || !!fileAttachment}
             style={{
               position: 'absolute',
@@ -247,111 +365,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             primaryStyle={{
               alignItems: 'flex-end',
             }}
-            renderComposer={(composerProps) => {
-              const textLength = composerProps.text?.length || 0;
-              const isNearLimit = textLength > MAX_MESSAGE_LENGTH * 0.9;
-              const isOverLimit = textLength > MAX_MESSAGE_LENGTH;
-
-              return (
-                <>
-                  <Composer
-                    {...composerProps}
-                    textInputStyle={{
-                      marginLeft: 2,
-                      backgroundColor: colors.background,
-                      borderWidth: 1,
-                      borderColor: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.border,
-                      borderRadius: 16,
-                      paddingLeft: 34,
-                      paddingRight: 12,
-                      paddingTop: 10,
-                      paddingBottom: 10,
-                      fontSize: 14,
-                      minHeight: 40,
-                      maxHeight: 120,
-                      lineHeight: 20,
-                      color: colors.foreground,
-                    }}
-                    textInputProps={{
-                      maxLength: MAX_MESSAGE_LENGTH,
-                    }}
-                    textInputAutoFocus={false}
-                    placeholder="Type a message..."
-                    placeholderTextColor={colors.mutedForeground}
-                    multiline
-                  />
-                  {isNearLimit && (
-                    <Text
-                      style={{
-                        position: 'absolute',
-                        bottom: -20,
-                        right: 35,
-                        fontSize: 12,
-                        color: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.mutedForeground,
-                      }}>
-                      {textLength}/{MAX_MESSAGE_LENGTH}
-                    </Text>
-                  )}
-                </>
-              );
-            }}
-            renderSend={(sendProps) => {
-              const originalOnSend = sendProps.onSend;
-              const wrappedSendProps = {
-                ...sendProps,
-                onSend: (messages: any, shouldResetInputToolbar: boolean) => {
-                  if (originalOnSend) {
-                    // Haptic feedback on send
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    originalOnSend(messages, shouldResetInputToolbar);
-                    // Delay keyboard dismissal to ensure send completes first
-                    requestAnimationFrame(() => {
-                      Keyboard.dismiss();
-                    });
-                  }
-                },
-              };
-
-              return (
-                <Send
-                  {...wrappedSendProps}
-                  containerStyle={{
-                    marginBottom: 0,
-                    marginLeft: 4,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <View>
-                    {isSending ? (
-                      <Pressable
-                        onPress={onStop}
-                        className="h-8 w-8 items-center justify-center rounded-full bg-destructive"
-                        accessibilityRole="button"
-                        accessibilityLabel="Stop sending">
-                        <Icon as={Square} size={16} className="text-primary-foreground" />
-                      </Pressable>
-                    ) : (
-                      <View
-                        className={`h-8 w-8 items-center justify-center rounded-full ${
-                          sendProps.text?.trim() || fileAttachment?.downloadURL
-                            ? 'bg-primary'
-                            : 'bg-secondary'
-                        }`}>
-                        <Icon
-                          as={SendIcon}
-                          size={16}
-                          className={
-                            sendProps.text?.trim() || fileAttachment?.downloadURL
-                              ? 'text-primary-foreground'
-                              : 'text-muted-foreground'
-                          }
-                        />
-                      </View>
-                    )}
-                  </View>
-                </Send>
-              );
-            }}
+            renderComposer={renderComposer}
+            renderSend={renderSend}
           />
         </View>
       </View>
