@@ -1718,8 +1718,10 @@ export default function PropertyDetailsScreen() {
                     onSelectFiles={handleSelectFiles}
                     onSend={(messages) => {
                       // GiftedChat calls this when user sends - extract text and call our handler
+                      console.log('[PropertyDetails] onSend called with messages:', messages);
                       if (messages.length > 0) {
                         const text = messages[0].text;
+                        console.log('[PropertyDetails] Extracted text:', text, 'fileAttachment:', !!fileAttachment);
                         setMessage(text);
                         // Call handleSendMessage with the text directly
                         handleSendMessage(text);
