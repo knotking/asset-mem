@@ -154,8 +154,9 @@ Automated deployments triggered by code changes or manual workflows.
 
 | Event | Workflow | Profile | Channel |
 |-------|----------|---------|---------|
-| Push to `main` (mapp changes) | Build + Update | staging | staging |
-| Push to `develop` (mapp changes) | Update only | staging | staging |
+| Push to `main` (mapp changes) | Update only | staging | staging |
+
+**Note**: Automatic builds are currently disabled. Use manual workflows for builds.
 
 #### Manual Workflows
 
@@ -407,17 +408,7 @@ Defined in [eas.json](./eas.json)
 
 ### Preview
 
-**Purpose**: Internal testing and QA
-
-**Configuration**:
-- Internal distribution
-- Release-like build
-- APK for Android (easier sharing)
-
-**Usage**:
-```bash
-./deploy.sh build --platform android --profile preview
-```
+**Note**: The preview profile is not currently configured in [eas.json](./eas.json). For internal testing, use the `development` or `staging` profiles instead.
 
 ### Staging
 
@@ -486,18 +477,16 @@ npm run android
 git add .
 git commit -m "Add new feature"
 
-# 4. Push to develop branch
-git push origin develop
+# 4. Push to main branch
+git push origin main
 # → Triggers automatic staging OTA update
 
 # 5. Test on staging channel
 # Have QA team verify on staging build
 
-# 6. Merge to main
-git checkout main
-git merge develop
-git push origin main
-# → Triggers staging build + update
+# 6. When ready for production, use manual workflow
+# Actions → Deploy Mapp - EAS Update
+# Select production environment
 ```
 
 ### Workflow 2: Production Release (Full Build)
@@ -576,7 +565,7 @@ Update channels control which OTA updates users receive.
 
 **Builds**:
 - `staging` profile builds
-- `preview` profile builds
+- `development` profile builds
 
 **Updates**:
 ```bash
@@ -889,12 +878,11 @@ eas credentials                              # Manage credentials
 
 | Branch | Path | Workflow | Result |
 |--------|------|----------|--------|
-| `main` | `apps/mapp/**` | Build + Update | Staging build + OTA |
-| `develop` | `apps/mapp/**` | Update only | Staging OTA |
+| `main` | `apps/mapp/**` | Update only | Staging OTA |
 | Manual | N/A | Build | Custom environment/platform |
 | Manual | N/A | Update | Custom channel/message |
 
 ---
 
-**Last Updated**: 2025-11-03
+**Last Updated**: 2025-11-12
 **Maintainer**: HomeGeekAI Team
