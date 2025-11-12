@@ -75,6 +75,7 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { GiftedChat, IMessage } from 'react-native-gifted-chat';
 import SessionsList from '@/components/SessionsList';
 import PushDrawer from '@/components/PushDrawer';
@@ -693,6 +694,7 @@ function ChatTab({
   onTakePhoto,
   onRecordVideo,
   onSelectFromLibrary,
+  onSelectFiles,
   onSend,
 }: {
   sessionId: string | null;
@@ -712,6 +714,7 @@ function ChatTab({
   onTakePhoto: () => void;
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
+  onSelectFiles: () => void;
   onSend: (messages: IMessage[]) => void;
 }) {
   const {
@@ -817,6 +820,7 @@ function ChatTab({
             onTakePhoto={onTakePhoto}
             onRecordVideo={onRecordVideo}
             onSelectFromLibrary={onSelectFromLibrary}
+            onSelectFiles={onSelectFiles}
           />
         )}
         scrollToBottomComponent={() => (
@@ -893,7 +897,6 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
-  const [attachmentOptionsVisible, setAttachmentOptionsVisible] = React.useState(false);
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -1058,6 +1061,19 @@ export default function PropertyDetailsScreen() {
       const storageRef = ref(storage, `uploads/${user.uid}/${timestamp}_${fileName}`);
       const attachmentId = `upload-${timestamp}`;
 
+      // Generate thumbnail for videos
+      let thumbnailUri: string | undefined;
+      if (asset.type === 'video') {
+        try {
+          const { uri } = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+            time: 0, // Get thumbnail from the first frame
+          });
+          thumbnailUri = uri;
+        } catch (error) {
+          console.warn('Failed to generate video thumbnail:', error);
+        }
+      }
+
       setFileAttachment({
         id: attachmentId,
         uri: asset.uri,
@@ -1070,6 +1086,7 @@ export default function PropertyDetailsScreen() {
         fileSize: asset.fileSize || 0,
         width: asset.width,
         height: asset.height,
+        thumbnailUri,
       });
 
       try {
@@ -1117,7 +1134,6 @@ export default function PropertyDetailsScreen() {
   );
 
   const handleSelectFromLibrary = React.useCallback(async () => {
-    setAttachmentOptionsVisible(false);
     if (!user) return;
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -1128,7 +1144,7 @@ export default function PropertyDetailsScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ['images', 'videos'],
       allowsEditing: false,
       quality: 0.8,
       videoMaxDuration: 60,
@@ -1142,67 +1158,143 @@ export default function PropertyDetailsScreen() {
   }, [user, handleAssetUpload]);
 
   const handleTakePhoto = React.useCallback(async () => {
-    setAttachmentOptionsVisible(false);
-    if (!user) return;
+    try {
+      if (!user) return;
 
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      setErrorMessage('Please grant permission to access your camera.');
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMessage('Please grant permission to access your camera.');
+        setErrorAlertOpen(true);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images',
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      await handleAssetUpload(result.assets[0]);
+    } catch (error) {
+      console.error('[Camera] Error in handleTakePhoto:', error);
+      setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setErrorAlertOpen(true);
-      return;
     }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    await handleAssetUpload(result.assets[0]);
   }, [user, handleAssetUpload]);
 
   const handleRecordVideo = React.useCallback(async () => {
-    setAttachmentOptionsVisible(false);
-    if (!user) return;
+    try {
+      if (!user) return;
 
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-    if (cameraPermission.status !== 'granted') {
-      setErrorMessage('Please grant permission to access your camera.');
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMessage('Please grant permission to access your camera and microphone.');
+        setErrorAlertOpen(true);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'videos',
+        allowsEditing: false,
+        quality: 0.8,
+        videoMaxDuration: 60,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      await handleAssetUpload(result.assets[0]);
+    } catch (error) {
+      console.error('[Camera] Error in handleRecordVideo:', error);
+      setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setErrorAlertOpen(true);
-      return;
     }
-
-    const microphonePermission = await ImagePicker.requestMicrophonePermissionsAsync();
-    if (microphonePermission.status !== 'granted') {
-      setErrorMessage('Please grant permission to access your microphone.');
-      setErrorAlertOpen(true);
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: false,
-      quality: 0.8,
-      videoMaxDuration: 60,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    await handleAssetUpload(result.assets[0]);
   }, [user, handleAssetUpload]);
 
-  const handleAttachmentPress = React.useCallback(() => {
-    if (isSending || fileAttachment) {
-      return;
+  const handleSelectFiles = React.useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*', 'video/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      // For now, just handle the first file as an attachment similar to images
+      const file = result.assets[0];
+      const timestamp = Date.now();
+      const fileName = file.name;
+      const fileType = file.mimeType || 'application/octet-stream';
+      const storageRef = ref(storage, `uploads/${user.uid}/${timestamp}_${fileName}`);
+      const attachmentId = `upload-${timestamp}`;
+
+      setFileAttachment({
+        id: attachmentId,
+        uri: file.uri,
+        progress: 0,
+        downloadURL: null,
+        error: null,
+        storagePath: storageRef.fullPath,
+        fileName,
+        fileType,
+        fileSize: file.size || 0,
+        width: 0,
+        height: 0,
+      });
+
+      try {
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, progress } : null
+            );
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, error: 'Upload failed' } : null
+            );
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev
+                ? {
+                    ...prev,
+                    downloadURL,
+                    progress: 100,
+                  }
+                : null
+            );
+          }
+        );
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setFileAttachment((prev: FileAttachment | null) =>
+          prev ? { ...prev, error: 'Upload failed' } : null
+        );
+      }
+    } catch (error) {
+      console.error('Error picking file:', error);
+      setErrorMessage('Failed to select file. Please try again.');
+      setErrorAlertOpen(true);
     }
-    setAttachmentOptionsVisible(true);
-  }, [isSending, fileAttachment]);
+  }, [user, storage]);
 
   // Remove file attachment
   const removeFileAttachment = React.useCallback(async () => {
@@ -1614,17 +1706,16 @@ export default function PropertyDetailsScreen() {
                     }}
                     userId={user?.uid || ''}
                     fileAttachment={fileAttachment}
-                    onAttachmentPress={handleAttachmentPress}
+                    onAttachmentPress={() => {}}
                     onRemoveAttachment={removeFileAttachment}
                     selectedOptionalAgents={selectedOptionalAgents}
                     onToggleOptionalAgent={toggleOptionalAgent}
                     isSending={isSending}
                     onStop={handleStop}
-                    attachmentOptionsVisible={attachmentOptionsVisible}
-                    onCloseAttachmentOptions={() => setAttachmentOptionsVisible(false)}
                     onTakePhoto={handleTakePhoto}
                     onRecordVideo={handleRecordVideo}
                     onSelectFromLibrary={handleSelectFromLibrary}
+                    onSelectFiles={handleSelectFiles}
                     onSend={(messages) => {
                       // GiftedChat calls this when user sends - extract text and call our handler
                       if (messages.length > 0) {

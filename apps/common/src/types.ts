@@ -25,6 +25,7 @@ export type FileAttachment = {
   fileSize: number;
   width?: number;
   height?: number;
+  thumbnailUri?: string; // For video thumbnails
 };
 
 export type Message = {

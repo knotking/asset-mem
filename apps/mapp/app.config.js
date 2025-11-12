@@ -30,6 +30,12 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.homegeekai.staging',
+      infoPlist: {
+        NSCameraUsageDescription: 'This app needs access to your camera to take photos and record videos for property documentation.',
+        NSMicrophoneUsageDescription: 'This app needs access to your microphone to record videos with audio.',
+        NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select photos and videos for property documentation.',
+        NSPhotoLibraryAddUsageDescription: 'This app needs access to save photos and videos to your photo library.',
+      },
     },
     android: {
       edgeToEdgeEnabled: true,
@@ -44,7 +50,18 @@ module.exports = {
       output: 'static',
       favicon: './assets/images/favicon.png',
     },
-    plugins: ['expo-router', 'expo-web-browser', 'expo-video'],
+    plugins: [
+      'expo-router',
+      'expo-web-browser',
+      'expo-video',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'This app needs access to your photo library to select photos and videos for property documentation.',
+          cameraPermission: 'This app needs access to your camera to take photos and record videos for property documentation.',
+        },
+      ],
+    ],
     experiments: {
       typedRoutes: true,
     },
