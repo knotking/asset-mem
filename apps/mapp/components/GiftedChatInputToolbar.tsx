@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Pressable,
-  Modal,
   Image,
   ActivityIndicator,
   Platform,
@@ -11,12 +10,11 @@ import {
   Keyboard,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Paperclip,
   Send as SendIcon,
@@ -24,8 +22,8 @@ import {
   Square,
   AlertCircle,
   Camera,
-  Video,
   Images,
+  Video,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -56,11 +54,10 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   isSending: boolean;
   onStop: () => void;
-  attachmentOptionsVisible: boolean;
-  onCloseAttachmentOptions: () => void;
   onTakePhoto: () => void;
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
+  onSelectFiles: () => void;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -72,14 +69,14 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onToggleOptionalAgent,
     isSending,
     onStop,
-    attachmentOptionsVisible,
-    onCloseAttachmentOptions,
     onTakePhoto,
     onRecordVideo,
     onSelectFromLibrary,
+    onSelectFiles,
     ...inputToolbarProps
   } = props;
 
+  const { showActionSheetWithOptions } = useActionSheet();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -102,8 +99,29 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   // Memoize attachment press handler to prevent recreation
   const handleAttachmentPressWithHaptic = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onAttachmentPress();
-  }, [onAttachmentPress]);
+
+    const options = ['Take Photo', 'Record Video', 'Choose from Gallery', 'Select Files', 'Cancel'];
+    const cancelButtonIndex = 4;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+        title: 'Add Attachment',
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 0) {
+          onTakePhoto();
+        } else if (buttonIndex === 1) {
+          onRecordVideo();
+        } else if (buttonIndex === 2) {
+          onSelectFromLibrary();
+        } else if (buttonIndex === 3) {
+          onSelectFiles();
+        }
+      }
+    );
+  }, [showActionSheetWithOptions, onTakePhoto, onRecordVideo, onSelectFromLibrary, onSelectFiles]);
 
   // Memoize renderComposer to prevent recreation on every render
   const renderComposer = React.useCallback(
@@ -221,33 +239,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   );
 
   return (
-    <>
-      <Modal
-        visible={attachmentOptionsVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={onCloseAttachmentOptions}>
-        <View className="flex-1 justify-end bg-black/40">
-          <Pressable className="flex-1" onPress={onCloseAttachmentOptions} />
-          <View className="space-y-3 rounded-t-3xl bg-background px-4 pb-6 pt-4">
-            <Text className="text-base font-semibold text-foreground">Attach media</Text>
-            <Button variant="outline" className="justify-start gap-3" onPress={onTakePhoto}>
-              <Icon as={Camera} size={20} className="text-foreground" />
-              <Text className="text-sm text-foreground">Take photo</Text>
-            </Button>
-            <Button variant="outline" className="justify-start gap-3" onPress={onRecordVideo}>
-              <Icon as={Video} size={20} className="text-foreground" />
-              <Text className="text-sm text-foreground">Record video</Text>
-            </Button>
-            <Button variant="outline" className="justify-start gap-3" onPress={onSelectFromLibrary}>
-              <Icon as={Images} size={20} className="text-foreground" />
-              <Text className="text-sm text-foreground">Choose from library</Text>
-            </Button>
-          </View>
-        </View>
-      </Modal>
-
-      <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
+    <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
         {/* File Attachment Preview */}
         {fileAttachment && (
           <View className="mb-3">
@@ -263,10 +255,28 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
               {/* Video Preview */}
               {fileAttachment.fileType.startsWith('video/') && (
-                <View className="h-full w-full items-center justify-center">
-                  <Icon as={FileText} size={24} className="text-muted-foreground" />
-                </View>
+                <>
+                  {fileAttachment.thumbnailUri ? (
+                    <Image
+                      source={{ uri: fileAttachment.thumbnailUri }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="h-full w-full items-center justify-center">
+                      <Icon as={Video} size={24} className="text-muted-foreground" />
+                    </View>
+                  )}
+                </>
               )}
+
+              {/* Document/File Preview */}
+              {!fileAttachment.fileType.startsWith('image/') &&
+                !fileAttachment.fileType.startsWith('video/') && (
+                  <View className="h-full w-full items-center justify-center">
+                    <Icon as={FileText} size={24} className="text-muted-foreground" />
+                  </View>
+                )}
 
               {/* Loading Indicator */}
               {fileAttachment.progress < 100 && !fileAttachment.error && (
@@ -370,6 +380,5 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           />
         </View>
       </View>
-    </>
   );
 }
