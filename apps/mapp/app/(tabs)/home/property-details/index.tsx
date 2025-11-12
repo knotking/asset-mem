@@ -40,8 +40,6 @@ import {
 import {
   ArrowLeft,
   MessageSquare,
-  Paperclip,
-  Send,
   FileText,
   MapPin,
   Pencil,
@@ -52,14 +50,6 @@ import {
   Trash2,
   Sparkles,
   Plus,
-  Square,
-  Camera,
-  Video,
-  Images,
-  ShieldCheck,
-  Hammer,
-  Wrench,
-  BadgeDollarSign,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -81,19 +71,21 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import ChatList from '@/components/ChatList';
+import { GiftedChat, IMessage } from 'react-native-gifted-chat';
 import SessionsList from '@/components/SessionsList';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, FileAttachment, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type {
+  Document,
+  FileAttachment,
+  AgentStep,
+  Session,
+  AnalysisOptionalAgent,
+} from '@homeapp/common/types';
 import { PROPERTY_TYPES, ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse, extractDocInfo, postFileToAgent } from '@/lib/api';
-
-const OPTIONAL_AGENT_OPTIONS: { id: AnalysisOptionalAgent; label: string; icon: typeof ShieldCheck }[] = [
-  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
-  { id: 'diy', label: 'DIY', icon: Hammer },
-  { id: 'service', label: 'Service', icon: Wrench },
-  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
-];
+import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
+import GiftedChatBubble from '@/components/GiftedChatBubble';
+import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 
 // Rotating Sparkles Component
 function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; color?: string }) {
@@ -684,19 +676,60 @@ function DetailsTab({ property }: { property: any }) {
 function ChatTab({
   sessionId,
   onMessagesReady,
+  userId,
+  fileAttachment,
+  onAttachmentPress,
+  onRemoveAttachment,
+  selectedOptionalAgents,
+  onToggleOptionalAgent,
+  isSending,
+  onStop,
+  attachmentOptionsVisible,
+  onCloseAttachmentOptions,
+  onTakePhoto,
+  onRecordVideo,
+  onSelectFromLibrary,
+  onSend,
 }: {
   sessionId: string | null;
   onMessagesReady?: (
     updateFn: (messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void
   ) => void;
+  userId: string;
+  fileAttachment: FileAttachment | null;
+  onAttachmentPress: () => void;
+  onRemoveAttachment: () => void;
+  selectedOptionalAgents: AnalysisOptionalAgent[];
+  onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  isSending: boolean;
+  onStop: () => void;
+  attachmentOptionsVisible: boolean;
+  onCloseAttachmentOptions: () => void;
+  onTakePhoto: () => void;
+  onRecordVideo: () => void;
+  onSelectFromLibrary: () => void;
+  onSend: (messages: IMessage[]) => void;
 }) {
-  const { messages, isLoading, updateMessageLocally } = useMessages();
+  const {
+    messages,
+    isLoading,
+    isLoadingEarlier,
+    hasMoreMessages,
+    updateMessageLocally,
+    loadEarlierMessages,
+  } = useMessages();
 
   React.useEffect(() => {
     if (onMessagesReady) {
       onMessagesReady(updateMessageLocally);
     }
   }, [updateMessageLocally, onMessagesReady]);
+
+  // Transform messages to GiftedChat format
+  const giftedMessages = React.useMemo(
+    () => transformMessagesToGiftedChat(messages, userId),
+    [messages, userId]
+  );
 
   if (!sessionId) {
     return (
@@ -708,7 +741,50 @@ function ChatTab({
     );
   }
 
-  return <ChatList messages={messages} isLoading={isLoading} />;
+  return (
+    <GiftedChat
+      messages={giftedMessages}
+      onSend={onSend}
+      user={{
+        _id: userId,
+      }}
+      renderBubble={(props) => <GiftedChatBubble {...props} />}
+      renderInputToolbar={(props) => (
+        <GiftedChatInputToolbar
+          {...props}
+          fileAttachment={fileAttachment}
+          onAttachmentPress={onAttachmentPress}
+          onRemoveAttachment={onRemoveAttachment}
+          selectedOptionalAgents={selectedOptionalAgents}
+          onToggleOptionalAgent={onToggleOptionalAgent}
+          isSending={isSending}
+          onStop={onStop}
+          attachmentOptionsVisible={attachmentOptionsVisible}
+          onCloseAttachmentOptions={onCloseAttachmentOptions}
+          onTakePhoto={onTakePhoto}
+          onRecordVideo={onRecordVideo}
+          onSelectFromLibrary={onSelectFromLibrary}
+        />
+      )}
+      renderActions={() => null}
+      renderAvatar={null}
+      isLoadingEarlier={isLoadingEarlier}
+      loadEarlier={hasMoreMessages}
+      onLoadEarlier={loadEarlierMessages}
+      alwaysShowSend={false}
+      keyboardShouldPersistTaps="never"
+      messagesContainerStyle={{
+        backgroundColor: 'transparent',
+      }}
+      textInputProps={{
+        autoCapitalize: 'sentences',
+        autoCorrect: true,
+      }}
+      bottomOffset={-84}
+      minInputToolbarHeight={44}
+      infiniteScroll
+    />
+  );
 }
 
 export default function PropertyDetailsScreen() {
@@ -743,7 +819,9 @@ export default function PropertyDetailsScreen() {
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
-  const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
+    AnalysisOptionalAgent[]
+  >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
   const [hasManuallyInteracted, setHasManuallyInteracted] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
@@ -938,7 +1016,9 @@ export default function PropertyDetailsScreen() {
           'state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setFileAttachment((prev: FileAttachment | null) => (prev ? { ...prev, progress } : null));
+            setFileAttachment((prev: FileAttachment | null) =>
+              prev ? { ...prev, progress } : null
+            );
           },
           (error) => {
             console.error('Upload error:', error);
@@ -1460,208 +1540,33 @@ export default function PropertyDetailsScreen() {
                     onMessagesReady={(updateFn) => {
                       updateMessageLocallyRef.current = updateFn;
                     }}
+                    userId={user?.uid || ''}
+                    fileAttachment={fileAttachment}
+                    onAttachmentPress={handleAttachmentPress}
+                    onRemoveAttachment={removeFileAttachment}
+                    selectedOptionalAgents={selectedOptionalAgents}
+                    onToggleOptionalAgent={toggleOptionalAgent}
+                    isSending={isSending}
+                    onStop={handleStop}
+                    attachmentOptionsVisible={attachmentOptionsVisible}
+                    onCloseAttachmentOptions={() => setAttachmentOptionsVisible(false)}
+                    onTakePhoto={handleTakePhoto}
+                    onRecordVideo={handleRecordVideo}
+                    onSelectFromLibrary={handleSelectFromLibrary}
+                    onSend={(messages) => {
+                      // GiftedChat calls this when user sends - extract text and call our handler
+                      if (messages.length > 0) {
+                        setMessage(messages[0].text);
+                        // Trigger send immediately
+                        setTimeout(() => handleSendMessage(), 0);
+                      }
+                    }}
                   />
                 </MessagesProvider>
               ) : (
                 <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
                   <DetailsTab property={property} />
                 </ScrollView>
-              )}
-
-              {/* Bottom Input Bar */}
-              {activeTab === 'chat' && selectedSessionId && (
-                <KeyboardAvoidingView
-                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                  keyboardVerticalOffset={0}>
-                  <Modal
-                    visible={attachmentOptionsVisible}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setAttachmentOptionsVisible(false)}>
-                    <View className="flex-1 justify-end bg-black/40">
-                      <Pressable
-                        className="flex-1"
-                        onPress={() => setAttachmentOptionsVisible(false)}
-                      />
-                      <View className="space-y-3 rounded-t-3xl bg-background px-4 pt-4 pb-6">
-                        <Text className="text-base font-semibold text-foreground">Attach media</Text>
-                        <Button
-                          variant="outline"
-                          className="justify-start gap-3"
-                          onPress={handleTakePhoto}>
-                          <Icon as={Camera} size={20} className="text-foreground" />
-                          <Text className="text-sm text-foreground">Take photo</Text>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="justify-start gap-3"
-                          onPress={handleRecordVideo}>
-                          <Icon as={Video} size={20} className="text-foreground" />
-                          <Text className="text-sm text-foreground">Record video</Text>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="justify-start gap-3"
-                          onPress={handleSelectFromLibrary}>
-                          <Icon as={Images} size={20} className="text-foreground" />
-                          <Text className="text-sm text-foreground">Choose from library</Text>
-                        </Button>
-                      </View>
-                    </View>
-                  </Modal>
-                  <View className="border-t border-border bg-light-background-alt px-4 py-3">
-                    {/* File Attachment Preview */}
-                    {fileAttachment && (
-                      <View className="mb-3">
-                        <View className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-secondary">
-                          {/* Image Preview */}
-                          {fileAttachment.fileType.startsWith('image/') && (
-                            <Image
-                              source={{ uri: fileAttachment.uri }}
-                              className="h-full w-full"
-                              resizeMode="cover"
-                            />
-                          )}
-
-                          {/* Video Preview */}
-                          {fileAttachment.fileType.startsWith('video/') && (
-                            <View className="h-full w-full items-center justify-center">
-                              <Icon as={FileText} size={24} className="text-muted-foreground" />
-                            </View>
-                          )}
-
-                          {/* Loading Indicator */}
-                          {fileAttachment.progress < 100 && !fileAttachment.error && (
-                            <View className="absolute inset-0 items-center justify-center bg-black/40">
-                              <ActivityIndicator size="large" color="#ffffff" />
-                            </View>
-                          )}
-
-                          {/* Delete Button Overlay */}
-                          <Pressable
-                            onPress={removeFileAttachment}
-                            className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full bg-gray-500/80"
-                            accessibilityRole="button"
-                            accessibilityLabel="Remove attachment">
-                            <Icon as={X} size={14} className="text-white" />
-                          </Pressable>
-
-                          {/* Error Indicator */}
-                          {fileAttachment.error && (
-                            <View className="absolute inset-0 items-center justify-center bg-destructive/20">
-                              <Icon as={AlertCircle} size={24} className="text-destructive" />
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    )}
-
-                    {/* Optional Agent Toggles */}
-                    <View className="mb-3">
-                      <View className="flex-row flex-wrap items-center gap-2">
-                        <View className="rounded-full border border-border bg-background px-3 py-1">
-                          <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-                            Triage required
-                          </Text>
-                        </View>
-                        {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                          const isSelected = selectedOptionalAgents.includes(option.id);
-                          return (
-                            <Pressable
-                              key={option.id}
-                              onPress={() => toggleOptionalAgent(option.id)}
-                              accessibilityRole="button"
-                              accessibilityState={{ selected: isSelected }}
-                              className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
-                                isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
-                              }`}
-                            >
-                              <Icon
-                                as={option.icon}
-                                size={14}
-                                className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
-                              />
-                              <Text
-                                className={`text-xs font-medium ${
-                                  isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-                                }`}
-                              >
-                                {option.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                      {selectedOptionalAgents.length === 0 && (
-                        <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
-                      )}
-                    </View>
-
-                    {/* Input Row - Overlay Icons (Option 3) */}
-                    <View className="relative flex-row items-center">
-                      {/* Attachment Icon - Inside Left */}
-                      <Pressable
-                        onPress={handleAttachmentPress}
-                        disabled={isSending || !!fileAttachment}
-                        className="absolute left-2 z-10 h-8 w-8 items-center justify-center">
-                        <Icon
-                          as={Paperclip}
-                          size={20}
-                          className={
-                            fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'
-                          }
-                        />
-                      </Pressable>
-
-                      {/* Input Field with Internal Padding for Icons */}
-                      <View className="flex-1 rounded-full border border-border bg-background">
-                        <Input
-                          value={message}
-                          onChangeText={setMessage}
-                          placeholder="Type a message..."
-                          multiline
-                          editable={!isSending}
-                          onSubmitEditing={handleSendMessage}
-                          className="border-0 bg-transparent pl-11 pr-11 text-sm"
-                          style={{
-                            minHeight: 40,
-                            maxHeight: 80,
-                            paddingTop: 10,
-                            paddingBottom: 10,
-                          }}
-                        />
-                      </View>
-
-                      {/* Send/Stop Button - Inside Right */}
-                      {isSending ? (
-                        <Pressable
-                          onPress={handleStop}
-                          className="absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full bg-destructive">
-                          <Icon as={Square} size={16} className="text-primary-foreground" />
-                        </Pressable>
-                      ) : (
-                        <Pressable
-                          onPress={handleSendMessage}
-                          disabled={!message.trim() && !fileAttachment?.downloadURL}
-                          className={`absolute right-1 z-10 h-8 w-8 items-center justify-center rounded-full ${
-                            message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error)
-                              ? 'bg-primary'
-                              : 'bg-secondary'
-                          }`}>
-                          <Icon
-                            as={Send}
-                            size={16}
-                            className={
-                              message.trim() || fileAttachment?.downloadURL
-                                ? 'text-primary-foreground'
-                                : 'text-muted-foreground'
-                            }
-                          />
-                        </Pressable>
-                      )}
-                    </View>
-                  </View>
-                </KeyboardAvoidingView>
               )}
 
               {/* Error Alert Dialog */}
