@@ -4,7 +4,6 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
-  Platform,
   ScrollView,
   useColorScheme,
   Keyboard,
@@ -133,6 +132,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   // Memoize attachment press handler to prevent recreation
   const handleAttachmentPressWithHaptic = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
     setShowMenu(true);
   }, []);
 
@@ -158,20 +158,21 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           <Composer
             {...composerProps}
             textInputStyle={{
-              marginLeft: 2,
+              marginLeft: 0,
               backgroundColor: colors.background,
               borderWidth: 1,
               borderColor: isOverLimit ? 'hsl(0, 84.2%, 60.2%)' : colors.border,
-              borderRadius: 16,
-              paddingLeft: 34,
+              borderRadius: 32,
+              paddingLeft: 12,
               paddingRight: 12,
-              paddingTop: 10,
-              paddingBottom: 10,
+              paddingTop: 9,
+              paddingBottom: 12,
               fontSize: 14,
               minHeight: 40,
               maxHeight: 120,
               lineHeight: 20,
               color: colors.foreground,
+              textAlignVertical: 'center',
             }}
             textInputProps={{
               maxLength: MAX_MESSAGE_LENGTH,
@@ -234,6 +235,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           {...sendProps}
           disabled={!canSend}
           containerStyle={{
+            position: 'absolute',
+            right: 2,
             marginBottom: 3,
             marginLeft: 4,
             justifyContent: 'center',
@@ -375,40 +378,43 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
       </View>
 
       {/* Input Row */}
-      <View style={{ position: 'relative' }}>
-        {/* Attachment Icon Overlay */}
+      <View className="flex-row items-end gap-2">
+        {/* Attachment Button */}
         <Pressable
           onPress={handleAttachmentPressWithHaptic}
           disabled={isSending || !!fileAttachment}
+          className={`mb-[8px] h-8 w-8 items-center justify-center rounded-full ${
+            fileAttachment ? 'bg-secondary' : 'bg-primary'
+          }`}
           style={{
-            position: 'absolute',
-            left: 10,
-            bottom: 12,
-            zIndex: 10,
+            opacity: fileAttachment ? 0.5 : 1,
           }}>
           <Icon
             as={Paperclip}
-            size={20}
-            className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
+            size={16}
+            className={fileAttachment ? 'text-muted-foreground' : 'text-primary-foreground'}
           />
         </Pressable>
 
-        <InputToolbar
-          {...inputToolbarProps}
-          containerStyle={{
-            backgroundColor: 'transparent',
-            borderTopWidth: 0,
-            paddingHorizontal: 0,
-            paddingVertical: 0,
-            marginTop: 0,
-            marginBottom: 0,
-          }}
-          primaryStyle={{
-            alignItems: 'flex-end',
-          }}
-          renderComposer={renderComposer}
-          renderSend={renderSend}
-        />
+        {/* Input Field */}
+        <View style={{ flex: 1 }}>
+          <InputToolbar
+            {...inputToolbarProps}
+            containerStyle={{
+              backgroundColor: 'transparent',
+              borderTopWidth: 0,
+              paddingHorizontal: 0,
+              paddingVertical: 0,
+              marginTop: 0,
+              marginBottom: 0,
+            }}
+            primaryStyle={{
+              alignItems: 'flex-end',
+            }}
+            renderComposer={renderComposer}
+            renderSend={renderSend}
+          />
+        </View>
       </View>
 
       {/* Animated Slide-up Menu */}
@@ -435,69 +441,59 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           transform: [{ translateY: slideAnim }],
           zIndex: 51,
         }}
-        className="rounded-t-3xl bg-background px-6 pb-8 pt-6 shadow-2xl"
+        className="rounded-t-3xl bg-background px-4 pb-4 pt-3 shadow-2xl"
         pointerEvents={showMenu ? 'auto' : 'none'}>
-        <View className="mb-6 flex-row items-center justify-between">
-          <Text className="text-lg font-semibold text-foreground">Add Attachment</Text>
-          <Pressable onPress={handleMenuClose} className="h-8 w-8 items-center justify-center">
-            <Icon as={X} size={20} className="text-muted-foreground" />
-          </Pressable>
-        </View>
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-base font-semibold text-foreground">Add Attachment</Text>
+            <Pressable onPress={handleMenuClose} className="h-7 w-7 items-center justify-center">
+              <Icon as={X} size={18} className="text-muted-foreground" />
+            </Pressable>
+          </View>
 
-        <View className="gap-3">
-          {/* Take Photo */}
-          <Pressable
-            onPress={() => handleMenuOption(onTakePhoto)}
-            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Icon as={Camera} size={24} className="text-primary" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">Take Photo</Text>
-              <Text className="text-sm text-muted-foreground">Use your camera</Text>
-            </View>
-          </Pressable>
+          <View className="gap-2">
+            {/* Row 1: Take Photo & Record Video */}
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => handleMenuOption(onTakePhoto)}
+                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Icon as={Camera} size={20} className="text-primary" />
+                </View>
+                <Text className="text-xs font-semibold text-foreground">Take Photo</Text>
+              </Pressable>
 
-          {/* Record Video */}
-          <Pressable
-            onPress={() => handleMenuOption(onRecordVideo)}
-            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Icon as={Video} size={24} className="text-primary" />
+              <Pressable
+                onPress={() => handleMenuOption(onRecordVideo)}
+                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Icon as={Video} size={20} className="text-primary" />
+                </View>
+                <Text className="text-xs font-semibold text-foreground">Record Video</Text>
+              </Pressable>
             </View>
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">Record Video</Text>
-              <Text className="text-sm text-muted-foreground">Capture a video</Text>
-            </View>
-          </Pressable>
 
-          {/* Choose from Gallery */}
-          <Pressable
-            onPress={() => handleMenuOption(onSelectFromLibrary)}
-            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Icon as={Images} size={24} className="text-primary" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">Gallery</Text>
-              <Text className="text-sm text-muted-foreground">Choose from photos</Text>
-            </View>
-          </Pressable>
+            {/* Row 2: Gallery & Files */}
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => handleMenuOption(onSelectFromLibrary)}
+                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Icon as={Images} size={20} className="text-primary" />
+                </View>
+                <Text className="text-xs font-semibold text-foreground">Gallery</Text>
+              </Pressable>
 
-          {/* Select Files */}
-          <Pressable
-            onPress={() => handleMenuOption(onSelectFiles)}
-            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Icon as={FileText} size={24} className="text-primary" />
+              <Pressable
+                onPress={() => handleMenuOption(onSelectFiles)}
+                className="flex-1 items-center gap-1.5 rounded-xl bg-secondary/50 p-3 active:bg-secondary">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Icon as={FileText} size={20} className="text-primary" />
+                </View>
+                <Text className="text-xs font-semibold text-foreground">Files</Text>
+              </Pressable>
             </View>
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground">Files</Text>
-              <Text className="text-sm text-muted-foreground">Browse documents</Text>
-            </View>
-          </Pressable>
-        </View>
-      </Animated.View>
+          </View>
+        </Animated.View>
     </View>
   );
 }
