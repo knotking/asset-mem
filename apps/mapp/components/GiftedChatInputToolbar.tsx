@@ -241,17 +241,17 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           containerStyle={{
             position: 'absolute',
             right: 3,
-            marginBottom: 1,
+            marginBottom: 2,
             marginLeft: 4,
             justifyContent: 'center',
             alignItems: 'center',
           }}
           onSend={handleSend}>
           <Pressable
-            onPress={handleSend}
-            disabled={!canSend || isSending}
+            onPress={isSending ? onStop : handleSend}
+            disabled={isSending ? false : !canSend}
             style={{
-              opacity: canSend && !isSending ? 1 : 0.5,
+              opacity: isSending || canSend ? 1 : 0.5,
             }}>
             {isSending ? (
               <View className="h-8 w-8 items-center justify-center rounded-full bg-destructive">
