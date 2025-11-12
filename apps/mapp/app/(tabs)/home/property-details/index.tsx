@@ -1020,6 +1020,25 @@ export default function PropertyDetailsScreen() {
     }
   }, [id, draftsByProperty, selectedSessionId]);
 
+  // Handle case when selected session is deleted - fall back to draft
+  React.useEffect(() => {
+    if (!id || !selectedSessionId) return;
+
+    const allSessions = [...(sessionsByProperty[id] || [])];
+    const draft = draftsByProperty[id];
+    if (draft) {
+      allSessions.push(draft);
+    }
+
+    // Check if the currently selected session still exists
+    const sessionExists = allSessions.some(s => s.id === selectedSessionId);
+
+    // If the selected session was deleted, fall back to draft
+    if (!sessionExists && draft) {
+      setSelectedSessionId(draft.id);
+    }
+  }, [id, selectedSessionId, sessionsByProperty, draftsByProperty]);
+
   // Auto-select all documents by default when documents are loaded (only if user hasn't manually interacted)
   React.useEffect(() => {
     if (

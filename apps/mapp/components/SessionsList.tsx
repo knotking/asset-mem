@@ -137,7 +137,11 @@ export default function SessionsList({
     });
   }, [sessions, searchTerm]);
   useEffect(() => {
-    setSelectedSessionIds((prev) => prev.filter((id) => sessions.some((session) => session.id === id)));
+    setSelectedSessionIds((prev) => {
+      const filtered = prev.filter((id) => sessions.some((session) => session.id === id));
+      // Only update if the filtered array is different to prevent infinite loops
+      return filtered.length !== prev.length ? filtered : prev;
+    });
   }, [sessions]);
   const selectedSessions = useMemo(
     () => sessions.filter((session) => selectedSessionIds.includes(session.id)),
