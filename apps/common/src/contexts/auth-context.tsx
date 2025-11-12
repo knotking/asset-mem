@@ -31,17 +31,25 @@ export const AuthProvider = ({ children, onAuthStateChange }: AuthProviderProps)
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
-      setUser(authenticatedUser);
-      setLoading(false);
+    let isMounted = true;
 
-      // Call platform-specific callback if provided (e.g., hide splash screen)
-      if (onAuthStateChange) {
-        await onAuthStateChange(authenticatedUser);
+    const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
+      // Only update state if component is still mounted
+      if (isMounted) {
+        setUser(authenticatedUser);
+        setLoading(false);
+
+        // Call platform-specific callback if provided (e.g., hide splash screen)
+        if (onAuthStateChange) {
+          await onAuthStateChange(authenticatedUser);
+        }
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [auth, onAuthStateChange]);
 
   const logout = async () => {

@@ -3,7 +3,7 @@ import '@/global.css';
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
@@ -47,6 +47,8 @@ function Routes() {
   const { user, loading } = useAuth();
   const isSignedIn = !!user;
   const isLoaded = !loading;
+  const router = useRouter();
+  const segments = useSegments();
 
   React.useEffect(() => {
     console.log('[ROUTES] Auth state changed:', {
@@ -60,6 +62,31 @@ function Routes() {
       SplashScreen.hideAsync();
     }
   }, [isLoaded, user, loading, isSignedIn]);
+
+  // Handle navigation based on auth state
+  React.useEffect(() => {
+    if (!isLoaded) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    console.log('[ROUTES] Navigation check:', {
+      isSignedIn,
+      inAuthGroup,
+      inTabsGroup,
+      segments
+    });
+
+    if (isSignedIn && inAuthGroup) {
+      // User is signed in but in auth screens, redirect to tabs
+      console.log('[ROUTES] Redirecting to /(tabs)/home');
+      router.replace('/(tabs)/home');
+    } else if (!isSignedIn && !inAuthGroup) {
+      // User is not signed in but not in auth screens, redirect to login
+      console.log('[ROUTES] Redirecting to /auth/login');
+      router.replace('/auth/login');
+    }
+  }, [isSignedIn, isLoaded, segments, router]);
 
   console.log('[ROUTES] Rendering with:', { isSignedIn, isLoaded, loading });
 
