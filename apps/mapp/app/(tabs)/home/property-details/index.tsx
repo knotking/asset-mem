@@ -771,7 +771,7 @@ function ChatTab({
       isLoadingEarlier={isLoadingEarlier}
       loadEarlier={hasMoreMessages}
       onLoadEarlier={loadEarlierMessages}
-      alwaysShowSend={false}
+      alwaysShowSend={true}
       keyboardShouldPersistTaps="never"
       messagesContainerStyle={{
         backgroundColor: 'transparent',
@@ -1173,9 +1173,11 @@ export default function PropertyDetailsScreen() {
     }
   }, []);
 
-  const handleSendMessage = React.useCallback(async () => {
+  const handleSendMessage = React.useCallback(async (textOverride?: string) => {
+    // Use textOverride if provided, otherwise use message state
+    const messageText = textOverride !== undefined ? textOverride : message;
     // Check if there's content to send (message text OR file attachment)
-    const hasContent = message.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
+    const hasContent = messageText.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
     if (!user || !selectedSessionId || !hasContent || isSending) return;
 
     // Don't allow sending if file is still uploading or has error
@@ -1186,7 +1188,7 @@ export default function PropertyDetailsScreen() {
     }
 
     setIsSending(true);
-    const userMessage = message;
+    const userMessage = messageText;
     const currentFileAttachment = fileAttachment;
     setMessage(''); // Clear input immediately
     setFileAttachment(null); // Clear file attachment
@@ -1556,9 +1558,10 @@ export default function PropertyDetailsScreen() {
                     onSend={(messages) => {
                       // GiftedChat calls this when user sends - extract text and call our handler
                       if (messages.length > 0) {
-                        setMessage(messages[0].text);
-                        // Trigger send immediately
-                        setTimeout(() => handleSendMessage(), 0);
+                        const text = messages[0].text;
+                        setMessage(text);
+                        // Call handleSendMessage with the text directly
+                        handleSendMessage(text);
                       }
                     }}
                   />
