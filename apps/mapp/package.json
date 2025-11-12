@@ -10,7 +10,6 @@
     "clean": "rm -rf .expo node_modules"
   },
   "dependencies": {
-    "@expo/react-native-action-sheet": "^4.1.1",
     "@homeapp/common": "*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",

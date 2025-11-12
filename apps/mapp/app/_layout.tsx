@@ -8,7 +8,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
-import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { FirebaseProvider } from '@homeapp/common/contexts/firebase';
 import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list';
@@ -26,23 +25,21 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
 
   return (
-    <ActionSheetProvider>
-      <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
-          <AuthProvider>
-            <SessionProvider createAgentSession={createAgentSession}>
-              <PropertiesListProvider>
-                <DocumentUploadProvider>
-                  <Routes />
-                </DocumentUploadProvider>
-              </PropertiesListProvider>
-            </SessionProvider>
-          </AuthProvider>
-        </FirebaseProvider>
-        <PortalHost />
-      </ThemeProvider>
-    </ActionSheetProvider>
+    <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
+        <AuthProvider>
+          <SessionProvider createAgentSession={createAgentSession}>
+            <PropertiesListProvider>
+              <DocumentUploadProvider>
+                <Routes />
+              </DocumentUploadProvider>
+            </PropertiesListProvider>
+          </SessionProvider>
+        </AuthProvider>
+      </FirebaseProvider>
+      <PortalHost />
+    </ThemeProvider>
   );
 }
 

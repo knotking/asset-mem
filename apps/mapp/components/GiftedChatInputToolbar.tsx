@@ -8,9 +8,9 @@ import {
   ScrollView,
   useColorScheme,
   Keyboard,
+  Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useActionSheet } from '@expo/react-native-action-sheet';
 import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
@@ -76,9 +76,11 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     ...inputToolbarProps
   } = props;
 
-  const { showActionSheetWithOptions } = useActionSheet();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const [showMenu, setShowMenu] = React.useState(false);
+  const slideAnim = React.useRef(new Animated.Value(500)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
   // Convert HSL to hex for TextInput (which doesn't support CSS variables)
   // Light mode: --background: 0 0% 100% (white), --foreground: 0 0% 3.9% (near black)
@@ -96,32 +98,53 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     [isDark]
   );
 
+  // Animate menu open/close
+  React.useEffect(() => {
+    if (showMenu) {
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 500,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showMenu, slideAnim, opacityAnim]);
+
   // Memoize attachment press handler to prevent recreation
   const handleAttachmentPressWithHaptic = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowMenu(true);
+  }, []);
 
-    const options = ['Take Photo', 'Record Video', 'Choose from Gallery', 'Select Files', 'Cancel'];
-    const cancelButtonIndex = 4;
+  const handleMenuClose = React.useCallback(() => {
+    setShowMenu(false);
+  }, []);
 
-    showActionSheetWithOptions(
-      {
-        options,
-        cancelButtonIndex,
-        title: 'Add Attachment',
-      },
-      (buttonIndex) => {
-        if (buttonIndex === 0) {
-          onTakePhoto();
-        } else if (buttonIndex === 1) {
-          onRecordVideo();
-        } else if (buttonIndex === 2) {
-          onSelectFromLibrary();
-        } else if (buttonIndex === 3) {
-          onSelectFiles();
-        }
-      }
-    );
-  }, [showActionSheetWithOptions, onTakePhoto, onRecordVideo, onSelectFromLibrary, onSelectFiles]);
+  const handleMenuOption = React.useCallback((action: () => void) => {
+    setShowMenu(false);
+    // Small delay to let menu close before opening camera/picker
+    setTimeout(action, 100);
+  }, []);
 
   // Memoize renderComposer to prevent recreation on every render
   const renderComposer = React.useCallback(
@@ -179,59 +202,67 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   // Memoize renderSend to prevent recreation on every render
   const renderSend = React.useCallback(
     (sendProps: any) => {
-      const originalOnSend = sendProps.onSend;
-      const wrappedSendProps = {
-        ...sendProps,
-        onSend: (messages: any, shouldResetInputToolbar: boolean) => {
-          if (originalOnSend) {
-            // Haptic feedback on send
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            originalOnSend(messages, shouldResetInputToolbar);
-            // Delay keyboard dismissal to ensure send completes first
-            requestAnimationFrame(() => {
-              Keyboard.dismiss();
-            });
-          }
-        },
+      const canSend = sendProps.text?.trim() || fileAttachment;
+
+      // Override onSend to handle attachment-only messages
+      const handleSend = () => {
+        console.log('[SendButton] handleSend called', {
+          canSend,
+          hasText: !!sendProps.text,
+          hasAttachment: !!fileAttachment,
+          text: sendProps.text,
+        });
+
+        if (canSend && sendProps.onSend) {
+          // Haptic feedback on send
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+          // Create message with text (empty string if no text)
+          const messageText = sendProps.text || '';
+          console.log('[SendButton] Calling onSend with text:', messageText);
+          sendProps.onSend([{ text: messageText }], true);
+
+          // Delay keyboard dismissal to ensure send completes first
+          requestAnimationFrame(() => {
+            Keyboard.dismiss();
+          });
+        }
       };
 
       return (
         <Send
-          {...wrappedSendProps}
+          {...sendProps}
+          disabled={!canSend}
           containerStyle={{
-            marginBottom: 0,
+            marginBottom: 3,
             marginLeft: 4,
             justifyContent: 'center',
             alignItems: 'center',
-          }}>
-          <View>
+          }}
+          onSend={handleSend}>
+          <Pressable
+            onPress={handleSend}
+            disabled={!canSend || isSending}
+            style={{
+              opacity: canSend && !isSending ? 1 : 0.5,
+            }}>
             {isSending ? (
-              <Pressable
-                onPress={onStop}
-                className="h-8 w-8 items-center justify-center rounded-full bg-destructive"
-                accessibilityRole="button"
-                accessibilityLabel="Stop sending">
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-destructive">
                 <Icon as={Square} size={16} className="text-primary-foreground" />
-              </Pressable>
+              </View>
             ) : (
               <View
                 className={`h-8 w-8 items-center justify-center rounded-full ${
-                  sendProps.text?.trim() || fileAttachment?.downloadURL
-                    ? 'bg-primary'
-                    : 'bg-secondary'
+                  canSend ? 'bg-primary' : 'bg-secondary'
                 }`}>
                 <Icon
                   as={SendIcon}
                   size={16}
-                  className={
-                    sendProps.text?.trim() || fileAttachment?.downloadURL
-                      ? 'text-primary-foreground'
-                      : 'text-muted-foreground'
-                  }
+                  className={canSend ? 'text-primary-foreground' : 'text-muted-foreground'}
                 />
               </View>
             )}
-          </View>
+          </Pressable>
         </Send>
       );
     },
@@ -240,145 +271,233 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
   return (
     <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
-        {/* File Attachment Preview */}
-        {fileAttachment && (
-          <View className="mb-3">
-            <View className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-secondary">
-              {/* Image Preview */}
-              {fileAttachment.fileType.startsWith('image/') && (
-                <Image
-                  source={{ uri: fileAttachment.uri }}
-                  className="h-full w-full"
-                  resizeMode="cover"
-                />
-              )}
+      {/* File Attachment Preview */}
+      {fileAttachment && (
+        <View className="mb-3">
+          <View className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-secondary">
+            {/* Image Preview */}
+            {fileAttachment.fileType.startsWith('image/') && (
+              <Image
+                source={{ uri: fileAttachment.uri }}
+                className="h-full w-full"
+                resizeMode="cover"
+              />
+            )}
 
-              {/* Video Preview */}
-              {fileAttachment.fileType.startsWith('video/') && (
-                <>
-                  {fileAttachment.thumbnailUri ? (
-                    <Image
-                      source={{ uri: fileAttachment.thumbnailUri }}
-                      className="h-full w-full"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="h-full w-full items-center justify-center">
-                      <Icon as={Video} size={24} className="text-muted-foreground" />
-                    </View>
-                  )}
-                </>
-              )}
-
-              {/* Document/File Preview */}
-              {!fileAttachment.fileType.startsWith('image/') &&
-                !fileAttachment.fileType.startsWith('video/') && (
+            {/* Video Preview */}
+            {fileAttachment.fileType.startsWith('video/') && (
+              <>
+                {fileAttachment.thumbnailUri ? (
+                  <Image
+                    source={{ uri: fileAttachment.thumbnailUri }}
+                    className="h-full w-full"
+                    resizeMode="cover"
+                  />
+                ) : (
                   <View className="h-full w-full items-center justify-center">
-                    <Icon as={FileText} size={24} className="text-muted-foreground" />
+                    <Icon as={Video} size={24} className="text-muted-foreground" />
                   </View>
                 )}
+              </>
+            )}
 
-              {/* Loading Indicator */}
-              {fileAttachment.progress < 100 && !fileAttachment.error && (
-                <View className="absolute inset-0 items-center justify-center bg-black/40">
-                  <ActivityIndicator size="large" color="#ffffff" />
+            {/* Document/File Preview */}
+            {!fileAttachment.fileType.startsWith('image/') &&
+              !fileAttachment.fileType.startsWith('video/') && (
+                <View className="h-full w-full items-center justify-center">
+                  <Icon as={FileText} size={24} className="text-muted-foreground" />
                 </View>
               )}
 
-              {/* Delete Button Overlay */}
+            {/* Loading Indicator */}
+            {fileAttachment.progress < 100 && !fileAttachment.error && (
+              <View className="absolute inset-0 items-center justify-center bg-black/40">
+                <ActivityIndicator size="large" color="#ffffff" />
+              </View>
+            )}
+
+            {/* Delete Button Overlay */}
+            <Pressable
+              onPress={onRemoveAttachment}
+              className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full bg-gray-500/80"
+              accessibilityRole="button"
+              accessibilityLabel="Remove attachment">
+              <Icon as={X} size={14} className="text-white" />
+            </Pressable>
+
+            {/* Error Indicator */}
+            {fileAttachment.error && (
+              <View className="absolute inset-0 items-center justify-center bg-destructive/20">
+                <Icon as={AlertCircle} size={24} className="text-destructive" />
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Optional Agent Toggles */}
+      <View className="mb-3">
+        <View className="flex-row flex-wrap items-center gap-2">
+          <View className="rounded-full border border-border bg-background px-3 py-1">
+            <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
+              Triage required
+            </Text>
+          </View>
+          {OPTIONAL_AGENT_OPTIONS.map((option) => {
+            const isSelected = selectedOptionalAgents.includes(option.id);
+            return (
               <Pressable
-                onPress={onRemoveAttachment}
-                className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full bg-gray-500/80"
+                key={option.id}
+                onPress={() => onToggleOptionalAgent(option.id)}
                 accessibilityRole="button"
-                accessibilityLabel="Remove attachment">
-                <Icon as={X} size={14} className="text-white" />
-              </Pressable>
-
-              {/* Error Indicator */}
-              {fileAttachment.error && (
-                <View className="absolute inset-0 items-center justify-center bg-destructive/20">
-                  <Icon as={AlertCircle} size={24} className="text-destructive" />
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Optional Agent Toggles */}
-        <View className="mb-3">
-          <View className="flex-row flex-wrap items-center gap-2">
-            <View className="rounded-full border border-border bg-background px-3 py-1">
-              <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-                Triage required
-              </Text>
-            </View>
-            {OPTIONAL_AGENT_OPTIONS.map((option) => {
-              const isSelected = selectedOptionalAgents.includes(option.id);
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => onToggleOptionalAgent(option.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
-                    isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                accessibilityState={{ selected: isSelected }}
+                className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
+                  isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                }`}>
+                <Icon
+                  as={option.icon}
+                  size={14}
+                  className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                />
+                <Text
+                  className={`text-xs font-medium ${
+                    isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
                   }`}>
-                  <Icon
-                    as={option.icon}
-                    size={14}
-                    className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
-                  />
-                  <Text
-                    className={`text-xs font-medium ${
-                      isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-                    }`}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {selectedOptionalAgents.length === 0 && (
-            <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
-          )}
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {selectedOptionalAgents.length === 0 && (
+          <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
+        )}
+      </View>
+
+      {/* Input Row */}
+      <View style={{ position: 'relative' }}>
+        {/* Attachment Icon Overlay */}
+        <Pressable
+          onPress={handleAttachmentPressWithHaptic}
+          disabled={isSending || !!fileAttachment}
+          style={{
+            position: 'absolute',
+            left: 10,
+            bottom: 12,
+            zIndex: 10,
+          }}>
+          <Icon
+            as={Paperclip}
+            size={20}
+            className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
+          />
+        </Pressable>
+
+        <InputToolbar
+          {...inputToolbarProps}
+          containerStyle={{
+            backgroundColor: 'transparent',
+            borderTopWidth: 0,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+            marginTop: 0,
+            marginBottom: 0,
+          }}
+          primaryStyle={{
+            alignItems: 'flex-end',
+          }}
+          renderComposer={renderComposer}
+          renderSend={renderSend}
+        />
+      </View>
+
+      {/* Animated Slide-up Menu */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: -1000,
+          bottom: -1000,
+          left: 0,
+          right: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          opacity: opacityAnim,
+          zIndex: 50,
+        }}
+        pointerEvents={showMenu ? 'auto' : 'none'}>
+        <Pressable onPress={handleMenuClose} style={{ flex: 1 }} />
+      </Animated.View>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          transform: [{ translateY: slideAnim }],
+          zIndex: 51,
+        }}
+        className="rounded-t-3xl bg-background px-6 pb-8 pt-6 shadow-2xl"
+        pointerEvents={showMenu ? 'auto' : 'none'}>
+        <View className="mb-6 flex-row items-center justify-between">
+          <Text className="text-lg font-semibold text-foreground">Add Attachment</Text>
+          <Pressable onPress={handleMenuClose} className="h-8 w-8 items-center justify-center">
+            <Icon as={X} size={20} className="text-muted-foreground" />
+          </Pressable>
         </View>
 
-        {/* Input Row */}
-        <View style={{ position: 'relative' }}>
-          {/* Attachment Icon Overlay */}
+        <View className="gap-3">
+          {/* Take Photo */}
           <Pressable
-            onPress={handleAttachmentPressWithHaptic}
-            disabled={isSending || !!fileAttachment}
-            style={{
-              position: 'absolute',
-              left: 10,
-              bottom: 12,
-              zIndex: 10,
-            }}>
-            <Icon
-              as={Paperclip}
-              size={20}
-              className={fileAttachment ? 'text-muted-foreground/50' : 'text-muted-foreground'}
-            />
+            onPress={() => handleMenuOption(onTakePhoto)}
+            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Icon as={Camera} size={24} className="text-primary" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-foreground">Take Photo</Text>
+              <Text className="text-sm text-muted-foreground">Use your camera</Text>
+            </View>
           </Pressable>
 
-          <InputToolbar
-            {...inputToolbarProps}
-            containerStyle={{
-              backgroundColor: 'transparent',
-              borderTopWidth: 0,
-              paddingHorizontal: 0,
-              paddingVertical: 0,
-              marginTop: 0,
-              marginBottom: 0,
-            }}
-            primaryStyle={{
-              alignItems: 'flex-end',
-            }}
-            renderComposer={renderComposer}
-            renderSend={renderSend}
-          />
+          {/* Record Video */}
+          <Pressable
+            onPress={() => handleMenuOption(onRecordVideo)}
+            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Icon as={Video} size={24} className="text-primary" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-foreground">Record Video</Text>
+              <Text className="text-sm text-muted-foreground">Capture a video</Text>
+            </View>
+          </Pressable>
+
+          {/* Choose from Gallery */}
+          <Pressable
+            onPress={() => handleMenuOption(onSelectFromLibrary)}
+            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Icon as={Images} size={24} className="text-primary" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-foreground">Gallery</Text>
+              <Text className="text-sm text-muted-foreground">Choose from photos</Text>
+            </View>
+          </Pressable>
+
+          {/* Select Files */}
+          <Pressable
+            onPress={() => handleMenuOption(onSelectFiles)}
+            className="flex-row items-center gap-4 rounded-2xl bg-secondary/50 p-4 active:bg-secondary">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Icon as={FileText} size={24} className="text-primary" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-foreground">Files</Text>
+              <Text className="text-sm text-muted-foreground">Browse documents</Text>
+            </View>
+          </Pressable>
         </View>
-      </View>
+      </Animated.View>
+    </View>
   );
 }
