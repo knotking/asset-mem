@@ -21,6 +21,7 @@ import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import {
   Select,
   SelectContent,
@@ -54,6 +55,7 @@ import {
   Sparkles,
   Plus,
   ChevronDown,
+  SwitchCamera,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
@@ -118,6 +120,182 @@ function RotatingSparkles({ size = 14, color = '#3B82F6' }: { size?: number; col
     <Animated.View style={{ transform: [{ rotate }] }}>
       <Sparkles size={size} color={color} />
     </Animated.View>
+  );
+}
+
+// Camera Modal Component for Video Recording
+function CameraModal({
+  visible,
+  onClose,
+  onVideoRecorded,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onVideoRecorded: (uri: string) => void;
+}) {
+  const cameraRef = React.useRef<CameraView>(null);
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [recordingTime, setRecordingTime] = React.useState(0);
+  const [facing, setFacing] = React.useState<'front' | 'back'>('back');
+  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    if (isRecording) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setRecordingTime(0);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isRecording]);
+
+  const startRecording = async () => {
+    if (cameraRef.current && !isRecording) {
+      try {
+        setIsRecording(true);
+        const video = await cameraRef.current.recordAsync({
+          maxDuration: 60,
+        });
+
+        if (video?.uri) {
+          onVideoRecorded(video.uri);
+        }
+      } catch (error) {
+        console.error('Error recording video:', error);
+      } finally {
+        setIsRecording(false);
+      }
+    }
+  };
+
+  const stopRecording = async () => {
+    if (cameraRef.current && isRecording) {
+      try {
+        cameraRef.current.stopRecording();
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      }
+    }
+  };
+
+  const handleClose = () => {
+    if (isRecording) {
+      stopRecording();
+    }
+    onClose();
+  };
+
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <View style={{ flex: 1, backgroundColor: 'black' }}>
+        <CameraView ref={cameraRef} style={{ flex: 1 }} mode="video" facing={facing} mute={true}>
+          {/* Header with close and flip buttons */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 50,
+              left: 0,
+              right: 0,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+            }}>
+            <Button onPress={handleClose} variant="ghost" size="icon">
+              <Icon as={X} size={24} color="white" />
+            </Button>
+            {isRecording && (
+              <View
+                style={{
+                  backgroundColor: 'rgba(220, 38, 38, 0.9)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: 'white',
+                  }}
+                />
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+                  {formatTime(recordingTime)}
+                </Text>
+              </View>
+            )}
+            {!isRecording && (
+              <Button onPress={toggleCameraFacing} variant="ghost" size="icon">
+                <Icon as={SwitchCamera} size={24} color="white" />
+              </Button>
+            )}
+          </View>
+
+          {/* Bottom controls */}
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 40,
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+            }}>
+            <View style={{ alignItems: 'center', gap: 12 }}>
+              {/* <Text style={{ color: 'white', fontSize: 12, opacity: 0.8 }}>
+                Recording without audio (avoids spatial format)
+              </Text> */}
+              <Pressable
+                onPress={isRecording ? stopRecording : startRecording}
+                style={{
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  backgroundColor: isRecording ? '#dc2626' : 'white',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 4,
+                  borderColor: 'white',
+                }}>
+                {isRecording && (
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      backgroundColor: 'white',
+                      borderRadius: 4,
+                    }}
+                  />
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </CameraView>
+      </View>
+    </Modal>
   );
 }
 
@@ -788,9 +966,10 @@ function ChatTab({
               alignItems: 'center',
               justifyContent: 'flex-end',
               paddingBottom: '50%',
-              transform: Platform.OS === 'ios'
-                ? [{ rotate: '180deg' }, { scaleX: -1 }]
-                : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
+              transform:
+                Platform.OS === 'ios'
+                  ? [{ rotate: '180deg' }, { scaleX: -1 }]
+                  : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
             }}>
             <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
               <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -897,6 +1076,7 @@ export default function PropertyDetailsScreen() {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
   const updateMessageLocallyRef = React.useRef<
     ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
   >(null);
@@ -1031,7 +1211,7 @@ export default function PropertyDetailsScreen() {
     }
 
     // Check if the currently selected session still exists
-    const sessionExists = allSessions.some(s => s.id === selectedSessionId);
+    const sessionExists = allSessions.some((s) => s.id === selectedSessionId);
 
     // If the selected session was deleted, fall back to draft
     if (!sessionExists && draft) {
@@ -1209,31 +1389,38 @@ export default function PropertyDetailsScreen() {
     try {
       if (!user) return;
 
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMessage('Please grant permission to access your camera and microphone.');
-        setErrorAlertOpen(true);
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: 'videos',
-        allowsEditing: false,
-        quality: 0.8,
-        videoMaxDuration: 60,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) {
-        return;
-      }
-
-      await handleAssetUpload(result.assets[0]);
+      // Open camera modal instead of using ImagePicker
+      setCameraModalVisible(true);
     } catch (error) {
       console.error('[Camera] Error in handleRecordVideo:', error);
       setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setErrorAlertOpen(true);
     }
-  }, [user, handleAssetUpload]);
+  }, [user]);
+
+  const handleVideoRecorded = React.useCallback(
+    async (videoUri: string) => {
+      setCameraModalVisible(false);
+
+      // Convert the video URI to an asset format compatible with handleAssetUpload
+      const timestamp = Date.now();
+      const fileName = `video-${timestamp}.mp4`;
+
+      // Create a mock asset object similar to ImagePicker's format
+      const mockAsset: ImagePicker.ImagePickerAsset = {
+        uri: videoUri,
+        type: 'video' as const,
+        fileName: fileName,
+        fileSize: 0, // We don't have the exact size yet
+        mimeType: 'video/mp4',
+        width: 0,
+        height: 0,
+      };
+
+      await handleAssetUpload(mockAsset);
+    },
+    [handleAssetUpload]
+  );
 
   const handleSelectFiles = React.useCallback(async () => {
     if (!user) return;
@@ -1742,7 +1929,12 @@ export default function PropertyDetailsScreen() {
                       console.log('[PropertyDetails] onSend called with messages:', messages);
                       if (messages.length > 0) {
                         const text = messages[0].text;
-                        console.log('[PropertyDetails] Extracted text:', text, 'fileAttachment:', !!fileAttachment);
+                        console.log(
+                          '[PropertyDetails] Extracted text:',
+                          text,
+                          'fileAttachment:',
+                          !!fileAttachment
+                        );
                         setMessage(text);
                         // Call handleSendMessage with the text directly
                         handleSendMessage(text);
@@ -1770,6 +1962,13 @@ export default function PropertyDetailsScreen() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+
+              {/* Camera Modal for Video Recording */}
+              <CameraModal
+                visible={cameraModalVisible}
+                onClose={() => setCameraModalVisible(false)}
+                onVideoRecorded={handleVideoRecorded}
+              />
             </SafeAreaView>
           }>
           {/* Sessions Drawer Content */}
