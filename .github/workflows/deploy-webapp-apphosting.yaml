@@ -1,0 +1,150 @@
+name: Deploy Webapp - AppHosting
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/webapp/**"
+      - "apps/common/**"
+      - ".github/workflows/deploy-webapp-apphosting.yaml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  WORKING_DIRECTORY: apps/webapp
+
+jobs:
+  deploy:
+    name: Deploy to AppHosting
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'staging' }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Set environment variables
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          else
+            ENV="staging"
+          fi
+
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+
+          if [ "$ENV" = "production" ]; then
+            echo "backend-id=prod" >> $GITHUB_OUTPUT
+          else
+            echo "backend-id=staging" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Deploying to environment: $ENV"
+          echo "Backend ID: $([ "$ENV" = "production" ] && echo "prod" || echo "staging")"
+
+      - name: Validate required GitHub variables
+        run: |
+          missing_vars=()
+
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            missing_vars+=("GCP_PROJECT_ID")
+          fi
+
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            missing_vars+=("GCP_REGION")
+          fi
+
+          if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          fi
+
+          if [ -z "${{ vars.FIREBASE_SERVICE_ACCOUNT_EMAIL }}" ]; then
+            missing_vars+=("FIREBASE_SERVICE_ACCOUNT_EMAIL")
+          fi
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
+            echo "Please set the following variables in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_vars[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub variables are set"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ vars.FIREBASE_SERVICE_ACCOUNT_EMAIL }}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+
+      - name: Deploy to App Hosting
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: |
+          echo "Deploying to AppHosting..."
+          echo "Backend ID: ${{ steps.set-env.outputs.backend-id }}"
+          echo "Project: ${{ vars.GCP_PROJECT_ID }}"
+          echo "Region: ${{ vars.GCP_REGION }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+          echo "Firebase will automatically use apphosting.${{ steps.set-env.outputs.backend-id }}.yaml"
+          echo "merged with the base apphosting.yaml configuration."
+          echo ""
+
+          firebase apphosting:rollouts:create ${{ steps.set-env.outputs.backend-id }} \
+            --project ${{ vars.GCP_PROJECT_ID }} \
+            --git-branch ${{ github.ref_name }}
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "### AppHosting Deployment Triggered! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.set-env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Backend ID:** ${{ steps.set-env.outputs.backend-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Project:** ${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ vars.GCP_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Config Files Used:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Base: \`apphosting.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Override: \`apphosting.${{ steps.set-env.outputs.backend-id }}.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Firebase automatically merges these files, with environment-specific values taking precedence." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Monitor deployment:** [Firebase Console](https://console.firebase.google.com/project/${{ vars.GCP_PROJECT_ID }}/apphosting)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.set-env.outputs.environment }}" = "staging" ]; then
+            echo "**Staging URL:** https://staging--${{ vars.GCP_PROJECT_ID }}.${{ vars.GCP_REGION }}.hosted.app" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Production URL:** https://prod--${{ vars.GCP_PROJECT_ID }}.${{ vars.GCP_REGION }}.hosted.app" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Ensure the backend's Environment name in Firebase Console matches the backend ID for automatic config file selection." >> $GITHUB_STEP_SUMMARY
