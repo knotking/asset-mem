@@ -624,8 +624,8 @@ export default function SessionsList({
             <AlertDialogCancel>
               <Text className="text-sm">Cancel</Text>
             </AlertDialogCancel>
-            <AlertDialogAction onPress={handleDeleteSession}>
-              <Text className="text-sm text-destructive-foreground">Delete</Text>
+            <AlertDialogAction onPress={handleDeleteSession} variant="destructive">
+              <Text className="text-sm text-white">Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -656,11 +656,11 @@ export default function SessionsList({
             <AlertDialogAction
               onPress={handleBulkDeleteSessions}
               disabled={selectedCount === 0 || isBulkDeleting}
-              className="bg-destructive">
+              variant="destructive">
               {isBulkDeleting && (
-                <Icon as={Loader2} size={16} className="mr-2 text-destructive-foreground" />
+                <Icon as={Loader2} size={16} className="mr-2 text-white" />
               )}
-              <Text className="text-sm text-destructive-foreground">Delete</Text>
+              <Text className="text-sm text-white">Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

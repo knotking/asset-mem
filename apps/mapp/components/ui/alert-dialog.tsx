@@ -115,11 +115,18 @@ function AlertDialogDescription({
 
 function AlertDialogAction({
   className,
+  variant,
   ...props
-}: AlertDialogPrimitive.ActionProps & React.RefAttributes<AlertDialogPrimitive.ActionRef>) {
+}: AlertDialogPrimitive.ActionProps &
+  React.RefAttributes<AlertDialogPrimitive.ActionRef> & {
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  }) {
   return (
-    <TextClassContext.Provider value={buttonTextVariants({ className })}>
-      <AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} {...props} />
+    <TextClassContext.Provider value={buttonTextVariants({ className, variant })}>
+      <AlertDialogPrimitive.Action
+        className={cn(buttonVariants({ variant }), className)}
+        {...props}
+      />
     </TextClassContext.Provider>
   );
 }
