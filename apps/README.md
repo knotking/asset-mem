@@ -157,6 +157,7 @@ npm run web     # Expo dev server + React DOM preview
 
 ## 7. Additional References
 
+- `TECH_STACK.md` – Comprehensive overview of technologies used across backend, mobile, and web applications.
 - `apps/mapp/docs/CHAT_IMPLEMENTATION.md` – Deep dive into the mobile messaging architecture.
 - `apps/mapp/docs/ENV_CONFIG.md` – Environment variable breakdown for Expo builds.
 - `apps/mapp/docs/DESIGN_SYSTEM.md` – Design tokens and component usage across mobile and web.

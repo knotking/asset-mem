@@ -2,6 +2,8 @@
 
 This repository contains multiple applications (`mapp` and `webapp`) managed within a single monorepo structure.
 
+> 📚 **Technology Stack**: For a comprehensive overview of all technologies used across backend, mobile, and web applications, see [TECH_STACK.md](./TECH_STACK.md).
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
