@@ -1,17 +1,16 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  "projectId": "goggle-gab",
-  "appId": "1:899405062685:web:85f754bca5f285613bdcf4",
-  "storageBucket": "goggle-gab.firebasestorage.app",
-  "apiKey": "AIzaSyBboitYJHU4M0VD0vJ9TZaAzNygbqtOcjs",
-  "authDomain": "goggle-gab.firebaseapp.com",
-  "messagingSenderId": "899405062685"
+  projectId: "homegeekdemo",
+  appId: "1:321433914812:web:d30bdb093dee72fb2d2fb9",
+  storageBucket: "homegeekdemo.firebasestorage.app",
+  apiKey: "AIzaSyC44gkEIt19KV51Y2cMlOJ9F9WepblX8sI",
+  authDomain: "homegeekdemo.firebaseapp.com",
+  messagingSenderId: "321433914812",
 };
-
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);

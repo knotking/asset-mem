@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Rules defined here apply to objects within the specified bucket
+    // Match any file in the 'uploads/{userId}' directory and its subdirectories
+    match /uploads/{userId}/{allPaths=**} {
+      // Only allow the user whose ID matches the {userId} wildcard to read and write
+      allow read, write: if request.auth.uid == userId;
+    }
+    match /documents/{userId}/{allPaths=**} {
+      // Only allow the user whose ID matches the {userId} wildcard to read and write
+      allow read, write: if request.auth.uid == userId;
+    }
+  }
+}
