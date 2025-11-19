@@ -60,7 +60,7 @@ def main():
 
     # Common configuration
     common_requirements = [
-        "google-cloud-aiplatform==1.126.1",
+        "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
         "google-adk>=1.18.0",
         "google-cloud-pubsub==2.31.1",
         "python-dotenv",
