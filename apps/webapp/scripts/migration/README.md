@@ -297,6 +297,68 @@ firebase deploy --only firestore:indexes --project homegeekdemo
 
 ---
 
+### 9. Migrate Vertex AI RAG Corpus
+
+⚠️ **Important**: This migrates user-uploaded documents to a new RAG corpus in the target project. The Knowledge Base corpus does not need migration.
+
+**Prerequisites:**
+1. Create new RAG corpus manually in Vertex AI Console
+2. Firestore and Storage data already migrated (steps 1-6)
+3. Tools required:
+   - Python 3.10+ installed (recommended for best compatibility)
+   - `gcloud` CLI with application-default credentials
+   - Python packages: `google-cloud-firestore`, `google-cloud-storage`, `google-cloud-aiplatform`
+
+**Note:** This script uses Python with the official Vertex AI SDK since the RAG import operations are not available via REST API. A virtual environment is automatically created to avoid package conflicts.
+
+```bash
+chmod +x 9-migrate-rag-corpus.sh
+
+# Set the new corpus ID (get from Vertex AI Console)
+export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YOUR_CORPUS_ID"
+
+# Preview what will be imported (recommended first)
+./9-migrate-rag-corpus.sh --dry-run
+
+# Actual migration
+./9-migrate-rag-corpus.sh
+```
+
+**What it does:**
+- Uses Python with Vertex AI SDK to query Firestore `users/{userId}/docs` subcollections
+- Verifies each file exists in migrated storage (`gs://homegeekdemo.firebasestorage.app`)
+- Separates documents and media files (images, audio, video)
+- Batch imports files per user to new RAG corpus using `vertexai.rag.import_files()`
+- Generates new import result NDJSON files in `gs://homegeek-user-data/uploads/{userId}/import-results/`
+- Preserves same structure as original imports
+
+**Duration:** Varies by document count (1-2 hours for 1000+ documents)
+
+**Technical Details:**
+- Uses Python with `vertexai.rag.import_files()` SDK (only available via official SDKs)
+- Creates isolated virtual environment in `scripts/migration/venv/`
+- Automatically installs required Python packages in the virtual environment
+- Uses `list_documents()` to find all users (including those with only subcollections)
+- Checks `gsURI` field for GCS file paths
+- Import results map GCS URLs to RAG FileIds for per-user query filtering
+- Can take several hours depending on number of files
+
+**After migration:**
+1. Verify imports in Vertex AI Console → RAG → Corpora
+2. Update environment variables:
+   ```bash
+   # In gcp/agents/homecare/.env
+   USER_UPLOAD_RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/NEW_ID
+
+   # In GitHub Actions secrets
+   # In Cloud Function environment variables
+   ```
+3. Redeploy agents with new corpus ID
+4. Test user document queries
+5. After 30 days, delete old corpus from `goggle-gab`
+
+---
+
 ## Verification
 
 After running all scripts, verify the migration:
@@ -326,6 +388,24 @@ gsutil du -s gs://homegeekdemo.firebasestorage.app
 
 # List files
 gsutil ls -r gs://homegeekdemo.firebasestorage.app | head -20
+```
+
+### Check Vertex AI RAG Corpus
+```bash
+# List files in new RAG corpus
+gcloud ai indexes list --project=homegeekdemo --region=us-central1
+
+# Check import results exist
+gsutil ls gs://homegeek-user-data/uploads/*/import-results/*-migration*.ndjson
+
+# Verify file count in corpus (via Python)
+python3 -c "
+from vertexai import rag
+import vertexai
+vertexai.init(project='homegeekdemo', location='us-central1')
+files = list(rag.list_files(corpus_name='YOUR_CORPUS_ID'))
+print(f'Total files in corpus: {len(files)}')
+"
 ```
 
 ## Troubleshooting
@@ -377,6 +457,67 @@ gsutil -o "GSUtil:http_socket_timeout=300" -m cp -r \
   gs://goggle-gab.firebasestorage.app/* \
   gs://homegeekdemo.firebasestorage.app/
 ```
+
+### RAG Corpus Migration Issues
+
+**Node.js not installed:**
+```bash
+# Check Node.js version
+node --version
+
+# Install Node.js if needed
+# macOS: brew install node
+# Or download from: https://nodejs.org/
+```
+
+**Firebase Admin errors:**
+```bash
+# The script installs firebase-admin automatically
+# If you encounter package issues, try:
+npm install firebase-admin --no-save
+```
+
+**Authentication errors:**
+```bash
+# Ensure application default credentials are set
+gcloud auth application-default login
+
+# Verify authentication
+gcloud auth application-default print-access-token
+```
+
+**Firestore access errors:**
+```bash
+# Check if you have read access to Firestore
+gcloud projects get-iam-policy homegeekdemo --flatten="bindings[].members" --filter="bindings.members:user:YOUR_EMAIL"
+
+# Grant Firestore access if needed
+gcloud projects add-iam-policy-binding homegeekdemo \
+  --member="user:YOUR_EMAIL" \
+  --role="roles/datastore.viewer"
+```
+
+**Corpus not found errors:**
+```bash
+# List available RAG corpora
+gcloud ai indexes list --project=homegeekdemo --region=us-central1
+
+# Verify corpus ID format (should be full resource name)
+# Correct: projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890
+# Wrong: 1234567890
+```
+
+**Import fails for specific files:**
+- Check file exists in storage: `gsutil ls gs://path/to/file`
+- Verify file is not corrupted
+- Check file size (very large files may timeout)
+- Review error message for specific file issues
+
+**Slow import performance:**
+- RAG import processes files sequentially per user
+- Vertex AI has rate limits on concurrent imports
+- Large documents (PDFs with many pages) take longer
+- Expected: 1-5 seconds per file average
 
 ## Rollback
 

@@ -9,3 +9,6 @@ node_modules/
 *.log
 npm-debug.log*
 migration.env
+.venv
+.python-version
+venv/
