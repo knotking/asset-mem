@@ -14,7 +14,7 @@ gcloud functions deploy pubsub_to_user_docs \
  --set-env-vars GCP_REGION=us-central1 \
  --set-env-vars GCS_BUCKET=homegeek-user-data \
  --set-env-vars USER_UPLOAD_RESULT_TOPIC=projects/homegeekdemo/topics/user-upload-result-topic \
- --set-env-vars RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/1689975760170778624
+ --set-env-vars RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/2305843009213693952
 
 python -m pytest firebase_integration_test.py
 
