@@ -9,6 +9,7 @@ Automated scripts to migrate from `goggle-gab` to `homegeekdemo` Firebase projec
 📋 **Follow this checklist**: [SETUP-CHECKLIST.md](SETUP-CHECKLIST.md)
 
 The checklist covers:
+
 - Enabling Firebase Authentication and providers
 - Creating Firestore database
 - Creating Storage bucket
@@ -16,6 +17,7 @@ The checklist covers:
 - Verifying setup
 
 **Then run the verification script:**
+
 ```bash
 ./0-verify-setup.sh
 ```
@@ -62,12 +64,14 @@ gcloud projects list
 The scripts use environment variables with sensible defaults (`goggle-gab` → `homegeekdemo`). To use different projects:
 
 **Option 1: Use environment variables directly**
+
 ```bash
 export SOURCE_PROJECT="your-source-project"
 export TARGET_PROJECT="your-target-project"
 ```
 
 **Option 2: Use configuration file (recommended)**
+
 ```bash
 # Copy the example config
 cp migration.env.example migration.env
@@ -93,6 +97,7 @@ chmod +x 1-export-auth-firebase-cli.sh
 ```
 
 **What it does:**
+
 - Exports all users from `goggle-gab` Authentication using Firebase CLI
 - **Includes password hashes** so users can login with existing passwords
 - Preserves UIDs, emails, OAuth providers, and all metadata
@@ -111,6 +116,7 @@ To migrate passwords successfully, you need the Firebase SCRYPT signer key from 
 **📋 Follow these steps:** [get-scrypt-params.md](get-scrypt-params.md)
 
 Quick summary:
+
 1. Go to Firebase Console → `goggle-gab` project → Authentication → Users
 2. Click the three dots menu (⋮) in upper-right corner
 3. Select "Password Hash Parameters"
@@ -128,6 +134,7 @@ chmod +x 2-import-auth-firebase-cli.sh
 ```
 
 **What it does:**
+
 - Imports users to `homegeekdemo` Authentication using Firebase CLI
 - Preserves exact same UIDs
 - **Migrates password hashes** (users can login with existing passwords immediately)
@@ -135,6 +142,7 @@ chmod +x 2-import-auth-firebase-cli.sh
 - No password reset required!
 
 **Requirements:**
+
 - Must run script 1 first
 - Need FIREBASE_SCRYPT_KEY environment variable (or choose to import without passwords)
 
@@ -152,12 +160,14 @@ chmod +x 3-deploy-rules.sh
 ```
 
 **What it does:**
+
 - Switches Firebase CLI to target project
 - Deploys Firestore security rules
 - Deploys Storage security rules
 - Verifies deployment success
 
 **Why now?** You need security rules in place to:
+
 - Test user authentication
 - Allow the app to read/write Firestore data
 - Allow the app to access Storage files
@@ -172,6 +182,7 @@ chmod +x 4-export-firestore.sh
 ```
 
 **What it does:**
+
 - Exports all Firestore collections/documents to goggle-gab bucket
 - Preserves exact document IDs and structure
 - Monitors export progress
@@ -188,6 +199,7 @@ chmod +x 5-import-firestore.sh
 ```
 
 **What it does:**
+
 - Copies export from goggle-gab bucket to homegeekdemo bucket using `gsutil cp`
 - Imports all Firestore data with exact same IDs
 - Monitors import progress
@@ -198,6 +210,7 @@ chmod +x 5-import-firestore.sh
 **Note:** Uses single-process mode for macOS compatibility.
 
 You can also specify a custom export path:
+
 ```bash
 ./5-import-firestore.sh gs://goggle-gab.firebasestorage.app/firestore-migration/firestore-2025-11-18-1951
 ```
@@ -217,6 +230,7 @@ chmod +x 6-migrate-storage.sh
 ```
 
 **What it does:**
+
 - Copies all files from goggle-gab Storage to homegeekdemo
 - Preserves exact file paths and names
 - Excludes Firestore backup folders
@@ -248,6 +262,7 @@ chmod +x 7-update-storage-urls.sh
 ```
 
 **What it does:**
+
 - Scans all Firestore collections (or specific collection) for storage URLs
 - Replaces old bucket URLs with new ones
 - Handles multiple URL formats:
@@ -258,10 +273,12 @@ chmod +x 7-update-storage-urls.sh
 - Shows summary of changed documents
 
 **Options:**
+
 - `--dry-run` - Preview changes without applying them
 - `--collection=NAME` - Only process specific collection
 
 **Requirements:**
+
 - Node.js installed
 - Firebase Admin SDK (installed automatically)
 - Application Default Credentials configured (`gcloud auth application-default login`)
@@ -278,6 +295,7 @@ chmod +x 8-migrate-indexes.sh
 ```
 
 **What it does:**
+
 - Exports index definitions from source project
 - Converts to Firebase deployment format
 - Deploys indexes to target project
@@ -285,12 +303,14 @@ chmod +x 8-migrate-indexes.sh
 - Monitors deployment status
 
 **Duration:**
+
 - Deployment: 1 minute
 - Index building: 5 minutes to several hours (depending on data size)
 
 **Note:** Apps continue to work during index creation. Queries requiring indexes may be slower until building completes.
 
 **Alternative:** If you have `firestore.indexes.json` in your codebase, you can deploy directly:
+
 ```bash
 firebase deploy --only firestore:indexes --project homegeekdemo
 ```
@@ -302,6 +322,7 @@ firebase deploy --only firestore:indexes --project homegeekdemo
 ⚠️ **Important**: This migrates user-uploaded documents to a new RAG corpus in the target project. The Knowledge Base corpus does not need migration.
 
 **Prerequisites:**
+
 1. Create new RAG corpus manually in Vertex AI Console
 2. Firestore and Storage data already migrated (steps 1-6)
 3. Tools required:
@@ -325,6 +346,7 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 ```
 
 **What it does:**
+
 - Uses Python with Vertex AI SDK to query Firestore `users/{userId}/docs` subcollections
 - Verifies each file exists in migrated storage (`gs://homegeekdemo.firebasestorage.app`)
 - Separates documents and media files (images, audio, video)
@@ -335,6 +357,7 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 **Duration:** Varies by document count (1-2 hours for 1000+ documents)
 
 **Technical Details:**
+
 - Uses Python with `vertexai.rag.import_files()` SDK (only available via official SDKs)
 - Creates isolated virtual environment in `scripts/migration/venv/`
 - Automatically installs required Python packages in the virtual environment
@@ -344,8 +367,10 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 - Can take several hours depending on number of files
 
 **After migration:**
+
 1. Verify imports in Vertex AI Console → RAG → Corpora
 2. Update environment variables:
+
    ```bash
    # In gcp/agents/homecare/.env
    USER_UPLOAD_RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/NEW_ID
@@ -353,9 +378,61 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
    # In GitHub Actions secrets
    # In Cloud Function environment variables
    ```
+
 3. Redeploy agents with new corpus ID
 4. Test user document queries
 5. After 30 days, delete old corpus from `goggle-gab`
+
+---
+
+### 10. Delete Draft Chats
+
+⚠️ **Optional Cleanup**: This removes draft chats from the Firestore database. Draft chats are temporary chats with `name = "draft"` that may have been left old AGENT Engine deployments.
+
+**Prerequisites:**
+
+- Firestore data already migrated (steps 1-6)
+- Python 3.10+ installed
+- Application Default Credentials configured (`gcloud auth application-default login`)
+
+```bash
+chmod +x 10-delete-draft-chats.sh
+
+# Preview what will be deleted (recommended first)
+./10-delete-draft-chats.sh --dry-run
+
+# Delete draft chats
+./10-delete-draft-chats.sh
+```
+
+**What it does:**
+
+- Scans all users in `users` collection
+- Queries each user's `chats` subcollection for documents where `name = "draft"`
+- Shows draft chat details (ID, creation date)
+- Deletes all found draft chats (unless in dry-run mode)
+- Provides summary statistics
+
+**Duration:** 1-2 minutes depending on user count
+
+**Technical Details:**
+
+- Uses Firebase Admin SDK with Python
+- Uses Firestore query filters to find only draft chats (efficient)
+- Processes users sequentially
+- Automatically uses existing virtual environment from RAG migration
+
+**When to run:**
+
+- After migrating to clean up any draft chats
+- Periodically as a maintenance task
+- Before production deployment to ensure clean database
+
+**Safety:**
+
+- Dry-run mode shows what would be deleted without making changes
+- Only deletes chats where `name` field exactly equals `"draft"`
+- Does not affect regular user chats
 
 ---
 
@@ -364,6 +441,7 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 After running all scripts, verify the migration:
 
 ### Check Authentication
+
 ```bash
 # List users in new project
 firebase --project homegeekdemo auth:export users.csv
@@ -371,6 +449,7 @@ wc -l users.csv  # Should match original user count
 ```
 
 ### Check Firestore
+
 ```bash
 # List collections
 gcloud firestore collections list --project=homegeekdemo
@@ -381,6 +460,7 @@ gcloud firestore documents list --collection=users --project=homegeekdemo | wc -
 ```
 
 ### Check Storage
+
 ```bash
 # Compare sizes
 gsutil du -s gs://goggle-gab.firebasestorage.app
@@ -391,6 +471,7 @@ gsutil ls -r gs://homegeekdemo.firebasestorage.app | head -20
 ```
 
 ### Check Vertex AI RAG Corpus
+
 ```bash
 # List files in new RAG corpus
 gcloud ai indexes list --project=homegeekdemo --region=us-central1
@@ -461,6 +542,7 @@ gsutil -o "GSUtil:http_socket_timeout=300" -m cp -r \
 ### RAG Corpus Migration Issues
 
 **Node.js not installed:**
+
 ```bash
 # Check Node.js version
 node --version
@@ -471,6 +553,7 @@ node --version
 ```
 
 **Firebase Admin errors:**
+
 ```bash
 # The script installs firebase-admin automatically
 # If you encounter package issues, try:
@@ -478,6 +561,7 @@ npm install firebase-admin --no-save
 ```
 
 **Authentication errors:**
+
 ```bash
 # Ensure application default credentials are set
 gcloud auth application-default login
@@ -487,6 +571,7 @@ gcloud auth application-default print-access-token
 ```
 
 **Firestore access errors:**
+
 ```bash
 # Check if you have read access to Firestore
 gcloud projects get-iam-policy homegeekdemo --flatten="bindings[].members" --filter="bindings.members:user:YOUR_EMAIL"
@@ -498,6 +583,7 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 ```
 
 **Corpus not found errors:**
+
 ```bash
 # List available RAG corpora
 gcloud ai indexes list --project=homegeekdemo --region=us-central1
@@ -508,12 +594,14 @@ gcloud ai indexes list --project=homegeekdemo --region=us-central1
 ```
 
 **Import fails for specific files:**
+
 - Check file exists in storage: `gsutil ls gs://path/to/file`
 - Verify file is not corrupted
 - Check file size (very large files may timeout)
 - Review error message for specific file issues
 
 **Slow import performance:**
+
 - RAG import processes files sequentially per user
 - Vertex AI has rate limits on concurrent imports
 - Large documents (PDFs with many pages) take longer
@@ -528,6 +616,7 @@ If something goes wrong:
 3. **Storage**: Delete files in Storage bucket
 
 To keep old project active while testing:
+
 ```bash
 # Switch back to old config
 cd apps/webapp
@@ -555,6 +644,7 @@ All scripts create these files in `scripts/migration/`:
 ## Safety Features
 
 All scripts include:
+
 - ✅ Progress monitoring
 - ✅ Error handling and rollback info
 - ✅ Dry-run mode (where applicable)
@@ -566,6 +656,7 @@ All scripts include:
 ## Support
 
 For issues or questions:
+
 1. Check the main [FIREBASE_MIGRATION.md](../../FIREBASE_MIGRATION.md) guide
 2. Review Firebase documentation
 3. Check script output for specific error messages
