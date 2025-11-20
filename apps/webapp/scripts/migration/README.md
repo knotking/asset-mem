@@ -85,6 +85,48 @@ source migration.env
 
 The `migration.env` file is in `.gitignore` to prevent accidentally committing credentials.
 
+## Re-running Migrations Safely
+
+All migration scripts now support safe re-runs with resume capabilities. If a migration fails partway through or you need to re-import data:
+
+### Check Migration Status
+
+```bash
+./check-migration-status.sh
+```
+
+Shows completed migrations and tracks user-specific imports (RAG corpus).
+
+### Resume vs Force Mode
+
+Most scripts support two modes:
+
+- **`--resume`** (recommended): Skips already-imported items, only imports new data
+- **`--force`**: Re-imports everything (may create duplicates!)
+
+**When to use resume mode:**
+- Migration script failed midway
+- Source data has changed and you want to import only new items
+- Want to verify nothing was missed
+
+**When to use force mode:**
+- Need to completely reimport data (accepts duplicates/overwrites)
+- Testing migration process
+- Source data structure changed
+
+### Script-Specific Behavior
+
+| Script | Re-run Safe? | Resume Flag | Notes |
+|--------|-------------|-------------|-------|
+| 2-import-auth-firebase-cli.sh | ⚠️ Partial | `--resume` | Resume skips existing users |
+| 5-import-firestore.sh | ⚠️ Warning | N/A | Shows warning, requires confirmation |
+| 9-migrate-rag-corpus.sh | ✅ Yes | `--resume` | Resume checks import result files |
+| 10-delete-draft-chats.sh | ✅ Yes | N/A | Idempotent by nature |
+
+See individual script sections below for detailed usage.
+
+---
+
 ## Migration Steps
 
 Run these scripts in order:
@@ -147,6 +189,32 @@ chmod +x 2-import-auth-firebase-cli.sh
 - Need FIREBASE_SCRYPT_KEY environment variable (or choose to import without passwords)
 
 **Alternative:** If you can't get the SCRYPT key, the script offers an option to import without password hashes. Users will need to use "Forgot Password" to set new passwords.
+
+**Re-running Authentication Import:**
+
+If the import fails partway through or you need to add new users:
+
+```bash
+# Resume mode (recommended): Skip already-imported users
+./2-import-auth-firebase-cli.sh --resume
+
+# Force mode: Attempt to import all users (will fail on duplicate UIDs)
+./2-import-auth-firebase-cli.sh --force
+```
+
+**Resume mode behavior:**
+1. Exports existing users from target project
+2. Compares UIDs with export file
+3. Creates filtered export with only new users
+4. Imports only the new users
+5. Shows count of skipped vs new users
+
+**Use cases:**
+- ✅ Import failed midway → Use `--resume` to continue
+- ✅ New users added to source → Use `--resume` to import only new ones
+- ⚠️ Testing full reimport → Use `--force` (may fail on existing UIDs)
+
+**Note:** Firebase CLI does not support updating existing users during import. If users already exist in the target, the import will fail for those UIDs unless using `--resume` mode.
 
 ---
 
@@ -213,6 +281,36 @@ You can also specify a custom export path:
 
 ```bash
 ./5-import-firestore.sh gs://goggle-gab.firebasestorage.app/firestore-migration/firestore-2025-11-18-1951
+```
+
+**Re-running Firestore Import:**
+
+⚠️ **Important:** Firestore import uses document ID matching to overwrite data.
+
+**Overwrite behavior:**
+- Documents with matching IDs: **OVERWRITTEN** with import data
+- New documents in import: **ADDED** to database
+- Existing documents not in import: **REMAIN UNCHANGED**
+
+**Safety features:**
+1. Script checks if target Firestore has existing data
+2. Shows warning with collection count and overwrite explanation
+3. Requires explicit confirmation before proceeding
+4. Any changes made in target since last import will be **LOST**
+
+**Use cases:**
+- ✅ Source data updated → Reimport to sync changes
+- ⚠️ Made changes in target → Backup first or changes will be lost
+- ⚠️ Testing → OK to overwrite, but understand data will reset
+
+**Best practice:** If you've made changes in the target project that you want to keep, export that data first before reimporting:
+
+```bash
+# Backup current target data
+./4-export-firestore.sh  # Run with TARGET_PROJECT=homegeekdemo
+
+# Then reimport source data
+./5-import-firestore.sh
 ```
 
 ---
@@ -356,6 +454,42 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 
 **Duration:** Varies by document count (1-2 hours for 1000+ documents)
 
+**Re-running RAG Corpus Migration:**
+
+The RAG migration script fully supports safe re-runs:
+
+```bash
+# Resume mode (recommended): Skip already-migrated users
+./9-migrate-rag-corpus.sh --resume
+
+# Force mode: Reimport all users (creates duplicates!)
+./9-migrate-rag-corpus.sh --force
+```
+
+**Resume mode behavior:**
+1. Checks GCS for import result files: `uploads/{userId}/import-results/*-migration*.ndjson`
+2. If migration files exist for a user → **Skip** that user
+3. Only imports users without migration files
+4. Shows count of skipped vs new users
+
+**Use cases:**
+- ✅ Migration failed midway → Use `--resume` to continue from where it stopped
+- ✅ New users added to source → Use `--resume` to import only new users
+- ✅ Specific user import failed → Delete that user's import-results files, then `--resume`
+- ⚠️ Need to reimport all users → Use `--force` (creates duplicates in corpus!)
+
+**How to reset a specific user's migration:**
+
+```bash
+# Remove import result files for specific user
+gsutil rm gs://homegeek-user-data/uploads/USER_ID/import-results/*-migration*.ndjson
+
+# Then rerun with resume flag
+./9-migrate-rag-corpus.sh --resume
+```
+
+**Note:** The script checks for import result files (not corpus contents) to determine if a user was migrated. This is much faster than querying the corpus itself.
+
 **Technical Details:**
 
 - Uses Python with `vertexai.rag.import_files()` SDK (only available via official SDKs)
@@ -490,6 +624,75 @@ print(f'Total files in corpus: {len(files)}')
 ```
 
 ## Troubleshooting
+
+### Re-run and Resume Issues
+
+**Authentication import shows "All users already imported":**
+
+This is expected when running with `--resume` and all users are already in the target. If you need to update users:
+
+```bash
+# Check which users exist
+firebase auth:export /tmp/check-users.json --project homegeekdemo
+cat /tmp/check-users.json | jq '.users | length'
+
+# To reimport (will fail on duplicate UIDs, but adds new users)
+./2-import-auth-firebase-cli.sh --force
+```
+
+**RAG migration skips all users but some are missing:**
+
+The script checks for import result files, not corpus contents. If files were deleted or never created:
+
+```bash
+# Check import results for a specific user
+gsutil ls gs://homegeek-user-data/uploads/USER_ID/import-results/
+
+# If no migration files found but user was imported, check corpus
+# Then manually create import result or use --force to reimport
+```
+
+**Firestore import keeps asking for confirmation:**
+
+This is by design when target has existing data. To auto-confirm (use carefully):
+
+```bash
+# Option 1: Delete target data first
+gcloud firestore databases delete --database="(default)" --project=homegeekdemo
+
+# Option 2: Answer 'y' to the prompt
+echo "y" | ./5-import-firestore.sh
+```
+
+**Want to reset everything and start over:**
+
+```bash
+# 1. Delete authentication users
+firebase auth:export /tmp/users.json --project homegeekdemo
+# Manually delete users in Firebase Console (no bulk delete in CLI)
+
+# 2. Delete Firestore data
+gcloud firestore databases delete --database="(default)" --project=homegeekdemo
+# Then recreate database in Console
+
+# 3. Delete Storage files
+gsutil rm -r gs://homegeekdemo.firebasestorage.app/**
+
+# 4. Delete RAG corpus
+gcloud ai indexes delete YOUR_CORPUS_ID --region=us-central1 --project=homegeekdemo
+# Then recreate corpus in Console
+
+# 5. Reset migration state
+rm migration-state.json
+
+# Now you can run the full migration again
+```
+
+**Check what's been completed so far:**
+
+```bash
+./check-migration-status.sh
+```
 
 ### Permission Errors
 
