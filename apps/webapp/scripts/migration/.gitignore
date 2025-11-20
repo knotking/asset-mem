@@ -1,6 +1,11 @@
 # Exported data files
 auth-users-export.json
+auth-users-export-filtered.json
+auth-users-export-no-passwords.json
 *.csv
+
+# Migration state
+migration-state.json
 
 # Node modules
 node_modules/

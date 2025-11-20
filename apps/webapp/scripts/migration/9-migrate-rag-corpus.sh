@@ -18,10 +18,13 @@
 #
 # Options:
 #   --dry-run    Preview what will be imported without making changes
+#   --resume     Skip users that have already been migrated
+#   --force      Reimport all users (creates duplicates!)
 #
 # Example:
 #   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh
 #   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --dry-run
+#   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --resume
 ##
 
 set -e
@@ -35,6 +38,8 @@ GCP_REGION="${GCP_REGION:-us-central1}"
 GCS_BUCKET="${GCS_BUCKET:-homegeek-user-data}"
 NEW_RAG_CORPUS="${NEW_RAG_CORPUS:-}"
 DRY_RUN="false"
+RESUME_MODE="false"
+FORCE_MODE="false"
 
 # Parse arguments
 for arg in "$@"; do
@@ -42,9 +47,15 @@ for arg in "$@"; do
         --dry-run)
             DRY_RUN="true"
             ;;
+        --resume)
+            RESUME_MODE="true"
+            ;;
+        --force)
+            FORCE_MODE="true"
+            ;;
         *)
             echo "Unknown option: $arg"
-            echo "Usage: $0 [--dry-run]"
+            echo "Usage: $0 [--dry-run] [--resume] [--force]"
             exit 1
             ;;
     esac
@@ -198,6 +209,8 @@ export GCP_REGION="$GCP_REGION"
 export GCS_BUCKET="$GCS_BUCKET"
 export NEW_RAG_CORPUS="$NEW_RAG_CORPUS"
 export DRY_RUN="$DRY_RUN"
+export RESUME_MODE="$RESUME_MODE"
+export FORCE_MODE="$FORCE_MODE"
 
 # Run Python script (using venv's python)
 python "$RAG_MIGRATE_SCRIPT"

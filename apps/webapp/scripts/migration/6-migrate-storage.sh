@@ -83,20 +83,29 @@ fi
 echo ""
 echo "📤 Starting file copy..."
 echo "   Using single-process mode (macOS compatible)"
+echo "   Copying user files (documents/ and uploads/ folders)"
 echo ""
 
 # Copy files using single-process mode to avoid macOS Python multiprocessing crashes
-# -r for recursive
-# -x to exclude Firestore migration/backup folders
+# Copy specific folders instead of using exclusion patterns for reliability
 # -o "GSUtil:parallel_process_count=1" to disable multiprocessing
 START_TIME=$(date +%s)
 
-echo "   Excluding: firestore-migration/, firestore-import/"
-echo ""
+# Copy documents folder
+if gsutil ls "$SOURCE_BUCKET/documents/" &> /dev/null; then
+    echo "📄 Copying documents folder..."
+    gsutil -o "GSUtil:parallel_process_count=1" -m cp -r "$SOURCE_BUCKET/documents" "$TARGET_BUCKET/" 2>&1 | while read line; do
+        echo "   $line"
+    done
+fi
 
-gsutil -x ".*firestore-migration/.*|.*firestore-import/.*" -o "GSUtil:parallel_process_count=1" cp -r "$SOURCE_BUCKET/*" "$TARGET_BUCKET/" 2>&1 | while read line; do
-    echo "   $line"
-done
+# Copy uploads folder
+if gsutil ls "$SOURCE_BUCKET/uploads/" &> /dev/null; then
+    echo "📤 Copying uploads folder..."
+    gsutil -o "GSUtil:parallel_process_count=1" -m cp -r "$SOURCE_BUCKET/uploads" "$TARGET_BUCKET/" 2>&1 | while read line; do
+        echo "   $line"
+    done
+fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
@@ -124,6 +133,6 @@ echo "✨ Storage migration complete!"
 echo ""
 echo "📝 Next steps:"
 echo "   1. Verify files in Firebase Console → Storage"
-echo "   2. Test file uploads/downloads in your app"
-echo "   3. Deploy updated app configurations"
+echo "   2. Run 7-update-storage-urls.sh to update Firestore document URLs"
+echo "   3. Run 8-migrate-indexes.sh to migrate Firestore indexes"
 echo ""

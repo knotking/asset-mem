@@ -67,6 +67,32 @@ fi
 echo ""
 echo "✅ Copy complete!"
 
+# Check if target has data and warn
+echo ""
+echo "🔍 Checking target Firestore..."
+COLLECTION_COUNT=$(gcloud firestore collections list --project="$TARGET_PROJECT" 2>/dev/null | wc -l)
+
+if [ "$COLLECTION_COUNT" -gt 0 ]; then
+    echo ""
+    echo "⚠️  WARNING: Target Firestore contains $COLLECTION_COUNT collection(s)"
+    echo ""
+    echo "📌 IMPORTANT: Firestore import OVERWRITES existing documents with same IDs!"
+    echo ""
+    echo "   What will happen:"
+    echo "   • Documents with matching IDs: OVERWRITTEN with import data"
+    echo "   • New documents in import: ADDED to database"
+    echo "   • Existing documents not in import: REMAIN UNCHANGED"
+    echo ""
+    echo "   ⚠️  Any changes made in target project since last import will be LOST!"
+    echo ""
+    read -p "Continue with import? This will OVERWRITE matching documents (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Import cancelled"
+        exit 0
+    fi
+fi
+
 # Start import
 echo ""
 echo "📥 Starting Firestore import..."

@@ -56,6 +56,8 @@ REGION = os.environ.get("GCP_REGION", "us-central1")
 NEW_RAG_CORPUS = os.environ.get("NEW_RAG_CORPUS")
 GCS_BUCKET = os.environ.get("GCS_BUCKET", "homegeek-user-data")
 DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
+RESUME_MODE = os.environ.get("RESUME_MODE", "false").lower() == "true"
+FORCE_MODE = os.environ.get("FORCE_MODE", "false").lower() == "true"
 
 # Initialize Vertex AI
 vertexai.init(project=PROJECT_ID, location=REGION)
@@ -84,6 +86,36 @@ def verify_gcs_file_exists(gcs_url: str, storage_client: storage.Client) -> bool
         return blob.exists()
     except Exception as e:
         print(f"   ⚠️  Error checking file {gcs_url}: {e}")
+        return False
+
+def check_user_already_migrated(user_id: str, storage_client: storage.Client) -> bool:
+    """
+    Check if a user's files have already been migrated by looking for import result files.
+
+    Args:
+        user_id: The user ID to check
+        storage_client: GCS storage client
+
+    Returns:
+        True if import result files exist for this user, False otherwise
+    """
+    try:
+        bucket = storage_client.bucket(GCS_BUCKET)
+        prefix = f"uploads/{user_id}/import-results/"
+
+        # List blobs with the migration prefix
+        blobs = list(bucket.list_blobs(prefix=prefix, max_results=10))
+
+        # Check for migration result files
+        migration_files = [
+            blob.name for blob in blobs
+            if "-migration" in blob.name and blob.name.endswith(".ndjson")
+        ]
+
+        return len(migration_files) > 0
+
+    except Exception as e:
+        print(f"   ⚠️  Error checking migration status for user {user_id}: {e}")
         return False
 
 def fetch_user_documents() -> Dict[str, List[str]]:
@@ -225,6 +257,10 @@ def main():
 
     if DRY_RUN:
         print("\n   🔍 DRY RUN MODE - No actual imports will be performed")
+    if RESUME_MODE and not FORCE_MODE:
+        print("\n   ♻️  RESUME MODE - Will skip users with existing migration")
+    if FORCE_MODE:
+        print("\n   ⚠️  FORCE MODE - Will reimport all users (creates duplicates!)")
 
     print("\n" + "="*60)
 
@@ -238,6 +274,21 @@ def main():
     # Step 2: Import files per user
     print("\n\n📦 Starting batch import...")
     print("="*60)
+
+    # Check for already-migrated users if in resume mode
+    storage_client = storage.Client(project=PROJECT_ID)
+    skipped_users = []
+
+    if RESUME_MODE and not FORCE_MODE:
+        print("\n🔍 Checking for already-migrated users...")
+        for user_id in list(user_docs.keys()):
+            if check_user_already_migrated(user_id, storage_client):
+                skipped_users.append(user_id)
+                del user_docs[user_id]
+
+        if skipped_users:
+            print(f"✓ Skipping {len(skipped_users)} already-migrated users")
+        print("")
 
     total_users = len(user_docs)
     success_count = 0
@@ -263,6 +314,8 @@ def main():
     print("📊 Migration Summary")
     print("="*60)
     print(f"\n   Total users processed: {total_users}")
+    if skipped_users:
+        print(f"   Users skipped (already migrated): {len(skipped_users)}")
     print(f"   Successful imports: {success_count}")
     print(f"   Failed imports: {error_count}")
     print(f"   Total files: {total_files}")
