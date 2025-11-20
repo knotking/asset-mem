@@ -67,6 +67,22 @@ print_check $? "gcloud CLI installed ($(gcloud --version 2>/dev/null | head -1 |
 command -v gsutil >/dev/null 2>&1
 print_check $? "gsutil installed"
 
+# Check for Python 3.10+
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_VERSION=$(python3 --version 2>&1 | grep -oE '[0-9]+\.[0-9]+')
+    PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+    PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+    if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 10 ]; then
+        print_check 0 "Python 3.10+ installed ($(python3 --version 2>&1))"
+    else
+        print_warning "Python $PYTHON_VERSION found, but 3.10+ recommended for RAG migration"
+    fi
+else
+    print_warning "Python 3 not found - Required for RAG corpus and draft chat deletion scripts"
+    print_info "  Install: brew install python@3.11 (macOS) or apt install python3 (Linux)"
+fi
+
 echo ""
 echo "2. Checking Authentication..."
 echo ""
