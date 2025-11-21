@@ -23,7 +23,7 @@ interface CheckpointContextType {
     loading: boolean;
     selectedCheckpoint: Checkpoint | null;
     setSelectedCheckpoint: (checkpoint: Checkpoint | null) => void;
-    createCheckpoint: (data: Partial<Checkpoint>, mediaFiles: { uri: string; type: 'image' | 'video' }[]) => Promise<void>;
+    createCheckpoint: (data: Partial<Checkpoint>, mediaFiles: { uri: string; type: 'image' | 'video' }[]) => Promise<{ id: string; media: CheckpointMedia[] }>;
     updateCheckpoint: (id: string, data: Partial<Checkpoint>) => Promise<void>;
     deleteCheckpoint: (id: string) => Promise<void>;
     compareCheckpoints: (id1: string, id2: string) => Promise<void>;
@@ -105,12 +105,14 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
                 media: uploadedMedia,
             };
 
-            await addDoc(collection(db, `properties/${property.id}/checkpoints`), checkpointData);
+            const docRef = await addDoc(collection(db, `properties/${property.id}/checkpoints`), checkpointData);
 
             // Update property checkpoint count (optional, can be done via cloud function trigger)
             // await updateDoc(doc(db, 'properties', property.id), {
             //   checkpointsCount: increment(1)
             // });
+
+            return { id: docRef.id, media: uploadedMedia };
 
         } catch (error) {
             console.error("Error creating checkpoint:", error);

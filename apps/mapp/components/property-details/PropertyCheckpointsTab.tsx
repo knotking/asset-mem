@@ -13,6 +13,9 @@ import { CheckpointDetailModal } from './CheckpointDetailModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import * as ImagePicker from 'expo-image-picker';
 
+import { analyzeCheckpoint } from '../../lib/api';
+import { Timestamp } from 'firebase/firestore';
+
 function CheckpointCard({
     checkpoint,
     onPress,
@@ -97,7 +100,7 @@ function CheckpointCard({
 }
 
 export function PropertyCheckpointsTab() {
-    const { checkpoints, loading, createCheckpoint } = useCheckpoint();
+    const { checkpoints, loading, createCheckpoint, updateCheckpoint } = useCheckpoint();
     const [isCreateModalVisible, setIsCreateModalVisible] = React.useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
@@ -112,18 +115,47 @@ export function PropertyCheckpointsTab() {
         location: string;
         imageAsset: ImagePicker.ImagePickerAsset;
     }) => {
-        await createCheckpoint(
-            {
-                name: data.name,
-                location: data.location,
-            },
-            [
+        try {
+            const result = await createCheckpoint(
                 {
-                    uri: data.imageAsset.uri,
-                    type: 'image',
+                    name: data.name,
+                    location: data.location,
                 },
-            ]
-        );
+                [
+                    {
+                        uri: data.imageAsset.uri,
+                        type: 'image',
+                    },
+                ]
+            );
+            setIsCreateModalVisible(false);
+
+            // Trigger AI Analysis
+            const { id, media } = result;
+            const imageMedia = media.find((m) => m.contentType.startsWith('image/'));
+
+            if (imageMedia && imageMedia.gsURI) {
+                analyzeCheckpoint({
+                    imageUrl: imageMedia.gsURI,
+                    contentType: imageMedia.contentType,
+                    location: data.location,
+                })
+                    .then(async (analysis) => {
+                        await updateCheckpoint(id, {
+                            aiAnalysis: {
+                                ...analysis,
+                                analyzedAt: Timestamp.now(),
+                                aiConfidence: 0.9,
+                            },
+                        });
+                    })
+                    .catch((err) => {
+                        console.error('AI Analysis failed', err);
+                    });
+            }
+        } catch (error) {
+            console.error('Failed to create checkpoint', error);
+        }
     };
 
     const handleCheckpointPress = (checkpoint: Checkpoint) => {

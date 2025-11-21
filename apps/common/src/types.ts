@@ -233,6 +233,7 @@ export type CheckpointAnalysis = {
   summary: string;
   detectedItems: string[]; // e.g., ["furniture", "appliances", "flooring"]
   conditions: string[]; // e.g., ["good", "minor wear", "damage detected"]
+  issues?: string[]; // e.g., ["crack in wall", "water stain"]
   aiConfidence?: number;
   analyzedAt: Timestamp;
 }

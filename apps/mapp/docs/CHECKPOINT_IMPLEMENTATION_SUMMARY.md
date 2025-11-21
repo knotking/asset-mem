@@ -35,6 +35,16 @@
 - **CheckpointComparisonModal**: Displays two checkpoints side-by-side (Before/After).
 - **Placeholder for AI Comparison**: UI is ready to display AI-generated comparison results.
 
+### Phase 6: AI Analysis Integration (Backend & Frontend)
+- **Backend (Python Proxy API)**:
+  - Implemented `/analyze-checkpoint` endpoint in `gcp/proxy/api`.
+  - Uses Vertex AI (Gemini 2.5 Flash) to analyze images.
+  - Returns structured JSON (summary, conditions, detected items, issues).
+- **Frontend Integration**:
+  - Updated `CheckpointContext` to return created checkpoint ID and media.
+  - Updated `PropertyCheckpointsTab` to trigger analysis immediately after creation.
+  - Updates Firestore document with analysis results.
+
 ---
 
 ## Pending Web Application UI (`apps/webapp`)
@@ -65,11 +75,6 @@ The web application currently contains a placeholder implementation. The followi
 ---
 
 ## Next Steps (Backend & AI)
-
-### Phase 6: AI Analysis Integration (Backend)
-- Implement Cloud Functions to trigger on new checkpoint creation.
-- Integrate with Vision AI (e.g., Gemini Pro Vision) to analyze images.
-- Update Firestore documents with analysis results (`aiAnalysis` field).
 
 ### Phase 7: AI Comparison Logic (Backend)
 - Implement logic to compare two checkpoints using AI.
