@@ -3,5 +3,7 @@ from schemas import (
     DocumentType,
     KeyEntity,
     ExtractDocInfoRequest,
-    ExtractDocInfoResponse
+    ExtractDocInfoResponse,
+    AnalyzeCheckpointRequest,
+    CheckpointAnalysisResponse
 )

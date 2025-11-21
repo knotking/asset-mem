@@ -79,6 +79,7 @@ module.exports = {
       agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase-agent-stream'),
       ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
       documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
+      checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'analyze-checkpoint'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {

@@ -10,6 +10,7 @@ const AGENT_SESSION_URL = extra.agentSessionUrl || '';
 const AGENT_SSE_URL = extra.agentSseUrl || '';
 const RAG_FILE_UPLOAD_URL = extra.ragFileUploadUrl || '';
 const DOCUMENT_ANALYSIS_URL = extra.documentAnalysisUrl || '';
+const CHECKPOINT_ANALYSIS_URL = extra.checkpointAnalysisUrl || '';
 
 // Web app URL for sharing links
 export const WEB_APP_URL = extra.webAppUrl || '';
@@ -401,5 +402,46 @@ export async function postFileToAgent(
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  }
+}
+
+export interface AnalyzeCheckpointInput {
+  imageUrl: string;
+  contentType: string;
+  location?: string;
+}
+
+export interface AnalyzeCheckpointOutput {
+  summary: string;
+  conditions: string[];
+  detectedItems: string[];
+  issues: string[];
+}
+
+export async function analyzeCheckpoint(input: AnalyzeCheckpointInput): Promise<AnalyzeCheckpointOutput> {
+  try {
+    const url = CHECKPOINT_ANALYSIS_URL;
+    if (!url) {
+      throw new Error('CHECKPOINT_ANALYSIS_URL not set.');
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to analyze checkpoint, status: ${response.status}, body: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error analyzing checkpoint:', error);
+    throw error;
   }
 }
