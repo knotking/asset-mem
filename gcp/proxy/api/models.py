@@ -5,5 +5,8 @@ from schemas import (
     ExtractDocInfoRequest,
     ExtractDocInfoResponse,
     AnalyzeCheckpointRequest,
-    CheckpointAnalysisResponse
+    CheckpointAnalysisResponse,
+    CompareCheckpointsRequest,
+    ChangeRegion,
+    CheckpointComparisonResponse
 )

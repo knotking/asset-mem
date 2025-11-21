@@ -80,6 +80,7 @@ module.exports = {
       ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
       documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
       checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'analyze-checkpoint'),
+      checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'compare-checkpoints'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {
