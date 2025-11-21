@@ -17,7 +17,13 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
+import type {
+  Document,
+  AgentStep,
+  Session,
+  AnalysisOptionalAgent,
+  LocationData,
+} from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
@@ -29,6 +35,8 @@ import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWra
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDocumentAutoUpload } from '@/hooks/useDocumentAutoUpload';
 import { useSessionSelection } from '@/hooks/useSessionSelection';
+import { CheckpointProvider } from '@homeapp/common/contexts/checkpoint-context';
+import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 
 export default function PropertyDetailsScreen() {
   const {
@@ -52,8 +60,14 @@ export default function PropertyDetailsScreen() {
   const router = useRouter();
 
   // Tab state
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details'>(
-    tab === 'details' ? 'details' : isNew === 'true' ? 'details' : 'chat'
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'checkpoints'>(
+    tab === 'details'
+      ? 'details'
+      : tab === 'checkpoints'
+        ? 'checkpoints'
+        : isNew === 'true'
+          ? 'details'
+          : 'chat'
   );
 
   // Drawer state
@@ -439,243 +453,257 @@ export default function PropertyDetailsScreen() {
   }
 
   return (
-    <PushDrawer
-      visible={documentsDrawerVisible}
-      onClose={() => setDocumentsDrawerVisible(false)}
-      width={75}
-      direction="right"
-      mainContent={
-        <PushDrawer
-          visible={sessionsDrawerVisible}
-          onClose={() => setSessionsDrawerVisible(false)}
-          width={80}
-          direction="left"
-          mainContent={
-            <SafeAreaView
-              className="flex-1 bg-light-background-alt"
-              edges={['top', 'left', 'right']}>
-              <Stack.Screen
-                options={{
-                  headerShown: false,
-                }}
-              />
+    <CheckpointProvider>
+      <PushDrawer
+        visible={documentsDrawerVisible}
+        onClose={() => setDocumentsDrawerVisible(false)}
+        width={75}
+        direction="right"
+        mainContent={
+          <PushDrawer
+            visible={sessionsDrawerVisible}
+            onClose={() => setSessionsDrawerVisible(false)}
+            width={80}
+            direction="left"
+            mainContent={
+              <SafeAreaView
+                className="flex-1 bg-light-background-alt"
+                edges={['top', 'left', 'right']}>
+                <Stack.Screen
+                  options={{
+                    headerShown: false,
+                  }}
+                />
 
-              {/* Navigation Header */}
-              <View className="bg-light-background-alt px-4 py-3">
-                <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
-                  <Button onPress={() => router.back()} variant="ghost" size="icon">
-                    <Icon as={ArrowLeft} size={24} className="text-foreground" />
-                  </Button>
-                  <View className="mx-3 flex-1">
-                    <Text
-                      className="text-center text-xl font-bold text-foreground"
-                      numberOfLines={1}>
-                      {property.name}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-2">
-                    {activeTab === 'chat' && (
-                      <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
-                        <View className="relative">
+                {/* Navigation Header */}
+                <View className="bg-light-background-alt px-4 py-3">
+                  <View className="flex-row items-center justify-between" style={{ minHeight: 40 }}>
+                    <Button onPress={() => router.back()} variant="ghost" size="icon">
+                      <Icon as={ArrowLeft} size={24} className="text-foreground" />
+                    </Button>
+                    <View className="mx-3 flex-1">
+                      <Text
+                        className="text-center text-xl font-bold text-foreground"
+                        numberOfLines={1}>
+                        {property.name}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                      {activeTab === 'chat' && (
+                        <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
+                          <View className="relative">
+                            <Button
+                              onPress={() => setSessionsDrawerVisible(true)}
+                              variant="ghost"
+                              size="icon">
+                              <Icon as={MessageSquare} size={20} className="text-foreground" />
+                            </Button>
+                            {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
+                              <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                                <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                  {sessionsByProperty[id].length}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
                           <Button
-                            onPress={() => setSessionsDrawerVisible(true)}
+                            onPress={async () => {
+                              if (!user) return;
+                              if (draftsByProperty[id]) {
+                                setSelectedSessionId(draftsByProperty[id].id);
+                              } else {
+                                const newSessionId = await createPropertyDraftSession(user.uid, id);
+                                if (newSessionId) {
+                                  setSelectedSessionId(newSessionId);
+                                }
+                              }
+                            }}
                             variant="ghost"
                             size="icon">
-                            <Icon as={MessageSquare} size={20} className="text-foreground" />
+                            <Icon as={Plus} size={20} className="text-foreground" />
                           </Button>
-                          {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
-                            <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                              <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                {sessionsByProperty[id].length}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <Button
-                          onPress={async () => {
-                            if (!user) return;
-                            if (draftsByProperty[id]) {
-                              setSelectedSessionId(draftsByProperty[id].id);
-                            } else {
-                              const newSessionId = await createPropertyDraftSession(user.uid, id);
-                              if (newSessionId) {
-                                setSelectedSessionId(newSessionId);
-                              }
-                            }
-                          }}
-                          variant="ghost"
-                          size="icon">
-                          <Icon as={Plus} size={20} className="text-foreground" />
-                        </Button>
-                      </View>
-                    )}
-                    <View className="relative">
-                      <Button
-                        onPress={() => setDocumentsDrawerVisible(true)}
-                        variant="ghost"
-                        size="icon">
-                        <Icon as={File} size={20} className="text-foreground" />
-                      </Button>
-                      {((activeTab === 'chat' && selectedDocuments.length > 0) ||
-                        (activeTab === 'details' && documents.length > 0)) && (
-                        <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                          <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                            {activeTab === 'chat' ? selectedDocuments.length : documents.length}
-                          </Text>
                         </View>
                       )}
+                      <View className="relative">
+                        <Button
+                          onPress={() => setDocumentsDrawerVisible(true)}
+                          variant="ghost"
+                          size="icon">
+                          <Icon as={File} size={20} className="text-foreground" />
+                        </Button>
+                        {((activeTab === 'chat' && selectedDocuments.length > 0) ||
+                          (activeTab === 'details' && documents.length > 0)) && (
+                          <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                            <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                              {activeTab === 'chat' ? selectedDocuments.length : documents.length}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
 
-              {/* Tabs */}
-              <View className="flex-row border-b border-border px-4">
-                <Pressable
-                  onPress={() => setActiveTab('chat')}
-                  className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
-                  <Text
-                    className={`text-center font-medium ${
-                      activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'
-                    }`}>
-                    AI Chat
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setActiveTab('details')}
-                  className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
-                  <Text
-                    className={`text-center font-medium ${
-                      activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
-                    }`}>
-                    Details
-                  </Text>
-                </Pressable>
-              </View>
-
-              {/* Selected Documents Display */}
-              {activeTab === 'chat' && selectedDocuments.length > 0 && (
-                <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View className="flex-row items-center gap-1.5">
-                      <View className="mr-1 flex-row items-center gap-1">
-                        <Icon as={FileText} size={12} className="text-muted-foreground" />
-                        <Text className="text-xs font-medium text-muted-foreground">
-                          {selectedDocuments.length}
-                        </Text>
-                      </View>
-                      {selectedDocuments.map((doc) => (
-                        <Pressable
-                          key={doc.id}
-                          onPress={() => toggleDocumentSelection(doc)}
-                          className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
-                          <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
-                            {doc.name}
-                          </Text>
-                          <Icon as={X} size={12} className="text-muted-foreground" />
-                        </Pressable>
-                      ))}
-                      <Pressable
-                        onPress={() => {
-                          setHasManuallyInteracted(true);
-                          setSelectedDocuments([]);
-                        }}
-                        className="ml-1 rounded-full bg-background px-2 py-0.5">
-                        <Text className="text-xs text-muted-foreground">Clear</Text>
-                      </Pressable>
-                    </View>
-                  </ScrollView>
+                {/* Tabs */}
+                <View className="flex-row border-b border-border px-4">
+                  <Pressable
+                    onPress={() => setActiveTab('chat')}
+                    className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
+                    <Text
+                      className={`text-center font-medium ${
+                        activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'
+                      }`}>
+                      AI Chat
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setActiveTab('details')}
+                    className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
+                    <Text
+                      className={`text-center font-medium ${
+                        activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
+                      }`}>
+                      Details
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setActiveTab('checkpoints')}
+                    className={`flex-1 py-3 ${activeTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
+                    <Text
+                      className={`text-center font-medium ${
+                        activeTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'
+                      }`}>
+                      Checkpoints
+                    </Text>
+                  </Pressable>
                 </View>
-              )}
 
-              {/* Main Content Area */}
-              {activeTab === 'chat' ? (
-                <MessagesProvider sessionId={selectedSessionId}>
-                  <PropertyChatTab
-                    sessionId={selectedSessionId}
-                    onMessagesReady={(updateFn) => {
-                      updateMessageLocallyRef.current = updateFn;
-                    }}
-                    userId={user?.uid || ''}
-                    fileAttachment={fileAttachment}
-                    onAttachmentPress={() => {}}
-                    onRemoveAttachment={removeFileAttachment}
-                    selectedOptionalAgents={selectedOptionalAgents}
-                    onToggleOptionalAgent={toggleOptionalAgent}
-                    isSending={isSending}
-                    onStop={handleStop}
-                    attachmentOptionsVisible={false}
-                    onCloseAttachmentOptions={() => {}}
-                    onTakePhoto={handleTakePhoto}
-                    onRecordVideo={handleRecordVideo}
-                    onSelectFromLibrary={handleSelectFromLibrary}
-                    onSelectFiles={handleSelectFiles}
-                    locationData={locationData}
-                    onLocationDataChange={setLocationData}
-                    propertyAddress={property?.address}
-                    onSend={(messages) => {
-                      console.log('[PropertyDetails] onSend called with messages:', messages);
-                      if (messages.length > 0) {
-                        const text = messages[0].text;
-                        console.log(
-                          '[PropertyDetails] Extracted text:',
-                          text,
-                          'fileAttachment:',
-                          !!fileAttachment
-                        );
-                        setMessage(text);
-                        handleSendMessage(text);
-                      }
-                    }}
-                  />
-                </MessagesProvider>
-              ) : (
-                <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
-                  <PropertyDetailsTab property={property} />
-                </ScrollView>
-              )}
+                {/* Selected Documents Display */}
+                {activeTab === 'chat' && selectedDocuments.length > 0 && (
+                  <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View className="flex-row items-center gap-1.5">
+                        <View className="mr-1 flex-row items-center gap-1">
+                          <Icon as={FileText} size={12} className="text-muted-foreground" />
+                          <Text className="text-xs font-medium text-muted-foreground">
+                            {selectedDocuments.length}
+                          </Text>
+                        </View>
+                        {selectedDocuments.map((doc) => (
+                          <Pressable
+                            key={doc.id}
+                            onPress={() => toggleDocumentSelection(doc)}
+                            className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
+                            <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
+                              {doc.name}
+                            </Text>
+                            <Icon as={X} size={12} className="text-muted-foreground" />
+                          </Pressable>
+                        ))}
+                        <Pressable
+                          onPress={() => {
+                            setHasManuallyInteracted(true);
+                            setSelectedDocuments([]);
+                          }}
+                          className="ml-1 rounded-full bg-background px-2 py-0.5">
+                          <Text className="text-xs text-muted-foreground">Clear</Text>
+                        </Pressable>
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
 
-              {/* Error Alert Dialog */}
-              <AlertDialogWrapper
-                open={errorAlertOpen}
-                onOpenChange={setErrorAlertOpen}
-                title="Error"
-                description={errorMessage}
-              />
+                {/* Main Content Area */}
+                {activeTab === 'chat' ? (
+                  <MessagesProvider sessionId={selectedSessionId}>
+                    <PropertyChatTab
+                      sessionId={selectedSessionId}
+                      onMessagesReady={(updateFn) => {
+                        updateMessageLocallyRef.current = updateFn;
+                      }}
+                      userId={user?.uid || ''}
+                      fileAttachment={fileAttachment}
+                      onAttachmentPress={() => {}}
+                      onRemoveAttachment={removeFileAttachment}
+                      selectedOptionalAgents={selectedOptionalAgents}
+                      onToggleOptionalAgent={toggleOptionalAgent}
+                      isSending={isSending}
+                      onStop={handleStop}
+                      attachmentOptionsVisible={false}
+                      onCloseAttachmentOptions={() => {}}
+                      onTakePhoto={handleTakePhoto}
+                      onRecordVideo={handleRecordVideo}
+                      onSelectFromLibrary={handleSelectFromLibrary}
+                      onSelectFiles={handleSelectFiles}
+                      locationData={locationData}
+                      onLocationDataChange={setLocationData}
+                      propertyAddress={property?.address}
+                      onSend={(messages) => {
+                        console.log('[PropertyDetails] onSend called with messages:', messages);
+                        if (messages.length > 0) {
+                          const text = messages[0].text;
+                          console.log(
+                            '[PropertyDetails] Extracted text:',
+                            text,
+                            'fileAttachment:',
+                            !!fileAttachment
+                          );
+                          setMessage(text);
+                          handleSendMessage(text);
+                        }
+                      }}
+                    />
+                  </MessagesProvider>
+                ) : activeTab === 'checkpoints' ? (
+                  <PropertyCheckpointsTab />
+                ) : (
+                  <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
+                    <PropertyDetailsTab property={property} />
+                  </ScrollView>
+                )}
 
-              {/* Camera Modal for Video Recording */}
-              <CameraModal
-                visible={cameraModalVisible}
-                onClose={() => setCameraModalVisible(false)}
-                onVideoRecorded={handleVideoRecorded}
-              />
-            </SafeAreaView>
-          }>
-          {/* Sessions Drawer Content */}
-          <SessionsDrawerContent
-            propertyId={id}
-            propertyName={property.name}
-            onClose={() => setSessionsDrawerVisible(false)}
-            onSessionPress={(session: Session) => {
-              setSelectedSessionId(session.id);
-              setActiveTab('chat');
-              setSessionsDrawerVisible(false);
-            }}
-            onCreateSession={() => {
-              setActiveTab('chat');
-              setSessionsDrawerVisible(false);
-            }}
-          />
-        </PushDrawer>
-      }>
-      {/* Documents Drawer Content */}
-      <DocumentsDrawerContent
-        documents={documents}
-        selectedDocuments={selectedDocuments}
-        activeTab={activeTab}
-        onClose={() => setDocumentsDrawerVisible(false)}
-        onToggleDocument={toggleDocumentSelection}
-      />
-    </PushDrawer>
+                {/* Error Alert Dialog */}
+                <AlertDialogWrapper
+                  open={errorAlertOpen}
+                  onOpenChange={setErrorAlertOpen}
+                  title="Error"
+                  description={errorMessage}
+                />
+
+                {/* Camera Modal for Video Recording */}
+                <CameraModal
+                  visible={cameraModalVisible}
+                  onClose={() => setCameraModalVisible(false)}
+                  onVideoRecorded={handleVideoRecorded}
+                />
+              </SafeAreaView>
+            }>
+            {/* Sessions Drawer Content */}
+            <SessionsDrawerContent
+              propertyId={id}
+              propertyName={property.name}
+              onClose={() => setSessionsDrawerVisible(false)}
+              onSessionPress={(session: Session) => {
+                setSelectedSessionId(session.id);
+                setActiveTab('chat');
+                setSessionsDrawerVisible(false);
+              }}
+              onCreateSession={() => {
+                setActiveTab('chat');
+                setSessionsDrawerVisible(false);
+              }}
+            />
+          </PushDrawer>
+        }>
+        {/* Documents Drawer Content */}
+        <DocumentsDrawerContent
+          documents={documents}
+          selectedDocuments={selectedDocuments}
+          activeTab={activeTab}
+          onClose={() => setDocumentsDrawerVisible(false)}
+          onToggleDocument={toggleDocumentSelection}
+        />
+      </PushDrawer>
+    </CheckpointProvider>
   );
 }
