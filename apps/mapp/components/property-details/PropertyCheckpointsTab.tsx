@@ -4,26 +4,31 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Card } from '@/components/ui/card';
-import { Camera, Plus, Calendar, MapPin, ChevronRight } from 'lucide-react-native';
+import { Camera, Plus, Calendar, MapPin, ChevronRight, CheckCircle, Circle, ArrowRightLeft } from 'lucide-react-native';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
+import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import * as ImagePicker from 'expo-image-picker';
 
 function CheckpointCard({
     checkpoint,
     onPress,
+    selectionMode,
+    isSelected,
 }: {
     checkpoint: Checkpoint;
     onPress: (checkpoint: Checkpoint) => void;
+    selectionMode?: boolean;
+    isSelected?: boolean;
 }) {
     const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
     const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
     return (
-        <Card>
+        <Card className={isSelected ? 'border-primary bg-primary/5' : ''}>
             <Pressable
                 onPress={() => onPress(checkpoint)}
                 className="flex-row overflow-hidden rounded-lg">
@@ -38,6 +43,15 @@ function CheckpointCard({
                     ) : (
                         <View className="h-full w-full items-center justify-center">
                             <Icon as={Camera} size={24} className="text-muted-foreground" />
+                        </View>
+                    )}
+                    {selectionMode && (
+                        <View className="absolute left-2 top-2 rounded-full bg-background/80 p-1">
+                            <Icon
+                                as={isSelected ? CheckCircle : Circle}
+                                size={20}
+                                className={isSelected ? 'text-primary' : 'text-muted-foreground'}
+                            />
                         </View>
                     )}
                 </View>
@@ -72,7 +86,9 @@ function CheckpointCard({
                             </Text>
                         </View>
 
-                        <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
+                        {!selectionMode && (
+                            <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
+                        )}
                     </View>
                 </View>
             </Pressable>
@@ -85,6 +101,11 @@ export function PropertyCheckpointsTab() {
     const [isCreateModalVisible, setIsCreateModalVisible] = React.useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
+
+    // Comparison State
+    const [isSelectionMode, setIsSelectionMode] = React.useState(false);
+    const [selectedForComparison, setSelectedForComparison] = React.useState<string[]>([]);
+    const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
 
     const handleCreateCheckpoint = async (data: {
         name: string;
@@ -106,8 +127,34 @@ export function PropertyCheckpointsTab() {
     };
 
     const handleCheckpointPress = (checkpoint: Checkpoint) => {
-        setSelectedCheckpoint(checkpoint);
-        setIsDetailModalVisible(true);
+        if (isSelectionMode) {
+            setSelectedForComparison((prev) => {
+                if (prev.includes(checkpoint.id)) {
+                    return prev.filter((id) => id !== checkpoint.id);
+                } else {
+                    if (prev.length >= 2) {
+                        // Replace the first one if already 2 selected (FIFO-ish for selection)
+                        // Or just prevent selecting more than 2. Let's prevent > 2 for clarity.
+                        return prev;
+                    }
+                    return [...prev, checkpoint.id];
+                }
+            });
+        } else {
+            setSelectedCheckpoint(checkpoint);
+            setIsDetailModalVisible(true);
+        }
+    };
+
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(!isSelectionMode);
+        setSelectedForComparison([]);
+    };
+
+    const handleCompare = () => {
+        if (selectedForComparison.length === 2) {
+            setIsComparisonModalVisible(true);
+        }
     };
 
     if (loading) {
@@ -142,19 +189,51 @@ export function PropertyCheckpointsTab() {
                 <>
                     <View className="mb-4 flex-row items-center justify-between">
                         <Text className="text-xl font-semibold text-foreground">Checkpoints</Text>
-                        <Button size="sm" onPress={() => setIsCreateModalVisible(true)}>
-                            <View className="flex-row items-center gap-1">
-                                <Icon as={Plus} size={16} className="text-primary-foreground" />
-                                <Text className="text-primary-foreground">Add New</Text>
-                            </View>
-                        </Button>
+                        <View className="flex-row gap-2">
+                            {isSelectionMode ? (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onPress={toggleSelectionMode}
+                                        className="mr-2">
+                                        <Text>Cancel</Text>
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onPress={handleCompare}
+                                        disabled={selectedForComparison.length !== 2}>
+                                        <Text className="text-primary-foreground">
+                                            Compare ({selectedForComparison.length})
+                                        </Text>
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button size="sm" variant="ghost" onPress={toggleSelectionMode}>
+                                        <Icon as={ArrowRightLeft} size={20} className="text-foreground" />
+                                    </Button>
+                                    <Button size="sm" onPress={() => setIsCreateModalVisible(true)}>
+                                        <View className="flex-row items-center gap-1">
+                                            <Icon as={Plus} size={16} className="text-primary-foreground" />
+                                            <Text className="text-primary-foreground">Add New</Text>
+                                        </View>
+                                    </Button>
+                                </>
+                            )}
+                        </View>
                     </View>
 
                     <FlatList
                         data={checkpoints}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => (
-                            <CheckpointCard checkpoint={item} onPress={handleCheckpointPress} />
+                            <CheckpointCard
+                                checkpoint={item}
+                                onPress={handleCheckpointPress}
+                                selectionMode={isSelectionMode}
+                                isSelected={selectedForComparison.includes(item.id)}
+                            />
                         )}
                         contentContainerStyle={{ gap: 12 }}
                         showsVerticalScrollIndicator={false}
@@ -172,6 +251,13 @@ export function PropertyCheckpointsTab() {
                 visible={isDetailModalVisible}
                 checkpoint={selectedCheckpoint}
                 onClose={() => setIsDetailModalVisible(false)}
+            />
+
+            <CheckpointComparisonModal
+                visible={isComparisonModalVisible}
+                checkpoint1={checkpoints.find((c) => c.id === selectedForComparison[0]) || null}
+                checkpoint2={checkpoints.find((c) => c.id === selectedForComparison[1]) || null}
+                onClose={() => setIsComparisonModalVisible(false)}
             />
         </View>
     );
