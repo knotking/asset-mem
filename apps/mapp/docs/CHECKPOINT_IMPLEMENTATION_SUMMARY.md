@@ -45,6 +45,17 @@
   - Updated `PropertyCheckpointsTab` to trigger analysis immediately after creation.
   - Updates Firestore document with analysis results.
 
+### Phase 7: AI Comparison Logic (Backend & Frontend)
+- **Backend (Python Proxy API)**:
+  - Implemented `/compare-checkpoints` endpoint in `gcp/proxy/api`.
+  - Uses Vertex AI to compare two images (Before/After).
+  - Returns structured comparison (summary, similarity score, semantic changes, regions).
+- **Frontend Integration**:
+  - Updated `CheckpointComparisonModal` to call comparison API.
+  - Displays loading state while analyzing.
+  - Renders comparison results (summary, score, changes list).
+  - Persists comparison results to Firestore (`visualDiff` field on the newer checkpoint).
+
 ---
 
 ## Pending Web Application UI (`apps/webapp`)
@@ -71,12 +82,3 @@ The web application currently contains a placeholder implementation. The followi
 - **Property Mind Map**: Interactive graph visualization of property issues and locations.
 - **Reports**: UI for generating and downloading PDF reports.
 - **Smart FAQs**: Display auto-generated FAQs about the property.
-
----
-
-## Next Steps (Backend & AI)
-
-### Phase 7: AI Comparison Logic (Backend)
-- Implement logic to compare two checkpoints using AI.
-- Generate difference summary and change score.
-- Update Firestore with comparison results.

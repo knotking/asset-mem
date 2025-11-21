@@ -11,6 +11,7 @@ const AGENT_SSE_URL = extra.agentSseUrl || '';
 const RAG_FILE_UPLOAD_URL = extra.ragFileUploadUrl || '';
 const DOCUMENT_ANALYSIS_URL = extra.documentAnalysisUrl || '';
 const CHECKPOINT_ANALYSIS_URL = extra.checkpointAnalysisUrl || '';
+const CHECKPOINT_COMPARISON_URL = extra.checkpointComparisonUrl || '';
 
 // Web app URL for sharing links
 export const WEB_APP_URL = extra.webAppUrl || '';
@@ -442,6 +443,57 @@ export async function analyzeCheckpoint(input: AnalyzeCheckpointInput): Promise<
     return data;
   } catch (error) {
     console.error('Error analyzing checkpoint:', error);
+    throw error;
+  }
+}
+
+export interface CompareCheckpointsInput {
+  image1Url: string;
+  image2Url: string;
+  contentType1: string;
+  contentType2: string;
+  location?: string;
+}
+
+export interface ChangeRegion {
+  description: string;
+  changeType: 'added' | 'removed' | 'modified';
+  severity: 'minor' | 'moderate' | 'major' | 'critical';
+  confidence: number;
+  bbox?: { x: number; y: number; width: number; height: number };
+}
+
+export interface CompareCheckpointsOutput {
+  summary: string;
+  similarityScore: number;
+  semanticChanges: string[];
+  regions: ChangeRegion[];
+}
+
+export async function compareCheckpoints(input: CompareCheckpointsInput): Promise<CompareCheckpointsOutput> {
+  try {
+    const url = CHECKPOINT_COMPARISON_URL;
+    if (!url) {
+      throw new Error('CHECKPOINT_COMPARISON_URL not set.');
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to compare checkpoints, status: ${response.status}, body: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error comparing checkpoints:', error);
     throw error;
   }
 }
