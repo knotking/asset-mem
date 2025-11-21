@@ -199,6 +199,63 @@ export type Property = {
   checks?: number;
   servicesCount?: number;
   checksCount?: number;
+  checkpoints?: number;
+  checkpointsCount?: number;
+}
+
+export type Checkpoint = {
+  id: string;
+  userId: string;
+  propertyId: string;
+  name: string; // e.g., "Monthly Inspection - Jan 2025"
+  description?: string;
+  createdAt: Timestamp;
+  capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
+  media: CheckpointMedia[];
+  location?: string; // e.g., "Kitchen", "Living Room", "Exterior"
+  tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
+  aiAnalysis?: CheckpointAnalysis;
+  visualDiff?: VisualDiffAnalysis;
+}
+
+export type CheckpointMedia = {
+  id: string;
+  url: string;
+  gsURI: string;
+  contentType: string;
+  storagePath: string;
+  thumbnailUrl?: string;
+  width?: number;
+  height?: number;
+}
+
+export type CheckpointAnalysis = {
+  summary: string;
+  detectedItems: string[]; // e.g., ["furniture", "appliances", "flooring"]
+  conditions: string[]; // e.g., ["good", "minor wear", "damage detected"]
+  aiConfidence?: number;
+  analyzedAt: Timestamp;
+}
+
+export type VisualDiffAnalysis = {
+  id: string;
+  status: 'processing' | 'completed' | 'failed';
+  semanticChanges: string[]; // Gemini-generated descriptions
+  heatmapUrl?: string;       // URL to the generated overlay image
+  regions: ChangeRegion[];   // Bounding boxes from Gemini
+  similarityScore: number;   // 0-1 score
+  completedAt: Timestamp;
+}
+
+export type ChangeRegion = {
+  id: string;
+  bbox: { x: number; y: number; width: number; height: number }; // Bounding box
+  changeType: 'added' | 'removed' | 'modified';
+  severity: 'minor' | 'moderate' | 'major' | 'critical';
+  confidence: number;          // 0-1 AI confidence
+  description: string;         // e.g., "Water staining detected", "New crack"
+  changePercentage: number;    // 0-100 how much this region changed
+  damageType?: 'crack' | 'water_damage' | 'mold' | 'paint_degradation' | 'structural' | 'other';
 }
 
 export type LocationType = 'address' | 'location';
