@@ -9,7 +9,7 @@ import type { Document } from '@homeapp/common/types';
 interface DocumentsDrawerContentProps {
   documents: Document[];
   selectedDocuments: Document[];
-  activeTab: 'chat' | 'details';
+  activeTab: 'chat' | 'details' | 'checkpoints';
   onClose: () => void;
   onToggleDocument: (document: Document) => void;
 }
@@ -78,16 +78,14 @@ export function DocumentsDrawerContent({
                       onToggleDocument(document);
                     }
                   }}
-                  className={`rounded-lg border p-4 ${
-                    activeTab === 'chat' && isSelected
+                  className={`rounded-lg border p-4 ${activeTab === 'chat' && isSelected
                       ? 'border-primary bg-secondary'
                       : 'border-border bg-card'
-                  }`}>
+                    }`}>
                   <View className="flex-row items-start gap-3">
                     <View
-                      className={`h-10 w-10 items-center justify-center rounded-full ${
-                        activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
-                      }`}>
+                      className={`h-10 w-10 items-center justify-center rounded-full ${activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
+                        }`}>
                       <Icon
                         as={FileText}
                         size={20}
