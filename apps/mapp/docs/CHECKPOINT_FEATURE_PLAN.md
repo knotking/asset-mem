@@ -963,558 +963,95 @@ In `apps/mapp/app/(tabs)/home/property-details/index.tsx`:
 - Cache AI analysis results
 - Background processing for comparisons
 
-## Phase 8: Sophisticated Visual Diff Analysis
+## Phase 8: Cloud-First Visual Diff Analysis
 
-Advanced computer vision techniques for pixel-level change detection and precise visual comparison between checkpoints.
+Leverage server-side processing and Gemini 3 Pro to perform sophisticated visual comparison without requiring heavy native libraries on the mobile device. This approach maintains compatibility with Expo Go and provides superior semantic understanding of changes.
 
-### 8.1 Advanced Comparison Algorithms
+### 8.1 Cloud Architecture for Analysis
 
-Implement multiple algorithms for comprehensive visual analysis:
+Instead of processing images on the phone, we will offload the heavy lifting to Google Cloud Platform:
 
-**SSIM (Structural Similarity Index)**
-- Perceptually accurate similarity scoring (0-1 scale)
-- Considers luminance, contrast, and structural information
-- Fast computation, aligned with human vision
-- Best for: Overall image quality assessment, detecting general degradation
-- Formula: SSIM(x,y) = (2μxμy + C1)(2σxy + C2) / (μx² + μy² + C1)(σx² + σy² + C2)
+**Workflow:**
+1.  **Trigger:** User captures a new checkpoint or requests a comparison.
+2.  **Upload:** App uploads the image to Firebase Storage.
+3.  **Cloud Function:** A background function (`analyzeCheckpointDiff`) is triggered.
+4.  **AI Analysis:** The function calls **Gemini 3 Pro (Vertex AI)** with both the new and previous checkpoint images.
+5.  **Processing:**
+    *   **Semantic Diff:** Gemini identifies actual physical changes (e.g., "The crack has widened," "A water stain appeared") vs. lighting differences.
+    *   **Heatmap Generation:** A Python script (using OpenCV/NumPy in the Cloud Function) generates a heatmap overlay based on the structural differences.
+    *   **Region Detection:** Gemini returns bounding box coordinates for specific areas of interest.
+6.  **Storage:** The analysis results (JSON + Heatmap Image URL) are saved to Firestore.
+7.  **UI Update:** The mobile app listens to the Firestore document and updates the UI when the analysis is ready (~3-5s latency).
 
-**Perceptual Hashing (pHash)**
-- Ultra-fast similarity detection using DCT transforms
-- 64-bit hash comparison via Hamming distance
-- O(1) comparison time for large-scale matching
-- Resistant to rotation, scaling, compression, noise
-- Best for: Identifying near-duplicates, filtering similar inspection angles
+### 8.2 Advanced Comparison Algorithms (Server-Side)
 
-**CNN-Based Comparison (MobileNetV3)**
-- Semantic understanding of changes (not just pixels)
-- Pre-trained model optimized for mobile
-- Generates feature embeddings for similarity matching
-- Robust to lighting, angle, scale variations
-- Best for: Understanding what changed, not just that it changed
+By running on the server, we can use powerful Python libraries without bloating the app bundle:
 
-**Edge Detection & Structural Analysis**
-- Canny edge detection for crack identification
-- Contour detection for damage boundaries
-- Optical flow for tracking damage propagation
-- Best for: Detecting structural changes (cracks, water damage, deterioration)
+**Gemini 3 Pro Vision Analysis**
+- **Semantic Change Detection:** "What changed?" (e.g., "The furniture was moved," "The paint is peeling").
+- **Condition Assessment:** "Is this worse than before?" (e.g., "Severe deterioration detected").
+- **Tool & Repair Recommendations:** Leveraging the Robotic LLM capabilities to suggest specific tools and repair steps.
 
-**MSE (Mean Squared Error)**
-- Baseline pixel-level difference quantification
-- Simple and fast (O(n) where n = pixels)
-- Highly sensitive to exact changes
-- Best for: Detecting new cracks, measuring surface deterioration
+**Server-Side OpenCV Pipeline**
+- **Image Registration:** Align the two images perfectly using feature matching (SIFT/ORB) to correct for slight camera angle differences.
+- **Structural Similarity (SSIM):** Calculate precise pixel-level difference maps.
+- **Heatmap Generation:** Create a transparent PNG overlay where "hot" colors indicate changes.
 
-### 8.2 Enhanced Visual Overlays
+### 8.3 Mobile UI Components (Lightweight)
 
-**Heatmap Overlays**
-- Color-gradient visualization showing change intensity
-- Color scheme: Cool (blue/green, no change) → Hot (yellow/orange/red, max change)
-- Semi-transparent overlay (alpha: 0.4-0.6, user-adjustable)
-- GPU-accelerated rendering using react-native-skia
-- Interactive: Tap regions to see detailed analysis
-- Swipe gesture: Adjust sensitivity threshold in real-time
+The mobile app becomes a "viewer" for the sophisticated server-side analysis:
 
-**Color-Coded Difference Highlighting**
-Standard convention for change visualization:
-- **Red (#FF4444)**: Removed/damaged areas (present in before, absent/worse in after)
-- **Green (#44FF44)**: Added/improved areas (new or better in after)
-- **Yellow (#FFAA00)**: Modified/changed areas (present in both but different)
+**Heatmap Overlay Viewer**
+- Simply renders the generated heatmap PNG on top of the checkpoint image.
+- Uses `react-native-reanimated` to fade the overlay in/out.
+- **No heavy computation on the phone.**
 
-UI Controls:
-- Individual layer toggle (checkbox for each color)
-- Per-layer opacity slider (0-100%)
-- Glow effect on tap for emphasis
-- Animated pulse when first loaded
+**Interactive Region Boxes**
+- Renders bounding boxes based on the JSON coordinates returned by the cloud.
+- Tapping a box shows the text description generated by Gemini (e.g., "Water damage detected").
 
-**Bounding Boxes Around Changes**
-- Automatic region detection using contour analysis
-- Colored boxes matching change type (red/green/yellow)
-- Confidence score badges (0-100%)
-- Numbering system: "Change #1", "Change #2", etc.
-- Interactive: Tap box → show cropped before/after comparison
-- Swipe between boxes to navigate changes
-- Long press → save specific region annotation
+**Split-Screen Comparison**
+- Uses standard `react-native-reanimated` to show the Before/After images side-by-side.
+- Smooth 60 FPS performance using standard Expo libraries.
 
-### 8.3 Advanced UI Components
+### 8.4 API & Data Structure Updates
 
-**Split-Screen with Synchronized Scrolling/Zooming**
-Layout options:
-- **Vertical Split**: Before (top) | After (bottom) - portrait mode
-- **Horizontal Split**: Before (left) | After (right) - landscape mode
-- **Slider/Scrubber**: Transparent divider with drag to reveal/hide
-
-Synchronization features:
-- Shared pan/zoom state across both images
-- Gesture handler: PanResponder for smooth 60 FPS updates
-- Pinch zoom affects both images simultaneously
-- Debounced updates with smooth animations (200-300ms duration)
-
-**Region-by-Region View**
-Browse detected changes as a navigable list:
-- **List View**: Thumbnail, description, severity badge for each region
-- **Grid View**: 2x2 or 3x3 grid of change regions
-- **Carousel**: Swipe between regions with N/Total indicator
-- Each region shows: Before/after crops, zoom capability, measurements
-
-**Change Metrics Dashboard**
-Comprehensive statistics display:
-- **Overall Similarity**: Large percentage (e.g., "87% Similar")
-- **SSIM Score**: 0-1 scale with visual progress bar
-- **Change Area**: Percentage of image affected (e.g., "15% of image changed")
-- **Confidence**: AI confidence in analysis (0-100%)
-- **Severity Breakdown**: Pie chart (Minor: 40%, Moderate: 30%, Major: 20%, Critical: 10%)
-- **Trend Indicator**: ↑ (worsening) / ↓ (improving) / → (stable)
-- **Number of Regions**: Count of detected change areas
-- **Time Since Last**: Time elapsed since previous checkpoint
-
-Color-coded overall assessment:
-- Green (≤10% change): Property in good condition
-- Yellow (10-30% change): Attention needed
-- Orange (30-60% change): Significant changes detected
-- Red (>60% change): Major deterioration or damage
-
-### 8.4 Image Processing Pipeline
-
-**Multi-Stage Processing Architecture**
-
-**Stage 1: Quick Preview (<500ms) - On-Device**
-- Perceptual hash comparison (50-100ms)
-- Hamming distance calculation for quick similarity
-- Display instant similarity score (0-100%)
-- Purpose: Immediate user feedback
-
-**Stage 2: Real-Time Analysis (500-1000ms) - On-Device**
-- Feature matching using ORB descriptors (200-300ms)
-- Image alignment/registration (100-200ms)
-- SSIM computation on aligned images (200-400ms)
-- Generate basic heatmap overlay
-- Purpose: Detailed comparison with visual feedback
-
-**Stage 3: Detailed Analysis (Background) - Server-Side**
-- High-resolution SSIM on full-size images
-- CNN semantic analysis (ResNet-50 or EfficientNet)
-- Advanced region detection and classification
-- Severity assessment and trend analysis
-- Generate comprehensive report
-- Purpose: Maximum accuracy with all features
-
-**Preprocessing Pipeline**
-
-All images undergo preprocessing before comparison:
-
-1. **Alignment/Registration**
-   - ORB feature detection and matching
-   - RANSAC for robust homography estimation
-   - Perspective correction for angle variations
-   - Handles ±15-20 degree viewpoint differences
-
-2. **Lighting Normalization**
-   - CLAHE (Contrast Limited Adaptive Histogram Equalization)
-   - Handles different lighting conditions (day/night, sunny/cloudy)
-   - White balance correction for color consistency
-
-3. **Noise Reduction**
-   - Bilateral filter (preserves edges while removing noise)
-   - Non-Local Means denoising for heavy noise
-   - Adaptive strength based on image quality
-
-4. **Image Resizing**
-   - Resolution tiers: LOW (640x480), MEDIUM (1280x960), HIGH (1920x1440)
-   - On-device: Use MEDIUM for balance
-   - Server: Use HIGH for detailed analysis
-   - Mobile: Tile processing for large images to avoid OOM
-
-### 8.5 Mobile-Optimized Libraries
-
-**Core Image Processing**
-```json
-{
-  "react-native-fast-image": "^8.7.0",
-  // Optimized image loading, caching, memory management
-
-  "expo-image-manipulator": "^12.0.0",
-  // Image transformations without native compilation
-
-  "react-native-image-resizer": "^1.3.0"
-  // Fast image resizing for preprocessing
-}
-```
-
-**GPU Acceleration & Performance**
-```json
-{
-  "react-native-skia": "^0.1.0",
-  // GPU-accelerated graphics for heatmap rendering (60+ FPS)
-
-  "react-native-reanimated": "^4.1.1",
-  // Smooth animations on native thread
-
-  "react-native-worklets": "^0.1.0"
-  // Native thread processing without blocking UI
-}
-```
-
-**Advanced Computer Vision (Optional - Heavy Processing)**
-```json
-{
-  "opencv-react-native": "^1.3.0",
-  // Full OpenCV capabilities, GPU acceleration
-  // Use for: Feature matching, edge detection, geometric transforms
-  // Note: Requires native compilation, larger bundle size
-
-  "react-native-tflite": "^1.0.0"
-  // TensorFlow Lite for CNN models on-device
-  // MobileNetV3, EfficientNet support
-}
-```
-
-**Gesture Handling**
-```json
-{
-  "react-native-gesture-handler": "^2.14.0"
-  // High-performance touch handling for pinch/pan/swipe
-}
-```
-
-### 8.6 New Components to Create
-
-**Core Comparison Components**
-- `apps/mapp/components/property-details/HeatmapOverlay.tsx` - GPU-accelerated heatmap visualization with Skia
-- `apps/mapp/components/property-details/SplitScreenComparison.tsx` - Synchronized dual-image view with gesture support
-- `apps/mapp/components/property-details/ComparisonMetricsDashboard.tsx` - Statistics and scores display
-- `apps/mapp/components/property-details/SensitivityControls.tsx` - User-adjustable detection thresholds
-
-**Region Analysis Components**
-- `apps/mapp/components/property-details/RegionAnalysisList.tsx` - List/grid of detected change regions
-- `apps/mapp/components/property-details/ChangeRegionDetail.tsx` - Deep dive into specific region with crops
-- `apps/mapp/components/property-details/BoundingBoxOverlay.tsx` - Interactive bounding boxes on images
-- `apps/mapp/components/property-details/RegionNavigator.tsx` - Swipe between detected regions
-
-**Utility Components**
-- `apps/mapp/components/property-details/ImageAlignmentPreview.tsx` - Show alignment result before comparison
-- `apps/mapp/components/property-details/ProcessingProgress.tsx` - Multi-stage progress indicator
-- `apps/mapp/components/property-details/ComparisonHistoryList.tsx` - Previous comparisons cache
-
-### 8.7 New Types to Add
-
-Add to `apps/common/src/types.ts`:
-
+**New Cloud Function:**
 ```typescript
-export type VisualDiffAnalysis = {
-  id: string;
-  checkpoint1Id: string;
-  checkpoint2Id: string;
-  ssimScore: number;           // 0-1 structural similarity (1 = identical)
-  changeScore: number;         // 0-100 percentage changed (0 = identical)
-  perceptualHashDistance: number; // 0-64 Hamming distance
-
-  // Visual overlays
-  heatmapUrl?: string;         // Generated heatmap overlay image URL
-  annotatedUrl?: string;       // Image with bounding boxes drawn
-
-  // Detected regions
-  regions: ChangeRegion[];     // Array of detected change areas
-
-  // Processing metadata
-  preprocessingApplied: {
-    aligned: boolean;          // Images were aligned
-    alignmentQuality: number;  // 0-1 alignment confidence
-    lightingNormalized: boolean;
-    denoised: boolean;
-    resolutionUsed: 'low' | 'medium' | 'high';
-  };
-
-  // Performance tracking
-  processingTime: number;      // Total milliseconds
-  stageTimings: {
-    quickPreview: number;      // Stage 1 time
-    realtimeAnalysis: number;  // Stage 2 time
-    detailedAnalysis?: number; // Stage 3 time (if completed)
-  };
-
-  // Algorithm results
-  algorithmResults: {
-    ssim: number;
-    pHash: number;
-    cnnSimilarity?: number;    // 0-1 from MobileNetV3
-    mse?: number;              // Mean squared error
-  };
-
-  createdAt: Timestamp;
-  completedAt?: Timestamp;     // When detailed analysis finished
-}
-
-export type ChangeRegion = {
-  id: string;
-  bbox: { x: number; y: number; width: number; height: number }; // Bounding box
-  changeType: 'added' | 'removed' | 'modified';
-  severity: 'minor' | 'moderate' | 'major' | 'critical';
-  confidence: number;          // 0-1 AI confidence
-  description: string;         // e.g., "Water staining detected", "New crack"
-
-  // Cropped images for this region
-  beforeCrop?: string;         // URL to before crop
-  afterCrop?: string;          // URL to after crop
-
-  // Measurements
-  changePercentage: number;    // 0-100 how much this region changed
-  pixelArea: number;           // Size in pixels
-
-  // Classification
-  damageType?: 'crack' | 'water_damage' | 'mold' | 'paint_degradation' | 'structural' | 'other';
-  affectedItems?: string[];    // e.g., ["ceiling", "paint", "drywall"]
-}
-
-export type ComparisonSettings = {
-  // Algorithm selection
-  algorithm: 'ssim' | 'cnn' | 'hybrid';
-
-  // Detection sensitivity
-  sensitivity: number;         // 0.1 (very sensitive) to 0.9 (very strict)
-  minRegionSize: number;       // Minimum pixels for region detection (50-1000)
-
-  // Visual display
-  showHeatmap: boolean;
-  showBoundingBoxes: boolean;
-  overlayOpacity: number;      // 0-1
-
-  // Layer visibility
-  visibleLayers: {
-    added: boolean;            // Show green (added) regions
-    removed: boolean;          // Show red (removed) regions
-    modified: boolean;         // Show yellow (modified) regions
-  };
-
-  // Processing options
-  preprocessingOptions: {
-    autoAlign: boolean;
-    normalizeLighting: boolean;
-    applyDenoising: boolean;
-  };
-
-  // Performance
-  resolution: 'low' | 'medium' | 'high';
-  useGPU: boolean;             // Use GPU acceleration if available
-}
-
-export type ComparisonCache = {
-  id: string;
-  checkpoint1Id: string;
-  checkpoint2Id: string;
-  analysisId: string;          // Reference to VisualDiffAnalysis
-  quickPreviewData: {
-    similarity: number;
-    processingTime: number;
-  };
-  cachedAt: Timestamp;
-  expiresAt: Timestamp;        // Cache for 7 days
-}
-```
-
-### 8.8 API Enhancements
-
-Add to `apps/mapp/lib/api.ts`:
-
-```typescript
-/**
- * Perform detailed visual diff analysis between two checkpoints
- * Returns comprehensive analysis including SSIM, regions, heatmap
- */
-analyzeVisualDiff(
-  checkpoint1Id: string,
-  checkpoint2Id: string,
-  settings: ComparisonSettings,
-  userId: string
-): Promise<VisualDiffAnalysis>
-
-/**
- * Generate heatmap overlay image for visual comparison
- * Faster than full analysis, returns just the heatmap
- */
-generateHeatmap(
-  checkpoint1Id: string,
-  checkpoint2Id: string,
-  sensitivity: number,
-  userId: string
-): Promise<{ heatmapUrl: string; changeScore: number }>
-
-/**
- * Quick preview comparison using perceptual hash
- * Returns almost instantly for immediate feedback
- */
-quickCompareCheckpoints(
-  checkpoint1Id: string,
-  checkpoint2Id: string,
-  userId: string
-): Promise<{ similarity: number; processingTime: number }>
-
-/**
- * Get or create cached comparison result
- * Checks cache first, computes if missing
- */
-getCachedComparison(
-  checkpoint1Id: string,
-  checkpoint2Id: string,
-  userId: string
-): Promise<VisualDiffAnalysis | null>
-
-/**
- * Batch compare one checkpoint against multiple others
- * Efficient for timeline views showing multiple comparisons
- */
-batchCompareCheckpoints(
-  baseCheckpointId: string,
-  compareCheckpointIds: string[],
-  userId: string
-): Promise<VisualDiffAnalysis[]>
-```
-
-### 8.9 Implementation Strategy
-
-**Hybrid On-Device + Server Approach (Recommended)**
-
-**On-Device Processing (Immediate Feedback)**
-```
-Timeline:
-├─ 0-100ms: Perceptual hash comparison
-│  └─ Display: Quick similarity percentage
-│
-├─ 100-300ms: Image loading and preprocessing
-│  └─ Display: Processing spinner
-│
-├─ 300-800ms: SSIM computation + feature matching
-│  └─ Display: Similarity score + basic heatmap
-│
-└─ 800-1000ms: Initial UI update complete
-   └─ Display: Split-screen with heatmap overlay
-```
-
-**Server-Side Processing (Detailed Analysis)**
-```
-Timeline:
-├─ Background: Upload images to server
-│
-├─ 1-3 seconds: High-res SSIM + CNN analysis
-│  └─ Notification: "Detailed analysis complete"
-│
-├─ 3-5 seconds: Region detection and classification
-│  └─ Update: Show bounding boxes and regions
-│
-└─ 5-10 seconds: Generate report and trends
-   └─ Update: Full dashboard with all metrics
-```
-
-**Caching Strategy**
-- Cache perceptual hashes for all checkpoints (64 bits each, minimal storage)
-- Cache full VisualDiffAnalysis results for 7 days
-- LRU cache with 50 comparison limit (~50 MB)
-- Precompute comparisons between adjacent checkpoints
-- Cache heatmap images in Firebase Storage
-
-**Performance Optimization**
-```typescript
-// Process large images in tiles to avoid OOM
-const TILE_SIZE = 512;
-const processTiled = async (image: Mat) => {
-  const tiles = splitIntoTiles(image, TILE_SIZE);
-  const results = [];
-
-  for (const tile of tiles) {
-    results.push(await processTile(tile));
-  }
-
-  return mergeTileResults(results);
-};
-
-// Debounce sensitivity slider updates
-const debouncedUpdate = debounce(updateComparison, 300);
-
-// Use native threads for heavy computation
-runOnWorklet(() => {
-  'worklet';
-  const result = computeSSIM(image1, image2);
-  return result;
+export const analyzeCheckpointDiff = onCall(async (request) => {
+  const { checkpointId, comparisonCheckpointId } = request.data;
+  // 1. Fetch images from Storage
+  // 2. Call Vertex AI (Gemini 3 Pro) for semantic analysis
+  // 3. Run Python script (via Cloud Run) for image alignment & heatmap generation
+  // 4. Save results to Firestore
 });
 ```
 
-### 8.10 Use Cases Enabled
+**Updated `VisualDiffAnalysis` Type:**
+```typescript
+export type VisualDiffAnalysis = {
+  id: string;
+  status: 'processing' | 'completed' | 'failed';
+  semanticChanges: string[]; // Gemini-generated descriptions
+  heatmapUrl?: string;       // URL to the generated overlay image
+  regions: ChangeRegion[];   // Bounding boxes from Gemini
+  similarityScore: number;   // 0-1 score
+  completedAt: Timestamp;
+}
+```
 
-**1. Structural Damage Detection**
-- Identify cracks in walls, ceilings, foundations
-- Track crack propagation over time
-- Detect settling or structural movement
-- Measure crack width and length
-- **UI**: Red heatmap shows crack locations, bounding boxes highlight each crack
+### 8.5 Benefits of Cloud-First Approach
 
-**2. Water Damage Identification**
-- Detect water staining patterns
-- Identify new leaks or moisture
-- Track water damage spread
-- Classify severity (minor stains vs major damage)
-- **UI**: Yellow/orange heatmap for water damage, confidence scores per region
+1.  **Expo Go Compatible:** No need for `opencv-react-native` or `react-native-tflite`. The app remains pure JavaScript/TypeScript.
+2.  **Better AI:** Gemini 3 Pro in the cloud is exponentially more powerful than any on-device mobile model.
+3.  **Battery Life:** Heavy processing happens on Google's servers, not the user's battery.
+4.  **OTA Updates:** We can improve the analysis algorithms in the cloud without forcing users to update their app.
 
-**3. Repair Verification**
-- Confirm repairs were completed successfully
-- Compare before-repair baseline with after-repair state
-- Quantify improvement (e.g., "95% of damage resolved")
-- Generate before/after report for contractor payment
-- **UI**: Green highlights show improvement, similarity score shows repair quality
+### 8.6 Implementation Strategy
 
-**4. Condition Trending Over Time**
-- Track property degradation across months/years
-- Build degradation curves (SSIM score over time)
-- Identify acceleration points (when deterioration speeds up)
-- Predict future condition based on trends
-- **UI**: Line chart of condition scores, trend arrows (↑↓→)
-
-**5. Object Change Detection**
-- Detect new/removed furniture, fixtures, appliances
-- Identify debris or clutter accumulation
-- Track renovation progress (before/during/after)
-- Verify inventory for insurance purposes
-- **UI**: Green boxes for added objects, red boxes for removed objects
-
-**6. Property Inspection for Insurance/Sales**
-- Document property condition comprehensively
-- Generate professional comparison reports
-- Provide quantitative metrics (not just photos)
-- Show improvement or deterioration over time
-- **UI**: Professional PDF with metrics, heatmaps, region crops
-
-### 8.11 Technical Considerations
-
-**Performance Targets**
-- Quick preview: <500ms on mid-range phone
-- Full on-device analysis: <1500ms
-- Detailed server analysis: <5 seconds
-- UI responsiveness: 60 FPS for all interactions
-- Memory usage: <200 MB peak for on-device processing
-
-**Accuracy vs Speed Tradeoffs**
-- **Fast Mode** (on-device): 80-85% accuracy, <1s
-- **Balanced Mode** (hybrid): 90-95% accuracy, 2-3s
-- **Accurate Mode** (server-only): 95-99% accuracy, 5-10s
-
-**Battery & Network Considerations**
-- On-device processing: Higher CPU usage, no network needed
-- Server processing: Minimal CPU, requires network, uses data
-- **Recommendation**: On-device for quick comparisons, server for detailed analysis
-- Defer server processing to WiFi + charging when possible
-
-**Storage Requirements**
-- Heatmap images: ~200-500 KB each (compressed PNG)
-- Region crops: ~50-100 KB each
-- Analysis metadata: ~5-10 KB (JSON)
-- **Per comparison**: ~1-2 MB total
-- **50 cached comparisons**: ~50-100 MB
-
-**Handling Edge Cases**
-- **Different image sizes**: Resize to common resolution before comparison
-- **Different angles**: ORB feature matching + homography transform
-- **Different lighting**: CLAHE normalization + white balance
-- **Low quality images**: Adaptive denoising, lower accuracy warning
-- **Failed alignment**: Fallback to simple pixel diff with warning
-- **No changes detected**: Show "Images are identical" message
+1.  **Phase 8.1:** Implement the `analyzeCheckpointDiff` Cloud Function (Python/FastAPI or Node.js).
+2.  **Phase 8.2:** Update the mobile app to trigger this function and display a "Analyzing..." state.
+3.  **Phase 8.3:** Build the `HeatmapOverlay` and `RegionBox` components in the app to render the results.
 
 ## Phase 9: Innovative Mobile Visualizations
 
