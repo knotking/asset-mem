@@ -132,6 +132,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
  --member="serviceAccount:service-321433914812@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
  --role="roles/aiplatform.user"
 
+gcloud projects add-iam-policy-binding homegeekdemo \
+ --member="serviceAccount:service-321433914812@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
+ --role="roles/storage.admin"
+
 $ curl -X POST -H "Content-Type: application/json" -d '{
 "update_id": 123456789,
 "message": {

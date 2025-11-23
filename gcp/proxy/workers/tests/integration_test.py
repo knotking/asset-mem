@@ -11,7 +11,7 @@ if function_dir not in sys.path:
     sys.path.insert(0, function_dir)
 import importlib.util
 os.environ["TELEGRAM_API_WEBHOOK_URL"] = "https://httpbin.org/post"  # Use httpbin for safe POST testing
-os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/2305843009213693952"
+os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856"
 os.environ["GCP_PROJECT_ID"] = "homegeekdemo"
 os.environ["GCP_LOCATION"] = "us-central1"
 os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
@@ -27,7 +27,7 @@ class TestIntegrationPubSubToTelegram(unittest.TestCase):
     def setUp(self):
         # Set environment variables for integration test
         os.environ["TELEGRAM_API_WEBHOOK_URL"] = "https://httpbin.org/post"  # Use httpbin for safe POST testing
-        os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/2305843009213693952"
+        os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856"
         os.environ["GCP_PROJECT_ID"] = "homegeekdemo"
         os.environ["GCP_LOCATION"] = "us-central1"
         os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
