@@ -87,17 +87,17 @@ def main():
     extra_packages = ["./property_agent"]
 
     if action == "create":
-        try:
-            current_engine = agent_engines.get(AGENT_ENGINE_ID)
-            if current_engine:
-                try:
-                    logger.info(f"Deleting existing engine: {AGENT_ENGINE_ID}")
-                    current_engine.delete(force=True)
-                    logger.info("Existing engine deleted successfully")
-                except Exception as e:
-                    logger.error(f"Error deleting current engine: {e}")
-        except Exception as e:
-            logger.warning(f"Could not retrieve existing engine (this is expected if it doesn't exist): {e}")
+        # try:
+        #     current_engine = agent_engines.get(AGENT_ENGINE_ID)
+        #     if current_engine:
+        #         try:
+        #             logger.info(f"Deleting existing engine: {AGENT_ENGINE_ID}")
+        #             current_engine.delete(force=True)
+        #             logger.info("Existing engine deleted successfully")
+        #         except Exception as e:
+        #             logger.error(f"Error deleting current engine: {e}")
+        # except Exception as e:
+        #     logger.warning(f"Could not retrieve existing engine (this is expected if it doesn't exist): {e}")
 
         remote_app = agent_engines.create(
             app,
