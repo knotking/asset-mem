@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_ID="goggle-gab"
+PROJECT_ID="homegeekdemo"
 WEBAPP_DIR="/Users/prakashbaskaran/projects/HomeApp/apps/webapp"
 BACKEND_ID="staging"  # This matches your existing staging backend
 REGION="us-central1"

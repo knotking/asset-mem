@@ -21,6 +21,7 @@ Instead of managing individual endpoint URLs, the app uses a proxy pattern:
 ```
 
 **Example:**
+
 ```
 Base: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app
 Token: abc123xyz
@@ -34,12 +35,12 @@ The [app.config.js:5-8](apps/mapp/app.config.js#L5-L8) `buildProxyUrl()` helper 
 
 The following endpoints are constructed from the proxy base URL:
 
-| Endpoint | Purpose |
-|----------|---------|
-| `agent-session` | Agent session creation |
-| `firebase-agent-stream` | Agent SSE streaming |
-| `rag-file-upload` | RAG file upload |
-| `extract-doc-info` | Document analysis |
+| Endpoint                | Purpose                |
+| ----------------------- | ---------------------- |
+| `agent-session`         | Agent session creation |
+| `firebase-agent-stream` | Agent SSE streaming    |
+| `rag-file-upload`       | RAG file upload        |
+| `extract-doc-info`      | Document analysis      |
 
 These are exposed in [app.config.js:76-79](apps/mapp/app.config.js#L76-L79) via `expo.extra`.
 
@@ -62,7 +63,7 @@ PROXY_BASE_URL=https://homecare-agent-proxy-dev-321433914812.us-central1.run.app
 PROXY_TOKEN=your-dev-proxy-token
 
 # Web App URL
-WEB_APP_URL=https://staging--goggle-gab.us-central1.hosted.app
+WEB_APP_URL=https://staging--homegeekdemo.us-central1.hosted.app
 
 # Optional: App identification (defaults set in app.config.js)
 APP_SLUG=homegeekai-staging
@@ -92,6 +93,7 @@ eas build --profile development --platform ios
 ```
 
 **Configuration** ([eas.json:7-28](../eas.json#L7-L28)):
+
 - App Slug: `homegeekai-development`
 - Bundle ID: `com.homegeekai.dev`
 - Proxy: Development environment
@@ -106,6 +108,7 @@ eas build --profile staging --platform ios
 ```
 
 **Configuration** ([eas.json:29-48](../eas.json#L29-L48)):
+
 - App Slug: `homegeekai-staging`
 - Bundle ID: `com.homegeekai.staging`
 - Proxy: Staging environment
@@ -119,6 +122,7 @@ eas build --profile production --platform ios
 ```
 
 **Configuration** ([eas.json:49-69](../eas.json#L49-L69)):
+
 - App Slug: `homegeekai-prod`
 - Bundle ID: `com.homegeekai.prod`
 - Proxy: Production environment
@@ -130,16 +134,16 @@ eas build --profile production --platform ios
 
 Each profile defines these environment variables:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `APP_SLUG` | Expo app slug for the environment | `homegeekai-staging` |
-| `IOS_BUNDLE_ID` | iOS bundle identifier | `com.homegeekai.staging` |
-| `ANDROID_PACKAGE` | Android package name | `com.homegeekai.staging` |
-| `EXPO_PROJECT_ID` | Expo project ID | `cc06df81-5ad0-4fc3-ad59-6294c95e4614` |
-| `PROXY_BASE_URL` | Proxy base URL | `https://homecare-agent-proxy-staging-...` |
-| `PROXY_TOKEN` | Proxy authentication token (placeholder) | `${PROXY_TOKEN}` |
-| `WEB_APP_URL` | Web app URL | `https://staging--goggle-gab...` |
-| `APP_ENV` | App environment (production only) | `production` |
+| Variable          | Description                              | Example                                    |
+| ----------------- | ---------------------------------------- | ------------------------------------------ |
+| `APP_SLUG`        | Expo app slug for the environment        | `homegeekai-staging`                       |
+| `IOS_BUNDLE_ID`   | iOS bundle identifier                    | `com.homegeekai.staging`                   |
+| `ANDROID_PACKAGE` | Android package name                     | `com.homegeekai.staging`                   |
+| `EXPO_PROJECT_ID` | Expo project ID                          | `cc06df81-5ad0-4fc3-ad59-6294c95e4614`     |
+| `PROXY_BASE_URL`  | Proxy base URL                           | `https://homecare-agent-proxy-staging-...` |
+| `PROXY_TOKEN`     | Proxy authentication token (placeholder) | `${PROXY_TOKEN}`                           |
+| `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeekdemo...`         |
+| `APP_ENV`         | App environment (production only)        | `production`                               |
 
 **Important**: `PROXY_TOKEN` uses placeholder syntax `${PROXY_TOKEN}` and must be provided at build time via EAS Secrets or CI/CD secrets.
 
@@ -154,11 +158,13 @@ The app uses automated deployment via GitHub Actions for OTA updates.
 #### Automatic Deployment
 
 **Trigger**: Push to `main` branch with changes to:
+
 - `apps/mapp/**`
 - `apps/common/**`
 - Workflow file itself
 
 **Behavior** ([deploy-mapp-update.yaml:54-57](../../../.github/workflows/deploy-mapp-update.yaml#L54-L57)):
+
 - Automatically deploys to **staging** environment
 - Uses staging channel
 - Version auto-increments: `0.0.{run_number}`
@@ -169,6 +175,7 @@ The app uses automated deployment via GitHub Actions for OTA updates.
 **Trigger**: Manual workflow dispatch via GitHub UI
 
 **Options**:
+
 - **Environment**: `staging` or `production`
 - **Version**: Custom version (e.g., `0.0.5`) or auto-increment
 - **Message**: Custom update message
@@ -179,8 +186,8 @@ The app uses automated deployment via GitHub Actions for OTA updates.
 
 Set in **Settings → Secrets and variables → Actions**:
 
-| Secret | Description | Used By |
-|--------|-------------|---------|
+| Secret       | Description               | Used By            |
+| ------------ | ------------------------- | ------------------ |
 | `EXPO_TOKEN` | Expo authentication token | All builds/updates |
 
 #### Environment-Level Configuration
@@ -234,6 +241,7 @@ git push origin main
 ```
 
 The GitHub Action automatically:
+
 - Publishes to staging channel
 - Auto-increments version
 - Uses commit message as update description
@@ -320,34 +328,34 @@ OTA bundle published with URLs
 
 ### Required Variables
 
-| Variable | Description | Source |
-|----------|-------------|--------|
-| `PROXY_BASE_URL` | Base URL for proxy endpoints | `.env` or `eas.json` |
-| `PROXY_TOKEN` | Authentication token for proxy | `.env` or GitHub/EAS Secrets |
-| `WEB_APP_URL` | Web application URL | `.env` or `eas.json` |
+| Variable         | Description                    | Source                       |
+| ---------------- | ------------------------------ | ---------------------------- |
+| `PROXY_BASE_URL` | Base URL for proxy endpoints   | `.env` or `eas.json`         |
+| `PROXY_TOKEN`    | Authentication token for proxy | `.env` or GitHub/EAS Secrets |
+| `WEB_APP_URL`    | Web application URL            | `.env` or `eas.json`         |
 
 ### Optional Variables
 
-| Variable | Description | Default | Source |
-|----------|-------------|---------|--------|
-| `APP_SLUG` | Expo app slug | `homegeekai-staging` | `eas.json` |
-| `APP_VERSION` | App version | `0.0.1` | Auto-generated in CI |
-| `IOS_BUNDLE_ID` | iOS bundle ID | `com.homegeekai.staging` | `eas.json` |
-| `ANDROID_PACKAGE` | Android package | `com.homegeekai.staging` | `eas.json` |
-| `EXPO_PROJECT_ID` | Expo project ID | (set in eas.json) | `eas.json` |
-| `APP_ENV` | Environment name | (not set) | `eas.json` (production) |
+| Variable          | Description      | Default                  | Source                  |
+| ----------------- | ---------------- | ------------------------ | ----------------------- |
+| `APP_SLUG`        | Expo app slug    | `homegeekai-staging`     | `eas.json`              |
+| `APP_VERSION`     | App version      | `0.0.1`                  | Auto-generated in CI    |
+| `IOS_BUNDLE_ID`   | iOS bundle ID    | `com.homegeekai.staging` | `eas.json`              |
+| `ANDROID_PACKAGE` | Android package  | `com.homegeekai.staging` | `eas.json`              |
+| `EXPO_PROJECT_ID` | Expo project ID  | (set in eas.json)        | `eas.json`              |
+| `APP_ENV`         | Environment name | (not set)                | `eas.json` (production) |
 
 ### Constructed URLs (in expo.extra)
 
 These are built automatically by [app.config.js:76-79](apps/mapp/app.config.js#L76-L79):
 
-| Property | Constructed From | Example |
-|----------|------------------|---------|
-| `agentSessionUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/agent-session` | Full proxy URL |
-| `agentSseUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/firebase-agent-stream` | Full proxy URL |
-| `ragFileUploadUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/rag-file-upload` | Full proxy URL |
-| `documentAnalysisUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/extract-doc-info` | Full proxy URL |
-| `webAppUrl` | `WEB_APP_URL` | Direct value |
+| Property              | Constructed From                                       | Example        |
+| --------------------- | ------------------------------------------------------ | -------------- |
+| `agentSessionUrl`     | `{PROXY_BASE_URL}/{PROXY_TOKEN}/agent-session`         | Full proxy URL |
+| `agentSseUrl`         | `{PROXY_BASE_URL}/{PROXY_TOKEN}/firebase-agent-stream` | Full proxy URL |
+| `ragFileUploadUrl`    | `{PROXY_BASE_URL}/{PROXY_TOKEN}/rag-file-upload`       | Full proxy URL |
+| `documentAnalysisUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/extract-doc-info`      | Full proxy URL |
+| `webAppUrl`           | `WEB_APP_URL`                                          | Direct value   |
 
 ## Security Best Practices
 
@@ -373,18 +381,21 @@ These are built automatically by [app.config.js:76-79](apps/mapp/app.config.js#L
 ### Managing Secrets
 
 **For local development:**
+
 ```bash
 # Add to your .env file (never commit)
 echo "PROXY_TOKEN=your-token-here" >> .env
 ```
 
 **For GitHub Actions:**
+
 1. Go to **Settings → Environments**
 2. Create/edit `staging` and `production` environments
 3. Add `PROXY_TOKEN` secret for each environment
 4. Add `EXPO_ACCOUNT` variable for each environment
 
 **For manual EAS builds:**
+
 ```bash
 # Option 1: Use .env file
 echo "PROXY_TOKEN=your-token" >> .env
@@ -401,6 +412,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 **Cause**: Missing `PROXY_BASE_URL` or `PROXY_TOKEN`.
 
 **Solution**:
+
 1. Check `.env` file exists and contains both variables
 2. Verify no typos in variable names
 3. Restart Expo dev server: `npm run dev`
@@ -411,6 +423,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 **Cause**: `PROXY_TOKEN` not set or incorrect during build.
 
 **Solution**:
+
 1. Check `PROXY_TOKEN` in your `.env` file (for local builds)
 2. For CI/CD builds, verify GitHub Environment secret is set correctly
 3. Rebuild: `eas build --profile staging --platform ios`
@@ -420,6 +433,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 **Cause**: Missing secrets or environment variables.
 
 **Solution**:
+
 1. Check error message for which secret/variable is missing
 2. Go to **Settings → Environments → [environment-name]**
 3. Ensure these exist:
@@ -432,6 +446,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 **Cause**: Channel mismatch or update not reaching device.
 
 **Solution**:
+
 1. Verify your build's channel matches update channel
    - Check [eas.json](../eas.json) for build profile's `channel` field
 2. Restart the app completely (force close and reopen)
@@ -443,6 +458,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 **Cause**: OTA updates use config from publish time.
 
 **Solution**:
+
 1. For GitHub Actions: Secrets are injected at publish time automatically
 2. For manual CLI: Update `.env` before running `eas update`
 3. Republish: `eas update --channel staging --message "Updated config"`
@@ -450,34 +466,34 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 
 ## Files Overview
 
-| File | Purpose | Committed to Git |
-|------|---------|------------------|
-| `.env` | Local development environment variables | ❌ No (in .gitignore) |
-| `.env.example` | Template showing required variables | ✅ Yes |
-| `eas.json` | EAS build profiles and environment config | ✅ Yes |
-| `app.config.js` | Expo config, loads env vars, builds proxy URLs | ✅ Yes |
-| `deploy-mapp-update.yaml` | GitHub Actions workflow for OTA updates | ✅ Yes |
+| File                      | Purpose                                        | Committed to Git      |
+| ------------------------- | ---------------------------------------------- | --------------------- |
+| `.env`                    | Local development environment variables        | ❌ No (in .gitignore) |
+| `.env.example`            | Template showing required variables            | ✅ Yes                |
+| `eas.json`                | EAS build profiles and environment config      | ✅ Yes                |
+| `app.config.js`           | Expo config, loads env vars, builds proxy URLs | ✅ Yes                |
+| `deploy-mapp-update.yaml` | GitHub Actions workflow for OTA updates        | ✅ Yes                |
 
 ## Environment URLs Reference
 
 ### Development Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-dev-321433914812.us-central1.run.app`
-- **Web App URL**: `https://staging--goggle-gab.us-central1.hosted.app`
+- **Web App URL**: `https://staging--homegeekdemo.us-central1.hosted.app`
 - **App Slug**: `homegeekai-development`
 - **Bundle ID**: `com.homegeekai.dev`
 
 ### Staging Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-staging-321433914812.us-central1.run.app`
-- **Web App URL**: `https://staging--goggle-gab.us-central1.hosted.app`
+- **Web App URL**: `https://staging--homegeekdemo.us-central1.hosted.app`
 - **App Slug**: `homegeekai-staging`
 - **Bundle ID**: `com.homegeekai.staging`
 
 ### Production Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-prod-321433914812.us-central1.run.app`
-- **Web App URL**: `https://prod--goggle-gab.us-central1.hosted.app`
+- **Web App URL**: `https://prod--homegeekdemo.us-central1.hosted.app`
 - **App Slug**: `homegeekai-prod`
 - **Bundle ID**: `com.homegeekai.prod`
 
