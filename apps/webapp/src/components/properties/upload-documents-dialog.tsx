@@ -11,8 +11,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Upload, X, File as FileIcon } from 'lucide-react';
+import { Upload, X, File as FileIcon, Camera } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
+import { CameraCaptureDialog } from '@/components/chat/camera-capture-dialog';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -38,6 +39,7 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
   const router = useRouter();
   const [files, setFiles] = useState<UploadableFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const params = useParams();
   const propertyId = params.propertyId as string;
   const isNewPropertyFlow = propertyId === 'new-property';
@@ -81,10 +83,20 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
   const removeFile = (id: string) => {
     setFiles(files => files.filter(file => file.id !== id));
   };
+
+  const handleCameraCapture = (file: File) => {
+    const newFile: UploadableFile = {
+      file,
+      id: `${file.name}-${file.size}-${Date.now()}`,
+    };
+    setFiles(prev => [...prev, newFile]);
+    setCameraDialogOpen(false);
+  };
   
   const handleClose = () => {
     if (isUploading) return;
     setFiles([]);
+    setCameraDialogOpen(false);
     onOpenChange(false);
     if (isNewPropertyFlow) {
       router.push('/home');
@@ -221,6 +233,7 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
 
 
   return (
+    <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -231,8 +244,8 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
           </DialogHeader>
 
           <div className="py-4">
-            {files.length > 0 ? (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+            {files.length > 0 && (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2 mb-4">
                   {files.map(uploadableFile => (
                       <div key={uploadableFile.id} className="flex items-center gap-4 p-2 border rounded-lg">
                           <FileIcon className="h-6 w-6 text-muted-foreground" />
@@ -245,7 +258,8 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
                       </div>
                   ))}
               </div>
-            ) : (
+            )}
+            <div className="space-y-3">
               <div {...getRootProps()} className={`p-10 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'hover:border-primary/50'}`}>
                 <input {...getInputProps()} />
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -255,7 +269,21 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
                   <Button variant="outline" size="sm" className="mt-4 pointer-events-none">Choose Files</Button>
                 </div>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-px bg-border"></div>
+                <span className="text-xs text-muted-foreground">OR</span>
+                <div className="flex-1 h-px bg-border"></div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setCameraDialogOpen(true)}
+                className="w-full"
+                disabled={isUploading}
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                Take Photo
+              </Button>
+            </div>
           </div>
 
           <DialogFooter>
@@ -266,5 +294,11 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CameraCaptureDialog
+        open={cameraDialogOpen}
+        onOpenChange={setCameraDialogOpen}
+        onCapture={handleCameraCapture}
+      />
+    </>
   );
 }

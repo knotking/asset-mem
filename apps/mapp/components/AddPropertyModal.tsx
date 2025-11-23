@@ -1,12 +1,13 @@
 import React from 'react';
-import { Modal, View, Pressable } from 'react-native';
+import { Modal, View, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { X, Upload, AlertCircle } from 'lucide-react-native';
+import { X, Upload, AlertCircle, Camera, File } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
@@ -59,10 +60,52 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         return;
       }
 
-      setSelectedFiles(result.assets);
+      // Add new files to existing selection
+      setSelectedFiles((prev) => [...prev, ...result.assets]);
     } catch (error) {
       console.error('Error picking documents:', error);
       setErrorMessage('Failed to pick documents. Please try again.');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    if (!user) {
+      setErrorMessage('You must be logged in to take photos');
+      return;
+    }
+
+    try {
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMessage('Please grant permission to access your camera.');
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images',
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      // Convert ImagePicker asset to DocumentPicker format
+      const asset = result.assets[0];
+      const convertedAsset = {
+        uri: asset.uri,
+        name: asset.fileName || `photo-${Date.now()}.jpg`,
+        mimeType: 'image/jpeg',
+        size: asset.fileSize || 0,
+      };
+
+      setSelectedFiles((prev) => [...prev, convertedAsset]);
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      setErrorMessage('Failed to take photo. Please try again.');
     }
   };
 
@@ -147,29 +190,59 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         )}
 
         {/* Main Content */}
-        <View className="flex-1 items-center justify-center px-6">
+        <ScrollView className="flex-1" contentContainerClassName="px-6 py-4">
+          {/* Selected Files List */}
+          {selectedFiles.length > 0 && (
+            <View className="mb-4 w-full max-w-md">
+              <Text className="mb-2 text-sm font-semibold text-foreground">
+                Selected Files ({selectedFiles.length})
+              </Text>
+              <View className="max-h-48 gap-2">
+                {selectedFiles.map((file, index) => (
+                  <View
+                    key={index}
+                    className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3">
+                    <Icon as={File} size={20} className="text-muted-foreground" />
+                    <View className="flex-1">
+                      <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                    </View>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onPress={() => {
+                        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+                      }}
+                      disabled={isCreating}>
+                      <Icon as={X} size={16} className="text-muted-foreground" />
+                    </Button>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Upload Area */}
           <Pressable
             onPress={handleChooseFiles}
             disabled={isCreating}
-            className="w-full max-w-md rounded-xl border-2 border-dashed border-border bg-secondary/30 px-8 py-16">
+            className="w-full max-w-md rounded-xl border-2 border-dashed border-border bg-secondary/30 px-8 py-12">
             <View className="items-center">
               {/* Upload Icon */}
-              <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Icon as={Upload} size={32} className="text-primary" />
               </View>
 
               {/* Main Text */}
               <Text className="mb-2 text-center text-lg font-semibold text-foreground">
-                {selectedFiles.length > 0
-                  ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`
-                  : 'Tap to select files'}
+                Tap to select files
               </Text>
 
               {/* Subtext */}
-              <Text className="mb-6 text-center text-sm text-muted-foreground">
-                {selectedFiles.length > 0
-                  ? 'Tap here to choose different files or upload the selected files below'
-                  : 'Upload documents related to your property such as inspection reports, floor plans, permits, etc.'}
+              <Text className="mb-4 text-center text-sm text-muted-foreground">
+                Upload documents related to your property such as inspection reports, floor plans, permits, etc.
               </Text>
 
               {/* Supported Types */}
@@ -178,6 +251,28 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               </Text>
             </View>
           </Pressable>
+
+          {/* Action Buttons */}
+          <View className="mt-4 w-full max-w-md flex-row gap-3">
+            <Button
+              onPress={handleTakePhoto}
+              disabled={isCreating}
+              variant="outline"
+              className="flex-1"
+              size="lg">
+              <Icon as={Camera} size={20} className="mr-2 text-foreground" />
+              <Text className="font-semibold text-foreground">Take Photo</Text>
+            </Button>
+            <Button
+              onPress={handleChooseFiles}
+              disabled={isCreating}
+              variant="outline"
+              className="flex-1"
+              size="lg">
+              <Icon as={Upload} size={20} className="mr-2 text-foreground" />
+              <Text className="font-semibold text-foreground">Choose Files</Text>
+            </Button>
+          </View>
 
           {/* Upload Documents Button */}
           <Button
@@ -191,7 +286,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
                 : `Upload ${selectedFiles.length} document${selectedFiles.length !== 1 ? 's' : ''}`}
             </Text>
           </Button>
-        </View>
+        </ScrollView>
 
         {/* Footer Note */}
         <View className="border-t border-border bg-background px-6 py-4">
