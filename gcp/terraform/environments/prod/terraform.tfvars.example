@@ -11,6 +11,6 @@ github_repository = "your-org/HomeApp"
 
 # Vertex AI Resources (must be created manually first)
 reasoning_engine_id        = "projects/321433914812/locations/us-central1/reasoningEngines/new"
-rag_corpus                 = "projects/homegeekdemo/locations/us-central1/ragCorpora/2305843009213693952"
-user_upload_rag_corpus     = "projects/homegeekdemo/locations/us-central1/ragCorpora/2305843009213693952"
+rag_corpus                 = "projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856"
+user_upload_rag_corpus     = "projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856"
 knowledge_base_rag_corpus  = "projects/homegeekdemo/locations/us-central1/ragCorpora/3419358017081049088"

@@ -30,7 +30,7 @@ The following environment variables are set for the Cloud Function, dynamically 
 - `GCP_REGION`: The GCP region where the function is deployed (`us-central1`).
 - `GCS_BUCKET`: The Google Cloud Storage bucket for user data (e.g., `homegeek-user-data-prod`).
 - `USER_UPLOAD_RESULT_TOPIC`: The full Pub/Sub topic path for user upload results (e.g., `projects/homegeek-prod/topics/user-upload-result-topic-prod`).
-- `RAG_CORPUS`: The full path to the Vertex AI RAG Corpus (e.g., `projects/homegeek-prod/locations/us-central1/ragCorpora/1689975760170778624`).
+- `RAG_CORPUS`: The full path to the Vertex AI RAG Corpus (e.g., `projects/homegeek-prod/locations/us-central1/ragCorpora/6917529027641081856`).
 
 ## Usage
 
