@@ -13,13 +13,16 @@ All infrastructure and application management is done through GitHub Actions usi
 #### [create-environment.yaml](create-environment.yaml)
 Creates a new environment with all required GCP infrastructure.
 
+**Triggers:**
+- **Manual (workflow_dispatch)**: Creates full infrastructure when manually triggered from Actions tab
+- **Push to `gcp_project` branch**: Validates workflow syntax only (does NOT create infrastructure)
+
 **What it creates:**
 - GCP Project (optional)
 - IAM Service Accounts
 - Workload Identity Federation
 - Storage Buckets (with versioning, lifecycle, CORS)
 - Pub/Sub Topics and Subscriptions
-- Secret Manager Secrets (empty, to be populated)
 - RAG Corpora (2 separate: user-upload and knowledge-base)
 - GitHub Environment with all variables
 
@@ -30,9 +33,11 @@ Creates a new environment with all required GCP infrastructure.
 #   - environment_name: qa-team-1
 #   - gcp_project_id: your-project-id
 #   - create_project: true/false
-#   - billing_account_id: (if creating project)
 #   - region: us-central1
-#   - github_repository: owner/repo
+#   - folder_id: (optional, if organizing by folders)
+
+# Note: BILLING_ACCOUNT_ID and ORGANIZATION_ID come from GitHub secrets
+# Note: GitHub repository is automatically detected
 ```
 
 **Outputs:**
@@ -43,12 +48,15 @@ Creates a new environment with all required GCP infrastructure.
 #### [destroy-environment.yaml](destroy-environment.yaml)
 Destroys an environment and optionally deletes the GCP project.
 
+**Triggers:**
+- **Manual (workflow_dispatch)**: Destroys infrastructure when manually triggered from Actions tab
+- **Push to `gcp_project` branch**: Validates workflow syntax only (does NOT destroy resources)
+
 **What it deletes:**
 - Cloud Run services
 - Cloud Functions
 - Pub/Sub topics and subscriptions
 - Storage buckets
-- Secret Manager secrets
 - RAG corpora
 - IAM service accounts
 - Workload Identity Pool
@@ -113,8 +121,7 @@ gsutil mb -p $PROJECT_ID gs://bucket-name/
 # Pub/Sub
 gcloud pubsub topics create topic-name ...
 
-# Secrets
-gcloud secrets create secret-name ...
+# Note: Secrets are managed via GitHub Secrets, not GCP Secret Manager
 
 # RAG Corpora
 curl -X POST https://.../ragCorpora ...
@@ -218,26 +225,113 @@ After running `create-environment.yaml`, these variables are automatically set:
 
 ## Prerequisites
 
-### Organization-Level Setup
+### Admin/Management Project Setup
 
-These secrets must be configured at the organization or repository level:
+To use the project creation feature (`create_project: true`), you need an **admin project** (also called a management or bootstrap project).
 
-- `ORG_WIF_PROVIDER`: Organization-level Workload Identity Provider
-- `ORG_ADMIN_SERVICE_ACCOUNT`: Service account with permissions to create projects and resources
+**What is an admin project?**
+- It's just a regular GCP project that you designate to manage other projects
+- It contains the Workload Identity Federation setup for GitHub Actions
+- It contains a service account with permissions to create and manage other projects
 
-See [README-workflow-identity-provider.md](README-workflow-identity-provider.md) for setup instructions.
+**Example structure:**
+```
+homegeek-admin          ← Admin project (you create this once)
+  ├── Workload Identity Pool
+  └── Service Account (with org-level permissions)
+
+homegeek-staging        ← Created by workflow
+homegeek-prod           ← Created by workflow
+homegeek-qa-team-1      ← Created by workflow
+```
+
+**One-time setup in your admin project:**
+1. Create a GCP project (e.g., `homegeek-admin`)
+2. Enable required APIs in the admin project:
+   ```bash
+   # CRITICAL: Enable these APIs in your admin project first
+   gcloud services enable \
+     cloudresourcemanager.googleapis.com \
+     iam.googleapis.com \
+     iamcredentials.googleapis.com \
+     cloudbilling.googleapis.com \
+     serviceusage.googleapis.com \
+     --project=your-admin-project-id
+   ```
+3. Set up Workload Identity Federation (see [README-workflow-identity-provider.md](README-workflow-identity-provider.md))
+4. Create a service account with necessary permissions (see below)
+5. Grant permissions for Workload Identity Federation to generate tokens:
+   ```bash
+   # IMPORTANT: Replace 'YOUR_PROJECT_NUMBER' with your admin project number
+   # Find it with: gcloud projects describe your-admin-project-id --format='value(projectNumber)'
+
+   # Allow GitHub Actions to generate access tokens for the service account
+   gcloud iam service-accounts add-iam-policy-binding \
+     your-admin-sa@your-admin-project.iam.gserviceaccount.com \
+     --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_GITHUB_ORG/YOUR_REPO" \
+     --role="roles/iam.serviceAccountTokenCreator" \
+     --project=your-admin-project-id
+
+   # Also allow the service account to impersonate itself (for certain operations)
+   gcloud iam service-accounts add-iam-policy-binding \
+     your-admin-sa@your-admin-project.iam.gserviceaccount.com \
+     --member="serviceAccount:your-admin-sa@your-admin-project.iam.gserviceaccount.com" \
+     --role="roles/iam.serviceAccountTokenCreator" \
+     --project=your-admin-project-id
+   ```
+6. Add these as GitHub repository secrets:
+   - `ORG_WIF_PROVIDER`: Workload Identity Provider path from admin project
+   - `ORG_ADMIN_SERVICE_ACCOUNT`: Service account email from admin project
+   - `BILLING_ACCOUNT_ID`: Your GCP billing account ID (format: `XXXXXX-XXXXXX-XXXXXX`)
+   - `ORGANIZATION_ID`: Your GCP organization ID (required for proper project governance)
+
+**Alternative without admin project:**
+If you don't want to use project creation:
+- Manually create GCP projects first
+- Set `create_project: false` in the workflow
+- The workflow will only set up infrastructure in existing projects
 
 ### Permissions Required
 
-The `ORG_ADMIN_SERVICE_ACCOUNT` needs:
-- `roles/resourcemanager.projectCreator` (if creating projects)
-- `roles/billing.user` (if creating projects)
-- `roles/iam.serviceAccountAdmin`
-- `roles/iam.workloadIdentityPoolAdmin`
-- `roles/storage.admin`
-- `roles/pubsub.admin`
-- `roles/secretmanager.admin`
-- `roles/aiplatform.admin`
+The `ORG_ADMIN_SERVICE_ACCOUNT` needs these roles. Grant them using the commands below:
+
+**If you have a GCP Organization:**
+```bash
+# Set your values
+ORGANIZATION_ID="your-org-id"
+SERVICE_ACCOUNT_EMAIL="your-admin-sa@your-admin-project.iam.gserviceaccount.com"
+
+# Grant roles at organization level
+gcloud organizations add-iam-policy-binding $ORGANIZATION_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/resourcemanager.projectCreator"
+
+gcloud organizations add-iam-policy-binding $ORGANIZATION_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/billing.user"
+```
+
+**For each new project created (the workflow needs these to set up resources):**
+```bash
+# Set your values
+PROJECT_ID="your-new-project-id"
+SERVICE_ACCOUNT_EMAIL="your-admin-sa@your-admin-project.iam.gserviceaccount.com"
+
+# Grant roles at project level
+for role in \
+  "roles/iam.serviceAccountAdmin" \
+  "roles/iam.workloadIdentityPoolAdmin" \
+  "roles/storage.admin" \
+  "roles/pubsub.admin" \
+  "roles/aiplatform.admin"; do
+
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+    --role="$role"
+done
+```
+
+**Note:** The workflow automatically grants these project-level roles when creating infrastructure, but the service account needs organization-level permissions first to create projects.
 
 ## Best Practices
 
@@ -251,14 +345,16 @@ Use descriptive names that indicate purpose:
 
 ### Secret Management
 
-Secrets are created empty. Add values manually:
+All secrets are managed via GitHub Secrets. Configure secrets at the repository or environment level:
+- Repository secrets: Available to all workflows
+- Environment secrets: Scoped to specific environments (recommended)
 
-```bash
-# Add secret value
-echo -n "your-secret-value" | gcloud secrets versions add TELEGRAM_BOT_TOKEN-qa-team-1 \
-  --project=your-project-id \
-  --data-file=-
-```
+Common secrets needed:
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `FIREBASE_WEBHOOK_SECRET`
+- `SERP_API_KEY`
+- `YELP_API_KEY`
 
 ### Idempotency
 
@@ -275,6 +371,59 @@ Always destroy environments when done:
 3. Choose whether to delete the project
 
 ## Troubleshooting
+
+### Authentication Error: `iam.serviceAccounts.getAccessToken` denied
+
+**Symptom:** Workflow fails with error:
+```
+Permission 'iam.serviceAccounts.getAccessToken' denied on resource
+```
+
+**Cause:** The service account or Workload Identity Federation principal lacks permission to generate access tokens.
+
+**Solution:**
+```bash
+# Get your admin project number
+PROJECT_NUMBER=$(gcloud projects describe your-admin-project-id --format='value(projectNumber)')
+
+# Grant token creator permission to the Workload Identity principal
+gcloud iam service-accounts add-iam-policy-binding \
+  your-admin-sa@your-admin-project.iam.gserviceaccount.com \
+  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_GITHUB_ORG/YOUR_REPO" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --project=your-admin-project-id
+
+# Also grant self-impersonation permission
+gcloud iam service-accounts add-iam-policy-binding \
+  your-admin-sa@your-admin-project.iam.gserviceaccount.com \
+  --member="serviceAccount:your-admin-sa@your-admin-project.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --project=your-admin-project-id
+```
+
+### API Not Enabled Error: `cloudresourcemanager.googleapis.com` not enabled
+
+**Symptom:** Workflow fails with error:
+```
+Cloud Resource Manager API has not been used in project [PROJECT_NUMBER] before or it is disabled
+```
+
+**Cause:** Required APIs are not enabled in the admin project.
+
+**Solution:**
+```bash
+# Enable all required APIs in your admin project
+gcloud services enable \
+  cloudresourcemanager.googleapis.com \
+  iam.googleapis.com \
+  iamcredentials.googleapis.com \
+  cloudbilling.googleapis.com \
+  serviceusage.googleapis.com \
+  --project=your-admin-project-id
+
+# Wait for APIs to propagate
+sleep 30
+```
 
 ### API Enablement Issues
 
