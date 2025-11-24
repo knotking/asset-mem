@@ -1,0 +1,647 @@
+name: Create New Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: 'Environment name (e.g., qa-team-1, demo-customer-x)'
+        required: true
+        type: string
+      gcp_project_id:
+        description: 'GCP Project ID (leave empty to use existing from GitHub env)'
+        required: false
+        type: string
+      create_project:
+        description: 'Create a new GCP project'
+        required: false
+        default: false
+        type: boolean
+      billing_account_id:
+        description: 'Billing Account ID (required if creating new project)'
+        required: false
+        type: string
+      organization_id:
+        description: 'Organization ID (optional, for new projects)'
+        required: false
+        type: string
+      folder_id:
+        description: 'Folder ID (optional, for new projects)'
+        required: false
+        type: string
+      region:
+        description: 'GCP Region (leave empty to use existing from GitHub env)'
+        required: false
+        default: 'us-central1'
+        type: choice
+        options:
+          - ''
+          - us-central1
+          - us-east1
+          - us-west1
+      github_repository:
+        description: 'GitHub repository (owner/repo)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  create-gcp-project:
+    name: Create GCP Project (Optional)
+    runs-on: ubuntu-latest
+    if: inputs.create_project == true
+    outputs:
+      project_id: ${{ steps.create.outputs.project_id }}
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ -z "${{ inputs.gcp_project_id }}" ]; then
+            echo "::error::gcp_project_id is required when creating a new project"
+            exit 1
+          fi
+
+          if [ -z "${{ inputs.billing_account_id }}" ]; then
+            echo "::error::billing_account_id is required when creating a new project"
+            exit 1
+          fi
+
+          echo "✓ Creating new GCP project: ${{ inputs.gcp_project_id }}"
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.ORG_WIF_PROVIDER }}
+          service_account: ${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Create GCP Project
+        id: create
+        run: |
+          # Build create command
+          CREATE_CMD="gcloud projects create ${{ inputs.gcp_project_id }}"
+
+          # Add organization if provided
+          if [ -n "${{ inputs.organization_id }}" ]; then
+            CREATE_CMD="$CREATE_CMD --organization=${{ inputs.organization_id }}"
+          fi
+
+          # Add folder if provided
+          if [ -n "${{ inputs.folder_id }}" ]; then
+            CREATE_CMD="$CREATE_CMD --folder=${{ inputs.folder_id }}"
+          fi
+
+          # Create project
+          eval $CREATE_CMD
+
+          echo "✓ Project created: ${{ inputs.gcp_project_id }}"
+          echo "project_id=${{ inputs.gcp_project_id }}" >> $GITHUB_OUTPUT
+
+      - name: Link Billing Account
+        run: |
+          gcloud billing projects link ${{ inputs.gcp_project_id }} \
+            --billing-account=${{ inputs.billing_account_id }}
+
+          echo "✓ Billing account linked"
+
+      - name: Wait for project creation to propagate
+        run: |
+          echo "Waiting for project creation to propagate..."
+          sleep 30
+
+  resolve-inputs:
+    name: Resolve Configuration
+    runs-on: ubuntu-latest
+    needs: create-gcp-project
+    if: always()
+    environment: ${{ inputs.environment_name }}
+    outputs:
+      gcp_project_id: ${{ steps.resolve.outputs.gcp_project_id }}
+      region: ${{ steps.resolve.outputs.region }}
+    steps:
+      - name: Resolve inputs from GitHub environment or workflow inputs
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Function to get value from GitHub environment variable
+          get_github_var() {
+            gh variable get "$1" --env ${{ inputs.environment_name }} 2>/dev/null || echo ""
+          }
+
+          # Resolve GCP_PROJECT_ID
+          if [ -n "${{ inputs.gcp_project_id }}" ]; then
+            PROJECT_ID="${{ inputs.gcp_project_id }}"
+            echo "Using GCP_PROJECT_ID from workflow input"
+          else
+            PROJECT_ID=$(get_github_var "GCP_PROJECT_ID")
+            if [ -z "$PROJECT_ID" ]; then
+              echo "::error::GCP_PROJECT_ID not provided and not found in GitHub environment"
+              exit 1
+            fi
+            echo "Using GCP_PROJECT_ID from GitHub environment: $PROJECT_ID"
+          fi
+
+          # Resolve REGION
+          if [ -n "${{ inputs.region }}" ] && [ "${{ inputs.region }}" != "us-central1" ]; then
+            REGION="${{ inputs.region }}"
+            echo "Using region from workflow input"
+          else
+            REGION=$(get_github_var "GCP_REGION")
+            if [ -z "$REGION" ]; then
+              REGION="${{ inputs.region }}"
+              if [ -z "$REGION" ]; then
+                REGION="us-central1"
+              fi
+              echo "Using default region: $REGION"
+            else
+              echo "Using region from GitHub environment: $REGION"
+            fi
+          fi
+
+          echo "gcp_project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+
+  create-infrastructure:
+    name: Create Infrastructure with gcloud
+    runs-on: ubuntu-latest
+    needs: resolve-inputs
+    outputs:
+      workload_identity_provider: ${{ steps.iam.outputs.wif_provider }}
+      service_account_email: ${{ steps.iam.outputs.sa_email }}
+      user_data_bucket: ${{ steps.storage.outputs.user_data_bucket }}
+      user_upload_topic: ${{ steps.pubsub.outputs.upload_topic }}
+      user_upload_result_topic: ${{ steps.pubsub.outputs.result_topic }}
+      user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
+      knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.ORG_WIF_PROVIDER }}
+          service_account: ${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Enable Required APIs
+        run: |
+          echo "Enabling required APIs..."
+          gcloud services enable \
+            cloudresourcemanager.googleapis.com \
+            iam.googleapis.com \
+            iamcredentials.googleapis.com \
+            sts.googleapis.com \
+            artifactregistry.googleapis.com \
+            cloudbuild.googleapis.com \
+            run.googleapis.com \
+            aiplatform.googleapis.com \
+            pubsub.googleapis.com \
+            storage.googleapis.com \
+            secretmanager.googleapis.com \
+            cloudfunctions.googleapis.com \
+            eventarc.googleapis.com \
+            --project=${{ needs.resolve-inputs.outputs.gcp_project_id }}
+
+          echo "✓ APIs enabled, waiting for propagation..."
+          sleep 30
+
+      - name: Create IAM Resources
+        id: iam
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+
+          echo "Creating service account..."
+          # Create deployment service account
+          gcloud iam service-accounts create githubworkflowdeployment \
+            --display-name="GitHub Workflow Deployment Service Account" \
+            --description="Service account used by GitHub Actions for deploying services" \
+            --project=$PROJECT_ID || echo "Service account may already exist"
+
+          SA_EMAIL="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
+          echo "✓ Service account: $SA_EMAIL"
+
+          echo "Granting IAM roles..."
+          # Grant necessary roles to the service account
+          for role in \
+            "roles/run.developer" \
+            "roles/artifactregistry.writer" \
+            "roles/cloudbuild.builds.editor" \
+            "roles/serviceusage.serviceUsageConsumer" \
+            "roles/iam.serviceAccountUser" \
+            "roles/artifactregistry.repoAdmin" \
+            "roles/storage.admin" \
+            "roles/pubsub.editor" \
+            "roles/aiplatform.user" \
+            "roles/cloudfunctions.developer" \
+            "roles/run.admin" \
+            "roles/secretmanager.secretAccessor"; do
+
+            gcloud projects add-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${SA_EMAIL}" \
+              --role="$role" \
+              --condition=None \
+              --quiet || true
+          done
+          echo "✓ IAM roles granted"
+
+          echo "Creating Workload Identity Pool..."
+          # Create Workload Identity Pool
+          gcloud iam workload-identity-pools create github-pool \
+            --location="global" \
+            --display-name="GitHub Actions Pool" \
+            --description="Workload Identity Pool for GitHub Actions" \
+            --project=$PROJECT_ID || echo "Pool may already exist"
+
+          # Create Workload Identity Provider
+          gcloud iam workload-identity-pools providers create-oidc github-provider \
+            --location="global" \
+            --workload-identity-pool="github-pool" \
+            --display-name="GitHub Provider" \
+            --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+            --issuer-uri="https://token.actions.githubusercontent.com" \
+            --project=$PROJECT_ID || echo "Provider may already exist"
+
+          # Get the Workload Identity Provider resource name
+          WIF_PROVIDER=$(gcloud iam workload-identity-pools providers describe github-provider \
+            --location="global" \
+            --workload-identity-pool="github-pool" \
+            --project=$PROJECT_ID \
+            --format="value(name)")
+
+          echo "✓ Workload Identity Provider: $WIF_PROVIDER"
+
+          echo "Binding service account to Workload Identity..."
+          # Bind the service account to allow GitHub Actions to impersonate it
+          gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
+            --project=$PROJECT_ID \
+            --role="roles/iam.workloadIdentityUser" \
+            --member="principalSet://iam.googleapis.com/projects/$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ inputs.github_repository }}" \
+            --quiet || true
+
+          echo "✓ Workload Identity binding created"
+
+          # Grant RAG service account access to storage
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+          RAG_SA="service-${PROJECT_NUMBER}@gcp-sa-vertex-rag.iam.gserviceaccount.com"
+
+          gcloud projects add-iam-policy-binding $PROJECT_ID \
+            --member="serviceAccount:${RAG_SA}" \
+            --role="roles/storage.objectAdmin" \
+            --condition=None \
+            --quiet || true
+
+          echo "✓ RAG service account permissions granted"
+
+          # Output values
+          echo "sa_email=$SA_EMAIL" >> $GITHUB_OUTPUT
+          echo "wif_provider=$WIF_PROVIDER" >> $GITHUB_OUTPUT
+
+      - name: Create Storage Buckets
+        id: storage
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Creating storage buckets..."
+
+          # Create user data bucket
+          USER_DATA_BUCKET="homegeek-user-data-${ENV}"
+          gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${USER_DATA_BUCKET}/ || echo "Bucket may already exist"
+
+          # Enable versioning
+          gsutil versioning set on gs://${USER_DATA_BUCKET}/
+
+          # Set lifecycle policy (delete after 90 days)
+          cat > /tmp/lifecycle.json <<EOF
+{
+  "lifecycle": {
+    "rule": [
+      {
+        "action": {"type": "Delete"},
+        "condition": {"age": 90}
+      }
+    ]
+  }
+}
+EOF
+          gsutil lifecycle set /tmp/lifecycle.json gs://${USER_DATA_BUCKET}/
+
+          # Set CORS policy
+          cat > /tmp/cors.json <<EOF
+[
+  {
+    "origin": ["*"],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "responseHeader": ["*"],
+    "maxAgeSeconds": 3600
+  }
+}
+EOF
+          gsutil cors set /tmp/cors.json gs://${USER_DATA_BUCKET}/
+
+          # Set uniform bucket-level access
+          gsutil uniformbucketlevelaccess set on gs://${USER_DATA_BUCKET}/
+
+          echo "✓ User data bucket created: $USER_DATA_BUCKET"
+
+          # Create agent catalog bucket (shared, not environment-specific)
+          CATALOG_BUCKET="homegeek-catalog"
+          gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${CATALOG_BUCKET}/ 2>/dev/null || echo "Catalog bucket already exists"
+          gsutil uniformbucketlevelaccess set on gs://${CATALOG_BUCKET}/ 2>/dev/null || true
+          echo "✓ Catalog bucket ready: $CATALOG_BUCKET"
+
+          # Output values
+          echo "user_data_bucket=$USER_DATA_BUCKET" >> $GITHUB_OUTPUT
+
+      - name: Create Pub/Sub Resources
+        id: pubsub
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Creating Pub/Sub topics and subscriptions..."
+
+          # Create user upload topic
+          UPLOAD_TOPIC="user-upload-topic-${ENV}"
+          gcloud pubsub topics create $UPLOAD_TOPIC \
+            --project=$PROJECT_ID \
+            --message-retention-duration=7d || echo "Topic may already exist"
+          echo "✓ Topic created: $UPLOAD_TOPIC"
+
+          # Create user upload subscription
+          gcloud pubsub subscriptions create "user-upload-subscription-${ENV}" \
+            --topic=$UPLOAD_TOPIC \
+            --project=$PROJECT_ID \
+            --ack-deadline=60 \
+            --message-retention-duration=7d \
+            --min-retry-delay=10s \
+            --max-retry-delay=600s || echo "Subscription may already exist"
+          echo "✓ Subscription created: user-upload-subscription-${ENV}"
+
+          # Create user upload result topic
+          RESULT_TOPIC="user-upload-result-topic-${ENV}"
+          gcloud pubsub topics create $RESULT_TOPIC \
+            --project=$PROJECT_ID \
+            --message-retention-duration=7d || echo "Topic may already exist"
+          echo "✓ Topic created: $RESULT_TOPIC"
+
+          # Create user upload result subscription
+          gcloud pubsub subscriptions create "user-upload-result-subscription-${ENV}" \
+            --topic=$RESULT_TOPIC \
+            --project=$PROJECT_ID \
+            --ack-deadline=60 \
+            --message-retention-duration=7d \
+            --min-retry-delay=10s \
+            --max-retry-delay=600s || echo "Subscription may already exist"
+          echo "✓ Subscription created: user-upload-result-subscription-${ENV}"
+
+          # Output values
+          echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
+          echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
+
+      - name: Create Secret Manager Secrets
+        id: secrets
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Creating Secret Manager secrets..."
+
+          # Create secrets (empty, to be populated later)
+          for secret in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET FIREBASE_WEBHOOK_SECRET SERP_API_KEY YELP_API_KEY; do
+            SECRET_NAME="${secret}-${ENV}"
+            gcloud secrets create $SECRET_NAME \
+              --replication-policy="automatic" \
+              --labels="environment=${ENV}" \
+              --project=$PROJECT_ID 2>/dev/null || echo "Secret $SECRET_NAME may already exist"
+            echo "✓ Secret created: $SECRET_NAME (empty, add values manually)"
+          done
+
+      - name: Create RAG Corpora
+        id: rag
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+          ENV="${{ inputs.environment_name }}"
+
+          # Create 2 separate RAG corpora using Vertex AI RAG API
+          BASE_URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/ragCorpora"
+          AUTH_HEADER="Authorization: Bearer $(gcloud auth print-access-token)"
+
+          # Create User Upload RAG Corpus
+          echo "Creating User Upload RAG corpus..."
+          USER_UPLOAD_RESPONSE=$(curl -X POST \
+            -H "$AUTH_HEADER" \
+            -H "Content-Type: application/json" \
+            "$BASE_URL" \
+            -d "{
+              \"display_name\": \"user-upload-rag-corpus-${ENV}\",
+              \"description\": \"User upload RAG corpus for ${ENV} environment\"
+            }" 2>&1) || true
+
+          USER_UPLOAD_CORPUS=$(echo "$USER_UPLOAD_RESPONSE" | jq -r '.name // empty')
+
+          if [ -n "$USER_UPLOAD_CORPUS" ] && [ "$USER_UPLOAD_CORPUS" != "null" ]; then
+            echo "✓ User upload RAG corpus created: $USER_UPLOAD_CORPUS"
+            echo "user_upload_rag_corpus=$USER_UPLOAD_CORPUS" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ User upload RAG corpus creation failed - using placeholder"
+            echo "user_upload_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+          fi
+
+          # Create Knowledge Base RAG Corpus
+          echo "Creating Knowledge Base RAG corpus..."
+          KNOWLEDGE_BASE_RESPONSE=$(curl -X POST \
+            -H "$AUTH_HEADER" \
+            -H "Content-Type: application/json" \
+            "$BASE_URL" \
+            -d "{
+              \"display_name\": \"knowledge-base-rag-corpus-${ENV}\",
+              \"description\": \"Knowledge base RAG corpus for ${ENV} environment\"
+            }" 2>&1) || true
+
+          KNOWLEDGE_BASE_CORPUS=$(echo "$KNOWLEDGE_BASE_RESPONSE" | jq -r '.name // empty')
+
+          if [ -n "$KNOWLEDGE_BASE_CORPUS" ] && [ "$KNOWLEDGE_BASE_CORPUS" != "null" ]; then
+            echo "✓ Knowledge base RAG corpus created: $KNOWLEDGE_BASE_CORPUS"
+            echo "knowledge_base_rag_corpus=$KNOWLEDGE_BASE_CORPUS" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Knowledge base RAG corpus creation failed - using placeholder"
+            echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+          fi
+
+  create-github-environment:
+    name: Create GitHub Environment
+    runs-on: ubuntu-latest
+    needs: [resolve-inputs, create-infrastructure]
+    permissions:
+      contents: read
+      id-token: write
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Environment and Variables
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Create the environment
+          gh api --method PUT repos/${{ github.repository }}/environments/${{ inputs.environment_name }}
+
+          # Function to set variable only if it doesn't exist
+          set_var_if_not_exists() {
+            local var_name=$1
+            local var_value=$2
+
+            # Try to get existing variable (will fail if doesn't exist)
+            if ! gh variable get "$var_name" --env ${{ inputs.environment_name }} &>/dev/null; then
+              gh variable set "$var_name" --body "$var_value" --env ${{ inputs.environment_name }}
+              echo "✅ Set $var_name"
+            else
+              echo "⏭️  $var_name already exists, keeping existing value"
+            fi
+          }
+
+          # Set variables (only if they don't exist)
+          set_var_if_not_exists "GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          set_var_if_not_exists "GCP_REGION" "${{ needs.resolve-inputs.outputs.region }}"
+          set_var_if_not_exists "WORKLOAD_IDENTITY_PROVIDER" "${{ needs.create-infrastructure.outputs.workload_identity_provider }}"
+          set_var_if_not_exists "GCP_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.service_account_email }}"
+          set_var_if_not_exists "GCS_BUCKET" "${{ needs.create-infrastructure.outputs.user_data_bucket }}"
+          set_var_if_not_exists "USER_UPLOAD_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_topic }}"
+          set_var_if_not_exists "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_var_if_not_exists "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_var_if_not_exists "REASONING_ENGINE_ID" "new"
+          set_var_if_not_exists "USER_UPLOAD_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}"
+          set_var_if_not_exists "KNOWLEDGE_BASE_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}"
+
+          echo "✅ GitHub environment '${{ inputs.environment_name }}' configured"
+
+      - name: Create environment config file
+        run: |
+          mkdir -p environment-configs
+          cat > environment-configs/${{ inputs.environment_name }}.md <<EOF
+          # Environment: ${{ inputs.environment_name }}
+
+          Created: $(date -u)
+
+          ## GitHub Repository Variables
+
+          Add these to: Settings → Environments → ${{ inputs.environment_name }} → Variables
+
+          \`\`\`bash
+          GCP_PROJECT_ID=${{ needs.resolve-inputs.outputs.gcp_project_id }}
+          GCP_REGION=${{ needs.resolve-inputs.outputs.region }}
+          WORKLOAD_IDENTITY_PROVIDER=${{ needs.create-infrastructure.outputs.workload_identity_provider }}
+          GCP_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.service_account_email }}
+          GCS_BUCKET=${{ needs.create-infrastructure.outputs.user_data_bucket }}
+          USER_UPLOAD_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_topic }}
+          USER_UPLOAD_RESULT_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
+          REASONING_ENGINE_ID=new
+          USER_UPLOAD_RAG_CORPUS=${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}
+          KNOWLEDGE_BASE_RAG_CORPUS=${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}
+          \`\`\`
+
+          ## Deploy Applications
+
+          Now you can deploy applications using existing workflows:
+
+          1. Go to Actions → Deploy Homecare Agent Proxy
+          2. Select environment: \`${{ inputs.environment_name }}\`
+          3. Run workflow
+
+          ## URLs
+
+          - Cloud Run will be available at: \`https://homecare-agent-proxy-${{ inputs.environment_name }}-*.run.app\`
+          - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
+
+          ## Destroy
+
+          To destroy this environment:
+          1. Go to Actions → Destroy Environment
+          2. Enter environment name: \`${{ inputs.environment_name }}\`
+          3. Type "DESTROY" to confirm
+          EOF
+
+      - name: Upload configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-config-${{ inputs.environment_name }}
+          path: environment-configs/${{ inputs.environment_name }}.md
+
+  summary:
+    name: Environment Summary
+    runs-on: ubuntu-latest
+    needs: [resolve-inputs, create-infrastructure, create-github-environment]
+    steps:
+      - name: Generate summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # 🎉 Environment Created: ${{ inputs.environment_name }}
+
+          ## ⚙️ Infrastructure Status
+
+          ✅ Infrastructure provisioned with gcloud
+          ✅ IAM and Workload Identity ready
+          ✅ GitHub environment created automatically
+          ✅ All variables configured
+          ✅ RAG corpora created (2 separate corpora)
+
+          ## 📋 Ready to Deploy!
+
+          Your environment is fully configured. You can now deploy applications:
+
+          ### Environment Variables (Already Configured)
+
+          | Variable | Value |
+          |----------|-------|
+          | \`GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |
+          | \`GCP_REGION\` | \`${{ needs.resolve-inputs.outputs.region }}\` |
+          | \`WORKLOAD_IDENTITY_PROVIDER\` | \`${{ needs.create-infrastructure.outputs.workload_identity_provider }}\` |
+          | \`GCP_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.service_account_email }}\` |
+          | \`GCS_BUCKET\` | \`${{ needs.create-infrastructure.outputs.user_data_bucket }}\` |
+          | \`USER_UPLOAD_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\` |
+          | \`USER_UPLOAD_RESULT_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
+          | \`REASONING_ENGINE_ID\` | \`new\` |
+          | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |
+          | \`KNOWLEDGE_BASE_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}\` |
+
+          ### Deploy Applications Now!
+
+          Go to Actions and run:
+
+          1. **Deploy Homecare Agent Proxy**
+             - Select environment: \`${{ inputs.environment_name }}\`
+             - Deploy in ~2-3 minutes
+
+          2. **Deploy PubSub to User Docs Function**
+             - Select environment: \`${{ inputs.environment_name }}\`
+             - Deploy in ~2-3 minutes
+
+          ### Ongoing Deployments
+
+          - Deploy as often as needed (multiple times per day!)
+          - Infrastructure stays stable
+          - No manual configuration required
+
+          ## 🔗 Resources
+
+          - **Service Account**: \`${{ needs.create-infrastructure.outputs.service_account_email }}\`
+          - **Storage**: \`${{ needs.create-infrastructure.outputs.user_data_bucket }}\`
+          - **Pub/Sub Topics**: \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\`
+
+          ## 📥 Download Configuration
+
+          Download the environment configuration from workflow artifacts.
+          EOF

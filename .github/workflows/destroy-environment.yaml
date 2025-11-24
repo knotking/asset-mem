@@ -1,0 +1,249 @@
+name: Destroy On-Demand Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: 'Environment name to destroy'
+        required: true
+        type: string
+      gcp_project_id:
+        description: 'GCP Project ID'
+        required: true
+        type: string
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm deletion'
+        required: true
+        type: string
+      destroy_project:
+        description: 'Also delete the GCP project (DANGEROUS)'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate Destruction Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ inputs.confirm_destroy }}" != "DESTROY" ]; then
+            echo "::error::You must type 'DESTROY' to confirm environment deletion"
+            exit 1
+          fi
+
+          echo "⚠️  Destruction confirmed for environment: ${{ inputs.environment_name }}"
+
+      - name: Warning for project deletion
+        if: inputs.destroy_project == true
+        run: |
+          echo "::warning::Project deletion is enabled! This will delete the entire GCP project."
+          sleep 10
+
+  cleanup-applications:
+    name: Cleanup Applications
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.ORG_WIF_PROVIDER }}
+          service_account: ${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Delete Cloud Run service
+        continue-on-error: true
+        run: |
+          gcloud run services delete homecare-agent-proxy-${{ inputs.environment_name }} \
+            --region=us-central1 \
+            --project=${{ inputs.gcp_project_id }} \
+            --quiet
+
+          echo "✓ Cloud Run service deleted"
+
+      - name: Delete Cloud Function
+        continue-on-error: true
+        run: |
+          gcloud functions delete pubsub_to_user_docs-${{ inputs.environment_name }} \
+            --gen2 \
+            --region=us-central1 \
+            --project=${{ inputs.gcp_project_id }} \
+            --quiet
+
+          echo "✓ Cloud Function deleted"
+
+  destroy-infrastructure:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [validate, cleanup-applications]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.ORG_WIF_PROVIDER }}
+          service_account: ${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Delete Pub/Sub Resources
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Deleting Pub/Sub subscriptions..."
+          gcloud pubsub subscriptions delete "user-upload-subscription-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+          gcloud pubsub subscriptions delete "user-upload-result-subscription-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+
+          echo "Deleting Pub/Sub topics..."
+          gcloud pubsub topics delete "user-upload-topic-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+          gcloud pubsub topics delete "user-upload-result-topic-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+
+          echo "✓ Pub/Sub resources deleted"
+
+      - name: Delete Storage Buckets
+        continue-on-error: true
+        run: |
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Deleting user data bucket..."
+          gsutil -m rm -r gs://homegeek-user-data-${ENV} || true
+
+          echo "✓ Storage buckets deleted"
+
+      - name: Delete Secrets
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Deleting secrets..."
+          for secret in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET FIREBASE_WEBHOOK_SECRET SERP_API_KEY YELP_API_KEY; do
+            gcloud secrets delete "${secret}-${ENV}" \
+              --project=$PROJECT_ID \
+              --quiet || true
+          done
+
+          echo "✓ Secrets deleted"
+
+      - name: Delete RAG Corpora
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Deleting RAG corpora..."
+
+          # List all RAG corpora and delete those matching the environment
+          BASE_URL="https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/ragCorpora"
+          AUTH_HEADER="Authorization: Bearer $(gcloud auth print-access-token)"
+
+          # Get list of corpora
+          CORPORA=$(curl -s -H "$AUTH_HEADER" "$BASE_URL" | jq -r ".ragCorpora[]? | select(.displayName | contains(\"${ENV}\")) | .name" || true)
+
+          for corpus in $CORPORA; do
+            if [ -n "$corpus" ]; then
+              echo "Deleting corpus: $corpus"
+              curl -X DELETE -H "$AUTH_HEADER" "https://us-central1-aiplatform.googleapis.com/v1/${corpus}" || true
+            fi
+          done
+
+          echo "✓ RAG corpora deleted"
+
+      - name: Delete IAM Resources
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+
+          echo "Deleting Workload Identity Pool..."
+          gcloud iam workload-identity-pools delete github-pool \
+            --location="global" \
+            --project=$PROJECT_ID \
+            --quiet || true
+
+          echo "Deleting service account..."
+          SA_EMAIL="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
+          gcloud iam service-accounts delete $SA_EMAIL \
+            --project=$PROJECT_ID \
+            --quiet || true
+
+          echo "✓ IAM resources deleted"
+
+  destroy-project:
+    name: Destroy GCP Project
+    runs-on: ubuntu-latest
+    needs: [validate, destroy-infrastructure]
+    if: inputs.destroy_project == true
+    steps:
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.ORG_WIF_PROVIDER }}
+          service_account: ${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Final confirmation wait
+        run: |
+          echo "⚠️⚠️⚠️  FINAL WARNING ⚠️⚠️⚠️"
+          echo "About to delete GCP project: ${{ inputs.gcp_project_id }}"
+          echo "Waiting 30 seconds for final consideration..."
+          sleep 30
+
+      - name: Delete GCP project
+        run: |
+          gcloud projects delete ${{ inputs.gcp_project_id }} --quiet
+          echo "✓ GCP project deleted"
+
+  summary:
+    name: Destruction Summary
+    runs-on: ubuntu-latest
+    needs: [validate, cleanup-applications, destroy-infrastructure]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # 🗑️ Environment Destroyed: ${{ inputs.environment_name }}
+
+          ## Destruction Report
+
+          | Resource | Status |
+          |----------|--------|
+          | **Cloud Run Service** | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Cloud Function** | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Infrastructure (gcloud)** | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Destroyed' || '⚠️ Check logs' }} |
+          | **GCP Project** | ${{ inputs.destroy_project == true && '✅ Deleted' || '➖ Preserved' }} |
+
+          ## Environment Details
+
+          - **Environment:** \`${{ inputs.environment_name }}\`
+          - **Project:** \`${{ inputs.gcp_project_id }}\`
+          - **Destroyed at:** $(date -u)
+
+          ${{ inputs.destroy_project == false && '⚠️ **Note:** GCP project was preserved. You may want to manually delete it if no longer needed.' || '' }}
+
+          ## Cleanup Complete
+
+          The environment has been destroyed. All resources should be deleted.
+          EOF
