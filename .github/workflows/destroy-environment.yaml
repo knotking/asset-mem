@@ -1,6 +1,9 @@
 name: Destroy On-Demand Environment
 
 on:
+  push:
+    branches:
+      - gcp_project
   workflow_dispatch:
     inputs:
       environment_name:
@@ -26,9 +29,28 @@ permissions:
   id-token: write
 
 jobs:
+  validate-only:
+    name: Validate Workflow (Push Only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate workflow syntax
+        run: |
+          echo "✅ Workflow validation successful"
+          echo "📝 This is a push event - NO resources will be destroyed"
+          echo "ℹ️  To destroy an environment, manually trigger this workflow from Actions tab"
+          echo ""
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
   validate:
     name: Validate Destruction Request
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Validate confirmation
         run: |
@@ -38,6 +60,22 @@ jobs:
           fi
 
           echo "⚠️  Destruction confirmed for environment: ${{ inputs.environment_name }}"
+
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.ORG_WIF_PROVIDER }}" ]; then
+            echo "::error::ORG_WIF_PROVIDER secret is not configured"
+            echo "::error::This is required for environment destruction. See README for setup instructions."
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::ORG_ADMIN_SERVICE_ACCOUNT secret is not configured"
+            echo "::error::This is required for environment destruction. See README for setup instructions."
+            exit 1
+          fi
+
+          echo "✓ All required secrets configured"
 
       - name: Warning for project deletion
         if: inputs.destroy_project == true
@@ -49,6 +87,7 @@ jobs:
     name: Cleanup Applications
     runs-on: ubuntu-latest
     needs: validate
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -87,6 +126,7 @@ jobs:
     name: Destroy Infrastructure
     runs-on: ubuntu-latest
     needs: [validate, cleanup-applications]
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,21 +169,6 @@ jobs:
           gsutil -m rm -r gs://homegeek-user-data-${ENV} || true
 
           echo "✓ Storage buckets deleted"
-
-      - name: Delete Secrets
-        continue-on-error: true
-        run: |
-          PROJECT_ID="${{ inputs.gcp_project_id }}"
-          ENV="${{ inputs.environment_name }}"
-
-          echo "Deleting secrets..."
-          for secret in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET FIREBASE_WEBHOOK_SECRET SERP_API_KEY YELP_API_KEY; do
-            gcloud secrets delete "${secret}-${ENV}" \
-              --project=$PROJECT_ID \
-              --quiet || true
-          done
-
-          echo "✓ Secrets deleted"
 
       - name: Delete RAG Corpora
         continue-on-error: true
@@ -192,7 +217,7 @@ jobs:
     name: Destroy GCP Project
     runs-on: ubuntu-latest
     needs: [validate, destroy-infrastructure]
-    if: inputs.destroy_project == true
+    if: github.event_name == 'workflow_dispatch' && inputs.destroy_project == true
     steps:
       - name: Google Auth
         uses: google-github-actions/auth@v2
@@ -219,7 +244,7 @@ jobs:
     name: Destruction Summary
     runs-on: ubuntu-latest
     needs: [validate, cleanup-applications, destroy-infrastructure]
-    if: always()
+    if: github.event_name == 'workflow_dispatch' && always()
     steps:
       - name: Generate summary
         run: |

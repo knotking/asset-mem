@@ -6,6 +6,7 @@ gcloud iam workload-identity-pools describe "github-pool" \
  --location="global" \
  --format="value(name)"
 
+WIF PROVIDER PATH
 POOL_ID = projects/321433914812/locations/global/workloadIdentityPools/github-pool
 
 gcloud iam workload-identity-pools providers create-oidc "github-provider" \

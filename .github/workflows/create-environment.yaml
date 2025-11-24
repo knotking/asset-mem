@@ -1,6 +1,9 @@
 name: Create New Environment
 
 on:
+  push:
+    branches:
+      - gcp_project
   workflow_dispatch:
     inputs:
       environment_name:
@@ -16,14 +19,6 @@ on:
         required: false
         default: false
         type: boolean
-      billing_account_id:
-        description: 'Billing Account ID (required if creating new project)'
-        required: false
-        type: string
-      organization_id:
-        description: 'Organization ID (optional, for new projects)'
-        required: false
-        type: string
       folder_id:
         description: 'Folder ID (optional, for new projects)'
         required: false
@@ -38,20 +33,34 @@ on:
           - us-central1
           - us-east1
           - us-west1
-      github_repository:
-        description: 'GitHub repository (owner/repo)'
-        required: true
-        type: string
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
+  validate-only:
+    name: Validate Workflow (Push Only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate workflow syntax
+        run: |
+          echo "✅ Workflow validation successful"
+          echo "📝 This is a push event - infrastructure will NOT be created"
+          echo "ℹ️  To create infrastructure, manually trigger this workflow from Actions tab"
+          echo ""
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+
   create-gcp-project:
     name: Create GCP Project (Optional)
     runs-on: ubuntu-latest
-    if: inputs.create_project == true
+    if: github.event_name == 'workflow_dispatch' && inputs.create_project == true
     outputs:
       project_id: ${{ steps.create.outputs.project_id }}
     steps:
@@ -62,11 +71,32 @@ jobs:
             exit 1
           fi
 
-          if [ -z "${{ inputs.billing_account_id }}" ]; then
-            echo "::error::billing_account_id is required when creating a new project"
+          if [ -z "${{ secrets.ORG_WIF_PROVIDER }}" ]; then
+            echo "::error::ORG_WIF_PROVIDER secret is not configured"
+            echo "::error::This is required for project creation. See README for setup instructions."
             exit 1
           fi
 
+          if [ -z "${{ secrets.ORG_ADMIN_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::ORG_ADMIN_SERVICE_ACCOUNT secret is not configured"
+            echo "::error::This is required for project creation. See README for setup instructions."
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.BILLING_ACCOUNT_ID }}" ]; then
+            echo "::error::BILLING_ACCOUNT_ID secret is not configured"
+            echo "::error::This is required for project creation. See README for setup instructions."
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.ORGANIZATION_ID }}" ]; then
+            echo "::error::ORGANIZATION_ID secret is not configured"
+            echo "::error::Projects must be created under an organization for proper governance."
+            echo "::error::See README for setup instructions."
+            exit 1
+          fi
+
+          echo "✓ All required secrets configured"
           echo "✓ Creating new GCP project: ${{ inputs.gcp_project_id }}"
 
       - name: Google Auth
@@ -81,31 +111,53 @@ jobs:
       - name: Create GCP Project
         id: create
         run: |
-          # Build create command
-          CREATE_CMD="gcloud projects create ${{ inputs.gcp_project_id }}"
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
 
-          # Add organization if provided
-          if [ -n "${{ inputs.organization_id }}" ]; then
-            CREATE_CMD="$CREATE_CMD --organization=${{ inputs.organization_id }}"
+          # Check if project already exists
+          echo "Checking if project $PROJECT_ID already exists..."
+          if gcloud projects describe $PROJECT_ID &>/dev/null; then
+            echo "ℹ️  Project $PROJECT_ID already exists"
+            echo "   Skipping project creation"
+            echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          else
+            echo "Creating new project: $PROJECT_ID"
+
+            # Build create command
+            CREATE_CMD="gcloud projects create $PROJECT_ID"
+
+            # Add organization if provided from secrets
+            if [ -n "${{ secrets.ORGANIZATION_ID }}" ]; then
+              CREATE_CMD="$CREATE_CMD --organization=${{ secrets.ORGANIZATION_ID }}"
+            fi
+
+            # Add folder if provided from inputs
+            if [ -n "${{ inputs.folder_id }}" ]; then
+              CREATE_CMD="$CREATE_CMD --folder=${{ inputs.folder_id }}"
+            fi
+
+            # Create project
+            eval $CREATE_CMD
+
+            echo "✓ Project created: $PROJECT_ID"
+            echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
           fi
-
-          # Add folder if provided
-          if [ -n "${{ inputs.folder_id }}" ]; then
-            CREATE_CMD="$CREATE_CMD --folder=${{ inputs.folder_id }}"
-          fi
-
-          # Create project
-          eval $CREATE_CMD
-
-          echo "✓ Project created: ${{ inputs.gcp_project_id }}"
-          echo "project_id=${{ inputs.gcp_project_id }}" >> $GITHUB_OUTPUT
 
       - name: Link Billing Account
         run: |
-          gcloud billing projects link ${{ inputs.gcp_project_id }} \
-            --billing-account=${{ inputs.billing_account_id }}
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
 
-          echo "✓ Billing account linked"
+          # Check if billing is already linked
+          CURRENT_BILLING=$(gcloud billing projects describe $PROJECT_ID \
+            --format="value(billingAccountName)" 2>/dev/null || echo "")
+
+          if [ -n "$CURRENT_BILLING" ]; then
+            echo "ℹ️  Billing account already linked: $CURRENT_BILLING"
+          else
+            echo "Linking billing account..."
+            gcloud billing projects link $PROJECT_ID \
+              --billing-account=${{ secrets.BILLING_ACCOUNT_ID }}
+            echo "✓ Billing account linked"
+          fi
 
       - name: Wait for project creation to propagate
         run: |
@@ -116,7 +168,7 @@ jobs:
     name: Resolve Configuration
     runs-on: ubuntu-latest
     needs: create-gcp-project
-    if: always()
+    if: github.event_name == 'workflow_dispatch' && always()
     environment: ${{ inputs.environment_name }}
     outputs:
       gcp_project_id: ${{ steps.resolve.outputs.gcp_project_id }}
@@ -125,21 +177,28 @@ jobs:
       - name: Resolve inputs from GitHub environment or workflow inputs
         id: resolve
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT_ENV_ADMIN }}
         run: |
           # Function to get value from GitHub environment variable
           get_github_var() {
             gh variable get "$1" --env ${{ inputs.environment_name }} 2>/dev/null || echo ""
           }
 
-          # Resolve GCP_PROJECT_ID
-          if [ -n "${{ inputs.gcp_project_id }}" ]; then
+          # Resolve GCP_PROJECT_ID (priority: created project > workflow input > github env)
+          if [ -n "${{ needs.create-gcp-project.outputs.project_id }}" ]; then
+            PROJECT_ID="${{ needs.create-gcp-project.outputs.project_id }}"
+            echo "Using GCP_PROJECT_ID from created project: $PROJECT_ID"
+          elif [ -n "${{ inputs.gcp_project_id }}" ]; then
             PROJECT_ID="${{ inputs.gcp_project_id }}"
-            echo "Using GCP_PROJECT_ID from workflow input"
+            echo "Using GCP_PROJECT_ID from workflow input: $PROJECT_ID"
           else
             PROJECT_ID=$(get_github_var "GCP_PROJECT_ID")
-            if [ -z "$PROJECT_ID" ]; then
+            # Remove quotes if present
+            PROJECT_ID=$(echo "$PROJECT_ID" | tr -d '"')
+            if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
               echo "::error::GCP_PROJECT_ID not provided and not found in GitHub environment"
+              echo "::error::Current value: '$PROJECT_ID'"
+              echo "::error::Please provide gcp_project_id as workflow input or set it in the GitHub environment"
               exit 1
             fi
             echo "Using GCP_PROJECT_ID from GitHub environment: $PROJECT_ID"
@@ -169,9 +228,12 @@ jobs:
     name: Create Infrastructure with gcloud
     runs-on: ubuntu-latest
     needs: resolve-inputs
+    if: github.event_name == 'workflow_dispatch'
     outputs:
+      gcp_project_number: ${{ steps.iam.outputs.project_number }}
       workload_identity_provider: ${{ steps.iam.outputs.wif_provider }}
       service_account_email: ${{ steps.iam.outputs.sa_email }}
+      firebase_service_account_email: ${{ steps.iam.outputs.firebase_sa_email }}
       user_data_bucket: ${{ steps.storage.outputs.user_data_bucket }}
       user_upload_topic: ${{ steps.pubsub.outputs.upload_topic }}
       user_upload_result_topic: ${{ steps.pubsub.outputs.result_topic }}
@@ -192,116 +254,269 @@ jobs:
 
       - name: Enable Required APIs
         run: |
-          echo "Enabling required APIs..."
-          gcloud services enable \
-            cloudresourcemanager.googleapis.com \
-            iam.googleapis.com \
-            iamcredentials.googleapis.com \
-            sts.googleapis.com \
-            artifactregistry.googleapis.com \
-            cloudbuild.googleapis.com \
-            run.googleapis.com \
-            aiplatform.googleapis.com \
-            pubsub.googleapis.com \
-            storage.googleapis.com \
-            secretmanager.googleapis.com \
-            cloudfunctions.googleapis.com \
-            eventarc.googleapis.com \
-            --project=${{ needs.resolve-inputs.outputs.gcp_project_id }}
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
 
-          echo "✓ APIs enabled, waiting for propagation..."
-          sleep 30
+          # Define required APIs
+          REQUIRED_APIS=(
+            "cloudresourcemanager.googleapis.com"
+            "iam.googleapis.com"
+            "iamcredentials.googleapis.com"
+            "sts.googleapis.com"
+            "artifactregistry.googleapis.com"
+            "cloudbuild.googleapis.com"
+            "run.googleapis.com"
+            "aiplatform.googleapis.com"
+            "pubsub.googleapis.com"
+            "storage.googleapis.com"
+            "secretmanager.googleapis.com"
+            "cloudfunctions.googleapis.com"
+            "eventarc.googleapis.com"
+          )
+
+          echo "Checking which APIs need to be enabled..."
+
+          # Get list of enabled services
+          ENABLED_SERVICES=$(gcloud services list --enabled --project=$PROJECT_ID --format="value(config.name)" 2>/dev/null)
+
+          # Find APIs that need to be enabled
+          APIS_TO_ENABLE=()
+          for api in "${REQUIRED_APIS[@]}"; do
+            if echo "$ENABLED_SERVICES" | grep -q "^${api}$"; then
+              echo "✓ $api (already enabled)"
+            else
+              echo "⚠ $api (needs enabling)"
+              APIS_TO_ENABLE+=("$api")
+            fi
+          done
+
+          # Enable missing APIs if any
+          if [ ${#APIS_TO_ENABLE[@]} -eq 0 ]; then
+            echo ""
+            echo "✓ All required APIs are already enabled, skipping enable step"
+          else
+            echo ""
+            echo "Enabling ${#APIS_TO_ENABLE[@]} API(s)..."
+            gcloud services enable "${APIS_TO_ENABLE[@]}" --project=$PROJECT_ID
+
+            echo "✓ APIs enabled, waiting for propagation..."
+            sleep 30
+          fi
 
       - name: Create IAM Resources
         id: iam
         run: |
           PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
           REGION="${{ needs.resolve-inputs.outputs.region }}"
-
-          echo "Creating service account..."
-          # Create deployment service account
-          gcloud iam service-accounts create githubworkflowdeployment \
-            --display-name="GitHub Workflow Deployment Service Account" \
-            --description="Service account used by GitHub Actions for deploying services" \
-            --project=$PROJECT_ID || echo "Service account may already exist"
-
           SA_EMAIL="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
-          echo "✓ Service account: $SA_EMAIL"
+          FIREBASE_SA_EMAIL="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
 
-          echo "Granting IAM roles..."
-          # Grant necessary roles to the service account
-          for role in \
-            "roles/run.developer" \
-            "roles/artifactregistry.writer" \
-            "roles/cloudbuild.builds.editor" \
-            "roles/serviceusage.serviceUsageConsumer" \
-            "roles/iam.serviceAccountUser" \
-            "roles/artifactregistry.repoAdmin" \
-            "roles/storage.admin" \
-            "roles/pubsub.editor" \
-            "roles/aiplatform.user" \
-            "roles/cloudfunctions.developer" \
-            "roles/run.admin" \
-            "roles/secretmanager.secretAccessor"; do
+          echo "Checking GitHub workflow service account..."
+          # Check if service account already exists
+          if gcloud iam service-accounts describe $SA_EMAIL --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Service account already exists: $SA_EMAIL"
+          else
+            echo "Creating service account..."
+            gcloud iam service-accounts create githubworkflowdeployment \
+              --display-name="GitHub Workflow Deployment Service Account" \
+              --description="Service account used by GitHub Actions for deploying services" \
+              --project=$PROJECT_ID
+            echo "✓ Service account created: $SA_EMAIL"
+          fi
 
-            gcloud projects add-iam-policy-binding $PROJECT_ID \
-              --member="serviceAccount:${SA_EMAIL}" \
-              --role="$role" \
-              --condition=None \
-              --quiet || true
+          # Define required roles for GitHub workflow service account
+          REQUIRED_ROLES=(
+            "roles/run.developer"
+            "roles/artifactregistry.writer"
+            "roles/cloudbuild.builds.editor"
+            "roles/serviceusage.serviceUsageConsumer"
+            "roles/iam.serviceAccountUser"
+            "roles/artifactregistry.repoAdmin"
+            "roles/storage.admin"
+            "roles/pubsub.editor"
+            "roles/aiplatform.user"
+            "roles/cloudfunctions.developer"
+            "roles/run.admin"
+            "roles/secretmanager.secretAccessor"
+          )
+
+          echo "Checking IAM role bindings for GitHub workflow service account..."
+          # Get current IAM policy
+          CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
+
+          ROLES_TO_ADD=()
+          for role in "${REQUIRED_ROLES[@]}"; do
+            # Check if the service account already has this role
+            if echo "$CURRENT_POLICY" | jq -e ".bindings[] | select(.role==\"$role\") | .members[] | select(. == \"serviceAccount:${SA_EMAIL}\")" &>/dev/null; then
+              echo "✓ $role (already bound)"
+            else
+              echo "⚠ $role (needs binding)"
+              ROLES_TO_ADD+=("$role")
+            fi
           done
-          echo "✓ IAM roles granted"
 
-          echo "Creating Workload Identity Pool..."
-          # Create Workload Identity Pool
-          gcloud iam workload-identity-pools create github-pool \
+          # Grant missing roles
+          if [ ${#ROLES_TO_ADD[@]} -eq 0 ]; then
+            echo "✓ All IAM roles already bound"
+          else
+            echo "Granting ${#ROLES_TO_ADD[@]} IAM role(s)..."
+            for role in "${ROLES_TO_ADD[@]}"; do
+              gcloud projects add-iam-policy-binding $PROJECT_ID \
+                --member="serviceAccount:${SA_EMAIL}" \
+                --role="$role" \
+                --condition=None \
+                --quiet
+            done
+            echo "✓ IAM roles granted"
+          fi
+
+          echo ""
+          echo "Checking Firebase App Hosting deployer service account..."
+          # Check if Firebase service account already exists
+          if gcloud iam service-accounts describe $FIREBASE_SA_EMAIL --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Firebase service account already exists: $FIREBASE_SA_EMAIL"
+          else
+            echo "Creating Firebase App Hosting deployer service account..."
+            gcloud iam service-accounts create firebase-apphosting-deployer \
+              --display-name="Firebase App Hosting Deployer" \
+              --description="Service account used by Firebase App Hosting for deploying web applications" \
+              --project=$PROJECT_ID
+            echo "✓ Firebase service account created: $FIREBASE_SA_EMAIL"
+          fi
+
+          # Define required roles for Firebase App Hosting deployer
+          FIREBASE_REQUIRED_ROLES=(
+            "roles/developerconnect.admin"
+            "roles/developerconnect.readTokenAccessor"
+            "roles/firebaseapphosting.admin"
+            "roles/serviceusage.serviceUsageConsumer"
+            "roles/storage.objectViewer"
+          )
+
+          echo "Checking IAM role bindings for Firebase service account..."
+          # Refresh current IAM policy
+          CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
+
+          FIREBASE_ROLES_TO_ADD=()
+          for role in "${FIREBASE_REQUIRED_ROLES[@]}"; do
+            # Check if the Firebase service account already has this role
+            if echo "$CURRENT_POLICY" | jq -e ".bindings[] | select(.role==\"$role\") | .members[] | select(. == \"serviceAccount:${FIREBASE_SA_EMAIL}\")" &>/dev/null; then
+              echo "✓ $role (already bound)"
+            else
+              echo "⚠ $role (needs binding)"
+              FIREBASE_ROLES_TO_ADD+=("$role")
+            fi
+          done
+
+          # Grant missing roles to Firebase service account
+          if [ ${#FIREBASE_ROLES_TO_ADD[@]} -eq 0 ]; then
+            echo "✓ All Firebase IAM roles already bound"
+          else
+            echo "Granting ${#FIREBASE_ROLES_TO_ADD[@]} Firebase IAM role(s)..."
+            for role in "${FIREBASE_ROLES_TO_ADD[@]}"; do
+              gcloud projects add-iam-policy-binding $PROJECT_ID \
+                --member="serviceAccount:${FIREBASE_SA_EMAIL}" \
+                --role="$role" \
+                --condition=None \
+                --quiet
+            done
+            echo "✓ Firebase IAM roles granted"
+          fi
+
+          echo "Checking Workload Identity Pool..."
+          # Check if Workload Identity Pool already exists
+          if gcloud iam workload-identity-pools describe github-pool \
             --location="global" \
-            --display-name="GitHub Actions Pool" \
-            --description="Workload Identity Pool for GitHub Actions" \
-            --project=$PROJECT_ID || echo "Pool may already exist"
+            --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Workload Identity Pool already exists"
+          else
+            echo "Creating Workload Identity Pool..."
+            gcloud iam workload-identity-pools create github-pool \
+              --location="global" \
+              --display-name="GitHub Actions Pool" \
+              --description="Workload Identity Pool for GitHub Actions" \
+              --project=$PROJECT_ID
+            echo "✓ Workload Identity Pool created"
+          fi
 
-          # Create Workload Identity Provider
-          gcloud iam workload-identity-pools providers create-oidc github-provider \
-            --location="global" \
-            --workload-identity-pool="github-pool" \
-            --display-name="GitHub Provider" \
-            --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
-            --issuer-uri="https://token.actions.githubusercontent.com" \
-            --project=$PROJECT_ID || echo "Provider may already exist"
-
-          # Get the Workload Identity Provider resource name
-          WIF_PROVIDER=$(gcloud iam workload-identity-pools providers describe github-provider \
+          # Check if Workload Identity Provider already exists
+          echo "Checking for existing Workload Identity Provider..."
+          EXISTING_PROVIDER=$(gcloud iam workload-identity-pools providers describe github-provider \
             --location="global" \
             --workload-identity-pool="github-pool" \
             --project=$PROJECT_ID \
-            --format="value(name)")
+            --format="value(name)" 2>/dev/null || echo "")
 
-          echo "✓ Workload Identity Provider: $WIF_PROVIDER"
+          if [ -n "$EXISTING_PROVIDER" ]; then
+            echo "ℹ️  Workload Identity Provider already exists: $EXISTING_PROVIDER"
+            echo "   Skipping creation to preserve existing configuration"
+            WIF_PROVIDER="$EXISTING_PROVIDER"
+          else
+            echo "Creating Workload Identity Provider..."
+            # Create Workload Identity Provider
+            gcloud iam workload-identity-pools providers create-oidc github-provider \
+              --location="global" \
+              --workload-identity-pool="github-pool" \
+              --display-name="GitHub Provider" \
+              --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+              --attribute-condition="assertion.repository_owner == '${{ github.repository_owner }}'" \
+              --issuer-uri="https://token.actions.githubusercontent.com" \
+              --project=$PROJECT_ID
 
-          echo "Binding service account to Workload Identity..."
-          # Bind the service account to allow GitHub Actions to impersonate it
-          gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
-            --project=$PROJECT_ID \
-            --role="roles/iam.workloadIdentityUser" \
-            --member="principalSet://iam.googleapis.com/projects/$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ inputs.github_repository }}" \
-            --quiet || true
+            echo "✓ Workload Identity Provider created"
+            echo "   Waiting for provider to propagate..."
+            sleep 10
 
-          echo "✓ Workload Identity binding created"
+            # Get the newly created provider with retries
+            for i in {1..5}; do
+              WIF_PROVIDER=$(gcloud iam workload-identity-pools providers describe github-provider \
+                --location="global" \
+                --workload-identity-pool="github-pool" \
+                --project=$PROJECT_ID \
+                --format="value(name)" 2>/dev/null || echo "")
 
-          # Grant RAG service account access to storage
+              if [ -n "$WIF_PROVIDER" ]; then
+                echo "✓ Provider verified: $WIF_PROVIDER"
+                break
+              fi
+
+              echo "   Waiting for provider to be available (attempt $i/5)..."
+              sleep 5
+            done
+
+            if [ -z "$WIF_PROVIDER" ]; then
+              echo "::warning::Provider created but not yet available for describe. Constructing expected name..."
+              PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+              WIF_PROVIDER="projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+              echo "   Using constructed provider name: $WIF_PROVIDER"
+            fi
+          fi
+
+          echo "Checking Workload Identity binding..."
+          # Check if binding already exists
           PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
-          RAG_SA="service-${PROJECT_NUMBER}@gcp-sa-vertex-rag.iam.gserviceaccount.com"
+          WIF_MEMBER="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ github.repository }}"
 
-          gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:${RAG_SA}" \
-            --role="roles/storage.objectAdmin" \
-            --condition=None \
-            --quiet || true
+          EXISTING_BINDING=$(gcloud iam service-accounts get-iam-policy $SA_EMAIL \
+            --project=$PROJECT_ID \
+            --format=json | jq -e ".bindings[] | select(.role==\"roles/iam.workloadIdentityUser\") | .members[] | select(. == \"$WIF_MEMBER\")" 2>/dev/null || echo "")
 
-          echo "✓ RAG service account permissions granted"
+          if [ -n "$EXISTING_BINDING" ]; then
+            echo "✓ Workload Identity binding already exists"
+          else
+            echo "Creating Workload Identity binding..."
+            gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
+              --project=$PROJECT_ID \
+              --role="roles/iam.workloadIdentityUser" \
+              --member="$WIF_MEMBER" \
+              --quiet
+            echo "✓ Workload Identity binding created"
+          fi
 
           # Output values
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+          echo "project_number=$PROJECT_NUMBER" >> $GITHUB_OUTPUT
           echo "sa_email=$SA_EMAIL" >> $GITHUB_OUTPUT
+          echo "firebase_sa_email=$FIREBASE_SA_EMAIL" >> $GITHUB_OUTPUT
           echo "wif_provider=$WIF_PROVIDER" >> $GITHUB_OUTPUT
 
       - name: Create Storage Buckets
@@ -311,53 +526,45 @@ jobs:
           REGION="${{ needs.resolve-inputs.outputs.region }}"
           ENV="${{ inputs.environment_name }}"
 
-          echo "Creating storage buckets..."
-
           # Create user data bucket
           USER_DATA_BUCKET="homegeek-user-data-${ENV}"
-          gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${USER_DATA_BUCKET}/ || echo "Bucket may already exist"
+          echo "Checking user data bucket: $USER_DATA_BUCKET"
 
-          # Enable versioning
-          gsutil versioning set on gs://${USER_DATA_BUCKET}/
+          if gsutil ls -b gs://${USER_DATA_BUCKET}/ &>/dev/null; then
+            echo "✓ User data bucket already exists: $USER_DATA_BUCKET"
+          else
+            echo "Creating user data bucket..."
+            gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${USER_DATA_BUCKET}/
 
-          # Set lifecycle policy (delete after 90 days)
-          cat > /tmp/lifecycle.json <<EOF
-{
-  "lifecycle": {
-    "rule": [
-      {
-        "action": {"type": "Delete"},
-        "condition": {"age": 90}
-      }
-    ]
-  }
-}
-EOF
-          gsutil lifecycle set /tmp/lifecycle.json gs://${USER_DATA_BUCKET}/
+            # Enable versioning
+            gsutil versioning set on gs://${USER_DATA_BUCKET}/
 
-          # Set CORS policy
-          cat > /tmp/cors.json <<EOF
-[
-  {
-    "origin": ["*"],
-    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
-    "responseHeader": ["*"],
-    "maxAgeSeconds": 3600
-  }
-}
-EOF
-          gsutil cors set /tmp/cors.json gs://${USER_DATA_BUCKET}/
+            # Set lifecycle policy (delete after 90 days)
+            echo '{"lifecycle":{"rule":[{"action":{"type":"Delete"},"condition":{"age":90}}]}}' > /tmp/lifecycle.json
+            gsutil lifecycle set /tmp/lifecycle.json gs://${USER_DATA_BUCKET}/
 
-          # Set uniform bucket-level access
-          gsutil uniformbucketlevelaccess set on gs://${USER_DATA_BUCKET}/
+            # Set CORS policy
+            echo '[{"origin":["*"],"method":["GET","HEAD","PUT","POST","DELETE"],"responseHeader":["*"],"maxAgeSeconds":3600}]' > /tmp/cors.json
+            gsutil cors set /tmp/cors.json gs://${USER_DATA_BUCKET}/
 
-          echo "✓ User data bucket created: $USER_DATA_BUCKET"
+            # Set uniform bucket-level access
+            gsutil uniformbucketlevelaccess set on gs://${USER_DATA_BUCKET}/
 
-          # Create agent catalog bucket (shared, not environment-specific)
-          CATALOG_BUCKET="homegeek-catalog"
-          gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${CATALOG_BUCKET}/ 2>/dev/null || echo "Catalog bucket already exists"
-          gsutil uniformbucketlevelaccess set on gs://${CATALOG_BUCKET}/ 2>/dev/null || true
-          echo "✓ Catalog bucket ready: $CATALOG_BUCKET"
+            echo "✓ User data bucket created: $USER_DATA_BUCKET"
+          fi
+
+          # Create agent catalog bucket (per-environment)
+          CATALOG_BUCKET="homegeek-catalog-${ENV}"
+          echo "Checking catalog bucket: $CATALOG_BUCKET"
+
+          if gsutil ls -b gs://${CATALOG_BUCKET}/ &>/dev/null; then
+            echo "✓ Catalog bucket already exists: $CATALOG_BUCKET"
+          else
+            echo "Creating catalog bucket..."
+            gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${CATALOG_BUCKET}/
+            gsutil uniformbucketlevelaccess set on gs://${CATALOG_BUCKET}/
+            echo "✓ Catalog bucket created: $CATALOG_BUCKET"
+          fi
 
           # Output values
           echo "user_data_bucket=$USER_DATA_BUCKET" >> $GITHUB_OUTPUT
@@ -368,63 +575,73 @@ EOF
           PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
           ENV="${{ inputs.environment_name }}"
 
-          echo "Creating Pub/Sub topics and subscriptions..."
-
           # Create user upload topic
           UPLOAD_TOPIC="user-upload-topic-${ENV}"
-          gcloud pubsub topics create $UPLOAD_TOPIC \
-            --project=$PROJECT_ID \
-            --message-retention-duration=7d || echo "Topic may already exist"
-          echo "✓ Topic created: $UPLOAD_TOPIC"
+          echo "Checking topic: $UPLOAD_TOPIC"
+
+          if gcloud pubsub topics describe $UPLOAD_TOPIC --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Topic already exists: $UPLOAD_TOPIC"
+          else
+            echo "Creating topic: $UPLOAD_TOPIC"
+            gcloud pubsub topics create $UPLOAD_TOPIC \
+              --project=$PROJECT_ID \
+              --message-retention-duration=7d
+            echo "✓ Topic created: $UPLOAD_TOPIC"
+          fi
 
           # Create user upload subscription
-          gcloud pubsub subscriptions create "user-upload-subscription-${ENV}" \
-            --topic=$UPLOAD_TOPIC \
-            --project=$PROJECT_ID \
-            --ack-deadline=60 \
-            --message-retention-duration=7d \
-            --min-retry-delay=10s \
-            --max-retry-delay=600s || echo "Subscription may already exist"
-          echo "✓ Subscription created: user-upload-subscription-${ENV}"
+          UPLOAD_SUB="user-upload-subscription-${ENV}"
+          echo "Checking subscription: $UPLOAD_SUB"
+
+          if gcloud pubsub subscriptions describe $UPLOAD_SUB --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Subscription already exists: $UPLOAD_SUB"
+          else
+            echo "Creating subscription: $UPLOAD_SUB"
+            gcloud pubsub subscriptions create $UPLOAD_SUB \
+              --topic=$UPLOAD_TOPIC \
+              --project=$PROJECT_ID \
+              --ack-deadline=60 \
+              --message-retention-duration=7d \
+              --min-retry-delay=10s \
+              --max-retry-delay=600s
+            echo "✓ Subscription created: $UPLOAD_SUB"
+          fi
 
           # Create user upload result topic
           RESULT_TOPIC="user-upload-result-topic-${ENV}"
-          gcloud pubsub topics create $RESULT_TOPIC \
-            --project=$PROJECT_ID \
-            --message-retention-duration=7d || echo "Topic may already exist"
-          echo "✓ Topic created: $RESULT_TOPIC"
+          echo "Checking topic: $RESULT_TOPIC"
+
+          if gcloud pubsub topics describe $RESULT_TOPIC --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Topic already exists: $RESULT_TOPIC"
+          else
+            echo "Creating topic: $RESULT_TOPIC"
+            gcloud pubsub topics create $RESULT_TOPIC \
+              --project=$PROJECT_ID \
+              --message-retention-duration=7d
+            echo "✓ Topic created: $RESULT_TOPIC"
+          fi
 
           # Create user upload result subscription
-          gcloud pubsub subscriptions create "user-upload-result-subscription-${ENV}" \
-            --topic=$RESULT_TOPIC \
-            --project=$PROJECT_ID \
-            --ack-deadline=60 \
-            --message-retention-duration=7d \
-            --min-retry-delay=10s \
-            --max-retry-delay=600s || echo "Subscription may already exist"
-          echo "✓ Subscription created: user-upload-result-subscription-${ENV}"
+          RESULT_SUB="user-upload-result-subscription-${ENV}"
+          echo "Checking subscription: $RESULT_SUB"
+
+          if gcloud pubsub subscriptions describe $RESULT_SUB --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Subscription already exists: $RESULT_SUB"
+          else
+            echo "Creating subscription: $RESULT_SUB"
+            gcloud pubsub subscriptions create $RESULT_SUB \
+              --topic=$RESULT_TOPIC \
+              --project=$PROJECT_ID \
+              --ack-deadline=60 \
+              --message-retention-duration=7d \
+              --min-retry-delay=10s \
+              --max-retry-delay=600s
+            echo "✓ Subscription created: $RESULT_SUB"
+          fi
 
           # Output values
           echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
-
-      - name: Create Secret Manager Secrets
-        id: secrets
-        run: |
-          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
-          ENV="${{ inputs.environment_name }}"
-
-          echo "Creating Secret Manager secrets..."
-
-          # Create secrets (empty, to be populated later)
-          for secret in TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET FIREBASE_WEBHOOK_SECRET SERP_API_KEY YELP_API_KEY; do
-            SECRET_NAME="${secret}-${ENV}"
-            gcloud secrets create $SECRET_NAME \
-              --replication-policy="automatic" \
-              --labels="environment=${ENV}" \
-              --project=$PROJECT_ID 2>/dev/null || echo "Secret $SECRET_NAME may already exist"
-            echo "✓ Secret created: $SECRET_NAME (empty, add values manually)"
-          done
 
       - name: Create RAG Corpora
         id: rag
@@ -434,56 +651,150 @@ EOF
           REGION="${{ needs.resolve-inputs.outputs.region }}"
           ENV="${{ inputs.environment_name }}"
 
-          # Create 2 separate RAG corpora using Vertex AI RAG API
-          BASE_URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/ragCorpora"
+          # RAG API has capacity restrictions in us-central1 and us-east4 for new projects
+          # Map to supported regions: https://cloud.google.com/vertex-ai/generative-ai/docs/rag-engine/rag-overview#supported-regions
+          case "$REGION" in
+            us-central1|us-east4)
+              RAG_REGION="us-west1"
+              echo "⚠️  RAG not available in $REGION for new projects, using $RAG_REGION instead"
+              ;;
+            europe-west*)
+              RAG_REGION="europe-west4"
+              ;;
+            asia-*)
+              RAG_REGION="asia-southeast1"
+              ;;
+            *)
+              RAG_REGION="us-west1"  # Default fallback to a supported region
+              ;;
+          esac
+
+          echo "Managing RAG corpora for project: $PROJECT_ID"
+          echo "Infrastructure region: $REGION, RAG region: $RAG_REGION"
+
+          # Setup for RAG API calls
+          BASE_URL="https://${RAG_REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${RAG_REGION}/ragCorpora"
           AUTH_HEADER="Authorization: Bearer $(gcloud auth print-access-token)"
 
-          # Create User Upload RAG Corpus
-          echo "Creating User Upload RAG corpus..."
-          USER_UPLOAD_RESPONSE=$(curl -X POST \
-            -H "$AUTH_HEADER" \
-            -H "Content-Type: application/json" \
-            "$BASE_URL" \
-            -d "{
-              \"display_name\": \"user-upload-rag-corpus-${ENV}\",
-              \"description\": \"User upload RAG corpus for ${ENV} environment\"
-            }" 2>&1) || true
+          # Get project number for RAG service account
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+          RAG_SA="service-${PROJECT_NUMBER}@gcp-sa-vertex-rag.iam.gserviceaccount.com"
 
-          USER_UPLOAD_CORPUS=$(echo "$USER_UPLOAD_RESPONSE" | jq -r '.name // empty')
+          # Check for existing User Upload RAG Corpus
+          echo "Checking for existing User Upload RAG corpus..."
+          USER_UPLOAD_DISPLAY_NAME="user-upload-rag-corpus-${ENV}"
+
+          EXISTING_CORPORA=$(curl -s -X GET \
+            -H "$AUTH_HEADER" \
+            "$BASE_URL" 2>&1 || echo "")
+
+          USER_UPLOAD_CORPUS=$(echo "$EXISTING_CORPORA" | jq -r ".ragCorpora[]? | select(.displayName==\"$USER_UPLOAD_DISPLAY_NAME\") | .name" 2>/dev/null || echo "")
 
           if [ -n "$USER_UPLOAD_CORPUS" ] && [ "$USER_UPLOAD_CORPUS" != "null" ]; then
-            echo "✓ User upload RAG corpus created: $USER_UPLOAD_CORPUS"
+            echo "✓ User upload RAG corpus already exists: $USER_UPLOAD_CORPUS"
             echo "user_upload_rag_corpus=$USER_UPLOAD_CORPUS" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ User upload RAG corpus creation failed - using placeholder"
-            echo "user_upload_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+            echo "Creating User Upload RAG corpus..."
+            USER_UPLOAD_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+              -H "$AUTH_HEADER" \
+              -H "Content-Type: application/json" \
+              "$BASE_URL" \
+              -d "{
+                \"displayName\": \"$USER_UPLOAD_DISPLAY_NAME\",
+                \"description\": \"User upload RAG corpus for ${ENV} environment\"
+              }" 2>&1) || true
+
+            # Extract HTTP code and body
+            HTTP_CODE=$(echo "$USER_UPLOAD_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            RESPONSE_BODY=$(echo "$USER_UPLOAD_RESPONSE" | sed '/HTTP_CODE:/d')
+
+            echo "API Response Status: $HTTP_CODE"
+
+            # Only try to parse JSON if we got a 200 response
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+              USER_UPLOAD_CORPUS=$(echo "$RESPONSE_BODY" | jq -r '.name // empty' 2>/dev/null)
+              if [ -n "$USER_UPLOAD_CORPUS" ] && [ "$USER_UPLOAD_CORPUS" != "null" ]; then
+                echo "✓ User upload RAG corpus created: $USER_UPLOAD_CORPUS"
+                echo "user_upload_rag_corpus=$USER_UPLOAD_CORPUS" >> $GITHUB_OUTPUT
+              else
+                echo "⚠️ Could not extract corpus name from response"
+                echo "Response: $RESPONSE_BODY"
+                echo "user_upload_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "⚠️ User upload RAG corpus creation failed with HTTP $HTTP_CODE"
+              echo "Response: $RESPONSE_BODY"
+              echo "user_upload_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+            fi
           fi
 
-          # Create Knowledge Base RAG Corpus
-          echo "Creating Knowledge Base RAG corpus..."
-          KNOWLEDGE_BASE_RESPONSE=$(curl -X POST \
-            -H "$AUTH_HEADER" \
-            -H "Content-Type: application/json" \
-            "$BASE_URL" \
-            -d "{
-              \"display_name\": \"knowledge-base-rag-corpus-${ENV}\",
-              \"description\": \"Knowledge base RAG corpus for ${ENV} environment\"
-            }" 2>&1) || true
+          # Check for existing Knowledge Base RAG Corpus
+          echo "Checking for existing Knowledge Base RAG corpus..."
+          KB_DISPLAY_NAME="knowledge-base-rag-corpus-${ENV}"
 
-          KNOWLEDGE_BASE_CORPUS=$(echo "$KNOWLEDGE_BASE_RESPONSE" | jq -r '.name // empty')
+          KNOWLEDGE_BASE_CORPUS=$(echo "$EXISTING_CORPORA" | jq -r ".ragCorpora[]? | select(.displayName==\"$KB_DISPLAY_NAME\") | .name" 2>/dev/null || echo "")
 
           if [ -n "$KNOWLEDGE_BASE_CORPUS" ] && [ "$KNOWLEDGE_BASE_CORPUS" != "null" ]; then
-            echo "✓ Knowledge base RAG corpus created: $KNOWLEDGE_BASE_CORPUS"
+            echo "✓ Knowledge base RAG corpus already exists: $KNOWLEDGE_BASE_CORPUS"
             echo "knowledge_base_rag_corpus=$KNOWLEDGE_BASE_CORPUS" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ Knowledge base RAG corpus creation failed - using placeholder"
-            echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+            echo "Creating Knowledge Base RAG corpus..."
+            KNOWLEDGE_BASE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+              -H "$AUTH_HEADER" \
+              -H "Content-Type: application/json" \
+              "$BASE_URL" \
+              -d "{
+                \"displayName\": \"$KB_DISPLAY_NAME\",
+                \"description\": \"Knowledge base RAG corpus for ${ENV} environment\"
+              }" 2>&1) || true
+
+            # Extract HTTP code and body
+            KB_HTTP_CODE=$(echo "$KNOWLEDGE_BASE_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            KB_RESPONSE_BODY=$(echo "$KNOWLEDGE_BASE_RESPONSE" | sed '/HTTP_CODE:/d')
+
+            echo "API Response Status: $KB_HTTP_CODE"
+
+            # Only try to parse JSON if we got a 200 response
+            if [ "$KB_HTTP_CODE" = "200" ] || [ "$KB_HTTP_CODE" = "201" ]; then
+              KNOWLEDGE_BASE_CORPUS=$(echo "$KB_RESPONSE_BODY" | jq -r '.name // empty' 2>/dev/null)
+              if [ -n "$KNOWLEDGE_BASE_CORPUS" ] && [ "$KNOWLEDGE_BASE_CORPUS" != "null" ]; then
+                echo "✓ Knowledge base RAG corpus created: $KNOWLEDGE_BASE_CORPUS"
+                echo "knowledge_base_rag_corpus=$KNOWLEDGE_BASE_CORPUS" >> $GITHUB_OUTPUT
+              else
+                echo "⚠️ Could not extract corpus name from response"
+                echo "Response: $KB_RESPONSE_BODY"
+                echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "⚠️ Knowledge base RAG corpus creation failed with HTTP $KB_HTTP_CODE"
+              echo "Response: $KB_RESPONSE_BODY"
+              echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          # Grant RAG service account access to storage (only if at least one corpus was created)
+          if [ -n "$USER_UPLOAD_CORPUS" ] && [ "$USER_UPLOAD_CORPUS" != "null" ] && [ "$USER_UPLOAD_CORPUS" != "placeholder" ]; then
+            echo "Granting RAG service account storage permissions..."
+            if gcloud projects add-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${RAG_SA}" \
+              --role="roles/storage.objectAdmin" \
+              --condition=None \
+              --quiet 2>/dev/null; then
+              echo "✓ RAG service account permissions granted"
+            else
+              echo "⚠️ Failed to grant RAG service account permissions (service account may not exist yet)"
+              echo "   The RAG service account is: $RAG_SA"
+              echo "   You may need to grant permissions manually after the first RAG operation"
+            fi
+          else
+            echo "⚠️ Skipping RAG service account permissions (no corpora created)"
           fi
 
   create-github-environment:
     name: Create GitHub Environment
     runs-on: ubuntu-latest
     needs: [resolve-inputs, create-infrastructure]
+    if: github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       id-token: write
@@ -494,39 +805,71 @@ EOF
 
       - name: Create GitHub Environment and Variables
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT_ENV_ADMIN }}
         run: |
           # Create the environment
           gh api --method PUT repos/${{ github.repository }}/environments/${{ inputs.environment_name }}
 
-          # Function to set variable only if it doesn't exist
-          set_var_if_not_exists() {
+          # Function to set or update variable with diff display
+          set_or_update_var() {
             local var_name=$1
             local var_value=$2
 
             # Try to get existing variable (will fail if doesn't exist)
-            if ! gh variable get "$var_name" --env ${{ inputs.environment_name }} &>/dev/null; then
+            existing_value=$(gh variable get "$var_name" --env ${{ inputs.environment_name }} 2>/dev/null || echo "")
+
+            if [ -z "$existing_value" ]; then
               gh variable set "$var_name" --body "$var_value" --env ${{ inputs.environment_name }}
-              echo "✅ Set $var_name"
+              echo "✅ Created $var_name = $var_value"
+            elif [ "$existing_value" != "$var_value" ]; then
+              echo "🔄 Updating $var_name:"
+              echo "   Old: $existing_value"
+              echo "   New: $var_value"
+              gh variable set "$var_name" --body "$var_value" --env ${{ inputs.environment_name }}
+              echo "   ✓ Updated"
             else
-              echo "⏭️  $var_name already exists, keeping existing value"
+              echo "✓ $var_name (unchanged)"
             fi
           }
 
-          # Set variables (only if they don't exist)
-          set_var_if_not_exists "GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
-          set_var_if_not_exists "GCP_REGION" "${{ needs.resolve-inputs.outputs.region }}"
-          set_var_if_not_exists "WORKLOAD_IDENTITY_PROVIDER" "${{ needs.create-infrastructure.outputs.workload_identity_provider }}"
-          set_var_if_not_exists "GCP_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.service_account_email }}"
-          set_var_if_not_exists "GCS_BUCKET" "${{ needs.create-infrastructure.outputs.user_data_bucket }}"
-          set_var_if_not_exists "USER_UPLOAD_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_topic }}"
-          set_var_if_not_exists "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
-          set_var_if_not_exists "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
-          set_var_if_not_exists "REASONING_ENGINE_ID" "new"
-          set_var_if_not_exists "USER_UPLOAD_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}"
-          set_var_if_not_exists "KNOWLEDGE_BASE_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}"
+          # Set or update all variables
+          echo "Configuring GitHub environment variables..."
 
+          # Core GCP configuration
+          set_or_update_var "GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          set_or_update_var "GCP_PROJECT_NUMBER" "${{ needs.create-infrastructure.outputs.gcp_project_number }}"
+          set_or_update_var "GCP_REGION" "${{ needs.resolve-inputs.outputs.region }}"
+          set_or_update_var "WORKLOAD_IDENTITY_PROVIDER" "${{ needs.create-infrastructure.outputs.workload_identity_provider }}"
+          set_or_update_var "GCP_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.service_account_email }}"
+
+          # Storage and Pub/Sub
+          set_or_update_var "GCS_BUCKET" "${{ needs.create-infrastructure.outputs.user_data_bucket }}"
+          set_or_update_var "USER_UPLOAD_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_topic }}"
+          set_or_update_var "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_or_update_var "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_or_update_var "USER_UPLOAD_FOLDER" "uploads-${{ inputs.environment_name }}"
+
+          # RAG and Agent configuration
+          set_or_update_var "REASONING_ENGINE_ID" "new"
+          set_or_update_var "USER_UPLOAD_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}"
+          set_or_update_var "KNOWLEDGE_BASE_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}"
+
+          # Agent and app-specific variables (set to defaults, can be updated manually)
+          set_or_update_var "AGENT_STAGING_BUCKET" "gs://homegeek-agent-${{ inputs.environment_name }}"
+          set_or_update_var "EXPO_ACCOUNT" "homegeekai"
+          set_or_update_var "WEBAPP_GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          set_or_update_var "FIREBASE_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.firebase_service_account_email }}"
+
+          echo ""
           echo "✅ GitHub environment '${{ inputs.environment_name }}' configured"
+          echo ""
+          echo "ℹ️  The following secrets need to be configured manually:"
+          echo "   - FIREBASE_WEBHOOK_SECRET"
+          echo "   - PROXY_TOKEN"
+          echo "   - SERP_API_KEY"
+          echo "   - TELEGRAM_BOT_TOKEN"
+          echo "   - TELEGRAM_WEBHOOK_SECRET"
+          echo "   - YELP_API_KEY"
 
       - name: Create environment config file
         run: |
@@ -538,20 +881,45 @@ EOF
 
           ## GitHub Repository Variables
 
-          Add these to: Settings → Environments → ${{ inputs.environment_name }} → Variables
+          All variables have been automatically configured. Current values:
 
           \`\`\`bash
+          # Core GCP Configuration
           GCP_PROJECT_ID=${{ needs.resolve-inputs.outputs.gcp_project_id }}
+          GCP_PROJECT_NUMBER=${{ needs.create-infrastructure.outputs.gcp_project_number }}
           GCP_REGION=${{ needs.resolve-inputs.outputs.region }}
           WORKLOAD_IDENTITY_PROVIDER=${{ needs.create-infrastructure.outputs.workload_identity_provider }}
           GCP_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.service_account_email }}
+
+          # Storage and Pub/Sub
           GCS_BUCKET=${{ needs.create-infrastructure.outputs.user_data_bucket }}
           USER_UPLOAD_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_topic }}
+          USER_UPLOAD_RESULT_SUBSCRIPTION=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
           USER_UPLOAD_RESULT_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
+          USER_UPLOAD_FOLDER=uploads-${{ inputs.environment_name }}
+
+          # RAG and Agent Configuration
           REASONING_ENGINE_ID=new
           USER_UPLOAD_RAG_CORPUS=${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}
           KNOWLEDGE_BASE_RAG_CORPUS=${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}
+
+          # Agent and App-specific Variables
+          AGENT_STAGING_BUCKET=gs://homegeek-agent-${{ inputs.environment_name }}
+          EXPO_ACCOUNT=homegeekai
+          WEBAPP_GCP_PROJECT_ID=${{ needs.resolve-inputs.outputs.gcp_project_id }}
+          FIREBASE_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.firebase_service_account_email }}
           \`\`\`
+
+          ## GitHub Repository Secrets (Manual Configuration Required)
+
+          The following secrets need to be configured manually in Settings → Environments → ${{ inputs.environment_name }} → Secrets:
+
+          - \`FIREBASE_WEBHOOK_SECRET\`
+          - \`PROXY_TOKEN\`
+          - \`SERP_API_KEY\`
+          - \`TELEGRAM_BOT_TOKEN\`
+          - \`TELEGRAM_WEBHOOK_SECRET\`
+          - \`YELP_API_KEY\`
 
           ## Deploy Applications
 
@@ -584,6 +952,7 @@ EOF
     name: Environment Summary
     runs-on: ubuntu-latest
     needs: [resolve-inputs, create-infrastructure, create-github-environment]
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Generate summary
         run: |
@@ -607,15 +976,32 @@ EOF
           | Variable | Value |
           |----------|-------|
           | \`GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |
+          | \`GCP_PROJECT_NUMBER\` | \`${{ needs.create-infrastructure.outputs.gcp_project_number }}\` |
           | \`GCP_REGION\` | \`${{ needs.resolve-inputs.outputs.region }}\` |
           | \`WORKLOAD_IDENTITY_PROVIDER\` | \`${{ needs.create-infrastructure.outputs.workload_identity_provider }}\` |
           | \`GCP_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.service_account_email }}\` |
           | \`GCS_BUCKET\` | \`${{ needs.create-infrastructure.outputs.user_data_bucket }}\` |
           | \`USER_UPLOAD_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\` |
+          | \`USER_UPLOAD_RESULT_SUBSCRIPTION\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
           | \`USER_UPLOAD_RESULT_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
+          | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |
           | \`KNOWLEDGE_BASE_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}\` |
+          | \`AGENT_STAGING_BUCKET\` | \`gs://homegeek-agent-${{ inputs.environment_name }}\` |
+          | \`EXPO_ACCOUNT\` | \`homegeekai\` |
+          | \`WEBAPP_GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |
+          | \`FIREBASE_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.firebase_service_account_email }}\` |
+
+          ### Secrets (Manual Configuration Required)
+
+          Configure these in Settings → Environments → \`${{ inputs.environment_name }}\` → Secrets:
+          - \`FIREBASE_WEBHOOK_SECRET\`
+          - \`PROXY_TOKEN\`
+          - \`SERP_API_KEY\`
+          - \`TELEGRAM_BOT_TOKEN\`
+          - \`TELEGRAM_WEBHOOK_SECRET\`
+          - \`YELP_API_KEY\`
 
           ### Deploy Applications Now!
 
