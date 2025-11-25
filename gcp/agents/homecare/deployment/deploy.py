@@ -61,17 +61,16 @@ def main():
     # Common configuration
     common_requirements = [
         "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
-        "google-adk>=1.18.0",
+        "google-adk==1.7.0",
         "google-cloud-pubsub==2.31.1",
-        "python-dotenv",
-        "google-auth",
-        "tqdm",
-        "requests",
-        "llama-index",
+        "python-dotenv==1.0.0",
+        "google-auth==2.36.0",
+        "tqdm==4.66.1",
+        "requests==2.32.4",
+        "llama-index==0.12.0",
         "langchain-community==0.3.27",
         "youtube-search==2.1.2",
         "google-search-results==2.4.2"
-
     ]
     common_env_vars = [
         "GOOGLE_CLOUD_BUCKET",
