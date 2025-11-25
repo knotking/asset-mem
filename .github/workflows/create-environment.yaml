@@ -237,6 +237,7 @@ jobs:
       user_data_bucket: ${{ steps.storage.outputs.user_data_bucket }}
       user_upload_topic: ${{ steps.pubsub.outputs.upload_topic }}
       user_upload_result_topic: ${{ steps.pubsub.outputs.result_topic }}
+      user_upload_result_subscription: ${{ steps.pubsub.outputs.result_subscription }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
       knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
     steps:
@@ -750,6 +751,7 @@ jobs:
           # Output values
           echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
+          echo "result_subscription=$RESULT_SUB" >> $GITHUB_OUTPUT
 
       - name: Create RAG Corpora
         id: rag
@@ -940,6 +942,21 @@ jobs:
             fi
           }
 
+          set_var_if_not_exists() {
+            local var_name=$1
+            local var_value=$2
+
+            # Try to get existing variable (will fail if doesn't exist)
+            existing_value=$(gh variable get "$var_name" --env ${{ inputs.environment_name }} 2>/dev/null || echo "")
+
+            if [ -z "$existing_value" ]; then
+              gh variable set "$var_name" --body "$var_value" --env ${{ inputs.environment_name }}
+              echo "✅ Created $var_name = $var_value"
+            else
+              echo "✓ $var_name already exists (value: $existing_value) - skipping"
+            fi
+          }
+
           # Set or update all variables
           echo "Configuring GitHub environment variables..."
 
@@ -953,12 +970,12 @@ jobs:
           # Storage and Pub/Sub
           set_or_update_var "GCS_BUCKET" "${{ needs.create-infrastructure.outputs.user_data_bucket }}"
           set_or_update_var "USER_UPLOAD_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_topic }}"
-          set_or_update_var "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_or_update_var "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}"
           set_or_update_var "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
           set_or_update_var "USER_UPLOAD_FOLDER" "uploads-${{ inputs.environment_name }}"
 
           # RAG and Agent configuration
-          set_or_update_var "REASONING_ENGINE_ID" "new"
+          set_var_if_not_exists "REASONING_ENGINE_ID" "new"
           set_or_update_var "USER_UPLOAD_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}"
           set_or_update_var "KNOWLEDGE_BASE_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}"
 
@@ -1002,7 +1019,7 @@ jobs:
           # Storage and Pub/Sub
           GCS_BUCKET=${{ needs.create-infrastructure.outputs.user_data_bucket }}
           USER_UPLOAD_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_topic }}
-          USER_UPLOAD_RESULT_SUBSCRIPTION=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
+          USER_UPLOAD_RESULT_SUBSCRIPTION=${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}
           USER_UPLOAD_RESULT_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
           USER_UPLOAD_FOLDER=uploads-${{ inputs.environment_name }}
 
@@ -1090,7 +1107,7 @@ jobs:
           | \`GCP_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.service_account_email }}\` |
           | \`GCS_BUCKET\` | \`${{ needs.create-infrastructure.outputs.user_data_bucket }}\` |
           | \`USER_UPLOAD_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\` |
-          | \`USER_UPLOAD_RESULT_SUBSCRIPTION\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
+          | \`USER_UPLOAD_RESULT_SUBSCRIPTION\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}\` |
           | \`USER_UPLOAD_RESULT_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
           | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
