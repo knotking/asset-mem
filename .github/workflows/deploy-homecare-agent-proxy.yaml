@@ -147,3 +147,13 @@ jobs:
             USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}
             USER_UPLOAD_RESULT_SUBSCRIPTION=${{ vars.USER_UPLOAD_RESULT_SUBSCRIPTION }}
             GCS_BUCKET=${{ vars.GCS_BUCKET }}
+
+      - name: Set IAM policy for public access
+        continue-on-error: true
+        run: |
+          echo "Attempting to grant public access..."
+          gcloud run services add-iam-policy-binding ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker" \
+            --project=${{ vars.GCP_PROJECT_ID }} || echo "⚠️  Organization policy prevents granting public access. You need to either: 1) Update org policy to allow allUsers, 2) Grant access to specific service accounts/users, or 3) Use a domain constraint like 'domain:yourdomain.com'"
