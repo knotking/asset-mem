@@ -104,6 +104,7 @@ jobs:
           name: ${{ env.FUNCTION_NAME }}
           runtime: ${{ env.RUNTIME }}
           region: ${{ env.REGION }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
           entry_point: ${{ env.ENTRY_POINT }}
           source_dir: ${{ env.SOURCE_DIRECTORY }}
           max_instance_count: ${{ env.MAX_INSTANCES }}
