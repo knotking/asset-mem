@@ -17,7 +17,7 @@ on:
         type: choice
         options:
           - staging
-          - production
+          - prod
 
 env:
   WORKING_DIRECTORY: apps/webapp
@@ -43,14 +43,14 @@ jobs:
 
           echo "environment=$ENV" >> $GITHUB_OUTPUT
 
-          if [ "$ENV" = "production" ]; then
+          if [ "$ENV" = "prod" ]; then
             echo "backend-id=prod" >> $GITHUB_OUTPUT
           else
             echo "backend-id=staging" >> $GITHUB_OUTPUT
           fi
 
           echo "Deploying to environment: $ENV"
-          echo "Backend ID: $([ "$ENV" = "production" ] && echo "prod" || echo "staging")"
+          echo "Backend ID: $([ "$ENV" = "prod" ] && echo "prod" || echo "staging")"
 
       - name: Validate required GitHub variables
         run: |
