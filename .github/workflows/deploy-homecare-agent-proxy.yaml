@@ -124,14 +124,19 @@ jobs:
           workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
           service_account: "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: "google-github-actions/deploy-cloudrun@v2"
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
           source: gcp/proxy/api # Path to the source directory for the service
           flags: "--allow-unauthenticated --service-account=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
+          gcloud_version: latest
           env_vars: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_REGION=${{ env.REGION }}

@@ -519,6 +519,114 @@ jobs:
           echo "firebase_sa_email=$FIREBASE_SA_EMAIL" >> $GITHUB_OUTPUT
           echo "wif_provider=$WIF_PROVIDER" >> $GITHUB_OUTPUT
 
+      - name: Configure Cloud Build Service Account Permissions
+        id: cloudbuild_permissions
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+
+          # Cloud Build default service account
+          CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+          # Compute Engine default service account (used by Cloud Build)
+          COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+          echo "Configuring Cloud Build permissions..."
+          echo "Cloud Build SA: $CLOUDBUILD_SA"
+          echo "Compute Engine SA: $COMPUTE_SA"
+
+          # Get current IAM policy
+          CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
+
+          # Roles needed for Cloud Build to work with Cloud Run source deployments
+          CLOUDBUILD_ROLES=(
+            "roles/storage.admin"
+            "roles/logging.logWriter"
+            "roles/artifactregistry.writer"
+          )
+
+          COMPUTE_ROLES=(
+            "roles/storage.objectViewer"
+            "roles/artifactregistry.writer"
+          )
+
+          # Grant roles to Cloud Build service account
+          echo "Checking Cloud Build service account roles..."
+          ROLES_TO_ADD=()
+          for role in "${CLOUDBUILD_ROLES[@]}"; do
+            if echo "$CURRENT_POLICY" | jq -e ".bindings[] | select(.role==\"$role\") | .members[] | select(. == \"serviceAccount:${CLOUDBUILD_SA}\")" &>/dev/null; then
+              echo "✓ $role (already bound to Cloud Build SA)"
+            else
+              echo "⚠ $role (needs binding to Cloud Build SA)"
+              ROLES_TO_ADD+=("$role")
+            fi
+          done
+
+          if [ ${#ROLES_TO_ADD[@]} -gt 0 ]; then
+            echo "Granting ${#ROLES_TO_ADD[@]} role(s) to Cloud Build service account..."
+            for role in "${ROLES_TO_ADD[@]}"; do
+              gcloud projects add-iam-policy-binding $PROJECT_ID \
+                --member="serviceAccount:${CLOUDBUILD_SA}" \
+                --role="$role" \
+                --condition=None \
+                --quiet
+            done
+            echo "✓ Cloud Build IAM roles granted"
+          else
+            echo "✓ All Cloud Build roles already bound"
+          fi
+
+          # Grant roles to Compute Engine default service account
+          echo ""
+          echo "Checking Compute Engine service account roles..."
+          CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
+          COMPUTE_ROLES_TO_ADD=()
+          for role in "${COMPUTE_ROLES[@]}"; do
+            if echo "$CURRENT_POLICY" | jq -e ".bindings[] | select(.role==\"$role\") | .members[] | select(. == \"serviceAccount:${COMPUTE_SA}\")" &>/dev/null; then
+              echo "✓ $role (already bound to Compute SA)"
+            else
+              echo "⚠ $role (needs binding to Compute SA)"
+              COMPUTE_ROLES_TO_ADD+=("$role")
+            fi
+          done
+
+          if [ ${#COMPUTE_ROLES_TO_ADD[@]} -gt 0 ]; then
+            echo "Granting ${#COMPUTE_ROLES_TO_ADD[@]} role(s) to Compute Engine service account..."
+            for role in "${COMPUTE_ROLES_TO_ADD[@]}"; do
+              gcloud projects add-iam-policy-binding $PROJECT_ID \
+                --member="serviceAccount:${COMPUTE_SA}" \
+                --role="$role" \
+                --condition=None \
+                --quiet
+            done
+            echo "✓ Compute Engine IAM roles granted"
+          else
+            echo "✓ All Compute Engine roles already bound"
+          fi
+
+      - name: Create Artifact Registry Repository
+        id: artifact_registry
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+          REPO_NAME="cloud-run-source-deploy"
+
+          echo "Checking Artifact Registry repository: $REPO_NAME"
+
+          # Check if repository already exists
+          if gcloud artifacts repositories describe $REPO_NAME \
+            --location=$REGION \
+            --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Artifact Registry repository already exists: $REPO_NAME"
+          else
+            echo "Creating Artifact Registry repository..."
+            gcloud artifacts repositories create $REPO_NAME \
+              --repository-format=docker \
+              --location=$REGION \
+              --description="Docker repository for Cloud Run source deployments" \
+              --project=$PROJECT_ID
+            echo "✓ Artifact Registry repository created: $REPO_NAME"
+          fi
+
       - name: Create Storage Buckets
         id: storage
         run: |
