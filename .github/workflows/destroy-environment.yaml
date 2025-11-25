@@ -1,25 +1,31 @@
 name: Destroy On-Demand Environment
 
 on:
-  push:
-    branches:
-      - gcp_project
   workflow_dispatch:
     inputs:
       environment_name:
-        description: 'Environment name to destroy'
+        description: "Environment name to destroy"
         required: true
         type: string
       gcp_project_id:
-        description: 'GCP Project ID'
+        description: "GCP Project ID"
         required: true
         type: string
+      region:
+        description: "GCP Region (should match the region used during creation)"
+        required: false
+        default: "us-central1"
+        type: choice
+        options:
+          - us-central1
+          - us-east1
+          - us-west1
       confirm_destroy:
         description: 'Type "DESTROY" to confirm deletion'
         required: true
         type: string
       destroy_project:
-        description: 'Also delete the GCP project (DANGEROUS)'
+        description: "Also delete the GCP project (DANGEROUS)"
         required: true
         default: false
         type: boolean
@@ -104,8 +110,11 @@ jobs:
       - name: Delete Cloud Run service
         continue-on-error: true
         run: |
+          REGION="${{ inputs.region }}"
+
+          echo "Deleting Cloud Run service in region: $REGION"
           gcloud run services delete homecare-agent-proxy-${{ inputs.environment_name }} \
-            --region=us-central1 \
+            --region=$REGION \
             --project=${{ inputs.gcp_project_id }} \
             --quiet
 
@@ -114,9 +123,12 @@ jobs:
       - name: Delete Cloud Function
         continue-on-error: true
         run: |
+          REGION="${{ inputs.region }}"
+
+          echo "Deleting Cloud Function in region: $REGION"
           gcloud functions delete pubsub_to_user_docs-${{ inputs.environment_name }} \
             --gen2 \
-            --region=us-central1 \
+            --region=$REGION \
             --project=${{ inputs.gcp_project_id }} \
             --quiet
 
@@ -160,56 +172,180 @@ jobs:
 
           echo "✓ Pub/Sub resources deleted"
 
+      - name: Delete Firebase App Hosting Backend
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+          BACKEND_ID="${ENV}"
+
+          echo "Installing Firebase CLI..."
+          npm install -g firebase-tools
+
+          echo "Authenticating with Firebase..."
+          export FIREBASE_TOKEN=$(gcloud auth application-default print-access-token)
+          export CLOUDSDK_CORE_PROJECT=$PROJECT_ID
+          export GOOGLE_CLOUD_QUOTA_PROJECT=$PROJECT_ID
+
+          echo "Deleting Firebase App Hosting backend: $BACKEND_ID"
+          firebase apphosting:backends:delete $BACKEND_ID \
+            --project=$PROJECT_ID \
+            --token "$FIREBASE_TOKEN" \
+            --force \
+            --non-interactive || echo "⚠️ Backend may not exist or already deleted"
+
+          echo "✓ Firebase App Hosting backend deleted"
+
       - name: Delete Storage Buckets
         continue-on-error: true
         run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
           ENV="${{ inputs.environment_name }}"
 
           echo "Deleting user data bucket..."
-          gsutil -m rm -r gs://homegeek-user-data-${ENV} || true
+          gsutil -m rm -r gs://homegeek-user-data-${ENV} || echo "⚠️ User data bucket may not exist"
+
+          echo "Deleting catalog bucket..."
+          gsutil -m rm -r gs://homegeek-catalog-${ENV} || echo "⚠️ Catalog bucket may not exist"
+
+          echo "Deleting Firebase Storage bucket..."
+          FIREBASE_BUCKET="${PROJECT_ID}.firebasestorage.app"
+          gsutil -m rm -r gs://${FIREBASE_BUCKET} || echo "⚠️ Firebase Storage bucket may not exist"
 
           echo "✓ Storage buckets deleted"
+
+      - name: Delete Artifact Registry Repository
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          REGION="${{ inputs.region }}"
+          REPO_NAME="cloud-run-source-deploy"
+
+          echo "Deleting Artifact Registry repository: $REPO_NAME in $REGION"
+          gcloud artifacts repositories delete $REPO_NAME \
+            --location=$REGION \
+            --project=$PROJECT_ID \
+            --quiet || echo "⚠️ Artifact Registry repository may not exist"
+
+          echo "✓ Artifact Registry repository deleted"
+
+      - name: Delete Firestore Database
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+
+          echo "Deleting Firestore database..."
+          # Get database name
+          DB_NAME=$(gcloud firestore databases list --project=$PROJECT_ID --format="value(name)" 2>/dev/null | head -n 1 || echo "")
+
+          if [ -n "$DB_NAME" ]; then
+            echo "Found database: $DB_NAME"
+            gcloud firestore databases delete $DB_NAME \
+              --project=$PROJECT_ID \
+              --quiet || echo "⚠️ Failed to delete Firestore database"
+            echo "✓ Firestore database deleted"
+          else
+            echo "⚠️ No Firestore database found"
+          fi
 
       - name: Delete RAG Corpora
         continue-on-error: true
         run: |
           PROJECT_ID="${{ inputs.gcp_project_id }}"
+          REGION="${{ inputs.region }}"
           ENV="${{ inputs.environment_name }}"
 
-          echo "Deleting RAG corpora..."
+          # Map region to RAG region (same logic as create workflow)
+          case "$REGION" in
+            us-central1|us-east4)
+              RAG_REGION="us-west1"
+              echo "⚠️ Mapping $REGION to RAG region: $RAG_REGION"
+              ;;
+            europe-west*)
+              RAG_REGION="europe-west4"
+              ;;
+            asia-*)
+              RAG_REGION="asia-southeast1"
+              ;;
+            *)
+              RAG_REGION="us-west1"
+              ;;
+          esac
+
+          echo "Deleting RAG corpora in region: $RAG_REGION"
 
           # List all RAG corpora and delete those matching the environment
-          BASE_URL="https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/ragCorpora"
+          BASE_URL="https://${RAG_REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${RAG_REGION}/ragCorpora"
           AUTH_HEADER="Authorization: Bearer $(gcloud auth print-access-token)"
 
           # Get list of corpora
-          CORPORA=$(curl -s -H "$AUTH_HEADER" "$BASE_URL" | jq -r ".ragCorpora[]? | select(.displayName | contains(\"${ENV}\")) | .name" || true)
+          CORPORA=$(curl -s -H "$AUTH_HEADER" "$BASE_URL" | jq -r ".ragCorpora[]? | select(.displayName | contains(\"${ENV}\")) | .name" || echo "")
 
-          for corpus in $CORPORA; do
-            if [ -n "$corpus" ]; then
-              echo "Deleting corpus: $corpus"
-              curl -X DELETE -H "$AUTH_HEADER" "https://us-central1-aiplatform.googleapis.com/v1/${corpus}" || true
-            fi
-          done
-
-          echo "✓ RAG corpora deleted"
+          if [ -n "$CORPORA" ]; then
+            for corpus in $CORPORA; do
+              if [ -n "$corpus" ]; then
+                echo "Deleting corpus: $corpus"
+                curl -X DELETE -H "$AUTH_HEADER" "https://${RAG_REGION}-aiplatform.googleapis.com/v1/${corpus}" || echo "⚠️ Failed to delete corpus"
+              fi
+            done
+            echo "✓ RAG corpora deleted"
+          else
+            echo "⚠️ No RAG corpora found for environment: $ENV"
+          fi
 
       - name: Delete IAM Resources
         continue-on-error: true
         run: |
           PROJECT_ID="${{ inputs.gcp_project_id }}"
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
 
+          # Service accounts
+          GITHUB_SA="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
+          FIREBASE_SA="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          # Step 1: Remove Workload Identity binding first
+          echo "Removing Workload Identity binding..."
+          WIF_MEMBER="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ github.repository }}"
+          gcloud iam service-accounts remove-iam-policy-binding $GITHUB_SA \
+            --project=$PROJECT_ID \
+            --role="roles/iam.workloadIdentityUser" \
+            --member="$WIF_MEMBER" \
+            --quiet 2>/dev/null || echo "⚠️ WIF binding may not exist"
+
+          # Step 2: Delete Workload Identity Provider
+          echo "Deleting Workload Identity Provider..."
+          gcloud iam workload-identity-pools providers delete github-provider \
+            --location="global" \
+            --workload-identity-pool="github-pool" \
+            --project=$PROJECT_ID \
+            --quiet 2>/dev/null || echo "⚠️ WIF Provider may not exist"
+
+          # Step 3: Delete Workload Identity Pool
           echo "Deleting Workload Identity Pool..."
           gcloud iam workload-identity-pools delete github-pool \
             --location="global" \
             --project=$PROJECT_ID \
-            --quiet || true
+            --quiet 2>/dev/null || echo "⚠️ WIF Pool may not exist"
 
-          echo "Deleting service account..."
-          SA_EMAIL="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
-          gcloud iam service-accounts delete $SA_EMAIL \
+          # Step 4: Delete GitHub workflow service account
+          echo "Deleting GitHub workflow service account..."
+          gcloud iam service-accounts delete $GITHUB_SA \
             --project=$PROJECT_ID \
-            --quiet || true
+            --quiet 2>/dev/null || echo "⚠️ GitHub SA may not exist"
+
+          # Step 5: Delete Firebase App Hosting service account
+          echo "Deleting Firebase App Hosting service account..."
+          gcloud iam service-accounts delete $FIREBASE_SA \
+            --project=$PROJECT_ID \
+            --quiet 2>/dev/null || echo "⚠️ Firebase SA may not exist"
+
+          # Step 6: Revoke RAG service account permissions (optional cleanup)
+          echo "Revoking RAG service account permissions..."
+          RAG_SA="service-${PROJECT_NUMBER}@gcp-sa-vertex-rag.iam.gserviceaccount.com"
+          gcloud projects remove-iam-policy-binding $PROJECT_ID \
+            --member="serviceAccount:${RAG_SA}" \
+            --role="roles/storage.objectAdmin" \
+            --quiet 2>/dev/null || echo "⚠️ RAG SA permissions may not exist"
 
           echo "✓ IAM resources deleted"
 
@@ -253,22 +389,53 @@ jobs:
 
           ## Destruction Report
 
-          | Resource | Status |
-          |----------|--------|
-          | **Cloud Run Service** | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
-          | **Cloud Function** | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
-          | **Infrastructure (gcloud)** | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Destroyed' || '⚠️ Check logs' }} |
-          | **GCP Project** | ${{ inputs.destroy_project == true && '✅ Deleted' || '➖ Preserved' }} |
+          | Resource Category | Status |
+          |------------------|--------|
+          | **Applications** | |
+          | Cloud Run Service | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Cloud Function | ${{ needs.cleanup-applications.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Firebase App Hosting Backend | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Storage** | |
+          | User Data Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Catalog Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Firebase Storage Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Artifact Registry Repository | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Messaging** | |
+          | Pub/Sub Topics & Subscriptions | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Database** | |
+          | Firestore Database | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **AI/ML** | |
+          | RAG Corpora (2) | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **IAM & Security** | |
+          | Service Accounts (2) | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Workload Identity Pool & Provider | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **Project** | |
+          | GCP Project | ${{ inputs.destroy_project == true && '✅ Deleted' || '➖ Preserved' }} |
 
           ## Environment Details
 
           - **Environment:** \`${{ inputs.environment_name }}\`
           - **Project:** \`${{ inputs.gcp_project_id }}\`
+          - **Region:** \`${{ inputs.region }}\`
           - **Destroyed at:** $(date -u)
+
+          ## Resources Cleaned
+
+          The following resources were deleted:
+          - Cloud Run service: \`homecare-agent-proxy-${{ inputs.environment_name }}\`
+          - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
+          - Firebase App Hosting backend: \`${{ inputs.environment_name }}\`
+          - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, Firebase Storage
+          - Artifact Registry: \`cloud-run-source-deploy\` (${{ inputs.region }})
+          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`
+          - Firestore database
+          - RAG corpora: \`user-upload-rag-corpus-${{ inputs.environment_name }}\`, \`knowledge-base-rag-corpus-${{ inputs.environment_name }}\`
+          - Service accounts: GitHub workflow deployment, Firebase App Hosting deployer
+          - Workload Identity Pool and Provider
 
           ${{ inputs.destroy_project == false && '⚠️ **Note:** GCP project was preserved. You may want to manually delete it if no longer needed.' || '' }}
 
           ## Cleanup Complete
 
-          The environment has been destroyed. All resources should be deleted.
+          All environment resources have been destroyed. The infrastructure is fully cleaned up.
           EOF

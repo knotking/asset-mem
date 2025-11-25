@@ -1,35 +1,32 @@
 name: Create New Environment
 
 on:
-  push:
-    branches:
-      - gcp_project
   workflow_dispatch:
     inputs:
       environment_name:
-        description: 'Environment name (e.g., qa-team-1, demo-customer-x)'
+        description: "Environment name (e.g., qa-team-1, demo-customer-x)"
         required: true
         type: string
       gcp_project_id:
-        description: 'GCP Project ID (leave empty to use existing from GitHub env)'
+        description: "GCP Project ID (leave empty to use existing from GitHub env)"
         required: false
         type: string
       create_project:
-        description: 'Create a new GCP project'
+        description: "Create a new GCP project"
         required: false
         default: false
         type: boolean
       folder_id:
-        description: 'Folder ID (optional, for new projects)'
+        description: "Folder ID (optional, for new projects)"
         required: false
         type: string
       region:
-        description: 'GCP Region (leave empty to use existing from GitHub env)'
+        description: "GCP Region (leave empty to use existing from GitHub env)"
         required: false
-        default: 'us-central1'
+        default: "us-central1"
         type: choice
         options:
-          - ''
+          - ""
           - us-central1
           - us-east1
           - us-west1
@@ -240,6 +237,8 @@ jobs:
       user_upload_result_subscription: ${{ steps.pubsub.outputs.result_subscription }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
       knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
+      apphosting_backend_id: ${{ steps.apphosting.outputs.backend_id }}
+      apphosting_backend_url: ${{ steps.apphosting.outputs.backend_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -272,6 +271,11 @@ jobs:
             "secretmanager.googleapis.com"
             "cloudfunctions.googleapis.com"
             "eventarc.googleapis.com"
+            "firebase.googleapis.com"
+            "firestore.googleapis.com"
+            "firebaserules.googleapis.com"
+            "firebasestorage.googleapis.com"
+            "identitytoolkit.googleapis.com"
           )
 
           echo "Checking which APIs need to be enabled..."
@@ -753,6 +757,360 @@ jobs:
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
           echo "result_subscription=$RESULT_SUB" >> $GITHUB_OUTPUT
 
+      - name: Enable Firebase Services
+        id: firebase_enable
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+
+          echo "Enabling Firebase services for project: $PROJECT_ID"
+          echo "Waiting for Firebase Management API to be fully ready..."
+          sleep 30
+
+          # Check if Firebase project is already enabled
+          echo "Checking if Firebase is enabled for project..."
+          FIREBASE_CHECK=$(curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            -H "x-goog-user-project: $PROJECT_ID" \
+            "https://firebase.googleapis.com/v1beta1/projects/$PROJECT_ID" 2>&1)
+
+          if echo "$FIREBASE_CHECK" | grep -q "\"projectId\": \"$PROJECT_ID\""; then
+            echo "✓ Firebase project already enabled"
+          else
+            echo "Enabling Firebase for project..."
+
+            # Retry loop for adding Firebase to the GCP project
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            SUCCESS=false
+
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if [ $RETRY_COUNT -gt 0 ]; then
+                echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES..."
+                echo "Waiting 30 seconds before retry..."
+                sleep 30
+              fi
+
+              # Add Firebase to the GCP project
+              ADD_FIREBASE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+                -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+                -H "Content-Type: application/json" \
+                -H "x-goog-user-project: $PROJECT_ID" \
+                "https://firebase.googleapis.com/v1beta1/projects/$PROJECT_ID:addFirebase")
+
+              HTTP_CODE=$(echo "$ADD_FIREBASE_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+              RESPONSE_BODY=$(echo "$ADD_FIREBASE_RESPONSE" | sed '/HTTP_CODE:/d')
+
+              echo "Firebase API Response Code: $HTTP_CODE"
+
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+                echo "✓ Firebase enabled successfully"
+                echo "$RESPONSE_BODY" | jq '.' || echo "$RESPONSE_BODY"
+                SUCCESS=true
+                break
+              elif echo "$RESPONSE_BODY" | grep -q "ALREADY_EXISTS"; then
+                echo "✓ Firebase already enabled for this project"
+                SUCCESS=true
+                break
+              elif echo "$RESPONSE_BODY" | grep -q "SERVICE_DISABLED"; then
+                echo "⚠️  Firebase Management API not fully propagated yet (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+              else
+                echo "⚠️  Unexpected error (HTTP $HTTP_CODE)"
+                echo "$RESPONSE_BODY"
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+              fi
+            done
+
+            if [ "$SUCCESS" = false ]; then
+              echo "❌ Failed to enable Firebase after $MAX_RETRIES attempts"
+              echo "Last response: $RESPONSE_BODY"
+              exit 1
+            fi
+
+            echo "   Waiting for Firebase initialization..."
+            sleep 15
+          fi
+
+          # Verify Firebase is now accessible
+          echo ""
+          echo "Verifying Firebase project..."
+          FIREBASE_VERIFY=$(curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            -H "x-goog-user-project: $PROJECT_ID" \
+            "https://firebase.googleapis.com/v1beta1/projects/$PROJECT_ID" 2>&1)
+
+          if echo "$FIREBASE_VERIFY" | grep -q "\"projectId\": \"$PROJECT_ID\""; then
+            echo "✓ Firebase project verified and accessible"
+            # Extract and display the Firebase project details
+            echo "$FIREBASE_VERIFY" | jq -r '"  Project Number: " + .projectNumber, "  Display Name: " + (.displayName // "N/A")' 2>/dev/null || true
+          else
+            echo "⚠️  Warning: Firebase project may not be fully initialized yet"
+            echo "   This might resolve itself, continuing with setup..."
+          fi
+
+          # Enable Firestore
+          echo ""
+          echo "Checking Firestore database..."
+          FIRESTORE_DB=$(gcloud firestore databases list --project=$PROJECT_ID --format="value(name)" 2>/dev/null || echo "")
+
+          if [ -n "$FIRESTORE_DB" ]; then
+            echo "✓ Firestore database already exists: $FIRESTORE_DB"
+          else
+            echo "Creating Firestore database in native mode..."
+            gcloud firestore databases create --location=${{ needs.resolve-inputs.outputs.region }} \
+              --type=firestore-native \
+              --project=$PROJECT_ID
+            echo "✓ Firestore database created"
+          fi
+
+          # Initialize Firebase Storage
+          echo ""
+          echo "Initializing Firebase Storage..."
+          STORAGE_BUCKET="${PROJECT_ID}.firebasestorage.app"
+
+          # Check if Firebase Storage bucket exists
+          if gsutil ls -b gs://${STORAGE_BUCKET}/ &>/dev/null; then
+            echo "✓ Firebase Storage bucket already exists: $STORAGE_BUCKET"
+          else
+            echo "Creating Firebase Storage bucket via Firebase Management API..."
+            # Use the addGoogleCloudStorageBucket API to properly initialize Firebase Storage
+            STORAGE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+              -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+              -H "Content-Type: application/json" \
+              -H "x-goog-user-project: $PROJECT_ID" \
+              "https://firebase.googleapis.com/v1beta1/projects/$PROJECT_ID:addGoogleCloudStorageBucket" \
+              -d "{\"bucket\": \"$STORAGE_BUCKET\"}")
+
+            STORAGE_HTTP_CODE=$(echo "$STORAGE_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            STORAGE_BODY=$(echo "$STORAGE_RESPONSE" | sed '/HTTP_CODE:/d')
+
+            echo "Storage API Response Code: $STORAGE_HTTP_CODE"
+
+            if [ "$STORAGE_HTTP_CODE" = "200" ] || [ "$STORAGE_HTTP_CODE" = "201" ]; then
+              echo "✓ Firebase Storage bucket created: $STORAGE_BUCKET"
+              echo "$STORAGE_BODY" | jq '.' 2>/dev/null || echo "$STORAGE_BODY"
+            elif echo "$STORAGE_BODY" | grep -q "ALREADY_EXISTS\|already exists"; then
+              echo "✓ Firebase Storage bucket already exists: $STORAGE_BUCKET"
+            else
+              echo "⚠️  Warning: Firebase Storage initialization may have failed (HTTP $STORAGE_HTTP_CODE)"
+              echo "$STORAGE_BODY"
+              echo "   Attempting alternative initialization method..."
+
+              # Alternative: Try to provision the default bucket
+              ALT_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+                -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+                -H "Content-Type: application/json" \
+                -H "x-goog-user-project: $PROJECT_ID" \
+                "https://firebase.googleapis.com/v1beta1/projects/$PROJECT_ID/defaultBucket" \
+                -d "{}")
+
+              ALT_HTTP_CODE=$(echo "$ALT_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+
+              if [ "$ALT_HTTP_CODE" = "200" ] || [ "$ALT_HTTP_CODE" = "201" ]; then
+                echo "✓ Firebase Storage initialized via alternative method"
+              else
+                echo "⚠️  Could not initialize Firebase Storage automatically"
+                echo "   The bucket may be created during first Firebase CLI deployment"
+              fi
+            fi
+
+            # Wait for bucket propagation
+            echo "Waiting for Firebase Storage to propagate..."
+            sleep 15
+          fi
+
+          # Enable Firebase Authentication
+          echo ""
+          echo "Enabling Firebase Authentication..."
+
+          # Check current auth configuration
+          AUTH_CONFIG=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            -H "x-goog-user-project: $PROJECT_ID" \
+            "https://identitytoolkit.googleapis.com/v2/projects/$PROJECT_ID/config" 2>&1)
+
+          AUTH_CHECK_CODE=$(echo "$AUTH_CONFIG" | grep "HTTP_CODE:" | cut -d: -f2)
+          AUTH_CHECK_BODY=$(echo "$AUTH_CONFIG" | sed '/HTTP_CODE:/d')
+
+          if [ "$AUTH_CHECK_CODE" = "404" ] || echo "$AUTH_CHECK_BODY" | grep -q "CONFIGURATION_NOT_FOUND"; then
+            echo "Initializing Firebase Authentication configuration..."
+
+            # Initialize Identity Platform configuration by creating it
+            INIT_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PATCH \
+              -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+              -H "Content-Type: application/json" \
+              -H "x-goog-user-project: $PROJECT_ID" \
+              "https://identitytoolkit.googleapis.com/v2/projects/$PROJECT_ID/config?updateMask=signIn.email.enabled,signIn.anonymous.enabled" \
+              -d '{
+                "signIn": {
+                  "email": {
+                    "enabled": true,
+                    "passwordRequired": true
+                  }
+                }
+              }')
+
+            INIT_HTTP_CODE=$(echo "$INIT_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            INIT_BODY=$(echo "$INIT_RESPONSE" | sed '/HTTP_CODE:/d')
+
+            if [ "$INIT_HTTP_CODE" = "200" ] || [ "$INIT_HTTP_CODE" = "201" ]; then
+              echo "✓ Firebase Authentication initialized and configured successfully"
+              echo "  - Email/Password authentication: enabled"
+            else
+              echo "⚠️  Warning: Authentication initialization may have failed (HTTP $INIT_HTTP_CODE)"
+              echo "$INIT_BODY"
+              echo "   You may need to enable authentication providers manually through Firebase Console"
+            fi
+          elif echo "$AUTH_CHECK_BODY" | grep -q "\"signIn\""; then
+            echo "✓ Firebase Authentication already configured"
+          else
+            echo "Configuring Firebase Authentication providers..."
+
+            # Enable Email/Password and Anonymous authentication
+            AUTH_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PATCH \
+              -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+              -H "Content-Type: application/json" \
+              -H "x-goog-user-project: $PROJECT_ID" \
+              "https://identitytoolkit.googleapis.com/v2/projects/$PROJECT_ID/config?updateMask=signIn.email.enabled,signIn.anonymous.enabled" \
+              -d '{
+                "signIn": {
+                  "email": {
+                    "enabled": true,
+                    "passwordRequired": true
+                  },
+                  "anonymous": {
+                    "enabled": true
+                  }
+                }
+              }')
+
+            AUTH_HTTP_CODE=$(echo "$AUTH_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            AUTH_BODY=$(echo "$AUTH_RESPONSE" | sed '/HTTP_CODE:/d')
+
+            if [ "$AUTH_HTTP_CODE" = "200" ] || [ "$AUTH_HTTP_CODE" = "201" ]; then
+              echo "✓ Firebase Authentication enabled successfully"
+              echo "  - Email/Password authentication: enabled"
+              echo "  - Anonymous authentication: enabled"
+            else
+              echo "⚠️  Warning: Authentication configuration may have failed (HTTP $AUTH_HTTP_CODE)"
+              echo "$AUTH_BODY"
+              echo "   You may need to enable authentication providers manually through Firebase Console"
+            fi
+          fi
+
+      - name: Deploy Firebase Configuration
+        id: firebase_deploy
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+
+          echo "Installing Firebase CLI..."
+          npm install -g firebase-tools
+
+          echo "Authenticating with Firebase using gcloud credentials..."
+          # Set the quota project to the target project
+          gcloud config set project $PROJECT_ID
+
+          # Get access token and use it with Firebase CLI
+          export FIREBASE_TOKEN=$(gcloud auth application-default print-access-token)
+
+          # Set quota project environment variable for API calls
+          export CLOUDSDK_CORE_PROJECT=$PROJECT_ID
+          export GOOGLE_CLOUD_QUOTA_PROJECT=$PROJECT_ID
+
+          echo "Switching to webapp directory..."
+          cd apps/webapp
+
+          echo "Deploying Firestore rules..."
+          firebase deploy --only firestore:rules --project=$PROJECT_ID --token "$FIREBASE_TOKEN" --non-interactive
+
+          echo "Deploying Firestore indexes..."
+          firebase deploy --only firestore:indexes --project=$PROJECT_ID --token "$FIREBASE_TOKEN" --non-interactive
+
+          echo "Deploying Storage rules..."
+          # Check if Firebase Storage is set up before deploying rules
+          STORAGE_BUCKET="${PROJECT_ID}.firebasestorage.app"
+          if gsutil ls -b gs://${STORAGE_BUCKET}/ &>/dev/null; then
+            firebase deploy --only storage --project=$PROJECT_ID --token "$FIREBASE_TOKEN" --non-interactive || {
+              echo "⚠️  Storage rules deployment failed, but continuing..."
+              echo "   You may need to manually deploy storage rules after Firebase Storage is fully initialized"
+            }
+          else
+            echo "⚠️  Firebase Storage bucket not found, skipping storage rules deployment"
+            echo "   You'll need to manually deploy storage rules after initializing Firebase Storage"
+          fi
+
+          echo "✓ Firebase configuration deployed successfully"
+
+      - name: Create App Hosting Backend
+        id: apphosting
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+          ENV="${{ inputs.environment_name }}"
+          BACKEND_ID="${ENV}"
+
+          echo "Creating Firebase App Hosting backend..."
+          echo "Backend ID: $BACKEND_ID"
+          echo "Project: $PROJECT_ID"
+          echo "Region: $REGION"
+
+          # Get access token for Firebase CLI
+          export FIREBASE_TOKEN=$(gcloud auth application-default print-access-token)
+
+          # Set quota project environment variables
+          export CLOUDSDK_CORE_PROJECT=$PROJECT_ID
+          export GOOGLE_CLOUD_QUOTA_PROJECT=$PROJECT_ID
+
+          # Check if backend already exists
+          echo "Checking for existing backend..."
+          BACKENDS_LIST=$(firebase apphosting:backends:list \
+            --project=$PROJECT_ID \
+            --token "$FIREBASE_TOKEN" 2>&1 || echo "")
+
+          if echo "$BACKENDS_LIST" | grep -q "$BACKEND_ID"; then
+            echo "✓ App Hosting backend already exists: $BACKEND_ID"
+          else
+            echo "Creating App Hosting backend..."
+            # Create the backend using Firebase CLI
+            # Capture both stdout and stderr
+            CREATE_OUTPUT=$(firebase apphosting:backends:create $BACKEND_ID \
+              --project=$PROJECT_ID \
+              --token "$FIREBASE_TOKEN" \
+              --primary-region=$REGION \
+              --root-dir=apps/webapp \
+              --non-interactive 2>&1)
+            CREATE_EXIT_CODE=$?
+
+            if [ $CREATE_EXIT_CODE -eq 0 ]; then
+              echo "✓ App Hosting backend created: $BACKEND_ID"
+              echo "$CREATE_OUTPUT"
+            else
+              echo "⚠️  Failed to create App Hosting backend via CLI (exit code: $CREATE_EXIT_CODE)"
+              echo ""
+              echo "Error output:"
+              echo "$CREATE_OUTPUT"
+              echo ""
+              echo "This may require manual setup through Firebase Console."
+              echo "Common reasons for failure:"
+              echo "  - GitHub repository not connected to Firebase"
+              echo "  - Missing required permissions"
+              echo "  - Invalid configuration in apphosting.yaml"
+              echo ""
+              echo "See README-environment-setup.md for manual setup instructions"
+              echo "Continuing with workflow..."
+            fi
+          fi
+
+          # Output the backend ID
+          echo "backend_id=$BACKEND_ID" >> $GITHUB_OUTPUT
+
+          # Construct the backend URL (will be available after first deployment)
+          BACKEND_URL="https://${BACKEND_ID}--${PROJECT_ID}.${REGION}.hosted.app"
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "✓ App Hosting backend ready for deployments"
+          echo "   Backend ID: $BACKEND_ID"
+          echo "   URL (after first deployment): $BACKEND_URL"
+
       - name: Create RAG Corpora
         id: rag
         continue-on-error: true
@@ -1050,14 +1408,18 @@ jobs:
 
           Now you can deploy applications using existing workflows:
 
-          1. Go to Actions → Deploy Homecare Agent Proxy
-          2. Select environment: \`${{ inputs.environment_name }}\`
-          3. Run workflow
+          1. **Deploy Web Application (Firebase App Hosting)**
+             - Go to Actions → Deploy Webapp - AppHosting
+             - Select environment: \`${{ inputs.environment_name }}\`
+             - App will be available at: \`${{ needs.create-infrastructure.outputs.apphosting_backend_url }}\`
 
-          ## URLs
+          2. **Deploy Homecare Agent Proxy**
+             - Go to Actions → Deploy Homecare Agent Proxy
+             - Select environment: \`${{ inputs.environment_name }}\`
+             - Cloud Run will be available at: \`https://homecare-agent-proxy-${{ inputs.environment_name }}-*.run.app\`
 
-          - Cloud Run will be available at: \`https://homecare-agent-proxy-${{ inputs.environment_name }}-*.run.app\`
-          - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
+          3. **Deploy PubSub to User Docs Function**
+             - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
 
           ## Destroy
 
@@ -1088,6 +1450,10 @@ jobs:
 
           ✅ Infrastructure provisioned with gcloud
           ✅ IAM and Workload Identity ready
+          ✅ Firebase enabled (Firestore + Storage)
+          ✅ Firestore rules and indexes deployed
+          ✅ Storage rules deployed
+          ✅ Firebase App Hosting backend created
           ✅ GitHub environment created automatically
           ✅ All variables configured
           ✅ RAG corpora created (2 separate corpora)
@@ -1132,11 +1498,16 @@ jobs:
 
           Go to Actions and run:
 
-          1. **Deploy Homecare Agent Proxy**
+          1. **Deploy Webapp - AppHosting**
+             - Select environment: \`${{ inputs.environment_name }}\`
+             - Deploy in ~5-10 minutes
+             - URL: ${{ needs.create-infrastructure.outputs.apphosting_backend_url }}
+
+          2. **Deploy Homecare Agent Proxy**
              - Select environment: \`${{ inputs.environment_name }}\`
              - Deploy in ~2-3 minutes
 
-          2. **Deploy PubSub to User Docs Function**
+          3. **Deploy PubSub to User Docs Function**
              - Select environment: \`${{ inputs.environment_name }}\`
              - Deploy in ~2-3 minutes
 
@@ -1151,6 +1522,8 @@ jobs:
           - **Service Account**: \`${{ needs.create-infrastructure.outputs.service_account_email }}\`
           - **Storage**: \`${{ needs.create-infrastructure.outputs.user_data_bucket }}\`
           - **Pub/Sub Topics**: \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\`
+          - **App Hosting Backend**: \`${{ needs.create-infrastructure.outputs.apphosting_backend_id }}\`
+          - **App Hosting URL**: ${{ needs.create-infrastructure.outputs.apphosting_backend_url }} (available after first deployment)
 
           ## 📥 Download Configuration
 
