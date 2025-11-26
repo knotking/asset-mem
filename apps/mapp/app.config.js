@@ -59,11 +59,12 @@ module.exports = {
       'expo-router',
       'expo-web-browser',
       'expo-video',
+      'react-native-keyboard-controller',
       [
         'expo-image-picker',
         {
           photosPermission: 'This app needs access to your photo library to select photos and videos for property documentation.',
-          cameraPermission: 'This app needs access to your camera to take photos and record videos for property documentation.',
+          cameraPermission: 'This app needs access to your camera to take photos and records for property documentation.',
         },
       ],
     ],
