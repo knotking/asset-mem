@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent } from '@/lib/types';
+import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent, LocationSource, LocationData } from '@/lib/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@/lib/types';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
@@ -38,6 +38,11 @@ export default function PropertyChatSessionPage() {
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+
+  // Location state
+  const [locationSource, setLocationSource] = useState<LocationSource>('address');
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -191,6 +196,66 @@ export default function PropertyChatSessionPage() {
     setSelectedOptionalAgents(agents);
   }, []);
 
+  // Handle location source change
+  const handleLocationSourceChange = useCallback(async (source: LocationSource) => {
+    setLocationSource(source);
+    
+    // If switching to location and we don't have location data, get it
+    if (source === 'location' && !locationData) {
+      setIsGettingLocation(true);
+      try {
+        if (typeof window === 'undefined' || !navigator.geolocation) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Geolocation is not supported by your browser.' });
+          setLocationSource('address');
+          return;
+        }
+
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 300000, // 5 minutes
+          });
+        });
+
+        setLocationData({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radiusMiles: 50, // Default radius
+        });
+      } catch (error: unknown) {
+        // Handle specific geolocation errors
+        let errorMessage = 'Failed to get your location. Please try again or use property address.';
+        if (error instanceof GeolocationPositionError) {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Please try again.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+          }
+        }
+        console.warn('Location error:', error);
+        toast({ variant: 'destructive', title: 'Location Error', description: errorMessage });
+        setLocationSource('address');
+      } finally {
+        setIsGettingLocation(false);
+      }
+    }
+  }, [locationData, toast]);
+
+  // Handle radius change
+  const handleRadiusChange = useCallback((radius: number) => {
+    setLocationData((prev) => {
+      if (!prev) return null;
+      return { ...prev, radiusMiles: radius };
+    });
+  }, []);
+
   const handleSend = useCallback(async (content: string) => {
     if (!user) return;
     
@@ -262,18 +327,34 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments.map(d => d.gsURI).filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI ? [userMessage.file.gsURI] : [];
 
+        // Determine whether to use property address or location data
+        const shouldUseLocationData = locationSource === 'location' || !property?.address;
+        const effectiveLocationData = shouldUseLocationData ? locationData : null;
+        const effectivePropertyAddress = locationSource === 'address' ? property?.address : undefined;
+
+        const requestBody: Record<string, unknown> = {
+            user_id: user.uid,
+            session_id: agentSessionId,
+            user_query: content,
+            context_doc_uris: contextDocURIs,
+            diagnosis_uris: diagnosisURIs,
+            property_address: effectivePropertyAddress,
+            analysis_optional_agents: selectedOptionalAgents,
+        };
+
+        // Include location_data if using location
+        if (effectiveLocationData) {
+            requestBody.location_data = {
+                latitude: effectiveLocationData.latitude,
+                longitude: effectiveLocationData.longitude,
+                radius_miles: effectiveLocationData.radiusMiles,
+            };
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user.uid,
-                session_id: agentSessionId,
-                user_query: content,
-                context_doc_uris: contextDocURIs,
-                diagnosis_uris: diagnosisURIs,
-                property_address: property?.address,
-                analysis_optional_agents: selectedOptionalAgents,
-            }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -353,7 +434,7 @@ export default function PropertyChatSessionPage() {
         setIsLoading(false);
         abortControllerRef.current = null;
     }
-  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents]);
+  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents, locationSource, locationData]);
 
 
   if (authLoading || isMessagesLoading || isDocsLoading) {
@@ -382,6 +463,13 @@ export default function PropertyChatSessionPage() {
                 placeholder="Type a message or attach image/video to diagnose an issue..."
                 selectedOptionalAgents={selectedOptionalAgents}
                 onOptionalAgentsChange={handleOptionalAgentsChange}
+                // Location props
+                hasPropertyAddress={!!property?.address}
+                locationSource={locationSource}
+                onLocationSourceChange={handleLocationSourceChange}
+                locationData={locationData}
+                onRadiusChange={handleRadiusChange}
+                isGettingLocation={isGettingLocation}
             />
         </footer>
       </div>

@@ -17,6 +17,10 @@ def service_agent_instructions() -> str:
         *   `user_query` (str): The user's question or description.
         *   `context_doc_uris` (List[str], optional): Additional context documents.
         *   `property_address` (str, optional): The property address if available.
+        *   `location_data` (object, optional): Location coordinates with search radius when property_address is not available.
+            - `latitude` (float): Latitude coordinate
+            - `longitude` (float): Longitude coordinate
+            - `radius_miles` (int): Search radius in miles (10-100)
         
         **Available Tools:**
         *   `cost_estimation`: Provides cost estimates for professional service.
@@ -24,15 +28,26 @@ def service_agent_instructions() -> str:
         *   `yelpapi_search`: Searches Yelp for service providers with reviews.
         *   `google_search_agent`: Searches the internet for service-related information.
         
+        **Location Handling Priority:**
+        1. If `property_address` is provided, use it for location-based searches
+        2. If `property_address` is not provided but `location_data` is available:
+           - Use the latitude/longitude coordinates for geo-based searches
+           - Restrict search results to within the specified `radius_miles` of the coordinates
+           - For serpapi_search and yelpapi_search, include location parameters: "lat:[latitude],lon:[longitude],radius:[radius_miles]mi"
+        3. If neither is available, use "near me" as fallback
+        
         **MANDATORY Sequence of Operations - Always Call ALL THREE Tools:**
         1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
         2. Call `cost_estimation` with query incorporating the diagnosis from triage_agent
            - Use the specific diagnosis to get more accurate cost estimates
-        3. Call `serpapi_search` with query incorporating the diagnosis and `property_address` or "near me" if available
-           - Search for: "[diagnosis] professionals near [address]" or "[diagnosis] repair service near me"
+        3. Call `serpapi_search` with query incorporating the diagnosis and location info:
+           - If `property_address`: "[diagnosis] professionals near [address]"
+           - If `location_data`: "[diagnosis] professionals" with geo parameters (lat, lon, radius)
+           - Otherwise: "[diagnosis] repair service near me"
            - This searches for local professionals/service providers based on the specific problem
-        4. Call `yelpapi_search` with query incorporating the diagnosis and `property_address` if available
-           - Search for: "[diagnosis] service [address]" 
+        4. Call `yelpapi_search` with query incorporating the diagnosis and location info:
+           - If `property_address`: "[diagnosis] service [address]"
+           - If `location_data`: "[diagnosis] service" with geo parameters (lat, lon, radius)
            - This searches Yelp for local professionals with reviews matching the diagnosis
         5. Return all three results in a nested JSON structure
         
@@ -54,6 +69,7 @@ def service_agent_instructions() -> str:
         * You MUST call ALL THREE tools (cost_estimation, serpapi_search, yelpapi_search).
         * Use the diagnosis from triage_agent to tailor your queries and get more accurate results.
         * Always provide cost estimates and local professional listings.
+        * When using `location_data`, respect the `radius_miles` parameter to filter results within that distance.
         * Focus ONLY on professional service options - do not include DIY solutions.
         * Include contact information, ratings, and locations for all service providers.
         * All data should be properly nested in JSON structure.

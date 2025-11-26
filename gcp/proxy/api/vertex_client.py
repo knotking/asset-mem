@@ -103,7 +103,10 @@ async def stream_agent_answers(
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
     property_address = request.property_address
-    analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
+    location_data = request.location_data
+    # Use user's selection if provided, otherwise default to all agents
+    # Note: Empty list means "only triage, no optional agents"
+    analysis_optional_agents = request.analysis_optional_agents if request.analysis_optional_agents is not None else ANALYSIS_OPTIONAL_AGENT_ORDER
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(user_id)
@@ -123,6 +126,14 @@ async def stream_agent_answers(
     
     if property_address:
         payload["property_address"] = property_address
+    
+    # Include location_data if provided (used when property_address is not available)
+    if location_data:
+        payload["location_data"] = {
+            "latitude": location_data.latitude,
+            "longitude": location_data.longitude,
+            "radius_miles": location_data.radius_miles
+        }
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents
