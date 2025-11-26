@@ -38,12 +38,12 @@ class FileMetadata(BaseModel):
     
     # File information
     original_filename: str
-    gcs_uri: str                           # Original GCS location
-    content_type: str
+    gcs_url: str                           # Original GCS location (e.g., "gs://bucket/path")
+    mime_type: str
     file_size_bytes: int = 0
     
     # Gemini File Search references
-    gemini_file_name: Optional[str] = None  # e.g., "files/abc123"
+    gemini_file_id: Optional[str] = None   # e.g., "files/abc123"
     gemini_file_uri: Optional[str] = None   # Gemini file URI
     store_id: Optional[str] = None          # Reference to FileSearchStore
     
@@ -107,10 +107,10 @@ class FileSearchStore(BaseModel):
 class FileUploadRequest(BaseModel):
     """Request to upload a file to Gemini File Search."""
     user_id: str
-    gcs_uri: str                            # GCS URI of the file to upload
+    gcs_url: str                            # GCS URL of the file to upload (e.g., "gs://bucket/path")
     property_id: Optional[str] = None
     original_filename: Optional[str] = None
-    content_type: Optional[str] = None
+    mime_type: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     custom_metadata: Dict[str, Any] = Field(default_factory=dict)
     
@@ -184,7 +184,7 @@ class FileUploadResponse(BaseModel):
     """Response from file upload operation."""
     success: bool
     file_id: Optional[str] = None
-    gemini_file_name: Optional[str] = None
+    gemini_file_id: Optional[str] = None
     status: FileStatus = FileStatus.PENDING
     message: str = ""
     error: Optional[str] = None

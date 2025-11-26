@@ -55,11 +55,11 @@ class FileSearchFirestoreClient:
             return FileMetadata(**doc.to_dict())
         return None
     
-    def get_file_by_gemini_name(self, gemini_file_name: str) -> Optional[FileMetadata]:
-        """Get file metadata by Gemini file name."""
+    def get_file_by_gemini_id(self, gemini_file_id: str) -> Optional[FileMetadata]:
+        """Get file metadata by Gemini file ID."""
         query = (
             self.db.collection(self.FILES_COLLECTION)
-            .where(filter=FieldFilter("gemini_file_name", "==", gemini_file_name))
+            .where(filter=FieldFilter("gemini_file_id", "==", gemini_file_id))
             .limit(1)
         )
         docs = list(query.stream())
@@ -79,7 +79,7 @@ class FileSearchFirestoreClient:
         self, 
         file_id: str, 
         status: FileStatus, 
-        gemini_file_name: Optional[str] = None,
+        gemini_file_id: Optional[str] = None,
         gemini_file_uri: Optional[str] = None,
         error_message: Optional[str] = None,
         expires_at: Optional[datetime] = None,
@@ -89,8 +89,8 @@ class FileSearchFirestoreClient:
             "status": status.value,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        if gemini_file_name:
-            updates["gemini_file_name"] = gemini_file_name
+        if gemini_file_id:
+            updates["gemini_file_id"] = gemini_file_id
         if gemini_file_uri:
             updates["gemini_file_uri"] = gemini_file_uri
         if error_message:
@@ -167,44 +167,44 @@ class FileSearchFirestoreClient:
             limit=1000,
         ))
     
-    def get_files_by_gcs_uris(
+    def get_files_by_gcs_urls(
         self, 
         user_id: str, 
-        gcs_uris: List[str]
+        gcs_urls: List[str]
     ) -> List[FileMetadata]:
-        """Get file metadata for specific GCS URIs."""
+        """Get file metadata for specific GCS URLs."""
         files = []
-        for gcs_uri in gcs_uris:
+        for gcs_url in gcs_urls:
             query = (
                 self.db.collection(self.FILES_COLLECTION)
                 .where(filter=FieldFilter("user_id", "==", user_id))
-                .where(filter=FieldFilter("gcs_uri", "==", gcs_uri))
+                .where(filter=FieldFilter("gcs_url", "==", gcs_url))
                 .limit(1)
             )
             for doc in query.stream():
                 files.append(FileMetadata(**doc.to_dict()))
         return files
     
-    def get_gemini_file_names_for_context(
+    def get_gemini_file_ids_for_context(
         self,
         user_id: str,
-        context_doc_uris: Optional[List[str]] = None,
+        context_doc_urls: Optional[List[str]] = None,
     ) -> List[str]:
         """
-        Get Gemini file names for context documents.
-        Used by agents to resolve context_doc_uris to Gemini file references.
+        Get Gemini file IDs for context documents.
+        Used by agents to resolve context_doc_urls to Gemini file references.
         """
-        if not context_doc_uris:
+        if not context_doc_urls:
             # Return all active files for user
             files = self.list_active_files_for_user(user_id)
         else:
-            # Return files matching the URIs
-            files = self.get_files_by_gcs_uris(user_id, context_doc_uris)
+            # Return files matching the URLs
+            files = self.get_files_by_gcs_urls(user_id, context_doc_urls)
         
         return [
-            f.gemini_file_name 
+            f.gemini_file_id 
             for f in files 
-            if f.gemini_file_name and f.status == FileStatus.ACTIVE
+            if f.gemini_file_id and f.status == FileStatus.ACTIVE
         ]
     
     # ==================== Store Operations ====================

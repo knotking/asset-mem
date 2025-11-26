@@ -130,19 +130,23 @@ class GeminiFileSearchService:
         3. Store metadata in Firestore
         4. Return upload result
         """
+        # Track file_metadata to update status on failure
+        file_metadata = None
+        file_saved_to_firestore = False
+        
         try:
-            # Determine content type
-            content_type = request.content_type
-            if not content_type:
-                content_type, _ = mimetypes.guess_type(request.gcs_uri)
-                content_type = content_type or "application/octet-stream"
+            # Determine mime type
+            mime_type = request.mime_type
+            if not mime_type:
+                mime_type, _ = mimetypes.guess_type(request.gcs_url)
+                mime_type = mime_type or "application/octet-stream"
             
-            # Validate content type
-            if content_type not in self.SUPPORTED_MIME_TYPES:
-                logger.warning(f"Unsupported content type: {content_type}")
+            # Validate mime type
+            if mime_type not in self.SUPPORTED_MIME_TYPES:
+                logger.warning(f"Unsupported mime type: {mime_type}")
             
             # Get file info from GCS
-            gcs_path = request.gcs_uri.replace("gs://", "")
+            gcs_path = request.gcs_url.replace("gs://", "")
             bucket_name = gcs_path.split("/")[0]
             blob_path = "/".join(gcs_path.split("/")[1:])
             
@@ -153,7 +157,7 @@ class GeminiFileSearchService:
                 return FileUploadResponse(
                     success=False,
                     status=FileStatus.FAILED,
-                    error=f"File not found in GCS: {request.gcs_uri}",
+                    error=f"File not found in GCS: {request.gcs_url}",
                 )
             
             # Get file size
@@ -167,8 +171,8 @@ class GeminiFileSearchService:
                 user_id=request.user_id,
                 property_id=request.property_id,
                 original_filename=original_filename,
-                gcs_uri=request.gcs_uri,
-                content_type=content_type,
+                gcs_url=request.gcs_url,
+                mime_type=mime_type,
                 file_size_bytes=file_size,
                 status=FileStatus.PROCESSING,
                 tags=request.tags,
@@ -186,6 +190,7 @@ class GeminiFileSearchService:
             
             # Save initial metadata
             self.firestore.create_file(file_metadata)
+            file_saved_to_firestore = True
             
             # Download file content
             file_content = blob.download_as_bytes()
@@ -200,7 +205,7 @@ class GeminiFileSearchService:
                 
                 gemini_file = genai.upload_file(
                     path=tmp_path,
-                    mime_type=content_type,
+                    mime_type=mime_type,
                     display_name=original_filename,
                 )
                 
@@ -220,7 +225,7 @@ class GeminiFileSearchService:
                 self.firestore.update_file_status(
                     file_id=file_metadata.id,
                     status=FileStatus.ACTIVE,
-                    gemini_file_name=gemini_file.name,
+                    gemini_file_id=gemini_file.name,
                     gemini_file_uri=gemini_file.uri,
                     expires_at=expires_at,
                 )
@@ -234,7 +239,7 @@ class GeminiFileSearchService:
                 return FileUploadResponse(
                     success=True,
                     file_id=file_metadata.id,
-                    gemini_file_name=gemini_file.name,
+                    gemini_file_id=gemini_file.name,
                     status=FileStatus.ACTIVE,
                     message=f"File uploaded successfully. Expires at: {expires_at.isoformat()}",
                 )
@@ -262,8 +267,19 @@ class GeminiFileSearchService:
             
         except Exception as e:
             logger.error(f"Upload failed: {e}")
+            # Update Firestore record status if it was created
+            if file_saved_to_firestore and file_metadata:
+                try:
+                    self.firestore.update_file_status(
+                        file_id=file_metadata.id,
+                        status=FileStatus.FAILED,
+                        error_message=str(e),
+                    )
+                except Exception as update_error:
+                    logger.error(f"Failed to update file status to FAILED: {update_error}")
             return FileUploadResponse(
                 success=False,
+                file_id=file_metadata.id if file_metadata else None,
                 status=FileStatus.FAILED,
                 error=str(e),
             )
@@ -307,19 +323,19 @@ class GeminiFileSearchService:
         start_time = time.time()
         
         try:
-            # Get Gemini file names to search
+            # Get Gemini file IDs to search
             if query.file_ids:
                 # Get specific files
                 gemini_files = []
                 for file_id in query.file_ids:
                     file_meta = self.firestore.get_file(file_id)
-                    if file_meta and file_meta.gemini_file_name:
-                        gemini_files.append(file_meta.gemini_file_name)
+                    if file_meta and file_meta.gemini_file_id:
+                        gemini_files.append(file_meta.gemini_file_id)
             else:
                 # Get all active files for user
-                gemini_files = self.firestore.get_gemini_file_names_for_context(
+                gemini_files = self.firestore.get_gemini_file_ids_for_context(
                     user_id=query.user_id,
-                    context_doc_uris=None,  # Get all
+                    context_doc_urls=None,  # Get all
                 )
             
             if not gemini_files:
@@ -420,10 +436,10 @@ class GeminiFileSearchService:
         This method is designed to be called by agents to get grounded context
         for their responses. Returns a list of relevant text chunks.
         """
-        # Get Gemini file names for the context
-        gemini_files = self.firestore.get_gemini_file_names_for_context(
+        # Get Gemini file IDs for the context
+        gemini_files = self.firestore.get_gemini_file_ids_for_context(
             user_id=user_id,
-            context_doc_uris=context_doc_uris,
+            context_doc_urls=context_doc_uris,
         )
         
         if not gemini_files:
@@ -469,9 +485,9 @@ class GeminiFileSearchService:
                     continue
                 
                 # Delete from Gemini if requested
-                if request.delete_from_gemini and file_meta.gemini_file_name:
+                if request.delete_from_gemini and file_meta.gemini_file_id:
                     try:
-                        genai.delete_file(file_meta.gemini_file_name)
+                        genai.delete_file(file_meta.gemini_file_id)
                     except Exception as e:
                         logger.warning(f"Could not delete from Gemini: {e}")
                 
@@ -536,10 +552,10 @@ class GeminiFileSearchService:
                 # Re-upload the file
                 result = self.upload_file(FileUploadRequest(
                     user_id=file_meta.user_id,
-                    gcs_uri=file_meta.gcs_uri,
+                    gcs_url=file_meta.gcs_url,
                     property_id=file_meta.property_id,
                     original_filename=file_meta.original_filename,
-                    content_type=file_meta.content_type,
+                    mime_type=file_meta.mime_type,
                     tags=file_meta.tags,
                     custom_metadata=file_meta.custom_metadata,
                     use_existing_store=True,
@@ -605,8 +621,8 @@ class GeminiFileSearchService:
                 stats["by_property"][prop_id] = 0
             stats["by_property"][prop_id] += 1
             
-            # Group by content type
-            ct = f.content_type or "unknown"
+            # Group by mime type
+            ct = f.mime_type or "unknown"
             if ct not in stats["by_content_type"]:
                 stats["by_content_type"][ct] = 0
             stats["by_content_type"][ct] += 1
