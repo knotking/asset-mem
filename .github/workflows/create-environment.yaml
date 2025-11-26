@@ -496,7 +496,7 @@ jobs:
             fi
           fi
 
-          echo "Checking Workload Identity binding..."
+          echo "Checking Workload Identity binding for GitHub workflow service account..."
           # Check if binding already exists
           PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
           WIF_MEMBER="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ github.repository }}"
@@ -515,6 +515,47 @@ jobs:
               --member="$WIF_MEMBER" \
               --quiet
             echo "✓ Workload Identity binding created"
+          fi
+
+          echo ""
+          echo "Checking Workload Identity binding for Firebase service account..."
+          # Check if Firebase service account has workload identity binding
+          FIREBASE_EXISTING_BINDING=$(gcloud iam service-accounts get-iam-policy $FIREBASE_SA_EMAIL \
+            --project=$PROJECT_ID \
+            --format=json | jq -e ".bindings[] | select(.role==\"roles/iam.workloadIdentityUser\") | .members[] | select(. == \"$WIF_MEMBER\")" 2>/dev/null || echo "")
+
+          if [ -n "$FIREBASE_EXISTING_BINDING" ]; then
+            echo "✓ Firebase Workload Identity binding already exists"
+          else
+            echo "Creating Workload Identity binding for Firebase service account..."
+            gcloud iam service-accounts add-iam-policy-binding $FIREBASE_SA_EMAIL \
+              --project=$PROJECT_ID \
+              --role="roles/iam.workloadIdentityUser" \
+              --member="$WIF_MEMBER" \
+              --quiet
+            echo "✓ Firebase Workload Identity binding created"
+          fi
+
+          echo ""
+          echo "Checking Service Account User permission for Firebase deployer..."
+          # Grant Firebase deployer permission to act as the compute service account
+          COMPUTE_SA="firebase-app-hosting-compute@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          # Check if the binding already exists
+          COMPUTE_SA_BINDING=$(gcloud iam service-accounts get-iam-policy $COMPUTE_SA \
+            --project=$PROJECT_ID \
+            --format=json 2>/dev/null | jq -e ".bindings[] | select(.role==\"roles/iam.serviceAccountUser\") | .members[] | select(. == \"serviceAccount:${FIREBASE_SA_EMAIL}\")" 2>/dev/null || echo "")
+
+          if [ -n "$COMPUTE_SA_BINDING" ]; then
+            echo "✓ Firebase deployer already has permission to act as compute service account"
+          else
+            echo "Granting Firebase deployer permission to act as compute service account..."
+            gcloud iam service-accounts add-iam-policy-binding $COMPUTE_SA \
+              --project=$PROJECT_ID \
+              --role="roles/iam.serviceAccountUser" \
+              --member="serviceAccount:${FIREBASE_SA_EMAIL}" \
+              --quiet
+            echo "✓ Service Account User permission granted"
           fi
 
           # Output values

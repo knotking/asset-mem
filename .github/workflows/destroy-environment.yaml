@@ -302,15 +302,33 @@ jobs:
           # Service accounts
           GITHUB_SA="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
           FIREBASE_SA="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+          COMPUTE_SA="firebase-app-hosting-compute@${PROJECT_ID}.iam.gserviceaccount.com"
 
-          # Step 1: Remove Workload Identity binding first
-          echo "Removing Workload Identity binding..."
+          # Step 1: Remove Workload Identity bindings
+          echo "Removing Workload Identity bindings..."
           WIF_MEMBER="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${{ github.repository }}"
+
+          echo "Removing GitHub workflow SA binding..."
           gcloud iam service-accounts remove-iam-policy-binding $GITHUB_SA \
             --project=$PROJECT_ID \
             --role="roles/iam.workloadIdentityUser" \
             --member="$WIF_MEMBER" \
-            --quiet 2>/dev/null || echo "⚠️ WIF binding may not exist"
+            --quiet 2>/dev/null || echo "⚠️ GitHub SA WIF binding may not exist"
+
+          echo "Removing Firebase deployer SA binding..."
+          gcloud iam service-accounts remove-iam-policy-binding $FIREBASE_SA \
+            --project=$PROJECT_ID \
+            --role="roles/iam.workloadIdentityUser" \
+            --member="$WIF_MEMBER" \
+            --quiet 2>/dev/null || echo "⚠️ Firebase SA WIF binding may not exist"
+
+          # Step 1.5: Remove Service Account User permission
+          echo "Removing Firebase deployer permission to act as compute SA..."
+          gcloud iam service-accounts remove-iam-policy-binding $COMPUTE_SA \
+            --project=$PROJECT_ID \
+            --role="roles/iam.serviceAccountUser" \
+            --member="serviceAccount:${FIREBASE_SA}" \
+            --quiet 2>/dev/null || echo "⚠️ Service Account User binding may not exist"
 
           # Step 2: Delete Workload Identity Provider
           echo "Deleting Workload Identity Provider..."
