@@ -1203,10 +1203,12 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               // Check for nested structure (analysis.*)
               if (parsed.analysis && typeof parsed.analysis === 'object') {
                   return !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
-                           parsed.analysis.diyResults || parsed.analysis.serviceResults);
+                           parsed.analysis.diyResults || parsed.analysis.serviceResults ||
+                           parsed.analysis.costEstimationResults || parsed.analysis.title);
               }
               // Check for flat structure
-              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult);
+              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || 
+                       parsed.coverageResult || parsed.costEstimationResults);
           };
           
           // Method 1: PRIORITY - Extract JSON from ```json code block (for dual-format responses)

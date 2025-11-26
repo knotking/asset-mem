@@ -34,6 +34,33 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Google image domains (for product images, thumbnails, etc.)
+      {
+        protocol: 'https',
+        hostname: '**.gstatic.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Amazon product images
+      {
+        protocol: 'https',
+        hostname: '**.media-amazon.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Yelp images
+      {
+        protocol: 'https',
+        hostname: '**.yelpcdn.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
