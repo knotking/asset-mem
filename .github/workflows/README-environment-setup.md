@@ -47,7 +47,10 @@ The `create-environment.yaml` workflow automatically provisions and configures:
 
 2. **IAM & Service Accounts**
    - GitHub workflow deployment service account: `githubworkflowdeployment@{PROJECT_ID}.iam.gserviceaccount.com`
+     - Roles: Cloud Run, Artifact Registry, Cloud Build, Storage Admin, Pub/Sub, AI Platform, Cloud Functions, Secret Manager
+     - Firebase-specific roles: `roles/firebasehosting.admin`, `roles/firebaserules.admin`, `roles/firebase.admin`, `roles/firebasestorage.admin`
    - Firebase App Hosting deployer service account: `firebase-apphosting-deployer@{PROJECT_ID}.iam.gserviceaccount.com`
+     - Roles: Developer Connect Admin, Firebase App Hosting Admin, Storage Object Viewer
    - Cloud Build service account with proper permissions
    - Compute Engine service account configuration
    - Workload Identity Pool and Provider for keyless authentication
@@ -87,8 +90,9 @@ The `create-environment.yaml` workflow automatically provisions and configures:
    - Firebase Authentication (Email/Password + Anonymous providers)
    - Firebase Storage bucket
    - Firestore rules and indexes deployment
-   - Storage rules deployment
+   - Storage rules deployment (with graceful fallback if not initialized)
    - Firebase App Hosting backend
+   - Note: Rules deployment uses `githubworkflowdeployment` service account with full Firebase permissions
 
 8. **GitHub Environment**
    - Automatically creates GitHub environment with all required variables
@@ -477,8 +481,17 @@ After running the `create-environment.yaml` workflow successfully, you will have
 
 ### Ready to Deploy
 Once the workflow completes, you can immediately deploy your applications:
-- Web application via Firebase App Hosting
+- Web application via Firebase App Hosting (includes automatic Firestore rules, indexes, and Storage rules deployment)
 - Homecare Agent Proxy to Cloud Run
 - Cloud Functions for event processing
 
 All infrastructure is in place and the GitHub environment is configured with the correct variables for your deployment workflows.
+
+#### Firebase Rules Deployment
+The `deploy-webapp-apphosting.yaml` workflow automatically deploys Firebase configuration alongside your application:
+- **Firestore Rules & Indexes**: Deployed using the `githubworkflowdeployment` service account with full Firebase permissions
+- **Storage Rules**: Deployed with graceful fallback if Firebase Storage is not fully initialized
+- **Service Account Switching**: The workflow authenticates with different service accounts for different operations:
+  - `githubworkflowdeployment` for Firebase rules/indexes deployment
+  - `firebase-apphosting-deployer` for App Hosting deployment
+- **Token-based Authentication**: Uses `gcloud auth application-default print-access-token` for Workload Identity compatibility
