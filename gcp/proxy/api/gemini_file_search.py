@@ -181,7 +181,7 @@ class GeminiFileSearchManager:
                 while not operation.done and elapsed < timeout:
                     time.sleep(5)
                     elapsed += 5
-                    operation = self.client.operations.get(operation)
+                    operation = self.client.operations.get(name=operation_name)
                     logger.debug(f"Waiting for import completion... ({elapsed}s)")
                 
                 if not operation.done:
@@ -267,7 +267,7 @@ class GeminiFileSearchManager:
                 while not operation.done and elapsed < timeout:
                     time.sleep(5)
                     elapsed += 5
-                    operation = self.client.operations.get(operation)
+                    operation = self.client.operations.get(name=operation_name)
                 
                 if operation.done:
                     logger.info(f"GCS file import completed: {display_name}")
