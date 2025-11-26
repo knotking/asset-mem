@@ -29,6 +29,12 @@ env:
     value: apps/webapp
     availability:
       - BUILD
+  # Environment identifier
+  - variable: NEXT_PUBLIC_ENV
+    value: dev
+    availability:
+      - BUILD
+      - RUNTIME
 
 runConfig:
   # Increase this value if you'd like to automatically spin up

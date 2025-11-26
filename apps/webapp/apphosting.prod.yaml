@@ -29,7 +29,7 @@ env:
       - BUILD
   # Environment identifier
   - variable: NEXT_PUBLIC_ENV
-    value: production
+    value: prod
     availability:
       - BUILD
       - RUNTIME
