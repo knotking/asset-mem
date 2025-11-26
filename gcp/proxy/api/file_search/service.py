@@ -324,8 +324,11 @@ class GeminiFileSearchService:
         
         try:
             # Get Gemini file IDs to search
-            if query.file_ids:
-                # Get specific files
+            if query.gemini_file_ids:
+                # Use directly provided Gemini file IDs
+                gemini_files = query.gemini_file_ids
+            elif query.file_ids:
+                # Get specific files by metadata ID
                 gemini_files = []
                 for file_id in query.file_ids:
                     file_meta = self.firestore.get_file(file_id)
@@ -445,11 +448,11 @@ class GeminiFileSearchService:
         if not gemini_files:
             return ["No matching documents found."]
         
-        # Perform search
+        # Perform search with the resolved Gemini file IDs
         result = self.search(FileSearchQuery(
             user_id=user_id,
             query=user_query,
-            file_ids=None,  # Use the resolved files
+            gemini_file_ids=gemini_files,
             max_results=10,
             include_citations=True,
         ))

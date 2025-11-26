@@ -125,7 +125,8 @@ class FileSearchQuery(BaseModel):
     query: str
     property_id: Optional[str] = None
     store_ids: Optional[List[str]] = None   # Specific stores to search
-    file_ids: Optional[List[str]] = None    # Specific files to search
+    file_ids: Optional[List[str]] = None    # Specific files to search (metadata IDs)
+    gemini_file_ids: Optional[List[str]] = None  # Direct Gemini file IDs (e.g., "files/abc123")
     max_results: int = 10
     include_citations: bool = True
 
