@@ -6,6 +6,24 @@ This implementation provides **Retrieval Augmented Generation (RAG)** capabiliti
 
 **Reference**: [Google Gemini File Search Documentation](https://ai.google.dev/gemini-api/docs/file-search)
 
+## ⚠️ Architecture Notice
+
+**As of the latest architectural review, file search operations should follow this pattern:**
+
+1. **For Queries (Recommended)**: Use **agent tools** that automatically handle user context and isolation
+   - Location: `gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent_v2.py`
+   - Tool: `ask_user_docs_retrieval_v2()`
+   - Benefits: Agent decides when to search, automatic user_id filtering, proper isolation
+
+2. **For File Operations**: Use **user-scoped endpoints** (`/file-search/user/*`)
+   - Required `user_id` parameter ensures proper isolation
+   - Auto-creates user stores as needed
+   - See sections on user-scoped endpoints below
+
+3. **Deprecated**: Non-user-scoped endpoints (`/file-search/import-gcs-file`, `/file-search/query`)
+   - These have been removed as they bypassed agent intelligence and didn't enforce user_id filtering
+   - See deprecation notices in sections 5 and 6 below
+
 ## What is File Search?
 
 File Search is a RAG tool that:
@@ -147,7 +165,10 @@ Upload a local file to a File Search store.
 
 ### 5. Import GCS File to Store
 
-**Endpoint**: `POST /file-search/import-gcs-file`
+> **⚠️ DEPRECATED**: This endpoint has been removed per architectural review. 
+> Use `/file-search/user/import-gcs-file` for user-scoped imports, or preferably use agent tools (see section below).
+
+**Endpoint**: `POST /file-search/import-gcs-file` *(DEPRECATED)*
 
 Import a file from Google Cloud Storage to a File Search store.
 
@@ -174,7 +195,11 @@ Import a file from Google Cloud Storage to a File Search store.
 
 ### 6. Query File Search (RAG)
 
-**Endpoint**: `POST /file-search/query`
+> **⚠️ DEPRECATED**: This endpoint has been removed per architectural review.
+> Use `/file-search/user/query` for user-scoped queries, or preferably use agent tools (recommended).
+> **Reason**: This endpoint did not filter by user_id, allowing queries across all stores. The agent layer should control when and how file search is used with proper user isolation.
+
+**Endpoint**: `POST /file-search/query` *(DEPRECATED)*
 
 Query documents with natural language and get AI-generated answers with citations.
 

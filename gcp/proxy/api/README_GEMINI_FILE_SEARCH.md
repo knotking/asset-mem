@@ -59,9 +59,12 @@ This implementation adds **Google Gemini File Search** to the proxy layer, enabl
    - `GET /file-search/list-stores`
    - `DELETE /file-search/delete-store`
    - `POST /file-search/upload-file`
-   - `POST /file-search/import-gcs-file`
-   - `POST /file-search/query` (RAG endpoint)
+   - ~~`POST /file-search/import-gcs-file`~~ *(DEPRECATED - use `/file-search/user/import-gcs-file`)*
+   - ~~`POST /file-search/query`~~ *(DEPRECATED - use agent tools or `/file-search/user/query`)*
    - `POST /file-search/operation-status`
+   - `POST /file-search/user/upload-file` *(user-scoped)*
+   - `POST /file-search/user/import-gcs-file` *(user-scoped)*
+   - `POST /file-search/user/query` *(user-scoped)*
 
 6. **`requirements.txt`** - Added:
    - `google-cloud-storage==2.18.2` (for GCS integration)
@@ -176,22 +179,26 @@ curl -X POST "$BASE_URL/$SECRET/file-search/create-store" \
   -d '{"display_name": "My Store"}'
 ```
 
-### Import GCS File
+### Import GCS File (User-Scoped)
 ```bash
-curl -X POST "$BASE_URL/$SECRET/file-search/import-gcs-file" \
+# Use user-scoped endpoint instead of deprecated import-gcs-file
+curl -X POST "$BASE_URL/$SECRET/file-search/user/import-gcs-file" \
   -H "Content-Type: application/json" \
   -d '{
+    "user_id": "user123",
     "gcs_uri": "gs://bucket/file.pdf",
     "store_name": "fileSearchStores/xyz",
     "display_name": "Document"
   }'
 ```
 
-### Query (RAG)
+### Query (RAG - User-Scoped)
 ```bash
-curl -X POST "$BASE_URL/$SECRET/file-search/query" \
+# Use user-scoped endpoint or agent tools instead of deprecated query endpoint
+curl -X POST "$BASE_URL/$SECRET/file-search/user/query" \
   -H "Content-Type: application/json" \
   -d '{
+    "user_id": "user123",
     "query": "What are the key points?",
     "store_names": ["fileSearchStores/xyz"]
   }'

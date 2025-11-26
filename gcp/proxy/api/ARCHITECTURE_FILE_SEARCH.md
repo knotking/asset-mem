@@ -25,10 +25,10 @@
                     │                                          │
                     │  Endpoints:                              │
                     │  • /file-search/create-store             │
-                    │  • /file-search/import-gcs-file          │
-                    │  • /file-search/query  (RAG)             │
+                    │  • /file-search/user/* (user-scoped)     │
                     │  • /firebase-agent-query                 │
                     │  • /extract-doc-info                     │
+                    │  [DEPRECATED: import-gcs-file, query]    │
                     └─────────┬────────────┬──────────┬────────┘
                               │            │          │
               ┌───────────────┘            │          └────────────────┐
@@ -127,8 +127,9 @@ User Upload
         │ Trigger webhook
         ▼
 ┌───────────────────────────────────┐
-│ Proxy API                         │
+│ Proxy API [DEPRECATED]            │
 │ /file-search/import-gcs-file      │
+│ USE: /file-search/user/* instead  │
 └───────┬───────────────────────────┘
         │
         ├──────────────────┬─────────────────┐
@@ -164,8 +165,9 @@ User Query: "What is my property address?"
         │
         ▼
 ┌─────────────────────────────────┐
-│ Proxy API                       │
+│ Proxy API [DEPRECATED]          │
 │ /file-search/query              │
+│ USE: Agent tools or user/* API  │
 └───────┬─────────────────────────┘
         │
         ▼

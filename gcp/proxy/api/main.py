@@ -234,7 +234,50 @@ async def extract_document_info(request: Request):
         logger.error(f"Error processing document analysis: {e}")
         return {"status": "error", "message": str(e)}
 
+# ============================================================================
 # Gemini File Search Endpoints
+# ============================================================================
+#
+# ARCHITECTURE OVERVIEW:
+# ----------------------
+# File Search operations follow a two-tier architecture:
+#
+# 1. AGENT TOOLS (Preferred for queries):
+#    - Location: gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/
+#    - Tool: ask_user_docs_retrieval_v2() in agent_v2.py
+#    - Benefits:
+#      * Agent dynamically decides when to invoke file search
+#      * Automatic user_id extraction from ToolContext
+#      * Proper user isolation (queries filtered by user's documents only)
+#      * Grounding metadata and citations included
+#    - Use case: When agents need to query user documents during conversation
+#
+# 2. USER-SCOPED PROXY ENDPOINTS (For direct file operations):
+#    - Endpoints: /file-search/user/* (see lines 450+)
+#    - Benefits:
+#      * Required user_id parameter ensures proper isolation
+#      * Auto-creates user stores as needed
+#      * Suitable for programmatic file upload/import
+#    - Use case: When frontend needs to upload files or query without agent
+#
+# DEPRECATED PATTERNS:
+# -------------------
+# The following patterns have been removed per architectural review:
+# - Non-user-scoped /file-search/import-gcs-file endpoint (removed)
+# - Non-user-scoped /file-search/query endpoint (removed)
+#
+# These endpoints bypassed agent intelligence and didn't enforce user_id
+# filtering, allowing potential cross-user data access.
+#
+# ADMIN ENDPOINTS (Below):
+# ------------------------
+# The endpoints below are for store management and admin operations.
+# They operate on explicit store names and should only be used for:
+# - Creating/deleting stores
+# - Checking operation status
+# - Testing and development
+#
+# ============================================================================
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/create-store")
 async def create_file_search_store(request: Request):
@@ -348,79 +391,37 @@ async def upload_file_to_file_search(request: Request):
         logger.error(f"Error uploading file: {e}")
         return {"status": "error", "message": str(e)}
 
-@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/import-gcs-file")
-async def import_gcs_file_to_file_search(request: Request):
-    """
-    Import a GCS file to a File Search store.
-    
-    Request body:
-    {
-        "gcs_uri": "gs://bucket/path/file.pdf",
-        "store_name": "fileSearchStores/xxxxx",
-        "display_name": "Property Document",
-        "mime_type": "application/pdf",
-        "wait_for_completion": true
-    }
-    """
-    logger.info("Import GCS file to File Search endpoint received a request.")
-    try:
-        data = await request.json()
-        import_request = ImportGCSFileRequest(**data)
-        
-        manager = get_file_search_manager()
-        result = manager.import_gcs_file_to_store(
-            gcs_uri=import_request.gcs_uri,
-            store_name=import_request.store_name,
-            display_name=import_request.display_name,
-            user_id=import_request.user_id,
-            mime_type=import_request.mime_type,
-            wait_for_completion=import_request.wait_for_completion
-        )
-        
-        return result
-        
-    except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        return {"status": "error", "message": str(e)}
-    except Exception as e:
-        logger.error(f"Error importing GCS file: {e}")
-        return {"status": "error", "message": str(e)}
+# DEPRECATED: This endpoint has been removed per architectural review.
+# File import operations should be handled through:
+# 1. Agent tools (preferred) - See gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent_v2.py
+# 2. User-scoped endpoints - See /file-search/user/import-gcs-file below (if direct API access is needed)
+# 
+# Rationale: The agent should dynamically decide when to use file search, and all operations
+# must be filtered by user_id for proper isolation. This non-user-scoped endpoint bypassed
+# both agent intelligence and user filtering.
+#
+# @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/import-gcs-file")
+# async def import_gcs_file_to_file_search(request: Request):
+#     """DEPRECATED - Use agent tools or user-scoped endpoints"""
+#     pass
 
-@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/query")
-async def query_file_search(request: Request):
-    """
-    Query File Search stores with semantic search.
-    
-    Request body:
-    {
-        "query": "What is the property address?",
-        "store_names": ["fileSearchStores/xxxxx"],
-        "model": "gemini-2.5-flash",
-        "include_grounding_metadata": true
-    }
-    """
-    logger.info("Query File Search endpoint received a request.")
-    try:
-        data = await request.json()
-        query_request = FileSearchQueryRequest(**data)
-        
-        manager = get_file_search_manager()
-        result = manager.query_file_search(
-            query=query_request.query,
-            store_names=query_request.store_names,
-            model=query_request.model,
-            include_grounding_metadata=query_request.include_grounding_metadata,
-            generation_config=query_request.generation_config
-        )
-        
-        return result
-        
-    except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        return {"status": "error", "message": str(e)}
-    except Exception as e:
-        logger.error(f"Error querying File Search: {e}")
-        return {"status": "error", "message": str(e)}
+# DEPRECATED: This endpoint has been removed per architectural review.
+# File search queries should be handled through:
+# 1. Agent tools (preferred) - See gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent_v2.py
+#    The ask_user_docs_retrieval_v2 tool properly:
+#    - Extracts user_id from ToolContext
+#    - Filters queries by user's documents only
+#    - Allows the agent to decide when to invoke file search
+# 2. User-scoped endpoints - See /file-search/user/query below (if direct API access is needed)
+#
+# Rationale: This endpoint did not accept user_id, allowing queries across all stores without
+# proper isolation. The agent layer must control when and how file search is used, with proper
+# user metadata filtering.
+#
+# @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/query")
+# async def query_file_search(request: Request):
+#     """DEPRECATED - Use agent tools or user-scoped endpoints"""
+#     pass
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/operation-status")
 async def get_file_search_operation_status(request: Request):
