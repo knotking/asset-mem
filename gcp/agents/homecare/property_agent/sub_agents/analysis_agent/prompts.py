@@ -33,6 +33,7 @@ def triage_agent_instructions() -> str:
         *   If `user_query` is provided, you can always perform triage - even if all other fields are missing or None.
         *   If `diagnosis_uris` is missing, None, or empty, proceed with text-only triage using `user_query`.
         *   If `context_doc_uris` or `property_address` are missing, simply ignore them and work with what you have.
+        *   If `property_address` is not available but location fields (`location_latitude`, `location_longitude`, `location_radius_miles`) are provided, use these for location-based searches instead.
         
         **Sequence of Operations:**
         1. If `diagnosis_uris` exist, are not None, and are non-empty:
@@ -193,7 +194,7 @@ def analysis_agent_instructions() -> str:
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
            Pass: user_query, context_doc_uris, property_address
            IMPORTANT: Include the diagnosis from the triage result as context.
-           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
+           SEARCH SCOPE: Restrict local professional search to within the provided `location_radius_miles` (or 50 miles if not specified) of the provided `property_address` (or use `location_latitude` and `location_longitude` if `property_address` is not available, or "near me" if neither is available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
            FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         

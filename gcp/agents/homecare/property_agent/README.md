@@ -71,7 +71,7 @@ Requirements: Python 3.9+, UV, Google Cloud auth if using Vertex RAG/Search or d
 
 ## How delegation works (at a glance)
 - If `diagnosis_uris` provided: `analysis_agent` performs multimodal analysis (images/videos/docs)
-- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with the optional agents listed in `analysis_optional_agents` (defaults to coverage, DIY, service, and cost)
+- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present, or `location_latitude`/`location_longitude`/`location_radius_miles` if `property_address` is not available), then continues with the optional agents listed in `analysis_optional_agents` (defaults to coverage, DIY, service, and cost)
 - The root returns the sub‑agent response as‑is
 
 ## Programmatic use
@@ -85,6 +85,15 @@ response = root_agent.invoke({
     "user_query": "My washing machine shows error E3, what does it mean?",
     "context_doc_uris": ["gs://my-bucket/manuals/washer.pdf"],
     "property_address": "123 Main St, Springfield, USA"
+})
+print(response)
+
+# Example with location instead of property_address
+response = root_agent.invoke({
+    "user_query": "Find a plumber nearby",
+    "location_latitude": 40.7128,
+    "location_longitude": -74.0060,
+    "location_radius_miles": 25
 })
 print(response)
 ```

@@ -2,7 +2,7 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, MapPinned } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import type { Location } from '@homeapp/common/types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Slider } from "../ui/slider";
+import { Label } from "../ui/label";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -45,6 +49,12 @@ type Props = {
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
+  location?: Location | null;
+  onLocationChange?: (location: Location | null) => void;
+  showLocationOption?: boolean;
+  propertyAddress?: string;
+  useLocationInsteadOfAddress?: boolean;
+  onToggleLocationMode?: (useLocation: boolean) => void;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(({ 
@@ -63,11 +73,19 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
+    location,
+    onLocationChange,
+    showLocationOption = false,
+    propertyAddress,
+    useLocationInsteadOfAddress = false,
+    onToggleLocationMode,
 }, ref) => {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [tempRadius, setTempRadius] = useState<number>(location?.radius || 25);
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -132,6 +150,57 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     }
     // Keep popover open for multi-select
   }
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser. Please use a modern browser with location services enabled.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radius: tempRadius,
+        };
+        if (onLocationChange) {
+          onLocationChange(newLocation);
+        }
+        setLocationDialogOpen(false);
+      },
+      (error) => {
+        let errorMessage = 'Failed to get location. ';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location permission was denied. Please enable location access in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out. Please try again.';
+            break;
+          default:
+            errorMessage += error.message || 'Unknown error occurred.';
+            break;
+        }
+        alert(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  const handleRemoveLocation = () => {
+    if (onLocationChange) {
+      onLocationChange(null);
+    }
+    setLocationDialogOpen(false);
+  };
 
 
   const renderPreview = () => {
@@ -226,36 +295,73 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
         <div className="flex flex-1 flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-              Triage required
-            </Badge>
-            {OPTIONAL_AGENT_OPTIONS.map((option) => {
-              const isSelected = selectedOptionalAgents.includes(option.id);
-              const Icon = option.icon;
-              return (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                Triage required
+              </Badge>
+              {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                const isSelected = selectedOptionalAgents.includes(option.id);
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleOptionalAgentToggle(option.id)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                );
+              })}
+              {selectedOptionalAgents.length === 0 && (
+                <span className="text-xs text-muted-foreground">Only triage will run</span>
+              )}
+            </div>
+            {/* Address/Location Toggle - Right side */}
+            {propertyAddress && onToggleLocationMode && (
+              <div className="flex items-center gap-1 border-l border-border pl-3">
                 <button
-                  key={option.id}
                   type="button"
-                  onClick={() => handleOptionalAgentToggle(option.id)}
-                  aria-pressed={isSelected}
+                  onClick={() => onToggleLocationMode(false)}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors",
+                    !useLocationInsteadOfAddress
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-background text-muted-foreground hover:bg-muted"
                   )}
+                  title="Use property address for location-based searches"
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  {option.label}
+                  <MapPinned className="h-3 w-3" />
                 </button>
-              );
-            })}
-            {selectedOptionalAgents.length === 0 && (
-              <span className="text-xs text-muted-foreground">Only triage will run</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!location) {
+                      setLocationDialogOpen(true);
+                    }
+                    onToggleLocationMode(true);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors",
+                    useLocationInsteadOfAddress
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                  title={location ? "Use current location for searches" : "Set your current location"}
+                >
+                  <MapPin className="h-3 w-3" />
+                </button>
+              </div>
             )}
           </div>
-
           <div className="relative flex w-full items-center rounded-lg bg-muted">
             <Textarea
               ref={textareaRef}
@@ -369,6 +475,66 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
             {allowFileAttachment && (
               <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
+                {showLocationOption && (
+                  <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant={location ? "default" : "ghost"}
+                        size="icon"
+                        className={cn(
+                          "flex-shrink-0",
+                          location && "bg-primary text-primary-foreground"
+                        )}
+                        disabled={isLoading}
+                        type="button"
+                        aria-label="Set location"
+                      >
+                        <MapPin className="h-5 w-5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Set Location</DialogTitle>
+                        <DialogDescription>
+                          Use your current location to find nearby services. The search radius can be adjusted from 10 to 100 miles.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="radius">Search Radius: {tempRadius} miles</Label>
+                          <Slider
+                            id="radius"
+                            min={10}
+                            max={100}
+                            step={5}
+                            value={[tempRadius]}
+                            onValueChange={(value) => setTempRadius(value[0])}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>10 miles</span>
+                            <span>100 miles</span>
+                          </div>
+                        </div>
+                        {location && (
+                          <div className="text-sm text-muted-foreground">
+                            Current location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button onClick={handleGetCurrentLocation} className="flex-1">
+                            {location ? "Update Location" : "Use Current Location"}
+                          </Button>
+                          {location && (
+                            <Button variant="outline" onClick={handleRemoveLocation}>
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

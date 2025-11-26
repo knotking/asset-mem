@@ -9,7 +9,7 @@ import { useMessages } from '@homeapp/common/contexts/messages-context';
 import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
-import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent, Location as LocationType } from '@homeapp/common/types';
 
 interface PropertyChatTabProps {
   sessionId: string | null;
@@ -31,6 +31,12 @@ interface PropertyChatTabProps {
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
   onSend: (messages: IMessage[]) => void;
+  location?: LocationType | null;
+  onLocationChange?: (location: LocationType | null) => void;
+  showLocationOption?: boolean;
+  propertyAddress?: string;
+  useLocationInsteadOfAddress?: boolean;
+  onToggleLocationMode?: (useLocation: boolean) => void;
 }
 
 export function PropertyChatTab({
@@ -51,6 +57,12 @@ export function PropertyChatTab({
   onSelectFromLibrary,
   onSelectFiles,
   onSend,
+  location,
+  onLocationChange,
+  showLocationOption = false,
+  propertyAddress,
+  useLocationInsteadOfAddress = false,
+  onToggleLocationMode,
 }: PropertyChatTabProps) {
   const {
     messages,
@@ -157,6 +169,12 @@ export function PropertyChatTab({
             onRecordVideo={onRecordVideo}
             onSelectFromLibrary={onSelectFromLibrary}
             onSelectFiles={onSelectFiles}
+            location={location}
+            onLocationChange={onLocationChange}
+            showLocationOption={showLocationOption}
+            propertyAddress={propertyAddress}
+            useLocationInsteadOfAddress={useLocationInsteadOfAddress}
+            onToggleLocationMode={onToggleLocationMode}
           />
         )}
         scrollToBottomComponent={() => (

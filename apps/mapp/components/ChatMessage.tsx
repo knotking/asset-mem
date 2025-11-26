@@ -165,7 +165,9 @@ const hasStructuredDataKeys = (parsed: any): boolean => {
       parsed.analysis.triageResult ||
       parsed.analysis.coverageResult ||
       parsed.analysis.diyResults ||
-      parsed.analysis.serviceResults
+      parsed.analysis.serviceResults ||
+      parsed.analysis.costEstimationResults ||
+      parsed.analysis.title
     );
   }
   // Check for flat structure
@@ -173,7 +175,9 @@ const hasStructuredDataKeys = (parsed: any): boolean => {
     parsed.triageResult ||
     parsed.diyResults ||
     parsed.serviceResults ||
-    parsed.coverageResult
+    parsed.coverageResult ||
+    parsed.costEstimationResults ||
+    parsed.title
   );
 };
 

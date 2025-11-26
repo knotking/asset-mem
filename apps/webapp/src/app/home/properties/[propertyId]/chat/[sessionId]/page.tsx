@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent } from '@/lib/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@/lib/types';
+import type { Location } from '@homeapp/common/types';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useAuth } from '@/contexts/auth-context';
@@ -38,6 +39,8 @@ export default function PropertyChatSessionPage() {
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [location, setLocation] = useState<Location | null>(null);
+  const [useLocationInsteadOfAddress, setUseLocationInsteadOfAddress] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -262,18 +265,33 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments.map(d => d.gsURI).filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI ? [userMessage.file.gsURI] : [];
 
+        const requestBody: any = {
+            user_id: user.uid,
+            session_id: agentSessionId,
+            user_query: content,
+            context_doc_uris: contextDocURIs,
+            diagnosis_uris: diagnosisURIs,
+            analysis_optional_agents: selectedOptionalAgents,
+        };
+
+        // Use location if explicitly chosen, or if property address is not available
+        if (useLocationInsteadOfAddress && location) {
+            requestBody.location_latitude = location.latitude;
+            requestBody.location_longitude = location.longitude;
+            requestBody.location_radius_miles = location.radius;
+        } else if (!useLocationInsteadOfAddress && property?.address) {
+            requestBody.property_address = property.address;
+        } else if (!property?.address && location) {
+            // Fallback: use location if property address is not set
+            requestBody.location_latitude = location.latitude;
+            requestBody.location_longitude = location.longitude;
+            requestBody.location_radius_miles = location.radius;
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user.uid,
-                session_id: agentSessionId,
-                user_query: content,
-                context_doc_uris: contextDocURIs,
-                diagnosis_uris: diagnosisURIs,
-                property_address: property?.address,
-                analysis_optional_agents: selectedOptionalAgents,
-            }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -353,7 +371,7 @@ export default function PropertyChatSessionPage() {
         setIsLoading(false);
         abortControllerRef.current = null;
     }
-  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents]);
+  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents, location, useLocationInsteadOfAddress]);
 
 
   if (authLoading || isMessagesLoading || isDocsLoading) {
@@ -382,6 +400,12 @@ export default function PropertyChatSessionPage() {
                 placeholder="Type a message or attach image/video to diagnose an issue..."
                 selectedOptionalAgents={selectedOptionalAgents}
                 onOptionalAgentsChange={handleOptionalAgentsChange}
+                location={location}
+                onLocationChange={setLocation}
+                showLocationOption={true}
+                propertyAddress={property?.address}
+                useLocationInsteadOfAddress={useLocationInsteadOfAddress}
+                onToggleLocationMode={setUseLocationInsteadOfAddress}
             />
         </footer>
       </div>

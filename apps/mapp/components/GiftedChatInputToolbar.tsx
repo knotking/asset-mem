@@ -8,7 +8,9 @@ import {
   useColorScheme,
   Keyboard,
   Animated,
+  Alert,
 } from 'react-native';
+import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
 import type { IMessage } from 'react-native-gifted-chat';
@@ -28,8 +30,10 @@ import {
   Wrench,
   BadgeDollarSign,
   FileText,
+  MapPin,
+  MapPinned,
 } from 'lucide-react-native';
-import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent, Location as LocationType } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 const OPTIONAL_AGENT_OPTIONS: {
@@ -59,6 +63,12 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
+  location?: LocationType | null;
+  onLocationChange?: (location: LocationType | null) => void;
+  showLocationOption?: boolean;
+  propertyAddress?: string;
+  useLocationInsteadOfAddress?: boolean;
+  onToggleLocationMode?: (useLocation: boolean) => void;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -76,14 +86,24 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRecordVideo,
     onSelectFromLibrary,
     onSelectFiles,
+    location,
+    onLocationChange,
+    showLocationOption = false,
+    propertyAddress,
+    useLocationInsteadOfAddress = false,
+    onToggleLocationMode,
     ...inputToolbarProps
   } = props;
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [showMenu, setShowMenu] = React.useState(false);
+  const [showLocationMenu, setShowLocationMenu] = React.useState(false);
+  const [tempRadius, setTempRadius] = React.useState<number>(location?.radius || 25);
   const slideAnim = React.useRef(new Animated.Value(500)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  const locationSlideAnim = React.useRef(new Animated.Value(500)).current;
+  const locationOpacityAnim = React.useRef(new Animated.Value(0)).current;
 
   // Convert HSL to hex for TextInput (which doesn't support CSS variables)
   // Light mode: --background: 0 0% 100% (white), --foreground: 0 0% 3.9% (near black)
@@ -133,6 +153,38 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     }
   }, [showMenu, slideAnim, opacityAnim]);
 
+  // Animate location menu open/close
+  React.useEffect(() => {
+    if (showLocationMenu) {
+      Animated.parallel([
+        Animated.spring(locationSlideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(locationOpacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(locationSlideAnim, {
+          toValue: 500,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(locationOpacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showLocationMenu, locationSlideAnim, locationOpacityAnim]);
+
   // Memoize attachment press handler to prevent recreation
   const handleAttachmentPressWithHaptic = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,11 +196,45 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     setShowMenu(false);
   }, []);
 
+  const handleLocationMenuClose = React.useCallback(() => {
+    setShowLocationMenu(false);
+  }, []);
+
   const handleMenuOption = React.useCallback((action: () => void) => {
     setShowMenu(false);
     // Small delay to let menu close before opening camera/picker
     setTimeout(action, 100);
   }, []);
+
+  const handleGetCurrentLocation = React.useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const newLocation = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        radius: tempRadius,
+      };
+      if (onLocationChange) {
+        onLocationChange(newLocation);
+      }
+      setShowLocationMenu(false);
+    } catch (error) {
+      Alert.alert('Error', `Failed to get location: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [tempRadius, onLocationChange]);
+
+  const handleRemoveLocation = React.useCallback(() => {
+    if (onLocationChange) {
+      onLocationChange(null);
+    }
+    setShowLocationMenu(false);
+  }, [onLocationChange]);
 
   // Memoize renderComposer to prevent recreation on every render
   const renderComposer = React.useCallback(
@@ -344,37 +430,77 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
       {/* Optional Agent Toggles */}
       <View className="mb-3">
-        <View className="flex-row flex-wrap items-center gap-2">
-          <View className="rounded-full border border-border bg-background px-3 py-1">
-            <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-              Triage required
-            </Text>
-          </View>
-          {OPTIONAL_AGENT_OPTIONS.map((option) => {
-            const isSelected = selectedOptionalAgents.includes(option.id);
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => onToggleOptionalAgent(option.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
-                  isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
-                }`}>
-                <Icon
-                  as={option.icon}
-                  size={14}
-                  className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+        <View className="flex-row flex-wrap items-center justify-between gap-2">
+          <View className="flex-row flex-wrap items-center gap-2 flex-1">
+            <View className="rounded-full border border-border bg-background px-3 py-1">
+              <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
+                Triage required
+              </Text>
+            </View>
+            {OPTIONAL_AGENT_OPTIONS.map((option) => {
+              const isSelected = selectedOptionalAgents.includes(option.id);
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => onToggleOptionalAgent(option.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
+                    isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
                   }`}>
-                  {option.label}
-                </Text>
+                  <Icon
+                    as={option.icon}
+                    size={14}
+                    className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                  />
+                  <Text
+                    className={`text-xs font-medium ${
+                      isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                    }`}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {/* Address/Location Toggle - Right side */}
+          {propertyAddress && onToggleLocationMode && (
+            <View className="flex-row items-center gap-1 border-l border-border pl-2">
+              <Pressable
+                onPress={() => onToggleLocationMode(false)}
+                className={`items-center justify-center rounded-full border p-1.5 ${
+                  !useLocationInsteadOfAddress
+                    ? 'border-primary bg-primary'
+                    : 'border-border bg-transparent'
+                }`}
+                accessibilityLabel="Use property address for searches">
+                <Icon
+                  as={MapPinned}
+                  size={14}
+                  className={!useLocationInsteadOfAddress ? 'text-primary-foreground' : 'text-muted-foreground'}
+                />
               </Pressable>
-            );
-          })}
+              <Pressable
+                onPress={() => {
+                  if (!location) {
+                    setShowLocationMenu(true);
+                  }
+                  onToggleLocationMode(true);
+                }}
+                className={`items-center justify-center rounded-full border p-1.5 ${
+                  useLocationInsteadOfAddress
+                    ? 'border-primary bg-primary'
+                    : 'border-border bg-transparent'
+                }`}
+                accessibilityLabel={location ? "Use current location for searches" : "Set your current location"}>
+                <Icon
+                  as={MapPin}
+                  size={14}
+                  className={useLocationInsteadOfAddress ? 'text-primary-foreground' : 'text-muted-foreground'}
+                />
+              </Pressable>
+            </View>
+          )}
         </View>
         {selectedOptionalAgents.length === 0 && (
           <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
@@ -495,6 +621,116 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
               </View>
               <Text className="text-xs font-semibold text-foreground">Files</Text>
             </Pressable>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Location Menu */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: -1000,
+          bottom: -1000,
+          left: 0,
+          right: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          opacity: locationOpacityAnim,
+          zIndex: 50,
+        }}
+        pointerEvents={showLocationMenu ? 'auto' : 'none'}>
+        <Pressable onPress={handleLocationMenuClose} style={{ flex: 1 }} />
+      </Animated.View>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          transform: [{ translateY: locationSlideAnim }],
+          zIndex: 51,
+        }}
+        className="rounded-t-3xl bg-background px-4 pb-4 pt-3 shadow-2xl"
+        pointerEvents={showLocationMenu ? 'auto' : 'none'}>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-foreground">Set Location</Text>
+          <Pressable onPress={handleLocationMenuClose} className="h-7 w-7 items-center justify-center">
+            <Icon as={X} size={18} className="text-muted-foreground" />
+          </Pressable>
+        </View>
+
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-foreground">
+              Search Radius: {tempRadius} miles
+            </Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-xs text-muted-foreground">10</Text>
+              <View style={{ flex: 1, height: 40, justifyContent: 'center' }}>
+                <View
+                  style={{
+                    height: 4,
+                    backgroundColor: isDark ? 'hsl(0, 0%, 28%)' : 'hsl(0, 0%, 89.8%)',
+                    borderRadius: 2,
+                    position: 'relative',
+                  }}>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      left: `${((tempRadius - 10) / 90) * 100}%`,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: '#007AFF',
+                      top: -8,
+                      marginLeft: -10,
+                    }}
+                  />
+                </View>
+              </View>
+              <Text className="text-xs text-muted-foreground">100</Text>
+            </View>
+            <View className="flex-row gap-2">
+              {[10, 25, 50, 75, 100].map((radius) => (
+                <Pressable
+                  key={radius}
+                  onPress={() => setTempRadius(radius)}
+                  className={`flex-1 rounded-lg border p-2 ${
+                    tempRadius === radius
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-transparent'
+                  }`}>
+                  <Text
+                    className={`text-center text-xs font-medium ${
+                      tempRadius === radius ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                    {radius}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {location && (
+            <View className="rounded-lg bg-secondary/50 p-2">
+              <Text className="text-xs text-muted-foreground">
+                Current: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+              </Text>
+            </View>
+          )}
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={handleGetCurrentLocation}
+              className="flex-1 items-center justify-center rounded-xl bg-primary p-3 active:bg-primary/90">
+              <Text className="font-semibold text-primary-foreground">
+                {location ? 'Update Location' : 'Use Current Location'}
+              </Text>
+            </Pressable>
+            {location && (
+              <Pressable
+                onPress={handleRemoveLocation}
+                className="items-center justify-center rounded-xl border border-border bg-transparent px-4 py-3 active:bg-secondary">
+                <Text className="font-semibold text-foreground">Remove</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </Animated.View>

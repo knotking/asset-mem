@@ -17,7 +17,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { Document, AgentStep, Session, AnalysisOptionalAgent, Location } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
@@ -68,6 +68,10 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+
+  // Location state
+  const [location, setLocation] = React.useState<LocationType | null>(null);
+  const [useLocationInsteadOfAddress, setUseLocationInsteadOfAddress] = React.useState(false);
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
@@ -337,13 +341,38 @@ export default function PropertyDetailsScreen() {
 
         const queryText = userMessage || 'What can you tell me about this?';
 
+        const currentProperty = properties.find((p: any) => p.id === id);
+        const propertyAddress = currentProperty?.address;
+
+        // Use location if explicitly chosen, or if property address is not available
+        let finalPropertyAddress: string | undefined;
+        let finalLatitude: number | undefined;
+        let finalLongitude: number | undefined;
+        let finalRadius: number | undefined;
+
+        if (useLocationInsteadOfAddress && location) {
+          finalLatitude = location.latitude;
+          finalLongitude = location.longitude;
+          finalRadius = location.radius;
+        } else if (!useLocationInsteadOfAddress && propertyAddress) {
+          finalPropertyAddress = propertyAddress;
+        } else if (!propertyAddress && location) {
+          // Fallback: use location if property address is not set
+          finalLatitude = location.latitude;
+          finalLongitude = location.longitude;
+          finalRadius = location.radius;
+        }
+
         await streamAgentResponse({
           userId: user.uid,
           agentSessionId,
           userQuery: queryText,
           contextDocURIs,
           diagnosisURIs,
-          propertyAddress,
+          propertyAddress: finalPropertyAddress,
+          analysisLatitude: finalLatitude,
+          analysisLongitude: finalLongitude,
+          analysisRadiusMiles: finalRadius,
           analysisOptionalAgents: selectedOptionalAgents,
           signal,
           onChunk: (chunk) => {
@@ -405,6 +434,8 @@ export default function PropertyDetailsScreen() {
       properties,
       selectedOptionalAgents,
       setFileAttachment,
+      location,
+      useLocationInsteadOfAddress,
     ]
   );
 
@@ -608,6 +639,12 @@ export default function PropertyDetailsScreen() {
                     onRecordVideo={handleRecordVideo}
                     onSelectFromLibrary={handleSelectFromLibrary}
                     onSelectFiles={handleSelectFiles}
+                    location={location}
+                    onLocationChange={setLocation}
+                    showLocationOption={true}
+                    propertyAddress={property?.address}
+                    useLocationInsteadOfAddress={useLocationInsteadOfAddress}
+                    onToggleLocationMode={setUseLocationInsteadOfAddress}
                     onSend={(messages) => {
                       console.log('[PropertyDetails] onSend called with messages:', messages);
                       if (messages.length > 0) {
