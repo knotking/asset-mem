@@ -17,14 +17,6 @@ def service_agent_instructions() -> str:
         *   `user_query` (str): The user's question or description.
         *   `context_doc_uris` (List[str], optional): Additional context documents.
         *   `property_address` (str, optional): The property address if available.
-        *   `location_latitude` (float, optional): Latitude for location-based searches when property_address is not available.
-        *   `location_longitude` (float, optional): Longitude for location-based searches when property_address is not available.
-        *   `location_radius_miles` (float, optional): Search radius in miles (default: 50) for location-based searches.
-        
-        **Location Handling:**
-        *   Use `property_address` if available for location-based searches.
-        *   If `property_address` is missing but `location_latitude` and `location_longitude` are provided, use location coordinates with the specified radius (default: 50 miles).
-        *   Format location-based queries as: "[diagnosis] professionals near [latitude],[longitude]" or "[diagnosis] repair service within [radius] miles of [latitude],[longitude]"
         
         **Available Tools:**
         *   `cost_estimation`: Provides cost estimates for professional service.
@@ -36,15 +28,12 @@ def service_agent_instructions() -> str:
         1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
         2. Call `cost_estimation` with query incorporating the diagnosis from triage_agent
            - Use the specific diagnosis to get more accurate cost estimates
-        3. Call `serpapi_search` with query incorporating the diagnosis and location information:
-           - If `property_address` is available: "[diagnosis] professionals near [address]"
-           - If location coordinates are available: "[diagnosis] professionals near [latitude],[longitude]" or "[diagnosis] repair service within [radius] miles"
-           - If neither is available: "[diagnosis] repair service near me"
-           - This searches for local professionals/service providers based on the specific problem within the specified radius (default: 50 miles)
-        4. Call `yelpapi_search` with query incorporating the diagnosis and location information:
-           - If `property_address` is available: "[diagnosis] service [address]"
-           - If location coordinates are available: "[diagnosis] service near [latitude],[longitude]"
-           - This searches Yelp for local professionals with reviews matching the diagnosis within the specified radius
+        3. Call `serpapi_search` with query incorporating the diagnosis and `property_address` or "near me" if available
+           - Search for: "[diagnosis] professionals near [address]" or "[diagnosis] repair service near me"
+           - This searches for local professionals/service providers based on the specific problem
+        4. Call `yelpapi_search` with query incorporating the diagnosis and `property_address` if available
+           - Search for: "[diagnosis] service [address]" 
+           - This searches Yelp for local professionals with reviews matching the diagnosis
         5. Return all three results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**

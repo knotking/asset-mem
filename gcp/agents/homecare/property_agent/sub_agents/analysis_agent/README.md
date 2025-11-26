@@ -122,7 +122,7 @@ Analysis Agent (orchestrator)
    - Consult `analysis_optional_agents` to determine which optional sections to produce (default order: coverage → DIY → service → cost).
    - Coverage: Retrieve warranty/insurance information from user docs.
    - DIY: Use the triage diagnosis to tailor Google search, YouTube search, and DIY product recommendations.
-   - Service: Use the triage diagnosis to find local pros via SerpAPI and Yelp. Location is determined by `property_address` if available, otherwise by `location_latitude`/`location_longitude` with `location_radius_miles` (default: 50 miles). Returns top 10 providers. If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
+   - Service: Use the triage diagnosis to find local pros via SerpAPI and Yelp (within 50 miles, top 10). If none are found, perform a Google search and return parsed providers under `localPros.googleSearchResults`.
    - Cost: Use the triage diagnosis to generate DIY vs service cost estimates via the cost agent.
 3. Response Assembly
    - Combine all results into one nested JSON object.
@@ -135,9 +135,6 @@ Analysis Agent (orchestrator)
   "diagnosis_uris": ["string"],  // Optional - may be omitted, null, or empty
   "context_doc_uris": ["string"],  // Optional - may be omitted, null, or empty
   "property_address": "string",  // Optional - may be omitted, null, or empty
-  "location_latitude": 0.0,  // Optional - latitude for location-based searches when property_address is missing
-  "location_longitude": 0.0,  // Optional - longitude for location-based searches when property_address is missing
-  "location_radius_miles": 50.0,  // Optional - search radius in miles (default: 50)
   "analysis_optional_agents": ["coverage", "diy", "service", "cost"]  // Optional - defaults to all when omitted or empty
 }
 ```
@@ -146,7 +143,6 @@ Analysis Agent (orchestrator)
 - `user_query` is the **only required field**. The triage agent can work with just this field.
 - `diagnosis_uris` may be omitted, null, or empty; in that case, triage runs in text‑only mode.
 - `analysis_optional_agents` limits which optional sub-agents run after triage. Allowed values are `coverage`, `diy`, `service`, and `cost`. If the list is missing, null, empty, or invalid, all optional agents run in the canonical order.
-- **Location Handling**: Use `property_address` if available for location-based searches (e.g., service provider discovery). If `property_address` is missing but `location_latitude` and `location_longitude` are provided, use location coordinates with the specified `location_radius_miles` (default: 50 miles). The `service_agent` will use this location data to find local service providers within the specified radius.
 - All other fields are optional and the agent will gracefully handle their absence.
 - The triage agent will **never fail** due to missing optional fields - it will always work with `user_query` as the minimum.
 

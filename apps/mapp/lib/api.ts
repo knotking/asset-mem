@@ -101,9 +101,6 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
-  locationLatitude?: number;
-  locationLongitude?: number;
-  locationRadiusMiles?: number; // Radius in miles for service provider searches
   analysisOptionalAgents?: AnalysisOptionalAgent[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -119,9 +116,6 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
-  locationLatitude,
-  locationLongitude,
-  locationRadiusMiles,
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   signal,
   onChunk,
@@ -135,28 +129,15 @@ export async function streamAgentResponse({
       throw new Error('AGENT_SSE_URL not set.');
     }
 
-    const requestBody: any = {
+    const requestBody = {
       user_id: userId,
       session_id: agentSessionId,
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
+      property_address: propertyAddress,
       analysis_optional_agents: analysisOptionalAgents,
     };
-
-    // Use property_address if available, otherwise use location data
-    if (propertyAddress) {
-      requestBody.property_address = propertyAddress;
-    } else if (locationLatitude !== undefined && locationLongitude !== undefined) {
-      requestBody.location_latitude = locationLatitude;
-      requestBody.location_longitude = locationLongitude;
-      requestBody.location_radius_miles = locationRadiusMiles ?? 50; // Use provided radius or default to 50 miles
-    }
-    
-    // If service agent is selected, always include radius (even with property address)
-    if (analysisOptionalAgents.includes('service')) {
-      requestBody.location_radius_miles = locationRadiusMiles ?? 50;
-    }
 
     const response = await fetch(url, {
       method: 'POST',

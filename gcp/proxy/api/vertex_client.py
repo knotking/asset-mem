@@ -103,9 +103,6 @@ async def stream_agent_answers(
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
     property_address = request.property_address
-    location_latitude = request.location_latitude
-    location_longitude = request.location_longitude
-    location_radius_miles = request.location_radius_miles
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
@@ -124,17 +121,8 @@ async def stream_agent_answers(
     if diagnosis_uris:
         payload["diagnosis_uris"] = diagnosis_uris
     
-    # Use property_address if available, otherwise use location data
     if property_address:
         payload["property_address"] = property_address
-    elif location_latitude is not None and location_longitude is not None:
-        payload["location_latitude"] = location_latitude
-        payload["location_longitude"] = location_longitude
-        if location_radius_miles is not None:
-            payload["location_radius_miles"] = location_radius_miles
-        else:
-            # Default to 50 miles if not specified
-            payload["location_radius_miles"] = 50.0
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents

@@ -191,12 +191,11 @@ def analysis_agent_instructions() -> str:
            IMPORTANT: Include the diagnosis from the triage result as context in your query so the DIY agent understands the problem.
         
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
-           Pass: user_query, context_doc_uris, property_address (if available), or location_latitude, location_longitude, location_radius_miles (if property_address is missing)
+           Pass: user_query, context_doc_uris, property_address
            IMPORTANT: Include the diagnosis from the triage result as context.
-           LOCATION HANDLING: Use `property_address` if available. If `property_address` is missing but location coordinates are provided, use location_latitude, location_longitude, and location_radius_miles (default: 50 miles).
-           SEARCH SCOPE: Restrict local professional search to within the specified radius (default: 50 miles) of the provided `property_address` or location coordinates (or "near me" if neither is available)
+           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
-           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" or "[diagnosis] repair service near [latitude],[longitude]" and return parsed results under `localPros.googleSearchResults`
+           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         
         5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.
            Pass: user_query, context_doc_uris, property_address, and include the triage diagnosis for context.
