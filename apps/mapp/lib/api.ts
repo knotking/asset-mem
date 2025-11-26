@@ -94,6 +94,15 @@ export async function deleteAgentSession(
   }
 }
 
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  radius_miles: number;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
 export interface StreamAgentResponseParams {
   userId: string;
   agentSessionId: string;
@@ -101,6 +110,7 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
+  locationData?: LocationData;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -116,6 +126,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
+  locationData,
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   signal,
   onChunk,
@@ -129,7 +140,7 @@ export async function streamAgentResponse({
       throw new Error('AGENT_SSE_URL not set.');
     }
 
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       user_id: userId,
       session_id: agentSessionId,
       user_query: userQuery,
@@ -138,6 +149,11 @@ export async function streamAgentResponse({
       property_address: propertyAddress,
       analysis_optional_agents: analysisOptionalAgents,
     };
+
+    // Add location_data only if provided
+    if (locationData) {
+      requestBody.location_data = locationData;
+    }
 
     const response = await fetch(url, {
       method: 'POST',

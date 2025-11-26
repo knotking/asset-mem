@@ -17,9 +17,10 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
-import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
-import { streamAgentResponse } from '@/lib/api';
+import type { Document, AgentStep, Session, AnalysisOptionalAgent, LocationSourceType, LocationData, LocationRadius } from '@homeapp/common/types';
+import { ANALYSIS_OPTIONAL_AGENTS, DEFAULT_LOCATION_RADIUS } from '@homeapp/common/types';
+import { streamAgentResponse, type LocationData as ApiLocationData } from '@/lib/api';
+import * as Location from 'expo-location';
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
@@ -68,6 +69,39 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+
+  // Location source state
+  const [locationSource, setLocationSource] = React.useState<LocationSourceType>('address');
+  const [locationRadius, setLocationRadius] = React.useState<LocationRadius>(DEFAULT_LOCATION_RADIUS);
+  const [currentLocation, setCurrentLocation] = React.useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Get user's current location when location source is set to coordinates
+  React.useEffect(() => {
+    if (locationSource === 'coordinates' && !currentLocation) {
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setErrorMessage('Location permission was denied. Using property address instead.');
+            setErrorAlertOpen(true);
+            setLocationSource('address');
+            return;
+          }
+
+          const location = await Location.getCurrentPositionAsync({});
+          setCurrentLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        } catch (error) {
+          console.error('Error getting location:', error);
+          setErrorMessage('Could not get your current location. Using property address instead.');
+          setErrorAlertOpen(true);
+          setLocationSource('address');
+        }
+      })();
+    }
+  }, [locationSource, currentLocation]);
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
@@ -337,13 +371,18 @@ export default function PropertyDetailsScreen() {
 
         const queryText = userMessage || 'What can you tell me about this?';
 
+        // Determine location data to send based on location source
+        const shouldUseAddress = locationSource === 'address' && propertyAddress;
+        const shouldUseLocation = locationSource === 'coordinates' && currentLocation;
+
         await streamAgentResponse({
           userId: user.uid,
           agentSessionId,
           userQuery: queryText,
           contextDocURIs,
           diagnosisURIs,
-          propertyAddress,
+          propertyAddress: shouldUseAddress ? propertyAddress : undefined,
+          locationData: shouldUseLocation ? { ...currentLocation, radius_miles: locationRadius } : undefined,
           analysisOptionalAgents: selectedOptionalAgents,
           signal,
           onChunk: (chunk) => {
@@ -405,6 +444,9 @@ export default function PropertyDetailsScreen() {
       properties,
       selectedOptionalAgents,
       setFileAttachment,
+      locationSource,
+      locationRadius,
+      currentLocation,
     ]
   );
 
@@ -622,6 +664,11 @@ export default function PropertyDetailsScreen() {
                         handleSendMessage(text);
                       }
                     }}
+                    locationSource={locationSource}
+                    onLocationSourceChange={setLocationSource}
+                    hasPropertyAddress={!!property?.address}
+                    locationRadius={locationRadius}
+                    onLocationRadiusChange={setLocationRadius}
                   />
                 </MessagesProvider>
               ) : (

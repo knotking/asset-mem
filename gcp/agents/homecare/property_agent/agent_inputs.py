@@ -5,11 +5,24 @@ AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 
 DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
 
+class LocationData(BaseModel):
+    """Location coordinates and optional location metadata."""
+    latitude: float = Field(description="The latitude coordinate.")
+    longitude: float = Field(description="The longitude coordinate.")
+    radius_miles: int = Field(default=50, description="The search radius in miles (10-100). Default is 50 miles.")
+    city: Optional[str] = Field(default=None, description="The city name.")
+    state: Optional[str] = Field(default=None, description="The state/province name.")
+    country: Optional[str] = Field(default=None, description="The country name.")
+
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    location_data: Optional[LocationData] = Field(
+        default=None, 
+        description="Location coordinates to use when property_address is not available. Used for finding local service providers."
+    )
     analysis_optional_agents: Optional[List[AnalysisOptionalAgent]] = Field(
         default=None,
         description=(
@@ -26,3 +39,7 @@ class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
     context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for DocuLink Agent.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    location_data: Optional[LocationData] = Field(
+        default=None, 
+        description="Location coordinates to use when property_address is not available."
+    )

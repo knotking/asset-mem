@@ -2,17 +2,17 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Home } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, LocationSourceType, LocationRadius } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
-import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent, LOCATION_RADIUS_OPTIONS, DEFAULT_LOCATION_RADIUS } from "@/lib/types";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -45,6 +45,13 @@ type Props = {
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
+  // Location source props
+  locationSource?: LocationSourceType;
+  onLocationSourceChange?: (source: LocationSourceType) => void;
+  hasPropertyAddress?: boolean;
+  // Location radius props
+  locationRadius?: LocationRadius;
+  onLocationRadiusChange?: (radius: LocationRadius) => void;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(({ 
@@ -63,6 +70,11 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
+    locationSource = 'address',
+    onLocationSourceChange,
+    hasPropertyAddress = true,
+    locationRadius = DEFAULT_LOCATION_RADIUS,
+    onLocationRadiusChange,
 }, ref) => {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -237,7 +249,11 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => handleOptionalAgentToggle(option.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleOptionalAgentToggle(option.id);
+                  }}
                   aria-pressed={isSelected}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -253,6 +269,72 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             })}
             {selectedOptionalAgents.length === 0 && (
               <span className="text-xs text-muted-foreground">Only triage will run</span>
+            )}
+            
+            {/* Location Source Toggle - only show when service agent is selected */}
+            {selectedOptionalAgents.includes('service') && onLocationSourceChange && (
+              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Location:</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onLocationSourceChange('address');
+                  }}
+                  aria-pressed={locationSource === 'address'}
+                  disabled={!hasPropertyAddress}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    locationSource === 'address'
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted",
+                    !hasPropertyAddress && "opacity-50 cursor-not-allowed"
+                  )}
+                  title={hasPropertyAddress ? "Use property address for service provider search" : "No property address available"}
+                >
+                  <Home className="h-3 w-3" />
+                  Address
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onLocationSourceChange('coordinates');
+                  }}
+                  aria-pressed={locationSource === 'coordinates'}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    locationSource === 'coordinates'
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                  title="Use current location for service provider search"
+                >
+                  <MapPin className="h-3 w-3" />
+                  Location
+                </button>
+                {/* Radius Selector - only show when using coordinates */}
+                {locationSource === 'coordinates' && onLocationRadiusChange && (
+                  <select
+                    value={locationRadius}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onLocationRadiusChange(Number(e.target.value) as LocationRadius);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="ml-1 h-6 rounded-full border border-border bg-background px-2 text-xs font-medium text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    title="Search radius in miles"
+                  >
+                    {LOCATION_RADIUS_OPTIONS.map((radius) => (
+                      <option key={radius} value={radius}>
+                        {radius} mi
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             )}
           </div>
 
