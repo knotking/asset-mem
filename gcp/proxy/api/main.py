@@ -68,11 +68,16 @@ from vertex_client import (
 )
 # Import document analysis
 from document_analysis import extract_doc_info
+# Import Gemini File Search API router
+from file_search_api import router as file_search_router
 # Register Telegram handlers
 
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  
 
 FIREBASE_WEBHOOK_SECRET = os.environ.get("FIREBASE_WEBHOOK_SECRET")
+
+# Include File Search API router
+app.include_router(file_search_router)
 
 @app.get("/health")
 async def health_check():

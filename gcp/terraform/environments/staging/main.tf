@@ -123,7 +123,7 @@ module "cloud_run" {
   ]
 }
 
-# Cloud Function Module - Worker Function
+# Cloud Function Module - Worker Function (Legacy RAG)
 module "cloud_function" {
   source = "../../modules/cloud-function"
 
@@ -141,6 +141,39 @@ module "cloud_function" {
     module.iam,
     module.storage,
     module.pubsub
+  ]
+}
+
+# Firestore Module - For Gemini File Search metadata
+module "firestore" {
+  source = "../../modules/firestore"
+
+  project_id  = var.project_id
+  environment = var.environment
+  region      = var.region
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# File Search Cloud Function Module - Gemini File Search processing
+module "file_search_function" {
+  source = "../../modules/file-search-function"
+
+  project_id                    = var.project_id
+  environment                   = var.environment
+  region                        = var.region
+  service_account_email         = module.iam.deployment_service_account_email
+  gcs_bucket                    = module.storage.user_data_bucket_name
+  file_search_upload_topic_id   = module.pubsub.file_search_upload_topic_id
+  file_search_result_topic_name = module.pubsub.file_search_result_topic_name
+  file_search_refresh_topic_id  = module.pubsub.file_search_refresh_topic_id
+  gemini_api_key_secret_id      = var.gemini_api_key_secret_id
+
+  depends_on = [
+    module.iam,
+    module.storage,
+    module.pubsub,
+    module.secrets
   ]
 }
 
@@ -178,7 +211,23 @@ output "user_data_bucket" {
 output "pubsub_topics" {
   description = "Pub/Sub topic names"
   value = {
-    user_upload        = module.pubsub.user_upload_topic_name
-    user_upload_result = module.pubsub.user_upload_result_topic_name
+    user_upload            = module.pubsub.user_upload_topic_name
+    user_upload_result     = module.pubsub.user_upload_result_topic_name
+    file_search_upload     = module.pubsub.file_search_upload_topic_name
+    file_search_result     = module.pubsub.file_search_result_topic_name
+    file_search_refresh    = module.pubsub.file_search_refresh_topic_name
+  }
+}
+
+output "firestore_database" {
+  description = "Firestore database name"
+  value       = module.firestore.database_name
+}
+
+output "file_search_functions" {
+  description = "File Search Cloud Function names"
+  value = {
+    upload  = module.file_search_function.upload_function_name
+    refresh = module.file_search_function.refresh_function_name
   }
 }

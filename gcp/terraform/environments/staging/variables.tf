@@ -58,3 +58,9 @@ variable "knowledge_base_rag_corpus" {
   description = "Knowledge base RAG corpus resource name"
   type        = string
 }
+
+variable "gemini_api_key_secret_id" {
+  description = "Secret Manager secret ID for Gemini API key"
+  type        = string
+  default     = "gemini-api-key"
+}

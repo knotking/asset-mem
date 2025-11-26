@@ -136,3 +136,31 @@ The proxy exposes REST endpoints and manages file ingestion and RAG imports via 
 - Root returns sub-agent output verbatim; no post-processing.
 - DocuLink agents must return a fixed no‑info message when retrieval yields nothing.
 - Analysis agent uses guard clauses: if triage fails, return triage-only result.
+
+## 9. Gemini File Search (New)
+
+The system now supports Gemini File Search API as an alternative to Vertex AI RAG for document retrieval.
+
+### 9.1 File Search Agent (`file_search_agent`)
+- Location: `gcp/agents/homecare/property_agent/sub_agents/file_search_agent/`
+- Purpose: Semantic search over user documents using Gemini Files API
+- Replaces/supplements: `user_docs_agent` (Vertex AI RAG-based)
+
+### 9.2 Infrastructure Components
+- **Cloud Functions**: `file-search-upload`, `file-search-refresh`
+- **Pub/Sub Topics**: `file-search-upload-topic`, `file-search-result-topic`, `file-search-refresh-topic`
+- **Firestore Collections**: `gemini_files`, `file_search_stores`
+- **Cloud Scheduler**: Automatic file refresh every 6 hours
+
+### 9.3 Data Flow
+1. User uploads file to GCS (via webapp/mobile)
+2. Client calls `/file-search/upload` endpoint
+3. Proxy publishes to Pub/Sub topic
+4. Cloud Function uploads to Gemini Files API
+5. Metadata stored in Firestore
+6. Queries route through File Search Agent
+
+### 9.4 Documentation
+- Architecture: `gcp/docs/GEMINI_FILE_SEARCH_ARCHITECTURE.md`
+- Migration Guide: `gcp/docs/GEMINI_FILE_SEARCH_MIGRATION.md`
+- Usability Guide: `gcp/docs/GEMINI_FILE_SEARCH_USABILITY.md`
