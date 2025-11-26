@@ -38,7 +38,8 @@ export async function createAgentSessionAction(userId: string): Promise<{ agentS
 
         return { agentSessionId };
     } catch (error) {
-        console.error('Error creating agent session:', error);
+        const url = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
+        console.error('Error creating agent session:', { error, url });
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { error: `Failed to create agent session: ${errorMessage}` };
     }

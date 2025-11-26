@@ -102,6 +102,16 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@latest
 
+      - name: Deploy Firestore Rules and Indexes
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: |
+          echo "Deploying Firestore rules, indexes, and Storage rules..."
+          echo "Project: ${{ vars.GCP_PROJECT_ID }}"
+          echo ""
+
+          firebase deploy --only firestore:rules,firestore:indexes,storage \
+            --project ${{ vars.GCP_PROJECT_ID }}
+
       - name: Deploy to App Hosting
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
