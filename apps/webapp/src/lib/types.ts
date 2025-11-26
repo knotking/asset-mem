@@ -12,22 +12,6 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
-// Location source types for service provider search
-export type LocationSourceType = 'address' | 'coordinates';
-
-export const LOCATION_RADIUS_OPTIONS = [10, 25, 50, 75, 100] as const;
-export type LocationRadius = (typeof LOCATION_RADIUS_OPTIONS)[number];
-export const DEFAULT_LOCATION_RADIUS: LocationRadius = 50;
-
-export type LocationData = {
-  latitude: number;
-  longitude: number;
-  radius_miles: number;
-  city?: string;
-  state?: string;
-  country?: string;
-};
-
 export type Message = {
   id: string;
   role: 'user' | 'assistant';

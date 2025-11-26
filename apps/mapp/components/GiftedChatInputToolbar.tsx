@@ -28,11 +28,9 @@ import {
   Wrench,
   BadgeDollarSign,
   FileText,
-  MapPin,
-  Home,
 } from 'lucide-react-native';
-import type { FileAttachment, AnalysisOptionalAgent, LocationSourceType, LocationRadius } from '@homeapp/common/types';
-import { ANALYSIS_OPTIONAL_AGENTS, LOCATION_RADIUS_OPTIONS, DEFAULT_LOCATION_RADIUS } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
+import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 const OPTIONAL_AGENT_OPTIONS: {
   id: AnalysisOptionalAgent;
@@ -61,13 +59,6 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
-  // Location source props
-  locationSource?: LocationSourceType;
-  onLocationSourceChange?: (source: LocationSourceType) => void;
-  hasPropertyAddress?: boolean;
-  // Location radius props
-  locationRadius?: LocationRadius;
-  onLocationRadiusChange?: (radius: LocationRadius) => void;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -85,11 +76,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRecordVideo,
     onSelectFromLibrary,
     onSelectFiles,
-    locationSource = 'address',
-    onLocationSourceChange,
-    hasPropertyAddress = true,
-    locationRadius = DEFAULT_LOCATION_RADIUS,
-    onLocationRadiusChange,
     ...inputToolbarProps
   } = props;
 
@@ -392,83 +378,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         </View>
         {selectedOptionalAgents.length === 0 && (
           <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
-        )}
-        
-        {/* Location Source Toggle - only show when service agent is selected */}
-        {selectedOptionalAgents.includes('service') && onLocationSourceChange && (
-          <View className="mt-2 flex-row flex-wrap items-center gap-2">
-            <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-              Location:
-            </Text>
-            <Pressable
-              onPress={() => {
-                if (hasPropertyAddress) {
-                  onLocationSourceChange('address');
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: locationSource === 'address', disabled: !hasPropertyAddress }}
-              style={{ opacity: hasPropertyAddress ? 1 : 0.5 }}
-              className={`flex-row items-center gap-1 rounded-full border px-2 py-0.5 ${
-                locationSource === 'address' ? 'border-primary bg-primary' : 'border-border bg-transparent'
-              }`}>
-              <Icon
-                as={Home}
-                size={12}
-                className={locationSource === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'}
-              />
-              <Text
-                className={`text-[10px] font-medium ${
-                  locationSource === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'
-                }`}>
-                Address
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => onLocationSourceChange('coordinates')}
-              accessibilityRole="button"
-              accessibilityState={{ selected: locationSource === 'coordinates' }}
-              className={`flex-row items-center gap-1 rounded-full border px-2 py-0.5 ${
-                locationSource === 'coordinates' ? 'border-primary bg-primary' : 'border-border bg-transparent'
-              }`}>
-              <Icon
-                as={MapPin}
-                size={12}
-                className={locationSource === 'coordinates' ? 'text-primary-foreground' : 'text-muted-foreground'}
-              />
-              <Text
-                className={`text-[10px] font-medium ${
-                  locationSource === 'coordinates' ? 'text-primary-foreground' : 'text-muted-foreground'
-                }`}>
-                Location
-              </Text>
-            </Pressable>
-            {/* Radius Selector - only show when using coordinates */}
-            {locationSource === 'coordinates' && onLocationRadiusChange && (
-              <View className="flex-row items-center gap-1">
-                <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-                  Radius:
-                </Text>
-                {LOCATION_RADIUS_OPTIONS.map((radius) => (
-                  <Pressable
-                    key={radius}
-                    onPress={() => onLocationRadiusChange(radius)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: locationRadius === radius }}
-                    className={`rounded-full border px-2 py-0.5 ${
-                      locationRadius === radius ? 'border-primary bg-primary' : 'border-border bg-transparent'
-                    }`}>
-                    <Text
-                      className={`text-[10px] font-medium ${
-                        locationRadius === radius ? 'text-primary-foreground' : 'text-muted-foreground'
-                      }`}>
-                      {radius}mi
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
         )}
       </View>
 
