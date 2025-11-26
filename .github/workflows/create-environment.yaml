@@ -342,6 +342,10 @@ jobs:
             "roles/cloudfunctions.developer"
             "roles/run.admin"
             "roles/secretmanager.secretAccessor"
+            "roles/firebasehosting.admin"
+            "roles/firebaserules.admin"
+            "roles/firebase.admin"
+            "roles/firebasestorage.admin"
           )
 
           echo "Checking IAM role bindings for GitHub workflow service account..."
@@ -1065,16 +1069,22 @@ jobs:
           firebase deploy --only firestore:indexes --project=$PROJECT_ID --token "$FIREBASE_TOKEN" --non-interactive
 
           echo "Deploying Storage rules..."
-          # Check if Firebase Storage is set up before deploying rules
-          STORAGE_BUCKET="${PROJECT_ID}.firebasestorage.app"
-          if gsutil ls -b gs://${STORAGE_BUCKET}/ &>/dev/null; then
-            firebase deploy --only storage --project=$PROJECT_ID --token "$FIREBASE_TOKEN" --non-interactive || {
-              echo "⚠️  Storage rules deployment failed, but continuing..."
-              echo "   You may need to manually deploy storage rules after Firebase Storage is fully initialized"
-            }
+          # Deploy Storage rules (show errors but allow to continue)
+          set +e  # Disable exit on error temporarily
+          firebase deploy --only storage \
+            --project=$PROJECT_ID \
+            --token "$FIREBASE_TOKEN" \
+            --non-interactive
+          STORAGE_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+
+          if [ $STORAGE_EXIT_CODE -eq 0 ]; then
+            echo "✓ Storage rules deployed successfully"
           else
-            echo "⚠️  Firebase Storage bucket not found, skipping storage rules deployment"
-            echo "   You'll need to manually deploy storage rules after initializing Firebase Storage"
+            echo ""
+            echo "⚠️  Storage rules deployment failed with exit code: $STORAGE_EXIT_CODE"
+            echo "   This is not critical - continuing with workflow..."
+            echo "   You can deploy storage rules manually later if needed"
           fi
 
           echo "✓ Firebase configuration deployed successfully"
