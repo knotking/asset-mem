@@ -341,6 +341,9 @@ export default function PropertyDetailsScreen() {
 
         const queryText = userMessage || 'What can you tell me about this?';
 
+        const currentProperty = properties.find((p: any) => p.id === id);
+        const propertyAddress = currentProperty?.address;
+
         // Use location if explicitly chosen, or if property address is not available
         let finalPropertyAddress: string | undefined;
         let finalLatitude: number | undefined;
