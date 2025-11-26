@@ -38,6 +38,7 @@ export default function PropertyChatSessionPage() {
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(50);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -262,18 +263,53 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments.map(d => d.gsURI).filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI ? [userMessage.file.gsURI] : [];
 
+        // Get location if property address is missing
+        let locationLatitude: number | undefined;
+        let locationLongitude: number | undefined;
+        if (!property?.address) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 5000,
+                maximumAge: 60000, // Cache for 1 minute
+              });
+            });
+            locationLatitude = position.coords.latitude;
+            locationLongitude = position.coords.longitude;
+          } catch (error) {
+            console.warn('Failed to get location:', error);
+            // Continue without location if permission denied or error
+          }
+        }
+
+        const requestBody: any = {
+            user_id: user.uid,
+            session_id: agentSessionId,
+            user_query: content,
+            context_doc_uris: contextDocURIs,
+            diagnosis_uris: diagnosisURIs,
+            analysis_optional_agents: selectedOptionalAgents,
+        };
+
+        // Use property_address if available, otherwise use location data
+        if (property?.address) {
+            requestBody.property_address = property.address;
+        } else if (locationLatitude !== undefined && locationLongitude !== undefined) {
+            requestBody.location_latitude = locationLatitude;
+            requestBody.location_longitude = locationLongitude;
+            requestBody.location_radius_miles = serviceRadiusMiles; // Use user-selected radius
+        }
+        
+        // If service agent is selected, always include radius (even with property address)
+        if (selectedOptionalAgents.includes('service') && property?.address) {
+            requestBody.location_radius_miles = serviceRadiusMiles;
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user.uid,
-                session_id: agentSessionId,
-                user_query: content,
-                context_doc_uris: contextDocURIs,
-                diagnosis_uris: diagnosisURIs,
-                property_address: property?.address,
-                analysis_optional_agents: selectedOptionalAgents,
-            }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -382,6 +418,8 @@ export default function PropertyChatSessionPage() {
                 placeholder="Type a message or attach image/video to diagnose an issue..."
                 selectedOptionalAgents={selectedOptionalAgents}
                 onOptionalAgentsChange={handleOptionalAgentsChange}
+                serviceRadiusMiles={serviceRadiusMiles}
+                onServiceRadiusChange={setServiceRadiusMiles}
             />
         </footer>
       </div>

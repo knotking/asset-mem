@@ -22,6 +22,8 @@ interface PropertyChatTabProps {
   onRemoveAttachment: () => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  serviceRadiusMiles?: number;
+  onServiceRadiusChange?: (radius: number) => void;
   isSending: boolean;
   onStop: () => void;
   attachmentOptionsVisible: boolean;
@@ -42,6 +44,8 @@ export function PropertyChatTab({
   onRemoveAttachment,
   selectedOptionalAgents,
   onToggleOptionalAgent,
+  serviceRadiusMiles = 50,
+  onServiceRadiusChange,
   isSending,
   onStop,
   attachmentOptionsVisible,
@@ -149,6 +153,8 @@ export function PropertyChatTab({
             onRemoveAttachment={onRemoveAttachment}
             selectedOptionalAgents={selectedOptionalAgents}
             onToggleOptionalAgent={onToggleOptionalAgent}
+            serviceRadiusMiles={serviceRadiusMiles}
+            onServiceRadiusChange={onServiceRadiusChange}
             isSending={isSending}
             onStop={onStop}
             attachmentOptionsVisible={attachmentOptionsVisible}

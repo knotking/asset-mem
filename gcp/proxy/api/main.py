@@ -97,6 +97,9 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
     context_doc_uris = data.get("context_doc_uris", [])
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")
+    location_latitude = data.get("location_latitude")
+    location_longitude = data.get("location_longitude")
+    location_radius_miles = data.get("location_radius_miles")
     analysis_optional_agents = normalize_analysis_optional_agents(data.get("analysis_optional_agents"))
     return AgentRequest(
         user_id=user_id,
@@ -105,6 +108,9 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
         diagnosis_uris=diagnosis_uris,
         session_id=session_id,
         property_address=property_address,
+        location_latitude=location_latitude,
+        location_longitude=location_longitude,
+        location_radius_miles=location_radius_miles,
         analysis_optional_agents=analysis_optional_agents,
     )
 

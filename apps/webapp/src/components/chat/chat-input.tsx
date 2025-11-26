@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Label } from "../ui/label";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -45,6 +47,8 @@ type Props = {
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
+  serviceRadiusMiles?: number;
+  onServiceRadiusChange?: (radius: number) => void;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(({ 
@@ -63,6 +67,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
+    serviceRadiusMiles = 50,
+    onServiceRadiusChange,
 }, ref) => {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -253,6 +259,28 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             })}
             {selectedOptionalAgents.length === 0 && (
               <span className="text-xs text-muted-foreground">Only triage will run</span>
+            )}
+            {selectedOptionalAgents.includes('service') && onServiceRadiusChange && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="service-radius" className="text-xs text-muted-foreground whitespace-nowrap">
+                  Search radius:
+                </Label>
+                <Select
+                  value={serviceRadiusMiles.toString()}
+                  onValueChange={(value) => onServiceRadiusChange(parseInt(value, 10))}
+                >
+                  <SelectTrigger id="service-radius" className="h-7 w-24 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 mi</SelectItem>
+                    <SelectItem value="25">25 mi</SelectItem>
+                    <SelectItem value="50">50 mi</SelectItem>
+                    <SelectItem value="75">75 mi</SelectItem>
+                    <SelectItem value="100">100 mi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
 

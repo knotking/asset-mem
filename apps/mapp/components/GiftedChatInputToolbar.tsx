@@ -14,6 +14,7 @@ import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gi
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Paperclip,
   Send as SendIcon,
@@ -51,6 +52,8 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRemoveAttachment: () => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  serviceRadiusMiles?: number;
+  onServiceRadiusChange?: (radius: number) => void;
   isSending: boolean;
   onStop: () => void;
   attachmentOptionsVisible: boolean;
@@ -68,6 +71,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRemoveAttachment,
     selectedOptionalAgents,
     onToggleOptionalAgent,
+    serviceRadiusMiles = 50,
+    onServiceRadiusChange,
     isSending,
     onStop,
     attachmentOptionsVisible,
@@ -378,6 +383,26 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         </View>
         {selectedOptionalAgents.length === 0 && (
           <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
+        )}
+        {selectedOptionalAgents.includes('service') && onServiceRadiusChange && (
+          <View className="mt-2 flex-row items-center gap-2">
+            <Text className="text-xs text-muted-foreground">Search radius:</Text>
+            <Select
+              value={serviceRadiusMiles.toString()}
+              onValueChange={(value) => onServiceRadiusChange(parseInt(value, 10))}
+            >
+              <SelectTrigger className="h-7 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 mi</SelectItem>
+                <SelectItem value="25">25 mi</SelectItem>
+                <SelectItem value="50">50 mi</SelectItem>
+                <SelectItem value="75">75 mi</SelectItem>
+                <SelectItem value="100">100 mi</SelectItem>
+              </SelectContent>
+            </Select>
+          </View>
         )}
       </View>
 

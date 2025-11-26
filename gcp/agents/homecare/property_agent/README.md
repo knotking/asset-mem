@@ -154,7 +154,10 @@ Root input (`DiagnosisInput` from `agent_inputs.py`):
   "user_query": "string",
   "context_doc_uris": ["string"],
   "diagnosis_uris": ["string"],
-  "property_address": "string"
+  "property_address": "string",
+  "location_latitude": 0.0,
+  "location_longitude": 0.0,
+  "location_radius_miles": 50.0
 }
 ```
 
@@ -164,9 +167,17 @@ DocuLink input (`DocsInput`):
 {
   "user_query": "string",
   "context_doc_uris": ["string"],
-  "property_address": "string"
+  "property_address": "string",
+  "location_latitude": 0.0,
+  "location_longitude": 0.0,
+  "location_radius_miles": 50.0
 }
 ```
+
+**Location Handling:**
+- Use `property_address` if available for location-based searches (e.g., service provider discovery).
+- If `property_address` is missing but `location_latitude` and `location_longitude` are provided, use location coordinates with the specified `location_radius_miles` (default: 50 miles).
+- Location data is primarily used by the `service_agent` to find local service providers within the specified radius.
 
 ## Output Shapes
 

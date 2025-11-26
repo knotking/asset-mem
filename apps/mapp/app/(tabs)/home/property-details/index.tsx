@@ -16,6 +16,7 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import PushDrawer from '@/components/PushDrawer';
 import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
@@ -68,6 +69,7 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [serviceRadiusMiles, setServiceRadiusMiles] = React.useState<number>(50);
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
@@ -329,6 +331,23 @@ export default function PropertyDetailsScreen() {
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
 
+        // Get location if property address is missing
+        let locationLatitude: number | undefined;
+        let locationLongitude: number | undefined;
+        if (!propertyAddress) {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const location = await Location.getCurrentPositionAsync({});
+              locationLatitude = location.coords.latitude;
+              locationLongitude = location.coords.longitude;
+            }
+          } catch (error) {
+            console.warn('Failed to get location:', error);
+            // Continue without location if permission denied or error
+          }
+        }
+
         let assistantContent = '';
         let agentSteps: AgentStep[] = [];
 
@@ -344,6 +363,9 @@ export default function PropertyDetailsScreen() {
           contextDocURIs,
           diagnosisURIs,
           propertyAddress,
+          locationLatitude,
+          locationLongitude,
+          locationRadiusMiles: serviceRadiusMiles, // Use user-selected radius
           analysisOptionalAgents: selectedOptionalAgents,
           signal,
           onChunk: (chunk) => {

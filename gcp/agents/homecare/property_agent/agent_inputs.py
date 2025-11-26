@@ -10,6 +10,9 @@ class DiagnosisInput(BaseModel):
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    location_latitude: Optional[float] = Field(default=None, description="Latitude for location-based searches when property_address is not available.")
+    location_longitude: Optional[float] = Field(default=None, description="Longitude for location-based searches when property_address is not available.")
+    location_radius_miles: Optional[float] = Field(default=None, description="Search radius in miles (default: 50) for location-based searches.")
     analysis_optional_agents: Optional[List[AnalysisOptionalAgent]] = Field(
         default=None,
         description=(
@@ -26,3 +29,6 @@ class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
     context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for DocuLink Agent.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
+    location_latitude: Optional[float] = Field(default=None, description="Latitude for location-based searches when property_address is not available.")
+    location_longitude: Optional[float] = Field(default=None, description="Longitude for location-based searches when property_address is not available.")
+    location_radius_miles: Optional[float] = Field(default=None, description="Search radius in miles (default: 50) for location-based searches.")
