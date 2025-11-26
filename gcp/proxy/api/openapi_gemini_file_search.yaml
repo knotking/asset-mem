@@ -1,0 +1,717 @@
+openapi: 3.0.3
+info:
+  title: Gemini File Search API
+  description: |
+    API for semantic document search using Google's Gemini File Search.
+    Provides RAG (Retrieval Augmented Generation) capabilities with automatic citations.
+    
+    Features:
+    - Semantic search over document content
+    - AI-generated answers with citations
+    - Multi-document queries
+    - 100+ supported file types
+    - GCS integration
+    
+    Reference: https://ai.google.dev/gemini-api/docs/file-search
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://ai.google.dev/gemini-api/docs/file-search
+
+servers:
+  - url: https://your-api-url.com/{webhookSecret}/file-search
+    description: Production server
+    variables:
+      webhookSecret:
+        default: FIREBASE_WEBHOOK_SECRET
+        description: Firebase webhook authentication secret
+  - url: http://localhost:8000/{webhookSecret}/file-search
+    description: Development server
+    variables:
+      webhookSecret:
+        default: test-secret
+        description: Test webhook secret
+
+security:
+  - WebhookSecret: []
+
+tags:
+  - name: Store Management
+    description: Create, list, and delete File Search stores
+  - name: File Operations
+    description: Upload and import files to stores
+  - name: Query
+    description: Query documents with RAG
+  - name: Operations
+    description: Check status of long-running operations
+
+paths:
+  /create-store:
+    post:
+      tags:
+        - Store Management
+      summary: Create File Search store
+      description: |
+        Create a new File Search store for organizing and searching documents.
+        Each store can contain multiple documents and acts as a searchable collection.
+      operationId: createStore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStoreRequest'
+            examples:
+              propertyStore:
+                summary: Property documents store
+                value:
+                  display_name: "Property Documents - 123 Main St"
+              userStore:
+                summary: User-specific store
+                value:
+                  display_name: "Documents for user_abc123"
+      responses:
+        '200':
+          description: Store created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreInfo'
+              examples:
+                success:
+                  summary: Successful creation
+                  value:
+                    name: "fileSearchStores/abc123xyz"
+                    display_name: "Property Documents - 123 Main St"
+                    create_time: "2024-11-26T10:00:00Z"
+                    status: "created"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /list-stores:
+    get:
+      tags:
+        - Store Management
+      summary: List all File Search stores
+      description: Get a list of all File Search stores with their metadata
+      operationId: listStores
+      responses:
+        '200':
+          description: List of stores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stores:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StoreInfo'
+                  count:
+                    type: integer
+                    description: Total number of stores
+              examples:
+                success:
+                  summary: Multiple stores
+                  value:
+                    stores:
+                      - name: "fileSearchStores/abc123"
+                        display_name: "Property Documents"
+                        create_time: "2024-11-26T10:00:00Z"
+                      - name: "fileSearchStores/def456"
+                        display_name: "Insurance Policies"
+                        create_time: "2024-11-25T15:30:00Z"
+                    count: 2
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /delete-store:
+    delete:
+      tags:
+        - Store Management
+      summary: Delete File Search store
+      description: |
+        Delete a File Search store and all its documents.
+        This action is irreversible.
+      operationId: deleteStore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteStoreRequest'
+      responses:
+        '200':
+          description: Store deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [deleted]
+                  store_name:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /upload-file:
+    post:
+      tags:
+        - File Operations
+      summary: Upload file to store
+      description: |
+        Upload a local file to a File Search store.
+        The file will be automatically chunked and indexed for semantic search.
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadFileRequest'
+            examples:
+              syncUpload:
+                summary: Synchronous upload
+                value:
+                  file_path: "/path/to/document.pdf"
+                  store_name: "fileSearchStores/abc123"
+                  display_name: "Property Deed"
+                  wait_for_completion: true
+                  timeout: 300
+              asyncUpload:
+                summary: Asynchronous upload
+                value:
+                  file_path: "/path/to/large-report.pdf"
+                  store_name: "fileSearchStores/abc123"
+                  display_name: "Annual Report"
+                  wait_for_completion: false
+      responses:
+        '200':
+          description: Upload operation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: File too large (max 100 MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /import-gcs-file:
+    post:
+      tags:
+        - File Operations
+      summary: Import file from GCS
+      description: |
+        Import a file from Google Cloud Storage to a File Search store.
+        This is the recommended method for files already in GCS.
+      operationId: importGCSFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportGCSFileRequest'
+            examples:
+              pdfImport:
+                summary: Import PDF from GCS
+                value:
+                  gcs_uri: "gs://my-bucket/documents/deed.pdf"
+                  store_name: "fileSearchStores/abc123"
+                  display_name: "Property Deed"
+                  mime_type: "application/pdf"
+                  wait_for_completion: true
+              batchImport:
+                summary: Async import for batch processing
+                value:
+                  gcs_uri: "gs://my-bucket/reports/annual-2024.pdf"
+                  store_name: "fileSearchStores/abc123"
+                  display_name: "Annual Report 2024"
+                  wait_for_completion: false
+      responses:
+        '200':
+          description: Import operation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileOperationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: GCS file not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /query:
+    post:
+      tags:
+        - Query
+      summary: Query with RAG
+      description: |
+        Query File Search stores with natural language.
+        Returns AI-generated answers with automatic citations to source documents.
+        
+        This is the core RAG (Retrieval Augmented Generation) endpoint.
+      operationId: queryFileSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+            examples:
+              simpleQuery:
+                summary: Simple question
+                value:
+                  query: "What is the property address?"
+                  store_names: ["fileSearchStores/abc123"]
+                  model: "gemini-2.5-flash"
+                  include_grounding_metadata: true
+              complexQuery:
+                summary: Complex analysis with Pro model
+                value:
+                  query: "Compare the coverage amounts across all insurance policies and identify any gaps"
+                  store_names: ["fileSearchStores/abc123", "fileSearchStores/def456"]
+                  model: "gemini-2.5-pro"
+                  include_grounding_metadata: true
+                  generation_config:
+                    temperature: 0.1
+                    max_output_tokens: 2048
+      responses:
+        '200':
+          description: Query results with answer and citations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+              examples:
+                withCitations:
+                  summary: Answer with citations
+                  value:
+                    text: "The property is located at 123 Main Street, Springfield. It was purchased on January 15, 2024 for $450,000."
+                    model: "gemini-2.5-flash"
+                    stores_queried: ["fileSearchStores/abc123"]
+                    grounding_metadata:
+                      grounding_chunks:
+                        - type: "file_search"
+                          document_name: "Property Deed"
+                          chunk_text: "Property located at 123 Main Street..."
+                          page_number: 1
+                        - type: "file_search"
+                          document_name: "Purchase Agreement"
+                          chunk_text: "Purchase price: $450,000"
+                          page_number: 3
+                      grounding_supports:
+                        - segment:
+                            start_index: 27
+                            end_index: 60
+                          grounding_chunk_indices: [0]
+                          confidence_scores: [0.95]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Store not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /operation-status:
+    post:
+      tags:
+        - Operations
+      summary: Get operation status
+      description: Check the status of a long-running operation (upload/import)
+      operationId: getOperationStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationStatusRequest'
+      responses:
+        '200':
+          description: Operation status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Operation ID
+                  done:
+                    type: boolean
+                    description: Whether operation is complete
+                  status:
+                    type: string
+                    enum: [in_progress, completed]
+              examples:
+                inProgress:
+                  summary: Still processing
+                  value:
+                    name: "operations/xyz789"
+                    done: false
+                    status: "in_progress"
+                completed:
+                  summary: Completed
+                  value:
+                    name: "operations/xyz789"
+                    done: true
+                    status: "completed"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    WebhookSecret:
+      type: apiKey
+      in: path
+      name: webhookSecret
+      description: Firebase webhook secret for authentication
+
+  schemas:
+    CreateStoreRequest:
+      type: object
+      required:
+        - display_name
+      properties:
+        display_name:
+          type: string
+          description: Human-readable name for the store
+          minLength: 1
+          maxLength: 255
+          example: "Property Documents - 123 Main St"
+
+    StoreInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Store ID (format: fileSearchStores/xxxxx)
+          example: "fileSearchStores/abc123xyz"
+        display_name:
+          type: string
+          description: Human-readable name
+          example: "Property Documents"
+        create_time:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-11-26T10:00:00Z"
+        status:
+          type: string
+          description: Store status
+          example: "created"
+
+    DeleteStoreRequest:
+      type: object
+      required:
+        - store_name
+      properties:
+        store_name:
+          type: string
+          description: Store name/ID to delete
+          pattern: '^fileSearchStores/[a-zA-Z0-9]+$'
+          example: "fileSearchStores/abc123xyz"
+
+    UploadFileRequest:
+      type: object
+      required:
+        - file_path
+        - store_name
+      properties:
+        file_path:
+          type: string
+          description: Local file path or GCS URI
+          example: "/path/to/document.pdf"
+        store_name:
+          type: string
+          description: Target store name
+          pattern: '^fileSearchStores/[a-zA-Z0-9]+$'
+          example: "fileSearchStores/abc123"
+        display_name:
+          type: string
+          description: Display name for the file
+          example: "Property Deed"
+        wait_for_completion:
+          type: boolean
+          description: Wait for import to complete
+          default: true
+        timeout:
+          type: integer
+          description: Timeout in seconds
+          minimum: 30
+          maximum: 600
+          default: 300
+
+    ImportGCSFileRequest:
+      type: object
+      required:
+        - gcs_uri
+        - store_name
+      properties:
+        gcs_uri:
+          type: string
+          description: GCS URI (gs://bucket/path)
+          pattern: '^gs://[a-z0-9][a-z0-9-_]*[a-z0-9]/.*$'
+          example: "gs://my-bucket/documents/deed.pdf"
+        store_name:
+          type: string
+          description: Target store name
+          pattern: '^fileSearchStores/[a-zA-Z0-9]+$'
+          example: "fileSearchStores/abc123"
+        display_name:
+          type: string
+          description: Display name for the file
+          example: "Property Deed"
+        mime_type:
+          type: string
+          description: MIME type of the file
+          example: "application/pdf"
+        wait_for_completion:
+          type: boolean
+          description: Wait for import completion
+          default: true
+
+    QueryRequest:
+      type: object
+      required:
+        - query
+        - store_names
+      properties:
+        query:
+          type: string
+          description: Natural language search query
+          minLength: 1
+          maxLength: 10000
+          example: "What is the property address and square footage?"
+        store_names:
+          type: array
+          description: List of store names to search
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            pattern: '^fileSearchStores/[a-zA-Z0-9]+$'
+          example: ["fileSearchStores/abc123"]
+        model:
+          type: string
+          description: Gemini model to use
+          enum:
+            - gemini-2.5-flash
+            - gemini-2.5-pro
+            - gemini-2.5-flash-lite
+          default: "gemini-2.5-flash"
+        include_grounding_metadata:
+          type: boolean
+          description: Include citations and source references
+          default: true
+        generation_config:
+          type: object
+          description: Optional generation parameters
+          properties:
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+              description: Sampling temperature (0 = deterministic)
+            top_p:
+              type: number
+              minimum: 0
+              maximum: 1
+            top_k:
+              type: integer
+              minimum: 1
+            max_output_tokens:
+              type: integer
+              minimum: 1
+              maximum: 8192
+
+    QueryResponse:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Generated answer text
+          example: "The property is located at 123 Main Street..."
+        model:
+          type: string
+          description: Model used for generation
+          example: "gemini-2.5-flash"
+        stores_queried:
+          type: array
+          description: Stores that were searched
+          items:
+            type: string
+        grounding_metadata:
+          type: object
+          description: Citations and source references
+          properties:
+            grounding_chunks:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroundingChunk'
+            grounding_supports:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroundingSupport'
+
+    GroundingChunk:
+      type: object
+      description: Citation/source reference
+      properties:
+        type:
+          type: string
+          enum: [file_search, web]
+          description: Source type
+        document_name:
+          type: string
+          description: Source document name
+          example: "Property Deed"
+        chunk_text:
+          type: string
+          description: Relevant text excerpt
+          example: "Property located at 123 Main Street..."
+        page_number:
+          type: integer
+          description: Page number in document
+          example: 1
+        uri:
+          type: string
+          description: Web URI if applicable
+        title:
+          type: string
+          description: Web title if applicable
+
+    GroundingSupport:
+      type: object
+      description: Links answer segments to sources
+      properties:
+        segment:
+          type: object
+          description: Answer text segment
+          properties:
+            start_index:
+              type: integer
+            end_index:
+              type: integer
+        grounding_chunk_indices:
+          type: array
+          description: Referenced chunk indices
+          items:
+            type: integer
+        confidence_scores:
+          type: array
+          description: Confidence scores
+          items:
+            type: number
+            minimum: 0
+            maximum: 1
+
+    FileOperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [completed, in_progress, timeout]
+          description: Operation status
+        operation_name:
+          type: string
+          description: Operation ID for status checking
+          example: "operations/xyz789"
+        display_name:
+          type: string
+          description: File display name
+        store_name:
+          type: string
+          description: Target store name
+        gcs_uri:
+          type: string
+          description: GCS URI if applicable
+        message:
+          type: string
+          description: Additional message
+
+    OperationStatusRequest:
+      type: object
+      required:
+        - operation_name
+      properties:
+        operation_name:
+          type: string
+          description: Operation name/ID
+          pattern: '^operations/[a-zA-Z0-9]+$'
+          example: "operations/xyz789"
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+          description: Error description
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalidStore:
+              summary: Invalid store name
+              value:
+                status: "error"
+                message: "Invalid store name format"
+            missingField:
+              summary: Missing required field
+              value:
+                status: "error"
+                message: "Field 'display_name' is required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: "error"
+            message: "Store not found"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: "error"
+            message: "Internal server error occurred"
+

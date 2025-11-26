@@ -18,7 +18,16 @@ from typing import Any, Dict, List, Union
 import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
-from models import AgentRequest, ExtractDocInfoRequest
+from models import (
+    AgentRequest,
+    ExtractDocInfoRequest,
+    CreateFileSearchStoreRequest,
+    UploadFileToStoreRequest,
+    ImportGCSFileRequest,
+    FileSearchQueryRequest,
+    DeleteStoreRequest,
+    OperationStatusRequest,
+)
 from optional_agents import (
     ANALYSIS_OPTIONAL_AGENT_ORDER,
     normalize_analysis_optional_agents,
@@ -68,6 +77,8 @@ from vertex_client import (
 )
 # Import document analysis
 from document_analysis import extract_doc_info
+# Import Gemini File Search
+from gemini_file_search import get_file_search_manager
 # Register Telegram handlers
 
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  
@@ -79,6 +90,12 @@ async def health_check():
     status_msg = "ok"
     if not reasoning_engine_resource:
         status_msg += " (Reasoning Engine not initialized)"
+    
+    # Check Gemini API key
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if gemini_api_key:
+        status_msg += " (Gemini File Search available)"
+    
     return {"status": status_msg}
 
 @app.post(f"/{TELEGRAM_WEBHOOK_SECRET}")
@@ -212,6 +229,219 @@ async def extract_document_info(request: Request):
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing document analysis: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Gemini File Search Endpoints
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/create-store")
+async def create_file_search_store(request: Request):
+    """
+    Create a new Gemini File Search store for RAG.
+    
+    Request body:
+    {
+        "display_name": "Property Documents Store"
+    }
+    """
+    logger.info("Create File Search store endpoint received a request.")
+    try:
+        data = await request.json()
+        store_request = CreateFileSearchStoreRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.create_file_search_store(store_request.display_name)
+        
+        logger.info(f"Created store: {result['name']}")
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error creating File Search store: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/list-stores")
+async def list_file_search_stores():
+    """
+    List all File Search stores.
+    """
+    logger.info("List File Search stores endpoint received a request.")
+    try:
+        manager = get_file_search_manager()
+        stores = manager.list_file_search_stores()
+        
+        return {
+            "stores": stores,
+            "count": len(stores)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing File Search stores: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.delete(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/delete-store")
+async def delete_file_search_store(request: Request):
+    """
+    Delete a File Search store.
+    
+    Request body:
+    {
+        "store_name": "fileSearchStores/xxxxx"
+    }
+    """
+    logger.info("Delete File Search store endpoint received a request.")
+    try:
+        data = await request.json()
+        delete_request = DeleteStoreRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.delete_file_search_store(delete_request.store_name)
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error deleting File Search store: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/upload-file")
+async def upload_file_to_file_search(request: Request):
+    """
+    Upload a file to a File Search store.
+    
+    Request body:
+    {
+        "file_path": "/path/to/file.pdf",
+        "store_name": "fileSearchStores/xxxxx",
+        "display_name": "Property Document",
+        "wait_for_completion": true,
+        "timeout": 300
+    }
+    """
+    logger.info("Upload file to File Search endpoint received a request.")
+    try:
+        data = await request.json()
+        upload_request = UploadFileToStoreRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.upload_file_to_store(
+            file_path=upload_request.file_path,
+            store_name=upload_request.store_name,
+            display_name=upload_request.display_name,
+            wait_for_completion=upload_request.wait_for_completion,
+            timeout=upload_request.timeout
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/import-gcs-file")
+async def import_gcs_file_to_file_search(request: Request):
+    """
+    Import a GCS file to a File Search store.
+    
+    Request body:
+    {
+        "gcs_uri": "gs://bucket/path/file.pdf",
+        "store_name": "fileSearchStores/xxxxx",
+        "display_name": "Property Document",
+        "mime_type": "application/pdf",
+        "wait_for_completion": true
+    }
+    """
+    logger.info("Import GCS file to File Search endpoint received a request.")
+    try:
+        data = await request.json()
+        import_request = ImportGCSFileRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.import_gcs_file_to_store(
+            gcs_uri=import_request.gcs_uri,
+            store_name=import_request.store_name,
+            display_name=import_request.display_name,
+            mime_type=import_request.mime_type,
+            wait_for_completion=import_request.wait_for_completion
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error importing GCS file: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/query")
+async def query_file_search(request: Request):
+    """
+    Query File Search stores with semantic search.
+    
+    Request body:
+    {
+        "query": "What is the property address?",
+        "store_names": ["fileSearchStores/xxxxx"],
+        "model": "gemini-2.5-flash",
+        "include_grounding_metadata": true
+    }
+    """
+    logger.info("Query File Search endpoint received a request.")
+    try:
+        data = await request.json()
+        query_request = FileSearchQueryRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.query_file_search(
+            query=query_request.query,
+            store_names=query_request.store_names,
+            model=query_request.model,
+            include_grounding_metadata=query_request.include_grounding_metadata,
+            generation_config=query_request.generation_config
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error querying File Search: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/operation-status")
+async def get_file_search_operation_status(request: Request):
+    """
+    Get the status of a File Search operation.
+    
+    Request body:
+    {
+        "operation_name": "operations/xxxxx"
+    }
+    """
+    logger.info("Get operation status endpoint received a request.")
+    try:
+        data = await request.json()
+        status_request = OperationStatusRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.get_operation_status(status_request.operation_name)
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error getting operation status: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):
