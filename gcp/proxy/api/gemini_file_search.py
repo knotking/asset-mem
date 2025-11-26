@@ -139,6 +139,7 @@ class GeminiFileSearchManager:
         file_path: str,
         store_name: str,
         display_name: Optional[str] = None,
+        user_id: Optional[str] = None,
         wait_for_completion: bool = True,
         timeout: int = 300
     ) -> Dict[str, Any]:
@@ -149,6 +150,7 @@ class GeminiFileSearchManager:
             file_path: Local path to file or GCS URI (gs://...)
             store_name: Target store name/ID
             display_name: Optional display name for the file
+            user_id: Optional user ID to associate with the file
             wait_for_completion: Whether to wait for import to complete
             timeout: Maximum wait time in seconds
             
@@ -158,6 +160,10 @@ class GeminiFileSearchManager:
         try:
             if not display_name:
                 display_name = os.path.basename(file_path)
+            
+            # Add user_id to display name for tracking
+            if user_id:
+                display_name = f"[user:{user_id}] {display_name}"
             
             logger.info(f"Uploading file to store: {file_path} -> {store_name}")
             
@@ -212,6 +218,7 @@ class GeminiFileSearchManager:
         gcs_uri: str,
         store_name: str,
         display_name: Optional[str] = None,
+        user_id: Optional[str] = None,
         mime_type: Optional[str] = None,
         wait_for_completion: bool = True
     ) -> Dict[str, Any]:
@@ -222,6 +229,7 @@ class GeminiFileSearchManager:
             gcs_uri: GCS URI (gs://bucket/path)
             store_name: Target store name/ID
             display_name: Optional display name
+            user_id: Optional user ID to associate with the file
             mime_type: Optional MIME type
             wait_for_completion: Whether to wait for completion
             
@@ -232,7 +240,11 @@ class GeminiFileSearchManager:
             if not display_name:
                 display_name = gcs_uri.split('/')[-1]
             
-            logger.info(f"Importing GCS file to store: {gcs_uri} -> {store_name}")
+            # Add user_id to display name for tracking
+            if user_id:
+                display_name = f"[user:{user_id}] {display_name}"
+            
+            logger.info(f"Importing GCS file to store: {gcs_uri} -> {store_name} (user: {user_id})")
             
             config = {'display_name': display_name}
             if mime_type:
@@ -418,6 +430,205 @@ class GeminiFileSearchManager:
             
         except Exception as e:
             logger.error(f"Error getting operation status: {e}", exc_info=True)
+            raise
+
+
+    def get_user_store_name(self, user_id: str) -> Optional[str]:
+        """
+        Get the File Search store name for a specific user.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Store name if found, None otherwise
+        """
+        try:
+            stores = self.list_file_search_stores()
+            
+            # Look for store with user_id in display name
+            for store in stores:
+                display_name = store.get('display_name', '')
+                if f"user_{user_id}" in display_name.lower() or f"user:{user_id}" in display_name.lower():
+                    return store['name']
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting user store: {e}")
+            return None
+
+    def get_or_create_user_store(self, user_id: str) -> str:
+        """
+        Get or create a File Search store for a specific user.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Store name (creates new store if not found)
+        """
+        try:
+            # Check if user store exists
+            store_name = self.get_user_store_name(user_id)
+            
+            if store_name:
+                logger.info(f"Found existing store for user {user_id}: {store_name}")
+                return store_name
+            
+            # Create new store for user
+            logger.info(f"Creating new store for user {user_id}")
+            store = self.create_file_search_store(f"Documents for user_{user_id}")
+            return store['name']
+            
+        except Exception as e:
+            logger.error(f"Error getting or creating user store: {e}")
+            raise
+
+    def list_user_files(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        List all files for a specific user across all stores.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            List of file information dictionaries
+        """
+        try:
+            stores = self.list_file_search_stores()
+            user_files = []
+            
+            for store in stores:
+                store_name = store['name']
+                
+                # Query to list documents in store
+                # Note: This is a simplified version - actual implementation
+                # would need to query the store's documents
+                try:
+                    # You would implement actual document listing here
+                    # For now, we track by display_name prefix
+                    pass
+                except Exception as e:
+                    logger.debug(f"Could not list documents in store {store_name}: {e}")
+            
+            return user_files
+            
+        except Exception as e:
+            logger.error(f"Error listing user files: {e}")
+            return []
+
+    def upload_user_file(
+        self,
+        user_id: str,
+        file_path: str,
+        display_name: Optional[str] = None,
+        wait_for_completion: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Upload a file for a specific user (creates user store if needed).
+        
+        Args:
+            user_id: User ID
+            file_path: File path or GCS URI
+            display_name: Optional display name
+            wait_for_completion: Wait for completion
+            
+        Returns:
+            Operation result
+        """
+        try:
+            store_name = self.get_or_create_user_store(user_id)
+            
+            return self.upload_file_to_store(
+                file_path=file_path,
+                store_name=store_name,
+                display_name=display_name,
+                user_id=user_id,
+                wait_for_completion=wait_for_completion
+            )
+            
+        except Exception as e:
+            logger.error(f"Error uploading user file: {e}")
+            raise
+
+    def import_user_gcs_file(
+        self,
+        user_id: str,
+        gcs_uri: str,
+        display_name: Optional[str] = None,
+        mime_type: Optional[str] = None,
+        wait_for_completion: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Import a GCS file for a specific user (creates user store if needed).
+        
+        Args:
+            user_id: User ID
+            gcs_uri: GCS URI
+            display_name: Optional display name
+            mime_type: Optional MIME type
+            wait_for_completion: Wait for completion
+            
+        Returns:
+            Operation result
+        """
+        try:
+            store_name = self.get_or_create_user_store(user_id)
+            
+            return self.import_gcs_file_to_store(
+                gcs_uri=gcs_uri,
+                store_name=store_name,
+                display_name=display_name,
+                user_id=user_id,
+                mime_type=mime_type,
+                wait_for_completion=wait_for_completion
+            )
+            
+        except Exception as e:
+            logger.error(f"Error importing user GCS file: {e}")
+            raise
+
+    def query_user_documents(
+        self,
+        user_id: str,
+        query: str,
+        model: str = "gemini-2.5-flash",
+        include_grounding_metadata: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Query documents for a specific user.
+        
+        Args:
+            user_id: User ID
+            query: Search query
+            model: Gemini model to use
+            include_grounding_metadata: Include citations
+            
+        Returns:
+            Query response with answer and citations
+        """
+        try:
+            store_name = self.get_user_store_name(user_id)
+            
+            if not store_name:
+                logger.warning(f"No store found for user {user_id}")
+                return {
+                    "text": "No documents available. Please upload documents first.",
+                    "model": model,
+                    "stores_queried": [],
+                    "grounding_metadata": None
+                }
+            
+            return self.query_file_search(
+                query=query,
+                store_names=[store_name],
+                model=model,
+                include_grounding_metadata=include_grounding_metadata
+            )
+            
+        except Exception as e:
+            logger.error(f"Error querying user documents: {e}")
             raise
 
 

@@ -51,6 +51,7 @@ class UploadFileToStoreRequest(BaseModel):
     file_path: str = Field(..., description="Local file path or GCS URI (gs://...)")
     store_name: str = Field(..., description="Target store name (fileSearchStores/xxxxx)")
     display_name: Optional[str] = Field(None, description="Display name for the file")
+    user_id: Optional[str] = Field(None, description="User ID to associate with the file")
     wait_for_completion: bool = Field(True, description="Wait for import to complete")
     timeout: int = Field(300, description="Timeout in seconds", ge=30, le=600)
 
@@ -59,6 +60,7 @@ class ImportGCSFileRequest(BaseModel):
     gcs_uri: str = Field(..., description="GCS URI (gs://bucket/path)")
     store_name: str = Field(..., description="Target store name")
     display_name: Optional[str] = Field(None, description="Display name for the file")
+    user_id: Optional[str] = Field(None, description="User ID to associate with the file")
     mime_type: Optional[str] = Field(None, description="MIME type of the file")
     wait_for_completion: bool = Field(True, description="Wait for completion")
 
@@ -108,3 +110,27 @@ class DeleteStoreRequest(BaseModel):
 class OperationStatusRequest(BaseModel):
     """Request to check operation status."""
     operation_name: str = Field(..., description="Operation name/ID")
+
+# User-scoped File Search Models
+
+class UserFileUploadRequest(BaseModel):
+    """Request to upload a file for a specific user."""
+    user_id: str = Field(..., description="User ID")
+    file_path: str = Field(..., description="File path or GCS URI")
+    display_name: Optional[str] = Field(None, description="Display name")
+    wait_for_completion: bool = Field(True, description="Wait for completion")
+
+class UserGCSImportRequest(BaseModel):
+    """Request to import GCS file for a specific user."""
+    user_id: str = Field(..., description="User ID")
+    gcs_uri: str = Field(..., description="GCS URI (gs://...)")
+    display_name: Optional[str] = Field(None, description="Display name")
+    mime_type: Optional[str] = Field(None, description="MIME type")
+    wait_for_completion: bool = Field(True, description="Wait for completion")
+
+class UserQueryRequest(BaseModel):
+    """Request to query a user's documents."""
+    user_id: str = Field(..., description="User ID")
+    query: str = Field(..., description="Search query")
+    model: str = Field("gemini-2.5-flash", description="Gemini model")
+    include_grounding_metadata: bool = Field(True, description="Include citations")

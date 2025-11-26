@@ -27,6 +27,9 @@ from models import (
     FileSearchQueryRequest,
     DeleteStoreRequest,
     OperationStatusRequest,
+    UserFileUploadRequest,
+    UserGCSImportRequest,
+    UserQueryRequest,
 )
 from optional_agents import (
     ANALYSIS_OPTIONAL_AGENT_ORDER,
@@ -331,6 +334,7 @@ async def upload_file_to_file_search(request: Request):
             file_path=upload_request.file_path,
             store_name=upload_request.store_name,
             display_name=upload_request.display_name,
+            user_id=upload_request.user_id,
             wait_for_completion=upload_request.wait_for_completion,
             timeout=upload_request.timeout
         )
@@ -368,6 +372,7 @@ async def import_gcs_file_to_file_search(request: Request):
             gcs_uri=import_request.gcs_uri,
             store_name=import_request.store_name,
             display_name=import_request.display_name,
+            user_id=import_request.user_id,
             mime_type=import_request.mime_type,
             wait_for_completion=import_request.wait_for_completion
         )
@@ -442,6 +447,115 @@ async def get_file_search_operation_status(request: Request):
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error getting operation status: {e}")
+        return {"status": "error", "message": str(e)}
+
+# User-scoped File Search Endpoints
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/user/upload-file")
+async def upload_user_file(request: Request):
+    """
+    Upload a file for a specific user (auto-creates user store).
+    
+    Request body:
+    {
+        "user_id": "user123",
+        "file_path": "/path/to/file.pdf",
+        "display_name": "My Document",
+        "wait_for_completion": true
+    }
+    """
+    logger.info("User file upload endpoint received a request.")
+    try:
+        data = await request.json()
+        upload_request = UserFileUploadRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.upload_user_file(
+            user_id=upload_request.user_id,
+            file_path=upload_request.file_path,
+            display_name=upload_request.display_name,
+            wait_for_completion=upload_request.wait_for_completion
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error uploading user file: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/user/import-gcs-file")
+async def import_user_gcs_file(request: Request):
+    """
+    Import a GCS file for a specific user (auto-creates user store).
+    
+    Request body:
+    {
+        "user_id": "user123",
+        "gcs_uri": "gs://bucket/file.pdf",
+        "display_name": "My Document",
+        "mime_type": "application/pdf",
+        "wait_for_completion": true
+    }
+    """
+    logger.info("User GCS import endpoint received a request.")
+    try:
+        data = await request.json()
+        import_request = UserGCSImportRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.import_user_gcs_file(
+            user_id=import_request.user_id,
+            gcs_uri=import_request.gcs_uri,
+            display_name=import_request.display_name,
+            mime_type=import_request.mime_type,
+            wait_for_completion=import_request.wait_for_completion
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error importing user GCS file: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/file-search/user/query")
+async def query_user_documents(request: Request):
+    """
+    Query documents for a specific user.
+    
+    Request body:
+    {
+        "user_id": "user123",
+        "query": "What documents do I have?",
+        "model": "gemini-2.5-flash",
+        "include_grounding_metadata": true
+    }
+    """
+    logger.info("User query endpoint received a request.")
+    try:
+        data = await request.json()
+        query_request = UserQueryRequest(**data)
+        
+        manager = get_file_search_manager()
+        result = manager.query_user_documents(
+            user_id=query_request.user_id,
+            query=query_request.query,
+            model=query_request.model,
+            include_grounding_metadata=query_request.include_grounding_metadata
+        )
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error querying user documents: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):
