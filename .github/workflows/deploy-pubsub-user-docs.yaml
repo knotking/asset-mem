@@ -16,9 +16,13 @@ on:
         options:
           - staging
           - prod
+      region:
+        description: "GCP region for deployment (defaults to GCP_REGION variable)"
+        required: false
+        type: string
 
 env:
-  REGION: ${{ vars.GCP_REGION }}
+  REGION: ${{ github.event.inputs.region || vars.GCP_REGION }}
   FUNCTION_NAME_BASE: pubsub-to-user-docs
   RUNTIME: python313
   ENTRY_POINT: pubsub_to_user_docs
