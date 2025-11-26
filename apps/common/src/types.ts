@@ -13,12 +13,6 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
-export type Location = {
-  latitude: number;
-  longitude: number;
-  radius: number;
-};
-
 export type FileAttachment = {
   id: string;
   uri: string;

@@ -101,9 +101,6 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
-  locationLatitude?: number;
-  analysisLongitude?: number;
-  analysisRadiusMiles?: number;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -119,9 +116,6 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
-  analysisLatitude,
-  analysisLongitude,
-  analysisRadiusMiles,
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   signal,
   onChunk,
@@ -135,7 +129,7 @@ export async function streamAgentResponse({
       throw new Error('AGENT_SSE_URL not set.');
     }
 
-    const requestBody: any = {
+    const requestBody = {
       user_id: userId,
       session_id: agentSessionId,
       user_query: userQuery,
@@ -144,15 +138,6 @@ export async function streamAgentResponse({
       property_address: propertyAddress,
       analysis_optional_agents: analysisOptionalAgents,
     };
-
-    // Add location if available and property address is not set
-    if (!propertyAddress && analysisLatitude !== undefined && analysisLongitude !== undefined) {
-      requestBody.location_latitude = analysisLatitude;
-      requestBody.location_longitude = analysisLongitude;
-      if (analysisRadiusMiles !== undefined) {
-        requestBody.location_radius_miles = analysisRadiusMiles;
-      }
-    }
 
     const response = await fetch(url, {
       method: 'POST',

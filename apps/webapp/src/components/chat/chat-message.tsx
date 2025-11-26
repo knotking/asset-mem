@@ -1203,12 +1203,10 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               // Check for nested structure (analysis.*)
               if (parsed.analysis && typeof parsed.analysis === 'object') {
                   return !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
-                           parsed.analysis.diyResults || parsed.analysis.serviceResults ||
-                           parsed.analysis.costEstimationResults || parsed.analysis.title);
+                           parsed.analysis.diyResults || parsed.analysis.serviceResults);
               }
               // Check for flat structure
-              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || 
-                       parsed.coverageResult || parsed.costEstimationResults || parsed.title);
+              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || parsed.coverageResult);
           };
           
           // Method 1: PRIORITY - Extract JSON from ```json code block (for dual-format responses)
@@ -1403,7 +1401,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
       </div>
       <div className={cn(
           "flex flex-col max-w-full sm:max-w-[calc(100%-4rem)] group relative",
-          (structuredData || fallbackParsedJson) ? 'w-full md:w-5/6 lg:w-4/5' : 'w-fit'
+          structuredData ? 'w-full md:w-5/6 lg:w-4/5' : 'w-fit'
       )} ref={bubbleRef} onCopy={handleCopy}>
           <div
             style={bubbleStyle}
@@ -1413,15 +1411,15 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               { "self-end": isUser },
               {
                 "rounded-lg": isUser,
-                "bg-muted border": !isUser && !isAgentStatusMessage && !showLoadingIndicator && !structuredData && !fallbackParsedJson,
-                "bg-transparent border-0 shadow-none": isAgentStatusMessage || showLoadingIndicator || structuredData || fallbackParsedJson
+                "bg-muted border": !isUser && !isAgentStatusMessage && !showLoadingIndicator && !structuredData,
+                "bg-transparent border-0 shadow-none": isAgentStatusMessage || showLoadingIndicator || structuredData
               },
               (isUser && message.content) && "bg-secondary text-secondary-foreground",
               fileData && message.content ? "gap-2" : "",
-              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !message.content)) ? "p-2" : (structuredData || fallbackParsedJson) ? "" : "px-4 py-2.5"
+              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !message.content)) ? "p-2" : structuredData ? "" : "px-4 py-2.5"
             )}
           >
-            {!isUser && message.content && !showLoadingIndicator && !isAgentStatusMessage && !structuredData && !fallbackParsedJson && (
+            {!isUser && message.content && !showLoadingIndicator && !isAgentStatusMessage && !structuredData && (
                 <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyClick}>
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">Copy message</span>
@@ -1448,8 +1446,6 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                </div>
             ) : structuredData ? (
                 <StructuredResponse data={structuredData} />
-            ) : fallbackParsedJson ? (
-                <StructuredResponse data={fallbackParsedJson} />
             ) : (
                 <>
                 {renderFilePreview()}
@@ -1463,7 +1459,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                         remarkPlugins={[remarkGfm]}
                         components={markdownRenderers}
                       >
-                        {message.content}
+                        {fallbackParsedJson ? jsonToMarkdown(fallbackParsedJson) : message.content}
                       </ReactMarkdown>
                     )}
                      {renderDocumentList()}

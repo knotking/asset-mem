@@ -62,23 +62,6 @@ components:
           type: string
           description: Optional property address for location-based searches. May be omitted, null, or empty.
           nullable: true
-        location_latitude:
-          type: number
-          format: float
-          description: Optional latitude of the current location. Used when property_address is not available. May be omitted, null, or empty.
-          nullable: true
-        location_longitude:
-          type: number
-          format: float
-          description: Optional longitude of the current location. Used when property_address is not available. May be omitted, null, or empty.
-          nullable: true
-        location_radius_miles:
-          type: number
-          format: float
-          minimum: 10
-          maximum: 100
-          description: Optional search radius in miles (10-100 miles). Used when property_address is not available. May be omitted, null, or empty.
-          nullable: true
         analysis_optional_agents:
           type: array
           items:
