@@ -10,12 +10,12 @@ import uuid
 
 class FileStatus(str, Enum):
     """Status of a file in the Gemini File Search system."""
-    PENDING = "PENDING"           # File uploaded, not yet processed
-    PROCESSING = "PROCESSING"     # File being processed by Gemini
-    ACTIVE = "ACTIVE"             # File ready for search
-    FAILED = "FAILED"             # Processing failed
-    EXPIRED = "EXPIRED"           # File TTL expired (Gemini files expire after 48 hours)
-    DELETED = "DELETED"           # File manually deleted
+    PENDING = "pending"           # File uploaded, not yet processed
+    PROCESSING = "processing"     # File being processed by Gemini
+    ACTIVE = "active"             # File ready for search
+    FAILED = "failed"             # Processing failed
+    EXPIRED = "expired"           # File TTL expired (Gemini files expire after 48 hours)
+    DELETED = "deleted"           # File manually deleted
 
 
 class StoreType(str, Enum):
