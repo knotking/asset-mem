@@ -4,6 +4,7 @@
 import os
 import logging
 import time
+import tempfile
 import mimetypes
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
@@ -190,10 +191,15 @@ class GeminiFileSearchService:
             file_content = blob.download_as_bytes()
             
             # Upload to Gemini File Search API
+            # Write to temp file first (genai.upload_file requires a file path)
+            tmp_path = None
             try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{original_filename}") as tmp:
+                    tmp.write(file_content)
+                    tmp_path = tmp.name
+                
                 gemini_file = genai.upload_file(
-                    path=None,
-                    data=file_content,
+                    path=tmp_path,
                     mime_type=content_type,
                     display_name=original_filename,
                 )
@@ -246,6 +252,13 @@ class GeminiFileSearchService:
                     status=FileStatus.FAILED,
                     error=str(e),
                 )
+            finally:
+                # Clean up temp file
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to clean up temp file {tmp_path}: {cleanup_error}")
             
         except Exception as e:
             logger.error(f"Upload failed: {e}")
