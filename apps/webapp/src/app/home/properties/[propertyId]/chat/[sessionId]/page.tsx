@@ -4,8 +4,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent, LocationSourceType, LocationData, LocationRadius } from '@/lib/types';
-import { ANALYSIS_OPTIONAL_AGENTS, DEFAULT_LOCATION_RADIUS } from '@/lib/types';
+import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent } from '@/lib/types';
+import { ANALYSIS_OPTIONAL_AGENTS } from '@/lib/types';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useAuth } from '@/contexts/auth-context';
@@ -38,43 +38,6 @@ export default function PropertyChatSessionPage() {
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
-  const [locationSource, setLocationSource] = useState<LocationSourceType>('address');
-  const [locationRadius, setLocationRadius] = useState<LocationRadius>(DEFAULT_LOCATION_RADIUS);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  // Get user's current location when location source is set to coordinates
-  useEffect(() => {
-    if (locationSource === 'coordinates' && !currentLocation) {
-      // Check if we're in browser environment
-      if (typeof window === 'undefined' || !navigator?.geolocation) {
-        toast({
-          variant: 'destructive',
-          title: 'Location Not Supported',
-          description: 'Geolocation is not supported by your browser.',
-        });
-        setLocationSource('address');
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.warn('Geolocation error:', error.message);
-          toast({
-            variant: 'destructive',
-            title: 'Location Error',
-            description: 'Could not get your current location. Please enable location services.',
-          });
-          setLocationSource('address');
-        }
-      );
-    }
-  }, [locationSource, currentLocation, toast]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -299,32 +262,18 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments.map(d => d.gsURI).filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI ? [userMessage.file.gsURI] : [];
 
-        // Determine location data to send based on location source
-        const requestBody: Record<string, unknown> = {
-            user_id: user.uid,
-            session_id: agentSessionId,
-            user_query: content,
-            context_doc_uris: contextDocURIs,
-            diagnosis_uris: diagnosisURIs,
-            analysis_optional_agents: selectedOptionalAgents,
-        };
-
-        if (locationSource === 'address' && property?.address) {
-            requestBody.property_address = property.address;
-        } else if (locationSource === 'coordinates' && currentLocation) {
-            requestBody.location_data = {
-                ...currentLocation,
-                radius_miles: locationRadius,
-            };
-        } else if (property?.address) {
-            // Fallback to address if coordinates not available
-            requestBody.property_address = property.address;
-        }
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify({
+                user_id: user.uid,
+                session_id: agentSessionId,
+                user_query: content,
+                context_doc_uris: contextDocURIs,
+                diagnosis_uris: diagnosisURIs,
+                property_address: property?.address,
+                analysis_optional_agents: selectedOptionalAgents,
+            }),
             signal,
         });
 
@@ -404,7 +353,7 @@ export default function PropertyChatSessionPage() {
         setIsLoading(false);
         abortControllerRef.current = null;
     }
-  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents, locationSource, locationRadius, currentLocation]);
+  }, [user, toast, fileAttachment, isLoading, sessionId, isNewSession, propertyId, property, selectedDocuments, selectedOptionalAgents]);
 
 
   if (authLoading || isMessagesLoading || isDocsLoading) {
@@ -433,11 +382,6 @@ export default function PropertyChatSessionPage() {
                 placeholder="Type a message or attach image/video to diagnose an issue..."
                 selectedOptionalAgents={selectedOptionalAgents}
                 onOptionalAgentsChange={handleOptionalAgentsChange}
-                locationSource={locationSource}
-                onLocationSourceChange={setLocationSource}
-                hasPropertyAddress={!!property?.address}
-                locationRadius={locationRadius}
-                onLocationRadiusChange={setLocationRadius}
             />
         </footer>
       </div>

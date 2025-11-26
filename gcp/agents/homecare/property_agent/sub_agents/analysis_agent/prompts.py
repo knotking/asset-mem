@@ -25,7 +25,6 @@ def triage_agent_instructions() -> str:
         *   `diagnosis_uris` (List[str], optional): List of GCS URIs pointing to media files (may be absent, None, or empty).
         *   `context_doc_uris` (List[str], optional): List of context document URIs (may be absent, None, or empty).
         *   `property_address` (str, optional): Property address (may be absent, None, or empty).
-        *   `location_data` (object, optional): Location coordinates when property_address is not available. Contains latitude, longitude, and optionally city, state, country. Used for finding local service providers.
         
         **Available Tool (used only when media is present):**
         *   `analyse_multimodal_data(user_query: str, gcs_url: str)`: Analyzes multimodal data and returns a comprehensive summary of the problem.
@@ -147,7 +146,7 @@ def analysis_agent_instructions() -> str:
         If triage succeeds with a valid diagnosis, check `analysis_optional_agents` to determine which optional tools to call next.
         
         1. Call `triage_agent` tool - Prefer multimodal analysis when media is provided; otherwise perform text-only triage
-           Pass: user_query (REQUIRED), diagnosis_uris (may be None, empty, or missing), context_doc_uris (may be None, empty, or missing), property_address (may be None, empty, or missing), location_data (may be None, empty, or missing)
+           Pass: user_query (REQUIRED), diagnosis_uris (may be None, empty, or missing), context_doc_uris (may be None, empty, or missing), property_address (may be None, empty, or missing)
            ALWAYS call this agent - it must produce a diagnosis from media when available or from text when not
            **IMPORTANT:** The triage agent can work with just `user_query` if other fields are missing. Do not fail if optional fields are absent.
            SAVE the result and extract the diagnosis text
@@ -192,11 +191,11 @@ def analysis_agent_instructions() -> str:
            IMPORTANT: Include the diagnosis from the triage result as context in your query so the DIY agent understands the problem.
         
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
-           Pass: user_query, context_doc_uris, property_address, location_data
+           Pass: user_query, context_doc_uris, property_address
            IMPORTANT: Include the diagnosis from the triage result as context.
-           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` or `location_data` (use location_data as fallback when property_address is not available; use "near me" if neither is available)
+           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
-           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address or location]" and return parsed results under `localPros.googleSearchResults`
+           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
         
         5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.
            Pass: user_query, context_doc_uris, property_address, and include the triage diagnosis for context.
