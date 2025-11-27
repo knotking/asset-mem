@@ -60,6 +60,7 @@ main_loop = asyncio.get_event_loop()
 from gcp_utils import listen_to_event
 from telegram_api import get_telegram_webhook_endpoint
 from firebase_api import handle_firebase_agent_query, stream_firebase_agent_answers, handle_firebase_file_upload
+from service_broker_api import handle_service_broker_payload
 # Import Vertex AI client logic
 from vertex_client import (
     reasoning_engine_resource,
@@ -212,6 +213,30 @@ async def extract_document_info(request: Request):
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error processing document analysis: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/service-broker-agent")
+async def service_broker_agent_webhook(request: Request):
+    """
+    Webhook endpoint to receive service broker agent notifications.
+    
+    This endpoint receives JSON payloads from the service broker agent.
+    Returns 200 immediately and processes the payload asynchronously on main_loop.
+    """
+    logger.info("Service broker agent webhook received a request.")
+    try:
+        payload = await request.json()
+        logger.info(f"Service broker agent webhook payload: {payload}")
+        
+        # Schedule async processing on main_loop and return immediately
+        asyncio.run_coroutine_threadsafe(
+            handle_service_broker_payload(payload),
+            main_loop
+        )
+        
+        return {"status": "ok", "message": "Payload received"}
+    except Exception as e:
+        logger.error(f"Error processing service broker agent webhook: {e}")
         return {"status": "error", "message": str(e)}
 
 async def on_event_user_upload_result(message: str):
