@@ -199,3 +199,16 @@ export type Property = {
   servicesCount?: number;
   checksCount?: number;
 }
+
+export type LocationType = 'address' | 'location';
+
+export type LocationCoordinates = {
+  lat: number;
+  lng: number;
+};
+
+export type LocationData = {
+  locationType?: LocationType;
+  locationCoordinates?: LocationCoordinates;
+  locationRadius?: number; // 10-100 miles
+};

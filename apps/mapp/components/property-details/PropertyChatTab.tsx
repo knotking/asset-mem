@@ -9,7 +9,7 @@ import { useMessages } from '@homeapp/common/contexts/messages-context';
 import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
-import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
 
 interface PropertyChatTabProps {
   sessionId: string | null;
@@ -31,6 +31,9 @@ interface PropertyChatTabProps {
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
   onSend: (messages: IMessage[]) => void;
+  locationData?: LocationData;
+  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  propertyAddress?: string;
 }
 
 export function PropertyChatTab({
@@ -51,6 +54,9 @@ export function PropertyChatTab({
   onSelectFromLibrary,
   onSelectFiles,
   onSend,
+  locationData,
+  onLocationDataChange,
+  propertyAddress,
 }: PropertyChatTabProps) {
   const {
     messages,
@@ -157,6 +163,9 @@ export function PropertyChatTab({
             onRecordVideo={onRecordVideo}
             onSelectFromLibrary={onSelectFromLibrary}
             onSelectFiles={onSelectFiles}
+            locationData={locationData}
+            onLocationDataChange={onLocationDataChange}
+            propertyAddress={propertyAddress}
           />
         )}
         scrollToBottomComponent={() => (

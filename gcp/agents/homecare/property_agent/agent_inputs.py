@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 
 AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 
@@ -16,6 +16,18 @@ class DiagnosisInput(BaseModel):
             "Optional list of analysis sub-agents to run after triage. "
             "Allowed values: coverage, diy, service, cost. Defaults to all when missing or empty."
         ),
+    )
+    location_type: Optional[Literal["address", "location"]] = Field(
+        default=None,
+        description="Location selection type: 'address' uses property_address if available, else location_coordinates; 'location' uses location_coordinates only."
+    )
+    location_coordinates: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Location coordinates as {'lat': float, 'lng': float}."
+    )
+    location_radius: Optional[int] = Field(
+        default=None,
+        description="Search radius in miles (10-100). Used for local professional searches."
     )
     
     class Config:
