@@ -48,6 +48,8 @@ class TwilioClient:
     Supports SMS, MMS, Content Templates, and OTT (WhatsApp, Messenger) channels.
     
     Example:
+        from cpaas.twilio import TwilioConfig, TwilioClient, SMSMessage
+        
         config = TwilioConfig.from_env()
         client = TwilioClient(config)
         

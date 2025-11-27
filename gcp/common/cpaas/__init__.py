@@ -8,39 +8,54 @@ Multi-provider messaging module for sending and receiving messages via:
 - OTT (Over-the-Top messaging: WhatsApp, Facebook Messenger, Viber, etc.)
 
 Supported Providers:
-- Twilio
-- Infobip
+- Twilio (cpaas.twilio)
+- Infobip (cpaas.infobip)
+
+Usage:
+    # Twilio
+    from cpaas.twilio import TwilioClient, TwilioConfig, SMSMessage
+    
+    config = TwilioConfig.from_env()
+    async with TwilioClient(config) as client:
+        response = await client.send_sms(SMSMessage(to="+1234567890", body="Hello!"))
+    
+    # Infobip
+    from cpaas.infobip import InfobipClient, InfobipConfig, InfobipSMSMessage, InfobipDestination
+    
+    config = InfobipConfig.from_env()
+    async with InfobipClient(config) as client:
+        response = await client.send_sms(
+            InfobipSMSMessage(
+                destinations=[InfobipDestination(to="+1234567890")],
+                text="Hello!"
+            )
+        )
 """
 
-# Twilio imports
-from .twilio_client import TwilioClient, TwilioClientError
-from .config import TwilioConfig, InfobipConfig
-
-# Twilio models
-from .models import (
-    # Twilio request models
+# Twilio imports (for backwards compatibility)
+from .twilio import (
+    TwilioClient,
+    TwilioClientError,
+    TwilioConfig,
     SMSMessage,
     MMSMessage,
     TemplateMessage,
     OTTMessage,
-    # Twilio response models
     MessageResponse,
     MessageListResponse,
     MediaResource,
     ContentTemplate,
     ContentTemplateListResponse,
-    # Twilio enums
     MessageStatus,
     MessageDirection,
     OTTChannel,
 )
 
-# Infobip imports
-from .infobip_client import InfobipClient, InfobipClientError
-
-# Infobip models
-from .models import (
-    # Infobip request models
+# Infobip imports (for backwards compatibility)
+from .infobip import (
+    InfobipClient,
+    InfobipClientError,
+    InfobipConfig,
     InfobipSMSMessage,
     InfobipMMSMessage,
     InfobipMMSContent,
@@ -49,14 +64,12 @@ from .models import (
     InfobipWhatsAppMediaMessage,
     InfobipViberMessage,
     InfobipDestination,
-    # Infobip response models
     InfobipSendResponse,
     InfobipMessageResult,
     InfobipMessageStatusDetail,
     InfobipDeliveryReport,
     InfobipDeliveryReportResponse,
     InfobipPrice,
-    # Infobip enums
     InfobipMessageStatus,
     InfobipChannel,
 )
@@ -99,4 +112,3 @@ __all__ = [
     "InfobipMessageStatus",
     "InfobipChannel",
 ]
-

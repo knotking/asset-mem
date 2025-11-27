@@ -4,9 +4,10 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
 
-from ..config import TwilioConfig
-from ..twilio_client import TwilioClient, TwilioClientError
-from ..models import (
+from cpaas.twilio import (
+    TwilioConfig,
+    TwilioClient,
+    TwilioClientError,
     SMSMessage,
     MMSMessage,
     TemplateMessage,

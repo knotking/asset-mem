@@ -3,9 +3,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from ..config import InfobipConfig
-from ..infobip_client import InfobipClient, InfobipClientError
-from ..models import (
+from cpaas.infobip import (
+    InfobipConfig,
+    InfobipClient,
+    InfobipClientError,
     InfobipSMSMessage,
     InfobipMMSMessage,
     InfobipMMSContent,

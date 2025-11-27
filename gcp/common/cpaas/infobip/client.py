@@ -50,6 +50,8 @@ class InfobipClient:
     Supports SMS, MMS, WhatsApp, and Viber channels.
     
     Example:
+        from cpaas.infobip import InfobipConfig, InfobipClient, InfobipSMSMessage, InfobipDestination
+        
         config = InfobipConfig.from_env()
         client = InfobipClient(config)
         
@@ -298,7 +300,7 @@ class InfobipClient:
             InfobipSendResponse
             
         Example:
-            from cpaas.models import InfobipMMSContent
+            from cpaas.infobip import InfobipMMSContent
             
             response = await client.send_mms(
                 InfobipMMSMessage(

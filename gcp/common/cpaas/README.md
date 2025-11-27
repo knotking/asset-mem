@@ -7,6 +7,28 @@ A comprehensive multi-provider messaging module for sending and receiving messag
 - **[Twilio](#twilio)** - Full-featured CPaaS with SMS, MMS, WhatsApp, and more
 - **[Infobip](#infobip)** - Global CPaaS with SMS, MMS, WhatsApp, Viber, and RCS
 
+## Project Structure
+
+```
+cpaas/
+├── __init__.py           # Main exports (backwards compatible)
+├── twilio/               # Twilio provider
+│   ├── __init__.py
+│   ├── client.py         # TwilioClient
+│   ├── config.py         # TwilioConfig
+│   └── models.py         # Twilio models
+├── infobip/              # Infobip provider
+│   ├── __init__.py
+│   ├── client.py         # InfobipClient
+│   ├── config.py         # InfobipConfig
+│   └── models.py         # Infobip models
+├── tests/
+│   ├── twilio/           # Twilio tests
+│   └── infobip/          # Infobip tests
+├── requirements.txt
+└── README.md
+```
+
 ## Features
 
 - **SMS** - Send and read text messages
@@ -28,7 +50,11 @@ Or install individually:
 pip install httpx pydantic google-cloud-secret-manager python-dotenv
 ```
 
-## Configuration
+---
+
+# Twilio
+
+## Twilio Configuration
 
 ### Environment Variables
 
@@ -63,7 +89,7 @@ Then load it in your code:
 from dotenv import load_dotenv
 load_dotenv()
 
-from cpaas import TwilioConfig, TwilioClient
+from cpaas.twilio import TwilioConfig, TwilioClient
 
 config = TwilioConfig.from_env()
 ```
@@ -81,7 +107,7 @@ gcloud secrets create twilio-auth-token --data-file=-
 Then load in code:
 
 ```python
-from cpaas import TwilioConfig, TwilioClient
+from cpaas.twilio import TwilioConfig, TwilioClient
 
 config = TwilioConfig.from_gcp_secret_manager(
     project_id="your-gcp-project-id",
@@ -90,13 +116,13 @@ config = TwilioConfig.from_gcp_secret_manager(
 )
 ```
 
-## Usage
+## Twilio Usage
 
 ### Basic Setup
 
 ```python
 import asyncio
-from cpaas import TwilioClient, TwilioConfig
+from cpaas.twilio import TwilioClient, TwilioConfig
 
 # Load configuration
 config = TwilioConfig.from_env()
@@ -108,7 +134,7 @@ client = TwilioClient(config)
 ### Sending SMS
 
 ```python
-from cpaas import SMSMessage
+from cpaas.twilio import SMSMessage
 
 async def send_text_message():
     async with TwilioClient(TwilioConfig.from_env()) as client:
@@ -148,7 +174,7 @@ asyncio.run(read_messages())
 ### Sending MMS (with Media)
 
 ```python
-from cpaas import MMSMessage
+from cpaas.twilio import MMSMessage
 
 async def send_picture_message():
     async with TwilioClient(TwilioConfig.from_env()) as client:
@@ -167,24 +193,12 @@ async def send_picture_message():
 asyncio.run(send_picture_message())
 ```
 
-### Getting Media from MMS
-
-```python
-async def get_mms_media():
-    async with TwilioClient(TwilioConfig.from_env()) as client:
-        media_list = await client.get_message_media("MM...")
-        for media in media_list:
-            print(f"Media: {media.content_type} - {media.uri}")
-
-asyncio.run(get_mms_media())
-```
-
 ### Sending Template Messages
 
 Templates are pre-approved message formats required for WhatsApp Business API communications outside the 24-hour messaging window.
 
 ```python
-from cpaas import TemplateMessage
+from cpaas.twilio import TemplateMessage
 
 async def send_template():
     async with TwilioClient(TwilioConfig.from_env()) as client:
@@ -204,22 +218,10 @@ async def send_template():
 asyncio.run(send_template())
 ```
 
-### Listing Content Templates
-
-```python
-async def list_templates():
-    async with TwilioClient(TwilioConfig.from_env()) as client:
-        templates = await client.list_content_templates()
-        for template in templates.contents:
-            print(f"{template.sid}: {template.friendly_name}")
-
-asyncio.run(list_templates())
-```
-
 ### Sending WhatsApp Messages (OTT)
 
 ```python
-from cpaas import OTTMessage, OTTChannel
+from cpaas.twilio import OTTMessage, OTTChannel
 
 async def send_whatsapp():
     async with TwilioClient(TwilioConfig.from_env()) as client:
@@ -236,63 +238,7 @@ async def send_whatsapp():
 asyncio.run(send_whatsapp())
 ```
 
-### Sending WhatsApp with Media
-
-```python
-from cpaas import OTTMessage, OTTChannel
-
-async def send_whatsapp_media():
-    async with TwilioClient(TwilioConfig.from_env()) as client:
-        response = await client.send_ott(
-            OTTMessage(
-                to="+1234567890",
-                channel=OTTChannel.WHATSAPP,
-                body="Check out this photo!",
-                media_urls=["https://example.com/photo.jpg"]
-            )
-        )
-        print(f"WhatsApp media sent! SID: {response.sid}")
-
-asyncio.run(send_whatsapp_media())
-```
-
-### Reading WhatsApp Messages (OTT)
-
-```python
-from cpaas import OTTChannel
-
-async def read_whatsapp():
-    async with TwilioClient(TwilioConfig.from_env()) as client:
-        # Read messages from a specific WhatsApp number
-        result = await client.read_ott(
-            channel=OTTChannel.WHATSAPP,
-            from_="+1234567890"  # Will be formatted as whatsapp:+1234567890
-        )
-        for msg in result.messages:
-            print(f"{msg.from_} -> {msg.to}: {msg.body}")
-
-asyncio.run(read_whatsapp())
-```
-
-### Message Status & Management
-
-```python
-async def manage_messages():
-    async with TwilioClient(TwilioConfig.from_env()) as client:
-        # Check message status
-        status = await client.get_message_status("SM...")
-        print(f"Status: {status}")
-        
-        # Delete a message
-        await client.delete_message("SM...")
-        
-        # Cancel a scheduled message
-        await client.cancel_message("SM...")
-
-asyncio.run(manage_messages())
-```
-
-## API Reference
+## Twilio API Reference
 
 ### TwilioConfig
 
@@ -331,191 +277,6 @@ Configuration container for Twilio credentials.
 - `delete_message(message_sid: str) -> bool`
 - `cancel_message(message_sid: str) -> MessageResponse`
 
-### Message Models
-
-#### SMSMessage
-```python
-SMSMessage(
-    to: str,                          # Recipient phone (E.164 format)
-    body: str,                        # Message text
-    from_: str = None,                # Sender phone
-    messaging_service_sid: str = None,# Messaging Service SID
-    status_callback: str = None,      # Webhook URL
-    max_price: float = None,          # Max price in USD
-    validity_period: int = None,      # Validity in seconds (1-14400)
-)
-```
-
-#### MMSMessage
-```python
-MMSMessage(
-    to: str,                          # Recipient phone
-    body: str = None,                 # Optional caption
-    media_urls: List[str] = [],       # Media URLs (max 10)
-    from_: str = None,                # Sender phone
-    messaging_service_sid: str = None,# Messaging Service SID
-)
-```
-
-#### TemplateMessage
-```python
-TemplateMessage(
-    to: str,                          # Recipient (e.g., whatsapp:+1234567890)
-    content_sid: str,                 # Template SID (starts with 'HX')
-    content_variables: Dict[str, str],# Template variables
-    from_: str = None,                # Sender
-    messaging_service_sid: str = None,# Messaging Service SID
-)
-```
-
-#### OTTMessage
-```python
-OTTMessage(
-    to: str,                          # Recipient phone
-    channel: OTTChannel,              # WHATSAPP, FACEBOOK_MESSENGER, etc.
-    body: str = None,                 # Message text
-    media_urls: List[str] = None,     # Media URLs
-    content_sid: str = None,          # Template SID
-    content_variables: Dict = None,   # Template variables
-    from_: str = None,                # Sender
-)
-```
-
-### Enums
-
-#### MessageStatus
-```python
-class MessageStatus(str, Enum):
-    QUEUED = "queued"
-    SENDING = "sending"
-    SENT = "sent"
-    DELIVERED = "delivered"
-    UNDELIVERED = "undelivered"
-    FAILED = "failed"
-    RECEIVING = "receiving"
-    RECEIVED = "received"
-    ACCEPTED = "accepted"
-    SCHEDULED = "scheduled"
-    READ = "read"
-    CANCELED = "canceled"
-```
-
-#### OTTChannel
-```python
-class OTTChannel(str, Enum):
-    WHATSAPP = "whatsapp"
-    FACEBOOK_MESSENGER = "messenger"
-    GOOGLE_BUSINESS_MESSAGES = "gbm"
-```
-
-## Security Best Practices
-
-### 1. Never Commit Credentials
-
-Add to your `.gitignore`:
-```
-.env
-*.env
-```
-
-### 2. Use Secret Manager in Production
-
-```python
-# Production
-config = TwilioConfig.from_gcp_secret_manager(project_id="your-project")
-
-# Development
-config = TwilioConfig.from_env()
-```
-
-### 3. Rotate Auth Tokens Regularly
-
-Generate a new Auth Token in the Twilio Console periodically:
-1. Go to Twilio Console → Account → API Keys & Tokens
-2. Create a new Auth Token
-3. Update your secrets/environment variables
-4. Delete the old token
-
-### 4. Use Messaging Service SID
-
-For production, use a Messaging Service instead of a direct From number:
-- Provides number pooling
-- Better delivery optimization
-- Compliance features
-
-## Error Handling
-
-```python
-from cpaas import TwilioClient, TwilioConfig
-from cpaas.twilio_client import TwilioClientError
-
-async def safe_send():
-    try:
-        async with TwilioClient(TwilioConfig.from_env()) as client:
-            response = await client.send_sms(
-                SMSMessage(to="+1234567890", body="Hello!")
-            )
-    except TwilioClientError as e:
-        print(f"Twilio error: {e}")
-        print(f"Status code: {e.status_code}")
-        print(f"Error code: {e.error_code}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-
-asyncio.run(safe_send())
-```
-
-## Testing
-
-For testing without making real API calls, you can mock the TwilioClient:
-
-```python
-from unittest.mock import AsyncMock, patch
-
-async def test_send_sms():
-    with patch('cpaas.twilio_client.httpx.AsyncClient') as mock_client:
-        mock_client.return_value.post = AsyncMock(return_value=MockResponse({
-            "sid": "SM123",
-            "status": "queued",
-            "to": "+1234567890",
-            "from": "+0987654321",
-        }))
-        
-        client = TwilioClient(TwilioConfig(
-            account_sid="ACtest",
-            auth_token="test_token"
-        ))
-        response = await client.send_sms(
-            SMSMessage(to="+1234567890", body="Test")
-        )
-        assert response.sid == "SM123"
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Error: "TWILIO_ACCOUNT_SID is required"**
-- Ensure environment variables are set correctly
-- Check that `.env` file is being loaded
-
-**Error: "Invalid TWILIO_ACCOUNT_SID format"**
-- Account SID must start with "AC"
-- Verify you're using the correct credential
-
-**Error: "21408 - Permission to send an SMS has not been enabled"**
-- Enable SMS capability in Twilio Console
-- Verify the phone number supports SMS
-
-**Error: "21614 - 'To' number is not a valid mobile number"**
-- Use E.164 format (+1234567890)
-- Verify the number is correct
-
-**WhatsApp messages not delivered**
-- Ensure template is approved (for messages outside 24hr window)
-- Verify WhatsApp sender number is registered
-- Check recipient has WhatsApp
-
 ---
 
 # Infobip
@@ -550,7 +311,7 @@ INFOBIP_VIBER_SENDER=ViberService
 ### Using Google Cloud Secret Manager
 
 ```python
-from cpaas import InfobipConfig, InfobipClient
+from cpaas.infobip import InfobipConfig, InfobipClient
 
 config = InfobipConfig.from_gcp_secret_manager(
     project_id="your-gcp-project-id",
@@ -564,7 +325,7 @@ config = InfobipConfig.from_gcp_secret_manager(
 
 ```python
 import asyncio
-from cpaas import InfobipClient, InfobipConfig
+from cpaas.infobip import InfobipClient, InfobipConfig
 
 # Load configuration
 config = InfobipConfig.from_env()
@@ -576,7 +337,7 @@ client = InfobipClient(config)
 ### Sending SMS
 
 ```python
-from cpaas import InfobipSMSMessage, InfobipDestination
+from cpaas.infobip import InfobipSMSMessage, InfobipDestination
 
 async def send_text_message():
     async with InfobipClient(InfobipConfig.from_env()) as client:
@@ -612,51 +373,12 @@ async def send_simple_sms():
 asyncio.run(send_simple_sms())
 ```
 
-### Getting Delivery Reports
-
-```python
-async def get_reports():
-    async with InfobipClient(InfobipConfig.from_env()) as client:
-        reports = await client.get_delivery_reports(bulk_id="BULK-123")
-        for report in reports.results:
-            print(f"{report.message_id}: {report.status.name}")
-            if report.price:
-                print(f"  Price: {report.price.price_per_message} {report.price.currency}")
-
-asyncio.run(get_reports())
-```
-
-### Sending MMS
-
-```python
-from cpaas import InfobipMMSMessage, InfobipMMSContent, InfobipDestination
-
-async def send_mms():
-    async with InfobipClient(InfobipConfig.from_env()) as client:
-        response = await client.send_mms(
-            InfobipMMSMessage(
-                destinations=[InfobipDestination(to="+1234567890")],
-                text="Check out this image!",
-                content=[
-                    InfobipMMSContent(
-                        content_type="image/jpeg",
-                        content_id="image1",
-                        content_url="https://example.com/image.jpg"
-                    )
-                ]
-            )
-        )
-        print(f"MMS sent! Bulk ID: {response.bulk_id}")
-
-asyncio.run(send_mms())
-```
-
 ### Sending WhatsApp Messages
 
 #### Text Message
 
 ```python
-from cpaas import InfobipWhatsAppTextMessage
+from cpaas.infobip import InfobipWhatsAppTextMessage
 
 async def send_whatsapp():
     async with InfobipClient(InfobipConfig.from_env()) as client:
@@ -671,21 +393,10 @@ async def send_whatsapp():
 asyncio.run(send_whatsapp())
 ```
 
-#### Simplified WhatsApp
-
-```python
-async def send_whatsapp_simple():
-    async with InfobipClient(InfobipConfig.from_env()) as client:
-        response = await client.send_whatsapp_simple("+1234567890", "Hello!")
-        print(f"Message sent!")
-
-asyncio.run(send_whatsapp_simple())
-```
-
 #### Template Message
 
 ```python
-from cpaas import InfobipWhatsAppTemplateMessage
+from cpaas.infobip import InfobipWhatsAppTemplateMessage
 
 async def send_whatsapp_template():
     async with InfobipClient(InfobipConfig.from_env()) as client:
@@ -709,7 +420,7 @@ asyncio.run(send_whatsapp_template())
 #### Media Message
 
 ```python
-from cpaas import InfobipWhatsAppMediaMessage
+from cpaas.infobip import InfobipWhatsAppMediaMessage
 
 async def send_whatsapp_media():
     async with InfobipClient(InfobipConfig.from_env()) as client:
@@ -722,16 +433,6 @@ async def send_whatsapp_media():
                 caption="Check out this photo!"
             )
         )
-        
-        # Send document
-        response = await client.send_whatsapp_media(
-            InfobipWhatsAppMediaMessage(
-                to="+1234567890",
-                media_type="document",
-                media_url="https://example.com/invoice.pdf",
-                filename="invoice.pdf"
-            )
-        )
 
 asyncio.run(send_whatsapp_media())
 ```
@@ -739,7 +440,7 @@ asyncio.run(send_whatsapp_media())
 ### Sending Viber Messages
 
 ```python
-from cpaas import InfobipViberMessage
+from cpaas.infobip import InfobipViberMessage
 
 async def send_viber():
     async with InfobipClient(InfobipConfig.from_env()) as client:
@@ -755,32 +456,6 @@ async def send_viber():
         print(f"Viber sent! Bulk ID: {response.bulk_id}")
 
 asyncio.run(send_viber())
-```
-
-#### Simplified Viber
-
-```python
-async def send_viber_simple():
-    async with InfobipClient(InfobipConfig.from_env()) as client:
-        response = await client.send_viber_simple(
-            to="+1234567890",
-            text="Hello Viber!",
-            button_text="Learn More",
-            button_url="https://example.com"
-        )
-
-asyncio.run(send_viber_simple())
-```
-
-### Account Balance
-
-```python
-async def check_balance():
-    async with InfobipClient(InfobipConfig.from_env()) as client:
-        balance = await client.get_account_balance()
-        print(f"Balance: {balance['balance']} {balance['currency']}")
-
-asyncio.run(check_balance())
 ```
 
 ## Infobip API Reference
@@ -820,74 +495,35 @@ Configuration container for Infobip credentials.
 #### Utility
 - `get_account_balance() -> Dict`
 
-### Infobip Message Models
+---
 
-#### InfobipSMSMessage
+## Error Handling
+
+### Twilio
+
 ```python
-InfobipSMSMessage(
-    destinations: List[InfobipDestination],  # Recipients
-    text: str,                               # Message text
-    from_: str = None,                       # Sender ID
-    flash: bool = None,                      # Flash SMS
-    transliteration: str = None,             # Transliteration type
-    notify_url: str = None,                  # Webhook URL
-    validity_period: int = None,             # Validity in minutes
-    send_at: str = None,                     # Scheduled send time (ISO 8601)
-)
+from cpaas.twilio import TwilioClient, TwilioConfig, TwilioClientError, SMSMessage
+
+async def safe_send():
+    try:
+        async with TwilioClient(TwilioConfig.from_env()) as client:
+            response = await client.send_sms(
+                SMSMessage(to="+1234567890", body="Hello!")
+            )
+    except TwilioClientError as e:
+        print(f"Twilio error: {e}")
+        print(f"Status code: {e.status_code}")
+        print(f"Error code: {e.error_code}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+asyncio.run(safe_send())
 ```
 
-#### InfobipWhatsAppTextMessage
-```python
-InfobipWhatsAppTextMessage(
-    to: str,                    # Recipient number
-    text: str,                  # Message text
-    from_: str = None,          # Sender number
-    preview_url: bool = None,   # Enable URL preview
-    notify_url: str = None,     # Webhook URL
-)
-```
-
-#### InfobipWhatsAppTemplateMessage
-```python
-InfobipWhatsAppTemplateMessage(
-    to: str,                          # Recipient number
-    template_name: str,               # Template name
-    template_data: Dict[str, Any],    # Template variables
-    language: str = "en",             # Language code
-    from_: str = None,                # Sender number
-)
-```
-
-#### InfobipWhatsAppMediaMessage
-```python
-InfobipWhatsAppMediaMessage(
-    to: str,                    # Recipient number
-    media_type: str,            # image, video, audio, document
-    media_url: str,             # Media URL
-    caption: str = None,        # Caption (image/video/document)
-    filename: str = None,       # Filename (document)
-    from_: str = None,          # Sender number
-)
-```
-
-#### InfobipViberMessage
-```python
-InfobipViberMessage(
-    to: str,                    # Recipient number
-    text: str = None,           # Message text
-    from_: str = None,          # Sender ID
-    image_url: str = None,      # Image URL
-    button_text: str = None,    # Button text
-    button_url: str = None,     # Button URL
-    validity_period: int = None,# Validity in seconds
-)
-```
-
-## Infobip Error Handling
+### Infobip
 
 ```python
-from cpaas import InfobipClient, InfobipConfig
-from cpaas.infobip_client import InfobipClientError
+from cpaas.infobip import InfobipClient, InfobipConfig, InfobipClientError
 
 async def safe_send():
     try:
@@ -904,34 +540,46 @@ async def safe_send():
 asyncio.run(safe_send())
 ```
 
-## Infobip Troubleshooting
+---
 
-### Common Issues
+## Security Best Practices
 
-**Error: "INFOBIP_API_KEY is required"**
-- Ensure environment variables are set correctly
-- Check that `.env` file is being loaded
+### 1. Never Commit Credentials
 
-**Error: "401 Unauthorized"**
-- Verify your API key is correct
-- Check if the API key has the required permissions
+Add to your `.gitignore`:
+```
+.env
+*.env
+```
 
-**Error: "Invalid recipient"**
-- Use E.164 format for phone numbers (+1234567890)
-- Verify the number is correct and active
+### 2. Use Secret Manager in Production
 
-**WhatsApp messages not delivered**
-- Ensure template is approved (for messages outside 24hr window)
-- Verify WhatsApp sender number is registered with Infobip
-- Check recipient has WhatsApp installed
+```python
+# Production
+from cpaas.twilio import TwilioConfig
+config = TwilioConfig.from_gcp_secret_manager(project_id="your-project")
 
-**Viber messages not delivered**
-- Ensure you have a registered Viber Business account
-- Verify the recipient has Viber installed
+# Development
+config = TwilioConfig.from_env()
+```
+
+### 3. Rotate Tokens Regularly
+
+Generate new tokens periodically and update your secrets/environment variables.
+
+---
+
+## Testing
+
+Run tests with pytest:
+
+```bash
+cd gcp/common/cpaas
+PYTHONPATH=.. python -m pytest tests/ -v
+```
 
 ---
 
 ## License
 
 Internal use only.
-
