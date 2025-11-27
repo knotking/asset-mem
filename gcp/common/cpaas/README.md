@@ -1,13 +1,18 @@
 # CPaaS - Communication Platform as a Service
 
-A comprehensive Twilio integration module for sending and receiving messages via SMS, MMS, Content Templates, and OTT (Over-the-Top) channels like WhatsApp.
+A comprehensive multi-provider messaging module for sending and receiving messages via SMS, MMS, Content Templates, and OTT (Over-the-Top) channels like WhatsApp, Viber, and more.
+
+## Supported Providers
+
+- **[Twilio](#twilio)** - Full-featured CPaaS with SMS, MMS, WhatsApp, and more
+- **[Infobip](#infobip)** - Global CPaaS with SMS, MMS, WhatsApp, Viber, and RCS
 
 ## Features
 
 - **SMS** - Send and read text messages
 - **MMS** - Send and read multimedia messages with images, videos, audio
 - **Content Templates** - Send pre-approved template messages (required for WhatsApp Business API)
-- **OTT (Over-the-Top)** - Send messages via WhatsApp, Facebook Messenger, and other channels
+- **OTT (Over-the-Top)** - Send messages via WhatsApp, Facebook Messenger, Viber, and other channels
 
 ## Installation
 
@@ -510,6 +515,421 @@ async def test_send_sms():
 - Ensure template is approved (for messages outside 24hr window)
 - Verify WhatsApp sender number is registered
 - Check recipient has WhatsApp
+
+---
+
+# Infobip
+
+## Infobip Configuration
+
+### Environment Variables
+
+Set the following environment variables for Infobip:
+
+```bash
+# Required
+export INFOBIP_API_KEY="your_api_key_here"
+
+# Optional
+export INFOBIP_BASE_URL="https://api.infobip.com"  # Varies by account region
+export INFOBIP_DEFAULT_FROM="MySender"
+export INFOBIP_WHATSAPP_SENDER="+1234567890"
+export INFOBIP_VIBER_SENDER="ViberService"
+```
+
+### Using .env File
+
+```env
+INFOBIP_API_KEY=your_api_key_here
+INFOBIP_BASE_URL=https://api.infobip.com
+INFOBIP_DEFAULT_FROM=MySender
+INFOBIP_WHATSAPP_SENDER=+1234567890
+INFOBIP_VIBER_SENDER=ViberService
+```
+
+### Using Google Cloud Secret Manager
+
+```python
+from cpaas import InfobipConfig, InfobipClient
+
+config = InfobipConfig.from_gcp_secret_manager(
+    project_id="your-gcp-project-id",
+    api_key_secret="infobip-api-key",
+)
+```
+
+## Infobip Usage
+
+### Basic Setup
+
+```python
+import asyncio
+from cpaas import InfobipClient, InfobipConfig
+
+# Load configuration
+config = InfobipConfig.from_env()
+
+# Create client
+client = InfobipClient(config)
+```
+
+### Sending SMS
+
+```python
+from cpaas import InfobipSMSMessage, InfobipDestination
+
+async def send_text_message():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_sms(
+            InfobipSMSMessage(
+                destinations=[InfobipDestination(to="+1234567890")],
+                text="Hello from Infobip!",
+                from_="MySender"  # Optional if default configured
+            )
+        )
+        print(f"Bulk ID: {response.bulk_id}")
+        for msg in response.messages:
+            print(f"Message ID: {msg.message_id}, Status: {msg.status.name}")
+
+asyncio.run(send_text_message())
+```
+
+### Simplified SMS (Single or Multiple Recipients)
+
+```python
+async def send_simple_sms():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        # Single recipient
+        response = await client.send_sms_simple("+1234567890", "Hello!")
+        
+        # Multiple recipients
+        response = await client.send_sms_simple(
+            ["+1234567890", "+0987654321"],
+            "Hello everyone!"
+        )
+        print(f"Sent to {len(response.messages)} recipients")
+
+asyncio.run(send_simple_sms())
+```
+
+### Getting Delivery Reports
+
+```python
+async def get_reports():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        reports = await client.get_delivery_reports(bulk_id="BULK-123")
+        for report in reports.results:
+            print(f"{report.message_id}: {report.status.name}")
+            if report.price:
+                print(f"  Price: {report.price.price_per_message} {report.price.currency}")
+
+asyncio.run(get_reports())
+```
+
+### Sending MMS
+
+```python
+from cpaas import InfobipMMSMessage, InfobipMMSContent, InfobipDestination
+
+async def send_mms():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_mms(
+            InfobipMMSMessage(
+                destinations=[InfobipDestination(to="+1234567890")],
+                text="Check out this image!",
+                content=[
+                    InfobipMMSContent(
+                        content_type="image/jpeg",
+                        content_id="image1",
+                        content_url="https://example.com/image.jpg"
+                    )
+                ]
+            )
+        )
+        print(f"MMS sent! Bulk ID: {response.bulk_id}")
+
+asyncio.run(send_mms())
+```
+
+### Sending WhatsApp Messages
+
+#### Text Message
+
+```python
+from cpaas import InfobipWhatsAppTextMessage
+
+async def send_whatsapp():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_whatsapp_text(
+            InfobipWhatsAppTextMessage(
+                to="+1234567890",
+                text="Hello via WhatsApp!"
+            )
+        )
+        print(f"WhatsApp sent! Message ID: {response.messages[0].message_id}")
+
+asyncio.run(send_whatsapp())
+```
+
+#### Simplified WhatsApp
+
+```python
+async def send_whatsapp_simple():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_whatsapp_simple("+1234567890", "Hello!")
+        print(f"Message sent!")
+
+asyncio.run(send_whatsapp_simple())
+```
+
+#### Template Message
+
+```python
+from cpaas import InfobipWhatsAppTemplateMessage
+
+async def send_whatsapp_template():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_whatsapp_template(
+            InfobipWhatsAppTemplateMessage(
+                to="+1234567890",
+                template_name="order_confirmation",
+                template_data={
+                    "body": {
+                        "placeholders": ["John", "Order #12345"]
+                    }
+                },
+                language="en"
+            )
+        )
+        print(f"Template sent!")
+
+asyncio.run(send_whatsapp_template())
+```
+
+#### Media Message
+
+```python
+from cpaas import InfobipWhatsAppMediaMessage
+
+async def send_whatsapp_media():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        # Send image
+        response = await client.send_whatsapp_media(
+            InfobipWhatsAppMediaMessage(
+                to="+1234567890",
+                media_type="image",
+                media_url="https://example.com/photo.jpg",
+                caption="Check out this photo!"
+            )
+        )
+        
+        # Send document
+        response = await client.send_whatsapp_media(
+            InfobipWhatsAppMediaMessage(
+                to="+1234567890",
+                media_type="document",
+                media_url="https://example.com/invoice.pdf",
+                filename="invoice.pdf"
+            )
+        )
+
+asyncio.run(send_whatsapp_media())
+```
+
+### Sending Viber Messages
+
+```python
+from cpaas import InfobipViberMessage
+
+async def send_viber():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_viber(
+            InfobipViberMessage(
+                to="+1234567890",
+                text="Hello via Viber!",
+                image_url="https://example.com/promo.jpg",
+                button_text="Visit Site",
+                button_url="https://example.com"
+            )
+        )
+        print(f"Viber sent! Bulk ID: {response.bulk_id}")
+
+asyncio.run(send_viber())
+```
+
+#### Simplified Viber
+
+```python
+async def send_viber_simple():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        response = await client.send_viber_simple(
+            to="+1234567890",
+            text="Hello Viber!",
+            button_text="Learn More",
+            button_url="https://example.com"
+        )
+
+asyncio.run(send_viber_simple())
+```
+
+### Account Balance
+
+```python
+async def check_balance():
+    async with InfobipClient(InfobipConfig.from_env()) as client:
+        balance = await client.get_account_balance()
+        print(f"Balance: {balance['balance']} {balance['currency']}")
+
+asyncio.run(check_balance())
+```
+
+## Infobip API Reference
+
+### InfobipConfig
+
+Configuration container for Infobip credentials.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `api_key` | str | Infobip API Key |
+| `base_url` | str | API base URL (varies by region) |
+| `default_from` | str | Default sender ID for SMS |
+| `whatsapp_sender` | str | WhatsApp sender number |
+| `viber_sender` | str | Viber sender ID |
+
+### InfobipClient Methods
+
+#### SMS
+- `send_sms(message: InfobipSMSMessage) -> InfobipSendResponse`
+- `send_sms_simple(to: str | List[str], text: str, ...) -> InfobipSendResponse`
+- `get_delivery_reports(bulk_id?, message_id?, limit?) -> InfobipDeliveryReportResponse`
+
+#### MMS
+- `send_mms(message: InfobipMMSMessage) -> InfobipSendResponse`
+
+#### WhatsApp
+- `send_whatsapp_text(message: InfobipWhatsAppTextMessage) -> InfobipSendResponse`
+- `send_whatsapp_template(message: InfobipWhatsAppTemplateMessage) -> InfobipSendResponse`
+- `send_whatsapp_media(message: InfobipWhatsAppMediaMessage) -> InfobipSendResponse`
+- `send_whatsapp_simple(to: str, text: str, ...) -> InfobipSendResponse`
+
+#### Viber
+- `send_viber(message: InfobipViberMessage) -> InfobipSendResponse`
+- `send_viber_simple(to: str, text: str, ...) -> InfobipSendResponse`
+
+#### Utility
+- `get_account_balance() -> Dict`
+
+### Infobip Message Models
+
+#### InfobipSMSMessage
+```python
+InfobipSMSMessage(
+    destinations: List[InfobipDestination],  # Recipients
+    text: str,                               # Message text
+    from_: str = None,                       # Sender ID
+    flash: bool = None,                      # Flash SMS
+    transliteration: str = None,             # Transliteration type
+    notify_url: str = None,                  # Webhook URL
+    validity_period: int = None,             # Validity in minutes
+    send_at: str = None,                     # Scheduled send time (ISO 8601)
+)
+```
+
+#### InfobipWhatsAppTextMessage
+```python
+InfobipWhatsAppTextMessage(
+    to: str,                    # Recipient number
+    text: str,                  # Message text
+    from_: str = None,          # Sender number
+    preview_url: bool = None,   # Enable URL preview
+    notify_url: str = None,     # Webhook URL
+)
+```
+
+#### InfobipWhatsAppTemplateMessage
+```python
+InfobipWhatsAppTemplateMessage(
+    to: str,                          # Recipient number
+    template_name: str,               # Template name
+    template_data: Dict[str, Any],    # Template variables
+    language: str = "en",             # Language code
+    from_: str = None,                # Sender number
+)
+```
+
+#### InfobipWhatsAppMediaMessage
+```python
+InfobipWhatsAppMediaMessage(
+    to: str,                    # Recipient number
+    media_type: str,            # image, video, audio, document
+    media_url: str,             # Media URL
+    caption: str = None,        # Caption (image/video/document)
+    filename: str = None,       # Filename (document)
+    from_: str = None,          # Sender number
+)
+```
+
+#### InfobipViberMessage
+```python
+InfobipViberMessage(
+    to: str,                    # Recipient number
+    text: str = None,           # Message text
+    from_: str = None,          # Sender ID
+    image_url: str = None,      # Image URL
+    button_text: str = None,    # Button text
+    button_url: str = None,     # Button URL
+    validity_period: int = None,# Validity in seconds
+)
+```
+
+## Infobip Error Handling
+
+```python
+from cpaas import InfobipClient, InfobipConfig
+from cpaas.infobip_client import InfobipClientError
+
+async def safe_send():
+    try:
+        async with InfobipClient(InfobipConfig.from_env()) as client:
+            response = await client.send_sms_simple("+1234567890", "Hello!")
+    except InfobipClientError as e:
+        print(f"Infobip error: {e}")
+        print(f"Status code: {e.status_code}")
+        if e.request_error:
+            print(f"Error details: {e.request_error}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+asyncio.run(safe_send())
+```
+
+## Infobip Troubleshooting
+
+### Common Issues
+
+**Error: "INFOBIP_API_KEY is required"**
+- Ensure environment variables are set correctly
+- Check that `.env` file is being loaded
+
+**Error: "401 Unauthorized"**
+- Verify your API key is correct
+- Check if the API key has the required permissions
+
+**Error: "Invalid recipient"**
+- Use E.164 format for phone numbers (+1234567890)
+- Verify the number is correct and active
+
+**WhatsApp messages not delivered**
+- Ensure template is approved (for messages outside 24hr window)
+- Verify WhatsApp sender number is registered with Infobip
+- Check recipient has WhatsApp installed
+
+**Viber messages not delivered**
+- Ensure you have a registered Viber Business account
+- Verify the recipient has Viber installed
+
+---
 
 ## License
 
