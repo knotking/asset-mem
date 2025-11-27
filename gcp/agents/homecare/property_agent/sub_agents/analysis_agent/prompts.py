@@ -191,11 +191,16 @@ def analysis_agent_instructions() -> str:
            IMPORTANT: Include the diagnosis from the triage result as context in your query so the DIY agent understands the problem.
         
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
-           Pass: user_query, context_doc_uris, property_address
+           Pass: user_query, context_doc_uris, property_address, location_data
            IMPORTANT: Include the diagnosis from the triage result as context.
-           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
+           LOCATION HANDLING:
+             - If `property_address` is provided, use it for location-based searches
+             - If `property_address` is NOT available but `location_data` is provided:
+               * Use `location_data.latitude` and `location_data.longitude` for GPS-based search
+               * Restrict results to within `location_data.radius` miles (10, 25, 50, 75, or 100)
+             - If neither is available, use "near me" as fallback
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
-           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
+           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address/location]" and return parsed results under `localPros.googleSearchResults`
         
         5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.
            Pass: user_query, context_doc_uris, property_address, and include the triage diagnosis for context.

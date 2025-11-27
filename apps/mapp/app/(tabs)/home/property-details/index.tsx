@@ -17,7 +17,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { Document, AgentStep, Session, AnalysisOptionalAgent, LocationMode } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
@@ -29,6 +29,8 @@ import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWra
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDocumentAutoUpload } from '@/hooks/useDocumentAutoUpload';
 import { useSessionSelection } from '@/hooks/useSessionSelection';
+import { useLocation } from '@/hooks/useLocation';
+import { LocationSelector } from '@/components/LocationSelector';
 
 export default function PropertyDetailsScreen() {
   const {
@@ -68,6 +70,19 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+
+  // Location state
+  const [locationMode, setLocationMode] = React.useState<LocationMode>('address');
+  const {
+    locationData,
+    isLoading: isLoadingLocation,
+    error: locationError,
+    radius,
+    setRadius,
+    requestLocation,
+    clearLocation,
+    hasPermission: hasLocationPermission,
+  } = useLocation();
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
@@ -329,6 +344,12 @@ export default function PropertyDetailsScreen() {
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
 
+        // Determine location data based on mode
+        // Use location data only when:
+        // 1. Location mode is 'location' OR there's no property address
+        // 2. AND we have valid location data
+        const shouldUseLocationData = (locationMode === 'location' || !propertyAddress) && locationData;
+
         let assistantContent = '';
         let agentSteps: AgentStep[] = [];
 
@@ -343,7 +364,8 @@ export default function PropertyDetailsScreen() {
           userQuery: queryText,
           contextDocURIs,
           diagnosisURIs,
-          propertyAddress,
+          propertyAddress: locationMode === 'address' ? propertyAddress : undefined,
+          locationData: shouldUseLocationData ? locationData : undefined,
           analysisOptionalAgents: selectedOptionalAgents,
           signal,
           onChunk: (chunk) => {
@@ -405,6 +427,8 @@ export default function PropertyDetailsScreen() {
       properties,
       selectedOptionalAgents,
       setFileAttachment,
+      locationMode,
+      locationData,
     ]
   );
 
@@ -584,6 +608,22 @@ export default function PropertyDetailsScreen() {
                     </View>
                   </ScrollView>
                 </View>
+              )}
+
+              {/* Location Selector (Chat tab only) */}
+              {activeTab === 'chat' && (
+                <LocationSelector
+                  propertyAddress={property.address}
+                  locationMode={locationMode}
+                  onLocationModeChange={setLocationMode}
+                  locationData={locationData}
+                  isLoadingLocation={isLoadingLocation}
+                  locationError={locationError}
+                  radius={radius}
+                  onRadiusChange={setRadius}
+                  onRequestLocation={requestLocation}
+                  hasLocationPermission={hasLocationPermission}
+                />
               )}
 
               {/* Main Content Area */}

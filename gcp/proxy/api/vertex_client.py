@@ -103,6 +103,7 @@ async def stream_agent_answers(
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
     property_address = request.property_address
+    location_data = request.location_data
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
@@ -123,6 +124,15 @@ async def stream_agent_answers(
     
     if property_address:
         payload["property_address"] = property_address
+
+    # Add location data when property address is not available
+    if location_data and not property_address:
+        payload["location_data"] = {
+            "latitude": location_data.latitude,
+            "longitude": location_data.longitude,
+            "radius": location_data.radius
+        }
+        logger.info(f"Using location data for service search: lat={location_data.latitude}, lng={location_data.longitude}, radius={location_data.radius}mi")
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents

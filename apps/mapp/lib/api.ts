@@ -1,6 +1,6 @@
 import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
-import type { AgentStep, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { AgentStep, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 // Get environment-specific URLs from EAS build configuration
@@ -101,6 +101,7 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   propertyAddress?: string;
+  locationData?: LocationData;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -116,6 +117,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   propertyAddress,
+  locationData,
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   signal,
   onChunk,
@@ -129,7 +131,7 @@ export async function streamAgentResponse({
       throw new Error('AGENT_SSE_URL not set.');
     }
 
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       user_id: userId,
       session_id: agentSessionId,
       user_query: userQuery,
@@ -138,6 +140,15 @@ export async function streamAgentResponse({
       property_address: propertyAddress,
       analysis_optional_agents: analysisOptionalAgents,
     };
+
+    // Add location data when property address is not available
+    if (locationData && !propertyAddress) {
+      requestBody.location_data = {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        radius: locationData.radius,
+      };
+    }
 
     const response = await fetch(url, {
       method: 'POST',

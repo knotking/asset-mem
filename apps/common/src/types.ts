@@ -13,6 +13,19 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
+// Location data types for service provider search
+export const LOCATION_RADIUS_OPTIONS = [10, 25, 50, 75, 100] as const;
+
+export type LocationRadius = (typeof LOCATION_RADIUS_OPTIONS)[number];
+
+export type LocationData = {
+  latitude: number;
+  longitude: number;
+  radius: LocationRadius; // in miles
+};
+
+export type LocationMode = 'address' | 'location';
+
 export type FileAttachment = {
   id: string;
   uri: string;
