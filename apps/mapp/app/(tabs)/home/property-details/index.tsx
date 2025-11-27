@@ -17,9 +17,8 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent, LocationSource, LocationData } from '@homeapp/common/types';
+import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
-import * as Location from 'expo-location';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
@@ -76,11 +75,6 @@ export default function PropertyDetailsScreen() {
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
-
-  // Location state
-  const [locationSource, setLocationSource] = React.useState<LocationSource>('address');
-  const [locationData, setLocationData] = React.useState<LocationData | null>(null);
-  const [isGettingLocation, setIsGettingLocation] = React.useState(false);
 
   // Refs
   const updateMessageLocallyRef = React.useRef<
@@ -248,50 +242,6 @@ export default function PropertyDetailsScreen() {
     });
   }, []);
 
-  // Handle location source change
-  const handleLocationSourceChange = React.useCallback(async (source: LocationSource) => {
-    setLocationSource(source);
-    
-    // If switching to location and we don't have location data, get it
-    if (source === 'location' && !locationData) {
-      setIsGettingLocation(true);
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMessage('Please grant permission to access your location.');
-          setErrorAlertOpen(true);
-          setLocationSource('address');
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        setLocationData({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          radiusMiles: 50, // Default radius
-        });
-      } catch (error) {
-        console.error('Error getting location:', error);
-        setErrorMessage('Failed to get your location. Please try again.');
-        setErrorAlertOpen(true);
-        setLocationSource('address');
-      } finally {
-        setIsGettingLocation(false);
-      }
-    }
-  }, [locationData]);
-
-  // Handle radius change
-  const handleRadiusChange = React.useCallback((radius: number) => {
-    setLocationData((prev) => {
-      if (!prev) return null;
-      return { ...prev, radiusMiles: radius };
-    });
-  }, []);
-
   const handleStop = React.useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -379,14 +329,6 @@ export default function PropertyDetailsScreen() {
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
 
-        // Determine whether to use property address or location data
-        // Use location data when:
-        // 1. Location source is set to 'location', OR
-        // 2. Location source is 'address' but there's no property address
-        const shouldUseLocationData = locationSource === 'location' || !propertyAddress;
-        const effectiveLocationData = shouldUseLocationData ? locationData : null;
-        const effectivePropertyAddress = locationSource === 'address' ? propertyAddress : undefined;
-
         let assistantContent = '';
         let agentSteps: AgentStep[] = [];
 
@@ -401,8 +343,7 @@ export default function PropertyDetailsScreen() {
           userQuery: queryText,
           contextDocURIs,
           diagnosisURIs,
-          propertyAddress: effectivePropertyAddress,
-          locationData: effectiveLocationData ?? undefined,
+          propertyAddress,
           analysisOptionalAgents: selectedOptionalAgents,
           signal,
           onChunk: (chunk) => {
@@ -463,8 +404,6 @@ export default function PropertyDetailsScreen() {
       selectedDocuments,
       properties,
       selectedOptionalAgents,
-      locationSource,
-      locationData,
       setFileAttachment,
     ]
   );
@@ -683,13 +622,6 @@ export default function PropertyDetailsScreen() {
                         handleSendMessage(text);
                       }
                     }}
-                    // Location props
-                    hasPropertyAddress={!!property?.address}
-                    locationSource={locationSource}
-                    onLocationSourceChange={handleLocationSourceChange}
-                    locationData={locationData}
-                    onRadiusChange={handleRadiusChange}
-                    isGettingLocation={isGettingLocation}
                   />
                 </MessagesProvider>
               ) : (

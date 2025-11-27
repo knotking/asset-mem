@@ -9,14 +9,6 @@ export type AgentStep = {
   status: 'transferredto' | 'executing' | 'completed' | 'failed';
 };
 
-export type LocationData = {
-  latitude: number;
-  longitude: number;
-  radiusMiles: number; // 10-100 miles
-};
-
-export type LocationSource = 'address' | 'location';
-
 export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] as const;
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];

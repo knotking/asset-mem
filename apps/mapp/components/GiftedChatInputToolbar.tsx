@@ -28,12 +28,9 @@ import {
   Wrench,
   BadgeDollarSign,
   FileText,
-  MapPin,
-  Home,
 } from 'lucide-react-native';
-import type { FileAttachment, AnalysisOptionalAgent, LocationSource, LocationData } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
-import Slider from '@react-native-community/slider';
 
 const OPTIONAL_AGENT_OPTIONS: {
   id: AnalysisOptionalAgent;
@@ -62,13 +59,6 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
-  // Location toggle props (all optional with defaults)
-  hasPropertyAddress?: boolean;
-  locationSource?: LocationSource;
-  onLocationSourceChange?: (source: LocationSource) => void;
-  locationData?: LocationData | null;
-  onRadiusChange?: (radius: number) => void;
-  isGettingLocation?: boolean;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -86,13 +76,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRecordVideo,
     onSelectFromLibrary,
     onSelectFiles,
-    // Location props
-    hasPropertyAddress = false,
-    locationSource = 'address',
-    onLocationSourceChange,
-    locationData = null,
-    onRadiusChange,
-    isGettingLocation = false,
     ...inputToolbarProps
   } = props;
 
@@ -397,101 +380,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
         )}
       </View>
-
-      {/* Location Source Toggle - Only show when service agent is selected and location handlers are provided */}
-      {selectedOptionalAgents.includes('service') && onLocationSourceChange && (
-        <View className="mb-3">
-          <View className="flex-row items-center gap-2 mb-2">
-            <Text className="text-xs font-medium text-muted-foreground">Service Provider Location:</Text>
-            <View className="flex-row items-center rounded-full border border-border bg-background overflow-hidden">
-              <Pressable
-                onPress={() => onLocationSourceChange('address')}
-                className={`flex-row items-center gap-1 px-3 py-1.5 ${
-                  locationSource === 'address' ? 'bg-primary' : 'bg-transparent'
-                }`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: locationSource === 'address' }}>
-                <Icon
-                  as={Home}
-                  size={12}
-                  className={locationSource === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    locationSource === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}>
-                  Address
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => onLocationSourceChange('location')}
-                className={`flex-row items-center gap-1 px-3 py-1.5 ${
-                  locationSource === 'location' ? 'bg-primary' : 'bg-transparent'
-                }`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: locationSource === 'location' }}>
-                <Icon
-                  as={MapPin}
-                  size={12}
-                  className={locationSource === 'location' ? 'text-primary-foreground' : 'text-muted-foreground'}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    locationSource === 'location' ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}>
-                  My Location
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Show location status or radius slider when location source is selected */}
-          {locationSource === 'location' && (
-            <View className="rounded-xl border border-border bg-secondary/30 p-3">
-              {isGettingLocation ? (
-                <View className="flex-row items-center gap-2">
-                  <ActivityIndicator size="small" color={colors.mutedForeground} />
-                  <Text className="text-xs text-muted-foreground">Getting your location...</Text>
-                </View>
-              ) : locationData && onRadiusChange ? (
-                <View>
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="text-xs text-muted-foreground">Search radius:</Text>
-                    <Text className="text-xs font-semibold text-foreground">{locationData.radiusMiles} miles</Text>
-                  </View>
-                  <Slider
-                    style={{ width: '100%', height: 24 }}
-                    minimumValue={10}
-                    maximumValue={100}
-                    step={10}
-                    value={locationData.radiusMiles}
-                    onValueChange={onRadiusChange}
-                    minimumTrackTintColor={isDark ? 'hsl(0, 0%, 50%)' : 'hsl(0, 0%, 30%)'}
-                    maximumTrackTintColor={colors.border}
-                    thumbTintColor={isDark ? 'hsl(0, 0%, 90%)' : 'hsl(0, 0%, 20%)'}
-                  />
-                  <View className="flex-row justify-between mt-1">
-                    <Text className="text-[10px] text-muted-foreground">10 mi</Text>
-                    <Text className="text-[10px] text-muted-foreground">100 mi</Text>
-                  </View>
-                </View>
-              ) : (
-                <View className="flex-row items-center gap-2">
-                  <Icon as={AlertCircle} size={14} className="text-muted-foreground" />
-                  <Text className="text-xs text-muted-foreground">Tap to get your location</Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Info text */}
-          {locationSource === 'address' && !hasPropertyAddress && (
-            <Text className="text-[10px] text-amber-500 mt-1">
-              No property address set. Switch to "My Location" for service provider search.
-            </Text>
-          )}
-        </View>
-      )}
 
       {/* Input Row */}
       <View className="flex-row items-end gap-2">

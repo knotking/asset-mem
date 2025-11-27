@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Union
 import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
-from models import AgentRequest, ExtractDocInfoRequest, LocationData
+from models import AgentRequest, ExtractDocInfoRequest
 from optional_agents import (
     ANALYSIS_OPTIONAL_AGENT_ORDER,
     normalize_analysis_optional_agents,
@@ -98,20 +98,6 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")
     analysis_optional_agents = normalize_analysis_optional_agents(data.get("analysis_optional_agents"))
-    
-    # Parse location_data if provided
-    location_data = None
-    location_data_raw = data.get("location_data")
-    if location_data_raw and isinstance(location_data_raw, dict):
-        try:
-            location_data = LocationData(
-                latitude=location_data_raw.get("latitude"),
-                longitude=location_data_raw.get("longitude"),
-                radius_miles=location_data_raw.get("radius_miles", 50)
-            )
-        except Exception as e:
-            logger.warning(f"Failed to parse location_data: {e}")
-    
     return AgentRequest(
         user_id=user_id,
         user_query=user_query,
@@ -119,7 +105,6 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
         diagnosis_uris=diagnosis_uris,
         session_id=session_id,
         property_address=property_address,
-        location_data=location_data,
         analysis_optional_agents=analysis_optional_agents,
     )
 

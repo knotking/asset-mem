@@ -2,7 +2,7 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Home, Loader2 } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
@@ -12,8 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
-import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent, type LocationSource, type LocationData } from "@/lib/types";
-import { Slider } from "@/components/ui/slider";
+import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -46,13 +45,6 @@ type Props = {
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
-  // Location props
-  hasPropertyAddress?: boolean;
-  locationSource?: LocationSource;
-  onLocationSourceChange?: (source: LocationSource) => void;
-  locationData?: LocationData | null;
-  onRadiusChange?: (radius: number) => void;
-  isGettingLocation?: boolean;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(({ 
@@ -71,13 +63,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
-    // Location props
-    hasPropertyAddress = false,
-    locationSource = 'address',
-    onLocationSourceChange,
-    locationData,
-    onRadiusChange,
-    isGettingLocation = false,
 }, ref) => {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -241,98 +226,33 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
         <div className="flex flex-1 flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Left side: Agent toggles */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-                Triage required
-              </Badge>
-              {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                const isSelected = selectedOptionalAgents.includes(option.id);
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleOptionalAgentToggle(option.id)}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border-border bg-background text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {option.label}
-                  </button>
-                );
-              })}
-              {selectedOptionalAgents.length === 0 && (
-                <span className="text-xs text-muted-foreground">Only triage will run</span>
-              )}
-            </div>
-
-            {/* Right side: Location Toggle - Only show when service agent is selected */}
-            {selectedOptionalAgents.includes('service') && onLocationSourceChange && (
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center rounded-full border border-border bg-background overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => onLocationSourceChange('address')}
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors",
-                      locationSource === 'address'
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Home className="h-3 w-3" />
-                    Address
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onLocationSourceChange('location')}
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors",
-                      locationSource === 'location'
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <MapPin className="h-3 w-3" />
-                    Location
-                  </button>
-                </div>
-
-                {/* Location status and radius slider */}
-                {locationSource === 'location' && (
-                  <>
-                    {isGettingLocation ? (
-                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                    ) : locationData && onRadiusChange ? (
-                      <div className="flex items-center gap-1.5">
-                        <Slider
-                          value={[locationData.radiusMiles]}
-                          onValueChange={(values) => onRadiusChange(values[0])}
-                          min={10}
-                          max={100}
-                          step={10}
-                          className="w-20"
-                        />
-                        <span className="text-xs font-medium text-muted-foreground w-10">{locationData.radiusMiles}mi</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-amber-600">N/A</span>
-                    )}
-                  </>
-                )}
-
-                {/* Warning when address source selected but no address */}
-                {locationSource === 'address' && !hasPropertyAddress && (
-                  <span className="text-xs text-amber-600">No address</span>
-                )}
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+              Triage required
+            </Badge>
+            {OPTIONAL_AGENT_OPTIONS.map((option) => {
+              const isSelected = selectedOptionalAgents.includes(option.id);
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleOptionalAgentToggle(option.id)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {option.label}
+                </button>
+              );
+            })}
+            {selectedOptionalAgents.length === 0 && (
+              <span className="text-xs text-muted-foreground">Only triage will run</span>
             )}
           </div>
 

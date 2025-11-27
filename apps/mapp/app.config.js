@@ -35,7 +35,6 @@ module.exports = {
         NSMicrophoneUsageDescription: 'This app needs access to your microphone to record videos with audio.',
         NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select photos and videos for property documentation.',
         NSPhotoLibraryAddUsageDescription: 'This app needs access to save photos and videos to your photo library.',
-        NSLocationWhenInUseUsageDescription: 'This app needs access to your location to find service providers near you.',
       },
     },
     android: {
@@ -45,10 +44,6 @@ module.exports = {
         backgroundColor: '#1a2332',
       },
       package: process.env.ANDROID_PACKAGE || 'com.homegeekai.staging',
-      permissions: [
-        'ACCESS_COARSE_LOCATION',
-        'ACCESS_FINE_LOCATION',
-      ],
     },
     web: {
       bundler: 'metro',
@@ -64,12 +59,6 @@ module.exports = {
         {
           photosPermission: 'This app needs access to your photo library to select photos and videos for property documentation.',
           cameraPermission: 'This app needs access to your camera to take photos and record videos for property documentation.',
-        },
-      ],
-      [
-        'expo-location',
-        {
-          locationWhenInUsePermission: 'This app needs access to your location to find service providers near you.',
         },
       ],
     ],
