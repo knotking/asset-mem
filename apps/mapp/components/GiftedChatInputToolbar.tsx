@@ -560,8 +560,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                 </View>
               )}
 
-              {/* Radius Slider */}
-              {locationType && (
+              {/* Radius Slider - Only show for location type */}
+              {locationType === 'location' && (
                 <View>
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-xs font-semibold text-foreground">Search Radius</Text>
@@ -570,11 +570,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                   <View className="flex-row items-center gap-2">
                     <Text className="text-xs text-muted-foreground">10</Text>
                     <View style={{ flex: 1 }}>
-                      <Pressable
-                        onPress={() => {
-                          // Simple slider implementation - can be enhanced with react-native-gesture-handler
-                        }}
-                        className="h-2 rounded-full bg-secondary">
+                      <View className="h-2 rounded-full bg-secondary relative">
                         <View
                           style={{
                             width: `${((locationRadius - 10) / 90) * 100}%`,
@@ -583,7 +579,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                             borderRadius: 4,
                           }}
                         />
-                      </Pressable>
+                      </View>
                     </View>
                     <Text className="text-xs text-muted-foreground">100</Text>
                   </View>

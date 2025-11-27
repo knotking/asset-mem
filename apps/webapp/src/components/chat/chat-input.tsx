@@ -1,5 +1,5 @@
 
-import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation } from "lucide-react";
@@ -427,8 +427,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                     </button>
                   )}
 
-                  {/* Radius Selector */}
-                  {locationType && (
+                  {/* Radius Selector - Only show for location type */}
+                  {locationType === 'location' && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-semibold text-foreground">Search Radius</label>
