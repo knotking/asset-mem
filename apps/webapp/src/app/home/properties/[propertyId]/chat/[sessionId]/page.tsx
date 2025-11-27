@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent } from '@/lib/types';
+import type { Message, FileAttachment, Property, Document as DocumentType, AgentStep, AnalysisOptionalAgent, LocationData } from '@/lib/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@/lib/types';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
@@ -38,6 +38,7 @@ export default function PropertyChatSessionPage() {
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<AnalysisOptionalAgent[]>(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [locationData, setLocationData] = useState<LocationData | undefined>(undefined);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -262,18 +263,33 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments.map(d => d.gsURI).filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI ? [userMessage.file.gsURI] : [];
 
+        const requestBody: Record<string, any> = {
+            user_id: user.uid,
+            session_id: agentSessionId,
+            user_query: content,
+            context_doc_uris: contextDocURIs,
+            diagnosis_uris: diagnosisURIs,
+            property_address: property?.address,
+            analysis_optional_agents: selectedOptionalAgents,
+        };
+
+        // Add location data if provided
+        if (locationData) {
+            if (locationData.locationType) {
+                requestBody.location_type = locationData.locationType;
+            }
+            if (locationData.locationCoordinates) {
+                requestBody.location_coordinates = locationData.locationCoordinates;
+            }
+            if (locationData.locationRadius !== undefined) {
+                requestBody.location_radius = locationData.locationRadius;
+            }
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: user.uid,
-                session_id: agentSessionId,
-                user_query: content,
-                context_doc_uris: contextDocURIs,
-                diagnosis_uris: diagnosisURIs,
-                property_address: property?.address,
-                analysis_optional_agents: selectedOptionalAgents,
-            }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -382,6 +398,9 @@ export default function PropertyChatSessionPage() {
                 placeholder="Type a message or attach image/video to diagnose an issue..."
                 selectedOptionalAgents={selectedOptionalAgents}
                 onOptionalAgentsChange={handleOptionalAgentsChange}
+                locationData={locationData}
+                onLocationDataChange={setLocationData}
+                propertyAddress={property?.address}
             />
         </footer>
       </div>

@@ -177,6 +177,19 @@ export type Property = {
     checksCount?: number;
 }
 
+export type LocationType = 'address' | 'location';
+
+export type LocationCoordinates = {
+  lat: number;
+  lng: number;
+};
+
+export type LocationData = {
+  locationType?: LocationType;
+  locationCoordinates?: LocationCoordinates;
+  locationRadius?: number; // 10-100 miles
+};
+
 
 export type Service = {
     id: string;

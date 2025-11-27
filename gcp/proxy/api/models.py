@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Literal, Dict
 from pydantic import BaseModel
 from enum import Enum
 
@@ -10,6 +10,9 @@ class AgentRequest(BaseModel):
     diagnosis_uris: Optional[List[str]] = None
     property_address: Optional[str] = None
     analysis_optional_agents: Optional[List[str]] = None
+    location_type: Optional[Literal["address", "location"]] = None
+    location_coordinates: Optional[Dict[str, float]] = None  # {"lat": float, "lng": float}
+    location_radius: Optional[int] = None  # 10-100 miles
 
 class DocumentType(str, Enum):
     DEED = "DEED"

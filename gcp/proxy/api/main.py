@@ -99,6 +99,12 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
     diagnosis_uris = data.get("diagnosis_uris", [])
     property_address = data.get("property_address", "")
     analysis_optional_agents = normalize_analysis_optional_agents(data.get("analysis_optional_agents"))
+    
+    # Extract location data
+    location_type = data.get("location_type")
+    location_coordinates = data.get("location_coordinates")
+    location_radius = data.get("location_radius")
+    
     return AgentRequest(
         user_id=user_id,
         user_query=user_query,
@@ -107,6 +113,9 @@ async def _extract_firebase_request_data(request: Request) -> AgentRequest:
         session_id=session_id,
         property_address=property_address,
         analysis_optional_agents=analysis_optional_agents,
+        location_type=location_type,
+        location_coordinates=location_coordinates,
+        location_radius=location_radius,
     )
 
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query")

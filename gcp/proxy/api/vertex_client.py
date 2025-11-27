@@ -104,6 +104,10 @@ async def stream_agent_answers(
     diagnosis_uris = request.diagnosis_uris
     property_address = request.property_address
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
+    location_type = request.location_type
+    location_coordinates = request.location_coordinates
+    location_radius = request.location_radius
+    
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(user_id)
@@ -121,8 +125,29 @@ async def stream_agent_answers(
     if diagnosis_uris:
         payload["diagnosis_uris"] = diagnosis_uris
     
-    if property_address:
-        payload["property_address"] = property_address
+    # Location handling logic:
+    # If location_type == "address": Use property_address if present, else fall back to location_coordinates
+    # If location_type == "location": Use location_coordinates only
+    if location_type == "address":
+        if property_address:
+            payload["property_address"] = property_address
+        elif location_coordinates:
+            payload["location_coordinates"] = location_coordinates
+    elif location_type == "location":
+        if location_coordinates:
+            payload["location_coordinates"] = location_coordinates
+    else:
+        # Backward compatibility: use property_address if available
+        if property_address:
+            payload["property_address"] = property_address
+    
+    # Include location metadata when location data is present
+    if location_type:
+        payload["location_type"] = location_type
+    if location_coordinates:
+        payload["location_coordinates"] = location_coordinates
+    if location_radius is not None:
+        payload["location_radius"] = location_radius
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents

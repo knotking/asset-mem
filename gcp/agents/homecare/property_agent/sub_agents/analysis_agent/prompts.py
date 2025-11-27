@@ -191,11 +191,15 @@ def analysis_agent_instructions() -> str:
            IMPORTANT: Include the diagnosis from the triage result as context in your query so the DIY agent understands the problem.
         
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
-           Pass: user_query, context_doc_uris, property_address
+           Pass: user_query, context_doc_uris, property_address, location_coordinates (if available), location_radius (if available)
            IMPORTANT: Include the diagnosis from the triage result as context.
-           SEARCH SCOPE: Restrict local professional search to within 50 miles of the provided `property_address` (or "near me" if not available)
+           LOCATION HANDLING:
+           - If `location_coordinates` is provided, pass it along with `location_radius` (default: 50 miles if not specified)
+           - If only `property_address` is available, use that for location-based searches
+           - If neither is available, use "near me" as fallback
+           SEARCH SCOPE: Restrict local professional search to within the specified `location_radius` (default: 50 miles) of the provided location
            RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
-           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address]" and return parsed results under `localPros.googleSearchResults`
+           FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address/coordinates]" and return parsed results under `localPros.googleSearchResults`
         
         5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.
            Pass: user_query, context_doc_uris, property_address, and include the triage diagnosis for context.

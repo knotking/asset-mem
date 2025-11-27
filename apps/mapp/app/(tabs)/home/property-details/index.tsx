@@ -17,7 +17,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import PushDrawer from '@/components/PushDrawer';
-import type { Document, AgentStep, Session, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { Document, AgentStep, Session, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
@@ -75,6 +75,7 @@ export default function PropertyDetailsScreen() {
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
+  const [locationData, setLocationData] = React.useState<LocationData | undefined>(undefined);
 
   // Refs
   const updateMessageLocallyRef = React.useRef<
@@ -345,6 +346,7 @@ export default function PropertyDetailsScreen() {
           diagnosisURIs,
           propertyAddress,
           analysisOptionalAgents: selectedOptionalAgents,
+          locationData,
           signal,
           onChunk: (chunk) => {
             assistantContent += chunk;
@@ -608,6 +610,9 @@ export default function PropertyDetailsScreen() {
                     onRecordVideo={handleRecordVideo}
                     onSelectFromLibrary={handleSelectFromLibrary}
                     onSelectFiles={handleSelectFiles}
+                    locationData={locationData}
+                    onLocationDataChange={setLocationData}
+                    propertyAddress={property?.address}
                     onSend={(messages) => {
                       console.log('[PropertyDetails] onSend called with messages:', messages);
                       if (messages.length > 0) {

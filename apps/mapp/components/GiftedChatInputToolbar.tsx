@@ -28,9 +28,12 @@ import {
   Wrench,
   BadgeDollarSign,
   FileText,
+  MapPin,
+  Navigation,
 } from 'lucide-react-native';
-import type { FileAttachment, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { FileAttachment, AnalysisOptionalAgent, LocationData, LocationType } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
+import * as Location from 'expo-location';
 
 const OPTIONAL_AGENT_OPTIONS: {
   id: AnalysisOptionalAgent;
@@ -59,6 +62,9 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
+  locationData?: LocationData;
+  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  propertyAddress?: string;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -76,12 +82,19 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRecordVideo,
     onSelectFromLibrary,
     onSelectFiles,
+    locationData,
+    onLocationDataChange,
+    propertyAddress,
     ...inputToolbarProps
   } = props;
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [showMenu, setShowMenu] = React.useState(false);
+  const [showLocationOptions, setShowLocationOptions] = React.useState(false);
+  const [locationType, setLocationType] = React.useState<LocationType | undefined>(locationData?.locationType);
+  const [locationRadius, setLocationRadius] = React.useState<number>(locationData?.locationRadius || 50);
+  const [isGettingLocation, setIsGettingLocation] = React.useState(false);
   const slideAnim = React.useRef(new Animated.Value(500)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -149,6 +162,84 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     // Small delay to let menu close before opening camera/picker
     setTimeout(action, 100);
   }, []);
+
+  // Location handling
+  const handleGetCurrentLocation = React.useCallback(async () => {
+    setIsGettingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        setIsGettingLocation(false);
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      const newLocationData: LocationData = {
+        locationType: 'location',
+        locationCoordinates: {
+          lat: currentLocation.coords.latitude,
+          lng: currentLocation.coords.longitude,
+        },
+        locationRadius: locationRadius,
+      };
+      setLocationType('location');
+      onLocationDataChange?.(newLocationData);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      alert('Failed to get current location');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [locationRadius, onLocationDataChange]);
+
+  const handleLocationTypeChange = React.useCallback((type: LocationType) => {
+    setLocationType(type);
+    if (type === 'address') {
+      // Use property address if available
+      if (propertyAddress) {
+        const newLocationData: LocationData = {
+          locationType: 'address',
+          locationRadius: locationRadius,
+        };
+        onLocationDataChange?.(newLocationData);
+      } else {
+        // Clear location data if no address available
+        onLocationDataChange?.(undefined);
+      }
+    } else if (type === 'location') {
+      // Keep existing coordinates if available, otherwise prompt for location
+      if (locationData?.locationCoordinates) {
+        const newLocationData: LocationData = {
+          locationType: 'location',
+          locationCoordinates: locationData.locationCoordinates,
+          locationRadius: locationRadius,
+        };
+        onLocationDataChange?.(newLocationData);
+      }
+    }
+  }, [propertyAddress, locationRadius, locationData, onLocationDataChange]);
+
+  const handleRadiusChange = React.useCallback((radius: number) => {
+    setLocationRadius(radius);
+    if (locationType && onLocationDataChange) {
+      const newLocationData: LocationData = {
+        locationType,
+        locationCoordinates: locationData?.locationCoordinates,
+        locationRadius: radius,
+      };
+      onLocationDataChange(newLocationData);
+    }
+  }, [locationType, locationData, onLocationDataChange]);
+
+  React.useEffect(() => {
+    if (locationData) {
+      setLocationType(locationData.locationType);
+      if (locationData.locationRadius !== undefined) {
+        setLocationRadius(locationData.locationRadius);
+      }
+    }
+  }, [locationData]);
 
   // Memoize renderComposer to prevent recreation on every render
   const renderComposer = React.useCallback(
@@ -380,6 +471,147 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
         )}
       </View>
+
+      {/* Location Selection */}
+      {onLocationDataChange && (
+        <View className="mb-3">
+          <Pressable
+            onPress={() => setShowLocationOptions(!showLocationOptions)}
+            className="flex-row items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+            <View className="flex-row items-center gap-2">
+              <Icon as={MapPin} size={16} className="text-muted-foreground" />
+              <Text className="text-sm font-medium text-foreground">
+                {locationType === 'address'
+                  ? `Address${propertyAddress ? `: ${propertyAddress.substring(0, 30)}...` : ' (not set)'}`
+                  : locationType === 'location'
+                    ? locationData?.locationCoordinates
+                      ? `Location: ${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)}`
+                      : 'Location (not set)'
+                    : 'Location (optional)'}
+                {locationData?.locationRadius ? ` • ${locationData.locationRadius} mi` : ''}
+              </Text>
+            </View>
+            <Icon
+              as={X}
+              size={16}
+              className={`text-muted-foreground ${showLocationOptions ? 'rotate-45' : ''}`}
+            />
+          </Pressable>
+
+          {showLocationOptions && (
+            <View className="mt-2 rounded-lg border border-border bg-background p-3">
+              {/* Location Type Selector */}
+              <View className="mb-3">
+                <Text className="mb-2 text-xs font-semibold text-foreground">Location Type</Text>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => handleLocationTypeChange('address')}
+                    className={`flex-1 flex-row items-center justify-center gap-2 rounded-lg border px-3 py-2 ${
+                      locationType === 'address' ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                    }`}>
+                    <Icon
+                      as={MapPin}
+                      size={14}
+                      className={locationType === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'}
+                    />
+                    <Text
+                      className={`text-xs font-medium ${
+                        locationType === 'address' ? 'text-primary-foreground' : 'text-muted-foreground'
+                      }`}>
+                      Address
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleLocationTypeChange('location')}
+                    className={`flex-1 flex-row items-center justify-center gap-2 rounded-lg border px-3 py-2 ${
+                      locationType === 'location' ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                    }`}>
+                    <Icon
+                      as={Navigation}
+                      size={14}
+                      className={locationType === 'location' ? 'text-primary-foreground' : 'text-muted-foreground'}
+                    />
+                    <Text
+                      className={`text-xs font-medium ${
+                        locationType === 'location' ? 'text-primary-foreground' : 'text-muted-foreground'
+                      }`}>
+                      Location
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Current Location Button (for location type) */}
+              {locationType === 'location' && (
+                <View className="mb-3">
+                  <Pressable
+                    onPress={handleGetCurrentLocation}
+                    disabled={isGettingLocation}
+                    className="flex-row items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2">
+                    {isGettingLocation ? (
+                      <ActivityIndicator size="small" color={colors.foreground} />
+                    ) : (
+                      <Icon as={Navigation} size={16} className="text-foreground" />
+                    )}
+                    <Text className="text-sm font-medium text-foreground">
+                      {isGettingLocation ? 'Getting location...' : 'Use Current Location'}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Radius Slider */}
+              {locationType && (
+                <View>
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="text-xs font-semibold text-foreground">Search Radius</Text>
+                    <Text className="text-xs font-medium text-muted-foreground">{locationRadius} miles</Text>
+                  </View>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-xs text-muted-foreground">10</Text>
+                    <View style={{ flex: 1 }}>
+                      <Pressable
+                        onPress={() => {
+                          // Simple slider implementation - can be enhanced with react-native-gesture-handler
+                        }}
+                        className="h-2 rounded-full bg-secondary">
+                        <View
+                          style={{
+                            width: `${((locationRadius - 10) / 90) * 100}%`,
+                            height: '100%',
+                            backgroundColor: colors.foreground,
+                            borderRadius: 4,
+                          }}
+                        />
+                      </Pressable>
+                    </View>
+                    <Text className="text-xs text-muted-foreground">100</Text>
+                  </View>
+                  <View className="mt-2 flex-row gap-2">
+                    {[10, 25, 50, 75, 100].map((radius) => (
+                      <Pressable
+                        key={radius}
+                        onPress={() => handleRadiusChange(radius)}
+                        className={`flex-1 rounded-lg border px-2 py-1 ${
+                          locationRadius === radius
+                            ? 'border-primary bg-primary'
+                            : 'border-border bg-transparent'
+                        }`}>
+                        <Text
+                          className={`text-center text-xs font-medium ${
+                            locationRadius === radius ? 'text-primary-foreground' : 'text-muted-foreground'
+                          }`}>
+                          {radius}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Input Row */}
       <View className="flex-row items-end gap-2">
