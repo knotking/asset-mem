@@ -1,0 +1,16 @@
+# Google Gen AI SDK for Gemini API
+google-genai>=0.2.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Google Cloud Secret Manager (optional, for credential loading)
+google-cloud-secret-manager>=2.16.0
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Development dependencies (optional)
+python-dotenv>=1.0.0
+
