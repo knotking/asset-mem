@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal, Dict, Any
+from typing import List, Optional, Literal, Dict
 from pydantic import BaseModel
 from enum import Enum
 
@@ -35,50 +35,3 @@ class ExtractDocInfoResponse(BaseModel):
     propertyAddress: str
     keyEntities: List[KeyEntity]
     summary: str
-
-# Gemini File Search Models
-class CreateFileSearchStoreRequest(BaseModel):
-    display_name: Optional[str] = None
-
-class FileSearchStoreResponse(BaseModel):
-    name: str
-    store_id: str
-    display_name: Optional[str] = None
-
-class UploadFileRequest(BaseModel):
-    file_url: str
-    file_search_store_name: str
-    display_name: Optional[str] = None
-    wait_for_completion: bool = True
-
-class FileSearchDocumentResponse(BaseModel):
-    name: str
-    document_id: str
-    display_name: Optional[str] = None
-    mime_type: Optional[str] = None
-    size_bytes: Optional[int] = None
-    state: Optional[str] = None
-
-class CitationResponse(BaseModel):
-    uri: Optional[str] = None
-    title: Optional[str] = None
-    start_index: Optional[int] = None
-    end_index: Optional[int] = None
-    license: Optional[str] = None
-
-class GenerateContentRequest(BaseModel):
-    contents: str
-    file_search_store_names: List[str]
-    model: Optional[str] = "gemini-2.5-flash"
-    temperature: Optional[float] = None
-    max_output_tokens: Optional[int] = None
-    response_mime_type: Optional[str] = None
-    response_schema: Optional[Dict[str, Any]] = None
-
-class GenerateContentResponse(BaseModel):
-    text: str
-    model: Optional[str] = None
-    finish_reason: Optional[str] = None
-    has_citations: bool = False
-    citations: Optional[List[CitationResponse]] = None
-    retrieval_queries: Optional[List[str]] = None
