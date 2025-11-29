@@ -15,21 +15,51 @@ from pathlib import Path
 import sys
 
 # Add common module to path - use absolute path resolution
+# Try multiple possible paths for the common module
 _current_dir = os.path.dirname(os.path.abspath(__file__))
-_common_dir = os.path.abspath(os.path.join(_current_dir, '../../common'))
-if _common_dir not in sys.path:
+_possible_paths = [
+    os.path.abspath(os.path.join(_current_dir, '../../common')),
+    os.path.abspath(os.path.join(_current_dir, '../../../common')),
+    '/app/common',  # Docker container path
+]
+
+_common_dir = None
+for path in _possible_paths:
+    if os.path.exists(path) and os.path.isdir(path):
+        _common_dir = path
+        break
+
+if _common_dir and _common_dir not in sys.path:
     sys.path.insert(0, _common_dir)
 
-from gemini_file_search import (
-    GeminiFileSearchClient,
-    GeminiFileSearchConfig,
-    GeminiFileSearchError,
-)
-from gemini_file_search.models import (
-    FileSearchStore,
-    FileSearchDocument,
-    GenerateContentResponse,
-)
+# Try to import gemini_file_search, but handle gracefully if not available
+try:
+    from gemini_file_search import (
+        GeminiFileSearchClient,
+        GeminiFileSearchConfig,
+        GeminiFileSearchError,
+    )
+    from gemini_file_search.models import (
+        FileSearchStore,
+        FileSearchDocument,
+        GenerateContentResponse,
+    )
+    GEMINI_FILE_SEARCH_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"gemini_file_search module not available: {e}. File Search features will be disabled.")
+    GEMINI_FILE_SEARCH_AVAILABLE = False
+    # Create dummy classes to prevent errors
+    class GeminiFileSearchError(Exception):
+        pass
+    class GeminiFileSearchConfig:
+        @classmethod
+        def from_env(cls):
+            return cls()
+    class GeminiFileSearchClient:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +69,8 @@ _config = None
 
 def get_config() -> GeminiFileSearchConfig:
     """Get or create Gemini File Search configuration."""
+    if not GEMINI_FILE_SEARCH_AVAILABLE:
+        raise RuntimeError("Gemini File Search is not available. Check module installation.")
     global _config
     if _config is None:
         _config = GeminiFileSearchConfig.from_env()
@@ -47,6 +79,8 @@ def get_config() -> GeminiFileSearchConfig:
 
 def get_client() -> GeminiFileSearchClient:
     """Get a Gemini File Search client instance."""
+    if not GEMINI_FILE_SEARCH_AVAILABLE:
+        raise RuntimeError("Gemini File Search is not available. Check module installation.")
     return GeminiFileSearchClient(get_config())
 
 
