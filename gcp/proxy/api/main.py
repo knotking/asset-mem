@@ -69,33 +69,15 @@ from vertex_client import (
 )
 # Import document analysis
 from document_analysis import extract_doc_info
-# Import Gemini File Search API (optional - gracefully handle if not available)
-try:
-    from gemini_file_search_api import (
-        create_file_search_store,
-        upload_file_to_store,
-        generate_content_with_file_search,
-        list_file_search_stores,
-        get_file_search_store,
-        delete_file_search_store,
-    )
-    GEMINI_FILE_SEARCH_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Gemini File Search API not available: {e}")
-    GEMINI_FILE_SEARCH_AVAILABLE = False
-    # Create stub functions to prevent errors
-    async def create_file_search_store(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
-    async def upload_file_to_store(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
-    async def generate_content_with_file_search(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
-    async def list_file_search_stores(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
-    async def get_file_search_store(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
-    async def delete_file_search_store(*args, **kwargs):
-        return {"status": "error", "message": "Gemini File Search not available"}
+# Import Gemini File Search API
+from gemini_file_search_api import (
+    create_file_search_store,
+    upload_file_to_store,
+    generate_content_with_file_search,
+    list_file_search_stores,
+    get_file_search_store,
+    delete_file_search_store,
+)
 # Register Telegram handlers
 
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")  
