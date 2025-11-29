@@ -189,6 +189,7 @@ export type Property = {
   address: string;
   createdAt: Timestamp;
   propertyType?: string;
+  propertySubType?: string;
   cityStateZip?: string;
   documents?: Document[];
   docIds?: string[];

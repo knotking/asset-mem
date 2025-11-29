@@ -11,6 +11,14 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Upload, X, File as FileIcon, Camera } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { CameraCaptureDialog } from '@/components/chat/camera-capture-dialog';
@@ -26,6 +34,7 @@ import type { Property } from '@/lib/types';
 import { useUploadDialog } from '@/contexts/upload-dialog-context';
 import { useAddressConfirmation } from '@/contexts/address-confirmation-context';
 import { useSession } from '@/contexts/session-context';
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
 
 type UploadableFile = {
   file: File;
@@ -40,6 +49,8 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
   const [files, setFiles] = useState<UploadableFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [propertyType, setPropertyType] = useState<PropertyType | null>(null);
+  const [propertySubType, setPropertySubType] = useState<PropertySubType | null>(null);
   const params = useParams();
   const propertyId = params.propertyId as string;
   const isNewPropertyFlow = propertyId === 'new-property';
@@ -96,12 +107,19 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
   const handleClose = () => {
     if (isUploading) return;
     setFiles([]);
+    setPropertyType(null);
+    setPropertySubType(null);
     setCameraDialogOpen(false);
     onOpenChange(false);
     if (isNewPropertyFlow) {
       router.push('/home');
     }
   }
+
+  const handleTypeChange = (type: PropertyType) => {
+    setPropertyType(type);
+    setPropertySubType(null); // Reset sub-type when type changes
+  };
 
   const handleUploadAndAnalyze = async () => {
     if (!user || files.length === 0) return;
@@ -117,12 +135,22 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
 
     if (isNewPropertyFlow && !currentPropertyId) {
         const tempName = fileList[0].file.name.split('.')[0] || 'New Property';
-        const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), {
+        const propertyData: any = {
             userId: user.uid,
             name: tempName,
             address: 'Pending address...',
             createdAt: serverTimestamp(),
-        });
+        };
+
+        // Add type and sub-type if selected
+        if (propertyType) {
+            propertyData.propertyType = propertyType;
+        }
+        if (propertySubType && propertySubType !== 'none') {
+            propertyData.propertySubType = propertySubType;
+        }
+
+        const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), propertyData);
         currentPropertyId = propRef.id;
 
         // Eagerly create the draft session for the new propeπrty
@@ -244,6 +272,59 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
           </DialogHeader>
 
           <div className="py-4">
+            {/* Property Type Selection */}
+            <div className="mb-4 space-y-2">
+              <Label htmlFor="property-type">Property Type</Label>
+              <Select
+                value={propertyType || ''}
+                onValueChange={(value) => {
+                  if (value) {
+                    handleTypeChange(value as PropertyType);
+                  } else {
+                    setPropertyType(null);
+                  }
+                }}
+                disabled={isUploading}>
+                <SelectTrigger id="property-type" className="w-full">
+                  <SelectValue placeholder="Select property type (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROPERTY_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Property Sub-Type Selection */}
+            {propertyType && getSubTypesForType(propertyType).length > 0 && (
+              <div className="mb-4 space-y-2">
+                <Label htmlFor="property-subtype">Sub-Type (Optional)</Label>
+                <Select
+                  value={propertySubType || ''}
+                  onValueChange={(value) => {
+                    if (value) {
+                      setPropertySubType(value as PropertySubType);
+                    } else {
+                      setPropertySubType(null);
+                    }
+                  }}
+                  disabled={isUploading}>
+                  <SelectTrigger id="property-subtype" className="w-full">
+                    <SelectValue placeholder="Select sub-type (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getSubTypesForType(propertyType).map((subType) => (
+                      <SelectItem key={subType.value} value={subType.value}>
+                        {subType.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {files.length > 0 && (
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2 mb-4">
                   {files.map(uploadableFile => (

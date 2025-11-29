@@ -55,6 +55,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
             checks: propertyData.checks || 0,
             name: propertyData.name,
             propertyType: propertyData.propertyType,
+            propertySubType: propertyData.propertySubType,
             createdAt: propertyData.createdAt,
             userId: propertyData.userId,
           };

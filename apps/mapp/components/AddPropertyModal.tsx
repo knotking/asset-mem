@@ -5,6 +5,8 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Upload, AlertCircle, Camera, File } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +14,7 @@ import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
 
 interface AddPropertyModalProps {
   visible: boolean;
@@ -26,6 +29,8 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
   const [selectedFiles, setSelectedFiles] = React.useState<any[]>([]);
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [propertyType, setPropertyType] = React.useState<PropertyType | null>(null);
+  const [propertySubType, setPropertySubType] = React.useState<PropertySubType | null>(null);
 
   const handleClose = () => {
     if (isCreating) {
@@ -33,8 +38,15 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       return;
     }
     setSelectedFiles([]);
+    setPropertyType(null);
+    setPropertySubType(null);
     setErrorMessage(null);
     onClose();
+  };
+
+  const handleTypeChange = (type: PropertyType) => {
+    setPropertyType(type);
+    setPropertySubType(null); // Reset sub-type when type changes
   };
 
   const handleChooseFiles = async () => {
@@ -125,12 +137,22 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       console.log('Documents selected:', selectedFiles.length);
 
       // Create property in Firestore
-      const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), {
+      const propertyData: any = {
         userId: user.uid,
         name: propertyName,
         address: 'Processing...', // Will be updated from document analysis
         createdAt: serverTimestamp(),
-      });
+      };
+
+      // Add type and sub-type if selected
+      if (propertyType) {
+        propertyData.propertyType = propertyType;
+      }
+      if (propertySubType && propertySubType !== 'none') {
+        propertyData.propertySubType = propertySubType;
+      }
+
+      const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), propertyData);
 
       console.log('Property created with ID:', propRef.id);
 
@@ -191,6 +213,58 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
         {/* Main Content */}
         <ScrollView className="flex-1" contentContainerClassName="px-6 py-4">
+          {/* Property Type Selection */}
+          <View className="mb-4 w-full max-w-md">
+            <Label className="mb-2 text-sm font-semibold text-foreground">Property Type</Label>
+            <Select
+              value={propertyType ? { value: propertyType, label: PROPERTY_TYPES.find(t => t.value === propertyType)?.label || propertyType } : undefined}
+              onValueChange={(option) => {
+                if (option?.value) {
+                  handleTypeChange(option.value as PropertyType);
+                } else {
+                  setPropertyType(null);
+                }
+              }}>
+              <SelectTrigger className="w-full" disabled={isCreating}>
+                <SelectValue placeholder="Select property type (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {PROPERTY_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value} label={type.label}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </View>
+
+          {/* Property Sub-Type Selection */}
+          {propertyType && getSubTypesForType(propertyType).length > 0 && (
+            <View className="mb-4 w-full max-w-md">
+              <Label className="mb-2 text-sm font-semibold text-foreground">Sub-Type (Optional)</Label>
+              <Select
+                value={propertySubType ? { value: propertySubType, label: getSubTypesForType(propertyType).find(st => st.value === propertySubType)?.label || propertySubType } : undefined}
+                onValueChange={(option) => {
+                  if (option?.value) {
+                    setPropertySubType(option.value as PropertySubType);
+                  } else {
+                    setPropertySubType(null);
+                  }
+                }}>
+                <SelectTrigger className="w-full" disabled={isCreating}>
+                  <SelectValue placeholder="Select sub-type (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getSubTypesForType(propertyType).map((subType) => (
+                    <SelectItem key={subType.value} value={subType.value} label={subType.label}>
+                      {subType.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </View>
+          )}
+
           {/* Selected Files List */}
           {selectedFiles.length > 0 && (
             <View className="mb-4 w-full max-w-md">

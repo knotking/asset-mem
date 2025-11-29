@@ -170,6 +170,7 @@ export type Property = {
     address: string;
     createdAt: Timestamp;
     propertyType?: string;
+    propertySubType?: string;
     documents?: Document[];
     docIds?: string[]; // For client-side convenience
     docGsURIs?: string[]; // For client-side convenience

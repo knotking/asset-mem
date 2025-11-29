@@ -31,7 +31,7 @@ import {
 import { ref, deleteObject } from 'firebase/storage';
 import * as DocumentPicker from 'expo-document-picker';
 import type { Document } from '@homeapp/common/types';
-import { PROPERTY_TYPES } from '@homeapp/common/types';
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
 import { extractDocInfo, postFileToAgent } from '@/lib/api';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
@@ -61,22 +61,25 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
   // Edit mode state
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editedName, setEditedName] = React.useState(property.name);
-  const [editedType, setEditedType] = React.useState(property.propertyType || '');
+  const [editedType, setEditedType] = React.useState<PropertyType | null>(property.propertyType as PropertyType || null);
+  const [editedSubType, setEditedSubType] = React.useState<PropertySubType | null>(property.propertySubType as PropertySubType || null);
   const [editedAddress, setEditedAddress] = React.useState(property.address);
   const [isSaving, setIsSaving] = React.useState(false);
 
   // Update form fields when property changes
   React.useEffect(() => {
     setEditedName(property.name);
-    setEditedType(property.propertyType || '');
+    setEditedType(property.propertyType as PropertyType || null);
+    setEditedSubType(property.propertySubType as PropertySubType || null);
     setEditedAddress(property.address);
-  }, [property.name, property.propertyType, property.address]);
+  }, [property.name, property.propertyType, property.propertySubType, property.address]);
 
   const handleEditToggle = () => {
     if (isEditMode) {
       // Cancel editing - reset to original values
       setEditedName(property.name);
-      setEditedType(property.propertyType || '');
+      setEditedType(property.propertyType as PropertyType || null);
+      setEditedSubType(property.propertySubType as PropertySubType || null);
       setEditedAddress(property.address);
     }
     setIsEditMode(!isEditMode);
@@ -104,11 +107,19 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
     setIsSaving(true);
     try {
       const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
-      await updateDoc(propertyRef, {
+      const updateData: any = {
         name: editedName.trim(),
-        propertyType: editedType.trim() || null,
         address: editedAddress.trim(),
-      });
+      };
+      
+      if (editedType) {
+        updateData.propertyType = editedType;
+      }
+      if (editedSubType && editedSubType !== 'none') {
+        updateData.propertySubType = editedSubType;
+      }
+      
+      await updateDoc(propertyRef, updateData);
 
       setIsEditMode(false);
       setSuccessMessage('Property updated successfully.');
@@ -337,18 +348,25 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
             <Text className="text-sm text-muted-foreground">Property Type</Text>
             {isEditMode ? (
               <Select
-                value={editedType ? { value: editedType, label: editedType } : undefined}
-                onValueChange={(option) => setEditedType(option?.value || '')}
+                value={editedType ? { value: editedType, label: PROPERTY_TYPES.find(t => t.value === editedType)?.label || editedType } : undefined}
+                onValueChange={(option) => {
+                  if (option?.value) {
+                    setEditedType(option.value as PropertyType);
+                    setEditedSubType(null); // Reset sub-type when type changes
+                  } else {
+                    setEditedType(null);
+                  }
+                }}
                 disabled={isSaving}>
                 <SelectTrigger className="mt-1" style={{ alignSelf: 'stretch' }}>
-                  <SelectValue placeholder="Select property type" />
+                  <SelectValue placeholder="Select property type (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-w-full">
                   <NativeSelectScrollView>
                     <SelectGroup>
                       {PROPERTY_TYPES.map((type) => (
-                        <SelectItem key={type} label={type} value={type}>
-                          {type}
+                        <SelectItem key={type.value} label={type.label} value={type.value}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -357,10 +375,50 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
               </Select>
             ) : (
               <Text className="text-md font-medium text-foreground">
-                {property.propertyType || 'Not set'}
+                {property.propertyType 
+                  ? PROPERTY_TYPES.find(t => t.value === property.propertyType)?.label || property.propertyType
+                  : 'Not set'}
               </Text>
             )}
           </View>
+          {isEditMode && editedType && getSubTypesForType(editedType).length > 0 && (
+            <View className="mb-2">
+              <Text className="text-sm text-muted-foreground">Sub-Type (Optional)</Text>
+              <Select
+                value={editedSubType ? { value: editedSubType, label: getSubTypesForType(editedType).find(st => st.value === editedSubType)?.label || editedSubType } : undefined}
+                onValueChange={(option) => {
+                  if (option?.value) {
+                    setEditedSubType(option.value as PropertySubType);
+                  } else {
+                    setEditedSubType(null);
+                  }
+                }}
+                disabled={isSaving}>
+                <SelectTrigger className="mt-1" style={{ alignSelf: 'stretch' }}>
+                  <SelectValue placeholder="Select sub-type (optional)" />
+                </SelectTrigger>
+                <SelectContent className="max-w-full">
+                  <NativeSelectScrollView>
+                    <SelectGroup>
+                      {getSubTypesForType(editedType).map((subType) => (
+                        <SelectItem key={subType.value} label={subType.label} value={subType.value}>
+                          {subType.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </NativeSelectScrollView>
+                </SelectContent>
+              </Select>
+            </View>
+          )}
+          {!isEditMode && property.propertySubType && (
+            <View className="mb-2">
+              <Text className="text-sm text-muted-foreground">Sub-Type</Text>
+              <Text className="text-md font-medium text-foreground">
+                {getSubTypesForType(property.propertyType as PropertyType).find(st => st.value === property.propertySubType)?.label || property.propertySubType}
+              </Text>
+            </View>
+          )}
           <View className="mb-2">
             <Text className="text-sm text-muted-foreground">Address</Text>
             {isEditMode ? (

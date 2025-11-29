@@ -17,6 +17,43 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 
+// Helper function to safely extract string from warranty/insurance info
+const extractTextFromCoverageInfo = (info: any): string => {
+    if (!info) return '';
+    
+    // If it's already a string, return it
+    if (typeof info === 'string') {
+        return info;
+    }
+    
+    // If it's an object, try to extract meaningful text
+    if (typeof info === 'object' && info !== null) {
+        // Check for common text properties
+        if (info.text) return String(info.text);
+        if (info.content) return String(info.content);
+        if (info.message) return String(info.message);
+        if (info.description) return String(info.description);
+        if (info.summary) return String(info.summary);
+        
+        // If it's an array, join the items
+        if (Array.isArray(info)) {
+            return info.map(item => 
+                typeof item === 'string' ? item : JSON.stringify(item)
+            ).join('\n');
+        }
+        
+        // Otherwise, format as JSON for readability
+        try {
+            return JSON.stringify(info, null, 2);
+        } catch {
+            return String(info);
+        }
+    }
+    
+    // Fallback to string conversion
+    return String(info);
+};
+
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
   INSURANCE_POLICY: ShieldCheck,
@@ -511,7 +548,9 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 </div>
                             </div>
                         ) : hasTriage ? (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{triage!.diagnosis!}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {String(triage!.diagnosis!)}
+                            </ReactMarkdown>
                         ) : null}
                     </AccordionContent>
                 </AccordionItem>
@@ -529,13 +568,17 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         {coverage?.warrantyInfo && (
                             <div className="space-y-2 mb-4">
                                 <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Warranty Information</h4>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.warrantyInfo}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {extractTextFromCoverageInfo(coverage.warrantyInfo)}
+                                </ReactMarkdown>
                             </div>
                         )}
                         {coverage?.insuranceInfo && (
                             <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-green-700 dark:text-green-400">Insurance Information</h4>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverage.insuranceInfo}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {extractTextFromCoverageInfo(coverage.insuranceInfo)}
+                                </ReactMarkdown>
                             </div>
                         )}
                     </AccordionContent>
@@ -554,7 +597,9 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         {diy?.diySteps?.summary && (
                             <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Summary</h4>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{diy.diySteps.summary}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {String(diy.diySteps.summary)}
+                                </ReactMarkdown>
                             </div>
                         )}
                         {/* DIY cost estimates removed */}

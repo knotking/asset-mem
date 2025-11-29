@@ -20,6 +20,7 @@ import { useUploadDialog } from "@/contexts/upload-dialog-context";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
 
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
@@ -104,13 +105,15 @@ function PropertyDetailsContent() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(property?.name || '');
     const [editedAddress, setEditedAddress] = useState(property?.address || '');
-    const [editedPropertyType, setEditedPropertyType] = useState(property?.propertyType || '');
+    const [editedPropertyType, setEditedPropertyType] = useState<PropertyType | null>(property?.propertyType as PropertyType || null);
+    const [editedPropertySubType, setEditedPropertySubType] = useState<PropertySubType | null>(property?.propertySubType as PropertySubType || null);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleEditClick = () => {
         setEditedName(property?.name || '');
         setEditedAddress(property?.address || '');
-        setEditedPropertyType(property?.propertyType || '');
+        setEditedPropertyType(property?.propertyType as PropertyType || null);
+        setEditedPropertySubType(property?.propertySubType as PropertySubType || null);
         setIsEditing(true);
     };
 
@@ -129,11 +132,19 @@ function PropertyDetailsContent() {
         setIsSaving(true);
         try {
             const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
-            await updateDoc(propertyRef, { 
+            const updateData: any = {
                 name: editedName,
                 address: editedAddress,
-                propertyType: editedPropertyType,
-            });
+            };
+            
+            if (editedPropertyType) {
+                updateData.propertyType = editedPropertyType;
+            }
+            if (editedPropertySubType && editedPropertySubType !== 'none') {
+                updateData.propertySubType = editedPropertySubType;
+            }
+            
+            await updateDoc(propertyRef, updateData);
             toast({ title: "Property Updated", description: "The property details have been saved." });
             setIsEditing(false);
         } catch (error) {
@@ -236,23 +247,70 @@ function PropertyDetailsContent() {
                      <div className="space-y-1">
                         <label className="text-sm font-medium text-muted-foreground">Property Type</label>
                          {isEditing ? (
-                            <Select value={editedPropertyType} onValueChange={setEditedPropertyType} disabled={isSaving}>
+                            <Select 
+                                value={editedPropertyType || ''} 
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        setEditedPropertyType(value as PropertyType);
+                                        setEditedPropertySubType(null); // Reset sub-type when type changes
+                                    } else {
+                                        setEditedPropertyType(null);
+                                    }
+                                }} 
+                                disabled={isSaving}>
                                 <SelectTrigger className="text-base">
-                                    <SelectValue placeholder="Select property type" />
+                                    <SelectValue placeholder="Select property type (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="House">House</SelectItem>
-                                    <SelectItem value="Apartment">Apartment</SelectItem>
-                                    <SelectItem value="Condo">Condo</SelectItem>
-                                    <SelectItem value="Townhouse">Townhouse</SelectItem>
-                                    <SelectItem value="Land">Land</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                    {PROPERTY_TYPES.map((type) => (
+                                        <SelectItem key={type.value} value={type.value}>
+                                            {type.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                          ) : (
-                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">{property?.propertyType || 'Not set'}</p>
+                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                                {property?.propertyType 
+                                    ? PROPERTY_TYPES.find(t => t.value === property.propertyType)?.label || property.propertyType 
+                                    : 'Not set'}
+                            </p>
                          )}
                     </div>
+                    {isEditing && editedPropertyType && getSubTypesForType(editedPropertyType).length > 0 && (
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-muted-foreground">Sub-Type (Optional)</label>
+                            <Select 
+                                value={editedPropertySubType || ''} 
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        setEditedPropertySubType(value as PropertySubType);
+                                    } else {
+                                        setEditedPropertySubType(null);
+                                    }
+                                }} 
+                                disabled={isSaving}>
+                                <SelectTrigger className="text-base">
+                                    <SelectValue placeholder="Select sub-type (optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {getSubTypesForType(editedPropertyType).map((subType) => (
+                                        <SelectItem key={subType.value} value={subType.value}>
+                                            {subType.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {!isEditing && property?.propertySubType && (
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-muted-foreground">Sub-Type</label>
+                            <p className="text-foreground p-3 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                                {getSubTypesForType(property?.propertyType as PropertyType).find(st => st.value === property.propertySubType)?.label || property.propertySubType}
+                            </p>
+                        </div>
+                    )}
                     <div className="space-y-1 md:col-span-2">
                         <label className="text-sm font-medium text-muted-foreground">Address</label>
                          {isEditing ? (
