@@ -1,0 +1,9 @@
+# Google Gen AI SDK for Gemini API
+google-genai>=0.2.0
+
+# Pydantic for models
+pydantic>=2.0.0
+
+# Google Cloud Secret Manager (optional, for config loading)
+google-cloud-secret-manager>=2.0.0
+
