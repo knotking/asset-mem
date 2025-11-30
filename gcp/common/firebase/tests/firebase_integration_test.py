@@ -1,13 +1,26 @@
-# gcp/proxy/tests/firebase_integration_test.py
+# gcp/common/firebase/tests/firebase_integration_test.py
+"""
+Integration tests for Firebase API handlers.
+
+These tests require the proxy API to be available and test the Firebase
+webhook endpoints through the proxy's main.py.
+"""
 import pytest
-from fastapi.testclient import TestClient # Use TestClient from fastapi.testclient
+import sys
+from pathlib import Path
+from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 import json
-#import os
-#
-# Adjust the import path based on your project structure
+
+# Add proxy/api to path to import main app
+proxy_api_path = Path(__file__).parent.parent.parent.parent / "proxy" / "api"
+if str(proxy_api_path) not in sys.path:
+    sys.path.insert(0, str(proxy_api_path))
+
 from main import app
+
 FIREBASE_WEBHOOK_SECRET = "92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376"
+
 # Mock Firebase Admin SDK for testing
 # @pytest.fixture(autouse=True)
 # def mock_firebase_admin():
@@ -130,3 +143,4 @@ async def test_firebase_streaming_webhook_no_user_id():
     assert response.status_code == 200
     content = response.text
     assert "User ID is required" in content
+

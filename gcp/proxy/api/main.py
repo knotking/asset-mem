@@ -13,11 +13,17 @@
 # limitations under the License.
 
 import os
+import sys
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Union
 import asyncio
 from fastapi.responses import StreamingResponse
 # from pydantic import BaseModel
+
+# Add parent directories to path to import from gcp.common
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from models import AgentRequest, ExtractDocInfoRequest
 from optional_agents import (
     ANALYSIS_OPTIONAL_AGENT_ORDER,
@@ -59,7 +65,7 @@ main_loop = asyncio.get_event_loop()
 
 from gcp_utils import listen_to_event
 from telegram_api import get_telegram_webhook_endpoint
-from firebase_api import handle_firebase_agent_query, stream_firebase_agent_answers, handle_firebase_file_upload
+from gcp.common.firebase import handle_firebase_agent_query, stream_firebase_agent_answers, handle_firebase_file_upload
 from service_broker_api import handle_service_broker_payload
 # Import Vertex AI client logic
 from vertex_client import (
