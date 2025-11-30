@@ -1,2 +1,0 @@
-# GCP services and utilities
-
