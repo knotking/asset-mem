@@ -1,4 +1,14 @@
-Deployment to Cloud Run
+# GCP Proxy
+
+A FastAPI-based microservice that acts as a unified API gateway between client applications (Firebase web/mobile apps, Telegram bots) and Google Cloud Platform services, primarily Vertex AI Reasoning Engine.
+
+## Documentation
+
+- **[Architecture Documentation](./docs/ARCHITECTURE.md)** - Comprehensive system architecture, components, and data flows
+- **[API Documentation](./docs/README.md)** - Feature-specific API endpoint documentation
+- **[Workers Documentation](./workers/README.md)** - Background worker functions documentation
+
+## Deployment to Cloud Run
 
 Follow these steps to deploy your FastAPI application to Cloud Run:
 
