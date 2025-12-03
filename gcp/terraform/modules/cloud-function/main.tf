@@ -45,6 +45,12 @@ variable "rag_corpus" {
   type        = string
 }
 
+variable "user_upload_folder" {
+  description = "Folder path for user uploads in GCS bucket"
+  type        = string
+  default     = "uploads"
+}
+
 # Note: Similar to Cloud Run, the actual function code is deployed via GitHub Actions
 # This creates the infrastructure that the deployment uses
 
@@ -82,6 +88,7 @@ resource "google_cloudfunctions2_function" "worker" {
       GCS_BUCKET                 = var.gcs_bucket
       USER_UPLOAD_RESULT_TOPIC   = var.user_upload_result_topic_path
       RAG_CORPUS                 = var.rag_corpus
+      USER_UPLOAD_FOLDER         = var.user_upload_folder
     }
   }
 

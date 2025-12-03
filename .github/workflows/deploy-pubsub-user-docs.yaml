@@ -75,6 +75,10 @@ jobs:
             missing_vars+=("USER_UPLOAD_RAG_CORPUS")
           fi
 
+          if [ -z "${{ vars.USER_UPLOAD_FOLDER }}" ]; then
+            missing_vars+=("USER_UPLOAD_FOLDER")
+          fi
+
           if [ ${#missing_vars[@]} -ne 0 ]; then
             echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
             echo "Please set the following variables in your GitHub repository settings:"
@@ -119,3 +123,4 @@ jobs:
             GCS_BUCKET=${{ vars.GCS_BUCKET }}
             USER_UPLOAD_RESULT_TOPIC=${{ env.USER_UPLOAD_RESULT_TOPIC_PATH }}
             RAG_CORPUS=${{ vars.USER_UPLOAD_RAG_CORPUS }}
+            USER_UPLOAD_FOLDER=${{ vars.USER_UPLOAD_FOLDER }}

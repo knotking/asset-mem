@@ -58,3 +58,9 @@ variable "knowledge_base_rag_corpus" {
   description = "Knowledge base RAG corpus resource name"
   type        = string
 }
+
+variable "user_upload_folder" {
+  description = "Folder path for user uploads in GCS bucket"
+  type        = string
+  default     = "uploads"
+}
