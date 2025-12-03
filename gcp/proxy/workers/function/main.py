@@ -18,8 +18,24 @@ logger = logging.getLogger(__name__)
 RAG_CORPUS = os.environ.get("RAG_CORPUS")
 USER_UPLOAD_RESULT_TOPIC = os.environ.get("USER_UPLOAD_RESULT_TOPIC")  # Set your topic name in env
 PROJECT = os.environ.get("GCP_PROJECT_ID")
-LOCATION = os.environ.get("GCP_REGION", "us-central1")
 GCS_BUCKET = os.environ.get("GCS_BUCKET")
+
+# Parse location from RAG_CORPUS path
+# Expected format: projects/{project}/locations/{location}/ragCorpora/{corpus_id}
+# RAG Corpus may be deployed in a different location than the project.
+def parse_location_from_corpus(corpus_path: str) -> str:
+    """Extract location from RAG corpus path."""
+    if not corpus_path:
+        return "us-central1"  # default fallback
+    try:
+        parts = corpus_path.split("/")
+        location_idx = parts.index("locations") + 1
+        return parts[location_idx]
+    except (ValueError, IndexError):
+        logger.warning(f"Could not parse location from RAG_CORPUS: {corpus_path}, using default")
+        return "us-central1"
+
+LOCATION = parse_location_from_corpus(RAG_CORPUS)
 
 
 def serialize_import_result(result):
@@ -41,14 +57,29 @@ def is_media_mime_type(mime_type: str) -> bool:
 
 def import_to_rag_corpus(gcs_urls, user_id:str):
     logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
+
+    # Validate required environment variables
+    if not RAG_CORPUS:
+        error_msg = "RAG_CORPUS environment variable is not set"
+        logger.error(error_msg)
+        return False, error_msg
+
+    if not GCS_BUCKET:
+        error_msg = "GCS_BUCKET environment variable is not set"
+        logger.error(error_msg)
+        return False, error_msg
+
     try:
+        # Initialize Vertex AI with the correct project and location
+        vertexai.init(project=PROJECT, location=LOCATION)
+        logger.info(f"Initialized Vertex AI with project={PROJECT}, location={LOCATION}")
         import mimetypes
         llmParserConfig = rag.LlmParserConfig(
             model_name="gemini-2.5-flash",
         )
 
         documents_list = []
-        media_list = [] 
+        media_list = []
         documents_result: ImportRagFilesResponse = None
         media_result: ImportRagFilesResponse = None    
         
