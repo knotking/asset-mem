@@ -136,6 +136,7 @@ module "cloud_function" {
   gcs_bucket                      = module.storage.user_data_bucket_name
   user_upload_result_topic_path   = module.pubsub.user_upload_result_topic_id
   rag_corpus                      = var.rag_corpus
+  user_upload_folder              = var.user_upload_folder
 
   depends_on = [
     module.iam,

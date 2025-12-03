@@ -19,6 +19,7 @@ RAG_CORPUS = os.environ.get("RAG_CORPUS")
 USER_UPLOAD_RESULT_TOPIC = os.environ.get("USER_UPLOAD_RESULT_TOPIC")  # Set your topic name in env
 PROJECT = os.environ.get("GCP_PROJECT_ID")
 GCS_BUCKET = os.environ.get("GCS_BUCKET")
+USER_UPLOAD_FOLDER = os.environ.get("USER_UPLOAD_FOLDER", "uploads")
 
 # Parse location from RAG_CORPUS path
 # Expected format: projects/{project}/locations/{location}/ragCorpora/{corpus_id}
@@ -92,7 +93,7 @@ def import_to_rag_corpus(gcs_urls, user_id:str):
 
         logger.info(f"Document files: {documents_list}")
         logger.info(f"Media files: {media_list}")
-        sink_path = f"gs://{GCS_BUCKET}/uploads/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        sink_path = f"gs://{GCS_BUCKET}/{USER_UPLOAD_FOLDER}/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         # Import documents to RAG corpus
         if documents_list:
             documents_result:ImportRagFilesResponse = rag.import_files(
