@@ -19,7 +19,7 @@ from ...agent_inputs import DocsInput
 
 load_dotenv()
 
-logger: logging.Logger = logging.getLogger("user_docs_agent")
+logger: logging.Logger = logging.getLogger("__name__")
 
 def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
     """
@@ -53,7 +53,7 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
     Fetches the RAG IDs for the user from the environment variable.
     """
     file_ids = get_user_file_ids(user_id, context_doc_uris)
-    logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
+    logger.warning(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
     return file_ids
 
 def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):
@@ -68,7 +68,7 @@ def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[st
         rag_resources.append(rag.RagResource(rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"), rag_file_ids=rag_file_ids))
     
     if not rag_resources:
-        logger.info(f"No RAG resources (file IDs or context URIs) found for user {user_id}.")
+        logger.warning(f"No RAG resources (file IDs or context URIs) found for user {user_id}.")
         return "No matching result found."
     
     response = rag.retrieval_query(
