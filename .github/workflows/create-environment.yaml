@@ -1305,6 +1305,52 @@ jobs:
               echo "   The RAG service account is: $RAG_SA"
               echo "   You may need to grant permissions manually after the first RAG operation"
             fi
+
+            # Grant Reasoning Engine service account permissions to access RAG corpora
+            echo ""
+            echo "Granting Reasoning Engine service account RAG access permissions..."
+            REASONING_ENGINE_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+
+            # Create custom role for RAG access (applies to all RAG corpora in project)
+            ROLE_ID="ragCorpusAccessRole"
+            ROLE_TITLE="RAG Corpus Access Role"
+            ROLE_DESCRIPTION="Custom role with permissions to access all RAG corpora (user upload and knowledge base)"
+            PERMISSIONS="aiplatform.ragCorpora.get,aiplatform.ragCorpora.query,aiplatform.ragFiles.get,aiplatform.ragFiles.list"
+
+            # Check if custom role exists
+            if gcloud iam roles describe "$ROLE_ID" --project="$PROJECT_ID" &>/dev/null; then
+              echo "✓ Custom RAG role already exists: $ROLE_ID"
+              # Update permissions in case they changed
+              gcloud iam roles update "$ROLE_ID" \
+                --project="$PROJECT_ID" \
+                --permissions="$PERMISSIONS" \
+                --quiet 2>/dev/null || true
+            else
+              echo "Creating custom RAG role: $ROLE_ID"
+              gcloud iam roles create "$ROLE_ID" \
+                --project="$PROJECT_ID" \
+                --title="$ROLE_TITLE" \
+                --description="$ROLE_DESCRIPTION" \
+                --permissions="$PERMISSIONS" \
+                --quiet
+              echo "✓ Custom RAG role created: $ROLE_ID"
+            fi
+
+            # Grant custom role to Reasoning Engine service account
+            echo "Granting custom RAG role to Reasoning Engine service account..."
+            if gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+              --member="serviceAccount:$REASONING_ENGINE_SA" \
+              --role="projects/$PROJECT_ID/roles/$ROLE_ID" \
+              --condition=None \
+              --quiet 2>/dev/null; then
+              echo "✓ Reasoning Engine service account granted RAG access permissions"
+              echo "   Service Account: $REASONING_ENGINE_SA"
+              echo "   Role: $ROLE_ID"
+              echo "   Permissions: $PERMISSIONS"
+            else
+              echo "⚠️ Failed to grant Reasoning Engine RAG permissions"
+              echo "   You may need to run: gcp/agents/homecare/deployment/grant_permissions.sh"
+            fi
           else
             echo "⚠️ Skipping RAG service account permissions (no corpora created)"
           fi
