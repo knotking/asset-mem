@@ -53,17 +53,17 @@ OPTIONS:
 
 BUILD OPTIONS:
     --platform      Platform to build (ios|android|all) [default: all]
-    --profile       Build profile (development|preview|staging|production) [default: staging]
+    --profile       Build profile (development|preview|staging|prod) [default: staging]
 
 UPDATE OPTIONS:
-    --channel       Update channel (staging|production) [default: staging]
+    --channel       Update channel (staging|prod) [default: staging]
     --message       Update message/description
 
 SUBMIT OPTIONS:
     --platform      Platform to submit (ios|android|all) [default: all]
 
 EXAMPLES:
-    $0 build --platform ios --profile production
+    $0 build --platform ios --profile prod
     $0 update --channel staging --message "Bug fixes and improvements"
     $0 submit --platform android
 

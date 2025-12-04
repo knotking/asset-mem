@@ -46,19 +46,19 @@
         "gradleCommand": ":app:assembleRelease"
       }
     },
-    "production": {
+    "prod": {
       "distribution": "store",
       "autoIncrement": true,
-      "channel": "production",
+      "channel": "prod",
       "env": {
-        "APP_ENV": "production",
+        "APP_ENV": "prod",
         "APP_SLUG": "homegeekai-prod",
         "IOS_BUNDLE_ID": "com.homegeekai.prod",
         "ANDROID_PACKAGE": "com.homegeekai.prod",
-        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
-        "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-321433914812.us-central1.run.app",
+        "EXPO_PROJECT_ID": "ba834da7-3ae6-4381-b641-f2674b54a97a",
+        "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-686746113874.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
-        "WEB_APP_URL": "https://prod--homegeekdemo.us-central1.hosted.app"
+        "WEB_APP_URL": "https://prod--homegeek-prod.us-central1.hosted.app"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -69,7 +69,7 @@
     }
   },
   "submit": {
-    "production": {
+    "prod": {
       "ios": {
         "appleId": "your-apple-id@example.com",
         "ascAppId": "your-app-store-connect-id",

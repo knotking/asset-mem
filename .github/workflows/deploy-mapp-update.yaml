@@ -16,7 +16,7 @@ on:
         type: choice
         options:
           - staging
-          - production
+          - prod
       version:
         description: "App version (e.g., 0.0.3). Leave empty to auto-increment."
         required: false
