@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-# Script to grant RAG Corpus access permissions to AI Platform Reasoning Engine Service Agent
+# Script to grant RAG Corpus access permissions (for both user upload and knowledge base corpora)
 
 set -e
 
@@ -31,7 +31,7 @@ fi
 # Get the project ID from environment variable
 PROJECT_ID="$GOOGLE_CLOUD_PROJECT"
 if [ -z "$PROJECT_ID" ]; then
-  echo "No project ID found. Please set your project ID with 'gcloud config set project YOUR_PROJECT_ID'"
+  echo "No project ID found. Please set GOOGLE_CLOUD_PROJECT in .env file"
   exit 1
 fi
 
@@ -42,50 +42,77 @@ if [ -z "$PROJECT_NUMBER" ]; then
   exit 1
 fi
 
-# Define the service account
-SERVICE_ACCOUNT="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
-
-# Get RAG Corpus ID from the RAG_CORPUS environment variable
-if [ -z "$RAG_CORPUS" ]; then
-  echo "RAG_CORPUS environment variable is not set in the .env file"
+# Get RAG Corpus from the USER_UPLOAD_RAG_CORPUS environment variable
+if [ -z "$USER_UPLOAD_RAG_CORPUS" ]; then
+  echo "USER_UPLOAD_RAG_CORPUS environment variable is not set in the .env file"
   exit 1
 fi
 
-# Extract RAG_CORPUS_ID from the full RAG_CORPUS path
-RAG_CORPUS_ID=$(echo $RAG_CORPUS | awk -F'/' '{print $NF}')
+# Extract location from the corpus path
+# Format: projects/{project}/locations/{location}/ragCorpora/{corpus_id}
+CORPUS_LOCATION=$(echo "$USER_UPLOAD_RAG_CORPUS" | sed -n 's|.*/locations/\([^/]*\)/.*|\1|p')
+if [ -z "$CORPUS_LOCATION" ]; then
+  echo "Could not extract location from USER_UPLOAD_RAG_CORPUS: $USER_UPLOAD_RAG_CORPUS"
+  exit 1
+fi
 
-# Define the RAG Corpus resource
-RAG_CORPUS="projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/${RAG_CORPUS_ID}"
+echo "Detected RAG Corpus location: $CORPUS_LOCATION"
+echo "RAG Corpus: $USER_UPLOAD_RAG_CORPUS"
 
-echo "Granting permissions to $SERVICE_ACCOUNT..."
+# Define the service accounts that need access
+REASONING_ENGINE_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+
+echo ""
+echo "Service accounts that will be granted permissions:"
+echo "  1. Reasoning Engine SA: $REASONING_ENGINE_SA"
 
 # Ensure the AI Platform service identity exists
+echo ""
+echo "Ensuring AI Platform service identity exists..."
 gcloud alpha services identity create --service=aiplatform.googleapis.com --project="$PROJECT_ID"
 
-# Create a custom role with only the RAG Corpus query permission
-ROLE_ID="ragCorpusQueryRole"
-ROLE_TITLE="RAG Corpus Query Role"
-ROLE_DESCRIPTION="Custom role with permission to query RAG Corpus"
+# Create a custom role with RAG access permissions (applies to all RAG corpora in project)
+ROLE_ID="ragCorpusAccessRole"
+ROLE_TITLE="RAG Corpus Access Role"
+ROLE_DESCRIPTION="Custom role with permissions to access all RAG corpora (user upload and knowledge base)"
+
+# Required permissions for RAG queries
+PERMISSIONS="aiplatform.ragCorpora.get,aiplatform.ragCorpora.query,aiplatform.ragFiles.get,aiplatform.ragFiles.list"
 
 # Check if the custom role already exists
+echo ""
 echo "Checking if custom role $ROLE_ID exists..."
 if gcloud iam roles describe "$ROLE_ID" --project="$PROJECT_ID" &>/dev/null; then
-  echo "Custom role $ROLE_ID already exists."
+  echo "Custom role $ROLE_ID already exists. Updating permissions..."
+  gcloud iam roles update "$ROLE_ID" \
+    --project="$PROJECT_ID" \
+    --permissions="$PERMISSIONS"
+  echo "Custom role updated successfully."
 else
   echo "Custom role $ROLE_ID does not exist. Creating it..."
   gcloud iam roles create "$ROLE_ID" \
     --project="$PROJECT_ID" \
     --title="$ROLE_TITLE" \
     --description="$ROLE_DESCRIPTION" \
-    --permissions="aiplatform.ragCorpora.query"
+    --permissions="$PERMISSIONS"
   echo "Custom role $ROLE_ID created successfully."
 fi
 
-# Grant the custom role to the service account
-echo "Granting custom role for RAG Corpus query permissions for $RAG_CORPUS..."
+# Grant the custom role to the Reasoning Engine service account
+echo ""
+echo "Granting custom role to Reasoning Engine service account..."
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$SERVICE_ACCOUNT" \
-  --role="projects/$PROJECT_ID/roles/$ROLE_ID" \
+  --member="serviceAccount:$REASONING_ENGINE_SA" \
+  --role="projects/$PROJECT_ID/roles/$ROLE_ID"
 
-echo "Permissions granted successfully."
-echo "Service account $SERVICE_ACCOUNT can now query the specific RAG Corpus: $RAG_CORPUS"
+echo ""
+echo "✅ Permissions granted successfully!"
+echo ""
+echo "Summary:"
+echo "  - Service Account: $REASONING_ENGINE_SA"
+echo "  - Role: $ROLE_ID"
+echo "  - Permissions: $PERMISSIONS"
+echo "  - RAG Corpus Location: $CORPUS_LOCATION"
+echo "  - RAG Corpus: $USER_UPLOAD_RAG_CORPUS"
+echo ""
+echo "The deployed agent can now access the User Docs RAG Corpus."

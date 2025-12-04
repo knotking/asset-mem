@@ -365,6 +365,23 @@ jobs:
             --role="roles/storage.objectAdmin" \
             --quiet 2>/dev/null || echo "⚠️ RAG SA permissions may not exist"
 
+          # Step 7: Revoke Reasoning Engine RAG access permissions
+          echo "Revoking Reasoning Engine RAG access permissions..."
+          REASONING_ENGINE_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+          ROLE_ID="ragCorpusAccessRole"
+
+          # Remove the custom role binding from Reasoning Engine SA
+          gcloud projects remove-iam-policy-binding $PROJECT_ID \
+            --member="serviceAccount:${REASONING_ENGINE_SA}" \
+            --role="projects/$PROJECT_ID/roles/$ROLE_ID" \
+            --quiet 2>/dev/null || echo "⚠️ Reasoning Engine RAG role binding may not exist"
+
+          # Step 8: Delete the custom RAG role
+          echo "Deleting custom RAG role..."
+          gcloud iam roles delete "$ROLE_ID" \
+            --project="$PROJECT_ID" \
+            --quiet 2>/dev/null || echo "⚠️ Custom RAG role may not exist"
+
           echo "✓ IAM resources deleted"
 
   destroy-project:
