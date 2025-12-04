@@ -212,6 +212,9 @@ jobs:
           FIREBASE_BUCKET="${PROJECT_ID}.firebasestorage.app"
           gsutil -m rm -r gs://${FIREBASE_BUCKET} || echo "⚠️ Firebase Storage bucket may not exist"
 
+          echo "Deleting agent staging bucket..."
+          gsutil -m rm -r gs://homegeek-agent-${ENV} || echo "⚠️ Agent staging bucket may not exist"
+
           echo "✓ Storage buckets deleted"
 
       - name: Delete Artifact Registry Repository
@@ -292,6 +295,102 @@ jobs:
           else
             echo "⚠️ No RAG corpora found for environment: $ENV"
           fi
+
+      - name: Remove IAM Role Bindings
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+
+          echo "Removing IAM role bindings before deleting service accounts..."
+
+          # GitHub workflow service account
+          GITHUB_SA="githubworkflowdeployment@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          # GitHub workflow SA roles (must match create-environment.yaml lines 332-349)
+          GITHUB_ROLES=(
+            "roles/run.developer"
+            "roles/artifactregistry.writer"
+            "roles/cloudbuild.builds.editor"
+            "roles/serviceusage.serviceUsageConsumer"
+            "roles/iam.serviceAccountUser"
+            "roles/artifactregistry.repoAdmin"
+            "roles/storage.admin"
+            "roles/pubsub.editor"
+            "roles/aiplatform.user"
+            "roles/cloudfunctions.developer"
+            "roles/run.admin"
+            "roles/secretmanager.secretAccessor"
+            "roles/firebasehosting.admin"
+            "roles/firebaserules.admin"
+            "roles/firebase.admin"
+            "roles/firebasestorage.admin"
+          )
+
+          echo "Removing IAM role bindings for GitHub workflow SA..."
+          for role in "${GITHUB_ROLES[@]}"; do
+            gcloud projects remove-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${GITHUB_SA}" \
+              --role="$role" \
+              --quiet 2>/dev/null || echo "⚠️ Role $role may not be bound"
+          done
+
+          # Firebase service account
+          FIREBASE_SA="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          # Firebase SA roles (must match create-environment.yaml lines 396-402)
+          FIREBASE_ROLES=(
+            "roles/developerconnect.admin"
+            "roles/developerconnect.readTokenAccessor"
+            "roles/firebaseapphosting.admin"
+            "roles/serviceusage.serviceUsageConsumer"
+            "roles/storage.objectViewer"
+          )
+
+          echo "Removing IAM role bindings for Firebase SA..."
+          for role in "${FIREBASE_ROLES[@]}"; do
+            gcloud projects remove-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${FIREBASE_SA}" \
+              --role="$role" \
+              --quiet 2>/dev/null || echo "⚠️ Role $role may not be bound"
+          done
+
+          # Cloud Build service account
+          CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+          # Cloud Build SA roles (must match create-environment.yaml lines 591-595)
+          CLOUDBUILD_ROLES=(
+            "roles/storage.admin"
+            "roles/logging.logWriter"
+            "roles/artifactregistry.writer"
+          )
+
+          echo "Removing IAM role bindings for Cloud Build SA..."
+          for role in "${CLOUDBUILD_ROLES[@]}"; do
+            gcloud projects remove-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${CLOUDBUILD_SA}" \
+              --role="$role" \
+              --quiet 2>/dev/null || echo "⚠️ Role $role may not be bound"
+          done
+
+          # Compute Engine service account
+          COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+          # Compute SA roles (must match create-environment.yaml lines 597-600)
+          COMPUTE_ROLES=(
+            "roles/storage.objectViewer"
+            "roles/artifactregistry.writer"
+          )
+
+          echo "Removing IAM role bindings for Compute SA..."
+          for role in "${COMPUTE_ROLES[@]}"; do
+            gcloud projects remove-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:${COMPUTE_SA}" \
+              --role="$role" \
+              --quiet 2>/dev/null || echo "⚠️ Role $role may not be bound"
+          done
+
+          echo "✓ IAM role bindings removed"
 
       - name: Delete IAM Resources
         continue-on-error: true
@@ -384,6 +483,44 @@ jobs:
 
           echo "✓ IAM resources deleted"
 
+      - name: Disable APIs
+        continue-on-error: true
+        if: inputs.destroy_project == false
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+
+          echo "Disabling APIs (project will be preserved)..."
+
+          # APIs to disable (must match create-environment.yaml lines 260-279)
+          # Note: Core APIs like iam, cloudresourcemanager, sts, iamcredentials are NOT disabled
+          # as they're needed for basic project operations
+          APIS_TO_DISABLE=(
+            "aiplatform.googleapis.com"
+            "cloudfunctions.googleapis.com"
+            "run.googleapis.com"
+            "pubsub.googleapis.com"
+            "artifactregistry.googleapis.com"
+            "cloudbuild.googleapis.com"
+            "eventarc.googleapis.com"
+            "firebase.googleapis.com"
+            "firestore.googleapis.com"
+            "firebaserules.googleapis.com"
+            "firebasestorage.googleapis.com"
+            "identitytoolkit.googleapis.com"
+            "secretmanager.googleapis.com"
+          )
+
+          echo "Disabling ${#APIS_TO_DISABLE[@]} API(s)..."
+          for api in "${APIS_TO_DISABLE[@]}"; do
+            echo "Disabling $api..."
+            gcloud services disable "$api" --project=$PROJECT_ID --quiet 2>/dev/null || echo "⚠️ $api may not be enabled"
+          done
+
+          echo "✓ APIs disabled"
+          echo ""
+          echo "ℹ️  Note: Core APIs (iam, cloudresourcemanager, sts, iamcredentials, storage) were NOT disabled"
+          echo "   as they are required for basic project operations."
+
   destroy-project:
     name: Destroy GCP Project
     runs-on: ubuntu-latest
@@ -433,6 +570,7 @@ jobs:
           | **Storage** | |
           | User Data Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | Catalog Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | Agent Staging Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | Firebase Storage Bucket | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | Artifact Registry Repository | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | **Messaging** | |
@@ -442,8 +580,11 @@ jobs:
           | **AI/ML** | |
           | RAG Corpora (2) | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | **IAM & Security** | |
+          | IAM Role Bindings (26 roles) | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Removed' || '⚠️ Check logs' }} |
           | Service Accounts (2) | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
           | Workload Identity Pool & Provider | ${{ needs.destroy-infrastructure.result == 'success' && '✅ Deleted' || '⚠️ Check logs' }} |
+          | **APIs** | |
+          | GCP APIs (13 APIs) | ${{ inputs.destroy_project == false && (needs.destroy-infrastructure.result == 'success' && '✅ Disabled' || '⚠️ Check logs') || '➖ Skipped (project deleted)' }} |
           | **Project** | |
           | GCP Project | ${{ inputs.destroy_project == true && '✅ Deleted' || '➖ Preserved' }} |
 
@@ -460,15 +601,17 @@ jobs:
           - Cloud Run service: \`homecare-agent-proxy-${{ inputs.environment_name }}\`
           - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
           - Firebase App Hosting backend: \`${{ inputs.environment_name }}\`
-          - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, Firebase Storage
+          - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, \`homegeek-agent-${{ inputs.environment_name }}\`, Firebase Storage
           - Artifact Registry: \`cloud-run-source-deploy\` (${{ inputs.region }})
           - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`
           - Firestore database
           - RAG corpora: \`user-upload-rag-corpus-${{ inputs.environment_name }}\`, \`knowledge-base-rag-corpus-${{ inputs.environment_name }}\`
+          - IAM role bindings: 26 roles removed from service accounts before deletion
           - Service accounts: GitHub workflow deployment, Firebase App Hosting deployer
           - Workload Identity Pool and Provider
+          ${{ inputs.destroy_project == false && '- GCP APIs: 13 APIs disabled (core APIs preserved for project operations)' || '' }}
 
-          ${{ inputs.destroy_project == false && '⚠️ **Note:** GCP project was preserved. You may want to manually delete it if no longer needed.' || '' }}
+          ${{ inputs.destroy_project == false && '⚠️ **Note:** GCP project was preserved. APIs have been disabled except for core services (iam, cloudresourcemanager, sts, iamcredentials, storage).' || '' }}
 
           ## Cleanup Complete
 
