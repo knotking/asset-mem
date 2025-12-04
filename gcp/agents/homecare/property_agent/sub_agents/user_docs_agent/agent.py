@@ -1,7 +1,6 @@
 import os
 import random
 import json
-import re
 from typing import Optional, List
 from pydantic import Field
 
@@ -16,19 +15,11 @@ from dotenv import load_dotenv
 from .prompts import user_docs_agent_instruction
 import logging
 from ...agent_inputs import DocsInput
-
+    
 
 load_dotenv()
 
 logger: logging.Logger = logging.getLogger("__name__")
-
-def extract_location_from_corpus(corpus_name: str) -> Optional[str]:
-    """Extract location from RAG corpus resource name.
-
-    Format: projects/{project}/locations/{location}/ragCorpora/{corpus_id}
-    """
-    match = re.match(r'projects/[^/]+/locations/([^/]+)/ragCorpora/', corpus_name)
-    return match.group(1) if match else None
 
 def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
     """
@@ -67,55 +58,25 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
 
 def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):
 
-
+    
     user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
-
+    
     rag_file_ids = get_rag_file_ids(user_id, context_doc_uris)
-
-    corpus_name = os.environ.get("USER_UPLOAD_RAG_CORPUS")
+    
     rag_resources = []
     if rag_file_ids:
-        rag_resources.append(rag.RagResource(rag_corpus=corpus_name, rag_file_ids=rag_file_ids))
-
+        rag_resources.append(rag.RagResource(rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"), rag_file_ids=rag_file_ids))
+    
     if not rag_resources:
         logger.warning(f"No RAG resources (file IDs or context URIs) found for user {user_id}.")
         return "No matching result found."
-
-    # Extract location from corpus name to use correct regional endpoint
-    rag_location = extract_location_from_corpus(corpus_name)
-    if not rag_location:
-        logger.error(f"Could not extract location from corpus name: {corpus_name}")
-        rag_location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-
-    logger.info(f"Using RAG location: {rag_location} for corpus: {corpus_name}")
-
-    # Save current vertexai settings
-    import vertexai
-    from google.cloud import aiplatform
-
-    original_project = aiplatform.initializer.global_config.project
-    original_location = aiplatform.initializer.global_config.location
-    original_staging_bucket = aiplatform.initializer.global_config.staging_bucket
-
-    try:
-        # Use location-specific API endpoint by temporarily setting vertexai context
-        vertexai.init(
-            location=rag_location
-        )
-
-        response = rag.retrieval_query(
-            text=user_query,
-            rag_resources=rag_resources,
-            similarity_top_k=10,
-            vector_distance_threshold=0.6,
-        )
-    finally:
-        # Restore original vertexai settings
-        vertexai.init(
-            project=original_project,
-            location=original_location,
-            staging_bucket=original_staging_bucket
-        )
+    
+    response = rag.retrieval_query(
+        text=user_query,
+        rag_resources=rag_resources,
+        similarity_top_k=10,
+        vector_distance_threshold=0.6,
+    )
 
     return (
         f'No matching result found.'
