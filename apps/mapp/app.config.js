@@ -70,6 +70,8 @@ module.exports = {
       eas: {
         projectId: process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
       },
+      // Environment
+      appEnv: process.env.APP_ENV || 'dev',
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
       // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json

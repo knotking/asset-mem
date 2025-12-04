@@ -9,6 +9,7 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
+        "APP_ENV": "dev",
         "APP_SLUG": "homegeekai-development",
         "IOS_BUNDLE_ID": "com.homegeekai.dev",
         "ANDROID_PACKAGE": "com.homegeekai.dev",
@@ -30,6 +31,7 @@
       "distribution": "internal",
       "channel": "staging",
       "env": {
+        "APP_ENV": "staging",
         "APP_SLUG": "homegeekai-staging",
         "IOS_BUNDLE_ID": "com.homegeekai.staging",
         "ANDROID_PACKAGE": "com.homegeekai.staging",
