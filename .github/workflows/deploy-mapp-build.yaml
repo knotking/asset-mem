@@ -16,7 +16,7 @@ on:
         type: choice
         options:
           - staging
-          - production
+          - prod
       platform:
         description: "Select platform to build"
         required: true

@@ -118,7 +118,7 @@ eas build --profile staging --platform ios
 #### Production Profile
 
 ```bash
-eas build --profile production --platform ios
+eas build --profile prod --platform ios
 ```
 
 **Configuration** ([eas.json:49-69](../eas.json#L49-L69)):
@@ -126,7 +126,7 @@ eas build --profile production --platform ios
 - App Slug: `homegeekai-prod`
 - Bundle ID: `com.homegeekai.prod`
 - Proxy: Production environment
-- Channel: `production`
+- Channel: `prod`
 - Store distribution
 - Auto-increment build numbers
 
@@ -143,7 +143,7 @@ Each profile defines these environment variables:
 | `PROXY_BASE_URL`  | Proxy base URL                           | `https://homecare-agent-proxy-staging-...` |
 | `PROXY_TOKEN`     | Proxy authentication token (placeholder) | `${PROXY_TOKEN}`                           |
 | `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeekdemo...`         |
-| `APP_ENV`         | App environment (production only)        | `production`                               |
+| `APP_ENV`         | App environment (production only)        | `prod`                                     |
 
 **Important**: `PROXY_TOKEN` uses placeholder syntax `${PROXY_TOKEN}` and must be provided at build time via EAS Secrets or CI/CD secrets.
 
@@ -176,7 +176,7 @@ The app uses automated deployment via GitHub Actions for OTA updates.
 
 **Options**:
 
-- **Environment**: `staging` or `production`
+- **Environment**: `staging` or `prod`
 - **Version**: Custom version (e.g., `0.0.5`) or auto-increment
 - **Message**: Custom update message
 
@@ -272,7 +272,7 @@ eas login
 eas update --channel staging --message "Your update message"
 
 # Publish to production
-eas update --channel production --message "Production release v1.2.0"
+eas update --channel prod --message "Production release v1.2.0"
 ```
 
 **Note**: When publishing via CLI, environment variables come from your local `.env` file. For production releases, use the GitHub Actions workflow to ensure correct configuration.
@@ -510,11 +510,11 @@ npm run dev                   # Start dev server
 eas login                                           # First time
 eas build --profile development --platform ios      # Dev build
 eas build --profile staging --platform ios          # Staging build
-eas build --profile production --platform ios       # Production build
+eas build --profile prod --platform ios             # Production build
 
 # OTA updates via CLI
 eas update --channel staging --message "Bug fix"
-eas update --channel production --message "v1.2.0"
+eas update --channel prod --message "v1.2.0"
 
 # View updates
 eas update:list

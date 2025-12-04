@@ -87,15 +87,15 @@ Navigate to your GitHub repository: **Settings → Secrets and variables → Act
 
 #### Required Secrets (Environment Level)
 
-Navigate to: **Settings → Environments → [staging/production] → Environment secrets**
+Navigate to: **Settings → Environments → [staging/prod] → Environment secrets**
 
 | Secret Name | Description | Environment |
 |-------------|-------------|-------------|
-| `PROXY_TOKEN` | API proxy authentication token | staging, production |
+| `PROXY_TOKEN` | API proxy authentication token | staging, prod |
 
 #### Required Variables (Environment Level)
 
-Navigate to: **Settings → Environments → [staging/production] → Environment variables**
+Navigate to: **Settings → Environments → [staging/prod] → Environment variables**
 
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
@@ -110,7 +110,7 @@ Navigate to: **Settings → Environments → [staging/production] → Environmen
 ```json
 {
   "submit": {
-    "production": {
+    "prod": {
       "ios": {
         "appleId": "your-apple-id@example.com",
         "ascAppId": "1234567890",
@@ -134,7 +134,7 @@ eas credentials
 ```json
 {
   "submit": {
-    "production": {
+    "prod": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
@@ -167,7 +167,7 @@ Automated deployments triggered by code changes or manual workflows.
 **When to Use**: Native app builds for app stores or internal testing
 
 **Parameters**:
-- **Environment**: `staging` or `production`
+- **Environment**: `staging` or `prod`
 - **Platform**: `ios`, `android`, or `all`
 - **Profile**: Build profile (optional, defaults to environment)
 - **Version**: App version (optional, auto-increments if not specified)
@@ -176,7 +176,7 @@ Automated deployments triggered by code changes or manual workflows.
 
 ```yaml
 # Scenario 1: Production iOS build for App Store with auto-increment version
-Environment: production
+Environment: prod
 Platform: ios
 Profile: (leave empty)
 Version: (leave empty for auto-increment)
@@ -188,7 +188,7 @@ Profile: staging
 Version: 1.0.0
 
 # Scenario 3: Build both platforms for production with auto-increment
-Environment: production
+Environment: prod
 Platform: all
 Profile: (leave empty)
 Version: (leave empty for auto-increment)
@@ -209,7 +209,7 @@ Version: (leave empty for auto-increment)
 **When to Use**: Quick JavaScript/React updates without app store review
 
 **Parameters**:
-- **Environment**: `staging` or `production`
+- **Environment**: `staging` or `prod`
 - **Version**: App version (optional, auto-increments if not specified)
 - **Message**: Description of changes (optional)
 
@@ -222,7 +222,7 @@ Version: (leave empty for auto-increment)
 Message: "Fixed login bug and improved performance"
 
 # Scenario 2: Production hotfix with specific version
-Environment: production
+Environment: prod
 Version: 1.2.1
 Message: "Critical security patch"
 
@@ -270,11 +270,11 @@ apps/mapp/deploy.sh
 ./deploy.sh build --platform all --profile staging
 
 # Production build (for app stores)
-./deploy.sh build --platform ios --profile production
-./deploy.sh build --platform android --profile production
+./deploy.sh build --platform ios --profile prod
+./deploy.sh build --platform android --profile prod
 
 # Build both platforms
-./deploy.sh build --platform all --profile production
+./deploy.sh build --platform all --profile prod
 ```
 
 ##### Update Commands (OTA)
@@ -284,7 +284,7 @@ apps/mapp/deploy.sh
 ./deploy.sh update --channel staging --message "Bug fixes"
 
 # Production channel update
-./deploy.sh update --channel production --message "New features"
+./deploy.sh update --channel prod --message "New features"
 
 # Quick staging update (default message)
 ./deploy.sh update --channel staging
@@ -449,11 +449,11 @@ Defined in [eas.json](./eas.json)
 
 **Usage**:
 ```bash
-./deploy.sh build --platform all --profile production
+./deploy.sh build --platform all --profile prod
 ```
 
 **Environment Variables** (from eas.json):
-- `APP_ENV=production`
+- `APP_ENV=prod`
 - `APP_SLUG=homegeekai-prod`
 - `IOS_BUNDLE_ID=com.homegeekai.prod`
 - `ANDROID_PACKAGE=com.homegeekai.prod`
@@ -486,7 +486,7 @@ git push origin main
 
 # 6. When ready for production, use manual workflow
 # Actions → Deploy Mapp - EAS Update
-# Select production environment
+# Select prod environment
 ```
 
 ### Workflow 2: Production Release (Full Build)
@@ -498,7 +498,7 @@ git pull origin main
 
 # 2. Trigger production build via GitHub Actions
 # Actions → Deploy Mapp - EAS Build
-# Environment: production
+# Environment: prod
 # Platform: all
 # Version: 1.0.2 (or leave empty to auto-increment)
 
@@ -531,7 +531,7 @@ git push origin main
 
 # 4. Deploy to production via GitHub Actions
 # Actions → Deploy Mapp - EAS Update
-# Environment: production
+# Environment: prod
 # Message: "Critical bug fix for authentication"
 
 # 5. Update goes live immediately
@@ -590,11 +590,11 @@ Update channels control which OTA updates users receive.
 
 **Users**: All app store users
 
-**Builds**: `production` profile builds
+**Builds**: `prod` profile builds
 
 **Updates**:
 ```bash
-./deploy.sh update --channel production
+./deploy.sh update --channel prod
 ```
 
 ### Channel Switching
@@ -608,8 +608,8 @@ Users receive updates based on the channel their build was configured with:
     "staging": {
       "channel": "staging"  // Gets staging updates
     },
-    "production": {
-      "channel": "production"  // Gets production updates
+    "prod": {
+      "channel": "prod"  // Gets production updates
     }
   }
 }
@@ -771,8 +771,8 @@ eas build:configure --check
 3. **Version via Environment Variable (Local)**
    ```bash
    # Set custom version locally
-   APP_VERSION=1.0.0 ./deploy.sh build --platform ios --profile production
-   APP_VERSION=1.0.1 ./deploy.sh update --channel production
+   APP_VERSION=1.0.0 ./deploy.sh build --platform ios --profile prod
+   APP_VERSION=1.0.1 ./deploy.sh update --channel prod
    ```
 
 4. **Use semantic versioning**: `MAJOR.MINOR.PATCH`
@@ -857,11 +857,11 @@ npm run android                              # Run on Android emulator
 
 # Builds
 ./deploy.sh build --platform all --profile staging      # Staging build
-./deploy.sh build --platform all --profile production   # Production build
+./deploy.sh build --platform all --profile prod         # Production build
 
 # Updates
 ./deploy.sh update --channel staging                    # Staging OTA
-./deploy.sh update --channel production                 # Production OTA
+./deploy.sh update --channel prod                       # Production OTA
 
 # Submit
 ./deploy.sh submit --platform all                       # Submit to stores
