@@ -161,17 +161,20 @@ jobs:
           echo "Loading environment variables from eas.json for environment: $ENV"
 
           # Extract environment variables from eas.json
+          APP_ENV=$(node -pe "require('./eas.json').build['$ENV'].env.APP_ENV")
           PROXY_BASE_URL=$(node -pe "require('./eas.json').build['$ENV'].env.PROXY_BASE_URL")
           WEB_APP_URL=$(node -pe "require('./eas.json').build['$ENV'].env.WEB_APP_URL")
           APP_SLUG=$(node -pe "require('./eas.json').build['$ENV'].env.APP_SLUG")
           EXPO_PROJECT_ID=$(node -pe "require('./eas.json').build['$ENV'].env.EXPO_PROJECT_ID")
 
+          echo "APP_ENV=$APP_ENV" >> $GITHUB_ENV
           echo "PROXY_BASE_URL=$PROXY_BASE_URL" >> $GITHUB_ENV
           echo "WEB_APP_URL=$WEB_APP_URL" >> $GITHUB_ENV
           echo "APP_SLUG=$APP_SLUG" >> $GITHUB_ENV
           echo "EXPO_PROJECT_ID=$EXPO_PROJECT_ID" >> $GITHUB_ENV
 
           echo "Loaded environment variables:"
+          echo "  APP_ENV: $APP_ENV"
           echo "  PROXY_BASE_URL: $PROXY_BASE_URL"
           echo "  WEB_APP_URL: $WEB_APP_URL"
           echo "  APP_SLUG: $APP_SLUG"
@@ -195,6 +198,7 @@ jobs:
         working-directory: apps/mapp
         run: |
           echo "Publishing OTA update to ${{ needs.validate.outputs.channel }} channel..."
+          echo "Environment: $APP_ENV"
           echo "App version: $APP_VERSION"
           echo "App slug: $APP_SLUG"
           echo "Expo Project ID: $EXPO_PROJECT_ID"
@@ -202,6 +206,7 @@ jobs:
           eas update --channel ${{ needs.validate.outputs.channel }} --message "${{ needs.validate.outputs.message }}" --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: ${{ env.APP_ENV }}
           APP_SLUG: ${{ env.APP_SLUG }}
           PROXY_BASE_URL: ${{ env.PROXY_BASE_URL }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
