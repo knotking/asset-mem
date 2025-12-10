@@ -40,12 +40,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from gcp_utils import upload_file_to_gcs, listen_to_event
+from config import settings
 
 # Configure logging
 logger: logging.Logger = logging.getLogger(__name__)
 
 # --- Environment Variables ---
-TELEGRAM_BOT_TOKEN: str   = os.environ.get("TELEGRAM_BOT_TOKEN","")    
+TELEGRAM_BOT_TOKEN: str = settings.telegram_bot_token or ""    
 
 # --- aiogram Bot and Dispatcher Initialization ---
 bot = Bot(
@@ -553,7 +554,7 @@ def safe_markdown_format(text: str) -> str:
 def parse_command(text: str) -> str:
     return text.strip().split()[0].lower()
 
-def split_message(text: str, max_length: int = 4000) -> list:
+def split_message(text: str, max_length: int = MAX_TELEGRAM_MESSAGE_LENGTH) -> list:
     """
     Splits a long text into chunks suitable for Telegram messages.
     """
@@ -586,10 +587,9 @@ async def handle_unknown_command(message: aio_types.Message) -> None:
 
 # --- Attachment Handler ---
 
-MAX_RAG_FILE_SIZE_MB = 10  # Example: 10 MB limit for Vertex RAG ManagedDB
-MAX_RAG_FILE_SIZE_BYTES = MAX_RAG_FILE_SIZE_MB * 1024 * 1024
+from constants import MAX_RAG_FILE_SIZE_MB, MAX_RAG_FILE_SIZE_BYTES, MAX_TELEGRAM_MESSAGE_LENGTH
 
-def isMessageAleadyHandled(message: aio_types.Message) -> bool:
+def is_message_already_handled(message: aio_types.Message) -> bool:
     chat_id = message.chat.id
     message_id = message.message_id
     message_identifier = (chat_id, message_id)
@@ -610,7 +610,7 @@ async def handle_attachment(message: aio_types.Message):
     content_type = message.content_type
     attachments = []
 
-    if(isMessageAleadyHandled(message=message)):
+    if is_message_already_handled(message=message):
         return # Do nothing
     # Collect all attachments in a list of dicts: {file_id, file_name, file_size, type}
     if content_type == aio_types.ContentType.DOCUMENT:
@@ -663,7 +663,7 @@ async def handle_attachment(message: aio_types.Message):
         await message.reply(safe_markdown_format("Unsupported attachment type."))
         return
 
-    GCS_BUCKET = os.environ.get("GCS_BUCKET")
+    GCS_BUCKET = settings.gcs_bucket
     if not GCS_BUCKET:
         await message.reply(safe_markdown_format("GCS_BUCKET environment variable not set."))
         return
@@ -728,7 +728,7 @@ async def handle_text_message(message: aio_types.Message):
     chat_id = message.chat.id
     user_text = message.text
    
-    if(isMessageAleadyHandled(message=message)):
+    if is_message_already_handled(message=message):
         return # Do nothing
 
     await message.bot.send_chat_action(chat_id, ChatAction.TYPING)

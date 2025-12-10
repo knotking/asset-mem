@@ -7,6 +7,7 @@ This directory contains feature documentation for the GCP Proxy API endpoints an
 ### Architecture & Overview
 
 - **[Architecture](./ARCHITECTURE.md)** - Comprehensive system architecture, components, and data flows for the GCP Proxy
+- **[Improvements Summary](./IMPROVEMENTS_SUMMARY.md)** - Summary of recent improvements and architecture changes
 
 ### API Endpoints
 

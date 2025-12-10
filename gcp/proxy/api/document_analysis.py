@@ -8,9 +8,19 @@ Uses Google Gen AI SDK (Vertex AI) to extract key information from property docu
 - Document summary generation
 """
 
-import os
+"""
+Document Analysis Module
+
+Uses Google Gen AI SDK (Vertex AI) to extract key information from property documents:
+- Document type classification
+- Property address extraction and normalization
+- Key entities identification
+- Document summary generation
+"""
+
 import logging
 import json
+import time
 from typing import Dict, Any
 from google import genai
 from google.genai import types
@@ -19,17 +29,20 @@ from models import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, 
 
 logger = logging.getLogger(__name__)
 
-# Initialize Google Gen AI Client with Vertex AI
-PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
+from config import settings
+from constants import MAX_RETRIES, RETRY_DELAY_SECONDS, VERTEX_AI_TIMEOUT
 
+# Initialize Google Gen AI Client with Vertex AI
 try:
+    if not settings.gcp_project_id:
+        raise ValueError("GCP_PROJECT_ID not configured")
+    
     client = genai.Client(
         vertexai=True,
-        project=PROJECT_ID,
-        location=LOCATION
+        project=settings.gcp_project_id,
+        location=settings.gcp_location
     )
-    logger.info(f"Google Gen AI SDK initialized for project {PROJECT_ID} in {LOCATION}")
+    logger.info(f"Google Gen AI SDK initialized for project {settings.gcp_project_id} in {settings.gcp_location}")
 except Exception as e:
     logger.error(f"Failed to initialize Google Gen AI SDK: {e}")
     client = None
@@ -122,19 +135,32 @@ Document:"""
         # Create contents with prompt and file
         contents = [prompt, file_part]
 
-        # Generate analysis using new SDK
+        # Generate analysis using new SDK with retry logic
         logger.info("Sending document to Gemini for analysis...")
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=contents,
-            config={
-                "temperature": 0.1,  # Low temperature for consistent extraction
-                "top_p": 0.95,
-                "max_output_tokens": 2048,
-                "response_mime_type": "application/json",
-                "response_schema": response_schema
-            }
-        )
+        
+        last_exception = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=contents,
+                    config={
+                        "temperature": 0.1,  # Low temperature for consistent extraction
+                        "top_p": 0.95,
+                        "max_output_tokens": 2048,
+                        "response_mime_type": "application/json",
+                        "response_schema": response_schema
+                    }
+                )
+                break  # Success, exit retry loop
+            except Exception as e:
+                last_exception = e
+                if attempt < MAX_RETRIES - 1:
+                    wait_time = RETRY_DELAY_SECONDS * (2 ** attempt)  # Exponential backoff
+                    logger.warning(f"Retry {attempt + 1}/{MAX_RETRIES} after {wait_time}s: {e}")
+                    time.sleep(wait_time)
+                else:
+                    raise
 
         # Parse JSON response
         result_json = json.loads(response.text)
