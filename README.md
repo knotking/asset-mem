@@ -5,6 +5,8 @@ This repository contains multiple applications (`mapp` and `webapp`) managed wit
 > 📚 **Technology Stack**: For a comprehensive overview of all technologies used across backend, mobile, and web applications, see [TECH_STACK.md](./docs/TECH_STACK.md).
 >
 > 🏗️ **Architecture**: For visual diagrams of the system architecture, data flows, and component relationships, see [ARCHITECTURE_DIAGRAM.md](./docs/ARCHITECTURE_DIAGRAM.md).
+>
+> 📊 **Presentation**: For project presentations, demos, and overview slides, see [PRESENTATION.md](./docs/PRESENTATION.md) or check the `docs/` directory for presentation materials.
 
 ## Prerequisites
 
