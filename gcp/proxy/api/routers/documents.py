@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 import logging
-from schemas import AgentRequest, ExtractDocInfoRequest
-from firebase_api import handle_firebase_file_upload
-from document_analysis import extract_doc_info
+from schemas.agent import AgentRequest
+from schemas.document import ExtractDocInfoRequest
+from services.agent_service import handle_firebase_file_upload
+from services.document_service import extract_doc_info
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -26,4 +27,3 @@ async def extract_document_info_endpoint(request_data: ExtractDocInfoRequest):
     except Exception as e:
         logger.error(f"Error processing document analysis: {e}")
         return {"status": "error", "message": str(e)}
-

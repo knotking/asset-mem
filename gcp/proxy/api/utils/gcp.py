@@ -36,8 +36,6 @@ def get_user_gcs_files(bucket_name: str, folder_name: str, user_id: str) -> list
     return [blob.name for blob in blobs if not blob.name.endswith("/")]
 
 
-
-
 def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
     from google.cloud import pubsub_v1
     publisher = pubsub_v1.PublisherClient()
@@ -73,3 +71,4 @@ def listen_to_event(project_id, subscription_id, callback):
         streaming_pull_future.result()
     except KeyboardInterrupt:
         streaming_pull_future.cancel()
+

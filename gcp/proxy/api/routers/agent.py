@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 import logging
 
-from schemas import AgentRequest, SessionRequest
-from firebase_api import handle_firebase_agent_query, stream_firebase_agent_answers
-from vertex_client import create_reasoning_engine_session, delete_reasoning_engine_session
+from schemas.agent import AgentRequest, SessionRequest
+from services.agent_service import handle_firebase_agent_query, stream_firebase_agent_answers
+from services.vertex_service import create_reasoning_engine_session, delete_reasoning_engine_session
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -44,4 +44,3 @@ async def firebase_agent_session_delete(request_data: SessionRequest):
     except Exception as e:
         logger.error(f"Error processing agent session delete: {e}")
         return {"status": "error", "message": str(e)}
-

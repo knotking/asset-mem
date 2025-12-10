@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.events import lifespan
 from routers import agent, documents, telegram, service_broker
-from vertex_client import reasoning_engine_resource
+from services.vertex_service import reasoning_engine_resource
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

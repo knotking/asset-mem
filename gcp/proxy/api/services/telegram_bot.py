@@ -28,18 +28,18 @@ from aiogram.filters import Command
 from aiogram import F
 from fastapi import FastAPI, Request
 import telegramify_markdown
-from schemas import AgentRequest
-from optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
+from schemas.agent import AgentRequest
+from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
 
 # Import Vertex AI client logic
-from vertex_client import (
+from services.vertex_service import (
     stream_agent_answers
 )
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from gcp_utils import upload_file_to_gcs, listen_to_event
+from utils.gcp import upload_file_to_gcs, listen_to_event
 
 # Configure logging
 logger: logging.Logger = logging.getLogger(__name__)
@@ -773,3 +773,4 @@ def get_telegram_webhook_endpoint():
 
 def start_telegram_bot_polling():
     asyncio.run(dp.start_polling(bot))
+

@@ -1,11 +1,10 @@
-# gcp/proxy/api/firebase_api.py
 import logging
 from typing import Dict, Any, Optional, List
 import firebase_admin
 from firebase_admin import auth
-from vertex_client import stream_agent_answers, publish_doc_to_secure_store
+from services.vertex_service import stream_agent_answers, publish_doc_to_secure_store
 import json
-from schemas import AgentRequest
+from schemas.agent import AgentRequest
 
 logger = logging.getLogger(__name__)
 
@@ -75,3 +74,4 @@ async def handle_firebase_agent_query(request: AgentRequest) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         return {"status": "error", "message": f"Internal server error: {e}"}
+

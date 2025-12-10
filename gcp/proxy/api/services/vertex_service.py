@@ -5,9 +5,10 @@ from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
 import json
-# from pydantic import BaseModel
-from schemas import AgentRequest
-from optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
+from google.cloud import pubsub_v1
+
+from schemas.agent import AgentRequest
+from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -50,7 +51,6 @@ except Exception as e:
 def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
     """Publishes a structured payload to a secure storage."""
     try:
-        from google.cloud import pubsub_v1  # <-- Fix import
         publisher = pubsub_v1.PublisherClient()
         
         topic_path = publisher.topic_path(os.environ.get("GCP_PROJECT_ID"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
@@ -265,3 +265,4 @@ def prettify_name(name: str) -> str:
     Converts a snake_case name like 'homecare_agent' to 'Homecare Agent' and bolds it.
     """
     return format_name(name, bold=True)
+

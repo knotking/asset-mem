@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 import logging
 import asyncio
-from service_broker_api import handle_service_broker_payload
+from services.service_broker_service import handle_service_broker_payload
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -21,4 +21,3 @@ async def service_broker_agent_webhook(request: Request):
     except Exception as e:
         logger.error(f"Error processing service broker agent webhook: {e}")
         return {"status": "error", "message": str(e)}
-

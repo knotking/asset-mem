@@ -1,7 +1,6 @@
 from typing import List, Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field, field_validator
-from enum import Enum
-from optional_agents import normalize_analysis_optional_agents
+from utils.optional_agents import normalize_analysis_optional_agents
 
 class AgentRequest(BaseModel):
     user_id: str
@@ -26,28 +25,6 @@ class AgentRequest(BaseModel):
     @classmethod
     def normalize_agents(cls, v):
         return normalize_analysis_optional_agents(v)
-
-class DocumentType(str, Enum):
-    DEED = "DEED"
-    INSURANCE_POLICY = "INSURANCE_POLICY"
-    UTILITY_BILL = "UTILITY_BILL"
-    INSPECTION_REPORT = "INSPECTION_REPORT"
-    MORTGAGE_STATEMENT = "MORTGAGE_STATEMENT"
-    OTHER = "OTHER"
-
-class KeyEntity(BaseModel):
-    name: str
-    value: str
-
-class ExtractDocInfoRequest(BaseModel):
-    docUrl: str
-    contentType: str
-
-class ExtractDocInfoResponse(BaseModel):
-    documentType: DocumentType
-    propertyAddress: str
-    keyEntities: List[KeyEntity]
-    summary: str
 
 class SessionRequest(BaseModel):
     user_id: str

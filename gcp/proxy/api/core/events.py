@@ -4,9 +4,9 @@ import threading
 import json
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from gcp_utils import listen_to_event
+from utils.gcp import listen_to_event
 from core.config import settings
-from schemas import UserUploadResultEvent
+from schemas.agent import UserUploadResultEvent
 
 logger = logging.getLogger(__name__)
 
@@ -48,4 +48,3 @@ async def lifespan(app: FastAPI):
     thread.start()
     yield
     # Shutdown logic if any
-

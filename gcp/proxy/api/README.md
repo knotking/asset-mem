@@ -4,33 +4,41 @@ This directory contains the FastAPI application that serves as the backend proxy
 
 ## Architecture
 
-The application has been refactored into a modular architecture to improve maintainability and scalability.
+The application is organized into a modular layered architecture:
 
 ### Project Structure
 
 ```
 gcp/proxy/api/
 ├── main.py              # Application entry point and router assembly
-├── schemas.py           # Pydantic models for request/response validation
-├── core/
-│   ├── config.py        # Environment variable configuration
-│   └── events.py        # App lifecycle and background event listeners (PubSub)
-├── routers/             # API Endpoints
-│   ├── agent.py         # Chat and session management (Firebase)
-│   ├── documents.py     # Document upload and analysis
-│   ├── telegram.py      # Telegram webhook handler
-│   └── service_broker.py# Service broker integration
-├── models.py            # (Deprecated) Re-exports schemas for backward compatibility
-└── ...
+├── core/                # Core configuration and lifecycle
+│   ├── config.py
+│   └── events.py
+├── routers/             # API Route Handlers (Controller Layer)
+│   ├── agent.py
+│   ├── documents.py
+│   ├── telegram.py
+│   └── service_broker.py
+├── services/            # Business Logic Layer
+│   ├── agent_service.py     # Firebase agent logic
+│   ├── document_service.py  # Document analysis (Gemini)
+│   ├── telegram_bot.py      # Telegram bot logic (aiogram)
+│   ├── vertex_service.py    # Vertex AI Reasoning Engine integration
+│   └── service_broker_service.py
+├── schemas/             # Pydantic Data Models
+│   ├── agent.py
+│   └── document.py
+└── utils/               # Shared Utilities
+    ├── gcp.py
+    └── optional_agents.py
 ```
 
 ### Key Components
 
-- **Routers**: API logic is split into dedicated routers in `routers/`. This keeps `main.py` clean and focused on configuration.
-- **Schemas**: All data models are defined in `schemas.py` using Pydantic. This ensures strict type validation for all incoming requests.
-- **Core**:
-    - `config.py`: Centralized access to environment variables.
-    - `events.py`: Manages the application lifespan, including the background thread for Google Cloud Pub/Sub listeners.
+- **Routers**: Handle HTTP requests, validate inputs using Schemas, and delegate business logic to Services.
+- **Services**: Contain the core business logic, independent of the HTTP transport layer (mostly).
+- **Schemas**: Pydantic models for request/response validation.
+- **Utils**: Reusable utility functions.
 
 ## Development
 
@@ -47,12 +55,7 @@ uvicorn main:app --reload
 
 ### Environment Variables
 
-Ensure you have a `.env` file or environment variables set for:
-- `GCP_PROJECT_ID`
-- `FIREBASE_WEBHOOK_SECRET`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `TELEGRAM_BOT_TOKEN`
-- ... (see `core/config.py` for full list)
+See `core/config.py` for the full list of required environment variables.
 
 ## Available Documentation
 

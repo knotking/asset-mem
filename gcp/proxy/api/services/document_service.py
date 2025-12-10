@@ -15,7 +15,7 @@ from typing import Dict, Any
 from google import genai
 from google.genai import types
 
-from schemas import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, KeyEntity
+from schemas.document import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, KeyEntity
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +160,4 @@ Document:"""
             keyEntities=[],
             summary=f"Analysis failed: {str(e)}"
         )
+
