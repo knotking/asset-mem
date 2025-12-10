@@ -4,27 +4,13 @@ This guide explains how to add new API endpoints and functions to the GCP Proxy 
 
 ## Overview
 
-The GCP Proxy API is a FastAPI application that serves as a backend proxy for various services. The API follows a modular architecture with routers, handlers, and middleware.
+The GCP Proxy API is a FastAPI application that serves as a backend proxy for various services. When adding a new function, you'll typically:
 
-When adding a new function, you'll typically:
-
-1. **Define models** for request/response validation in `models.py`
+1. **Define models** for request/response validation
 2. **Create a handler module** with your business logic
-3. **Create a router** in `routers/` directory
-4. **Register the router** in `main.py`
-5. **Add documentation** for the new endpoint
-6. **Test** the implementation
-
-## Architecture Overview
-
-The API uses a router-based architecture:
-
-- **Routers** (`routers/`) - Define API endpoints and route handling
-- **Handlers** (e.g., `firebase_api.py`) - Business logic for processing requests
-- **Models** (`models.py`) - Pydantic models for request/response validation
-- **Config** (`config.py`) - Centralized configuration management
-- **Middleware** (`middleware.py`) - Request/response processing (logging, security, errors)
-- **Dependencies** (`dependencies.py`) - Shared dependencies and utilities
+3. **Register the endpoint** in `main.py`
+4. **Add documentation** for the new endpoint
+5. **Test** the implementation
 
 ## Step-by-Step Guide
 
@@ -66,17 +52,17 @@ Your API Module
 Brief description of what this module does.
 """
 
+import os
 import logging
 from typing import Dict, Any
 from models import YourRequest, YourResponse
-from config import settings  # Use centralized config
 
 logger = logging.getLogger(__name__)
 
 # Initialize any clients or services here
 # Example:
 # from google import genai
-# client = genai.Client(vertexai=True, project=settings.gcp_project_id)
+# client = genai.Client(vertexai=True, project=os.environ.get("GCP_PROJECT_ID"))
 
 def your_handler_function(request: YourRequest) -> YourResponse:
     """
@@ -125,31 +111,19 @@ def process_data(request: YourRequest) -> Dict[str, Any]:
 - Main handler function(s)
 - Helper functions (if needed)
 
-### Step 3: Create Router
+### Step 3: Register Endpoint in main.py
 
-Create a new router file `routers/your_router.py`:
+Add your endpoint to `main.py`:
 
 ```python
-"""
-Your Router
-
-API endpoints for your feature.
-"""
-
-import logging
-from fastapi import APIRouter, Request, HTTPException, status
-
-from models import YourRequest, YourResponse
+# Import your handler
 from your_api import your_handler_function
-from dependencies import get_request_id, verify_webhook_secret
-from config import settings
 
-logger = logging.getLogger(__name__)
+# Import your models
+from models import YourRequest
 
-router = APIRouter(tags=["your-feature"])
-
-
-@router.post("/your-endpoint")
+# Add endpoint (use appropriate HTTP method)
+@app.post(f"/{FIREBASE_WEBHOOK_SECRET}/your-endpoint")
 async def your_endpoint(request: Request):
     """
     Your endpoint description.
@@ -162,90 +136,40 @@ async def your_endpoint(request: Request):
         "optional_field": "optional_value"
     }
     """
-    # Verify webhook secret (if needed)
-    if not verify_webhook_secret(request, settings.firebase_webhook_secret):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid webhook secret"
-        )
-    
     logger.info("Your endpoint received a request.")
-    request_id = get_request_id(request)
-    
     try:
         data = await request.json()
         request_obj = YourRequest(**data)
-        logger.info(f"Processing: {request_obj.model_dump_json()}", extra={"request_id": request_id})
+        logger.info(f"Processing: {request_obj.model_dump_json()}")
         
         result = your_handler_function(request_obj)
         
-        logger.info(f"Completed: {result.status}", extra={"request_id": request_id})
+        logger.info(f"Completed: {result.status}")
         return result.model_dump()
         
-    except HTTPException:
-        raise
     except ValueError as e:
-        logger.error(f"Validation error: {e}", extra={"request_id": request_id})
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        logger.error(f"Validation error: {e}")
+        return {"status": "error", "message": str(e)}
     except Exception as e:
-        logger.error(f"Error processing request: {e}", exc_info=True, extra={"request_id": request_id})
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        logger.error(f"Error processing request: {e}")
+        return {"status": "error", "message": str(e)}
 ```
 
-### Step 4: Register Router in main.py
-
-Add your router to `main.py`:
-
-```python
-from routers import your_router
-from config import settings
-
-# Register router with appropriate prefix
-if settings.firebase_webhook_secret:
-    app.include_router(
-        your_router.router,
-        prefix=f"/{settings.firebase_webhook_secret}",
-        tags=["your-feature"]
-    )
-```
-
-**Router Patterns:**
+**Endpoint Patterns:**
 
 1. **Firebase Webhook Endpoints** (protected by `FIREBASE_WEBHOOK_SECRET`):
    ```python
-   # In router file
-   router = APIRouter(tags=["your-feature"])
-   
-   @router.post("/your-endpoint")
-   async def your_endpoint(request: Request):
-       # Verify webhook secret
-       if not verify_webhook_secret(request, settings.firebase_webhook_secret):
-           raise HTTPException(status_code=401, detail="Invalid webhook secret")
-       # ... handler logic
-   
-   # In main.py
-   app.include_router(
-       your_router.router,
-       prefix=f"/{settings.firebase_webhook_secret}",
-       tags=["your-feature"]
-   )
+   @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/your-endpoint")
    ```
 
 2. **Telegram Webhook Endpoints** (protected by `TELEGRAM_WEBHOOK_SECRET`):
    ```python
-   # Similar pattern with telegram_webhook_secret
+   @app.post(f"/{TELEGRAM_WEBHOOK_SECRET}")
    ```
 
 3. **Public Endpoints** (no secret):
    ```python
-   # Register router without prefix
-   app.include_router(your_router.router)
+   @app.get("/your-public-endpoint")
    ```
 
 **HTTP Methods:**
@@ -254,7 +178,7 @@ if settings.firebase_webhook_secret:
 - `@app.put()` - For updating data
 - `@app.delete()` - For deleting data
 
-### Step 5: Add Documentation
+### Step 4: Add Documentation
 
 Create `YOUR_API.md` in `gcp/proxy/api/`:
 
@@ -273,34 +197,19 @@ Brief description of what this endpoint does and why it exists.
 ┌─────────────────┐
 │  Client         │
 └────────┬────────┘
-         │ POST /{SECRET}/your-endpoint
-         │ X-Webhook-Secret: secret
+         │ POST /your-endpoint
          │ { request data }
          ↓
-┌─────────────────────────────────────────────┐
-│  GCP Proxy API (FastAPI)                    │
-│  ┌───────────────────────────────────────┐  │
-│  │ Middleware Layer                      │  │
-│  │ - RequestIDMiddleware                 │  │
-│  │ - SecurityHeadersMiddleware           │  │
-│  │ - LoggingMiddleware                   │  │
-│  │ - ErrorHandlingMiddleware             │  │
-│  └──────────────┬────────────────────────┘  │
-│                 ↓                            │
-│  ┌───────────────────────────────────────┐  │
-│  │ Router Layer (routers/your_router.py) │  │
-│  │ - Webhook verification                 │  │
-│  │ - Request validation                   │  │
-│  │ - Error handling                       │  │
-│  └──────────────┬────────────────────────┘  │
-└─────────────────┼───────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────────┐
-│  Handler Layer (your_api.py)                │
-│  └─ your_handler_function()                  │
-│     - Business logic                         │
-│     - External service calls                 │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────┐
+│  GCP Proxy API (FastAPI)       │
+│  └─ your_endpoint()             │
+└────────┬────────────────────────┘
+         │
+         ↓
+┌─────────────────────────────────┐
+│  your_api.py                    │
+│  └─ your_handler_function()     │
+└─────────────────────────────────┘
 ```
 
 ## Files
@@ -313,20 +222,10 @@ Defines request/response models:
 ### 2. `your_api.py`
 Core handler logic:
 - `your_handler_function()`: Main processing function
-- Business logic separated from routing
 
-### 3. `routers/your_router.py`
-Router definition:
+### 3. `main.py`
+FastAPI endpoint registration:
 - `your_endpoint()`: HTTP endpoint handler
-- Webhook verification
-- Request validation
-- Error handling
-
-### 4. `main.py`
-FastAPI application:
-- Router registration
-- Middleware configuration
-- Application setup
 
 ## API Endpoint
 
@@ -435,7 +334,7 @@ gcloud run deploy homecare-agent-proxy --source .
 - [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
 ```
 
-### Step 6: Handle Async Operations (If Needed)
+### Step 5: Handle Async Operations (If Needed)
 
 If your function needs to perform async operations:
 
@@ -464,7 +363,7 @@ async def your_endpoint(request: Request):
     return {"status": "ok", "message": "Processing started"}
 ```
 
-### Step 7: Add Streaming Support (If Needed)
+### Step 6: Add Streaming Support (If Needed)
 
 For streaming responses (like chat or long-running operations):
 
@@ -493,20 +392,14 @@ async def your_streaming_endpoint(request: Request):
 
 ### Pattern 1: Simple Request/Response
 ```python
-# Handler (your_api.py)
+# Handler
 def simple_handler(request: YourRequest) -> YourResponse:
     result = process(request)
     return YourResponse(status="success", data=result)
 
-# Router (routers/your_router.py)
-router = APIRouter(tags=["your-feature"])
-
-@router.post("/simple")
+# Endpoint
+@app.post(f"/{SECRET}/simple")
 async def simple_endpoint(request: Request):
-    # Verify webhook secret if needed
-    if not verify_webhook_secret(request, settings.firebase_webhook_secret):
-        raise HTTPException(status_code=401, detail="Invalid webhook secret")
-    
     data = await request.json()
     result = simple_handler(YourRequest(**data))
     return result.model_dump()
@@ -515,12 +408,11 @@ async def simple_endpoint(request: Request):
 ### Pattern 2: Using Vertex AI/Gemini
 ```python
 from google import genai
-from config import settings
 
 client = genai.Client(
     vertexai=True,
-    project=settings.gcp_project_id,
-    location=settings.gcp_location
+    project=os.environ.get("GCP_PROJECT_ID"),
+    location=os.environ.get("GCP_LOCATION", "us-central1")
 )
 
 def ai_handler(request: YourRequest) -> YourResponse:
@@ -545,18 +437,15 @@ def firestore_handler(request: YourRequest) -> YourResponse:
     return YourResponse(status="success", data=doc.to_dict())
 ```
 
-**Note:** Firebase Admin is initialized automatically if credentials are available.
-
 ### Pattern 4: Using Pub/Sub
 ```python
 from google.cloud import pubsub_v1
-from config import settings
 
 publisher = pubsub_v1.PublisherClient()
 
 def pubsub_handler(request: YourRequest) -> YourResponse:
     topic_path = publisher.topic_path(
-        settings.gcp_project_id,
+        os.environ.get("GCP_PROJECT_ID"),
         "your-topic"
     )
     publisher.publish(topic_path, request.data.encode())
@@ -576,50 +465,43 @@ def pubsub_handler(request: YourRequest) -> YourResponse:
 
 ## Code Review Checklist
 
-- [ ] Follows existing code patterns (router-based architecture)
+- [ ] Follows existing code patterns
 - [ ] Uses proper type hints
 - [ ] Includes docstrings
-- [ ] Handles errors gracefully (uses HTTPException)
-- [ ] Logs important events with request_id
-- [ ] Validates input data (Pydantic models)
+- [ ] Handles errors gracefully
+- [ ] Logs important events
+- [ ] Validates input data
 - [ ] Returns consistent response format
-- [ ] Uses configuration from `config.py` (not `os.environ` directly)
-- [ ] Uses constants from `constants.py` (not magic numbers)
-- [ ] Verifies webhook secrets appropriately
 - [ ] Documentation is clear and complete
 
 ## Examples in Codebase
 
 Reference these existing implementations:
 
-1. **Document Analysis** (`document_analysis.py`, `routers/document_router.py`)
+1. **Document Analysis** (`document_analysis.py`, `DOCUMENT_ANALYSIS_API.md`)
    - Uses Vertex AI Gemini
    - Structured JSON response
    - Error handling with fallbacks
-   - Retry logic
 
-2. **Firebase API** (`firebase_api.py`, `routers/firebase_router.py`)
+2. **Firebase API** (`firebase_api.py`)
    - Async streaming responses
    - Session management
    - File upload handling
-   - Proper error handling with HTTPException
 
-3. **Service Broker** (`service_broker_api.py`, `routers/service_broker_router.py`)
+3. **Service Broker** (`service_broker_api.py`, `SERVICE_BROKER_API.md`)
    - Background async processing
    - Webhook pattern
    - Payload validation
-   - Pydantic models for validation
 
-4. **Telegram API** (`telegram_api.py`, `routers/telegram_router.py`)
+4. **Telegram API** (`telegram_api.py`)
    - Webhook handling
    - Message processing
    - External API integration
-   - Uses constants for file size limits
 
 ## Troubleshooting
 
 ### Issue: "Module not found"
-**Solution:** Ensure your module is in `gcp/proxy/api/` and your router is imported correctly in `main.py`
+**Solution:** Ensure your module is in `gcp/proxy/api/` and imported correctly in `main.py`
 
 ### Issue: "Validation error"
 **Solution:** Check your Pydantic models match the request structure
@@ -628,7 +510,7 @@ Reference these existing implementations:
 **Solution:** Verify the endpoint path matches the registered route in `main.py`
 
 ### Issue: "Environment variable not set"
-**Solution:** Add required env vars to Cloud Run deployment or `.env` file. Check `config.py` for required variables and use `settings` object instead of `os.environ` directly.
+**Solution:** Add required env vars to Cloud Run deployment or `.env` file
 
 ## Next Steps
 
@@ -654,12 +536,9 @@ After adding your function:
 
 ## Related Documentation
 
-- [GCP Proxy API README](./README.md) - Main API documentation
-- [Improvements Summary](../docs/IMPROVEMENTS_SUMMARY.md) - Recent improvements and architecture changes
-- [GCP Proxy README](../README.md) - Deployment and setup
-- [Document Analysis API](./DOCUMENT_ANALYSIS_API.md) - Document analysis endpoint docs
-- [Service Broker API](./SERVICE_BROKER_API.md) - Service broker endpoint docs
+- [GCP Proxy README](../README.md)
+- [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
+- [Service Broker API](./SERVICE_BROKER_API.md)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Pydantic Documentation](https://docs.pydantic.dev/)
-- [Pydantic Settings Documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 

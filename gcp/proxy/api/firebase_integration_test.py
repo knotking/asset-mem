@@ -1,20 +1,34 @@
-"""
-Firebase Integration Tests
-
-Integration tests for Firebase webhook endpoints.
-Note: This file should be moved to tests/integration/ directory.
-"""
-
+# gcp/proxy/tests/firebase_integration_test.py
 import pytest
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient # Use TestClient from fastapi.testclient
 from unittest.mock import patch, MagicMock
 import json
-
+#import os
+#
+# Adjust the import path based on your project structure
 from main import app
-from config import settings
-
-# Test webhook secret (should match test configuration)
 FIREBASE_WEBHOOK_SECRET = "92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376"
+# Mock Firebase Admin SDK for testing
+# @pytest.fixture(autouse=True)
+# def mock_firebase_admin():
+#     with patch("firebase_admin.auth.verify_id_token") as mock_verify_id_token:
+#         mock_verify_id_token.return_value = {"uid": "test_user_id"}
+#         yield
+
+# # Mock Vertex AI client logic
+# @pytest.fixture(autouse=True)
+# def mock_vertex_client():
+#     with patch("gcp.proxy.api.vertex_client.reasoning_engine_resource", MagicMock()) as mock_re_resource:
+#         with patch("gcp.proxy.api.vertex_client.stream_agent_answers") as mock_stream_agent_answers:
+#             # Configure mock_re_resource if needed, for now just ensure it's not None
+#             mock_re_resource.is_initialized = True # Example of setting an attribute
+
+#             async def async_generator():
+#                 yield "Mocked agent response part 1"
+#                 yield "Mocked agent response part 2"
+
+#             mock_stream_agent_answers.return_value = async_generator()
+#             yield
 
 @pytest.mark.asyncio
 async def test_firebase_webhook_success():
@@ -37,12 +51,10 @@ async def test_firebase_webhook_success():
 
 @pytest.mark.asyncio
 async def test_firebase_webhook_no_user_id():
-    """Test that missing user_id returns 400 Bad Request."""
     with TestClient(app) as client:
         response = client.post(
             f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query",
-            json={
-                "user_query": "Give me troubleshooting tips for washing machine",
+            json={"user_query": "Give me troubleshooting tips for washing machine",
                 "diagnosis_uris": [],
                 "context_doc_uris": [],
                 "property_address": "",
@@ -50,9 +62,9 @@ async def test_firebase_webhook_no_user_id():
             }
         )
         print(f"test_firebase-agent-query_no_user_id Response: {response.json()}")
-    # Should return 400 Bad Request with new error handling
-    assert response.status_code in [400, 200]  # 200 for backward compatibility
-    assert "User ID is required" in str(response.json())
+    assert response.status_code == 200
+    assert response.json()["status"] == "error"
+    assert "User ID is required" in response.json()["message"]
 
 @pytest.mark.asyncio
 async def test_firebase_diagnostic_mode_success():
@@ -103,20 +115,18 @@ async def test_firebase_streaming_webhook_success():
 
 @pytest.mark.asyncio
 async def test_firebase_streaming_webhook_no_user_id():
-    """Test that missing user_id in streaming endpoint returns error."""
     with TestClient(app) as client:
         response = client.post(
             f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream",
-            json={
-                "user_query": "Give me troubleshooting tips for washing machine",
+            json={"user_query": "Give me troubleshooting tips for washing machine",
                 "diagnosis_uris": [],
                 "context_doc_uris": [],
                 "property_address": "",
                 "session_id": ""
-            }
+            },
+            # timeout=None is not needed for TestClient
         )
         print(f"test_firebase-agent-stream_no_user_id Response: {response.text}")
-    # Streaming endpoint may return 200 with error in stream, or 400
-    assert response.status_code in [200, 400]
+    assert response.status_code == 200
     content = response.text
     assert "User ID is required" in content

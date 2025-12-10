@@ -28,56 +28,43 @@ _DISPLAY_NAME_MAP = {
     "cost_estimation_agent": "Cost Estimation Agent"
 }
 
-from config import settings
+# --- Environment Variables ---
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+GCP_REGION = os.environ.get("GCP_REGION")
+REASONING_ENGINE_ID = os.environ.get("REASONING_ENGINE_ID")
+
 
 # --- Vertex AI Reasoning Engine Client (Global) ---
-reasoning_engine_resource: AgentEngine = None
+reasoning_engine_resource:AgentEngine = None
 try:
-    if settings.gcp_project_id and settings.gcp_region and settings.reasoning_engine_id:
-        vertexai.init(project=settings.gcp_project_id, location=settings.gcp_region)
-        reasoning_engine_resource = agent_engines.get(settings.reasoning_engine_id)
-        logger.info(f"Vertex AI Reasoning Engine client initialized for: {settings.reasoning_engine_id}")
+    if GCP_PROJECT_ID and GCP_REGION and REASONING_ENGINE_ID:
+        vertexai.init(project=GCP_PROJECT_ID, location=GCP_REGION)
+        reasoning_engine_resource = agent_engines.get(REASONING_ENGINE_ID)
+        logger.info(f"Vertex AI Reasoning Engine client initialized for: {REASONING_ENGINE_ID}")
     else:
         logger.warning("Missing GCP_PROJECT_ID, GCP_REGION, or REASONING_ENGINE_ID. Vertex AI client or Session Service not initialized.")
 except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
 
-def publish_doc_to_secure_store(gcs_urls: list[str], user_query: str, user_id: str) -> dict:
-    """
-    Publishes a structured payload to Pub/Sub for document processing.
-    
-    Args:
-        gcs_urls: List of GCS URLs to process
-        user_query: User query text
-        user_id: User identifier
-        
-    Returns:
-        Dict with success message or error
-    """
+def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
+    """Publishes a structured payload to a secure storage."""
     try:
-        from google.cloud import pubsub_v1
-        from config import settings
-        
-        if not settings.gcp_project_id or not settings.user_upload_topic:
-            raise ValueError("GCP_PROJECT_ID and USER_UPLOAD_TOPIC must be configured")
-        
+        from google.cloud import pubsub_v1  # <-- Fix import
         publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(settings.gcp_project_id, settings.user_upload_topic)
         
+        topic_path = publisher.topic_path(os.environ.get("GCP_PROJECT_ID"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
         payload = {
             "gcs_urls": gcs_urls,
             "user_id": user_id,
             "user_query": user_query,
-            "source": "rag-file-upload"
+            "source": 'rag-file-upload'  # Add source parameter
         }
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)
-        message_id = future.result()
-        logger.info(f"Published document upload to Pub/Sub: {message_id}")
-        return {"status": "success", "message_id": message_id}
+        return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
     except Exception as e:
-        logger.error(f"Failed to publish data to Pub/Sub: {e}", exc_info=True)
+        logger.error(f"Failed to publish data to Pub/Sub: {e}")
         return {"error": str(e)}  
 
 # --- Reasoning Engine Session Management Functions ---
