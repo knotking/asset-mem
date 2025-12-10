@@ -1,135 +1,21 @@
-import base64
 import json
-import os
-from google.cloud.aiplatform_v1.types.vertex_rag_data_service import ImportRagFilesResponse
-import requests
-from datetime import datetime, timezone
-
-from vertexai import rag
-import vertexai
-
 import logging
+from datetime import datetime, timezone
 from google.cloud import pubsub_v1
-from prompts import parsing_prompt_media
+
+from config import Config
+from rag_service import RagService
+from utils import parse_pubsub_message
+from exceptions import WorkerError
+
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-RAG_CORPUS = os.environ.get("RAG_CORPUS")
-USER_UPLOAD_RESULT_TOPIC = os.environ.get("USER_UPLOAD_RESULT_TOPIC")  # Set your topic name in env
-PROJECT = os.environ.get("GCP_PROJECT_ID")
-GCS_BUCKET = os.environ.get("GCS_BUCKET")
-USER_UPLOAD_FOLDER = os.environ.get("USER_UPLOAD_FOLDER", "uploads")
-
-# Parse location from RAG_CORPUS path
-# Expected format: projects/{project}/locations/{location}/ragCorpora/{corpus_id}
-# RAG Corpus may be deployed in a different location than the project.
-def parse_location_from_corpus(corpus_path: str) -> str:
-    """Extract location from RAG corpus path."""
-    if not corpus_path:
-        return "us-central1"  # default fallback
-    try:
-        parts = corpus_path.split("/")
-        location_idx = parts.index("locations") + 1
-        return parts[location_idx]
-    except (ValueError, IndexError):
-        logger.warning(f"Could not parse location from RAG_CORPUS: {corpus_path}, using default")
-        return "us-central1"
-
-LOCATION = parse_location_from_corpus(RAG_CORPUS)
-
-
-def serialize_import_result(result):
-    """Convert ImportRagFilesResponse or similar objects to a serializable dict."""
-    if result is None:
-        return {}
-    if hasattr(result, "to_dict"):
-        return result.to_dict()
-    # Fallback: try to convert to string
-    return str(result)
-
-def is_media_mime_type(mime_type: str) -> bool:
-    """
-    Returns True if the MIME type is media (image, audio, or video), else False.
-    """
-    if not mime_type:
-        return False
-    return any(mime_type.startswith(prefix) for prefix in ("image/", "audio/", "video/"))
-
-def import_to_rag_corpus(gcs_urls, user_id:str):
-    logger.info(f"Importing files to RAG corpus: {gcs_urls}, corpus: {RAG_CORPUS}")
-
-    # Validate required environment variables
-    if not RAG_CORPUS:
-        error_msg = "RAG_CORPUS environment variable is not set"
-        logger.error(error_msg)
-        return False, error_msg
-
-    if not GCS_BUCKET:
-        error_msg = "GCS_BUCKET environment variable is not set"
-        logger.error(error_msg)
-        return False, error_msg
-
-    try:
-        # Initialize Vertex AI with the correct project and location
-        vertexai.init(project=PROJECT, location=LOCATION)
-        logger.info(f"Initialized Vertex AI with project={PROJECT}, location={LOCATION}")
-        import mimetypes
-        llmParserConfig = rag.LlmParserConfig(
-            model_name="gemini-2.5-flash",
-        )
-
-        documents_list = []
-        media_list = []
-        documents_result: ImportRagFilesResponse = None
-        media_result: ImportRagFilesResponse = None    
-        
-        for gcs_url in gcs_urls:
-            mime_type,_ = mimetypes.guess_type(gcs_url)
-            if is_media_mime_type(mime_type):
-                media_list.append(gcs_url)
-            else:
-                documents_list.append(gcs_url)
-
-        logger.info(f"Document files: {documents_list}")
-        logger.info(f"Media files: {media_list}")
-        sink_path = f"gs://{GCS_BUCKET}/{USER_UPLOAD_FOLDER}/{user_id}/import-results/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
-        # Import documents to RAG corpus
-        if documents_list:
-            documents_result:ImportRagFilesResponse = rag.import_files(
-                corpus_name=RAG_CORPUS,
-                paths=documents_list,
-                llm_parser=llmParserConfig,
-                import_result_sink=f"{sink_path}-documents.ndjson"
-            )
-
-        # Import other documents to RAG corpus
-        if media_list:
-            llmParserConfig.custom_parsing_prompt = parsing_prompt_media()
-            media_result = rag.import_files(
-                corpus_name=RAG_CORPUS,
-                paths=media_list,
-                llm_parser=llmParserConfig,
-                import_result_sink=f"{sink_path}-media.ndjson"
-            )
-        logger.info(f"Document Results: {documents_result}, Media Results: {media_result}")
-
-        return True, {
-            "document_import_result": serialize_import_result(documents_result),
-            "media_import_result": serialize_import_result(media_result)
-        }
-    except Exception as e:
-        logger.error(f"Failed to import to RAG corpus: {e}")
-        return False, str(e)
-
-
 def pubsub_to_user_docs(request, context):
     """Background Cloud Function to be triggered by Pub/Sub."""
-    if 'data' in request:
-        payload = json.loads(base64.b64decode(request['data']).decode('utf-8'))
-    else:
-        payload = {}
-
+    payload = parse_pubsub_message(request)
+    
     gcs_urls = payload.get("gcs_urls", [])
     user_id = payload.get("user_id")
     user_query = payload.get("user_query", "")
@@ -140,28 +26,44 @@ def pubsub_to_user_docs(request, context):
         return
 
     logger.info(f"Payload: {gcs_urls}, {user_id}, {user_query}")
-    # Import to Vertex AI RAG corpus
-    success, result_msg = import_to_rag_corpus(gcs_urls, user_id)
-    # rag_files = list(rag.list_files(corpus_name=RAG_CORPUS))
-    # logger.info(f"RAG corpus files after import: {rag_files}")
+    
+    success = False
+    result_msg = ""
+    
+    try:
+        rag_service = RagService()
+        result_msg = rag_service.import_files(gcs_urls, user_id)
+        success = True
+    except WorkerError as e:
+        logger.error(f"Worker Error: {e}")
+        result_msg = str(e)
+    except Exception as e:
+        logger.error(f"Unexpected Error: {e}")
+        result_msg = f"Unexpected error: {str(e)}"
+    
     logger.info(f"Result: {result_msg}")
 
-    data   = {
+    data = {
         "gcs_urls": gcs_urls,
         "user_id": user_id,
         "user_query": user_query,
         "result": result_msg,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "success": success,
-        "error": "" if success else result_msg,
+        "error": "" if success else str(result_msg),
         "source": source
     }
 
-    # Publish to Pub/Sub topic
+    _publish_result(data)
+
+def _publish_result(data):
+    """Publishes the result to the configured Pub/Sub topic."""
     try:
-        publisher = pubsub_v1.PublisherClient()
-        future = publisher.publish(topic=USER_UPLOAD_RESULT_TOPIC, data=json.dumps(data).encode("utf-8"))
-        logger.info(f"Published result to Pub/Sub topic {USER_UPLOAD_RESULT_TOPIC}: {future.result()}")
+        if Config.USER_UPLOAD_RESULT_TOPIC:
+            publisher = pubsub_v1.PublisherClient()
+            future = publisher.publish(topic=Config.USER_UPLOAD_RESULT_TOPIC, data=json.dumps(data).encode("utf-8"))
+            logger.info(f"Published result to Pub/Sub topic {Config.USER_UPLOAD_RESULT_TOPIC}: {future.result()}")
+        else:
+            logger.warning("USER_UPLOAD_RESULT_TOPIC not set, skipping publish.")
     except Exception as e:
         logger.error(f"Failed to publish to Pub/Sub topic: {e}")
-
