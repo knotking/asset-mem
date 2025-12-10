@@ -71,6 +71,26 @@ The `webapp` is a Next.js application.
     ```
     The application will typically be available at `http://localhost:9002` (as configured in `package.json`).
 
+### Running `backend` (GCP Proxy)
+
+The backend service handles API requests, document analysis, and integrations.
+
+1.  Navigate to the API directory:
+    ```bash
+    cd gcp/proxy/api
+    ```
+2.  Install Python dependencies (Python 3.9+ recommended):
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Set up environment variables:
+    Make sure you have a `.env` file with necessary GCP and Firebase credentials.
+
+4.  Run the server:
+    ```bash
+    uvicorn main:app --reload
+    ```
+
 ## Building Shared Library
 
 The `common` package is a shared library used by `mapp` and `webapp`. You need to build it for changes to be reflected.
