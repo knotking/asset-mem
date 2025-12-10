@@ -5,7 +5,7 @@ import firebase_admin
 from firebase_admin import auth
 from vertex_client import stream_agent_answers, publish_doc_to_secure_store
 import json
-from models import AgentRequest
+from schemas import AgentRequest
 
 logger = logging.getLogger(__name__)
 

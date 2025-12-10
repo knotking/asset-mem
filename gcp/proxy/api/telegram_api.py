@@ -28,7 +28,7 @@ from aiogram.filters import Command
 from aiogram import F
 from fastapi import FastAPI, Request
 import telegramify_markdown
-from models import AgentRequest
+from schemas import AgentRequest
 from optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
 
 # Import Vertex AI client logic

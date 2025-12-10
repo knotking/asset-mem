@@ -15,7 +15,7 @@ from typing import Dict, Any
 from google import genai
 from google.genai import types
 
-from models import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, KeyEntity
+from schemas import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, KeyEntity
 
 logger = logging.getLogger(__name__)
 
