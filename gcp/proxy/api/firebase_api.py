@@ -3,12 +3,7 @@ import logging
 from typing import Dict, Any, Optional, List
 import firebase_admin
 from firebase_admin import auth
-from vertex_client import (
-    stream_agent_answers, 
-    publish_doc_to_secure_store,
-    create_reasoning_engine_session,
-    delete_reasoning_engine_session
-)
+from vertex_client import stream_agent_answers, publish_doc_to_secure_store
 import json
 from models import AgentRequest
 
@@ -80,25 +75,3 @@ async def handle_firebase_agent_query(request: AgentRequest) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         return {"status": "error", "message": f"Internal server error: {e}"}
-
-def create_agent_session(user_id: str) -> Dict[str, Any]:
-    """
-    Creates a new session in the Reasoning Engine.
-    """
-    try:
-        session = create_reasoning_engine_session(user_id)
-        return {"status": "success", "id": session.get("name").split("/")[-1]} # return only the ID
-    except Exception as e:
-        logger.error(f"Error creating session: {e}")
-        return {"status": "error", "message": str(e)}
-
-def delete_agent_session(user_id: str, session_id: str) -> Dict[str, Any]:
-    """
-    Deletes a session in the Reasoning Engine.
-    """
-    try:
-        delete_reasoning_engine_session(user_id, session_id)
-        return {"status": "success"}
-    except Exception as e:
-        logger.error(f"Error deleting session: {e}")
-        return {"status": "error", "message": str(e)}

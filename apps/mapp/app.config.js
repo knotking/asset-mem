@@ -75,10 +75,10 @@ module.exports = {
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
       // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json
-      agentSessionUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase/session'),
-      agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase/stream'),
-      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase/upload'),
-      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'document/analyze'),
+      agentSessionUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'agent-session'),
+      agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase-agent-stream'),
+      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
+      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {
