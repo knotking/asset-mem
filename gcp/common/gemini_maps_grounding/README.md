@@ -210,7 +210,7 @@ from gemini_maps_grounding import GenerateContentConfig, LatLng
 async def with_config():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-3-flash",
+            model="gemini-2.5-flash",
             enable_maps_grounding=True,
             enable_widget=True,
             user_location=LatLng(latitude=34.0522, longitude=-118.2437),
@@ -270,7 +270,7 @@ Configuration container for Gemini Maps Grounding.
 #### GenerateContentConfig
 ```python
 GenerateContentConfig(
-    model: str = "gemini-3-flash",        # Model to use
+    model: str = "gemini-2.5-flash",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -331,8 +331,8 @@ maps_chunk.review_id                       # str - Review ID (if from review)
 
 Google Maps Grounding is supported by:
 - `gemini-2.5-pro`
-- `gemini-3-flash`
-- `gemini-3-flash-lite`
+- `gemini-2.5-flash`
+- `gemini-2.5-flash-lite`
 - `gemini-2.0-flash`
 
 **Note:** Maps Grounding is **not** available with Gemini 3 or Gemini 2.0 Flash Lite.

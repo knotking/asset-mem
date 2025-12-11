@@ -27,7 +27,7 @@ ask_knowledge_base_retrieval = VertexAiRagRetrieval(
 )
 
 knowledge_base_agent = Agent(
-    model='gemini-3-flash',
+    model='gemini-2.5-flash',
     name='ask_knowledge_base_agent',
     instruction=knowledge_base_instructions(),
     tools=[
