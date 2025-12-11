@@ -27,8 +27,7 @@ try:
     client = genai.Client(
         vertexai=True,
         project=PROJECT_ID,
-        location=LOCATION,
-        http_options=types.HttpOptions(api_version='v1beta1')
+        location=LOCATION
     )
     logger.info(f"Google Gen AI SDK initialized for project {PROJECT_ID} in {LOCATION}")
 except Exception as e:
@@ -126,7 +125,7 @@ Document:"""
         # Generate analysis using new SDK
         logger.info("Sending document to Gemini for analysis...")
         response = client.models.generate_content(
-            model="gemini-3-pro-preview",
+            model="gemini-2.5-flash",
             contents=contents,
             config={
                 "temperature": 0.1,  # Low temperature for consistent extraction

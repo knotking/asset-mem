@@ -19,7 +19,7 @@ def before_tool_callback(tool_context: ToolContext, **kwargs):
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
 doculink_agent = Agent(
-    model='gemini-3-pro-preview',
+    model='gemini-2.5-flash',
     name='doculink_agent',
     description=("Agent that manages and executes document retrieval-related tasks."),
     instruction=doculink_agent_system_instruction(),
@@ -33,7 +33,7 @@ doculink_agent = Agent(
 )
 
 root_agent = Agent(
-    model='gemini-3-pro-preview',
+    model='gemini-2.5-flash',
     name='property_agent',
     description=("Agent that manages and executes homecare-related tasks."),
     instruction=root_agent_instructions(),

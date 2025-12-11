@@ -41,11 +41,11 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
             vertexai=True,
             project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
             location=os.environ.get("GOOGLE_CLOUD_LOCATION"),
-            http_options=types.HttpOptions(api_version='v1beta1')
+            http_options=types.HttpOptions(api_version='v1')
         )
     
         response = client.models.generate_content(
-            model="gemini-3-pro-preview",
+            model="gemini-2.5-flash",
             contents=[
                 types.Part.from_text(text=user_query),
                 types.Part.from_uri(file_uri=gcs_url, mime_type=mimetypes.guess_type(gcs_url)[0])
@@ -65,7 +65,7 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
 
 # Create agents
 triage_agent = Agent(
-    model='gemini-3-pro-preview',
+    model='gemini-2.5-flash',
     name='triage_agent',
     description="Analyzes multimodal data and extracts the problem description.",
     instruction=triage_agent_instructions(),
@@ -78,7 +78,7 @@ triage_agent = Agent(
 # Main analysis agent calls all agents as tools
 analysis_agent = Agent(
     name='analysis_agent',
-    model='gemini-3-pro-preview',
+    model='gemini-2.5-flash',
     description="Orchestrates Triage, Coverage, DIY, and Service agents to provide comprehensive problem analysis.",
     instruction=analysis_agent_instructions(),
     tools=[
