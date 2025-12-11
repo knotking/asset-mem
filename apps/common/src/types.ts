@@ -102,7 +102,6 @@ export type StructuredResponseData = {
   // Flat structure fields (alternative to nested analysis structure)
   triageResult?: {
     diagnosis?: string;
-    annotated_media_uri?: string;
     needs_clarification?: boolean;
     message?: string;
     clarification_questions?: string[];
@@ -136,7 +135,6 @@ export type StructuredResponseData = {
     title?: string;
     triageResult?: {
       diagnosis?: string;
-      annotated_media_uri?: string;
       needs_clarification?: boolean;
       message?: string;
       clarification_questions?: string[];

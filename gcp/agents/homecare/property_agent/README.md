@@ -176,7 +176,7 @@ DocuLink input (`DocsInput`):
 ## Sub-Agent Summaries
 
 - **analysis_agent**: Orchestrator that runs multimodal triage first; if valid diagnosis, proceeds with coverage retrieval, DIY (steps, videos, products), and service (costs, local pros). Has a built-in triage guard to short-circuit on invalid inputs. Coordinates the following sub-agents:
-  - **triage_agent**: Analyzes multimodal data (with Gemini Robotics image annotation) or performs text-only triage
+  - **triage_agent**: Analyzes multimodal data or performs text-only triage
   - **coverage_agent**: Retrieves warranty/insurance from user documents
   - **diy_agent**: Provides DIY repair steps, YouTube tutorials, and product recommendations via shopping_agent
   - **service_agent**: Finds local service providers and provides cost estimates

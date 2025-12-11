@@ -45,7 +45,7 @@ The main orchestrator manages the overall workflow and delegates tasks to approp
 #### 1. Analysis Agent
 Comprehensive multimodal analysis system with multiple specialized sub-agents organized as separate modules:
 
-- **Triage Agent**: Multimodal data analysis using Gemini 2.5 Flash (or text-only triage when no media provided). Now enhanced with **Gemini Robotics** for object detection and image annotation.
+- **Triage Agent**: Multimodal data analysis using Gemini 2.5 Flash (or text-only triage when no media provided)
 - **Coverage Agent**: Retrieves warranty and insurance information from user documents
 - **DIY Agent**: Combines Google Search, YouTube videos, and product recommendations via Shopping Agent
 - **Service Agent**: Finds local service providers via SerpAPI and Yelp, provides cost estimates
@@ -62,7 +62,6 @@ Document retrieval and knowledge base access:
 
 ### Multimodal Analysis
 - **Image Analysis**: Processes photos of damage, issues, or components
-- **Visual Grounding**: Detects objects and annotates images with bounding boxes using Gemini Robotics to pinpoint issues
 - **Video Analysis**: Analyzes video content for diagnostic purposes
 - **Document Analysis**: Processes uploaded documents, manuals, and policies
 - **Problem Identification**: Extracts core issues and relevant details

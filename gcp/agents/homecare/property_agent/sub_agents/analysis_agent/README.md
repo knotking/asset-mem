@@ -45,14 +45,12 @@ Analysis Agent (orchestrator)
 
 - **Purpose**: Produce a clear diagnosis or need description either by analyzing multimodal data (images, documents, videos) when provided, or by deriving a concise diagnosis from text when no media is available. Handles repairs, maintenance, pest control, service requests, and product queries. When text-only triage is unclear, asks targeted clarification questions until a clear diagnosis can be determined.
 - **Tool (when media provided)**: `analyse_multimodal_data(user_query, gcs_url)`
-  - **Enhanced Capability**: If the media is an image, uses **Gemini Robotics** for object detection to locate and annotate the issue described in the `user_query`.
-  - **Annotation**: Draws bounding boxes around detected objects on the image and returns an `annotated_media_uri` pointing to the modified image in GCS.
 - **Output**: 
-  - JSON containing a diagnosis text when the issue is clear, optionally including `annotated_media_uri`.
+  - JSON containing a diagnosis text when the issue is clear
   - JSON with `needs_clarification: true` and `clarification_questions` array when more information is needed
   - Used by subsequent agents only after a clear diagnosis is obtained
 - **Behavior**:
-  - **With media**: Analyzes the media and returns diagnosis + optional annotated image
+  - **With media**: Analyzes the media and returns diagnosis
   - **Text-only (clear)**: Returns diagnosis from user_query
   - **Text-only (unclear)**: Asks 1-3 targeted clarification questions
   - **Iterative**: Continues asking questions until a clear, actionable diagnosis is obtained
@@ -163,7 +161,6 @@ The Analysis Agent **MUST** return responses in a dual format that includes both
     "title": "string",
     "triageResult": {
       "diagnosis": "string",
-      "annotated_media_uri": "string", // Optional: URI of image with detected objects annotated
       "needs_clarification": false
     },
     // OR when clarification is needed:
@@ -247,7 +244,6 @@ This dual format ensures:
 
 - **Comprehensive scope**: Handles repairs, maintenance, pest control, service recommendations, and product requests
 - **Multimodal analysis**: Images, videos, and documents via Gemini 2.5 Flash
-- **Visual Grounding**: Object detection and image annotation using **Gemini Robotics** for visual confirmation of issues
 - **Coverage retrieval**: Warranty and insurance details from user documents
 - **DIY guidance**: Steps, videos, and DIY product recommendations
 - **Service options**: Cost estimates and local pros from multiple sources (plumbers, electricians, pest control, contractors, etc.)

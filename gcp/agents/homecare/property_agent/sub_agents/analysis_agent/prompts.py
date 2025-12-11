@@ -38,8 +38,8 @@ def triage_agent_instructions() -> str:
         1. If `diagnosis_uris` exist, are not None, and are non-empty:
            - Extract the first URI from `diagnosis_uris` (e.g., "gs://bucket/file.jpg").
            - Call `analyse_multimodal_data` with `user_query` and the first URI.
-           - The tool will return a JSON object with `diagnosis` and optionally `annotated_media_uri`.
-           - Return the diagnosis and annotated_media_uri (if present) in JSON format.
+           - Let the tool's result be the `diagnosis`.
+           - Return the diagnosis in JSON format.
         
         2. Else (no media provided - TEXT-ONLY TRIAGE):
            - **Use `user_query` as your primary source of information.**
@@ -81,8 +81,7 @@ def triage_agent_instructions() -> str:
         ```json
         {
           "triageResult": {
-            "diagnosis": "[diagnosis text derived from media analysis or text-only triage]",
-            "annotated_media_uri": "[Optional: URI of the annotated image if objects were detected]"
+            "diagnosis": "[diagnosis text derived from media analysis or text-only triage]"
           }
         }
         ```
@@ -229,8 +228,7 @@ def analysis_agent_instructions() -> str:
           "analysis": {
             "title": "[Concise title derived from the diagnosis/user request]",
             "triageResult": {
-              "diagnosis": "[diagnosis from triage_agent]",
-              "annotated_media_uri": "[Optional: URI of the annotated image from triage_agent]"
+              "diagnosis": "[diagnosis from triage_agent]"
             },
             "coverageResult": {
               "warrantyInfo": "[warranty information]",

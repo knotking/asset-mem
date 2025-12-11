@@ -5,8 +5,6 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { useFirebase } from '@homeapp/common/contexts/firebase';
-import { ref, getDownloadURL } from 'firebase/storage';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -448,60 +446,6 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
   );
 });
 
-const AnnotatedImage = React.memo(({ uri }: { uri: string }) => {
-  const { storage } = useFirebase();
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  React.useEffect(() => {
-    let isMounted = true;
-    const resolveUri = async () => {
-      if (!uri) return;
-      
-      try {
-        setLoading(true);
-        if (uri.startsWith('gs://')) {
-          const storageRef = ref(storage, uri);
-          const url = await getDownloadURL(storageRef);
-          if (isMounted) setImageUrl(url);
-        } else {
-          if (isMounted) setImageUrl(uri);
-        }
-      } catch (e) {
-        console.error('Failed to resolve annotated image URI:', e);
-        if (isMounted) setError(true);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    
-    resolveUri();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [uri, storage]);
-
-  if (error || !imageUrl) return null;
-
-  return (
-    <View className="mb-4 h-48 w-full overflow-hidden rounded-md bg-muted">
-       {loading && (
-          <View className="absolute inset-0 z-10 flex items-center justify-center bg-muted/50">
-             <Skeleton className="h-full w-full" />
-          </View>
-       )}
-      <Image
-        source={{ uri: imageUrl }}
-        style={{ width: '100%', height: '100%' }}
-        contentFit="contain"
-        transition={200}
-      />
-    </View>
-  );
-});
-
 const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData }) => {
   const markdownStyles = useMarkdownStyles(false);
 
@@ -563,10 +507,9 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   const hasTriage = useMemo(
     () =>
       !!(
-        (triage?.diagnosis &&
-          typeof triage.diagnosis === 'string' &&
-          triage.diagnosis.trim() !== '') ||
-        triage?.annotated_media_uri
+        triage?.diagnosis &&
+        typeof triage.diagnosis === 'string' &&
+        triage.diagnosis.trim() !== ''
       ),
     [triage]
   );
@@ -636,21 +579,9 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                   </View>
                 </View>
               ) : hasTriage ? (
-                <View>
-                  {triage?.diagnosis ? (
-                    <Markdown style={markdownStyles} rules={markdownRules}>
-                      {triage.diagnosis}
-                    </Markdown>
-                  ) : null}
-                  {triage?.annotated_media_uri && (
-                    <View className="mt-3">
-                      <Text className="mb-2 text-sm font-semibold text-foreground">
-                        Visual Analysis
-                      </Text>
-                      <AnnotatedImage uri={triage.annotated_media_uri} />
-                    </View>
-                  )}
-                </View>
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {triage!.diagnosis!}
+                </Markdown>
               ) : null}
             </AccordionContent>
           </AccordionItem>
