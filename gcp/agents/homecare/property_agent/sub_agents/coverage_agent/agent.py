@@ -7,7 +7,7 @@ from ...agent_inputs import DocsInput
 load_dotenv()
 
 coverage_agent = Agent(
-    model='gemini-3.0-pro-002',
+    model='gemini-2.5-flash',
     name='coverage_agent',
     description="Retrieves warranty and insurance coverage information from user documents.",
     instruction=coverage_agent_instructions(),

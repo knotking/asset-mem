@@ -103,7 +103,7 @@ class GeminiMapsGroundingClient:
     async def generate_content(
         self,
         contents: str,
-        model: str = "gemini-3.0-pro-002",
+        model: str = "gemini-2.5-flash",
         enable_maps_grounding: bool = True,
         enable_widget: bool = False,
         user_location: Optional[LatLng] = None,
@@ -282,7 +282,7 @@ class GeminiMapsGroundingClient:
             
         Example:
             config = GenerateContentConfig(
-                model="gemini-3.0-pro-002",
+                model="gemini-2.5-flash",
                 enable_maps_grounding=True,
                 enable_widget=True,
                 user_location=LatLng(latitude=34.050481, longitude=-118.248526),

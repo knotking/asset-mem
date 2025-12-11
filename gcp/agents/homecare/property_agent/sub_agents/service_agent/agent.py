@@ -17,7 +17,7 @@ load_dotenv()
 # Google search agent for service searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-3.0-pro-002",
+    model="gemini-2.5-flash-lite",
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -49,7 +49,7 @@ def yelpapi_search(query: str) -> str:
 
 
 service_agent = Agent(
-    model='gemini-3.0-pro-002',
+    model='gemini-2.5-flash',
     name='service_agent',
     description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),
