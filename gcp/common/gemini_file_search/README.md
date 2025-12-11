@@ -314,7 +314,7 @@ Citation(
 The following models support File Search:
 
 - `gemini-3-pro-preview`
-- `gemini-2.5-pro`
+- `gemini-3-pro-preview`
 - `gemini-3-pro-preview` and its preview versions
 - `gemini-2.5-flash-lite` and its preview versions
 

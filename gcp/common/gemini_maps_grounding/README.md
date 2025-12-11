@@ -330,7 +330,7 @@ maps_chunk.review_id                       # str - Review ID (if from review)
 ## Supported Models
 
 Google Maps Grounding is supported by:
-- `gemini-2.5-pro`
+- `gemini-3-pro-preview`
 - `gemini-3-pro-preview`
 - `gemini-2.5-flash-lite`
 - `gemini-2.0-flash`
