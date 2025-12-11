@@ -69,7 +69,7 @@ class RagService:
             return None
         
         llmParserConfig = rag.LlmParserConfig(
-            model_name="gemini-3-pro-preview",
+            model_name="gemini-2.5-flash",
         )
         return rag.import_files(
             corpus_name=Config.RAG_CORPUS,
@@ -83,7 +83,7 @@ class RagService:
             return None
 
         llmParserConfig = rag.LlmParserConfig(
-            model_name="gemini-3-pro-preview",
+            model_name="gemini-2.5-flash",
             custom_parsing_prompt=parsing_prompt_media()
         )
         return rag.import_files(

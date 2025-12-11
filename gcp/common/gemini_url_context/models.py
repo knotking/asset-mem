@@ -72,7 +72,7 @@ class URLContextMetadata(BaseModel):
 class GenerateContentConfig(BaseModel):
     """Configuration for generateContent with URL context."""
     model: str = Field(
-        default="gemini-3-pro-preview",
+        default="gemini-2.5-flash",
         description="Model to use (must support URL context)"
     )
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Temperature")

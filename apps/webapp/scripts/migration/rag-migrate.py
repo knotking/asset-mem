@@ -189,7 +189,7 @@ def import_user_files(user_id: str, gcs_urls: List[str]) -> Tuple[bool, str]:
     try:
         # Configure LLM parser (same as main.py)
         llm_parser_config = rag.LlmParserConfig(
-            model_name="gemini-3-pro-preview",
+            model_name="gemini-2.5-flash",
         )
 
         # Separate documents and media
