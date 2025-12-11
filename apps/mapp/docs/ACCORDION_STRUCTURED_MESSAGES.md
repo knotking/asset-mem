@@ -70,6 +70,7 @@ export type StructuredResponseData = {
     title?: string;
     triageResult?: {
       diagnosis?: string;
+      annotated_media_uri?: string;
       needs_clarification?: boolean;
       message?: string;
       clarification_questions?: string[];
@@ -177,6 +178,7 @@ Displays parsed JSON data in accordion sections with intelligent content detecti
 1. **Triage Summary** ([ChatMessage.tsx:553-588](apps/mapp/components/ChatMessage.tsx#L553-L588))
    - Icon: Stethoscope (Info color)
    - Shows diagnosis from `triageResult.diagnosis`
+   - **Visual Analysis**: If `triageResult.annotated_media_uri` is present, displays the annotated image.
    - **Clarification Mode**: If `needs_clarification === true`
      - Displays `clarification_questions` as numbered list
      - Shows `message` explaining what information is needed

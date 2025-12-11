@@ -24,6 +24,7 @@ dependencies = [
     "tools==1.0.6",
     "tqdm==4.66.1",
     "youtube-search==2.1.2",
+    "Pillow==10.2.0",
 ]
 
 [project.optional-dependencies]
