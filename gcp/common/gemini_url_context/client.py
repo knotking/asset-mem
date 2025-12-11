@@ -100,7 +100,7 @@ class GeminiURLContextClient:
     async def generate_content(
         self,
         contents: str,
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.0-pro-002",
         enable_url_context: bool = True,
         enable_google_search: bool = False,
         temperature: Optional[float] = None,
@@ -250,7 +250,7 @@ class GeminiURLContextClient:
             
         Example:
             config = GenerateContentConfig(
-                model="gemini-2.5-flash",
+                model="gemini-3.0-pro-002",
                 enable_url_context=True,
                 enable_google_search=True,
                 temperature=0.7

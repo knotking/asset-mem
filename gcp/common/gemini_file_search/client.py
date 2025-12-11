@@ -313,7 +313,7 @@ class GeminiFileSearchClient:
         self,
         contents: str,
         file_search_store_names: List[str],
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.0-pro-002",
         temperature: Optional[float] = None,
         max_output_tokens: Optional[int] = None,
         response_mime_type: Optional[str] = None,

@@ -78,7 +78,7 @@ class GroundingMetadata(BaseModel):
 class GenerateContentConfig(BaseModel):
     """Configuration for generateContent with Maps Grounding."""
     model: str = Field(
-        default="gemini-2.5-flash",
+        default="gemini-3.0-pro-002",
         description="Model to use (must support Maps Grounding)"
     )
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Temperature")
