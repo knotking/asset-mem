@@ -787,7 +787,7 @@ gcloud functions deploy pubsub_to_user_docs --gen2 --runtime python313
 
 ## Related Documentation
 
-- **[Proxy Architecture](./proxy/ARCHITECTURE.md)** - Detailed proxy service architecture
+- **[Proxy Architecture](../proxy/docs/ARCHITECTURE.md)** - Detailed proxy service architecture
 - **[Setup and Deployment](./SETUP_AND_DEPLOYMENT.md)** - Comprehensive setup guide
-- **[Agents README](./agents/homecare/README.md)** - Agent system documentation
-- **[Terraform README](./terraform/README.md)** - Infrastructure documentation
+- **[Agents README](../agents/homecare/README.md)** - Agent system documentation
+- **[Terraform README](../terraform/README.md)** - Infrastructure documentation

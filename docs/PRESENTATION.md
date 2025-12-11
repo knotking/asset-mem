@@ -639,8 +639,8 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 
 - **Architecture Diagrams**: [`ARCHITECTURE_DIAGRAM.md`](./ARCHITECTURE_DIAGRAM.md)
 - **Technology Stack**: [`TECH_STACK.md`](./TECH_STACK.md)
-- **Backend Architecture**: [`../gcp/ARCHITECTURE.md`](../gcp/ARCHITECTURE.md)
-- **Setup Guide**: [`../gcp/SETUP_AND_DEPLOYMENT.md`](../gcp/SETUP_AND_DEPLOYMENT.md)
+- **Backend Architecture**: [`../gcp/docs/ARCHITECTURE.md`](../gcp/docs/ARCHITECTURE.md)
+- **Setup Guide**: [`../gcp/docs/SETUP_AND_DEPLOYMENT.md`](../gcp/docs/SETUP_AND_DEPLOYMENT.md)
 - **Frontend Guide**: [`../apps/README.md`](../apps/README.md)
 
 ---

@@ -477,8 +477,8 @@ HomeApp/
 
 ## Related Documentation
 
-- **Backend Architecture**: See [`gcp/ARCHITECTURE.md`](./gcp/ARCHITECTURE.md)
+- **Backend Architecture**: See [`gcp/docs/ARCHITECTURE.md`](./gcp/docs/ARCHITECTURE.md)
 - **Technology Stack**: See [`TECH_STACK.md`](./TECH_STACK.md)
-- **Setup Guide**: See [`gcp/SETUP_AND_DEPLOYMENT.md`](./gcp/SETUP_AND_DEPLOYMENT.md)
+- **Setup Guide**: See [`gcp/docs/SETUP_AND_DEPLOYMENT.md`](./gcp/docs/SETUP_AND_DEPLOYMENT.md)
 - **Terraform Guide**: See [`gcp/terraform/README.md`](./gcp/terraform/README.md)
 

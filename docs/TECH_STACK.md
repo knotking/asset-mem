@@ -311,6 +311,6 @@ The common package provides:
 For detailed setup and deployment instructions, refer to:
 - `apps/README.md` - Frontend setup guide
 - `gcp/README.md` - Backend setup guide
-- `gcp/ARCHITECTURE.md` - Backend architecture details
-- `gcp/SETUP_AND_DEPLOYMENT.md` - Deployment guide
+- `gcp/docs/ARCHITECTURE.md` - Backend architecture details
+- `gcp/docs/SETUP_AND_DEPLOYMENT.md` - Deployment guide
 
