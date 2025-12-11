@@ -85,6 +85,12 @@ def main():
     display_name = f"HomecareAgent-{environment}"
     extra_packages = ["./property_agent"]
 
+    # Validate environment variables
+    missing_env_vars = [var for var in common_env_vars if not os.getenv(var)]
+    if missing_env_vars:
+        logger.error(f"Missing required environment variables: {missing_env_vars}")
+        raise ValueError(f"Missing required environment variables: {missing_env_vars}")
+
     if action == "create":
         # try:
         #     current_engine = agent_engines.get(AGENT_ENGINE_ID)
@@ -113,6 +119,7 @@ def main():
             resource_name=AGENT_ENGINE_ID,
             agent_engine=app,
             env_vars=common_env_vars,
+            requirements=common_requirements,
             extra_packages=extra_packages
         )
         logging.info(f"Updated agent on Vertex AI Agent Engine successfully, resource name: {updated_app.resource_name}")
