@@ -331,7 +331,7 @@ class URLRetrievalStatus(str, Enum):
 ## Supported Models
 
 The URL context tool is supported by:
-- `gemini-3-pro-preview`
+- `gemini-2.5-pro`
 - `gemini-3-pro-preview`
 - `gemini-2.5-flash-lite`
 - `gemini-live-2.5-flash-preview`
