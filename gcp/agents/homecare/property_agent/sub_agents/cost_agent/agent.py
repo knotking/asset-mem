@@ -258,7 +258,7 @@ def cost_estimation_diy(query: str) -> str:
 
 
 cost_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3-pro-preview',
     name='cost_agent',
     description='Provides DIY vs Service cost estimations and DIY-only estimates.',
     instruction=(

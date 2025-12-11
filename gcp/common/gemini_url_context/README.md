@@ -186,7 +186,7 @@ from gemini_url_context import GenerateContentConfig
 async def with_config():
     async with GeminiURLContextClient(GeminiURLContextConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-2.5-flash",
+            model="gemini-3-pro-preview",
             enable_url_context=True,
             enable_google_search=False,
             temperature=0.7,
@@ -271,7 +271,7 @@ Configuration container for Gemini URL Context.
 #### GenerateContentConfig
 ```python
 GenerateContentConfig(
-    model: str = "gemini-2.5-flash",        # Model to use
+    model: str = "gemini-3-pro-preview",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -332,7 +332,7 @@ class URLRetrievalStatus(str, Enum):
 
 The URL context tool is supported by:
 - `gemini-2.5-pro`
-- `gemini-2.5-flash`
+- `gemini-3-pro-preview`
 - `gemini-2.5-flash-lite`
 - `gemini-live-2.5-flash-preview`
 - `gemini-2.0-flash-live-001`

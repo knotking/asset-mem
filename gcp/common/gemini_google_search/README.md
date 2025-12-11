@@ -192,7 +192,7 @@ from gemini_google_search import GenerateContentConfig
 async def with_config():
     async with GeminiGoogleSearchClient(GeminiGoogleSearchConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-2.5-flash",
+            model="gemini-3-pro-preview",
             enable_google_search=True,
             enable_url_context=False,
             temperature=0.7,
@@ -275,7 +275,7 @@ Configuration container for Gemini Google Search Grounding.
 #### GenerateContentConfig
 ```python
 GenerateContentConfig(
-    model: str = "gemini-2.5-flash",        # Model to use
+    model: str = "gemini-3-pro-preview",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -340,7 +340,7 @@ grounding_support.text                     # str - text of segment
 
 The Google Search Grounding tool is supported by:
 - `gemini-2.5-pro`
-- `gemini-2.5-flash`
+- `gemini-3-pro-preview`
 - `gemini-2.5-flash-lite`
 - `gemini-2.0-flash`
 - `gemini-1.5-pro`

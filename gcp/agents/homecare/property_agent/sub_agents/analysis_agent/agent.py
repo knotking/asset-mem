@@ -45,7 +45,7 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
         )
     
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3-pro-preview",
             contents=[
                 types.Part.from_text(text=user_query),
                 types.Part.from_uri(file_uri=gcs_url, mime_type=mimetypes.guess_type(gcs_url)[0])
@@ -65,7 +65,7 @@ def analyse_multimodal_data(user_query: str, gcs_url: str, tool_context: ToolCon
 
 # Create agents
 triage_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3-pro-preview',
     name='triage_agent',
     description="Analyzes multimodal data and extracts the problem description.",
     instruction=triage_agent_instructions(),
@@ -78,7 +78,7 @@ triage_agent = Agent(
 # Main analysis agent calls all agents as tools
 analysis_agent = Agent(
     name='analysis_agent',
-    model='gemini-2.5-flash',
+    model='gemini-3-pro-preview',
     description="Orchestrates Triage, Coverage, DIY, and Service agents to provide comprehensive problem analysis.",
     instruction=analysis_agent_instructions(),
     tools=[
