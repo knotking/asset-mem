@@ -16,7 +16,7 @@ load_dotenv()
 # Google search agent for DIY searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3-flash-lite",
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -35,7 +35,7 @@ youtube_search = YouTubeSearchTool(
 
 
 diy_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3-flash',
     name='diy_agent',
     description="Provides DIY repair recommendations, tutorials, and product suggestions.",
     instruction=diy_agent_instructions(),
