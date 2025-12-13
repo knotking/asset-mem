@@ -2,6 +2,7 @@
 
 > **AI-Powered Home Care & Property Diagnostics Platform**
 
+
 ---
 
 ## Table of Contents
@@ -19,6 +20,8 @@
 11. [Future Roadmap](#future-roadmap)
 
 ---
+
+<img width="1241" height="694" alt="HomeGeek AI Idea Explained" src="https://github.com/user-attachments/assets/081a804b-7a93-4194-9fb8-21c2b1e6c525" />
 
 ## Executive Summary
 
