@@ -9,6 +9,8 @@ This repository contains the complete source code for the HomeApp platform, a co
 >
 > 📊 **Presentation**: For project presentations, demos, and overview slides, see [PRESENTATION.md](./docs/PRESENTATION.md).
 
+<img width="1241" height="694" alt="HomeGeek AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
+
 ## Project Structure
 
 The monorepo is organized into two main areas:
