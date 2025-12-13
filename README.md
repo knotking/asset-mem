@@ -1,4 +1,5 @@
-# HomeApp Monorepo
+
+# HomeApp 
 
 This repository contains the complete source code for the HomeApp platform, a comprehensive AI-powered property care system. It integrates frontend applications (Mobile & Web) with a sophisticated backend built on Google Cloud Platform.
 
