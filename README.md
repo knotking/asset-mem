@@ -11,6 +11,8 @@ This repository contains the complete source code for the HomeApp platform, a co
 
 <img width="1241" height="694" alt="HomeGeek AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
 
+<img width="2752" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/70c8be49-b847-4cdc-b790-2bcfc2cdb113" />
+
 ## Project Structure
 
 The monorepo is organized into two main areas:
