@@ -120,19 +120,28 @@ jobs:
 
           echo "✓ Cloud Run service deleted"
 
-      - name: Delete Cloud Function
+      - name: Delete Cloud Functions
         continue-on-error: true
         run: |
           REGION="${{ inputs.region }}"
 
-          echo "Deleting Cloud Function in region: $REGION"
+          echo "Deleting Cloud Functions in region: $REGION"
+
+          echo "Deleting pubsub_to_user_docs function..."
           gcloud functions delete pubsub_to_user_docs-${{ inputs.environment_name }} \
             --gen2 \
             --region=$REGION \
             --project=${{ inputs.gcp_project_id }} \
-            --quiet
+            --quiet || echo "⚠️ pubsub_to_user_docs function may not exist"
 
-          echo "✓ Cloud Function deleted"
+          echo "Deleting pubsub_checkpoint_analysis function..."
+          gcloud functions delete pubsub-checkpoint-analysis-${{ inputs.environment_name }} \
+            --gen2 \
+            --region=$REGION \
+            --project=${{ inputs.gcp_project_id }} \
+            --quiet || echo "⚠️ pubsub_checkpoint_analysis function may not exist"
+
+          echo "✓ Cloud Functions deleted"
 
   destroy-infrastructure:
     name: Destroy Infrastructure
@@ -168,6 +177,8 @@ jobs:
           gcloud pubsub topics delete "user-upload-topic-${ENV}" \
             --project=$PROJECT_ID --quiet || true
           gcloud pubsub topics delete "user-upload-result-topic-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+          gcloud pubsub topics delete "checkpoint-analysis-topic-${ENV}" \
             --project=$PROJECT_ID --quiet || true
 
           echo "✓ Pub/Sub resources deleted"
@@ -599,11 +610,11 @@ jobs:
 
           The following resources were deleted:
           - Cloud Run service: \`homecare-agent-proxy-${{ inputs.environment_name }}\`
-          - Cloud Function: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`
+          - Cloud Functions: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`, \`pubsub-checkpoint-analysis-${{ inputs.environment_name }}\`
           - Firebase App Hosting backend: \`${{ inputs.environment_name }}\`
           - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, \`homegeek-agent-${{ inputs.environment_name }}\`, Firebase Storage
           - Artifact Registry: \`cloud-run-source-deploy\` (${{ inputs.region }})
-          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`
+          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`, \`checkpoint-analysis-topic-${{ inputs.environment_name }}\`
           - Firestore database
           - RAG corpora: \`user-upload-rag-corpus-${{ inputs.environment_name }}\`, \`knowledge-base-rag-corpus-${{ inputs.environment_name }}\`
           - IAM role bindings: 26 roles removed from service accounts before deletion

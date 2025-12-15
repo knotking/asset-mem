@@ -1,0 +1,104 @@
+name: Deploy Checkpoint Analysis Function
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "gcp/proxy/workers/function/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select the deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment ||  'staging' }}
+    env:
+      FUNCTION_NAME_BASE: pubsub-checkpoint-analysis
+      RUNTIME: python313
+      ENTRY_POINT: pubsub_checkpoint_analysis
+      MAX_INSTANCES: 10
+      CONCURRENCY: 1
+      MEMORY: 512Mi
+      SOURCE_DIRECTORY: gcp/proxy/workers/function
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required GitHub variables
+        run: |
+          missing_vars=()
+
+          if [ -z "${{ vars.GCP_REGION }}" ]; then
+            missing_vars+=("GCP_REGION")
+          fi
+
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            missing_vars+=("GCP_PROJECT_ID")
+          fi
+
+          if [ -z "${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}" ]; then
+            missing_vars+=("CHECKPOINT_ANALYSIS_TOPIC")
+          fi
+
+          if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          fi
+
+          if [ -z "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}" ]; then
+            missing_vars+=("GCP_SERVICE_ACCOUNT_EMAIL")
+          fi
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
+            echo "Please set the following variables in your GitHub repository settings:"
+            printf '  - %s\n' "${missing_vars[@]}"
+            exit 1
+          fi
+
+          echo "✓ All required GitHub variables are set"
+
+      - name: Set environment variables
+        run: |
+          echo "REGION=${{ vars.GCP_REGION }}" >> $GITHUB_ENV
+          echo "FUNCTION_NAME=${{ env.FUNCTION_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
+          echo "TRIGGER_TOPIC=projects/${{ vars.GCP_PROJECT_ID }}/topics/${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}" >> $GITHUB_ENV
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
+
+      - name: Deploy Cloud Function
+        id: deploy
+        uses: "google-github-actions/deploy-cloud-functions@v3"
+        with:
+          name: ${{ env.FUNCTION_NAME }}
+          runtime: ${{ env.RUNTIME }}
+          region: ${{ env.REGION }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          entry_point: ${{ env.ENTRY_POINT }}
+          source_dir: ${{ env.SOURCE_DIRECTORY }}
+          max_instance_count: ${{ env.MAX_INSTANCES }}
+          max_instance_request_concurrency: ${{ env.CONCURRENCY }}
+          memory: ${{ env.MEMORY }}
+          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
+          event_trigger_pubsub_topic: ${{ env.TRIGGER_TOPIC }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+          environment_variables: |
+            GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            GCP_LOCATION=${{ vars.GCP_REGION }}

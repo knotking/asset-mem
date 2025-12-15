@@ -410,16 +410,20 @@ export interface AnalyzeCheckpointInput {
   imageUrl: string;
   contentType: string;
   location?: string;
+  checkpointId: string;
+  userId: string;
+  propertyId: string;
 }
 
 export interface AnalyzeCheckpointOutput {
-  summary: string;
-  conditions: string[];
-  detectedItems: string[];
-  issues: string[];
+  status: 'accepted';
+  message: string;
+  checkpointId: string;
 }
 
-export async function analyzeCheckpoint(input: AnalyzeCheckpointInput): Promise<AnalyzeCheckpointOutput> {
+export async function analyzeCheckpoint(
+  input: AnalyzeCheckpointInput
+): Promise<AnalyzeCheckpointOutput> {
   try {
     const url = CHECKPOINT_ANALYSIS_URL;
     if (!url) {
@@ -436,7 +440,9 @@ export async function analyzeCheckpoint(input: AnalyzeCheckpointInput): Promise<
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Failed to analyze checkpoint, status: ${response.status}, body: ${errorBody}`);
+      throw new Error(
+        `Failed to analyze checkpoint, status: ${response.status}, body: ${errorBody}`
+      );
     }
 
     const data = await response.json();
@@ -470,7 +476,9 @@ export interface CompareCheckpointsOutput {
   regions: ChangeRegion[];
 }
 
-export async function compareCheckpoints(input: CompareCheckpointsInput): Promise<CompareCheckpointsOutput> {
+export async function compareCheckpoints(
+  input: CompareCheckpointsInput
+): Promise<CompareCheckpointsOutput> {
   try {
     const url = CHECKPOINT_COMPARISON_URL;
     if (!url) {
@@ -487,7 +495,9 @@ export async function compareCheckpoints(input: CompareCheckpointsInput): Promis
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Failed to compare checkpoints, status: ${response.status}, body: ${errorBody}`);
+      throw new Error(
+        `Failed to compare checkpoints, status: ${response.status}, body: ${errorBody}`
+      );
     }
 
     const data = await response.json();

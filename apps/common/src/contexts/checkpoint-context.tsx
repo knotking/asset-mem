@@ -3,6 +3,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -27,8 +29,11 @@ import { useFirebase } from "./firebase-context";
 interface CheckpointContextType {
   checkpoints: Checkpoint[];
   loading: boolean;
+  isLoadingEarlier: boolean;
+  hasMoreCheckpoints: boolean;
   selectedCheckpoint: Checkpoint | null;
   setSelectedCheckpoint: (checkpoint: Checkpoint | null) => void;
+  loadMoreCheckpoints: () => Promise<void>;
   createCheckpoint: (
     data: Partial<Checkpoint>,
     mediaFiles: { uri: string; type: "image" | "video" }[]
@@ -48,20 +53,43 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
   const { property } = useProperty();
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
+  const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(true);
+  const [checkpointsLimit, setCheckpointsLimit] = useState(20); // Start with 20 checkpoints
   const [selectedCheckpoint, setSelectedCheckpoint] =
     useState<Checkpoint | null>(null);
+
+  // Function to load more checkpoints (pagination)
+  const loadMoreCheckpoints = useCallback(async () => {
+    if (!user || !property || isLoadingEarlier || !hasMoreCheckpoints) {
+      return;
+    }
+
+    setIsLoadingEarlier(true);
+    try {
+      // Increase the limit to fetch more checkpoints
+      const newLimit = checkpointsLimit + 20;
+      setCheckpointsLimit(newLimit);
+    } catch (err) {
+      console.error("Error loading more checkpoints:", err);
+    } finally {
+      setIsLoadingEarlier(false);
+    }
+  }, [user, property, isLoadingEarlier, hasMoreCheckpoints, checkpointsLimit]);
 
   useEffect(() => {
     if (!user || !property) {
       setCheckpoints([]);
       setLoading(false);
+      setHasMoreCheckpoints(true);
       return;
     }
 
     setLoading(true);
     const q = query(
       collection(db, `users/${user.uid}/properties/${property.id}/checkpoints`),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(checkpointsLimit) // Add limit to query
     );
 
     const unsubscribe = onSnapshot(
@@ -74,6 +102,10 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
         setCheckpoints(checkpointsData);
         setLoading(false);
+
+        // Check if there are more checkpoints available
+        // If we got exactly the limit, there might be more
+        setHasMoreCheckpoints(snapshot.docs.length >= checkpointsLimit);
       },
       (error) => {
         console.error("Error fetching checkpoints:", error);
@@ -82,7 +114,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [user, property]);
+  }, [user, property, db, checkpointsLimit]);
 
   const createCheckpoint = async (
     data: Partial<Checkpoint>,
@@ -176,8 +208,11 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       value={{
         checkpoints,
         loading,
+        isLoadingEarlier,
+        hasMoreCheckpoints,
         selectedCheckpoint,
         setSelectedCheckpoint,
+        loadMoreCheckpoints,
         createCheckpoint,
         updateCheckpoint,
         deleteCheckpoint,
