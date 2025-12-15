@@ -3,10 +3,10 @@ import logging
 import asyncio
 from services.service_broker_service import handle_service_broker_payload
 
-router = APIRouter()
+router = APIRouter(tags=["Service Broker"])
 logger = logging.getLogger(__name__)
 
-@router.post("/service-broker-agent")
+@router.post("/service-broker-agent", summary="Service Broker Webhook", description="Handle incoming webhooks for the service broker agent.")
 async def service_broker_agent_webhook(request: Request):
     logger.info("Service broker agent webhook received a request.")
     try:

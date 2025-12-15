@@ -6,10 +6,10 @@ from schemas.agent import AgentRequest, SessionRequest
 from services.agent_service import handle_firebase_agent_query, stream_firebase_agent_answers
 from services.vertex_service import create_reasoning_engine_session, delete_reasoning_engine_session
 
-router = APIRouter()
+router = APIRouter(tags=["Agent"])
 logger = logging.getLogger(__name__)
 
-@router.post("/firebase-agent-query")
+@router.post("/firebase-agent-query", summary="Handle Agent Query", description="Process a query from the agent and return a response.")
 async def firebase_webhook(request_data: AgentRequest):
     logger.info(f"Firebase query webhook data: {request_data.model_dump_json()}")
     try:
@@ -18,7 +18,7 @@ async def firebase_webhook(request_data: AgentRequest):
         logger.error(f"Error processing Firebase webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.post("/firebase-agent-stream")
+@router.post("/firebase-agent-stream", summary="Stream Agent Response", description="Process a query from the agent and stream the response.")
 async def firebase_streaming_webhook(request_data: AgentRequest):
     try:
         return StreamingResponse(stream_firebase_agent_answers(request_data), media_type="text/event-stream")
@@ -26,7 +26,7 @@ async def firebase_streaming_webhook(request_data: AgentRequest):
         logger.error(f"Error processing Firebase streaming webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.post("/agent-session")
+@router.post("/agent-session", summary="Create Agent Session", description="Create a new session for the agent.")
 async def firebase_agent_session_create(request_data: AgentRequest):
     logger.info(f"Received session create request from user: {request_data.user_id}")
     try:
@@ -35,7 +35,7 @@ async def firebase_agent_session_create(request_data: AgentRequest):
         logger.error(f"Error processing agent session create: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.delete("/agent-session")
+@router.delete("/agent-session", summary="Delete Agent Session", description="Delete an existing agent session.")
 async def firebase_agent_session_delete(request_data: SessionRequest):
     logger.info(f"Received session delete request from user: {request_data.user_id}, {request_data.session_id}")
     try:

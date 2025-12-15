@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 
 class DocumentType(str, Enum):
@@ -11,16 +11,16 @@ class DocumentType(str, Enum):
     OTHER = "OTHER"
 
 class KeyEntity(BaseModel):
-    name: str
-    value: str
+    name: str = Field(description="Name of the entity extracted from the document")
+    value: str = Field(description="Value of the entity")
 
 class ExtractDocInfoRequest(BaseModel):
-    docUrl: str
-    contentType: str
+    docUrl: str = Field(description="The GCS URL of the document to analyze")
+    contentType: str = Field(description="MIME type of the document")
 
 class ExtractDocInfoResponse(BaseModel):
-    documentType: DocumentType
-    propertyAddress: str
-    keyEntities: List[KeyEntity]
-    summary: str
+    documentType: DocumentType = Field(description="Classified type of the document")
+    propertyAddress: str = Field(description="Address of the property found in the document")
+    keyEntities: List[KeyEntity] = Field(description="List of key-value pairs extracted from the document")
+    summary: str = Field(description="Summary of the document content")
 

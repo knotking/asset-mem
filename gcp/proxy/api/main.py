@@ -25,7 +25,12 @@ logging.basicConfig(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
 
 # --- FastAPI App ---
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="HomeApp Proxy API",
+    description="API for handling HomeApp proxy requests, including Firebase and Telegram webhooks.",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
+@app.get("/health", summary="Health Check", description="Check the health status of the API and Reasoning Engine connection.")
 async def health_check():
     status_msg = "ok"
     if not reasoning_engine_resource:

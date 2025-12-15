@@ -5,10 +5,10 @@ from schemas.document import ExtractDocInfoRequest
 from services.agent_service import handle_firebase_file_upload
 from services.document_service import extract_doc_info
 
-router = APIRouter()
+router = APIRouter(tags=["Documents"])
 logger = logging.getLogger(__name__)
 
-@router.post("/rag-file-upload")
+@router.post("/rag-file-upload", summary="Upload RAG File", description="Upload a file for RAG (Retrieval-Augmented Generation) processing.")
 async def firebase_webhook_file_upload(request_data: AgentRequest):
     logger.info(f"Firebase webhook file upload data: {request_data.model_dump_json()}")
     try:
@@ -17,7 +17,7 @@ async def firebase_webhook_file_upload(request_data: AgentRequest):
         logger.error(f"Error processing Firebase webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.post("/extract-doc-info")
+@router.post("/extract-doc-info", summary="Extract Document Info", description="Extract information from a document URL.")
 async def extract_document_info_endpoint(request_data: ExtractDocInfoRequest):
     logger.info(f"Analyzing document: {request_data.docUrl}")
     try:

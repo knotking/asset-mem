@@ -3,16 +3,16 @@ from pydantic import BaseModel, Field, field_validator
 from utils.optional_agents import normalize_analysis_optional_agents
 
 class AgentRequest(BaseModel):
-    user_id: str
-    session_id: Optional[str] = Field(default="")
-    user_query: str = Field(default="Analyse")
-    context_doc_uris: List[str] = Field(default_factory=list)
-    diagnosis_uris: List[str] = Field(default_factory=list)
-    property_address: str = Field(default="")
-    analysis_optional_agents: List[str] = Field(default_factory=list)
-    location_type: Optional[Literal["address", "location"]] = None
-    location_coordinates: Optional[Dict[str, float]] = None  # {"lat": float, "lng": float}
-    location_radius: Optional[int] = None  # 10-100 miles
+    user_id: str = Field(description="Unique identifier for the user")
+    session_id: Optional[str] = Field(default="", description="Session ID for the conversation context")
+    user_query: str = Field(default="Analyse", description="The query or prompt from the user")
+    context_doc_uris: List[str] = Field(default_factory=list, description="List of GCS URIs for context documents")
+    diagnosis_uris: List[str] = Field(default_factory=list, description="List of GCS URIs for diagnosis documents")
+    property_address: str = Field(default="", description="Address of the property being analyzed")
+    analysis_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in analysis")
+    location_type: Optional[Literal["address", "location"]] = Field(default=None, description="Type of location data provided")
+    location_coordinates: Optional[Dict[str, float]] = Field(default=None, description="Coordinates {'lat': float, 'lng': float}")
+    location_radius: Optional[int] = Field(default=None, description="Search radius in miles (10-100)")
 
     @field_validator('user_id')
     @classmethod
@@ -27,8 +27,8 @@ class AgentRequest(BaseModel):
         return normalize_analysis_optional_agents(v)
 
 class SessionRequest(BaseModel):
-    user_id: str
-    session_id: Optional[str] = None
+    user_id: str = Field(description="Unique identifier for the user")
+    session_id: Optional[str] = Field(default=None, description="Session ID to operate on")
 
 class UserUploadResultEvent(BaseModel):
     user_id: str
