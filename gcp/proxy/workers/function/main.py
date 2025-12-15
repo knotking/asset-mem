@@ -2,11 +2,14 @@ import json
 import logging
 from datetime import datetime, timezone
 from google.cloud import pubsub_v1
+import firebase_admin
+from firebase_admin import firestore
 
 from config import Config
 from rag_service import RagService
 from utils import parse_pubsub_message
 from exceptions import WorkerError
+from checkpoint_service import analyze_checkpoint_image
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
@@ -67,3 +70,69 @@ def _publish_result(data):
             logger.warning("USER_UPLOAD_RESULT_TOPIC not set, skipping publish.")
     except Exception as e:
         logger.error(f"Failed to publish to Pub/Sub topic: {e}")
+
+def pubsub_checkpoint_analysis(request, context):
+    """Background Cloud Function to process checkpoint analysis via Pub/Sub."""
+    payload = parse_pubsub_message(request)
+    
+    checkpoint_id = payload.get("checkpointId")
+    user_id = payload.get("userId")
+    property_id = payload.get("propertyId")
+    image_url = payload.get("imageUrl")
+    content_type = payload.get("contentType")
+    location = payload.get("location")
+    source = payload.get("source", "checkpoint-analysis-api")
+
+    if not checkpoint_id or not user_id or not property_id or not image_url:
+        logger.warning(f"Missing required fields in payload: {payload}")
+        return
+
+    logger.info(f"Processing checkpoint analysis: checkpointId={checkpoint_id}, userId={user_id}, propertyId={property_id}")
+
+    # Initialize Firebase Admin if not already initialized
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        # Initialize with default credentials (uses GCP service account)
+        firebase_admin.initialize_app()
+
+    db = firestore.client()
+
+    try:
+        # Analyze the checkpoint image using Gemini
+        analysis_result = analyze_checkpoint_image(image_url, content_type, location)
+
+        # Update Firestore with analysis results
+        checkpoint_ref = db.collection("users").document(user_id)\
+            .collection("properties").document(property_id)\
+            .collection("checkpoints").document(checkpoint_id)
+
+        checkpoint_ref.update({
+            "analysisStatus": "completed",
+            "aiAnalysis": {
+                "summary": analysis_result["summary"],
+                "conditions": analysis_result["conditions"],
+                "detectedItems": analysis_result["detectedItems"],
+                "issues": analysis_result["issues"],
+                "aiConfidence": 0.9,
+                "analyzedAt": firestore.SERVER_TIMESTAMP,
+            }
+        })
+
+        logger.info(f"Successfully updated checkpoint {checkpoint_id} with analysis results")
+
+    except Exception as e:
+        logger.error(f"Error processing checkpoint analysis: {e}", exc_info=True)
+        
+        # Update Firestore with failed status
+        try:
+            checkpoint_ref = db.collection("users").document(user_id)\
+                .collection("properties").document(property_id)\
+                .collection("checkpoints").document(checkpoint_id)
+            
+            checkpoint_ref.update({
+                "analysisStatus": "failed"
+            })
+            logger.info(f"Updated checkpoint {checkpoint_id} status to failed")
+        except Exception as update_error:
+            logger.error(f"Failed to update checkpoint status to failed: {update_error}", exc_info=True)

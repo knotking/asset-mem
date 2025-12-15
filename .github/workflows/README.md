@@ -89,6 +89,11 @@ Deploys the PubSub to User Docs Cloud Function.
 
 See [README-pubsub-user-docs.md](README-pubsub-user-docs.md) for details.
 
+#### [deploy-checkpoint-analysis.yaml](deploy-checkpoint-analysis.yaml)
+Deploys the Checkpoint Analysis Cloud Function.
+
+See [README-checkpoint-analysis.md](README-checkpoint-analysis.md) for details.
+
 #### [deploy-webapp-apphosting.yaml](deploy-webapp-apphosting.yaml)
 Deploys the web application to Firebase App Hosting.
 
@@ -456,4 +461,5 @@ Check workflow logs for detailed error messages.
 - [Homecare Agent Proxy Deployment](README-homecare-agent-proxy.md)
 - [Homecare Agent Deployment](README-homecare-agent.md)
 - [PubSub User Docs Deployment](README-pubsub-user-docs.md)
+- [Checkpoint Analysis Deployment](README-checkpoint-analysis.md)
 - [Webapp Deployment](README-deploy-webapp-apphosting.md)

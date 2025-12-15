@@ -214,6 +214,7 @@ export type Checkpoint = {
   media: CheckpointMedia[];
   location?: string; // e.g., "Kitchen", "Living Room", "Exterior"
   tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
+  analysisStatus?: 'pending' | 'processing' | 'completed' | 'failed';
   aiAnalysis?: CheckpointAnalysis;
   visualDiff?: VisualDiffAnalysis;
 }

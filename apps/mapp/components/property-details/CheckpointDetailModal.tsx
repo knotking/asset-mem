@@ -105,7 +105,33 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
                         <View className="rounded-lg border border-border bg-card p-4">
                             <Text className="mb-3 font-semibold text-foreground">AI Analysis</Text>
 
-                            {checkpoint.aiAnalysis ? (
+                            {checkpoint.analysisStatus === 'pending' && (
+                                <View className="flex-row items-center gap-2">
+                                    <Icon as={Loader2} size={16} className="text-muted-foreground" />
+                                    <Text className="text-sm text-muted-foreground">Analysis pending...</Text>
+                                </View>
+                            )}
+
+                            {checkpoint.analysisStatus === 'processing' && (
+                                <View className="flex-row items-center gap-2">
+                                    <Icon as={Loader2} size={16} className="animate-spin text-primary" />
+                                    <Text className="text-sm text-foreground">Analysis in progress...</Text>
+                                </View>
+                            )}
+
+                            {checkpoint.analysisStatus === 'failed' && (
+                                <View className="gap-3">
+                                    <View className="flex-row items-center gap-2">
+                                        <Icon as={AlertTriangle} size={20} className="text-destructive" />
+                                        <Text className="font-medium text-destructive">Analysis Failed</Text>
+                                    </View>
+                                    <Text className="text-sm text-muted-foreground">
+                                        Unable to analyze this checkpoint. Please try again later.
+                                    </Text>
+                                </View>
+                            )}
+
+                            {checkpoint.analysisStatus === 'completed' && checkpoint.aiAnalysis && (
                                 <View className="gap-3">
                                     <View className="flex-row items-center gap-2">
                                         <Icon
@@ -124,10 +150,12 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
                                         </Text>
                                     )}
                                 </View>
-                            ) : (
+                            )}
+
+                            {!checkpoint.analysisStatus && (
                                 <View className="flex-row items-center gap-2">
-                                    <Icon as={Loader2} size={16} className="animate-spin text-muted-foreground" />
-                                    <Text className="text-sm text-muted-foreground">Analysis in progress...</Text>
+                                    <Icon as={Loader2} size={16} className="text-muted-foreground" />
+                                    <Text className="text-sm text-muted-foreground">Analysis status unknown</Text>
                                 </View>
                             )}
                         </View>

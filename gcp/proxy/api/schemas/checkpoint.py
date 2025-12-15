@@ -5,6 +5,9 @@ class AnalyzeCheckpointRequest(BaseModel):
     imageUrl: str
     contentType: str
     location: Optional[str] = None
+    checkpointId: Optional[str] = None  # Required for Firestore update
+    userId: Optional[str] = None  # Required for Firestore update
+    propertyId: Optional[str] = None  # Required for Firestore update
 
 class CheckpointAnalysisResponse(BaseModel):
     summary: str

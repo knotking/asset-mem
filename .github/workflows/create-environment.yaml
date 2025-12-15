@@ -235,6 +235,7 @@ jobs:
       user_upload_topic: ${{ steps.pubsub.outputs.upload_topic }}
       user_upload_result_topic: ${{ steps.pubsub.outputs.result_topic }}
       user_upload_result_subscription: ${{ steps.pubsub.outputs.result_subscription }}
+      checkpoint_analysis_topic: ${{ steps.pubsub.outputs.checkpoint_analysis_topic }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
       knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
       apphosting_backend_id: ${{ steps.apphosting.outputs.backend_id }}
@@ -797,10 +798,25 @@ jobs:
             echo "✓ Subscription created: $RESULT_SUB"
           fi
 
+          # Create checkpoint analysis topic
+          CHECKPOINT_TOPIC="checkpoint-analysis-topic-${ENV}"
+          echo "Checking topic: $CHECKPOINT_TOPIC"
+
+          if gcloud pubsub topics describe $CHECKPOINT_TOPIC --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Topic already exists: $CHECKPOINT_TOPIC"
+          else
+            echo "Creating topic: $CHECKPOINT_TOPIC"
+            gcloud pubsub topics create $CHECKPOINT_TOPIC \
+              --project=$PROJECT_ID \
+              --message-retention-duration=7d
+            echo "✓ Topic created: $CHECKPOINT_TOPIC"
+          fi
+
           # Output values
           echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
           echo "result_subscription=$RESULT_SUB" >> $GITHUB_OUTPUT
+          echo "checkpoint_analysis_topic=$CHECKPOINT_TOPIC" >> $GITHUB_OUTPUT
 
       - name: Enable Firebase Services
         id: firebase_enable
@@ -1427,6 +1443,7 @@ jobs:
           set_or_update_var "USER_UPLOAD_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_topic }}"
           set_or_update_var "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}"
           set_or_update_var "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
+          set_or_update_var "CHECKPOINT_ANALYSIS_TOPIC" "${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}"
           set_or_update_var "USER_UPLOAD_FOLDER" "uploads-${{ inputs.environment_name }}"
 
           # RAG and Agent configuration
@@ -1476,6 +1493,7 @@ jobs:
           USER_UPLOAD_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_topic }}
           USER_UPLOAD_RESULT_SUBSCRIPTION=${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}
           USER_UPLOAD_RESULT_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
+          CHECKPOINT_ANALYSIS_TOPIC=${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}
           USER_UPLOAD_FOLDER=uploads-${{ inputs.environment_name }}
 
           # RAG and Agent Configuration
@@ -1572,6 +1590,7 @@ jobs:
           | \`USER_UPLOAD_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_topic }}\` |
           | \`USER_UPLOAD_RESULT_SUBSCRIPTION\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}\` |
           | \`USER_UPLOAD_RESULT_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
+          | \`CHECKPOINT_ANALYSIS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}\` |
           | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |

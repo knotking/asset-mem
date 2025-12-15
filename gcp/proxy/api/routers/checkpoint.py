@@ -1,11 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import logging
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
 )
-from checkpoint_analysis import analyze_checkpoint
-from checkpoint_comparison import compare_checkpoints
+from services.checkpoint_service import publish_checkpoint_analysis
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -14,22 +13,44 @@ logger = logging.getLogger(__name__)
 async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
     """
     Analyze a property checkpoint image using Gemini AI.
+    
+    This endpoint publishes the analysis request to Pub/Sub for async processing.
+    Returns immediately (202 Accepted). The worker function will process the
+    analysis and update Firestore directly. Frontend should listen to Firestore
+    changes to see when analysis completes.
+    
+    Requires: checkpointId, userId, propertyId for Firestore update.
     """
     logger.info("Checkpoint analysis endpoint received a request.")
     try:
-        logger.info(f"Analyzing checkpoint image: {request_data.imageUrl}")
+        # Validate required fields for Firestore update
+        if not request_data.checkpointId or not request_data.userId or not request_data.propertyId:
+            raise HTTPException(
+                status_code=400,
+                detail="checkpointId, userId, and propertyId are required for async processing"
+            )
 
-        result = analyze_checkpoint(request_data)
+        logger.info(f"Publishing checkpoint analysis request: checkpointId={request_data.checkpointId}")
 
-        logger.info("Analysis complete")
-        return result.model_dump()
+        # Publish to Pub/Sub topic for async processing
+        message_id = publish_checkpoint_analysis(request_data)
 
+        logger.info(f"Checkpoint analysis published to Pub/Sub: {message_id}")
+
+        return {
+            "status": "accepted",
+            "message": "Analysis queued for processing",
+            "checkpointId": request_data.checkpointId
+        }
+
+    except HTTPException:
+        raise
     except ValueError as e:
         logger.error(f"Validation error: {e}")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error processing checkpoint analysis: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"Error publishing checkpoint analysis: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/compare-checkpoints")
 async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):

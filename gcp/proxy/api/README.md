@@ -18,16 +18,19 @@ gcp/proxy/api/
 │   ├── agent.py
 │   ├── documents.py
 │   ├── telegram.py
-│   └── service_broker.py
+│   ├── service_broker.py
+│   └── checkpoint.py
 ├── services/            # Business Logic Layer
 │   ├── agent_service.py     # Firebase agent logic
 │   ├── document_service.py  # Document analysis (Gemini)
 │   ├── telegram_bot.py      # Telegram bot logic (aiogram)
 │   ├── vertex_service.py    # Vertex AI Reasoning Engine integration
-│   └── service_broker_service.py
+│   ├── service_broker_service.py
+│   └── checkpoint_service.py # Checkpoint analysis Pub/Sub publishing
 ├── schemas/             # Pydantic Data Models
 │   ├── agent.py
-│   └── document.py
+│   ├── document.py
+│   └── checkpoint.py
 └── utils/               # Shared Utilities
     ├── gcp.py
     └── optional_agents.py
@@ -60,10 +63,13 @@ See `core/config.py` for the full list of required environment variables.
 ## Available Documentation
 
 ### API Features
-- **[Adding Functions](./ADDING_FUNCTIONS.md)** - Guide for adding new API endpoints and functions
-- **[Document Analysis API](./DOCUMENT_ANALYSIS_API.md)** - Documentation for the document analysis endpoint
-- **[Service Broker API](./SERVICE_BROKER_API.md)** - Documentation for the service broker integration
+
+- **[Adding Functions](./docs/ADDING_FUNCTIONS.md)** - Guide for adding new API endpoints and functions
+- **[Document Analysis API](./docs/DOCUMENT_ANALYSIS_API.md)** - Documentation for the document analysis endpoint
+- **[Service Broker API](./docs/SERVICE_BROKER_API.md)** - Documentation for the service broker integration
+- **[Checkpoint Analysis API](./docs/CHECKPOINT_ANALYSIS_API.md)** - Documentation for checkpoint image analysis (async via Pub/Sub)
 
 ## Quick Links
+
 - [Main Proxy README](../README.md) - Deployment and setup instructions
 - [Workers README](../workers/README.md) - Background workers documentation

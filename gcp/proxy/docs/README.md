@@ -13,6 +13,7 @@ This directory contains feature documentation for the GCP Proxy API endpoints an
 - **[Adding Functions](./ADDING_FUNCTIONS.md)** - Guide for adding new API endpoints and functions to the proxy
 - **[Document Analysis API](./DOCUMENT_ANALYSIS_API.md)** - Documentation for the document analysis endpoint using Vertex AI Gemini
 - **[Service Broker API](./SERVICE_BROKER_API.md)** - Documentation for the service broker agent webhook endpoint
+- **[Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)** - Documentation for checkpoint image analysis (async via Pub/Sub)
 
 ## Quick Links
 
@@ -39,4 +40,3 @@ When adding new API endpoints:
 1. Follow the guide in [ADDING_FUNCTIONS.md](./ADDING_FUNCTIONS.md)
 2. Create a new documentation file following the existing patterns
 3. Update this README with a link to your new documentation
-
