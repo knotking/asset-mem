@@ -10,6 +10,7 @@ import logging
 from google import genai
 from google.genai import types
 from area_detection import detect_room_area
+from prompt_builder import get_asset_category, build_analysis_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +57,10 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
     media_type = "video" if is_video else "image"
     logger.info(f"Starting checkpoint analysis for {media_type}: {media_url}")
 
-    # Detect room/area if location not provided
+    # Detect room/area and asset category if location not provided
     detected_room_info = None
+    asset_category = "property"  # Default
+    
     if not location:
         try:
             detected_room_info = detect_room_area(media_url, content_type)
@@ -65,17 +68,25 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
             logger.info(f"Auto-detected room: {location} (confidence: {detected_room_info['roomConfidence']})")
         except Exception as e:
             logger.warning(f"Room detection failed, continuing without it: {e}")
-
-    prompt = f"""
-        Analyze this {media_type} of a property checkpoint.
-        Location: {location or 'Unknown'}
-        
-        Provide a structured analysis in JSON format with the following fields:
-        - summary: A brief summary of what is seen.
-        - conditions: A list of conditions (e.g., "good", "damaged", "wear and tear", "clean", "cluttered").
-        - detectedItems: A list of objects or items identified.
-        - issues: A list of potential issues or damage detected. If none, return empty list.
-    """
+    
+    # Determine asset category from detected information (platform-agnostic approach)
+    if detected_room_info:
+        asset_category = get_asset_category(
+            detected_room_info.get("detectedRoom"),
+            detected_room_info.get("roomFeatures")
+        )
+        logger.info(f"Detected asset category: {asset_category}")
+    elif location:
+        # Fallback: use location to determine category if no AI detection
+        asset_category = get_asset_category(location)
+    
+    # Build prompt using platform-extensible prompt builder
+    prompt = build_analysis_prompt(
+        media_type=media_type,
+        location=location,
+        asset_category=asset_category,
+        detected_room=detected_room_info.get("detectedRoom") if detected_room_info else None
+    )
 
     response_schema = {
         "type": "object",

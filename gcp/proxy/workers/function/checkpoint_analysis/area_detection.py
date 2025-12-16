@@ -53,20 +53,28 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
     logger.info(f"Detecting room/area from {media_type}: {media_url}")
 
     prompt = f"""
-        Analyze this property checkpoint {media_type} and identify the room or area type.
+        Analyze this checkpoint {media_type} and identify the primary asset type and location.
         
-        Identify the specific room/area (e.g., Kitchen, Living Room, Bedroom, Bathroom, 
-        Dining Room, Office, Garage, Exterior Front, Exterior Back, Basement, Attic, etc.).
+        First, determine if this is a PROPERTY/ROOM checkpoint, a VEHICLE/ASSET checkpoint, or an APPLIANCE checkpoint:
+        - PROPERTY/ROOM: Rooms within a property (Kitchen, Living Room, Bedroom, Bathroom, 
+          Dining Room, Office, Garage, Exterior Front, Exterior Back, Basement, Attic, etc.)
+        - VEHICLE/ASSET: Vehicles or other movable assets (Car, Truck, Motorcycle, Boat, RV, etc.)
+        - APPLIANCE: Home appliances or systems (Refrigerator, Washer, Dryer, Dishwasher, Oven, 
+          HVAC, Water Heater, Furnace, etc.). These may be part of a room or standalone.
         
         Provide a structured analysis in JSON format with the following fields:
-        - detectedRoom: A concise room/area name (e.g., "Kitchen", "Master Bedroom", "Bathroom", "Exterior Front")
+        - detectedRoom: A concise location/asset name:
+          * For property: Room/area name (e.g., "Kitchen", "Master Bedroom", "Bathroom", "Exterior Front")
+          * For vehicle: Asset type (e.g., "Car", "Truck", "Motorcycle", "Vehicle - Exterior", "Vehicle - Interior")
+          * For appliance: Appliance type (e.g., "Refrigerator", "Washer", "HVAC Unit", "Water Heater", "Oven")
         - roomConfidence: A float between 0.0 and 1.0 indicating confidence in the detection
-        - roomFeatures: A list of key features/objects that identify this room (e.g., ["stove", "sink", "refrigerator"] for kitchen)
-        - areaDescription: A brief description of the area shown (e.g., "Kitchen with island and modern appliances")
+        - roomFeatures: A list of key features/objects that identify this location/asset:
+          * For property: Room features (e.g., ["stove", "sink", "refrigerator"] for kitchen)
+          * For vehicle: Vehicle features (e.g., ["wheels", "windshield", "doors"] for car exterior, or ["dashboard", "seats", "steering wheel"] for interior)
+          * For appliance: Appliance features (e.g., ["control panel", "door seals", "coils"] for refrigerator, or ["filter", "vents", "electrical connections"] for HVAC)
+        - areaDescription: A brief description (e.g., "Kitchen with island and modern appliances", "SUV exterior view showing front and side", or "Front-loading washing machine showing control panel and door")
         
-        Be specific with room names when possible (e.g., "Master Bedroom" vs "Bedroom", 
-        "Guest Bathroom" vs "Main Bathroom"). For exterior shots, specify direction/location 
-        (e.g., "Exterior Front", "Exterior Back", "Driveway", "Backyard").
+        Be specific when possible. For vehicles, specify if it's exterior, interior, or specific part. For appliances, specify the appliance type clearly.
     """
 
     response_schema = {

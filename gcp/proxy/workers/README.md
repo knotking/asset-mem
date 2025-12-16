@@ -162,22 +162,57 @@ Provides AI-powered room/area detection and image similarity comparison using Ge
 - `find_matching_checkpoint(new_media_url, ...)`: Finds existing checkpoints that match a new image/video's area
 
 **Features:**
+
 - Supports both images and videos
 - Returns room name, confidence score, key features, and area description
 - Used to automatically group checkpoints by location
+
+### 5. Comparison Service (`function/checkpoint_analysis/comparison_service.py`)
+
+Handles automatic comparison of checkpoints to detect changes over time.
+
+**Key Functions:**
+
+- `find_previous_checkpoint(...)`: Finds the most recent previous checkpoint for the same location
+  - Uses location-based matching first (fast, cheap)
+  - Falls back to recent checkpoints if no location match
+  - Respects maximum age window (default: 180 days)
+- `should_compare_checkpoints(...)`: Determines if comparison should be performed
+  - Checks for previous checkpoint existence
+  - Validates room confidence threshold
+  - Respects user skip preferences
+- `compare_checkpoints(...)`: Compares two checkpoint images/videos using Gemini AI
+  - Returns similarity score, semantic changes, and change regions
+  - Supports images, videos, and mixed comparisons
+
+**Automatic Comparison Flow:**
+
+1. After analysis completes, worker calls `find_previous_checkpoint()`
+2. If previous checkpoint found and conditions met, performs comparison
+3. Stores results in `visualDiff` field with `comparedWithCheckpointId`
+4. Comparison failures are logged but don't block checkpoint creation
+
+**Configuration:**
+
+- `max_age_days`: Maximum age for previous checkpoints (default: 180 days)
+- Room confidence threshold: Comparisons skipped if confidence < 0.3
+- User can opt-out via `skipComparison` field on checkpoint
 
 ### 5. Configuration and Utilities
 
 Each worker subfolder contains its own configuration and utility files:
 
 **User Docs Worker (`function/user_docs/`):**
+
 - `config.py`: Environment variables for RAG corpus, Pub/Sub topics, GCS bucket
 - `utils.py`: Pub/Sub parsing, result serialization, media type detection
 - `exceptions.py`: Custom exceptions (WorkerError, ConfigurationError, RagImportError)
 - `prompts.py`: Custom parsing prompts for media files
 
 **Checkpoint Analysis Worker (`function/checkpoint_analysis/`):**
+
 - `utils.py`: Pub/Sub message parsing
+- `comparison_service.py`: Automatic checkpoint comparison logic
 
 ## Environment Variables
 
