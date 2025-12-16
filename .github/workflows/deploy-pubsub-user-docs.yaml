@@ -25,7 +25,7 @@ env:
   MAX_INSTANCES: 1
   CONCURRENCY: 1
   MEMORY: 512Mi
-  SOURCE_DIRECTORY: gcp/proxy/workers/function
+  SOURCE_DIRECTORY: gcp/proxy/workers/function/user_docs
 
 jobs:
   deploy:

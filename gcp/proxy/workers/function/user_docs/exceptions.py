@@ -9,3 +9,4 @@ class ConfigurationError(WorkerError):
 class RagImportError(WorkerError):
     """Raised when RAG import fails."""
     pass
+

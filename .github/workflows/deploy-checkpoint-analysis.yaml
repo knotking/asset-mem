@@ -28,7 +28,7 @@ jobs:
       MAX_INSTANCES: 10
       CONCURRENCY: 1
       MEMORY: 512Mi
-      SOURCE_DIRECTORY: gcp/proxy/workers/function
+      SOURCE_DIRECTORY: gcp/proxy/workers/function/checkpoint_analysis
     permissions:
       contents: "read"
       id-token: "write"

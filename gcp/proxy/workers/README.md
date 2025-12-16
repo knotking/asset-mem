@@ -52,26 +52,36 @@ The workers directory contains Cloud Functions (Gen2) that process asynchronous 
 ```
 workers/
 ├── function/
-│   ├── main.py              # Cloud Function entry points
-│   ├── rag_service.py       # RAG corpus import logic (RagService class)
-│   ├── checkpoint_service.py # Checkpoint image analysis logic
-│   ├── config.py            # Configuration and environment variables
-│   ├── utils.py             # Helper functions (parsing, serialization)
-│   ├── exceptions.py        # Custom exceptions
-│   ├── prompts.py           # Custom parsing prompts for media files
-│   └── requirements.txt     # Python dependencies
+│   ├── user_docs/                      # User Documents RAG Processing Worker
+│   │   ├── main.py                     # Entry point: pubsub_to_user_docs
+│   │   ├── rag_service.py              # RAG corpus import logic (RagService class)
+│   │   ├── config.py                   # Configuration (RAG_CORPUS, etc.)
+│   │   ├── utils.py                    # Helper functions (parsing, serialization)
+│   │   ├── exceptions.py               # Custom exceptions
+│   │   ├── prompts.py                  # Custom parsing prompts for media files
+│   │   ├── requirements.txt            # Python dependencies
+│   │   └── __init__.py
+│   │
+│   └── checkpoint_analysis/            # Checkpoint Analysis Worker
+│       ├── main.py                     # Entry point: pubsub_checkpoint_analysis
+│       ├── checkpoint_service.py       # Checkpoint image/video analysis logic
+│       ├── area_detection.py           # Room/area detection using Gemini Vision
+│       ├── utils.py                    # Helper functions (Pub/Sub parsing)
+│       ├── requirements.txt            # Python dependencies
+│       └── __init__.py
 ├── tests/
-│   ├── test_main.py         # Unit tests with mocks
-│   └── integration_test.py  # Integration tests with real GCP services
-└── README.md                # This file
+│   ├── test_main.py                    # Unit tests with mocks
+│   └── integration_test.py             # Integration tests with real GCP services
+└── README.md                           # This file
 ```
 
 ## Core Components
 
-### 1. Main Functions (`function/main.py`)
+### 1. Main Functions
 
 #### `pubsub_to_user_docs(request, context)`
 
+**Location:** `function/user_docs/main.py`  
 **Entry Point:** Cloud Function (Gen2) entry point triggered by Pub/Sub messages on `user-upload-topic`.
 
 **Responsibilities:**
@@ -84,6 +94,7 @@ workers/
 
 #### `pubsub_checkpoint_analysis(request, context)`
 
+**Location:** `function/checkpoint_analysis/main.py`  
 **Entry Point:** Cloud Function (Gen2) entry point triggered by Pub/Sub messages on `checkpoint-analysis-topic`.
 
 **Responsibilities:**
@@ -94,7 +105,7 @@ workers/
 - Sets `analysisStatus` to `completed` on success or `failed` on error.
 - Handles errors and logs processing status.
 
-### 2. RAG Service (`function/rag_service.py`)
+### 2. RAG Service (`function/user_docs/rag_service.py`)
 
 #### `RagService` Class
 
@@ -108,16 +119,16 @@ workers/
 - `_import_documents(...)`: Imports text-based documents.
 - `_import_media(...)`: Imports media files using custom prompts.
 
-### 3. Checkpoint Service (`function/checkpoint_service.py`)
+### 3. Checkpoint Service (`function/checkpoint_analysis/checkpoint_service.py`)
 
-#### `analyze_checkpoint_image(image_url, content_type, location)`
+#### `analyze_checkpoint_image(media_url, content_type, location)`
 
-**Purpose:** Analyzes a checkpoint image using Google Gemini AI.
+**Purpose:** Analyzes a checkpoint image or video using Google Gemini AI.
 
 **Parameters:**
 
-- `image_url`: GCS URI of the image (gs://bucket/path)
-- `content_type`: MIME type of the image
+- `media_url`: GCS URI of the image or video (gs://bucket/path)
+- `content_type`: MIME type of the media (e.g., "image/jpeg", "video/mp4")
 - `location`: Optional location description
 
 **Returns:**
@@ -135,37 +146,38 @@ Dictionary with analysis results:
 **Key Features:**
 
 - Uses Gemini 2.5 Flash model for fast analysis
+- Supports both images and videos (Gemini automatically extracts key frames from videos)
 - Structured JSON response with schema validation
+- Includes automatic room/area detection via `area_detection.py`
 - Detects property conditions, items, and issues
 
-### 4. Configuration (`function/config.py`)
+### 4. Area Detection (`function/checkpoint_analysis/area_detection.py`)
 
-**Purpose:** Centralizes environment variable management and validation.
+Provides AI-powered room/area detection and image similarity comparison using Gemini Vision.
 
-**Variables:**
+**Key Functions:**
 
-- `RAG_CORPUS`: Vertex AI RAG Corpus resource name.
-- `USER_UPLOAD_RESULT_TOPIC`: Pub/Sub topic for results.
-- `PROJECT_ID`: GCP Project ID.
-- `GCS_BUCKET`: GCS Bucket name.
-- `USER_UPLOAD_FOLDER`: Folder prefix for uploads.
+- `detect_room_area(media_url, content_type)`: Detects the room/area type from an image or video
+- `compare_room_similarity(media1_url, media2_url, ...)`: Compares two images/videos to determine if they show the same area
+- `find_matching_checkpoint(new_media_url, ...)`: Finds existing checkpoints that match a new image/video's area
 
-### 5. Utilities (`function/utils.py`)
+**Features:**
+- Supports both images and videos
+- Returns room name, confidence score, key features, and area description
+- Used to automatically group checkpoints by location
 
-**Purpose:** Provides helper functions for common tasks.
+### 5. Configuration and Utilities
 
-- `parse_pubsub_message(request)`: Extracts and decodes Pub/Sub payloads.
-- `serialize_import_result(result)`: Converts API responses to dicts.
-- `is_media_mime_type(mime_type)`: Identifies media files.
-- `parse_location_from_corpus(corpus_path)`: Extracts location from corpus resource name.
+Each worker subfolder contains its own configuration and utility files:
 
-### 6. Exceptions (`function/exceptions.py`)
+**User Docs Worker (`function/user_docs/`):**
+- `config.py`: Environment variables for RAG corpus, Pub/Sub topics, GCS bucket
+- `utils.py`: Pub/Sub parsing, result serialization, media type detection
+- `exceptions.py`: Custom exceptions (WorkerError, ConfigurationError, RagImportError)
+- `prompts.py`: Custom parsing prompts for media files
 
-**Purpose:** Defines custom exceptions for better error handling.
-
-- `WorkerError`: Base exception.
-- `ConfigurationError`: Raised for missing/invalid config.
-- `RagImportError`: Raised when RAG import fails.
+**Checkpoint Analysis Worker (`function/checkpoint_analysis/`):**
+- `utils.py`: Pub/Sub message parsing
 
 ## Environment Variables
 
