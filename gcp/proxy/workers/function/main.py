@@ -99,7 +99,7 @@ def pubsub_checkpoint_analysis(request, context):
     db = firestore.client()
 
     try:
-        # Analyze the checkpoint image using Gemini
+        # Analyze the checkpoint image/video using Gemini
         analysis_result = analyze_checkpoint_image(image_url, content_type, location)
 
         # Update Firestore with analysis results
@@ -107,7 +107,13 @@ def pubsub_checkpoint_analysis(request, context):
             .collection("properties").document(property_id)\
             .collection("checkpoints").document(checkpoint_id)
 
-        checkpoint_ref.update({
+        # Check if location already exists
+        checkpoint_doc = checkpoint_ref.get()
+        existing_location = None
+        if checkpoint_doc.exists():
+            existing_location = checkpoint_doc.to_dict().get("location")
+
+        update_data = {
             "analysisStatus": "completed",
             "aiAnalysis": {
                 "summary": analysis_result["summary"],
@@ -117,7 +123,23 @@ def pubsub_checkpoint_analysis(request, context):
                 "aiConfidence": 0.9,
                 "analyzedAt": firestore.SERVER_TIMESTAMP,
             }
-        })
+        }
+
+        # Add auto-detected room/area if available
+        if "detectedRoom" in analysis_result:
+            update_data["detectedRoom"] = analysis_result["detectedRoom"]
+            update_data["roomConfidence"] = analysis_result.get("roomConfidence", 0.0)
+            update_data["roomFeatures"] = analysis_result.get("roomFeatures", [])
+            update_data["areaDescription"] = analysis_result.get("areaDescription", "")
+            
+            # If user didn't provide a location, use the detected one
+            if not existing_location:
+                update_data["location"] = analysis_result["detectedRoom"]
+                logger.info(f"Auto-setting location to detected room: {analysis_result['detectedRoom']}")
+            else:
+                logger.info(f"Location already set to '{existing_location}', keeping user-provided value")
+
+        checkpoint_ref.update(update_data)
 
         logger.info(f"Successfully updated checkpoint {checkpoint_id} with analysis results")
 

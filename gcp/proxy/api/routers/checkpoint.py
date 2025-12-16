@@ -5,6 +5,7 @@ from schemas.checkpoint import (
     CompareCheckpointsRequest
 )
 from services.checkpoint_service import publish_checkpoint_analysis
+from checkpoint_comparison import compare_checkpoints
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -55,7 +56,8 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
 @router.post("/compare-checkpoints")
 async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
     """
-    Compare two property checkpoint images using Gemini AI.
+    Compare two property checkpoint images or videos using Gemini AI.
+    Supports comparing images to images, videos to videos, or mixed comparisons.
     """
     logger.info("Checkpoint comparison endpoint received a request.")
     try:
