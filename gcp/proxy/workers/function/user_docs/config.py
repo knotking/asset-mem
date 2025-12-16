@@ -1,5 +1,19 @@
 import os
-from utils import parse_location_from_corpus
+import logging
+
+logger = logging.getLogger(__name__)
+
+def parse_location_from_corpus(corpus_path: str) -> str:
+    """Extract location from RAG corpus path."""
+    if not corpus_path:
+        return "us-central1"  # default fallback
+    try:
+        parts = corpus_path.split("/")
+        location_idx = parts.index("locations") + 1
+        return parts[location_idx]
+    except (ValueError, IndexError):
+        logger.warning(f"Could not parse location from RAG_CORPUS: {corpus_path}, using default")
+        return "us-central1"
 
 class Config:
     RAG_CORPUS = os.environ.get("RAG_CORPUS")
@@ -23,3 +37,4 @@ class Config:
         if missing:
             return False, f"Missing environment variables: {', '.join(missing)}"
         return True, None
+

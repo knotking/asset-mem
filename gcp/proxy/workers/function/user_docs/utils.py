@@ -4,18 +4,6 @@ import json
 
 logger = logging.getLogger(__name__)
 
-def parse_location_from_corpus(corpus_path: str) -> str:
-    """Extract location from RAG corpus path."""
-    if not corpus_path:
-        return "us-central1"  # default fallback
-    try:
-        parts = corpus_path.split("/")
-        location_idx = parts.index("locations") + 1
-        return parts[location_idx]
-    except (ValueError, IndexError):
-        logger.warning(f"Could not parse location from RAG_CORPUS: {corpus_path}, using default")
-        return "us-central1"
-
 def serialize_import_result(result):
     """Convert ImportRagFilesResponse or similar objects to a serializable dict."""
     if result is None:
@@ -46,3 +34,4 @@ def parse_pubsub_message(request) -> dict:
     except Exception as e:
         logger.error(f"Failed to decode payload: {e}")
         return {}
+

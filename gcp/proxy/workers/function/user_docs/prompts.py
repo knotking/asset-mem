@@ -19,3 +19,4 @@ def parsing_prompt_media() -> str:
 
             """
     return prompt
+
