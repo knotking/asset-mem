@@ -1,15 +1,27 @@
-import type { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from "firebase/firestore";
 
-export const PROPERTY_TYPES = ['House', 'Apartment', 'Condo', 'Townhouse', 'Land', 'Other'] as const;
+export const PROPERTY_TYPES = [
+  "House",
+  "Apartment",
+  "Condo",
+  "Townhouse",
+  "Land",
+  "Other",
+] as const;
 
-export type PropertyType = typeof PROPERTY_TYPES[number];
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export type AgentStep = {
   name: string;
-  status: 'transferredto' | 'executing' | 'completed' | 'failed';
+  status: "transferredto" | "executing" | "completed" | "failed";
 };
 
-export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] as const;
+export const ANALYSIS_OPTIONAL_AGENTS = [
+  "coverage",
+  "diy",
+  "service",
+  "cost",
+] as const;
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
@@ -30,7 +42,7 @@ export type FileAttachment = {
 
 export type Message = {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   createdAt?: Timestamp | Date;
   followUpQuestions?: string[];
@@ -53,7 +65,7 @@ export type Session = {
   propertyId?: string | null;
   messageCount?: number;
   lastMessageAt?: Timestamp;
-}
+};
 
 export type ServiceProvider = {
   name: string;
@@ -81,7 +93,7 @@ export type Product = {
   url?: string | null;
   description?: string | null;
   price?: string | null;
-}
+};
 
 export type StructuredResponseData = {
   // Top-level fields (for backward compatibility and flat structures)
@@ -160,7 +172,7 @@ export type StructuredResponseData = {
       localPros?: {
         serpAPIResults?: ServiceProvider[];
         yelpAPIResults?: ServiceProvider[];
-      }
+      };
     };
   };
 };
@@ -176,11 +188,17 @@ export type Document = {
   gsURI?: string;
   contentType?: string;
   summary?: string;
-  documentType?: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
+  documentType?:
+    | "DEED"
+    | "INSURANCE_POLICY"
+    | "UTILITY_BILL"
+    | "INSPECTION_REPORT"
+    | "MORTGAGE_STATEMENT"
+    | "OTHER";
   propertyAddress?: string;
   keyEntities?: { name: string; value: string }[];
-  status?: 'uploading' | 'analyzing' | 'complete' | 'failed';
-}
+  status?: "uploading" | "analyzing" | "complete" | "failed";
+};
 
 export type Property = {
   id: string;
@@ -201,7 +219,7 @@ export type Property = {
   checksCount?: number;
   checkpoints?: number;
   checkpointsCount?: number;
-}
+};
 
 export type Checkpoint = {
   id: string;
@@ -212,12 +230,16 @@ export type Checkpoint = {
   createdAt: Timestamp;
   capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
   media: CheckpointMedia[];
-  location?: string; // e.g., "Kitchen", "Living Room", "Exterior"
+  location?: string; // e.g., "Kitchen", "Living Room", "Exterior" (user-provided or auto-detected)
+  detectedRoom?: string; // Auto-detected room/area name from AI
+  roomConfidence?: number; // 0-1 confidence score for room detection
+  roomFeatures?: string[]; // Key features that identify the room (e.g., ["stove", "sink"])
+  areaDescription?: string; // Detailed description of the detected area
   tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
-  analysisStatus?: 'pending' | 'processing' | 'completed' | 'failed';
+  analysisStatus?: "pending" | "processing" | "completed" | "failed";
   aiAnalysis?: CheckpointAnalysis;
   visualDiff?: VisualDiffAnalysis;
-}
+};
 
 export type CheckpointMedia = {
   id: string;
@@ -228,7 +250,7 @@ export type CheckpointMedia = {
   thumbnailUrl?: string;
   width?: number;
   height?: number;
-}
+};
 
 export type CheckpointAnalysis = {
   summary: string;
@@ -237,30 +259,36 @@ export type CheckpointAnalysis = {
   issues?: string[]; // e.g., ["crack in wall", "water stain"]
   aiConfidence?: number;
   analyzedAt: Timestamp;
-}
+};
 
 export type VisualDiffAnalysis = {
   id: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: "processing" | "completed" | "failed";
   semanticChanges: string[]; // Gemini-generated descriptions
-  heatmapUrl?: string;       // URL to the generated overlay image
-  regions: ChangeRegion[];   // Bounding boxes from Gemini
-  similarityScore: number;   // 0-1 score
+  heatmapUrl?: string; // URL to the generated overlay image
+  regions: ChangeRegion[]; // Bounding boxes from Gemini
+  similarityScore: number; // 0-1 score
   completedAt: Timestamp;
-}
+};
 
 export type ChangeRegion = {
   id: string;
   bbox: { x: number; y: number; width: number; height: number }; // Bounding box
-  changeType: 'added' | 'removed' | 'modified';
-  severity: 'minor' | 'moderate' | 'major' | 'critical';
-  confidence: number;          // 0-1 AI confidence
-  description: string;         // e.g., "Water staining detected", "New crack"
-  changePercentage: number;    // 0-100 how much this region changed
-  damageType?: 'crack' | 'water_damage' | 'mold' | 'paint_degradation' | 'structural' | 'other';
-}
+  changeType: "added" | "removed" | "modified";
+  severity: "minor" | "moderate" | "major" | "critical";
+  confidence: number; // 0-1 AI confidence
+  description: string; // e.g., "Water staining detected", "New crack"
+  changePercentage: number; // 0-100 how much this region changed
+  damageType?:
+    | "crack"
+    | "water_damage"
+    | "mold"
+    | "paint_degradation"
+    | "structural"
+    | "other";
+};
 
-export type LocationType = 'address' | 'location';
+export type LocationType = "address" | "location";
 
 export type LocationCoordinates = {
   lat: number;
