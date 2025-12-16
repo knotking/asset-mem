@@ -237,6 +237,7 @@ export type Checkpoint = {
   areaDescription?: string; // Detailed description of the detected area
   tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
   analysisStatus?: "pending" | "processing" | "completed" | "failed";
+  skipComparison?: boolean; // Opt-out of automatic comparison
   aiAnalysis?: CheckpointAnalysis;
   visualDiff?: VisualDiffAnalysis;
 };
@@ -264,6 +265,7 @@ export type CheckpointAnalysis = {
 export type VisualDiffAnalysis = {
   id: string;
   status: "processing" | "completed" | "failed";
+  comparedWithCheckpointId?: string; // ID of the checkpoint this was compared with
   semanticChanges: string[]; // Gemini-generated descriptions
   heatmapUrl?: string; // URL to the generated overlay image
   regions: ChangeRegion[]; // Bounding boxes from Gemini
@@ -299,4 +301,15 @@ export type LocationData = {
   locationType?: LocationType;
   locationCoordinates?: LocationCoordinates;
   locationRadius?: number; // 10-100 miles
+};
+
+export type CheckpointComparisonPreferences = {
+  enabled: boolean; // Master switch for automatic comparison
+  maxAgeDays: number; // Maximum age of previous checkpoint to compare with (default: 180)
+  minRoomConfidence: number; // Minimum room detection confidence to perform comparison (default: 0.3)
+};
+
+export type UserPreferences = {
+  checkpointComparison?: CheckpointComparisonPreferences;
+  updatedAt?: Timestamp;
 };

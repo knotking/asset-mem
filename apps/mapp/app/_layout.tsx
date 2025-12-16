@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list';
 import { SessionProvider } from '@homeapp/common/contexts/session-context';
 import { DocumentUploadProvider } from '@homeapp/common/contexts/document-upload-context';
+import { PreferencesProvider } from '@homeapp/common/contexts/preferences-context';
 import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
 
@@ -29,13 +30,15 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
         <AuthProvider>
-          <SessionProvider createAgentSession={createAgentSession}>
-            <PropertiesListProvider>
-              <DocumentUploadProvider>
-                <Routes />
-              </DocumentUploadProvider>
-            </PropertiesListProvider>
-          </SessionProvider>
+          <PreferencesProvider>
+            <SessionProvider createAgentSession={createAgentSession}>
+              <PropertiesListProvider>
+                <DocumentUploadProvider>
+                  <Routes />
+                </DocumentUploadProvider>
+              </PropertiesListProvider>
+            </SessionProvider>
+          </PreferencesProvider>
         </AuthProvider>
       </FirebaseProvider>
       <PortalHost />
@@ -55,7 +58,7 @@ function Routes() {
       user: user?.email || 'none',
       loading,
       isSignedIn,
-      isLoaded
+      isLoaded,
     });
     if (isLoaded) {
       console.log('[ROUTES] Hiding splash screen');
@@ -74,7 +77,7 @@ function Routes() {
       isSignedIn,
       inAuthGroup,
       inTabsGroup,
-      segments
+      segments,
     });
 
     if (isSignedIn && inAuthGroup) {
@@ -95,7 +98,12 @@ function Routes() {
     return null;
   }
 
-  console.log('[ROUTES] Stack rendering - isSignedIn:', isSignedIn, '- Should show:', isSignedIn ? '(tabs)' : 'auth');
+  console.log(
+    '[ROUTES] Stack rendering - isSignedIn:',
+    isSignedIn,
+    '- Should show:',
+    isSignedIn ? '(tabs)' : 'auth'
+  );
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

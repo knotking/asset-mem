@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { useAuth } from '@homeapp/common/contexts/auth';
 import { User } from 'firebase/auth';
 import { Icon } from '@/components/ui/icon';
@@ -21,6 +21,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
+import { CheckpointComparisonSettings } from '@/components/settings/CheckpointComparisonSettings';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -53,37 +54,47 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
-      <View className="mb-4 bg-card p-4">
-        <View className="flex-row items-center space-x-4">
-          <View className="h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-secondary">
-            <Text className="text-xl font-semibold text-secondary-foreground">
-              {loading ? '' : userInitials}
-            </Text>
-          </View>
-          <View className="ml-2 flex-1">
-            <Text className="text-lg font-semibold text-foreground">
-              {user?.displayName || 'Property Owner'}
-            </Text>
-            <Text className="text-sm text-muted-foreground">
-              {user?.email || 'owner@homegeek.ai'}
-            </Text>
+    <ScrollView className="flex-1 bg-background">
+      <View className="p-4">
+        {/* User Profile Section */}
+        <View className="mb-4 rounded-lg bg-card p-4">
+          <View className="flex-row items-center space-x-4">
+            <View className="h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-secondary">
+              <Text className="text-xl font-semibold text-secondary-foreground">
+                {loading ? '' : userInitials}
+              </Text>
+            </View>
+            <View className="ml-2 flex-1">
+              <Text className="text-lg font-semibold text-foreground">
+                {user?.displayName || 'Property Owner'}
+              </Text>
+              <Text className="text-sm text-muted-foreground">
+                {user?.email || 'owner@homegeek.ai'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <Button
-        className="mx-4 border border-destructive bg-card text-destructive-foreground hover:bg-destructive/90"
-        onPress={handleSignOut}>
-        <Icon as={LogOut} size={20} className="mr-2 text-destructive" />
-        <Text className="font-semibold text-destructive">Sign Out</Text>
-      </Button>
+        {/* Checkpoint Comparison Settings */}
+        <View className="mb-4">
+          <CheckpointComparisonSettings />
+        </View>
 
-      <View className="flex-1 items-center justify-end pb-8">
-        <Text className="text-xs text-muted-foreground">
-          Version {Constants.expoConfig?.version || '0.0.1'}
-        </Text>
+        {/* Sign Out Button */}
+        <Button
+          className="mb-4 border border-destructive bg-card text-destructive-foreground hover:bg-destructive/90"
+          onPress={handleSignOut}>
+          <Icon as={LogOut} size={20} className="mr-2 text-destructive" />
+          <Text className="font-semibold text-destructive">Sign Out</Text>
+        </Button>
+
+        {/* Version */}
+        <View className="items-center pb-8">
+          <Text className="text-xs text-muted-foreground">
+            Version {Constants.expoConfig?.version || '0.0.1'}
+          </Text>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
