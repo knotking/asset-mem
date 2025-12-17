@@ -6,6 +6,7 @@ The workers directory contains Cloud Functions (Gen2) that process asynchronous 
 
 - `pubsub_to_user_docs`: Handles the import of user-uploaded files into the Vertex AI RAG Corpus for retrieval-augmented generation.
 - `pubsub_checkpoint_analysis`: Analyzes checkpoint images using Gemini AI and updates Firestore with analysis results.
+- `pubsub_checkpoint_metrics_aggregate`: Aggregates checkpoint analysis into a property-level metrics document for the mobile app.
 
 ## Architecture
 
@@ -68,6 +69,17 @@ workers/
 │       ├── area_detection.py           # Room/area detection using Gemini Vision
 │       ├── utils.py                    # Helper functions (Pub/Sub parsing)
 │       ├── requirements.txt            # Python dependencies
+│       └── __init__.py
+│   │
+│   └── checkpoint_metrics/             # Checkpoint Metrics Worker
+│       ├── main.py                     # Entry point: pubsub_checkpoint_metrics_aggregate
+│       ├── metrics_aggregator.py       # Computes property metrics and writes Firestore summary
+│       ├── utils.py                    # Helper functions (Pub/Sub parsing)
+│       ├── tests/                      # Unit tests (pytest)
+│       ├── pytest.ini                  # Pytest config for this worker
+│       ├── requirements.txt            # Python dependencies
+│       ├── requirements-dev.txt        # Dev/test deps (pytest)
+│       ├── README.md                   # Worker details + test instructions
 │       └── __init__.py
 ├── tests/
 │   ├── test_main.py                    # Unit tests with mocks
