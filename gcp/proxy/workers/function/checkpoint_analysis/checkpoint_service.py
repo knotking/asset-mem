@@ -94,9 +94,46 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
             "summary": {"type": "string"},
             "conditions": {"type": "array", "items": {"type": "string"}},
             "detectedItems": {"type": "array", "items": {"type": "string"}},
-            "issues": {"type": "array", "items": {"type": "string"}}
+            "issues": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "description": {"type": "string"},
+                        "severity": {"type": "string", "enum": ["minor", "moderate", "major", "critical"]}
+                    },
+                    "required": ["description", "severity"]
+                }
+            },
+            "condition_scores": {
+                "type": "object",
+                "description": "Condition scores (0-100) for various components. 100 = perfect, 0 = completely damaged. Include all visible/apparent components.",
+                "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100}
+            },
+            "damage_scores": {
+                "type": "object",
+                "description": "Damage severity scores (0-100) for various damage types. 0 = none, 100 = severe. Include all detected damage types.",
+                "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100}
+            },
+            "cost_estimates": {
+                "type": "object",
+                "description": "Cost estimates in USD for repairs and maintenance",
+                "properties": {
+                    "repairs_immediate": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Estimated immediate repair cost in USD (0 if none needed)"
+                    },
+                    "maintenance_annual": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Estimated annual maintenance cost in USD"
+                    }
+                },
+                "required": ["repairs_immediate", "maintenance_annual"]
+            }
         },
-        "required": ["summary", "conditions", "detectedItems", "issues"]
+        "required": ["summary", "conditions", "detectedItems", "issues", "condition_scores", "damage_scores", "cost_estimates"]
     }
 
     media_part = types.Part.from_uri(
@@ -122,11 +159,48 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
     result_json = json.loads(response.text)
     logger.info("Checkpoint analysis complete")
 
+    # Validate that required structured fields are present (schema should enforce this, but validate anyway)
+    if "condition_scores" not in result_json or not result_json["condition_scores"]:
+        logger.warning("Gemini did not return condition_scores, using empty dict")
+        result_json["condition_scores"] = {}
+    
+    if "damage_scores" not in result_json or not result_json["damage_scores"]:
+        logger.warning("Gemini did not return damage_scores, using empty dict")
+        result_json["damage_scores"] = {}
+    
+    if "cost_estimates" not in result_json:
+        logger.warning("Gemini did not return cost_estimates, using defaults")
+        result_json["cost_estimates"] = {"repairs_immediate": 0, "maintenance_annual": 0}
+    else:
+        if "repairs_immediate" not in result_json["cost_estimates"]:
+            result_json["cost_estimates"]["repairs_immediate"] = 0
+        if "maintenance_annual" not in result_json["cost_estimates"]:
+            result_json["cost_estimates"]["maintenance_annual"] = 0
+
+    # Convert issues from objects to list format for backward compatibility
+    # while preserving severity information
+    issues_list = result_json.get("issues", [])
+    if issues_list and isinstance(issues_list[0], dict):
+        # New format with severity - keep as objects for structured data
+        issues = issues_list
+    else:
+        # Legacy format (strings) - convert to objects with default severity
+        issues = [
+            {"description": issue, "severity": "minor"}
+            for issue in issues_list
+        ] if issues_list else []
+
     result = {
         "summary": result_json["summary"],
         "conditions": result_json["conditions"],
         "detectedItems": result_json["detectedItems"],
-        "issues": result_json["issues"]
+        "issues": issues,
+        "condition_scores": result_json.get("condition_scores", {}),
+        "damage_scores": result_json.get("damage_scores", {}),
+        "cost_estimates": result_json.get("cost_estimates", {
+            "repairs_immediate": 0,
+            "maintenance_annual": 0
+        })
     }
 
     # Add room detection info if available

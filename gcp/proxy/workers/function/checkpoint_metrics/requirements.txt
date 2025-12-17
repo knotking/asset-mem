@@ -1,0 +1,4 @@
+google-cloud-pubsub==2.31.1
+firebase-admin>=6.0.0
+
+

@@ -313,3 +313,30 @@ export type UserPreferences = {
   checkpointComparison?: CheckpointComparisonPreferences;
   updatedAt?: Timestamp;
 };
+
+// Property-level checkpoint analytics (written by backend aggregator for mobile consumption)
+export type PropertyCheckpointMetrics = {
+  version: number;
+  updatedAt?: Timestamp;
+  window?: {
+    checkpoints_considered: number;
+    trend_points: number;
+  };
+  overall?: {
+    latest_score: number | null;
+    trend: Array<{ t: string; score: number }>;
+  };
+  issues?: {
+    total_by_severity: {
+      critical: number;
+      major: number;
+      moderate: number;
+      minor: number;
+    };
+    total: number;
+  };
+  deterioration?: {
+    rate_points_per_day: number | null;
+    trend: "improving" | "stable" | "deteriorating" | "unknown";
+  };
+};

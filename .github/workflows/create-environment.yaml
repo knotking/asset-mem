@@ -236,6 +236,7 @@ jobs:
       user_upload_result_topic: ${{ steps.pubsub.outputs.result_topic }}
       user_upload_result_subscription: ${{ steps.pubsub.outputs.result_subscription }}
       checkpoint_analysis_topic: ${{ steps.pubsub.outputs.checkpoint_analysis_topic }}
+      checkpoint_metrics_topic: ${{ steps.pubsub.outputs.checkpoint_metrics_topic }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
       knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
       apphosting_backend_id: ${{ steps.apphosting.outputs.backend_id }}
@@ -277,6 +278,7 @@ jobs:
             "firebaserules.googleapis.com"
             "firebasestorage.googleapis.com"
             "identitytoolkit.googleapis.com"
+            "logging.googleapis.com"
           )
 
           echo "Checking which APIs need to be enabled..."
@@ -812,11 +814,26 @@ jobs:
             echo "✓ Topic created: $CHECKPOINT_TOPIC"
           fi
 
+          # Create checkpoint metrics aggregation topic (for mobile analytics refresh)
+          CHECKPOINT_METRICS_TOPIC="checkpoint-metrics-topic-${ENV}"
+          echo "Checking topic: $CHECKPOINT_METRICS_TOPIC"
+
+          if gcloud pubsub topics describe $CHECKPOINT_METRICS_TOPIC --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Topic already exists: $CHECKPOINT_METRICS_TOPIC"
+          else
+            echo "Creating topic: $CHECKPOINT_METRICS_TOPIC"
+            gcloud pubsub topics create $CHECKPOINT_METRICS_TOPIC \
+              --project=$PROJECT_ID \
+              --message-retention-duration=7d
+            echo "✓ Topic created: $CHECKPOINT_METRICS_TOPIC"
+          fi
+
           # Output values
           echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
           echo "result_subscription=$RESULT_SUB" >> $GITHUB_OUTPUT
           echo "checkpoint_analysis_topic=$CHECKPOINT_TOPIC" >> $GITHUB_OUTPUT
+          echo "checkpoint_metrics_topic=$CHECKPOINT_METRICS_TOPIC" >> $GITHUB_OUTPUT
 
       - name: Enable Firebase Services
         id: firebase_enable
@@ -1371,6 +1388,72 @@ jobs:
             echo "⚠️ Skipping RAG service account permissions (no corpora created)"
           fi
 
+      - name: Create Observability Resources (Log Sinks)
+        id: observability
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          REGION="${{ needs.resolve-inputs.outputs.region }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Creating observability resources for checkpoint analysis..."
+
+          # Create Cloud Storage bucket for checkpoint logs (audit trail)
+          LOGS_BUCKET="checkpoint-logs-${ENV}"
+          echo "Checking Cloud Storage bucket: $LOGS_BUCKET"
+
+          if gsutil ls -b gs://${LOGS_BUCKET}/ &>/dev/null; then
+            echo "✓ Logs bucket already exists: $LOGS_BUCKET"
+          else
+            echo "Creating logs bucket..."
+            gsutil mb -p $PROJECT_ID -l $REGION -b on gs://${LOGS_BUCKET}/
+            # Set lifecycle policy (retain for 7 years for audit compliance)
+            echo '{"lifecycle":{"rule":[{"action":{"type":"SetStorageClass","storageClass":"ARCHIVE"},"condition":{"age":3650}},{"action":{"type":"Delete"},"condition":{"age":2555}}]}}' > /tmp/logs-lifecycle.json
+            gsutil lifecycle set /tmp/logs-lifecycle.json gs://${LOGS_BUCKET}/
+            gsutil uniformbucketlevelaccess set on gs://${LOGS_BUCKET}/
+            echo "✓ Logs bucket created: $LOGS_BUCKET"
+          fi
+
+          PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+          LOGGING_SA="service-${PROJECT_NUMBER}@gcp-sa-logging.iam.gserviceaccount.com"
+
+          # Grant Logging service account permission to write to Cloud Storage
+          echo "Granting Logging service account Cloud Storage permissions..."
+          gcloud projects add-iam-policy-binding $PROJECT_ID \
+            --member="serviceAccount:${LOGGING_SA}" \
+            --role="roles/storage.objectCreator" \
+            --condition=None \
+            --quiet 2>/dev/null || echo "⚠️ Failed to grant Storage permissions (may already be granted)"
+
+          # Create log sink to Cloud Storage for checkpoint analysis logs (audit trail)
+          SINK_NAME_STORAGE="checkpoint-analysis-sink-storage-${ENV}"
+          echo "Checking log sink to Cloud Storage: $SINK_NAME_STORAGE"
+
+          if gcloud logging sinks describe $SINK_NAME_STORAGE --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Log sink to Cloud Storage already exists: $SINK_NAME_STORAGE"
+          else
+            echo "Creating log sink to Cloud Storage..."
+            FUNCTION_NAME="pubsub-checkpoint-analysis-${ENV}"
+            # Filter for checkpoint analysis function logs with structured event types
+            LOG_FILTER='resource.type="cloud_function" AND resource.labels.function_name="'${FUNCTION_NAME}'" AND (jsonPayload.body.event_type=~"checkpoint\\.(analysis|comparison)\\..*" OR textPayload=~"checkpoint.*")'
+
+            gcloud logging sinks create $SINK_NAME_STORAGE \
+              "storage.googleapis.com/${LOGS_BUCKET}" \
+              --project=$PROJECT_ID \
+              --log-filter="$LOG_FILTER" \
+              --description="Checkpoint analysis logs exported to Cloud Storage for audit trail"
+
+            echo "✓ Log sink to Cloud Storage created: $SINK_NAME_STORAGE"
+          fi
+
+          # Output values
+          echo "checkpoint_logs_storage_bucket=${LOGS_BUCKET}" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "✓ Observability resources created"
+          echo "  - Cloud Storage bucket: $LOGS_BUCKET"
+          echo "  - Log sink to Cloud Storage: $SINK_NAME_STORAGE"
+
   create-github-environment:
     name: Create GitHub Environment
     runs-on: ubuntu-latest
@@ -1444,6 +1527,7 @@ jobs:
           set_or_update_var "USER_UPLOAD_RESULT_SUBSCRIPTION" "${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}"
           set_or_update_var "USER_UPLOAD_RESULT_TOPIC" "${{ needs.create-infrastructure.outputs.user_upload_result_topic }}"
           set_or_update_var "CHECKPOINT_ANALYSIS_TOPIC" "${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}"
+          set_or_update_var "CHECKPOINT_METRICS_TOPIC" "${{ needs.create-infrastructure.outputs.checkpoint_metrics_topic }}"
           set_or_update_var "USER_UPLOAD_FOLDER" "uploads-${{ inputs.environment_name }}"
 
           # RAG and Agent configuration
@@ -1494,6 +1578,7 @@ jobs:
           USER_UPLOAD_RESULT_SUBSCRIPTION=${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}
           USER_UPLOAD_RESULT_TOPIC=${{ needs.create-infrastructure.outputs.user_upload_result_topic }}
           CHECKPOINT_ANALYSIS_TOPIC=${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}
+          CHECKPOINT_METRICS_TOPIC=${{ needs.create-infrastructure.outputs.checkpoint_metrics_topic }}
           USER_UPLOAD_FOLDER=uploads-${{ inputs.environment_name }}
 
           # RAG and Agent Configuration
@@ -1591,6 +1676,7 @@ jobs:
           | \`USER_UPLOAD_RESULT_SUBSCRIPTION\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_subscription }}\` |
           | \`USER_UPLOAD_RESULT_TOPIC\` | \`${{ needs.create-infrastructure.outputs.user_upload_result_topic }}\` |
           | \`CHECKPOINT_ANALYSIS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}\` |
+          | \`CHECKPOINT_METRICS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.checkpoint_metrics_topic }}\` |
           | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |

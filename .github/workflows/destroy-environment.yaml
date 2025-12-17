@@ -180,8 +180,40 @@ jobs:
             --project=$PROJECT_ID --quiet || true
           gcloud pubsub topics delete "checkpoint-analysis-topic-${ENV}" \
             --project=$PROJECT_ID --quiet || true
+          gcloud pubsub topics delete "checkpoint-metrics-topic-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
 
           echo "✓ Pub/Sub resources deleted"
+
+      - name: Delete Observability Resources (Log Sinks)
+        continue-on-error: true
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+
+          echo "Deleting observability resources..."
+
+          # Delete log sinks
+          SINK_NAME_STORAGE="checkpoint-analysis-sink-storage-${ENV}"
+
+          echo "Deleting log sink to Cloud Storage..."
+          gcloud logging sinks delete $SINK_NAME_STORAGE \
+            --project=$PROJECT_ID \
+            --quiet || echo "⚠️ Log sink $SINK_NAME_STORAGE may not exist"
+
+          # Delete Cloud Storage bucket for logs (optional - contains audit trail)
+          LOGS_BUCKET="checkpoint-logs-${ENV}"
+          echo "Checking Cloud Storage bucket: $LOGS_BUCKET"
+          # For automated workflows, preserve the audit bucket by default.
+          if gsutil ls -b gs://${LOGS_BUCKET}/ &>/dev/null; then
+            echo "⚠️ Logs bucket preserved: $LOGS_BUCKET"
+            echo "   Contains audit trail logs"
+            echo "   To delete manually: gsutil -m rm -r gs://${LOGS_BUCKET}"
+          else
+            echo "✓ Logs bucket does not exist"
+          fi
+
+          echo "✓ Observability resources cleanup complete"
 
       - name: Delete Firebase App Hosting Backend
         continue-on-error: true
@@ -614,7 +646,7 @@ jobs:
           - Firebase App Hosting backend: \`${{ inputs.environment_name }}\`
           - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, \`homegeek-agent-${{ inputs.environment_name }}\`, Firebase Storage
           - Artifact Registry: \`cloud-run-source-deploy\` (${{ inputs.region }})
-          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`, \`checkpoint-analysis-topic-${{ inputs.environment_name }}\`
+          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`, \`checkpoint-analysis-topic-${{ inputs.environment_name }}\`, \`checkpoint-metrics-topic-${{ inputs.environment_name }}\`
           - Firestore database
           - RAG corpora: \`user-upload-rag-corpus-${{ inputs.environment_name }}\`, \`knowledge-base-rag-corpus-${{ inputs.environment_name }}\`
           - IAM role bindings: 26 roles removed from service accounts before deletion
