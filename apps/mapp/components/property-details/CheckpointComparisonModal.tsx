@@ -112,9 +112,9 @@ export function CheckpointComparisonModal({
         }
     }, [visible, before?.id, after?.id]);
 
-    const renderCheckpointPreview = (cp: Checkpoint, label: string) => {
-        const imageUrl = cp.media?.[0]?.url;
-        const date = cp.createdAt?.toDate ? cp.createdAt.toDate() : new Date();
+    const renderCheckpointPreview = (cp: Checkpoint | null | undefined, label: string) => {
+        const imageUrl = cp?.media?.[0]?.url;
+        const date = cp?.createdAt?.toDate ? cp.createdAt.toDate() : new Date();
 
         return (
             <View className="flex-1 gap-2">
@@ -134,7 +134,7 @@ export function CheckpointComparisonModal({
                 </View>
                 <View className="items-center">
                     <Text className="text-xs font-medium text-foreground" numberOfLines={1}>
-                        {cp.name}
+                        {cp?.name || '—'}
                     </Text>
                     <Text className="text-[10px] text-muted-foreground">
                         {format(date, 'MMM d, yyyy')}
