@@ -98,7 +98,7 @@ function CheckpointCard({
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
-    <Card className={isSelected ? 'border-primary bg-primary/5' : ''}>
+    <Card className={`${isSelected ? 'border-primary bg-primary/5 ' : ''}p-2`}>
       <Pressable
         onPress={() => onPress(checkpoint)}
         className="flex-row overflow-hidden rounded-lg">

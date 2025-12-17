@@ -3,11 +3,22 @@ import { Modal, View, Image, ScrollView, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { X, MapPin, Calendar, Trash2, Edit2, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react-native';
+import { X, MapPin, Calendar, Trash2, Edit2, AlertTriangle, CheckCircle, Loader2, Clock, Info } from 'lucide-react-native';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { PortalHost } from '@rn-primitives/portal';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CheckpointDetailModalProps {
     visible: boolean;
@@ -19,6 +30,7 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
     const insets = useSafeAreaInsets();
     const { deleteCheckpoint } = useCheckpoint();
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 
     if (!checkpoint) return null;
 
@@ -26,30 +38,18 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
     const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
     const hasIssues = checkpoint.aiAnalysis?.conditions?.includes('damage detected');
 
-    const handleDelete = () => {
-        Alert.alert(
-            "Delete Checkpoint",
-            "Are you sure you want to delete this checkpoint? This action cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setIsDeleting(true);
-                            await deleteCheckpoint(checkpoint.id);
-                            onClose();
-                        } catch (error) {
-                            console.error("Error deleting checkpoint:", error);
-                            Alert.alert("Error", "Failed to delete checkpoint");
-                        } finally {
-                            setIsDeleting(false);
-                        }
-                    }
-                }
-            ]
-        );
+    const handleConfirmDelete = async () => {
+        try {
+            setIsDeleting(true);
+            await deleteCheckpoint(checkpoint.id);
+            setIsDeleteConfirmOpen(false);
+            onClose();
+        } catch (error) {
+            console.error('Error deleting checkpoint:', error);
+            Alert.alert('Error', 'Failed to delete checkpoint');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -107,8 +107,8 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
 
                             {checkpoint.analysisStatus === 'pending' && (
                                 <View className="flex-row items-center gap-2">
-                                    <Icon as={Loader2} size={16} className="text-muted-foreground" />
-                                    <Text className="text-sm text-muted-foreground">Analysis pending...</Text>
+                                    <Icon as={Clock} size={16} className="text-muted-foreground" />
+                                    <Text className="text-sm text-muted-foreground">Queued for analysis</Text>
                                 </View>
                             )}
 
@@ -154,8 +154,8 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
 
                             {!checkpoint.analysisStatus && (
                                 <View className="flex-row items-center gap-2">
-                                    <Icon as={Loader2} size={16} className="text-muted-foreground" />
-                                    <Text className="text-sm text-muted-foreground">Analysis status unknown</Text>
+                                    <Icon as={Info} size={16} className="text-muted-foreground" />
+                                    <Text className="text-sm text-muted-foreground">Not analyzed yet</Text>
                                 </View>
                             )}
                         </View>
@@ -165,9 +165,8 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
                             <Button
                                 variant="destructive"
                                 className="flex-1"
-                                onPress={handleDelete}
-                                disabled={isDeleting}
-                            >
+                                onPress={() => setIsDeleteConfirmOpen(true)}
+                                disabled={isDeleting}>
                                 <View className="flex-row items-center gap-2">
                                     <Icon as={Trash2} size={16} className="text-destructive-foreground" />
                                     <Text className="text-destructive-foreground">Delete Checkpoint</Text>
@@ -177,6 +176,31 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
                     </View>
                 </ScrollView>
             </View>
+
+            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+                <AlertDialogContent portalHost="checkpoint-detail-modal">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Checkpoint</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this checkpoint? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>
+                            <Text>Cancel</Text>
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            disabled={isDeleting}
+                            onPress={handleConfirmDelete}>
+                            <Text>{isDeleting ? 'Deleting…' : 'Delete'}</Text>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Portal host inside the native Modal so dialogs/menus render above the modal layer */}
+            <PortalHost name="checkpoint-detail-modal" />
         </Modal>
     );
 }
