@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { View, FlatList, Image, Pressable } from 'react-native';
+import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Camera,
   Plus,
@@ -17,6 +18,7 @@ import {
   AlertCircle,
   Info,
   Play,
+  X,
 } from 'lucide-react-native';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -31,21 +33,170 @@ import * as ImagePicker from 'expo-image-picker';
 import { analyzeCheckpoint } from '../../lib/api';
 import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
 
-function PropertyMetricsCard() {
+type IssueSeverity = 'critical' | 'major' | 'moderate' | 'minor';
+type IssueRow = {
+  severity: IssueSeverity;
+  description: string;
+  checkpointId: string;
+  checkpointName: string;
+  createdAt: Date;
+};
+
+function normalizeIssuesFromCheckpoints(checkpoints: Checkpoint[], maxCheckpoints: number): IssueRow[] {
+  const rows: IssueRow[] = [];
+  const slice = checkpoints.slice(0, maxCheckpoints);
+  for (const cp of slice) {
+    const issues = cp.aiAnalysis?.issues as any[] | undefined;
+    if (!issues || issues.length === 0) continue;
+    const createdAt = cp.createdAt?.toDate ? cp.createdAt.toDate() : new Date();
+    for (const issue of issues) {
+      if (typeof issue === 'string') {
+        rows.push({
+          severity: 'minor',
+          description: issue,
+          checkpointId: cp.id,
+          checkpointName: cp.name || 'Untitled Checkpoint',
+          createdAt,
+        });
+      } else if (issue && typeof issue === 'object') {
+        const sev: IssueSeverity =
+          issue.severity === 'critical' || issue.severity === 'major' || issue.severity === 'moderate'
+            ? issue.severity
+            : 'minor';
+        const desc = String(issue.description || issue.text || issue.title || 'Issue detected');
+        rows.push({
+          severity: sev,
+          description: desc,
+          checkpointId: cp.id,
+          checkpointName: cp.name || 'Untitled Checkpoint',
+          createdAt,
+        });
+      }
+    }
+  }
+  // newest first
+  rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return rows;
+}
+
+function severityLabel(sev: IssueSeverity) {
+  return sev === 'critical' ? 'Critical' : sev === 'major' ? 'Major' : sev === 'moderate' ? 'Moderate' : 'Minor';
+}
+
+function CheckpointsTabSkeleton() {
+  return (
+    <View className="flex-1 p-4">
+      {/* Property Insights Skeleton */}
+      <PropertyInsightsSkeletonCard />
+
+      {/* Header Skeleton */}
+      <View className="mb-4 flex-row items-center justify-between">
+        <Skeleton className="h-7 w-32 rounded" />
+        <View className="flex-row gap-2">
+          <Skeleton className="h-9 w-10 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </View>
+      </View>
+
+      {/* List Skeleton */}
+      <View className="gap-3">
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <Card key={idx} className="p-2">
+            <View className="flex-row overflow-hidden rounded-lg">
+              <Skeleton className="h-24 w-24 rounded-md" />
+              <View className="flex-1 justify-between p-3">
+                <View>
+                  <View className="flex-row items-start justify-between">
+                    <Skeleton className="h-4 w-40 rounded" />
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                  </View>
+                  <Skeleton className="mt-2 h-3 w-28 rounded" />
+                </View>
+                <View className="flex-row items-center justify-between">
+                  <Skeleton className="h-3 w-24 rounded" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </View>
+              </View>
+            </View>
+          </Card>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function PropertyInsightsSkeletonCard() {
+  return (
+    <Card className="mb-4">
+      <View className="p-4">
+        <View className="flex-row items-center justify-between">
+          <Skeleton className="h-5 w-40 rounded" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </View>
+        <Skeleton className="mt-2 h-3 w-48 rounded" />
+
+        <View className="mt-4 flex-row justify-between">
+          <View>
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="mt-2 h-7 w-20 rounded" />
+            <Skeleton className="mt-2 h-3 w-16 rounded" />
+            <Skeleton className="mt-3 h-2 w-40 rounded-full" />
+          </View>
+          <View>
+            <Skeleton className="h-3 w-20 rounded" />
+            <Skeleton className="mt-2 h-4 w-36 rounded" />
+            <Skeleton className="mt-2 h-3 w-24 rounded" />
+          </View>
+        </View>
+
+        <View className="mt-4">
+          <Skeleton className="h-3 w-24 rounded" />
+          <Skeleton className="mt-2 h-4 w-full rounded" />
+          <Skeleton className="mt-2 h-3 w-3/4 rounded" />
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+function PropertyMetricsCard({
+  checkpoints,
+  onOpenIssues,
+}: {
+  checkpoints: Checkpoint[];
+  onOpenIssues: () => void;
+}) {
   const { metrics, loading } = usePropertyCheckpointMetrics();
   const [showHelp, setShowHelp] = React.useState(false);
 
-  if (loading) {
+  // Crossfade skeleton -> content to avoid a "pop" when metrics arrives.
+  const contentOpacity = React.useRef(new Animated.Value(metrics ? 1 : 0)).current;
+  const skeletonOpacity = React.useRef(new Animated.Value(metrics ? 0 : 1)).current;
+
+  React.useEffect(() => {
+    const hasMetrics = !!metrics && !loading;
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: hasMetrics ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(skeletonOpacity, {
+        toValue: hasMetrics ? 0 : 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [metrics, loading, contentOpacity, skeletonOpacity]);
+
+  // Still keep layout stable: always render the same card footprint, and fade between layers.
+  if (!metrics) {
     return (
-      <Card className="mb-4">
-        <View className="p-4">
-          <Text className="text-sm text-muted-foreground">Loading property insights…</Text>
-        </View>
-      </Card>
+      <Animated.View style={{ opacity: skeletonOpacity }}>
+        <PropertyInsightsSkeletonCard />
+      </Animated.View>
     );
   }
-
-  if (!metrics) return null;
 
   const latest = metrics.overall?.latest_score;
   const issues = metrics.issues?.total_by_severity;
@@ -78,8 +229,16 @@ function PropertyMetricsCard() {
   const rateSecondary = rateAbs === null ? '' : `≈ ${(rateAbs * 7).toFixed(0)} pts/week`;
 
   return (
-    <Card className="mb-4">
-      <View className="p-4">
+    <View className="mb-4">
+      {/* Skeleton layer (under/over) */}
+      <Animated.View style={{ position: 'absolute', left: 0, right: 0, top: 0, opacity: skeletonOpacity }}>
+        <PropertyInsightsSkeletonCard />
+      </Animated.View>
+
+      {/* Content layer */}
+      <Animated.View style={{ opacity: contentOpacity }}>
+        <Card>
+          <View className="p-4">
         <View className="flex-row items-center justify-between">
           <Text className="text-base font-semibold text-foreground">Property Insights</Text>
           <Pressable
@@ -119,15 +278,18 @@ function PropertyMetricsCard() {
         </View>
 
         {issues && (
-          <View className="mt-3">
+          <Pressable onPress={onOpenIssues} className="mt-3">
             <Text className="text-xs text-muted-foreground">Issues found</Text>
-            <Text className="text-sm text-foreground">
-              Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor {issues.minor}
-            </Text>
+            <View className="mt-1 flex-row items-center justify-between">
+              <Text className="text-sm text-foreground">
+                Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor {issues.minor}
+              </Text>
+              <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
+            </View>
             <Text className="text-xs text-muted-foreground">
-              Counts come from AI-detected issues across checkpoints (not repair quotes).
+              Tap to see which issues were counted.
             </Text>
-          </View>
+          </Pressable>
         )}
 
         {showHelp && (
@@ -146,8 +308,10 @@ function PropertyMetricsCard() {
             </View>
           </View>
         )}
-      </View>
-    </Card>
+          </View>
+        </Card>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -271,6 +435,8 @@ export function PropertyCheckpointsTab() {
   const [isCreateModalVisible, setIsCreateModalVisible] = React.useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
+  const [isIssuesModalVisible, setIsIssuesModalVisible] = React.useState(false);
+  const [issuesFilter, setIssuesFilter] = React.useState<IssueSeverity | 'all'>('all');
 
   // Comparison State
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
@@ -376,16 +542,12 @@ export function PropertyCheckpointsTab() {
   };
 
   if (loading) {
-    return (
-      <View className="p-4">
-        <Text className="text-center text-muted-foreground">Loading checkpoints...</Text>
-      </View>
-    );
+    return <CheckpointsTabSkeleton />;
   }
 
   return (
     <View className="flex-1 p-4">
-      <PropertyMetricsCard />
+      <PropertyMetricsCard checkpoints={checkpoints} onOpenIssues={() => setIsIssuesModalVisible(true)} />
       {checkpoints.length === 0 ? (
         <Card className="items-center p-6">
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -492,6 +654,75 @@ export function PropertyCheckpointsTab() {
         checkpoint={selectedCheckpoint}
         onClose={() => setIsDetailModalVisible(false)}
       />
+
+      {/* Issues breakdown modal */}
+      <Modal visible={isIssuesModalVisible} animationType="slide" presentationStyle="pageSheet">
+        <View className="flex-1 bg-background">
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+            <View className="flex-1">
+              <Text className="text-lg font-semibold text-foreground">Issues breakdown</Text>
+              <Text className="text-xs text-muted-foreground">From recent checkpoints</Text>
+            </View>
+            <Button onPress={() => setIsIssuesModalVisible(false)} variant="ghost" size="icon">
+              <Icon as={X} size={22} className="text-foreground" />
+            </Button>
+          </View>
+
+          <ScrollView className="flex-1">
+            <View className="p-4">
+              <View className="mb-3 flex-row flex-wrap gap-2">
+                {(['all', 'critical', 'major', 'moderate', 'minor'] as const).map((sev) => (
+                  <Pressable
+                    key={sev}
+                    onPress={() => setIssuesFilter(sev)}
+                    className={`rounded-full border px-2 py-0.5 ${
+                      issuesFilter === sev ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                    }`}>
+                    <Text className={`text-xs ${issuesFilter === sev ? 'text-primary' : 'text-foreground'}`}>
+                      {sev === 'all' ? 'All' : severityLabel(sev)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {(() => {
+                const rows = normalizeIssuesFromCheckpoints(checkpoints, 12);
+                const filtered = issuesFilter === 'all' ? rows : rows.filter((r) => r.severity === issuesFilter);
+                if (filtered.length === 0) {
+                  return (
+                    <Text className="text-sm text-muted-foreground">
+                      No issues found in the recent checkpoints.
+                    </Text>
+                  );
+                }
+                return (
+                  <View className="gap-3">
+                    {filtered.slice(0, 50).map((r, idx) => (
+                      <View key={`${r.checkpointId}-${idx}`} className="rounded-lg border border-border bg-card p-3">
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-xs text-muted-foreground">{severityLabel(r.severity)}</Text>
+                          <Text className="text-xs text-muted-foreground">
+                            {format(r.createdAt, 'MMM d, yyyy')}
+                          </Text>
+                        </View>
+                        <Text className="mt-1 text-sm font-medium text-foreground">{r.description}</Text>
+                        <Text className="mt-1 text-xs text-muted-foreground">
+                          From: {r.checkpointName}
+                        </Text>
+                      </View>
+                    ))}
+                    {rows.length > 50 && (
+                      <Text className="text-xs text-muted-foreground">
+                        Showing the first 50 issues.
+                      </Text>
+                    )}
+                  </View>
+                );
+              })()}
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       <CheckpointComparisonModal
         visible={isComparisonModalVisible}

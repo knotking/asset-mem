@@ -257,7 +257,23 @@ export type CheckpointAnalysis = {
   summary: string;
   detectedItems: string[]; // e.g., ["furniture", "appliances", "flooring"]
   conditions: string[]; // e.g., ["good", "minor wear", "damage detected"]
-  issues?: string[]; // e.g., ["crack in wall", "water stain"]
+  // Backend may store either legacy strings OR structured issues with severity.
+  issues?: Array<
+    | string
+    | {
+        description?: string;
+        severity?: "minor" | "moderate" | "major" | "critical";
+        confidence?: number;
+        category?: string;
+      }
+  >;
+  // Optional worker-computed rollup (used by metrics aggregator)
+  issues_by_severity?: {
+    critical?: number;
+    major?: number;
+    moderate?: number;
+    minor?: number;
+  };
   aiConfidence?: number;
   analyzedAt: Timestamp;
 };
