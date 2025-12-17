@@ -279,6 +279,9 @@ jobs:
             "firebasestorage.googleapis.com"
             "identitytoolkit.googleapis.com"
             "logging.googleapis.com"
+            # Optional for OpenTelemetry exports (needed if enabling OTel traces/metrics export)
+            "cloudtrace.googleapis.com"
+            "monitoring.googleapis.com"
           )
 
           echo "Checking which APIs need to be enabled..."
@@ -349,6 +352,12 @@ jobs:
             "roles/firebaserules.admin"
             "roles/firebase.admin"
             "roles/firebasestorage.admin"
+            # OpenTelemetry export permissions (Cloud Monitoring + Cloud Trace)
+            # - metricWriter: write time series
+            # - monitoring.editor: allow creating metric descriptors (required by some exporters on first run)
+            "roles/monitoring.metricWriter"
+            "roles/monitoring.editor"
+            "roles/cloudtrace.agent"
           )
 
           echo "Checking IAM role bindings for GitHub workflow service account..."

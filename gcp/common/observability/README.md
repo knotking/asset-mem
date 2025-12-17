@@ -398,8 +398,8 @@ Add to `requirements.txt`:
 ```txt
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
-opentelemetry-exporter-cloud-trace>=1.20.0
-opentelemetry-exporter-cloud-monitoring>=1.20.0
+opentelemetry-exporter-gcp-trace
+opentelemetry-exporter-gcp-monitoring
 ```
 
 ## Deployment Notes

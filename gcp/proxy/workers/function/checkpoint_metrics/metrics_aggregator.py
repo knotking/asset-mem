@@ -20,7 +20,23 @@ def _extract_overall_condition(ai_analysis: Dict[str, Any]) -> Optional[float]:
     if not ai_analysis:
         return None
     condition_scores = ai_analysis.get("condition_scores") or {}
-    return _safe_float(condition_scores.get("overall"))
+    overall = _safe_float(condition_scores.get("overall"))
+    if overall is not None:
+        return overall
+
+    # Fallback: some analyses may not provide an explicit "overall".
+    # Derive it as the mean of numeric component scores when available.
+    vals: List[float] = []
+    if isinstance(condition_scores, dict):
+        for k, v in condition_scores.items():
+            if k == "overall":
+                continue
+            fv = _safe_float(v)
+            if fv is not None:
+                vals.append(fv)
+    if vals:
+        return sum(vals) / float(len(vals))
+    return None
 
 
 def _extract_issues_by_severity(ai_analysis: Dict[str, Any]) -> Dict[str, int]:

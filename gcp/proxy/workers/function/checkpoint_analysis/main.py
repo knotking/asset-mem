@@ -108,8 +108,11 @@ def pubsub_checkpoint_analysis(request, context):
             # Check if location already exists
             checkpoint_doc = checkpoint_ref.get()
             existing_location = None
-            if checkpoint_doc.exists():
-                existing_location = checkpoint_doc.to_dict().get("location")
+            existing_name = None
+            if checkpoint_doc.exists:
+                existing = checkpoint_doc.to_dict() or {}
+                existing_location = existing.get("location")
+                existing_name = existing.get("name")
 
             # Extract condition and damage scores from analysis result
             condition_scores = analysis_result.get("condition_scores", {})
@@ -167,6 +170,14 @@ def pubsub_checkpoint_analysis(request, context):
                     logger.info(f"Auto-setting location to detected room: {detected_room}")
                 else:
                     logger.info(f"Location already set to '{final_location}', keeping user-provided value")
+
+            # Auto-generate a checkpoint name if missing/blank.
+            # Keep any user-provided value.
+            if not (isinstance(existing_name, str) and existing_name.strip()):
+                base = (final_location or detected_room or "Checkpoint").strip()
+                auto_name = f"{base} • {datetime.utcnow().strftime('%b %d')}"
+                update_data["name"] = auto_name
+                logger.info(f"Auto-setting checkpoint name to: {auto_name}")
             
             # Update checkpoint with analysis results first
             checkpoint_ref.update(update_data)
@@ -268,7 +279,7 @@ def pubsub_checkpoint_analysis(request, context):
                 # Check if we should perform comparison
                 checkpoint_doc_after_update = checkpoint_ref.get()
                 skip_comparison = False
-                if checkpoint_doc_after_update.exists():
+                if checkpoint_doc_after_update.exists:
                     checkpoint_data = checkpoint_doc_after_update.to_dict()
                     skip_comparison = checkpoint_data.get("skipComparison", False)
                 
@@ -312,6 +323,7 @@ def pubsub_checkpoint_analysis(request, context):
                                     "id": f"diff_{uuid.uuid4().hex[:8]}",
                                     "status": "completed",
                                     "comparedWithCheckpointId": previous_checkpoint_id,
+                                    "summary": comparison_result.get("summary", ""),
                                     "semanticChanges": comparison_result.get("semanticChanges", []),
                                     "regions": [
                                         {

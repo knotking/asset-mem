@@ -141,6 +141,13 @@ jobs:
             --project=${{ inputs.gcp_project_id }} \
             --quiet || echo "⚠️ pubsub_checkpoint_analysis function may not exist"
 
+          echo "Deleting pubsub_checkpoint_metrics function..."
+          gcloud functions delete pubsub-checkpoint-metrics-${{ inputs.environment_name }} \
+            --gen2 \
+            --region=$REGION \
+            --project=${{ inputs.gcp_project_id }} \
+            --quiet || echo "⚠️ pubsub_checkpoint_metrics function may not exist"
+
           echo "✓ Cloud Functions deleted"
 
   destroy-infrastructure:
@@ -368,6 +375,10 @@ jobs:
             "roles/firebaserules.admin"
             "roles/firebase.admin"
             "roles/firebasestorage.admin"
+            # OpenTelemetry export permissions (Cloud Monitoring + Cloud Trace)
+            "roles/monitoring.metricWriter"
+            "roles/monitoring.editor"
+            "roles/cloudtrace.agent"
           )
 
           echo "Removing IAM role bindings for GitHub workflow SA..."
@@ -551,6 +562,9 @@ jobs:
             "firebasestorage.googleapis.com"
             "identitytoolkit.googleapis.com"
             "secretmanager.googleapis.com"
+            # OpenTelemetry exporters (optional) - safe to disable when preserving a project
+            "cloudtrace.googleapis.com"
+            "monitoring.googleapis.com"
           )
 
           echo "Disabling ${#APIS_TO_DISABLE[@]} API(s)..."

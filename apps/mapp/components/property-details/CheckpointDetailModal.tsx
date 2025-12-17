@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { PortalHost } from '@rn-primitives/portal';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -32,11 +33,23 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 
-    if (!checkpoint) return null;
+    // IMPORTANT: hooks must be called consistently across renders.
+    // This modal can render with checkpoint=null initially and later receive a checkpoint.
+    // So we compute safe defaults and always call useVideoPlayer.
+    const media0 = checkpoint?.media?.[0];
+    const isVideo = !!media0?.contentType?.startsWith('video/');
+    const mediaUrl = media0?.url;
+    const videoSourceUrl = isVideo && mediaUrl ? mediaUrl : '';
+    const videoPlayer = useVideoPlayer(videoSourceUrl, (player) => {
+        // don't autoplay in a modal; user intent should start playback
+        player.loop = false;
+    });
 
-    const imageUrl = checkpoint.media?.[0]?.url;
+    if (!checkpoint) return null;
     const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
-    const hasIssues = checkpoint.aiAnalysis?.conditions?.includes('damage detected');
+    // Keep issue detection logic consistent with the list view:
+    // treat any non-empty issues array as "issues detected".
+    const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
 
     const handleConfirmDelete = async () => {
         try {
@@ -71,17 +84,27 @@ export function CheckpointDetailModal({ visible, checkpoint, onClose }: Checkpoi
                 </View>
 
                 <ScrollView className="flex-1">
-                    {/* Image */}
+                    {/* Media (image/video) */}
                     <View className="h-72 w-full bg-muted">
-                        {imageUrl ? (
-                            <Image
-                                source={{ uri: imageUrl }}
-                                className="h-full w-full"
-                                resizeMode="cover"
-                            />
+                        {mediaUrl ? (
+                            isVideo ? (
+                                <VideoView
+                                    player={videoPlayer}
+                                    style={{ width: '100%', height: '100%' }}
+                                    allowsFullscreen
+                                    allowsPictureInPicture={false}
+                                    nativeControls
+                                />
+                            ) : (
+                                <Image
+                                    source={{ uri: mediaUrl }}
+                                    className="h-full w-full"
+                                    resizeMode="cover"
+                                />
+                            )
                         ) : (
                             <View className="h-full w-full items-center justify-center">
-                                <Text className="text-muted-foreground">No Image Available</Text>
+                                <Text className="text-muted-foreground">No Media Available</Text>
                             </View>
                         )}
                     </View>

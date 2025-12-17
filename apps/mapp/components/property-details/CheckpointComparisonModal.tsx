@@ -30,6 +30,19 @@ export function CheckpointComparisonModal({
     const [loading, setLoading] = React.useState(false);
     const [analysis, setAnalysis] = React.useState<CompareCheckpointsOutput | null>(null);
 
+    const normalizeAnalysis = React.useCallback(
+        (input: Partial<CompareCheckpointsOutput> | null | undefined): CompareCheckpointsOutput | null => {
+            if (!input) return null;
+            return {
+                summary: input.summary ?? '',
+                similarityScore: typeof input.similarityScore === 'number' ? input.similarityScore : 0,
+                semanticChanges: Array.isArray(input.semanticChanges) ? input.semanticChanges : [],
+                regions: Array.isArray(input.regions) ? input.regions : [],
+            };
+        },
+        []
+    );
+
     // Sort by date (older first)
     const sortedCheckpoints = React.useMemo(() => {
         if (!checkpoint1 || !checkpoint2) return [];
@@ -44,20 +57,28 @@ export function CheckpointComparisonModal({
 
     React.useEffect(() => {
         if (visible && before && after) {
-            // Check if we already have analysis
-            if (after.visualDiff) {
-                setAnalysis({
-                    summary: after.visualDiff.semanticChanges.join('\n'),
-                    similarityScore: after.visualDiff.similarityScore,
-                    semanticChanges: after.visualDiff.semanticChanges,
-                    regions: after.visualDiff.regions.map((r) => ({
-                        description: r.description,
-                        changeType: r.changeType,
-                        severity: r.severity,
-                        confidence: r.confidence,
-                        bbox: r.bbox,
-                    })),
-                });
+            // Reuse cached comparison only if it matches this before/after pair.
+            // Otherwise, compare-checkpoints (e.g. compare 1→3 should not reuse 1→2).
+            if (after.visualDiff?.comparedWithCheckpointId === before.id) {
+                const semanticChanges = Array.isArray(after.visualDiff.semanticChanges)
+                    ? after.visualDiff.semanticChanges
+                    : [];
+                const regions = Array.isArray(after.visualDiff.regions) ? after.visualDiff.regions : [];
+
+                setAnalysis(
+                    normalizeAnalysis({
+                        summary: after.visualDiff.summary || semanticChanges.join('\n'),
+                        similarityScore: after.visualDiff.similarityScore,
+                        semanticChanges,
+                        regions: regions.map((r) => ({
+                            description: r.description,
+                            changeType: r.changeType,
+                            severity: r.severity,
+                            confidence: r.confidence,
+                            bbox: r.bbox,
+                        })),
+                    })
+                );
                 return;
             }
 
@@ -76,15 +97,18 @@ export function CheckpointComparisonModal({
                             location: after.location,
                         });
 
-                        setAnalysis(result);
+                        const normalized = normalizeAnalysis(result);
+                        setAnalysis(normalized);
 
                         // Save to Firestore
                         await updateCheckpoint(after.id, {
                             visualDiff: {
                                 id: `diff_${Date.now()}`,
                                 status: 'completed',
-                                semanticChanges: result.semanticChanges,
-                                regions: result.regions.map((r, i) => ({
+                                comparedWithCheckpointId: before.id,
+                                summary: normalized?.summary ?? '',
+                                semanticChanges: normalized?.semanticChanges ?? [],
+                                regions: (normalized?.regions ?? []).map((r, i) => ({
                                     id: `region_${i}`,
                                     bbox: r.bbox || { x: 0, y: 0, width: 0, height: 0 },
                                     changeType: r.changeType,
@@ -93,7 +117,7 @@ export function CheckpointComparisonModal({
                                     description: r.description,
                                     changePercentage: 0,
                                 })),
-                                similarityScore: result.similarityScore,
+                                similarityScore: normalized?.similarityScore ?? 0,
                                 completedAt: Timestamp.now(),
                             },
                         });
@@ -176,7 +200,13 @@ export function CheckpointComparisonModal({
                             </View>
                         ) : analysis ? (
                             <View className="gap-3">
-                                <Text className="text-sm text-foreground">{analysis.summary}</Text>
+                                <Text className="text-sm text-foreground">
+                                    {analysis.summary?.trim()
+                                        ? analysis.summary
+                                        : analysis.similarityScore >= 0.98
+                                            ? 'No significant differences detected.'
+                                            : 'No comparison summary available.'}
+                                </Text>
 
                                 <View className="flex-row items-center gap-2">
                                     <Text className="text-xs font-medium text-muted-foreground">Similarity Score:</Text>
@@ -191,10 +221,10 @@ export function CheckpointComparisonModal({
                                     </Text>
                                 </View>
 
-                                {analysis.regions.length > 0 && (
+                                {(analysis.regions?.length || 0) > 0 && (
                                     <View className="mt-2 gap-2">
                                         <Text className="text-xs font-medium text-muted-foreground">Detected Changes:</Text>
-                                        {analysis.regions.map((region, index) => (
+                                        {(analysis.regions || []).map((region, index) => (
                                             <View key={index} className="flex-row items-start gap-2 rounded bg-muted/50 p-2">
                                                 <View
                                                     className={`mt-1 h-2 w-2 rounded-full ${region.changeType === 'added'

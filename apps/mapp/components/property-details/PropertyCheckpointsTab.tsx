@@ -15,6 +15,8 @@ import {
   ArrowRightLeft,
   Loader2,
   AlertCircle,
+  Info,
+  Play,
 } from 'lucide-react-native';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -31,6 +33,7 @@ import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetri
 
 function PropertyMetricsCard() {
   const { metrics, loading } = usePropertyCheckpointMetrics();
+  const [showHelp, setShowHelp] = React.useState(false);
 
   if (loading) {
     return (
@@ -48,34 +51,99 @@ function PropertyMetricsCard() {
   const issues = metrics.issues?.total_by_severity;
   const rate = metrics.deterioration?.rate_points_per_day;
   const trend = metrics.deterioration?.trend;
+  const considered = metrics.window?.checkpoints_considered;
+
+  const latestDisplay =
+    typeof latest === 'number' && Number.isFinite(latest) ? Math.max(0, Math.min(100, latest)) : null;
+  const latestLabel =
+    latestDisplay === null
+      ? '—'
+      : latestDisplay >= 80
+        ? 'Good'
+        : latestDisplay >= 60
+          ? 'Fair'
+          : latestDisplay >= 40
+            ? 'Needs attention'
+            : 'Poor';
+
+  const trendLabel =
+    trend === 'improving' ? 'Improving' : trend === 'stable' ? 'Stable' : trend === 'deteriorating' ? 'Worsening' : 'Unknown';
+  const rateAbs = typeof rate === 'number' && Number.isFinite(rate) ? Math.abs(rate) : null;
+  const rateDisplay =
+    rateAbs === null
+      ? (typeof considered === 'number' && considered >= 2
+        ? 'Need 2+ scored checkpoints'
+        : '—')
+      : `${rateAbs.toFixed(1)} pts/day`;
+  const rateSecondary = rateAbs === null ? '' : `≈ ${(rateAbs * 7).toFixed(0)} pts/week`;
 
   return (
     <Card className="mb-4">
       <View className="p-4">
-        <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+          <Pressable
+            onPress={() => setShowHelp((v) => !v)}
+            className="flex-row items-center gap-1 rounded-full bg-secondary px-2 py-1">
+            <Icon as={Info} size={14} className="text-muted-foreground" />
+            <Text className="text-xs text-muted-foreground">{showHelp ? 'Hide' : 'What is this?'}</Text>
+          </Pressable>
+        </View>
+
+        {typeof considered === 'number' && considered > 0 && (
+          <Text className="mt-1 text-xs text-muted-foreground">
+            Based on the last {considered} checkpoint{considered === 1 ? '' : 's'}.
+          </Text>
+        )}
+
         <View className="mt-3 flex-row justify-between">
           <View>
-            <Text className="text-xs text-muted-foreground">Latest overall</Text>
+            <Text className="text-xs text-muted-foreground">Overall condition</Text>
             <Text className="text-xl font-semibold text-foreground">
-              {typeof latest === 'number' ? `${Math.round(latest)}/100` : '—'}
+              {latestDisplay === null ? '—' : `${Math.round(latestDisplay)}/100`}
             </Text>
+            <Text className="text-xs text-muted-foreground">{latestDisplay === null ? 'No score yet' : latestLabel}</Text>
+            {latestDisplay !== null && (
+              <View className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-muted">
+                <View className="h-full bg-primary" style={{ width: `${latestDisplay}%` }} />
+              </View>
+            )}
           </View>
           <View>
-            <Text className="text-xs text-muted-foreground">Deterioration</Text>
+            <Text className="text-xs text-muted-foreground">Change rate</Text>
             <Text className="text-sm font-medium text-foreground">
-              {typeof rate === 'number' ? `${rate.toFixed(2)}/day` : '—'}{' '}
-              {trend ? `(${trend})` : ''}
+              {rateDisplay} {trendLabel !== 'Unknown' ? `(${trendLabel})` : ''}
             </Text>
+            {!!rateSecondary && <Text className="text-xs text-muted-foreground">{rateSecondary}</Text>}
           </View>
         </View>
 
         {issues && (
           <View className="mt-3">
-            <Text className="text-xs text-muted-foreground">Issues (total)</Text>
+            <Text className="text-xs text-muted-foreground">Issues found</Text>
             <Text className="text-sm text-foreground">
-              Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor{' '}
-              {issues.minor}
+              Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor {issues.minor}
             </Text>
+            <Text className="text-xs text-muted-foreground">
+              Counts come from AI-detected issues across checkpoints (not repair quotes).
+            </Text>
+          </View>
+        )}
+
+        {showHelp && (
+          <View className="mt-3 rounded-lg border border-border bg-card p-3">
+            <Text className="text-sm font-semibold text-foreground">How to read this</Text>
+            <View className="mt-2 gap-1">
+              <Text className="text-xs text-muted-foreground">
+                - Overall condition is a 0–100 score estimated by AI from your recent checkpoint photos.
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                - Change rate is how fast the score is moving over time (points/day). “Worsening” means the score is trending down.
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                - Issues are grouped by severity (minor → critical) based on AI classification.
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -94,7 +162,9 @@ function CheckpointCard({
   selectionMode?: boolean;
   isSelected?: boolean;
 }) {
+  const media0 = checkpoint.media?.[0];
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
+  const isVideo = !!media0?.contentType?.startsWith('video/');
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
@@ -109,6 +179,13 @@ function CheckpointCard({
           ) : (
             <View className="h-full w-full items-center justify-center">
               <Icon as={Camera} size={24} className="text-muted-foreground" />
+            </View>
+          )}
+          {isVideo && (
+            <View className="absolute inset-0 items-center justify-center">
+              <View className="rounded-full bg-black/50 p-2">
+                <Icon as={Play} size={18} className="text-white" />
+              </View>
             </View>
           )}
           {selectionMode && (
@@ -203,7 +280,8 @@ export function PropertyCheckpointsTab() {
   const handleCreateCheckpoint = async (data: {
     name: string;
     location: string;
-    imageAsset: ImagePicker.ImagePickerAsset;
+    mediaAsset: ImagePicker.ImagePickerAsset;
+    mediaType: 'image' | 'video';
   }) => {
     try {
       const result = await createCheckpoint(
@@ -213,8 +291,8 @@ export function PropertyCheckpointsTab() {
         },
         [
           {
-            uri: data.imageAsset.uri,
-            type: 'image',
+            uri: data.mediaAsset.uri,
+            type: data.mediaType,
           },
         ]
       );
@@ -227,9 +305,9 @@ export function PropertyCheckpointsTab() {
 
       // Trigger AI Analysis via Pub/Sub (truly async)
       const { id, media } = result;
-      const imageMedia = media.find((m) => m.contentType.startsWith('image/'));
+      const firstMedia = media[0];
 
-      if (imageMedia && imageMedia.gsURI && user && property) {
+      if (firstMedia && firstMedia.gsURI && user && property) {
         // Update status to processing
         updateCheckpoint(id, {
           analysisStatus: 'processing',
@@ -240,8 +318,8 @@ export function PropertyCheckpointsTab() {
         // Publish to Pub/Sub for async processing (fire and forget)
         // Worker will update Firestore when analysis completes
         analyzeCheckpoint({
-          imageUrl: imageMedia.gsURI,
-          contentType: imageMedia.contentType,
+          imageUrl: firstMedia.gsURI,
+          contentType: firstMedia.contentType,
           location: data.location,
           checkpointId: id,
           userId: user.uid,
