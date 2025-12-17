@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mapp_checkpoint
     paths:
       - "gcp/proxy/workers/function/**"
   workflow_dispatch:

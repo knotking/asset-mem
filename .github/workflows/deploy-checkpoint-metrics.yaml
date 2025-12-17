@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mapp_checkpoint
     paths:
       - "gcp/proxy/workers/function/checkpoint_metrics/**"
   workflow_dispatch:
@@ -101,5 +102,3 @@ jobs:
           environment_variables: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_LOCATION=${{ vars.GCP_REGION }}
-
-
