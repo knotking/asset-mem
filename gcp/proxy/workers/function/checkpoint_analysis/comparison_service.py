@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 from google import genai
 from google.genai import types
 from firebase_admin import firestore
+from google.cloud.firestore_v1 import FieldFilter
 from prompt_builder import get_asset_category, build_comparison_prompt
 
 logger = logging.getLogger(__name__)
@@ -88,12 +89,14 @@ def find_previous_checkpoint(
             if not search_loc:
                 continue
                 
-            # Query by location, excluding current checkpoint, ordered by creation date descending
-            query = checkpoints_ref\
-                .where("location", "==", search_loc)\
-                .where("createdAt", ">", min_date)\
-                .order_by("createdAt", direction=firestore.Query.DESCENDING)\
+            # Query by location, excluding current checkpoint, ordered by creation date descending.
+            # Use the newer 'filter=' API to avoid positional-args warnings on newer firestore clients.
+            query = (
+                checkpoints_ref.where(filter=FieldFilter("location", "==", search_loc))
+                .where(filter=FieldFilter("createdAt", ">", min_date))
+                .order_by("createdAt", direction=firestore.Query.DESCENDING)
                 .limit(1)
+            )
             
             docs = list(query.stream())
             
@@ -107,10 +110,11 @@ def find_previous_checkpoint(
         
         # If no location match found, try querying recent checkpoints (without location filter)
         # This is a fallback for cases where location wasn't detected
-        query = checkpoints_ref\
-            .where("createdAt", ">", min_date)\
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)\
+        query = (
+            checkpoints_ref.where(filter=FieldFilter("createdAt", ">", min_date))
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
             .limit(10)  # Get last 10 to have options
+        )
         
         docs = list(query.stream())
         
@@ -148,7 +152,7 @@ def get_user_preferences(
             .collection("preferences").document("user")
         
         preferences_doc = preferences_ref.get()
-        if preferences_doc.exists():
+        if preferences_doc.exists:
             return preferences_doc.to_dict()
         return None
     except Exception as e:

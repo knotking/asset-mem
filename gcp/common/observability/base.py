@@ -10,21 +10,64 @@ import logging
 from typing import Optional
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter, SpanExportResult
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 
 # Cloud exporters (conditionally imported)
+# NOTE:
+# - Modern/maintained Google Cloud exporters are published via:
+#   - opentelemetry-exporter-gcp-trace
+#   - opentelemetry-exporter-gcp-monitoring
+# They expose the same import paths used below.
 try:
     from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
     from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
     CLOUD_EXPORTERS_AVAILABLE = True
 except ImportError:
     CLOUD_EXPORTERS_AVAILABLE = False
-    logging.warning("Cloud exporters not available. Install opentelemetry-exporter-cloud-* for GCP integration.")
+    logging.warning(
+        "Cloud exporters not available. Install opentelemetry-exporter-gcp-trace and "
+        "opentelemetry-exporter-gcp-monitoring for Google Cloud integration."
+    )
 
 logger = logging.getLogger(__name__)
+
+# -----------------------------------------------------------------------------
+# Safety wrappers
+# -----------------------------------------------------------------------------
+
+class _SafeSpanExporter(SpanExporter):
+    """
+    Wrap a SpanExporter so exporter bugs/transient runtime failures don't crash the app.
+
+    Some exporters have been observed to raise during export in certain runtime
+    environments. Cloud Functions should never fail a request due to telemetry.
+    """
+
+    def __init__(self, exporter: SpanExporter):
+        self._exporter = exporter
+
+    def export(self, spans):  # type: ignore[override]
+        try:
+            return self._exporter.export(spans)
+        except Exception as e:
+            logger.warning(f"Tracing export failed (ignored): {e}", exc_info=True)
+            return SpanExportResult.FAILURE
+
+    def shutdown(self):  # type: ignore[override]
+        try:
+            return self._exporter.shutdown()
+        except Exception:
+            return None
+
+    def force_flush(self, timeout_millis: int = 30000):  # type: ignore[override]
+        try:
+            return self._exporter.force_flush(timeout_millis=timeout_millis)
+        except Exception:
+            return False
+
 
 # Global instances
 _tracer_provider: Optional[TracerProvider] = None
@@ -78,7 +121,7 @@ def _initialize_tracing(project_id: Optional[str]):
         _tracer_provider = TracerProvider(resource=_RESOURCE)
         
         if project_id:
-            exporter = CloudTraceSpanExporter(project_id=project_id)
+            exporter = _SafeSpanExporter(CloudTraceSpanExporter(project_id=project_id))
             processor = BatchSpanProcessor(exporter)
             _tracer_provider.add_span_processor(processor)
             logger.info(f"Cloud Trace exporter initialized for project {project_id}")

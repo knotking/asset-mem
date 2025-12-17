@@ -169,7 +169,7 @@ OpenTelemetry Tracing SDK → CloudTraceSpanExporter → Cloud Trace
 
 ```python
 # Add to requirements.txt
-opentelemetry-exporter-cloud-trace>=1.20.0
+opentelemetry-exporter-gcp-trace
 
 # In main.py or checkpoint_service.py
 from opentelemetry import trace
@@ -1338,8 +1338,8 @@ Add these to your `requirements.txt` (if not already present in the shared modul
 # OpenTelemetry dependencies (may already be in shared module)
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
-opentelemetry-exporter-cloud-trace>=1.20.0
-opentelemetry-exporter-cloud-monitoring>=1.20.0
+opentelemetry-exporter-gcp-trace
+opentelemetry-exporter-gcp-monitoring
 ```
 
 **Note:** The shared module handles all OpenTelemetry initialization. You just need to ensure these packages are available in your deployment environment.

@@ -136,12 +136,40 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         await uploadBytes(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
 
+        // For videos, generate + upload a thumbnail image so list items can display a preview.
+        // We do a dynamic import so other platforms/builds that don't include this module
+        // won't fail at import time.
+        let thumbnailUrl: string | undefined;
+        if (file.type === "video") {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const VideoThumbnails = await import("expo-video-thumbnails");
+            const thumb = await VideoThumbnails.getThumbnailAsync(file.uri, {
+              time: 1000,
+            });
+
+            if (thumb?.uri) {
+              const thumbFileName = `checkpoint_${Date.now()}_${index}_thumb.jpg`;
+              const thumbStoragePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${thumbFileName}`;
+              const thumbRef = ref(storage, thumbStoragePath);
+
+              const thumbResp = await fetch(thumb.uri);
+              const thumbBlob = await thumbResp.blob();
+              await uploadBytes(thumbRef, thumbBlob);
+              thumbnailUrl = await getDownloadURL(thumbRef);
+            }
+          } catch (e) {
+            console.warn("Failed to generate/upload video thumbnail:", e);
+          }
+        }
+
         return {
           id: fileName,
           url: downloadURL,
           gsURI: `gs://${storage.app.options.storageBucket}/${storagePath}`,
           contentType: file.type === "video" ? "video/mp4" : "image/jpeg",
           storagePath: storagePath,
+          ...(thumbnailUrl ? { thumbnailUrl } : {}),
         } as CheckpointMedia;
       });
 

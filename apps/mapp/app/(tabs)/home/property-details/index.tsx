@@ -524,22 +524,24 @@ export default function PropertyDetailsScreen() {
                           </Button>
                         </View>
                       )}
-                      <View className="relative">
-                        <Button
-                          onPress={() => setDocumentsDrawerVisible(true)}
-                          variant="ghost"
-                          size="icon">
-                          <Icon as={File} size={20} className="text-foreground" />
-                        </Button>
-                        {((activeTab === 'chat' && selectedDocuments.length > 0) ||
-                          (activeTab === 'details' && documents.length > 0)) && (
-                          <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                            <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                              {activeTab === 'chat' ? selectedDocuments.length : documents.length}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
+                      {activeTab !== 'checkpoints' && (
+                        <View className="relative">
+                          <Button
+                            onPress={() => setDocumentsDrawerVisible(true)}
+                            variant="ghost"
+                            size="icon">
+                            <Icon as={File} size={20} className="text-foreground" />
+                          </Button>
+                          {((activeTab === 'chat' && selectedDocuments.length > 0) ||
+                            (activeTab === 'details' && documents.length > 0)) && (
+                            <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                              <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                {activeTab === 'chat' ? selectedDocuments.length : documents.length}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
                     </View>
                   </View>
                 </View>
