@@ -90,11 +90,33 @@ def build_analysis_prompt(
         - summary: A brief summary of the vehicle's condition and what is visible.
         - conditions: A list of conditions specific to vehicles (e.g., "good", "excellent", "fair", "damaged", "wear visible", "clean", "dirty", "well-maintained", "needs maintenance").
         - detectedItems: A list of vehicle components/parts identified (e.g., "tires", "windshield", "paint", "headlights", "bumper", "interior trim", "dashboard", etc.).
-        - issues: A list of potential issues, damage, or wear detected:
+        - issues: A list of issue objects, each with:
+          * description: Description of the issue
+          * severity: "minor", "moderate", "major", or "critical"
+          Examples:
           * Exterior: paint damage, scratches, dents, rust, tire condition, windshield cracks, light damage, etc.
           * Interior: wear on seats, dashboard cracks, stains, missing parts, etc.
           * Mechanical: visible leaks, worn components, etc.
-          If none, return empty list.
+          If none, return empty array.
+        
+        Additionally, provide structured condition and damage scores:
+        - condition_scores: An object with component names as keys and scores (0-100) as values:
+            * exterior: 0-100 (100 = perfect, 0 = completely damaged)
+            * interior: 0-100
+            * mechanical: 0-100 (if visible/apparent)
+            * paint: 0-100
+            * tires: 0-100 (if visible)
+            * overall: 0-100 (weighted average of all components)
+        
+        - damage_scores: An object with damage types as keys and severity (0-100) as values:
+            * rust: 0-100 (0 = none, 100 = severe)
+            * dents: 0-100
+            * scratches: 0-100
+            * wear: 0-100
+        
+        - cost_estimates: An object with cost estimates:
+            * repairs_immediate: Estimated immediate repair cost in USD (0 if none needed)
+            * maintenance_annual: Estimated annual maintenance cost in USD
         """
     
     elif asset_category == "appliance":
@@ -106,12 +128,33 @@ def build_analysis_prompt(
         - summary: A brief summary of the appliance's condition and what is visible.
         - conditions: A list of conditions specific to appliances (e.g., "good", "excellent", "fair", "poor", "worn", "clean", "dirty", "well-maintained", "needs maintenance", "needs replacement", "efficient", "inefficient").
         - detectedItems: A list of appliance components/parts identified (e.g., "door seals", "control panel", "filter", "coils", "vents", "drain", "hoses", "electrical connections", etc.).
-        - issues: A list of potential issues, damage, or wear detected:
+        - issues: A list of issue objects, each with:
+          * description: Description of the issue
+          * severity: "minor", "moderate", "major", or "critical"
+          Examples:
           * Physical: dents, scratches, rust, corrosion, cracks, loose parts, worn seals, damaged controls
           * Functional: leaks, poor performance indicators, unusual wear patterns, clogged filters/vents
           * Safety: exposed wires, gas leaks (if visible), improper installation, fire hazards
           * Age/Maintenance: excessive wear, outdated appearance, missing parts, signs of neglect
-          If none, return empty list.
+          If none, return empty array.
+        
+        Additionally, provide structured condition and damage scores:
+        - condition_scores: An object with component names as keys and scores (0-100) as values:
+            * exterior: 0-100 (100 = perfect, 0 = completely damaged)
+            * interior: 0-100 (if applicable)
+            * seals: 0-100
+            * controls: 0-100
+            * overall: 0-100 (weighted average of all components)
+        
+        - damage_scores: An object with damage types as keys and severity (0-100) as values:
+            * rust: 0-100 (0 = none, 100 = severe)
+            * corrosion: 0-100
+            * wear: 0-100
+            * leaks: 0-100
+        
+        - cost_estimates: An object with cost estimates:
+            * repairs_immediate: Estimated immediate repair cost in USD (0 if none needed)
+            * maintenance_annual: Estimated annual maintenance cost in USD
         """
     
     else:  # property or generic
@@ -123,7 +166,36 @@ def build_analysis_prompt(
         - summary: A brief summary of what is seen.
         - conditions: A list of conditions (e.g., "good", "damaged", "wear and tear", "clean", "cluttered", "well-maintained").
         - detectedItems: A list of objects or items identified.
-        - issues: A list of potential issues or damage detected (structural damage, water damage, wear, etc.). If none, return empty list.
+        - issues: A list of issue objects, each with:
+          * description: Description of the issue
+          * severity: "minor", "moderate", "major", or "critical"
+          Examples: structural damage, water damage, wear, cracks, mold, pest damage, etc.
+          If none, return empty array.
+        
+        Additionally, provide structured condition and damage scores:
+        - condition_scores: An object with component names as keys and scores (0-100) as values:
+            * roof: 0-100 (100 = perfect, 0 = completely damaged)
+            * wall: 0-100
+            * foundation: 0-100
+            * overall: 0-100 (weighted average of all components)
+            * windows: 0-100 (if visible)
+            * doors: 0-100 (if visible)
+            * paint: 0-100 (if visible)
+            * flooring: 0-100 (if visible)
+            * ceiling: 0-100 (if visible)
+            * plumbing: 0-100 (if visible/apparent)
+            * electrical: 0-100 (if visible/apparent)
+            * hvac: 0-100 (if visible/apparent)
+        
+        - damage_scores: An object with damage types as keys and severity (0-100) as values:
+            * water: 0-100 (0 = none, 100 = severe)
+            * mold: 0-100
+            * pest: 0-100
+            * cracks: 0-100
+        
+        - cost_estimates: An object with cost estimates:
+            * repairs_immediate: Estimated immediate repair cost in USD (0 if none needed)
+            * maintenance_annual: Estimated annual maintenance cost in USD
         """
 
 

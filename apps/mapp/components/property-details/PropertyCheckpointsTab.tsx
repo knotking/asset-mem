@@ -27,6 +27,61 @@ import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import * as ImagePicker from 'expo-image-picker';
 
 import { analyzeCheckpoint } from '../../lib/api';
+import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
+
+function PropertyMetricsCard() {
+  const { metrics, loading } = usePropertyCheckpointMetrics();
+
+  if (loading) {
+    return (
+      <Card className="mb-4">
+        <View className="p-4">
+          <Text className="text-sm text-muted-foreground">Loading property insights…</Text>
+        </View>
+      </Card>
+    );
+  }
+
+  if (!metrics) return null;
+
+  const latest = metrics.overall?.latest_score;
+  const issues = metrics.issues?.total_by_severity;
+  const rate = metrics.deterioration?.rate_points_per_day;
+  const trend = metrics.deterioration?.trend;
+
+  return (
+    <Card className="mb-4">
+      <View className="p-4">
+        <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+        <View className="mt-3 flex-row justify-between">
+          <View>
+            <Text className="text-xs text-muted-foreground">Latest overall</Text>
+            <Text className="text-xl font-semibold text-foreground">
+              {typeof latest === 'number' ? `${Math.round(latest)}/100` : '—'}
+            </Text>
+          </View>
+          <View>
+            <Text className="text-xs text-muted-foreground">Deterioration</Text>
+            <Text className="text-sm font-medium text-foreground">
+              {typeof rate === 'number' ? `${rate.toFixed(2)}/day` : '—'}{' '}
+              {trend ? `(${trend})` : ''}
+            </Text>
+          </View>
+        </View>
+
+        {issues && (
+          <View className="mt-3">
+            <Text className="text-xs text-muted-foreground">Issues (total)</Text>
+            <Text className="text-sm text-foreground">
+              Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor{' '}
+              {issues.minor}
+            </Text>
+          </View>
+        )}
+      </View>
+    </Card>
+  );
+}
 
 function CheckpointCard({
   checkpoint,
@@ -252,6 +307,7 @@ export function PropertyCheckpointsTab() {
 
   return (
     <View className="flex-1 p-4">
+      <PropertyMetricsCard />
       {checkpoints.length === 0 ? (
         <Card className="items-center p-6">
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary/10">

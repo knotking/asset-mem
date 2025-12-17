@@ -1,11 +1,11 @@
-name: Deploy Checkpoint Analysis Function
+name: Deploy Checkpoint Metrics Function
 
 on:
   push:
     branches:
       - main
     paths:
-      - "gcp/proxy/workers/function/**"
+      - "gcp/proxy/workers/function/checkpoint_metrics/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -22,13 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment ||  'staging' }}
     env:
-      FUNCTION_NAME_BASE: pubsub-checkpoint-analysis
+      FUNCTION_NAME_BASE: pubsub-checkpoint-metrics
       RUNTIME: python313
-      ENTRY_POINT: pubsub_checkpoint_analysis
-      MAX_INSTANCES: 10
+      ENTRY_POINT: pubsub_checkpoint_metrics_aggregate
+      MAX_INSTANCES: 5
       CONCURRENCY: 1
-      MEMORY: 512Mi
-      SOURCE_DIRECTORY: gcp/proxy/workers/function/checkpoint_analysis
+      MEMORY: 256Mi
+      SOURCE_DIRECTORY: gcp/proxy/workers/function/checkpoint_metrics
     permissions:
       contents: "read"
       id-token: "write"
@@ -49,9 +49,6 @@ jobs:
             missing_vars+=("GCP_PROJECT_ID")
           fi
 
-          if [ -z "${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}" ]; then
-            missing_vars+=("CHECKPOINT_ANALYSIS_TOPIC")
-          fi
           if [ -z "${{ vars.CHECKPOINT_METRICS_TOPIC }}" ]; then
             missing_vars+=("CHECKPOINT_METRICS_TOPIC")
           fi
@@ -66,7 +63,6 @@ jobs:
 
           if [ ${#missing_vars[@]} -ne 0 ]; then
             echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
-            echo "Please set the following variables in your GitHub repository settings:"
             printf '  - %s\n' "${missing_vars[@]}"
             exit 1
           fi
@@ -77,7 +73,7 @@ jobs:
         run: |
           echo "REGION=${{ vars.GCP_REGION }}" >> $GITHUB_ENV
           echo "FUNCTION_NAME=${{ env.FUNCTION_NAME_BASE }}-${{ github.event.inputs.environment || 'staging' }}" >> $GITHUB_ENV
-          echo "TRIGGER_TOPIC=projects/${{ vars.GCP_PROJECT_ID }}/topics/${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}" >> $GITHUB_ENV
+          echo "TRIGGER_TOPIC=projects/${{ vars.GCP_PROJECT_ID }}/topics/${{ vars.CHECKPOINT_METRICS_TOPIC }}" >> $GITHUB_ENV
 
       - name: Google Auth
         id: auth
@@ -105,4 +101,5 @@ jobs:
           environment_variables: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_LOCATION=${{ vars.GCP_REGION }}
-            CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
+
+

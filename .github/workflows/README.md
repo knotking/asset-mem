@@ -94,6 +94,9 @@ Deploys the Checkpoint Analysis Cloud Function.
 
 See [README-checkpoint-analysis.md](README-checkpoint-analysis.md) for details.
 
+#### [deploy-checkpoint-metrics.yaml](deploy-checkpoint-metrics.yaml)
+Deploys the Checkpoint Metrics Cloud Function (aggregates checkpoint analysis into property-level metrics for mobile).
+
 #### [deploy-webapp-apphosting.yaml](deploy-webapp-apphosting.yaml)
 Deploys the web application to Firebase App Hosting.
 
