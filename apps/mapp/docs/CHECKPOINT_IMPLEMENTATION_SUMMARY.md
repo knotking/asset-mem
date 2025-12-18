@@ -85,7 +85,7 @@
   - Automatically detects room/area type from checkpoint images (Kitchen, Bedroom, Bathroom, etc.).
   - Provides confidence scores and room feature detection.
   - Auto-assigns location to checkpoints if user doesn't provide one.
-  - Stores `detectedRoom`, `roomConfidence`, and `roomFeatures` in Firestore.
+  - Stores `detectedAsset`, `assetConfidence`, and `assetFeatures` in Firestore.
 - **Smart Location Matching**:
   - Compares visual similarity between images to group checkpoints from same area.
   - Supports finding previous checkpoints from same location for comparison.

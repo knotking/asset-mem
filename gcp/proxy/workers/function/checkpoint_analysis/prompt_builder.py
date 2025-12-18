@@ -12,24 +12,24 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
-def get_asset_category(detected_room: Optional[str], room_features: Optional[list] = None) -> str:
+def get_asset_category(detected_asset: Optional[str], asset_features: Optional[list] = None) -> str:
     """
-    Categorizes an asset based on detected room/area information.
+    Categorizes an asset based on detected asset information.
     
     Uses AI-detected information to determine asset category rather than
     hardcoded keyword matching. This makes the system extensible.
     
     Args:
-        detected_room: The detected room/asset name from AI
-        room_features: Optional list of detected features
+        detected_asset: The detected asset name from AI (e.g., "Kitchen", "Car", "Refrigerator")
+        asset_features: Optional list of detected features
         
     Returns:
         One of: "vehicle", "appliance", "property", or "generic"
     """
-    if not detected_room:
+    if not detected_asset:
         return "generic"
     
-    detected_lower = detected_room.lower()
+    detected_lower = detected_asset.lower()
     
     # Check for vehicle indicators
     vehicle_keywords = ["car", "truck", "vehicle", "motorcycle", "boat", "rv", "automobile"]
@@ -46,9 +46,9 @@ def get_asset_category(detected_room: Optional[str], room_features: Optional[lis
     if any(keyword in detected_lower for keyword in appliance_keywords):
         return "appliance"
     
-    # Check room_features for additional context
-    if room_features:
-        features_lower = " ".join([f.lower() for f in room_features])
+    # Check asset_features for additional context
+    if asset_features:
+        features_lower = " ".join([f.lower() for f in asset_features])
         if any(keyword in features_lower for keyword in vehicle_keywords):
             return "vehicle"
         if any(keyword in features_lower for keyword in appliance_keywords):
@@ -62,7 +62,7 @@ def build_analysis_prompt(
     media_type: str,
     location: str,
     asset_category: str = "property",
-    detected_room: Optional[str] = None
+    detected_asset: Optional[str] = None
 ) -> str:
     """
     Builds an analysis prompt tailored to the asset category.
@@ -74,12 +74,12 @@ def build_analysis_prompt(
         media_type: "image" or "video"
         location: Location/asset name
         asset_category: One of "vehicle", "appliance", "property", or "generic"
-        detected_room: Optional detected room/asset name for context
+        detected_asset: Optional detected asset name for context
         
     Returns:
         Analysis prompt string
     """
-    base_context = f"Location/Asset: {location or detected_room or 'Unknown'}"
+    base_context = f"Location/Asset: {location or detected_asset or 'Unknown'}"
     
     if asset_category == "vehicle":
         return f"""
@@ -202,7 +202,7 @@ def build_analysis_prompt(
 def build_comparison_prompt(
     location: str,
     asset_category: str = "property",
-    detected_room: Optional[str] = None
+    detected_asset: Optional[str] = None
 ) -> str:
     """
     Builds a comparison prompt tailored to the asset category.
@@ -210,12 +210,12 @@ def build_comparison_prompt(
     Args:
         location: Location/asset name
         asset_category: One of "vehicle", "appliance", "property", or "generic"
-        detected_room: Optional detected room/asset name for context
+        detected_asset: Optional detected asset name for context
         
     Returns:
         Comparison prompt string (without the JSON schema part)
     """
-    base_context = f"Location/Asset: {location or detected_room or 'Unknown'}"
+    base_context = f"Location/Asset: {location or detected_asset or 'Unknown'}"
     
     if asset_category == "vehicle":
         return f"""

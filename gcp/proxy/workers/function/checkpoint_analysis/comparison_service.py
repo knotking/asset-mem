@@ -45,12 +45,12 @@ def find_previous_checkpoint(
     property_id: str,
     current_checkpoint_id: str,
     location: Optional[str],
-    detected_room: Optional[str],
+    detected_asset: Optional[str],
     max_age_days: Optional[int] = None,
     user_preferences: Optional[Dict[str, Any]] = None
 ) -> Optional[Dict[str, Any]]:
     """
-    Finds the most recent previous checkpoint for the same location.
+    Finds the most recent previous checkpoint for the same location/asset.
     
     Args:
         db: Firestore client
@@ -58,7 +58,7 @@ def find_previous_checkpoint(
         property_id: Property ID
         current_checkpoint_id: ID of the current checkpoint (to exclude from results)
         location: Location string (user-provided or auto-detected)
-        detected_room: Auto-detected room name
+        detected_asset: Auto-detected asset name
         max_age_days: Maximum age in days (if None, uses user preference or default 180)
         user_preferences: User preferences dictionary from Firestore
         
@@ -82,8 +82,8 @@ def find_previous_checkpoint(
         search_locations = []
         if location:
             search_locations.append(location)
-        if detected_room and detected_room != location:
-            search_locations.append(detected_room)
+        if detected_asset and detected_asset != location:
+            search_locations.append(detected_asset)
         
         for search_loc in search_locations:
             if not search_loc:
@@ -161,7 +161,7 @@ def get_user_preferences(
 
 def should_compare_checkpoints(
     previous_checkpoint: Optional[Dict[str, Any]],
-    room_confidence: Optional[float] = None,
+    asset_confidence: Optional[float] = None,
     skip_comparison: bool = False,
     user_preferences: Optional[Dict[str, Any]] = None
 ) -> bool:
@@ -170,7 +170,7 @@ def should_compare_checkpoints(
     
     Args:
         previous_checkpoint: Previous checkpoint data (None if not found)
-        room_confidence: Confidence score for room detection (0.0-1.0)
+        asset_confidence: Confidence score for asset detection (0.0-1.0)
         skip_comparison: Checkpoint-level flag to skip comparison
         user_preferences: User preferences dictionary from Firestore
         
@@ -202,9 +202,9 @@ def should_compare_checkpoints(
         return False
     
     # Check room confidence threshold from preferences (default: 0.3)
-    min_confidence = comparison_prefs.get("minRoomConfidence", 0.3)
-    if room_confidence is not None and room_confidence < min_confidence:
-        logger.info(f"Room confidence ({room_confidence}) below threshold ({min_confidence}), skipping comparison")
+        min_confidence = comparison_prefs.get("minAssetConfidence", 0.3)
+    if asset_confidence is not None and asset_confidence < min_confidence:
+        logger.info(f"Asset confidence ({asset_confidence}) below threshold ({min_confidence}), skipping comparison")
         return False
     
     return True
@@ -255,7 +255,7 @@ def compare_checkpoints(
     prompt_base = build_comparison_prompt(
         location=location,
         asset_category=asset_category,
-        detected_room=location  # Use location as detected_room for comparison
+        detected_asset=location  # Use location as detected_asset for comparison
     )
     
     # Complete the prompt with JSON schema (common to all asset types)

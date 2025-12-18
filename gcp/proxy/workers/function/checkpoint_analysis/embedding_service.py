@@ -88,15 +88,15 @@ def extract_checkpoint_text(checkpoint_data: Dict[str, Any]) -> str:
                 issues_text = "; ".join(issue_descriptions)
                 text_parts.append(f"Issues: {issues_text}")
         
-        # Extract detected room information
-        detected_room = ai_analysis.get("detectedRoom") or checkpoint_data.get("detectedRoom")
-        if detected_room:
-            text_parts.append(f"Location: {detected_room}")
+        # Extract detected asset information
+        detected_asset = ai_analysis.get("detectedAsset") or checkpoint_data.get("detectedAsset")
+        if detected_asset:
+            text_parts.append(f"Location: {detected_asset}")
         
-        room_features = ai_analysis.get("roomFeatures", []) or checkpoint_data.get("roomFeatures", [])
-        if room_features and isinstance(room_features, list):
-            features_text = ", ".join(room_features)
-            text_parts.append(f"Room features: {features_text}")
+        asset_features = ai_analysis.get("assetFeatures", []) or checkpoint_data.get("assetFeatures", [])
+        if asset_features and isinstance(asset_features, list):
+            features_text = ", ".join(asset_features)
+            text_parts.append(f"Asset features: {features_text}")
         
         area_description = ai_analysis.get("areaDescription") or checkpoint_data.get("areaDescription")
         if area_description:
@@ -105,7 +105,7 @@ def extract_checkpoint_text(checkpoint_data: Dict[str, Any]) -> str:
     # Add location if available (from top-level checkpoint data)
     location = checkpoint_data.get("location")
     if location and location not in text_parts:
-        # Only add if not already included from detectedRoom
+        # Only add if not already included from detectedAsset
         if not any(f"Location: {location}" in part for part in text_parts):
             text_parts.append(f"Location: {location}")
     
