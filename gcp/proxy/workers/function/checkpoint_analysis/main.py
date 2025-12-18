@@ -152,30 +152,30 @@ def pubsub_checkpoint_analysis(request, context):
 
             # Determine final location (user-provided, detected, or existing)
             final_location = existing_location
-            detected_room = analysis_result.get("detectedRoom")
-            room_confidence = analysis_result.get("roomConfidence", 0.0)
+            detected_asset = analysis_result.get("detectedAsset")
+            asset_confidence = analysis_result.get("assetConfidence", 0.0)
             
-            # Determine asset category (infer from location/room since it's not in analysis_result)
-            asset_category = get_asset_category(final_location or detected_room)
+            # Determine asset category (infer from location/asset since it's not in analysis_result)
+            asset_category = get_asset_category(final_location or detected_asset)
             
-            if "detectedRoom" in analysis_result:
-                update_data["aiAnalysis"]["detectedRoom"] = detected_room
-                update_data["aiAnalysis"]["roomConfidence"] = room_confidence
-                update_data["aiAnalysis"]["roomFeatures"] = analysis_result.get("roomFeatures", [])
+            if "detectedAsset" in analysis_result:
+                update_data["aiAnalysis"]["detectedAsset"] = detected_asset
+                update_data["aiAnalysis"]["assetConfidence"] = asset_confidence
+                update_data["aiAnalysis"]["assetFeatures"] = analysis_result.get("assetFeatures", [])
                 update_data["aiAnalysis"]["areaDescription"] = analysis_result.get("areaDescription", "")
                 
                 # If user didn't provide a location, use the detected one
                 if not final_location:
-                    final_location = detected_room
+                    final_location = detected_asset
                     update_data["location"] = final_location
-                    logger.info(f"Auto-setting location to detected room: {detected_room}")
+                    logger.info(f"Auto-setting location to detected asset: {detected_asset}")
                 else:
                     logger.info(f"Location already set to '{final_location}', keeping user-provided value")
 
             # Auto-generate a checkpoint name if missing/blank.
             # Keep any user-provided value.
             if not (isinstance(existing_name, str) and existing_name.strip()):
-                base = (final_location or detected_room or "Checkpoint").strip()
+                base = (final_location or detected_asset or "Checkpoint").strip()
                 auto_name = f"{base} • {datetime.utcnow().strftime('%b %d')}"
                 update_data["name"] = auto_name
                 logger.info(f"Auto-setting checkpoint name to: {auto_name}")
@@ -228,7 +228,7 @@ def pubsub_checkpoint_analysis(request, context):
                 user_id=user_id,
                 property_id=property_id,
                 duration_ms=analysis_duration_ms,
-                detected_room=detected_room,
+                detected_asset=detected_asset,
                 asset_category=asset_category,
                 condition_scores=condition_scores if condition_scores else None,
                 damage_scores=damage_scores if damage_scores else None,
@@ -244,8 +244,8 @@ def pubsub_checkpoint_analysis(request, context):
                 "property_id": property_id,
                 "checkpoint_id": checkpoint_id
             }
-            if detected_room:
-                attributes["location"] = detected_room
+            if detected_asset:
+                attributes["location"] = detected_asset
             
             # Record analysis duration metric
             record_histogram(
@@ -299,7 +299,7 @@ def pubsub_checkpoint_analysis(request, context):
                     property_id=property_id,
                     current_checkpoint_id=checkpoint_id,
                     location=final_location,
-                    detected_room=detected_room,
+                    detected_asset=detected_asset,
                     max_age_days=None,  # Will use user preference or default
                     user_preferences=user_preferences
                 )
@@ -313,7 +313,7 @@ def pubsub_checkpoint_analysis(request, context):
                 
                 should_compare = should_compare_checkpoints(
                     previous_checkpoint,
-                    room_confidence,
+                    asset_confidence,
                     skip_comparison,
                     user_preferences
                 )
@@ -461,10 +461,10 @@ def pubsub_checkpoint_analysis(request, context):
                         skip_reason = "no_previous_checkpoint"
                     elif skip_comparison:
                         skip_reason = "checkpoint_flag"
-                    elif room_confidence is not None:
+                    elif asset_confidence is not None:
                         comparison_prefs = user_preferences.get("checkpointComparison", {}) if user_preferences else {}
-                        min_confidence = comparison_prefs.get("minRoomConfidence", 0.3)
-                        if room_confidence < min_confidence:
+                        min_confidence = comparison_prefs.get("minAssetConfidence", 0.3)
+                        if asset_confidence < min_confidence:
                             skip_reason = "low_confidence"
                     elif user_preferences:
                         comparison_prefs = user_preferences.get("checkpointComparison", {})

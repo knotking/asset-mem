@@ -35,7 +35,7 @@ const PreferencesContext = createContext<PreferencesContextType | undefined>(
 const DEFAULT_CHECKPOINT_COMPARISON: CheckpointComparisonPreferences = {
   enabled: true,
   maxAgeDays: 180,
-  minRoomConfidence: 0.3,
+  minAssetConfidence: 0.3,
 };
 
 export const PreferencesProvider = ({ children }: { children: ReactNode }) => {

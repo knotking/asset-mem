@@ -30,7 +30,7 @@ class CheckpointObservability:
         user_id: str,
         property_id: str,
         duration_ms: float,
-        detected_room: Optional[str] = None,
+        detected_asset: Optional[str] = None,
         asset_category: Optional[str] = None,
         condition_scores: Optional[Dict[str, float]] = None,
         damage_scores: Optional[Dict[str, float]] = None,
@@ -43,7 +43,7 @@ class CheckpointObservability:
             "user_id": user_id,
             "property_id": property_id,
             "duration_ms": duration_ms,
-            "detected_room": detected_room,
+            "detected_asset": detected_asset,
             "asset_category": asset_category,
             "issues_count": issues_count,
             **kwargs

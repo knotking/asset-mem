@@ -39,9 +39,9 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
     Returns:
         Dictionary with:
         {
-            "detectedRoom": str,  # e.g., "Kitchen", "Living Room", "Bathroom", "Bedroom", "Exterior"
-            "roomConfidence": float,  # 0.0-1.0 confidence score
-            "roomFeatures": List[str],  # Key features that identify the room (e.g., ["stove", "sink", "refrigerator"])
+            "detectedAsset": str,  # e.g., "Kitchen", "Living Room", "Refrigerator", "Car", "HVAC Unit"
+            "assetConfidence": float,  # 0.0-1.0 confidence score
+            "assetFeatures": List[str],  # Key features that identify the asset (e.g., ["stove", "sink"] for kitchen, ["engine", "wheels"] for car)
             "areaDescription": str  # More detailed description
         }
     """
@@ -63,12 +63,12 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
           HVAC, Water Heater, Furnace, etc.). These may be part of a room or standalone.
         
         Provide a structured analysis in JSON format with the following fields:
-        - detectedRoom: A concise location/asset name:
+        - detectedAsset: A concise location/asset name:
           * For property: Room/area name (e.g., "Kitchen", "Master Bedroom", "Bathroom", "Exterior Front")
           * For vehicle: Asset type (e.g., "Car", "Truck", "Motorcycle", "Vehicle - Exterior", "Vehicle - Interior")
           * For appliance: Appliance type (e.g., "Refrigerator", "Washer", "HVAC Unit", "Water Heater", "Oven")
-        - roomConfidence: A float between 0.0 and 1.0 indicating confidence in the detection
-        - roomFeatures: A list of key features/objects that identify this location/asset:
+        - assetConfidence: A float between 0.0 and 1.0 indicating confidence in the detection
+        - assetFeatures: A list of key features/objects that identify this location/asset:
           * For property: Room features (e.g., ["stove", "sink", "refrigerator"] for kitchen)
           * For vehicle: Vehicle features (e.g., ["wheels", "windshield", "doors"] for car exterior, or ["dashboard", "seats", "steering wheel"] for interior)
           * For appliance: Appliance features (e.g., ["control panel", "door seals", "coils"] for refrigerator, or ["filter", "vents", "electrical connections"] for HVAC)
@@ -80,12 +80,12 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
     response_schema = {
         "type": "object",
         "properties": {
-            "detectedRoom": {"type": "string"},
-            "roomConfidence": {"type": "number"},
-            "roomFeatures": {"type": "array", "items": {"type": "string"}},
+            "detectedAsset": {"type": "string"},
+            "assetConfidence": {"type": "number"},
+            "assetFeatures": {"type": "array", "items": {"type": "string"}},
             "areaDescription": {"type": "string"}
         },
-        "required": ["detectedRoom", "roomConfidence", "roomFeatures", "areaDescription"]
+        "required": ["detectedAsset", "assetConfidence", "assetFeatures", "areaDescription"]
     }
 
     file_part = types.Part.from_uri(
@@ -109,12 +109,12 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
     )
 
     result_json = json.loads(response.text)
-    logger.info(f"Room detection complete: {result_json.get('detectedRoom')} (confidence: {result_json.get('roomConfidence')})")
+    logger.info(f"Asset detection complete: {result_json.get('detectedAsset')} (confidence: {result_json.get('assetConfidence')})")
 
     return {
-        "detectedRoom": result_json["detectedRoom"],
-        "roomConfidence": result_json["roomConfidence"],
-        "roomFeatures": result_json["roomFeatures"],
+        "detectedAsset": result_json["detectedAsset"],
+        "assetConfidence": result_json["assetConfidence"],
+        "assetFeatures": result_json["assetFeatures"],
         "areaDescription": result_json["areaDescription"]
     }
 
@@ -224,7 +224,7 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
             {
                 "id": str,
                 "media": [{"gsURI": str, "contentType": str}],
-                "detectedRoom": Optional[str],
+                "detectedAsset": Optional[str],
                 "location": Optional[str]
             }
     
@@ -234,13 +234,13 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
     if not existing_checkpoints:
         return None
 
-    # First, detect room for new media
+    # First, detect asset for new media
     try:
-        new_room_detection = detect_room_area(new_media_url, new_content_type)
-        new_room = new_room_detection["detectedRoom"]
-        logger.info(f"New checkpoint detected as: {new_room}")
+        new_asset_detection = detect_room_area(new_media_url, new_content_type)
+        new_asset = new_asset_detection["detectedAsset"]
+        logger.info(f"New checkpoint detected as: {new_asset}")
     except Exception as e:
-        logger.error(f"Failed to detect room for new media: {e}")
+        logger.error(f"Failed to detect asset for new media: {e}")
         return None
 
     # Compare with existing checkpoints
@@ -254,7 +254,7 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
             continue
 
         existing_media = existing["media"][0]
-        existing_room = existing.get("detectedRoom") or existing.get("location")
+        existing_asset = existing.get("detectedAsset") or existing.get("location")
 
         try:
             # Compare media files (images or videos)
@@ -263,17 +263,17 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
                 media2_url=existing_media.get("gsURI") or existing_media.get("url"),
                 content_type1=new_content_type,
                 content_type2=existing_media.get("contentType", "image/jpeg"),
-                room1=new_room,
-                room2=existing_room
+                room1=new_asset,
+                room2=existing_asset
             )
 
             similarity_score = similarity_result["similarityScore"]
 
-            # Also boost score if room names match (even if slightly different wording)
-            if existing_room and new_room:
-                if existing_room.lower() == new_room.lower():
+            # Also boost score if asset names match (even if slightly different wording)
+            if existing_asset and new_asset:
+                if existing_asset.lower() == new_asset.lower():
                     similarity_score = max(similarity_score, 0.9)
-                elif existing_room.lower() in new_room.lower() or new_room.lower() in existing_room.lower():
+                elif existing_asset.lower() in new_asset.lower() or new_asset.lower() in existing_asset.lower():
                     similarity_score = max(similarity_score, 0.85)
 
             if similarity_result["isSameArea"] and similarity_score > best_score:
@@ -282,7 +282,7 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
                     **existing,
                     "matchSimilarity": similarity_score,
                     "matchReasoning": similarity_result["reasoning"],
-                    "newRoomDetection": new_room_detection
+                    "newAssetDetection": new_asset_detection
                 }
 
         except Exception as e:

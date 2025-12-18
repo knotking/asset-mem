@@ -1317,7 +1317,7 @@ In `apps/mapp/app/(tabs)/home/property-details/index.tsx`:
   - Provides confidence scores (0.0-1.0)
   - Identifies key room features (stove, sink, bed, etc.)
   - Auto-assigns location if user doesn't provide one
-- **Storage**: Results stored in Firestore as `detectedRoom`, `roomConfidence`, `roomFeatures`.
+- **Storage**: Results stored in Firestore as `detectedAsset`, `assetConfidence`, `assetFeatures`.
 
 ## Phase 10: User Preferences & Settings (COMPLETED)
 

@@ -231,10 +231,10 @@ export type Checkpoint = {
   capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
   media: CheckpointMedia[];
   location?: string; // e.g., "Kitchen", "Living Room", "Exterior" (user-provided or auto-detected)
-  detectedRoom?: string; // Auto-detected room/area name from AI
-  roomConfidence?: number; // 0-1 confidence score for room detection
-  roomFeatures?: string[]; // Key features that identify the room (e.g., ["stove", "sink"])
-  areaDescription?: string; // Detailed description of the detected area
+  detectedAsset?: string; // Auto-detected asset name from AI (e.g., "Kitchen", "Refrigerator", "Car")
+  assetConfidence?: number; // 0-1 confidence score for asset detection
+  assetFeatures?: string[]; // Key features that identify the asset (e.g., ["stove", "sink"] for kitchen, ["engine", "wheels"] for car)
+  areaDescription?: string; // Detailed description of the detected area/asset
   tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
   analysisStatus?: "pending" | "processing" | "completed" | "failed";
   skipComparison?: boolean; // Opt-out of automatic comparison
@@ -326,7 +326,7 @@ export type LocationData = {
 export type CheckpointComparisonPreferences = {
   enabled: boolean; // Master switch for automatic comparison
   maxAgeDays: number; // Maximum age of previous checkpoint to compare with (default: 180)
-  minRoomConfidence: number; // Minimum room detection confidence to perform comparison (default: 0.3)
+  minAssetConfidence: number; // Minimum asset detection confidence to perform comparison (default: 0.3)
 };
 
 export type UserPreferences = {

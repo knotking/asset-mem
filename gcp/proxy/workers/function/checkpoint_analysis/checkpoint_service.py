@@ -31,12 +31,12 @@ except Exception as e:
 
 def analyze_checkpoint_image(media_url: str, content_type: str, location: str = None) -> dict:
     """
-    Analyzes a checkpoint image or video using Gemini AI, including room/area detection.
+    Analyzes a checkpoint image or video using Gemini AI, including asset detection.
     
     Args:
         media_url: GCS URI of the image or video (gs://bucket/path)
         content_type: MIME type of the media (e.g., "image/jpeg", "video/mp4")
-        location: Optional location description (if provided, room detection may be skipped)
+        location: Optional location description (if provided, asset detection may be skipped)
         
     Returns:
         Dictionary with analysis results:
@@ -45,9 +45,9 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
             "conditions": List[str],
             "detectedItems": List[str],
             "issues": List[str],
-            "detectedRoom": Optional[str],  # Auto-detected room/area name
-            "roomConfidence": Optional[float],  # Confidence score for room detection
-            "roomFeatures": Optional[List[str]]  # Key features that identify the room
+            "detectedAsset": Optional[str],  # Auto-detected asset name (room, appliance, vehicle, etc.)
+            "assetConfidence": Optional[float],  # Confidence score for asset detection
+            "assetFeatures": Optional[List[str]]  # Key features that identify the asset
         }
     """
     if not client:
@@ -57,23 +57,23 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
     media_type = "video" if is_video else "image"
     logger.info(f"Starting checkpoint analysis for {media_type}: {media_url}")
 
-    # Detect room/area and asset category if location not provided
-    detected_room_info = None
+    # Detect asset and asset category if location not provided
+    detected_asset_info = None
     asset_category = "property"  # Default
     
     if not location:
         try:
-            detected_room_info = detect_room_area(media_url, content_type)
-            location = detected_room_info["detectedRoom"]  # Use detected room for analysis prompt
-            logger.info(f"Auto-detected room: {location} (confidence: {detected_room_info['roomConfidence']})")
+            detected_asset_info = detect_room_area(media_url, content_type)
+            location = detected_asset_info["detectedAsset"]  # Use detected asset for analysis prompt
+            logger.info(f"Auto-detected asset: {location} (confidence: {detected_asset_info['assetConfidence']})")
         except Exception as e:
-            logger.warning(f"Room detection failed, continuing without it: {e}")
+            logger.warning(f"Asset detection failed, continuing without it: {e}")
     
     # Determine asset category from detected information (platform-agnostic approach)
-    if detected_room_info:
+    if detected_asset_info:
         asset_category = get_asset_category(
-            detected_room_info.get("detectedRoom"),
-            detected_room_info.get("roomFeatures")
+            detected_asset_info.get("detectedAsset"),
+            detected_asset_info.get("assetFeatures")
         )
         logger.info(f"Detected asset category: {asset_category}")
     elif location:
@@ -85,7 +85,7 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
         media_type=media_type,
         location=location,
         asset_category=asset_category,
-        detected_room=detected_room_info.get("detectedRoom") if detected_room_info else None
+        detected_asset=detected_asset_info.get("detectedAsset") if detected_asset_info else None
     )
 
     response_schema = {
@@ -204,11 +204,11 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
     }
 
     # Add room detection info if available
-    if detected_room_info:
-        result["detectedRoom"] = detected_room_info["detectedRoom"]
-        result["roomConfidence"] = detected_room_info["roomConfidence"]
-        result["roomFeatures"] = detected_room_info["roomFeatures"]
-        result["areaDescription"] = detected_room_info["areaDescription"]
+    if detected_asset_info:
+        result["detectedAsset"] = detected_asset_info["detectedAsset"]
+        result["assetConfidence"] = detected_asset_info["assetConfidence"]
+        result["assetFeatures"] = detected_asset_info["assetFeatures"]
+        result["areaDescription"] = detected_asset_info["areaDescription"]
 
     return result
 

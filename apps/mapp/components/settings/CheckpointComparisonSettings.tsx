@@ -11,7 +11,7 @@ import { CheckpointComparisonPreferences } from '@homeapp/common/types';
 const DEFAULT_PREFERENCES: CheckpointComparisonPreferences = {
   enabled: true,
   maxAgeDays: 180,
-  minRoomConfidence: 0.3,
+  minAssetConfidence: 0.3,
 };
 
 export function CheckpointComparisonSettings() {
@@ -22,14 +22,14 @@ export function CheckpointComparisonSettings() {
   const [localEnabled, setLocalEnabled] = React.useState(comparisonPrefs.enabled);
   const [localMaxAgeDays, setLocalMaxAgeDays] = React.useState(comparisonPrefs.maxAgeDays);
   const [localMinConfidence, setLocalMinConfidence] = React.useState(
-    comparisonPrefs.minRoomConfidence
+    comparisonPrefs.minAssetConfidence
   );
   const [hasChanges, setHasChanges] = React.useState(false);
 
   React.useEffect(() => {
     setLocalEnabled(comparisonPrefs.enabled);
     setLocalMaxAgeDays(comparisonPrefs.maxAgeDays);
-    setLocalMinConfidence(comparisonPrefs.minRoomConfidence);
+    setLocalMinConfidence(comparisonPrefs.minAssetConfidence);
     setHasChanges(false);
   }, [comparisonPrefs]);
 
@@ -38,7 +38,7 @@ export function CheckpointComparisonSettings() {
       await updateCheckpointComparison({
         enabled: localEnabled,
         maxAgeDays: localMaxAgeDays,
-        minRoomConfidence: localMinConfidence,
+        minAssetConfidence: localMinConfidence,
       });
       setHasChanges(false);
     } catch (error) {
@@ -134,9 +134,9 @@ export function CheckpointComparisonSettings() {
           <View className="mb-4 rounded-lg border border-border bg-card p-3">
             <View className="mb-2 flex-row items-center justify-between">
               <View className="flex-1">
-                <Text className="font-medium text-foreground">Minimum Room Confidence</Text>
+                <Text className="font-medium text-foreground">Minimum Asset Confidence</Text>
                 <Text className="text-xs text-muted-foreground">
-                  Only compare when room detection confidence is at least{' '}
+                  Only compare when asset detection confidence is at least{' '}
                   {Math.round(localMinConfidence * 100)}%
                 </Text>
               </View>
