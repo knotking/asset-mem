@@ -202,7 +202,7 @@ def should_compare_checkpoints(
         return False
     
     # Check room confidence threshold from preferences (default: 0.3)
-        min_confidence = comparison_prefs.get("minAssetConfidence", 0.3)
+    min_confidence = comparison_prefs.get("minAssetConfidence", 0.3)
     if asset_confidence is not None and asset_confidence < min_confidence:
         logger.info(f"Asset confidence ({asset_confidence}) below threshold ({min_confidence}), skipping comparison")
         return False

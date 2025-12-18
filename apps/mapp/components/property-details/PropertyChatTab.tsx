@@ -9,7 +9,12 @@ import { useMessages } from '@homeapp/common/contexts/messages-context';
 import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
-import type { FileAttachment, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
+import type {
+  FileAttachment,
+  AnalysisOptionalAgent,
+  LocationData,
+  PrimaryAgent,
+} from '@homeapp/common/types';
 
 interface PropertyChatTabProps {
   sessionId: string | null;
@@ -20,6 +25,8 @@ interface PropertyChatTabProps {
   fileAttachment: FileAttachment | null;
   onAttachmentPress: () => void;
   onRemoveAttachment: () => void;
+  primaryAgent: PrimaryAgent;
+  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   isSending: boolean;
@@ -43,6 +50,8 @@ export function PropertyChatTab({
   fileAttachment,
   onAttachmentPress,
   onRemoveAttachment,
+  primaryAgent,
+  onPrimaryAgentChange,
   selectedOptionalAgents,
   onToggleOptionalAgent,
   isSending,
@@ -153,6 +162,8 @@ export function PropertyChatTab({
             fileAttachment={fileAttachment}
             onAttachmentPress={onAttachmentPress}
             onRemoveAttachment={onRemoveAttachment}
+            primaryAgent={primaryAgent}
+            onPrimaryAgentChange={onPrimaryAgentChange}
             selectedOptionalAgents={selectedOptionalAgents}
             onToggleOptionalAgent={onToggleOptionalAgent}
             isSending={isSending}

@@ -529,6 +529,13 @@ jobs:
             --role="projects/$PROJECT_ID/roles/$ROLE_ID" \
             --quiet 2>/dev/null || echo "⚠️ Reasoning Engine RAG role binding may not exist"
 
+          # Step 7.5: Revoke Reasoning Engine Firestore permissions
+          echo "Revoking Reasoning Engine Firestore access permissions..."
+          gcloud projects remove-iam-policy-binding $PROJECT_ID \
+            --member="serviceAccount:${REASONING_ENGINE_SA}" \
+            --role="roles/datastore.user" \
+            --quiet 2>/dev/null || echo "⚠️ Reasoning Engine Firestore role binding may not exist"
+
           # Step 8: Delete the custom RAG role
           echo "Deleting custom RAG role..."
           gcloud iam roles delete "$ROLE_ID" \

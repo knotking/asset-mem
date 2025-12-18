@@ -8,6 +8,7 @@ import {
   useColorScheme,
   Keyboard,
   Animated,
+  LayoutAnimation,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gifted-chat';
@@ -30,10 +31,21 @@ import {
   FileText,
   MapPin,
   Navigation,
+  Stethoscope,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
-import type { FileAttachment, AnalysisOptionalAgent, LocationData, LocationType } from '@homeapp/common/types';
+import type {
+  FileAttachment,
+  AnalysisOptionalAgent,
+  LocationData,
+  LocationType,
+  PrimaryAgent,
+} from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import * as Location from 'expo-location';
+import { suggestPrimaryAgent } from '@/lib/query-suggestions';
 
 const OPTIONAL_AGENT_OPTIONS: {
   id: AnalysisOptionalAgent;
@@ -52,6 +64,8 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   fileAttachment: FileAttachment | null;
   onAttachmentPress: () => void;
   onRemoveAttachment: () => void;
+  primaryAgent: PrimaryAgent;
+  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   isSending: boolean;
@@ -72,6 +86,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     fileAttachment,
     onAttachmentPress,
     onRemoveAttachment,
+    primaryAgent,
+    onPrimaryAgentChange,
     selectedOptionalAgents,
     onToggleOptionalAgent,
     isSending,
@@ -95,8 +111,15 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   const [locationType, setLocationType] = React.useState<LocationType | undefined>(locationData?.locationType);
   const [locationRadius, setLocationRadius] = React.useState<number>(locationData?.locationRadius || 50);
   const [isGettingLocation, setIsGettingLocation] = React.useState(false);
+  const [isAgentSectionExpanded, setIsAgentSectionExpanded] = React.useState(false);
+  const [suggestedAgent, setSuggestedAgent] = React.useState<PrimaryAgent | null>(null);
+  const [currentText, setCurrentText] = React.useState<string>('');
   const slideAnim = React.useRef(new Animated.Value(500)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Animation values for opacity (height uses LayoutAnimation)
+  const agentSectionOpacity = React.useRef(new Animated.Value(0)).current;
+  const locationSectionOpacity = React.useRef(new Animated.Value(0)).current;
 
   // Convert HSL to hex for TextInput (which doesn't support CSS variables)
   // Light mode: --background: 0 0% 100% (white), --foreground: 0 0% 3.9% (near black)
@@ -145,6 +168,49 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
       ]).start();
     }
   }, [showMenu, slideAnim, opacityAnim]);
+
+  // Configure LayoutAnimation for smooth height transitions
+  const configureLayoutAnimation = React.useCallback(() => {
+    LayoutAnimation.configureNext({
+      duration: 300,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.spring,
+        springDamping: 0.7,
+      },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+    });
+  }, []);
+
+  // Handle agent section expand/collapse with animation
+  const handleAgentSectionToggle = React.useCallback(() => {
+    configureLayoutAnimation();
+    const newValue = !isAgentSectionExpanded;
+    setIsAgentSectionExpanded(newValue);
+    Animated.timing(agentSectionOpacity, {
+      toValue: newValue ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isAgentSectionExpanded, configureLayoutAnimation, agentSectionOpacity]);
+
+  // Handle location section expand/collapse with animation
+  const handleLocationSectionToggle = React.useCallback(() => {
+    configureLayoutAnimation();
+    const newValue = !showLocationOptions;
+    setShowLocationOptions(newValue);
+    Animated.timing(locationSectionOpacity, {
+      toValue: newValue ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showLocationOptions, configureLayoutAnimation, locationSectionOpacity]);
 
   // Memoize attachment press handler to prevent recreation
   const handleAttachmentPressWithHaptic = React.useCallback(() => {
@@ -241,6 +307,26 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     }
   }, [locationData]);
 
+  // Query-based agent suggestion with debouncing
+  React.useEffect(() => {
+    if (!currentText.trim()) {
+      setSuggestedAgent(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const suggestion = suggestPrimaryAgent(currentText, primaryAgent);
+      setSuggestedAgent(suggestion);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [currentText, primaryAgent]);
+
+  // Clear suggestion when agent changes manually
+  React.useEffect(() => {
+    setSuggestedAgent(null);
+  }, [primaryAgent]);
+
   // Memoize renderComposer to prevent recreation on every render
   const renderComposer = React.useCallback(
     (composerProps: any) => {
@@ -271,6 +357,10 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             }}
             textInputProps={{
               maxLength: MAX_MESSAGE_LENGTH,
+              onChangeText: (text: string) => {
+                setCurrentText(text);
+                composerProps.onTextChanged?.(text);
+              },
             }}
             textInputAutoFocus={false}
             placeholder="Type a message..."
@@ -317,6 +407,10 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           const messageText = sendProps.text || '';
           console.log('[SendButton] Calling onSend with text:', messageText);
           sendProps.onSend([{ text: messageText }], true);
+
+          // Clear suggestion and text state after sending
+          setCurrentText('');
+          setSuggestedAgent(null);
 
           // Delay keyboard dismissal to ensure send completes first
           requestAnimationFrame(() => {
@@ -369,6 +463,44 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
   return (
     <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
+      {/* Agent Suggestion Banner */}
+      {suggestedAgent && suggestedAgent !== primaryAgent && (
+        <View className="mb-2 flex-row items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+          <View className="flex-row items-center gap-2 flex-1">
+            <Icon
+              as={suggestedAgent === 'checkpoint' ? Clock : Stethoscope}
+              size={14}
+              className="text-primary"
+            />
+            <Text className="flex-1 text-xs text-foreground">
+              Your query suggests using the{' '}
+              <Text className="font-semibold">
+                {suggestedAgent === 'checkpoint' ? 'Checkpoint' : 'Analysis'} Agent
+              </Text>
+            </Text>
+          </View>
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => {
+                setSuggestedAgent(null);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              className="px-2 py-1">
+              <Text className="text-xs text-muted-foreground">Dismiss</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                onPrimaryAgentChange(suggestedAgent);
+                setSuggestedAgent(null);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+              className="rounded-md bg-primary px-3 py-1">
+              <Text className="text-xs font-semibold text-primary-foreground">Switch</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+      
       {/* File Attachment Preview */}
       {fileAttachment && (
         <View className="mb-3">
@@ -433,50 +565,163 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         </View>
       )}
 
-      {/* Optional Agent Toggles */}
+      {/* Primary Agent Selector - Collapsible */}
       <View className="mb-3">
-        <View className="flex-row flex-wrap items-center gap-2">
-          <View className="rounded-full border border-border bg-background px-3 py-1">
-            <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
-              Triage required
-            </Text>
-          </View>
-          {OPTIONAL_AGENT_OPTIONS.map((option) => {
-            const isSelected = selectedOptionalAgents.includes(option.id);
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => onToggleOptionalAgent(option.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
-                  isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
-                }`}>
-                <Icon
-                  as={option.icon}
-                  size={14}
-                  className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
-                />
-                <Text
-                  className={`text-xs font-medium ${
-                    isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}>
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        {selectedOptionalAgents.length === 0 && (
-          <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
+        {/* Collapsed Header - Only show when collapsed */}
+        {!isAgentSectionExpanded && (
+          <Pressable
+            onPress={handleAgentSectionToggle}
+            className="flex-row items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+            <View className="flex-row items-center gap-2">
+              <Icon
+                as={primaryAgent === 'analysis' ? Stethoscope : Clock}
+                size={16}
+                className="text-foreground"
+              />
+              <Text className="text-sm font-medium text-foreground">
+                {primaryAgent === 'analysis' ? 'Analysis Agent' : 'Checkpoint Agent'}
+              </Text>
+              {primaryAgent === 'analysis' && selectedOptionalAgents.length > 0 && (
+                <View className="rounded-full bg-primary px-2 py-0.5">
+                  <Text className="text-[10px] font-semibold text-primary-foreground">
+                    {selectedOptionalAgents.length} optional
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Icon as={ChevronDown} size={16} className="text-muted-foreground" />
+          </Pressable>
         )}
+        
+        {/* Expanded content */}
+        <Animated.View
+          style={{
+            opacity: agentSectionOpacity,
+            overflow: 'hidden',
+          }}
+          pointerEvents={isAgentSectionExpanded ? 'auto' : 'none'}>
+          {isAgentSectionExpanded && (
+            <View className="pt-2">
+              {/* Primary Agent Selector */}
+              <View>
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-xs font-semibold text-muted-foreground">Primary Agent</Text>
+                  <Pressable
+                    onPress={handleAgentSectionToggle}
+                    className="rounded-full p-1">
+                    <Icon as={ChevronUp} size={16} className="text-muted-foreground" />
+                  </Pressable>
+                </View>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => onPrimaryAgentChange('analysis')}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: primaryAgent === 'analysis' }}
+                    className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-2 ${
+                      primaryAgent === 'analysis'
+                        ? 'border-primary bg-primary'
+                        : 'border-border bg-background'
+                    }`}>
+                    <Icon
+                      as={Stethoscope}
+                      size={15}
+                      className={
+                        primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-muted-foreground'
+                      }
+                    />
+                    <Text
+                      className={`text-xs font-semibold ${
+                        primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
+                      }`}>
+                      Analysis
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onPrimaryAgentChange('checkpoint')}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: primaryAgent === 'checkpoint' }}
+                    className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-2 ${
+                      primaryAgent === 'checkpoint'
+                        ? 'border-primary bg-primary'
+                        : 'border-border bg-background'
+                    }`}>
+                    <Icon
+                      as={Clock}
+                      size={15}
+                      className={
+                        primaryAgent === 'checkpoint' ? 'text-primary-foreground' : 'text-muted-foreground'
+                      }
+                    />
+                    <Text
+                      className={`text-xs font-semibold ${
+                        primaryAgent === 'checkpoint' ? 'text-primary-foreground' : 'text-foreground'
+                      }`}>
+                      Checkpoint
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Analysis Mode: Optional Agent Toggles */}
+              {primaryAgent === 'analysis' && (
+                <View className="mt-3">
+                  <View className="flex-row flex-wrap items-center gap-2">
+                    <View className="rounded-full border border-border bg-background px-3 py-1">
+                      <Text className="text-[10px] font-semibold uppercase text-muted-foreground">
+                        Triage required
+                      </Text>
+                    </View>
+                    {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                      const isSelected = selectedOptionalAgents.includes(option.id);
+                      return (
+                        <Pressable
+                          key={option.id}
+                          onPress={() => onToggleOptionalAgent(option.id)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isSelected }}
+                          className={`flex-row items-center gap-1 rounded-full border px-3 py-1 ${
+                            isSelected ? 'border-primary bg-primary' : 'border-border bg-transparent'
+                          }`}>
+                          <Icon
+                            as={option.icon}
+                            size={14}
+                            className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}
+                          />
+                          <Text
+                            className={`text-xs font-medium ${
+                              isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                            }`}>
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {selectedOptionalAgents.length === 0 && (
+                    <Text className="mt-1 text-xs text-muted-foreground">Only triage will run.</Text>
+                  )}
+                </View>
+              )}
+
+              {/* Checkpoint Mode: Info Message */}
+              {primaryAgent === 'checkpoint' && (
+                <View className="mt-3 rounded-lg border border-border bg-secondary/50 px-3 py-1.5">
+                  <Text className="text-xs leading-4 text-muted-foreground">
+                    Checkpoint Agent will analyze your property's checkpoint history to answer
+                    questions about changes, trends, and condition over time.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </Animated.View>
       </View>
 
       {/* Location Selection */}
       {onLocationDataChange && (
         <View className="mb-3">
           <Pressable
-            onPress={() => setShowLocationOptions(!showLocationOptions)}
+            onPress={handleLocationSectionToggle}
             className="flex-row items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
             <View className="flex-row items-center gap-2">
               <Icon as={MapPin} size={16} className="text-muted-foreground" />
@@ -491,15 +736,30 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                 {locationData?.locationRadius ? ` • ${locationData.locationRadius} mi` : ''}
               </Text>
             </View>
-            <Icon
-              as={X}
-              size={16}
-              className={`text-muted-foreground ${showLocationOptions ? 'rotate-45' : ''}`}
-            />
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: locationSectionOpacity.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '45deg'],
+                    }),
+                  },
+                ],
+              }}>
+              <Icon as={X} size={16} className="text-muted-foreground" />
+            </Animated.View>
           </Pressable>
 
-          {showLocationOptions && (
-            <View className="mt-2 rounded-lg border border-border bg-background p-3">
+          {/* Expanded content */}
+          <Animated.View
+            style={{
+              opacity: locationSectionOpacity,
+              overflow: 'hidden',
+            }}
+            pointerEvents={showLocationOptions ? 'auto' : 'none'}>
+            {showLocationOptions && (
+              <View className="mt-2 rounded-lg border border-border bg-background p-3">
               {/* Location Type Selector */}
               <View className="mb-3">
                 <Text className="mb-2 text-xs font-semibold text-foreground">Location Type</Text>
@@ -604,8 +864,9 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                   </View>
                 </View>
               )}
-            </View>
-          )}
+              </View>
+            )}
+          </Animated.View>
         </View>
       )}
 

@@ -58,19 +58,22 @@ def main():
     environment = sys.argv[2] if len(sys.argv) > 2 else "staging"
     logger.info(f"Action: {action}, Environment: {environment}")
 
-    # Common configuration
+    # Common configuration - production dependencies (excluding dev-only and transitive dependencies)
     common_requirements = [
-        "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
         "google-adk==1.7.0",
+        "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
+        "google-auth==2.45.0",
+        "google-cloud-firestore==2.22.0",
         "google-cloud-pubsub==2.31.1",
-        "python-dotenv==1.0.0",
-        "google-auth==2.36.0",
-        "tqdm==4.66.1",
-        "requests==2.32.4",
-        "llama-index==0.12.0",
+        "google-genai==1.56.0",
+        "google-search-results==2.4.2",
+        "langchain==0.3.26",
         "langchain-community==0.3.27",
+        "llama-index==0.12.0",
+        "pydantic-settings==2.8.1",
+        "python-dotenv==1.0.0",
+        "requests==2.32.4",
         "youtube-search==2.1.2",
-        "google-search-results==2.4.2"
     ]
     common_env_vars = [
         "GOOGLE_CLOUD_BUCKET",

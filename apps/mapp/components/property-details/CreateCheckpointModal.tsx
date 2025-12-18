@@ -152,7 +152,8 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
     try {
       setLoading(true);
-      const finalName = name.trim() || `${(location || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
+      const finalName =
+        name.trim() || `${(location || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
       const finalLocation = location.trim();
       await onCreate({ name: finalName, location: finalLocation, mediaAsset, mediaType });
@@ -182,7 +183,11 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
             <View className="mb-4 h-64 w-full overflow-hidden rounded-lg border border-border bg-muted">
               {mediaAsset ? (
                 mediaType === 'image' ? (
-                  <Image source={{ uri: mediaAsset.uri }} className="h-full w-full" resizeMode="cover" />
+                  <Image
+                    source={{ uri: mediaAsset.uri }}
+                    className="h-full w-full"
+                    resizeMode="cover"
+                  />
                 ) : (
                   <View className="h-full w-full">
                     <VideoView player={videoPlayer} style={{ width: '100%', height: '100%' }} />
@@ -203,8 +208,6 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
                   <Text>Take Photo</Text>
                 </View>
               </Button>
-            </View>
-            <View className="mt-3 flex-row gap-4">
               <Button onPress={handleRecordVideo} variant="outline" className="flex-1">
                 <View className="flex-row items-center gap-2">
                   <Icon as={VideoIcon} size={16} className="text-foreground" />
@@ -214,7 +217,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
               <Button onPress={handleSelectPhoto} variant="outline" className="flex-1">
                 <View className="flex-row items-center gap-2">
                   <Icon as={ImageIcon} size={16} className="text-foreground" />
-                  <Text>Library</Text>
+                  <Text>Gallery</Text>
                 </View>
               </Button>
             </View>
@@ -261,10 +264,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
         {/* Footer */}
         <View className="border-t border-border p-4" style={{ paddingBottom: insets.bottom + 16 }}>
-          <Button
-            onPress={handleSubmit}
-            disabled={!mediaAsset || loading}
-            className="w-full">
+          <Button onPress={handleSubmit} disabled={!mediaAsset || loading} className="w-full">
             {loading ? (
               <View className="flex-row items-center gap-2">
                 <Icon as={Loader2} size={16} className="animate-spin text-primary-foreground" />

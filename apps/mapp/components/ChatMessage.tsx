@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Share2,
   DollarSign,
+  Clock,
+  Sparkles,
 } from 'lucide-react-native';
 import type {
   Message,
@@ -1213,6 +1215,22 @@ function ChatMessage({ message }: ChatMessageProps) {
         <MessageAvatar role={message.role} />
       </View>
       <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
+        {/* Agent Badge for assistant messages */}
+        {!isUser && message.primaryAgent && (
+          <View className="mb-1.5 flex-row items-center gap-1.5">
+            {message.primaryAgent === 'checkpoint' ? (
+              <>
+                <Icon as={Clock} size={12} className="text-muted-foreground" />
+                <Text className="text-xs font-medium text-muted-foreground">Checkpoint Agent</Text>
+              </>
+            ) : (
+              <>
+                <Icon as={Sparkles} size={12} className="text-muted-foreground" />
+                <Text className="text-xs font-medium text-muted-foreground">Analysis Agent</Text>
+              </>
+            )}
+          </View>
+        )}
         <Pressable onLongPress={handleLongPress} delayLongPress={500}>
           <View className={`overflow-hidden rounded-lg ${isUser ? 'bg-muted' : 'bg-secondary'}`}>
             {message.file && <FilePreview file={message.file} isUserMessage={isUser} />}

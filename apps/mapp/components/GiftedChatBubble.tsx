@@ -26,6 +26,7 @@ export default function GiftedChatBubble(props: CustomBubbleProps) {
     createdAt: currentMessage.createdAt as any,
     file: currentMessage.customData?.file,
     agentSteps: currentMessage.customData?.agentSteps,
+    primaryAgent: currentMessage.customData?.primaryAgent,
   };
 
   return (

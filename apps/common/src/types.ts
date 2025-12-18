@@ -25,6 +25,8 @@ export const ANALYSIS_OPTIONAL_AGENTS = [
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
+export type PrimaryAgent = 'analysis' | 'checkpoint';
+
 export type FileAttachment = {
   id: string;
   uri: string;
@@ -55,6 +57,7 @@ export type Message = {
     height?: number;
   };
   agentSteps?: AgentStep[];
+  primaryAgent?: PrimaryAgent;
 };
 
 export type Session = {

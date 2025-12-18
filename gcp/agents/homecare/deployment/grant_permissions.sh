@@ -105,14 +105,24 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:$REASONING_ENGINE_SA" \
   --role="projects/$PROJECT_ID/roles/$ROLE_ID"
 
+# Grant Firestore permissions for checkpoint access
+echo ""
+echo "Granting Firestore permissions to Reasoning Engine service account..."
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$REASONING_ENGINE_SA" \
+  --role="roles/datastore.user"
+
 echo ""
 echo "✅ Permissions granted successfully!"
 echo ""
 echo "Summary:"
 echo "  - Service Account: $REASONING_ENGINE_SA"
-echo "  - Role: $ROLE_ID"
-echo "  - Permissions: $PERMISSIONS"
+echo "  - RAG Corpus Role: $ROLE_ID"
+echo "  - RAG Corpus Permissions: $PERMISSIONS"
+echo "  - Firestore Role: roles/datastore.user"
 echo "  - RAG Corpus Location: $CORPUS_LOCATION"
 echo "  - RAG Corpus: $USER_UPLOAD_RAG_CORPUS"
 echo ""
-echo "The deployed agent can now access the User Docs RAG Corpus."
+echo "The deployed agent can now:"
+echo "  - Access the User Docs RAG Corpus"
+echo "  - Read checkpoints from Firestore"
