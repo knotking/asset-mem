@@ -240,6 +240,10 @@ export type Checkpoint = {
   skipComparison?: boolean; // Opt-out of automatic comparison
   aiAnalysis?: CheckpointAnalysis;
   visualDiff?: VisualDiffAnalysis;
+  // Vector embedding for semantic search (Firestore Vector Search)
+  embedding?: number[]; // 768-dimensional vector from text-embedding-004
+  embeddingModel?: string; // e.g., "text-embedding-004"
+  embeddingGeneratedAt?: Timestamp; // When the embedding was generated
 };
 
 export type CheckpointMedia = {
