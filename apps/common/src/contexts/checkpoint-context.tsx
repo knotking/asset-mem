@@ -95,10 +95,22 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const checkpointsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Checkpoint[];
+        // Explicitly exclude embedding fields to reduce memory usage
+        // Note: Firestore select() doesn't work with onSnapshot(), so we filter client-side
+        const checkpointsData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Remove embedding-related fields that are only needed for server-side vector search
+          const {
+            embedding,
+            embeddingModel,
+            embeddingGeneratedAt,
+            ...checkpointFields
+          } = data;
+          return {
+            id: doc.id,
+            ...checkpointFields,
+          } as Checkpoint;
+        });
 
         setCheckpoints(checkpointsData);
         setLoading(false);

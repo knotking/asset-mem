@@ -1,6 +1,11 @@
 import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
-import type { AgentStep, AnalysisOptionalAgent, LocationData } from '@homeapp/common/types';
+import type {
+  AgentStep,
+  AnalysisOptionalAgent,
+  LocationData,
+  PrimaryAgent,
+} from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 // Get environment-specific URLs from EAS build configuration
@@ -102,7 +107,9 @@ export interface StreamAgentResponseParams {
   userQuery: string;
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
+  checkpointIds?: string[]; // Checkpoint IDs for checkpoint context
   propertyAddress?: string;
+  primaryAgent?: PrimaryAgent;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
   locationData?: LocationData;
   signal?: AbortSignal;
@@ -118,7 +125,9 @@ export async function streamAgentResponse({
   userQuery,
   contextDocURIs = [],
   diagnosisURIs = [],
+  checkpointIds = [],
   propertyAddress,
+  primaryAgent = 'analysis',
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
   locationData,
   signal,
@@ -139,7 +148,9 @@ export async function streamAgentResponse({
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
+      checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Only include if checkpoints selected
       property_address: propertyAddress,
+      primary_agent: primaryAgent,
       analysis_optional_agents: analysisOptionalAgents,
     };
 

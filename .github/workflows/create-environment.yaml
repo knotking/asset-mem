@@ -1393,6 +1393,23 @@ jobs:
               echo "⚠️ Failed to grant Reasoning Engine RAG permissions"
               echo "   You may need to run: gcp/agents/homecare/deployment/grant_permissions.sh"
             fi
+
+            # Grant Firestore permissions for checkpoint access
+            echo ""
+            echo "Granting Firestore permissions to Reasoning Engine service account..."
+            if gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+              --member="serviceAccount:$REASONING_ENGINE_SA" \
+              --role="roles/datastore.user" \
+              --condition=None \
+              --quiet 2>/dev/null; then
+              echo "✓ Reasoning Engine service account granted Firestore access permissions"
+              echo "   Service Account: $REASONING_ENGINE_SA"
+              echo "   Role: roles/datastore.user"
+              echo "   This enables checkpoint read access in Firestore"
+            else
+              echo "⚠️ Failed to grant Reasoning Engine Firestore permissions"
+              echo "   You may need to run: gcp/agents/homecare/deployment/grant_permissions.sh"
+            fi
           else
             echo "⚠️ Skipping RAG service account permissions (no corpora created)"
           fi

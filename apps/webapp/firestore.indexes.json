@@ -19,10 +19,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "propertyId",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "location",
           "order": "ASCENDING"
         },

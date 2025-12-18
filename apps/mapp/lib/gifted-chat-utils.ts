@@ -34,6 +34,7 @@ export function transformToGiftedChat(
       file: firestoreMsg.file,
       agentSteps: firestoreMsg.agentSteps,
       originalContent: firestoreMsg.content,
+      primaryAgent: firestoreMsg.primaryAgent,
     },
   };
 }

@@ -6,6 +6,7 @@ from vertexai.agent_engines import AgentEngine
 from typing import Optional, Dict, Any, List, Callable
 import json
 from google.cloud import pubsub_v1
+from google.cloud import firestore
 
 from schemas.agent import AgentRequest
 from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
@@ -67,6 +68,46 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str
         logger.error(f"Failed to publish data to Pub/Sub: {e}")
         return {"error": str(e)}  
 
+# --- Property ID Retrieval from Firestore Session ---
+def get_property_id_from_session_by_agent_id(user_id: str, agent_session_id: str) -> Optional[str]:
+    """
+    Retrieves property_id from Firestore session document by querying for agentSessionId.
+    
+    Option 2: Retrieve property_id from session metadata stored in Firestore.
+    Session documents are stored at: users/{user_id}/chats/{session_id}
+    and have an agentSessionId field that matches the Vertex AI agent session ID.
+    
+    Args:
+        user_id: User ID
+        agent_session_id: Vertex AI agent session ID (used to find Firestore session document)
+        
+    Returns:
+        property_id if found in session document, None otherwise
+    """
+    try:
+        db = firestore.Client()
+        # Query Firestore sessions collection to find document with matching agentSessionId
+        chats_ref = db.collection("users").document(user_id).collection("chats")
+        query = chats_ref.where("agentSessionId", "==", agent_session_id).limit(1)
+        docs = query.stream()
+        
+        for doc in docs:
+            session_data = doc.to_dict()
+            property_id = session_data.get("propertyId") or session_data.get("property_id")
+            if property_id:
+                logger.debug(f"Found property_id '{property_id}' in Firestore session document")
+                return property_id
+            else:
+                logger.debug(f"No property_id found in Firestore session document")
+                return None
+        
+        logger.debug(f"No Firestore session document found with agentSessionId: {agent_session_id}")
+        return None
+    except Exception as e:
+        logger.debug(f"Error retrieving property_id from Firestore session (non-critical): {e}")
+        return None
+
+
 # --- Reasoning Engine Session Management Functions ---
 def get_or_create_reasoning_engine_session(chat_id: str) -> Dict[str, Any]:
     if not reasoning_engine_resource:
@@ -102,7 +143,13 @@ async def stream_agent_answers(
     user_query = request.user_query
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
+    checkpoint_ids = request.checkpoint_ids  # Checkpoint IDs for checkpoint context
+    if checkpoint_ids:
+        logger.info(f"Received checkpoint_ids in request: {checkpoint_ids} (count: {len(checkpoint_ids)})")
+    else:
+        logger.debug("No checkpoint_ids provided in request")
     property_address = request.property_address
+    property_id = request.property_id  # Option 1: property_id from request
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     location_type = request.location_type
     location_coordinates = request.location_coordinates
@@ -117,6 +164,17 @@ async def stream_agent_answers(
         session_id = session["id"]
         logger.info(f"Using session ID: {session_id}")
     
+    # Option 2: Try to retrieve property_id from Firestore session if not provided in request
+    # Note: This requires finding the Firestore session document. We try to find it by agentSessionId.
+    if not property_id and session_id and user_id:
+        try:
+            property_id_from_session = get_property_id_from_session_by_agent_id(user_id, session_id)
+            if property_id_from_session:
+                property_id = property_id_from_session
+                logger.info(f"Retrieved property_id from Firestore session: {property_id}")
+        except Exception as e:
+            logger.debug(f"Could not retrieve property_id from Firestore session (this is optional): {e}")
+    
     payload: Dict[str, Any] = {"user_query": user_query}
 
     if context_doc_uris:
@@ -124,6 +182,18 @@ async def stream_agent_answers(
 
     if diagnosis_uris:
         payload["diagnosis_uris"] = diagnosis_uris
+    
+    # Include checkpoint_ids if provided (enables checkpoint_agent routing)
+    if checkpoint_ids:
+        payload["checkpoint_ids"] = checkpoint_ids
+        logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
+    else:
+        logger.debug("No checkpoint_ids to include in agent payload")
+    
+    # Include property_id if available (for checkpoint queries, etc.)
+    if property_id:
+        logger.info(f"Including property_id in agent payload: {property_id}")
+        payload["property_id"] = property_id
     
     # Location handling logic:
     # If location_type == "address": Use property_address if present, else fall back to location_coordinates
@@ -153,7 +223,7 @@ async def stream_agent_answers(
         payload["analysis_optional_agents"] = analysis_optional_agents
 
     message = json.dumps(payload)
-
+    logger.info(f"Sending message to Reasoning Engine: {message}")
     for event in reasoning_engine_resource.stream_query(
         user_id=user_id, session_id=session_id, message=message
     ):
