@@ -15,6 +15,7 @@ from comparison_service import (
     compare_checkpoints,
     get_user_preferences
 )
+from embedding_service import generate_checkpoint_embedding
 
 # Initialize observability
 from common.observability import initialize_observability, checkpoint
@@ -182,6 +183,33 @@ def pubsub_checkpoint_analysis(request, context):
             # Update checkpoint with analysis results first
             checkpoint_ref.update(update_data)
             logger.info(f"Successfully updated checkpoint {checkpoint_id} with analysis results")
+
+            # Generate and store embedding for semantic search (Firestore Vector Search)
+            try:
+                # Fetch the updated checkpoint data for embedding generation
+                updated_checkpoint_doc = checkpoint_ref.get()
+                if updated_checkpoint_doc.exists:
+                    checkpoint_dict = updated_checkpoint_doc.to_dict()
+                    
+                    # Generate embedding from checkpoint analysis text
+                    embedding = generate_checkpoint_embedding(checkpoint_dict)
+                    
+                    if embedding:
+                        # Update checkpoint with embedding
+                        embedding_update = {
+                            "embedding": embedding,
+                            "embeddingModel": "text-embedding-004",
+                            "embeddingGeneratedAt": firestore.SERVER_TIMESTAMP
+                        }
+                        checkpoint_ref.update(embedding_update)
+                        logger.info(f"Successfully generated and stored embedding for checkpoint {checkpoint_id}")
+                    else:
+                        logger.warning(f"Failed to generate embedding for checkpoint {checkpoint_id}, continuing without embedding")
+                else:
+                    logger.warning(f"Checkpoint document not found after analysis update, skipping embedding generation")
+            except Exception as embedding_error:
+                # Don't fail the entire process if embedding generation fails
+                logger.error(f"Error generating embedding for checkpoint {checkpoint_id}: {embedding_error}", exc_info=True)
 
             # Trigger async metrics aggregation for the property (mobile analytics)
             _publish_metrics_aggregate_event(
