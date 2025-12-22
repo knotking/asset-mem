@@ -201,25 +201,25 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
               )}
             </View>
 
-            <View className="flex-row gap-4">
-              <Button onPress={handleTakePhoto} variant="outline" className="flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Icon as={Camera} size={16} className="text-foreground" />
-                  <Text>Take Photo</Text>
-                </View>
-              </Button>
-              <Button onPress={handleRecordVideo} variant="outline" className="flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Icon as={VideoIcon} size={16} className="text-foreground" />
-                  <Text>Record Video</Text>
-                </View>
-              </Button>
-              <Button onPress={handleSelectPhoto} variant="outline" className="flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Icon as={ImageIcon} size={16} className="text-foreground" />
-                  <Text>Gallery</Text>
-                </View>
-              </Button>
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={handleTakePhoto}
+                className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
+                <Icon as={Camera} size={20} className="mb-1 text-foreground" />
+                <Text className="text-center text-xs font-medium text-foreground">Photo</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleRecordVideo}
+                className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
+                <Icon as={VideoIcon} size={20} className="mb-1 text-foreground" />
+                <Text className="text-center text-xs font-medium text-foreground">Video</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSelectPhoto}
+                className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
+                <Icon as={ImageIcon} size={20} className="mb-1 text-foreground" />
+                <Text className="text-center text-xs font-medium text-foreground">Gallery</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -263,7 +263,9 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         </ScrollView>
 
         {/* Footer */}
-        <View className="border-t border-border p-4" style={{ paddingBottom: insets.bottom + 16 }}>
+        <View
+          className="border-t border-border px-4 pt-4"
+          style={{ paddingBottom: Math.max(insets.bottom, 4) }}>
           <Button onPress={handleSubmit} disabled={!mediaAsset || loading} className="w-full">
             {loading ? (
               <View className="flex-row items-center gap-2">

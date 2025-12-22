@@ -42,7 +42,10 @@ type IssueRow = {
   createdAt: Date;
 };
 
-function normalizeIssuesFromCheckpoints(checkpoints: Checkpoint[], maxCheckpoints: number): IssueRow[] {
+function normalizeIssuesFromCheckpoints(
+  checkpoints: Checkpoint[],
+  maxCheckpoints: number
+): IssueRow[] {
   const rows: IssueRow[] = [];
   const slice = checkpoints.slice(0, maxCheckpoints);
   for (const cp of slice) {
@@ -60,7 +63,9 @@ function normalizeIssuesFromCheckpoints(checkpoints: Checkpoint[], maxCheckpoint
         });
       } else if (issue && typeof issue === 'object') {
         const sev: IssueSeverity =
-          issue.severity === 'critical' || issue.severity === 'major' || issue.severity === 'moderate'
+          issue.severity === 'critical' ||
+          issue.severity === 'major' ||
+          issue.severity === 'moderate'
             ? issue.severity
             : 'minor';
         const desc = String(issue.description || issue.text || issue.title || 'Issue detected');
@@ -80,7 +85,13 @@ function normalizeIssuesFromCheckpoints(checkpoints: Checkpoint[], maxCheckpoint
 }
 
 function severityLabel(sev: IssueSeverity) {
-  return sev === 'critical' ? 'Critical' : sev === 'major' ? 'Major' : sev === 'moderate' ? 'Moderate' : 'Minor';
+  return sev === 'critical'
+    ? 'Critical'
+    : sev === 'major'
+      ? 'Major'
+      : sev === 'moderate'
+        ? 'Moderate'
+        : 'Minor';
 }
 
 function CheckpointsTabSkeleton() {
@@ -205,7 +216,9 @@ function PropertyMetricsCard({
   const considered = metrics.window?.checkpoints_considered;
 
   const latestDisplay =
-    typeof latest === 'number' && Number.isFinite(latest) ? Math.max(0, Math.min(100, latest)) : null;
+    typeof latest === 'number' && Number.isFinite(latest)
+      ? Math.max(0, Math.min(100, latest))
+      : null;
   const latestLabel =
     latestDisplay === null
       ? '—'
@@ -218,20 +231,27 @@ function PropertyMetricsCard({
             : 'Poor';
 
   const trendLabel =
-    trend === 'improving' ? 'Improving' : trend === 'stable' ? 'Stable' : trend === 'deteriorating' ? 'Worsening' : 'Unknown';
+    trend === 'improving'
+      ? 'Improving'
+      : trend === 'stable'
+        ? 'Stable'
+        : trend === 'deteriorating'
+          ? 'Worsening'
+          : 'Unknown';
   const rateAbs = typeof rate === 'number' && Number.isFinite(rate) ? Math.abs(rate) : null;
   const rateDisplay =
     rateAbs === null
-      ? (typeof considered === 'number' && considered >= 2
+      ? typeof considered === 'number' && considered >= 2
         ? 'Need 2+ scored checkpoints'
-        : '—')
+        : '—'
       : `${rateAbs.toFixed(1)} pts/day`;
   const rateSecondary = rateAbs === null ? '' : `≈ ${(rateAbs * 7).toFixed(0)} pts/week`;
 
   return (
     <View className="mb-4">
       {/* Skeleton layer (under/over) */}
-      <Animated.View style={{ position: 'absolute', left: 0, right: 0, top: 0, opacity: skeletonOpacity }}>
+      <Animated.View
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, opacity: skeletonOpacity }}>
         <PropertyInsightsSkeletonCard />
       </Animated.View>
 
@@ -239,75 +259,84 @@ function PropertyMetricsCard({
       <Animated.View style={{ opacity: contentOpacity }}>
         <Card>
           <View className="p-4">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-semibold text-foreground">Property Insights</Text>
-          <Pressable
-            onPress={() => setShowHelp((v) => !v)}
-            className="flex-row items-center gap-1 rounded-full bg-secondary px-2 py-1">
-            <Icon as={Info} size={14} className="text-muted-foreground" />
-            <Text className="text-xs text-muted-foreground">{showHelp ? 'Hide' : 'What is this?'}</Text>
-          </Pressable>
-        </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+              <Pressable
+                onPress={() => setShowHelp((v) => !v)}
+                className="flex-row items-center gap-1 rounded-full bg-secondary px-2 py-1">
+                <Icon as={Info} size={14} className="text-muted-foreground" />
+                <Text className="text-xs text-muted-foreground">
+                  {showHelp ? 'Hide' : 'What is this?'}
+                </Text>
+              </Pressable>
+            </View>
 
-        {typeof considered === 'number' && considered > 0 && (
-          <Text className="mt-1 text-xs text-muted-foreground">
-            Based on the last {considered} checkpoint{considered === 1 ? '' : 's'}.
-          </Text>
-        )}
+            {typeof considered === 'number' && considered > 0 && (
+              <Text className="mt-1 text-xs text-muted-foreground">
+                Based on the last {considered} checkpoint{considered === 1 ? '' : 's'}.
+              </Text>
+            )}
 
-        <View className="mt-3 flex-row justify-between">
-          <View>
-            <Text className="text-xs text-muted-foreground">Overall condition</Text>
-            <Text className="text-xl font-semibold text-foreground">
-              {latestDisplay === null ? '—' : `${Math.round(latestDisplay)}/100`}
-            </Text>
-            <Text className="text-xs text-muted-foreground">{latestDisplay === null ? 'No score yet' : latestLabel}</Text>
-            {latestDisplay !== null && (
-              <View className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-muted">
-                <View className="h-full bg-primary" style={{ width: `${latestDisplay}%` }} />
+            <View className="mt-3 flex-row justify-between">
+              <View>
+                <Text className="text-xs text-muted-foreground">Overall condition</Text>
+                <Text className="text-xl font-semibold text-foreground">
+                  {latestDisplay === null ? '—' : `${Math.round(latestDisplay)}/100`}
+                </Text>
+                <Text className="text-xs text-muted-foreground">
+                  {latestDisplay === null ? 'No score yet' : latestLabel}
+                </Text>
+                {latestDisplay !== null && (
+                  <View className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-muted">
+                    <View className="h-full bg-primary" style={{ width: `${latestDisplay}%` }} />
+                  </View>
+                )}
+              </View>
+              <View>
+                <Text className="text-xs text-muted-foreground">Change rate</Text>
+                <Text className="text-sm font-medium text-foreground">
+                  {rateDisplay} {trendLabel !== 'Unknown' ? `(${trendLabel})` : ''}
+                </Text>
+                {!!rateSecondary && (
+                  <Text className="text-xs text-muted-foreground">{rateSecondary}</Text>
+                )}
+              </View>
+            </View>
+
+            {issues && (
+              <Pressable onPress={onOpenIssues} className="mt-3">
+                <Text className="text-xs text-muted-foreground">Issues found</Text>
+                <View className="mt-1 flex-row items-center justify-between">
+                  <Text className="text-sm text-foreground">
+                    Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} ·
+                    Minor {issues.minor}
+                  </Text>
+                  <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
+                </View>
+                <Text className="text-xs text-muted-foreground">
+                  Tap to see which issues were counted.
+                </Text>
+              </Pressable>
+            )}
+
+            {showHelp && (
+              <View className="mt-3 rounded-lg border border-border bg-card p-3">
+                <Text className="text-sm font-semibold text-foreground">How to read this</Text>
+                <View className="mt-2 gap-1">
+                  <Text className="text-xs text-muted-foreground">
+                    - Overall condition is a 0–100 score estimated by AI from your recent checkpoint
+                    photos.
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">
+                    - Change rate is how fast the score is moving over time (points/day).
+                    “Worsening” means the score is trending down.
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">
+                    - Issues are grouped by severity (minor → critical) based on AI classification.
+                  </Text>
+                </View>
               </View>
             )}
-          </View>
-          <View>
-            <Text className="text-xs text-muted-foreground">Change rate</Text>
-            <Text className="text-sm font-medium text-foreground">
-              {rateDisplay} {trendLabel !== 'Unknown' ? `(${trendLabel})` : ''}
-            </Text>
-            {!!rateSecondary && <Text className="text-xs text-muted-foreground">{rateSecondary}</Text>}
-          </View>
-        </View>
-
-        {issues && (
-          <Pressable onPress={onOpenIssues} className="mt-3">
-            <Text className="text-xs text-muted-foreground">Issues found</Text>
-            <View className="mt-1 flex-row items-center justify-between">
-              <Text className="text-sm text-foreground">
-                Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} · Minor {issues.minor}
-              </Text>
-              <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
-            </View>
-            <Text className="text-xs text-muted-foreground">
-              Tap to see which issues were counted.
-            </Text>
-          </Pressable>
-        )}
-
-        {showHelp && (
-          <View className="mt-3 rounded-lg border border-border bg-card p-3">
-            <Text className="text-sm font-semibold text-foreground">How to read this</Text>
-            <View className="mt-2 gap-1">
-              <Text className="text-xs text-muted-foreground">
-                - Overall condition is a 0–100 score estimated by AI from your recent checkpoint photos.
-              </Text>
-              <Text className="text-xs text-muted-foreground">
-                - Change rate is how fast the score is moving over time (points/day). “Worsening” means the score is trending down.
-              </Text>
-              <Text className="text-xs text-muted-foreground">
-                - Issues are grouped by severity (minor → critical) based on AI classification.
-              </Text>
-            </View>
-          </View>
-        )}
           </View>
         </Card>
       </Animated.View>
@@ -332,7 +361,7 @@ function CheckpointCard({
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
-    <Card className={`${isSelected ? 'border-primary bg-primary/5 ' : ''}p-2`}>
+    <Card className={`${isSelected ? 'border-primary bg-primary/5' : ''}p-2`}>
       <Pressable
         onPress={() => onPress(checkpoint)}
         className="flex-row overflow-hidden rounded-lg">
@@ -546,28 +575,68 @@ export function PropertyCheckpointsTab() {
   }
 
   return (
-    <View className="flex-1 p-4">
-      <PropertyMetricsCard checkpoints={checkpoints} onOpenIssues={() => setIsIssuesModalVisible(true)} />
+    <View className="flex-1">
       {checkpoints.length === 0 ? (
-        <Card className="items-center p-6">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Icon as={Camera} size={32} className="text-primary" />
-          </View>
-          <Text className="mb-2 text-center text-lg font-semibold text-foreground">
-            No Checkpoints Yet
-          </Text>
-          <Text className="mb-6 text-center text-sm text-muted-foreground">
-            Create your first checkpoint to start tracking changes over time.
-          </Text>
-          <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Plus} size={20} className="text-primary-foreground" />
-              <Text className="text-primary-foreground">Create Checkpoint</Text>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+          <Card className="mb-4 border-dashed border-border">
+            <View className="px-4 py-1">
+              <View className="mb-2 flex-row items-center gap-2">
+                <Icon as={Info} size={18} className="text-primary" />
+                <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+              </View>
+              <Text className="text-sm text-muted-foreground">
+                Once you create checkpoints, you'll see AI-powered insights here including:
+              </Text>
+              <View className="mt-3 gap-2">
+                <View className="flex-row items-start gap-2">
+                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <Text className="flex-1 text-xs text-muted-foreground">
+                    Overall condition score (0–100) based on your checkpoint photos
+                  </Text>
+                </View>
+                <View className="flex-row items-start gap-2">
+                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <Text className="flex-1 text-xs text-muted-foreground">
+                    Change rate tracking to see if your property is improving or deteriorating
+                  </Text>
+                </View>
+                <View className="flex-row items-start gap-2">
+                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <Text className="flex-1 text-xs text-muted-foreground">
+                    Issue detection grouped by severity (critical, major, moderate, minor)
+                  </Text>
+                </View>
+              </View>
             </View>
-          </Button>
-        </Card>
+          </Card>
+          <Card
+            className="items-center"
+            style={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: 16 }}>
+            <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Icon as={Camera} size={32} className="text-primary" />
+            </View>
+            <Text className="mb-1 text-center text-lg font-semibold text-foreground">
+              No Checkpoints Yet
+            </Text>
+            <Text className="mb-3 text-center text-sm text-muted-foreground">
+              Create your first checkpoint to start tracking changes over time.
+            </Text>
+            <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Plus} size={20} className="text-primary-foreground" />
+                <Text className="text-primary-foreground">Create Checkpoint</Text>
+              </View>
+            </Button>
+          </Card>
+        </ScrollView>
       ) : (
-        <>
+        <View className="flex-1 p-4">
+          <PropertyMetricsCard
+            checkpoints={checkpoints}
+            onOpenIssues={() => setIsIssuesModalVisible(true)}
+          />
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-xl font-semibold text-foreground">Checkpoints</Text>
             <View className="flex-row gap-2">
@@ -616,8 +685,9 @@ export function PropertyCheckpointsTab() {
                 isSelected={selectedForComparison.includes(item.id)}
               />
             )}
-            contentContainerStyle={{ gap: 12 }}
+            contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
             showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}
             ListFooterComponent={
               hasMoreCheckpoints ? (
                 <View className="py-4">
@@ -640,7 +710,7 @@ export function PropertyCheckpointsTab() {
               ) : null
             }
           />
-        </>
+        </View>
       )}
 
       <CreateCheckpointModal
@@ -676,9 +746,12 @@ export function PropertyCheckpointsTab() {
                     key={sev}
                     onPress={() => setIssuesFilter(sev)}
                     className={`rounded-full border px-2 py-0.5 ${
-                      issuesFilter === sev ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                      issuesFilter === sev
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-card'
                     }`}>
-                    <Text className={`text-xs ${issuesFilter === sev ? 'text-primary' : 'text-foreground'}`}>
+                    <Text
+                      className={`text-xs ${issuesFilter === sev ? 'text-primary' : 'text-foreground'}`}>
                       {sev === 'all' ? 'All' : severityLabel(sev)}
                     </Text>
                   </Pressable>
@@ -687,7 +760,8 @@ export function PropertyCheckpointsTab() {
 
               {(() => {
                 const rows = normalizeIssuesFromCheckpoints(checkpoints, 12);
-                const filtered = issuesFilter === 'all' ? rows : rows.filter((r) => r.severity === issuesFilter);
+                const filtered =
+                  issuesFilter === 'all' ? rows : rows.filter((r) => r.severity === issuesFilter);
                 if (filtered.length === 0) {
                   return (
                     <Text className="text-sm text-muted-foreground">
@@ -698,14 +772,20 @@ export function PropertyCheckpointsTab() {
                 return (
                   <View className="gap-3">
                     {filtered.slice(0, 50).map((r, idx) => (
-                      <View key={`${r.checkpointId}-${idx}`} className="rounded-lg border border-border bg-card p-3">
+                      <View
+                        key={`${r.checkpointId}-${idx}`}
+                        className="rounded-lg border border-border bg-card p-3">
                         <View className="flex-row items-center justify-between">
-                          <Text className="text-xs text-muted-foreground">{severityLabel(r.severity)}</Text>
+                          <Text className="text-xs text-muted-foreground">
+                            {severityLabel(r.severity)}
+                          </Text>
                           <Text className="text-xs text-muted-foreground">
                             {format(r.createdAt, 'MMM d, yyyy')}
                           </Text>
                         </View>
-                        <Text className="mt-1 text-sm font-medium text-foreground">{r.description}</Text>
+                        <Text className="mt-1 text-sm font-medium text-foreground">
+                          {r.description}
+                        </Text>
                         <Text className="mt-1 text-xs text-muted-foreground">
                           From: {r.checkpointName}
                         </Text>
