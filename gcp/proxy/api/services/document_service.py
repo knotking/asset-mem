@@ -125,7 +125,7 @@ Document:"""
         # Generate analysis using new SDK
         logger.info("Sending document to Gemini for analysis...")
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3-flash-preview",
             contents=contents,
             config={
                 "temperature": 0.1,  # Low temperature for consistent extraction

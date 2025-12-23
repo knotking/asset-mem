@@ -187,7 +187,7 @@ def ask_checkpoints_retrieval(
 
 
 checkpoint_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3-flash-preview',
     name='checkpoint_agent',
     instruction=checkpoint_agent_instruction(),
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, etc.)
