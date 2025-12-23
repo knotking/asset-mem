@@ -59,13 +59,15 @@ async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
     Returns structured comparison data including similarity score, semantic changes, and specific regions of interest.
     """
     try:
-        return compare_checkpoints(
+        result = compare_checkpoints(
             image1_url=request_data.image1Url,
             image2_url=request_data.image2Url,
             content_type1=request_data.contentType1,
             content_type2=request_data.contentType2,
             location=request_data.location
         )
+        logger.info("Comparison complete")
+        return result.model_dump()
     except Exception as e:
         logger.error(f"Error comparing checkpoints: {e}")
         raise HTTPException(status_code=500, detail=str(e))
