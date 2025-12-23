@@ -1,12 +1,55 @@
-# Checkpoint Analysis API
+# Checkpoint API
 
-This document describes the checkpoint analysis API endpoint that processes property checkpoint images using Google Gemini AI.
+This document describes the checkpoint API endpoints for processing property checkpoint images.
 
-## Overview
+## Endpoints
 
-The Checkpoint Analysis API provides asynchronous image analysis for property checkpoints. The endpoint publishes analysis requests to Pub/Sub for background processing, allowing for scalable and fault-tolerant analysis without blocking API requests.
+### 1. Analyze Checkpoint (Async)
 
-## Architecture
+The Checkpoint Analysis API provides asynchronous image analysis for property checkpoints. The endpoint publishes analysis requests to Pub/Sub for background processing.
+
+**Endpoint:** `POST /{SECRET}/analyze-checkpoint`
+
+See [Architecture](#architecture-async-analysis) below for details.
+
+### 2. Compare Checkpoints (Sync)
+
+The Checkpoint Comparison API compares two checkpoint images (e.g., "Before" vs "After") to identify changes, damage, or repairs. This is a synchronous endpoint that returns results immediately using Gemini AI.
+
+**Endpoint:** `POST /{SECRET}/compare-checkpoints`
+
+**Request Body:**
+
+```json
+{
+  "image1Url": "gs://bucket/path/to/before.jpg",
+  "image2Url": "gs://bucket/path/to/after.jpg",
+  "contentType1": "image/jpeg",
+  "contentType2": "image/jpeg",
+  "location": "Kitchen"
+}
+```
+
+**Response:**
+
+```json
+{
+  "summary": "The wall has been painted...",
+  "similarityScore": 0.85,
+  "semanticChanges": ["Wall color changed", "Crack repaired"],
+  "regions": [
+    {
+      "description": "Crack repair",
+      "changeType": "modified",
+      "severity": "minor",
+      "confidence": 0.95,
+      "bbox": { ... }
+    }
+  ]
+}
+```
+
+## Architecture (Async Analysis)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -58,83 +101,14 @@ The Checkpoint Analysis API provides asynchronous image analysis for property ch
 
 ### API Layer (`gcp/proxy/api`)
 
-- **`routers/checkpoint.py`**: FastAPI router with `/analyze-checkpoint` endpoint
-- **`services/checkpoint_service.py`**: Service that publishes messages to Pub/Sub
+- **`routers/checkpoint.py`**: FastAPI router with `/analyze-checkpoint` and `/compare-checkpoints` endpoints
+- **`services/checkpoint_service.py`**: Service handling Pub/Sub publishing and checkpoint comparison logic
 - **`schemas/checkpoint.py`**: Pydantic models for request/response validation
 
 ### Worker Layer (`gcp/proxy/workers/function`)
 
 - **`main.py`**: Contains `pubsub_checkpoint_analysis()` Cloud Function entry point
 - **`checkpoint_service.py`**: Service that calls Gemini AI and updates Firestore
-
-## API Endpoint
-
-### `POST /{SECRET}/analyze-checkpoint`
-
-Analyzes a checkpoint image using Gemini AI. Returns immediately after publishing to Pub/Sub.
-
-#### Request
-
-**Headers:**
-
-- `Content-Type: application/json`
-
-**Body:**
-
-```json
-{
-  "imageUrl": "gs://bucket/path/to/image.jpg",
-  "contentType": "image/jpeg",
-  "location": "Kitchen",
-  "checkpointId": "checkpoint-123",
-  "userId": "user-456",
-  "propertyId": "property-789"
-}
-```
-
-**Schema:**
-
-```python
-class AnalyzeCheckpointRequest(BaseModel):
-    imageUrl: str                    # GCS URI of the image (gs://bucket/path)
-    contentType: str                 # MIME type (e.g., "image/jpeg", "image/png")
-    location: Optional[str] = None   # Optional location description
-    checkpointId: str                # Firestore checkpoint document ID
-    userId: str                      # Firestore user ID
-    propertyId: str                  # Firestore property ID
-```
-
-#### Response
-
-**Status:** `202 Accepted`
-
-**Body:**
-
-```json
-{
-  "status": "accepted",
-  "message": "Analysis queued for processing",
-  "checkpointId": "checkpoint-123"
-}
-```
-
-#### Error Responses
-
-**400 Bad Request:**
-
-```json
-{
-  "detail": "checkpointId, userId, and propertyId are required for async processing"
-}
-```
-
-**500 Internal Server Error:**
-
-```json
-{
-  "detail": "Error message"
-}
-```
 
 ## Configuration
 
@@ -146,6 +120,7 @@ The API requires the following environment variable:
 | --------------------------- | ------------------------------------------ | --------------------------- |
 | `CHECKPOINT_ANALYSIS_TOPIC` | Pub/Sub topic name for checkpoint analysis | `checkpoint-analysis-topic` |
 | `GCP_PROJECT_ID`            | Google Cloud Project ID                    | `homegeekdemo`              |
+| `GCP_LOCATION`              | GCP location for Vertex AI                 | `us-central1`               |
 
 ### Pub/Sub Setup
 

@@ -4,8 +4,7 @@ from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
 )
-from services.checkpoint_service import publish_checkpoint_analysis
-from checkpoint_comparison import compare_checkpoints
+from services.checkpoint_service import publish_checkpoint_analysis, compare_checkpoints
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -56,13 +55,10 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
 @router.post("/compare-checkpoints")
 async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
     """
-    Compare two property checkpoint images or videos using Gemini AI.
-    Supports comparing images to images, videos to videos, or mixed comparisons.
+    Compare two checkpoint images (previous vs current) using Gemini AI.
+    Returns structured comparison data including similarity score, semantic changes, and specific regions of interest.
     """
-    logger.info("Checkpoint comparison endpoint received a request.")
     try:
-        logger.info(f"Comparing checkpoints: {request_data.image1Url} vs {request_data.image2Url}")
-
         result = compare_checkpoints(
             image1_url=request_data.image1Url,
             image2_url=request_data.image2Url,
@@ -70,14 +66,8 @@ async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
             content_type2=request_data.contentType2,
             location=request_data.location
         )
-
         logger.info("Comparison complete")
         return result.model_dump()
-
-    except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        return {"status": "error", "message": str(e)}
     except Exception as e:
-        logger.error(f"Error processing checkpoint comparison: {e}")
-        return {"status": "error", "message": str(e)}
-
+        logger.error(f"Error comparing checkpoints: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

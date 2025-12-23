@@ -26,7 +26,7 @@ gcp/proxy/api/
 │   ├── telegram_bot.py      # Telegram bot logic (aiogram)
 │   ├── vertex_service.py    # Vertex AI Reasoning Engine integration
 │   ├── service_broker_service.py
-│   └── checkpoint_service.py # Checkpoint analysis Pub/Sub publishing
+│   └── checkpoint_service.py # Checkpoint operations (Analysis Pub/Sub, Comparison)
 ├── schemas/             # Pydantic Data Models
 │   ├── agent.py
 │   ├── document.py
