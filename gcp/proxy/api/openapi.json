@@ -251,6 +251,78 @@
         }
       }
     },
+    "/mock_secret/analyze-checkpoint": {
+      "post": {
+        "summary": "Analyze Checkpoint Endpoint",
+        "operationId": "analyze_checkpoint_endpoint_mock_secret_analyze_checkpoint_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeCheckpointRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mock_secret/compare-checkpoints": {
+      "post": {
+        "summary": "Compare Checkpoints Endpoint",
+        "operationId": "compare_checkpoints_endpoint_mock_secret_compare_checkpoints_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareCheckpointsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mock_telegram_secret": {
       "post": {
         "summary": "Telegram Webhook",
@@ -365,6 +437,107 @@
           "user_id"
         ],
         "title": "AgentRequest"
+      },
+      "AnalyzeCheckpointRequest": {
+        "properties": {
+          "imageUrl": {
+            "type": "string",
+            "title": "Imageurl"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "checkpointId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpointid"
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userid"
+          },
+          "propertyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Propertyid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "imageUrl",
+          "contentType"
+        ],
+        "title": "AnalyzeCheckpointRequest"
+      },
+      "CompareCheckpointsRequest": {
+        "properties": {
+          "image1Url": {
+            "type": "string",
+            "title": "Image1Url"
+          },
+          "image2Url": {
+            "type": "string",
+            "title": "Image2Url"
+          },
+          "contentType1": {
+            "type": "string",
+            "title": "Contenttype1"
+          },
+          "contentType2": {
+            "type": "string",
+            "title": "Contenttype2"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image1Url",
+          "image2Url",
+          "contentType1",
+          "contentType2"
+        ],
+        "title": "CompareCheckpointsRequest"
       },
       "ExtractDocInfoRequest": {
         "properties": {
