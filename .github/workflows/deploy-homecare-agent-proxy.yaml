@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - mapp_checkpoint_proxy_deployment
     paths:
       - "gcp/proxy/api/**"
   workflow_dispatch:
@@ -67,6 +68,14 @@ jobs:
 
           if [ -z "${{ vars.GCS_BUCKET }}" ]; then
             missing_vars+=("GCS_BUCKET")
+          fi
+
+          if [ -z "${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}" ]; then
+            missing_vars+=("CHECKPOINT_ANALYSIS_TOPIC")
+          fi
+
+          if [ -z "${{ vars.CHECKPOINT_METRICS_TOPIC }}" ]; then
+            missing_vars+=("CHECKPOINT_METRICS_TOPIC")
           fi
 
           if [ ${#missing_vars[@]} -ne 0 ]; then
@@ -147,6 +156,8 @@ jobs:
             USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}
             USER_UPLOAD_RESULT_SUBSCRIPTION=${{ vars.USER_UPLOAD_RESULT_SUBSCRIPTION }}
             GCS_BUCKET=${{ vars.GCS_BUCKET }}
+            CHECKPOINT_ANALYSIS_TOPIC=${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}
+            CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
 
       - name: Set IAM policy for public access
         continue-on-error: true
