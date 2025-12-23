@@ -97,7 +97,7 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
 
     logger.info("Sending image to Gemini for room/area detection...")
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
+        model="gemini-2.5-flash",
         contents=contents,
         config={
             "temperature": 0.3,  # Lower temperature for more consistent room detection
@@ -191,7 +191,7 @@ def compare_room_similarity(media1_url: str, media2_url: str,
 
     logger.info("Comparing media files for room similarity...")
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
+        model="gemini-2.5-flash",
         contents=contents,
         config={
             "temperature": 0.2,  # Lower temperature for more consistent comparisons

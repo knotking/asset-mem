@@ -79,7 +79,7 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
 
 
 shopping_agent = Agent(
-    model='gemini-3-flash-preview',
+    model='gemini-2.5-flash',
     name='shopping_agent',
     description="Provides product recommendations for DIY repairs, professional services, and general repair needs.",
     instruction=shopping_agent_instructions(),

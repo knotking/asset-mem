@@ -148,7 +148,7 @@ def compare_checkpoints(
 
     try:
         response = genai_client.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-2.5-flash",
             contents=[prompt, image1_part, image2_part],
             config={
                 "max_output_tokens": 2048,

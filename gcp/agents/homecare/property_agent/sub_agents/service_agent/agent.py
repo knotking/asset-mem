@@ -49,7 +49,7 @@ def yelpapi_search(query: str) -> str:
 
 
 service_agent = Agent(
-    model='gemini-3-flash-preview',
+    model='gemini-2.5-flash',
     name='service_agent',
     description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),

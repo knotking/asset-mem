@@ -35,7 +35,7 @@ youtube_search = YouTubeSearchTool(
 
 
 diy_agent = Agent(
-    model='gemini-3-flash-preview',
+    model='gemini-2.5-flash',
     name='diy_agent',
     description="Provides DIY repair recommendations, tutorials, and product suggestions.",
     instruction=diy_agent_instructions(),

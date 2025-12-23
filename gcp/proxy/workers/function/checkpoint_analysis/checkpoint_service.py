@@ -145,7 +145,7 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
 
     logger.info(f"Sending checkpoint {media_type} to Gemini for analysis...")
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
+        model="gemini-2.5-flash",
         contents=contents,
         config={
             "temperature": 0.4,

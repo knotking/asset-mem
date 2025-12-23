@@ -85,7 +85,7 @@ def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[st
     )
 
 user_docs_agent = Agent(
-    model='gemini-3-flash-preview',
+    model='gemini-2.5-flash',
     name='ask_user_docs_agent',
     instruction=user_docs_agent_instruction(),
     input_schema=DocsInput,
