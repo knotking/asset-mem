@@ -478,8 +478,8 @@ FIREBASE_WEBHOOK_SECRET=your-secret
 ## Related Documentation
 
 - [Vertex AI Gemini Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
-- [mapp Document Analysis](../../apps/mapp/docs/DOCUMENT_ANALYSIS.md)
-- [common extract-doc-info](../../apps/common/src/ai/flows/extract-doc-info.ts)
+- [mapp Document Analysis](../../../../apps/mapp/docs/DOCUMENT_ANALYSIS.md)
+- [common extract-doc-info](../../../../apps/common/src/ai/flows/extract-doc-info.ts)
 
 ## Support
 

@@ -1304,7 +1304,7 @@ In `apps/mapp/app/(tabs)/home/property-details/index.tsx`:
 - **Files**:
   - `gcp/proxy/api/services/checkpoint_service.py` - Publishes to Pub/Sub
   - `gcp/proxy/workers/function/checkpoint_analysis/main.py` - Cloud Function handler
-  - `gcp/proxy/docs/CHECKPOINT_ANALYSIS_API.md` - API documentation
+  - `gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md` - API documentation
 
 ## Phase 9: Automatic Room/Area Detection (COMPLETED)
 

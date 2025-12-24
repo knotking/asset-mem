@@ -71,10 +71,18 @@ The GCP directory contains a comprehensive AI-powered property care system built
 ┌─────────────────────────────────────────────────────────────────────────┐
 │              Background Workers (Cloud Functions)                       │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  pubsub_to_user_docs                                             │  │
-│  │  - Triggered by user-upload-topic                                 │  │
-│  │  - Imports files to Vertex AI RAG Corpus                         │  │
-│  │  - Publishes results to user-upload-result-topic                  │  │
+│  │  1. pubsub_to_user_docs                                          │  │
+│  │     - Triggered by user-upload-topic                             │  │
+│  │     - Imports files to RAG Corpus                                │  │
+│  │                                                                  │  │
+│  │  2. pubsub_checkpoint_analysis                                   │  │
+│  │     - Triggered by checkpoint-analysis-topic                     │  │
+│  │     - Analyzes images with Gemini Vision                         │  │
+│  │     - Performs room detection and comparison                     │  │
+│  │                                                                  │  │
+│  │  3. pubsub_checkpoint_metrics                                    │  │
+│  │     - Triggered by checkpoint-metrics-topic                      │  │
+│  │     - Aggregates property condition stats                        │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -281,23 +289,23 @@ FastAPI-based API gateway that provides unified access to the agent system from 
 
 **Deployment:** Google Cloud Functions (Gen2)
 
-**Worker Function:** `pubsub_to_user_docs`
+**Worker 1: `pubsub_to_user_docs`**
+- **Purpose:** Processes file uploads asynchronously by importing them to Vertex AI RAG Corpus.
+- **Trigger:** `user-upload-topic` Pub/Sub messages.
 
-**Purpose:** Processes file uploads asynchronously by importing them to Vertex AI RAG Corpus.
+**Worker 2: `pubsub_checkpoint_analysis`**
+- **Purpose:** Analyzes property checkpoint images.
+- **Trigger:** `checkpoint-analysis-topic` Pub/Sub messages.
+- **Capabilities:**
+  - Image analysis using Gemini 2.5 Flash
+  - Room/Area detection
+  - Condition assessment
+  - Automatic comparison with previous checkpoints
 
-**Workflow:**
-1. Triggered by `user-upload-topic` Pub/Sub messages
-2. Receives GCS URLs, user_id, user_query
-3. Separates documents from media files
-4. Imports documents to RAG corpus with default parser
-5. Imports media files with custom parsing prompt
-6. Publishes results to `user-upload-result-topic`
-
-**Key Features:**
-- Handles document and media files separately
-- Custom parsing prompts for media (images, videos)
-- Result tracking and error handling
-- Async processing to prevent API timeouts
+**Worker 3: `pubsub_checkpoint_metrics`**
+- **Purpose:** Aggregates property-level metrics based on checkpoint data.
+- **Trigger:** `checkpoint-metrics-topic` Pub/Sub messages.
+- **Outputs:** Condition scores, issue summaries, and deterioration trends.
 
 ### 3. Common Libraries (`gcp/common/`)
 
@@ -481,6 +489,36 @@ Infrastructure as Code using Terraform for managing GCP resources.
    └─> Background thread listens to result topic
        └─> Processes completion events
            └─> Can notify clients or update state
+```
+
+### Checkpoint Analysis Flow
+
+```
+1. Client Action
+   └─> User creates checkpoint in Mobile App
+       └─> Uploads image to Storage
+           └─> POST /analyze-checkpoint
+
+2. Proxy API Handler
+   └─> Validates request
+       └─> Publishes to checkpoint-analysis-topic
+           └─> Returns 202 Accepted immediately
+
+3. Analysis Worker (Cloud Function)
+   └─> Triggered by Pub/Sub
+       └─> Calls Gemini 2.5 Flash for analysis
+           └─> Detects room type and assets
+               └─> Performs comparison with previous checkpoint (if applicable)
+                   └─> Writes results to Firestore
+
+4. Metrics Worker (Cloud Function)
+   └─> Triggered by analysis completion
+       └─> Aggregates metrics for property
+           └─> Updates property summary in Firestore
+
+5. Real-time UI Update
+   └─> Mobile App listens to Firestore document
+       └─> UI updates automatically when analysis completes
 ```
 
 ### Telegram Message Flow

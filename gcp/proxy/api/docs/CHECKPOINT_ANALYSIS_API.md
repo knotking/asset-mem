@@ -345,6 +345,6 @@ gcloud functions deploy pubsub_checkpoint_analysis \
 
 ## Related Documentation
 
-- [Workers README](../workers/README.md) - Background workers documentation
+- [Workers README](../../workers/README.md) - Background workers documentation
 - [Adding Functions](./ADDING_FUNCTIONS.md) - Guide for adding new API endpoints
-- [Architecture](./ARCHITECTURE.md) - System architecture overview
+- [Architecture](../../docs/ARCHITECTURE.md) - System architecture overview

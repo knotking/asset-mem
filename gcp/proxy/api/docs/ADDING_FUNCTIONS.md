@@ -330,7 +330,7 @@ gcloud run deploy homecare-agent-proxy --source .
 
 ## Related Documentation
 
-- [GCP Proxy README](../README.md)
+- [GCP Proxy README](../../README.md)
 - [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
 ```
 
@@ -536,7 +536,7 @@ After adding your function:
 
 ## Related Documentation
 
-- [GCP Proxy README](../README.md)
+- [GCP Proxy README](../../README.md)
 - [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
 - [Service Broker API](./SERVICE_BROKER_API.md)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)

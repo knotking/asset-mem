@@ -18,7 +18,7 @@ This repository contains the complete source code for the HomeApp platform, a co
 The monorepo is organized into two main areas:
 
 -   **Frontend Applications (`apps/`)**:
-    -   `mapp`: Mobile application built with React Native and Expo.
+    -   `mapp`: Mobile application built with React Native and Expo. Features include AI-powered property diagnostics, visual checkpoints timeline, and document management.
     -   `webapp`: Web application built with Next.js.
     -   `common`: Shared TypeScript library, types, and Firebase configuration.
 

@@ -345,7 +345,7 @@ gcloud run deploy homecare-agent-proxy \
 
 ## Related Documentation
 
-- [GCP Proxy README](../README.md)
+- [GCP Proxy README](../../README.md)
 - [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
-- [Firebase API](./firebase_api.py)
+- [Firebase API](../routers/agent.py)
 

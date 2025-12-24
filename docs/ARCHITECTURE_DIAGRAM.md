@@ -71,15 +71,16 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │  │   │                  │                           │               │               │   │
 │  │   │     ┌────────────┴────────────┐              │               ▼               │   │
 │  │   │     ▼                         ▼              │   ┌──────────────────────┐   │   │
-│  │   │  ┌──────────────┐   ┌──────────────────┐    │   │  Cloud Function      │   │   │
-│  │   │  │  DOCULINK    │   │    ANALYSIS      │    │   │  (RAG Import Worker) │   │   │
-│  │   │  │  AGENT       │   │    AGENT         │    │   │                      │   │   │
-│  │   │  │              │   │                  │    │   │  Imports documents   │   │   │
-│  │   │  │  Document    │   │  Multimodal      │    │   │  into RAG corpus     │   │   │
-│  │   │  │  Q&A         │   │  Diagnostics     │    │   └──────────┬───────────┘   │   │
-│  │   │  │              │   │                  │    │              │               │   │
-│  │   │  └───────┬──────┘   └──────────────────┘    │              │               │   │
-│  │   │          │                                   │              │               │   │
+│  │   │  ┌──────────────┐   ┌──────────────────┐    │   │  Cloud Functions     │   │   │
+│  │   │  │  DOCULINK    │   │    ANALYSIS      │    │   │                      │   │   │
+│  │   │  │  AGENT       │   │    AGENT         │    │   │  1. RAG Import       │   │   │
+│  │   │  │              │   │                  │    │   │     Worker           │   │   │
+│  │   │  │  Document    │   │  Multimodal      │    │   │                      │   │   │
+│  │   │  │  Q&A         │   │  Diagnostics     │    │   │  2. Checkpoint       │   │   │
+│  │   │  │              │   │                  │    │   │     Analysis Worker  │   │   │
+│  │   │  └───────┬──────┘   └──────────────────┘    │   │                      │   │   │
+│  │   │          │                                   │   │  3. Metrics Worker   │   │   │
+│  │   │   ┌──────┴──────┐                           │   └──────────┬───────────┘   │   │
 │  │   │   ┌──────┴──────┐                           │              │               │   │
 │  │   │   ▼             ▼                           │              │               │   │
 │  │   │ ┌──────────┐ ┌─────────────────┐            │              │               │   │
@@ -128,7 +129,8 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │   │                 │  │                 │  │    Config       │                 │
 │   │  • AuthContext  │  │  • Property     │  │                 │                 │
 │   │  • Session      │  │  • Session      │  │  • Web adapter  │                 │
-│   │  • Property     │  │  • Message      │  │  • Native adapt │                 │
+│   │  • Property     │  │  • Checkpoint   │  │  • Native adapt │                 │
+│   │  • Checkpoint   │  │  • Message      │  │                 │                 │
 │   │  • Messages     │  │  • User         │  │                 │                 │
 │   │  • Documents    │  │  • Document     │  │                 │                 │
 │   └─────────────────┘  └─────────────────┘  └─────────────────┘                 │
@@ -308,6 +310,44 @@ A visual representation of the HomeApp platform architecture, showing the relati
       │                       │                    │ JSON response         │
       │◄──────────────────────┤                    │                       │
       │  Display response     │                    │                       │
+      │                       │                    │                       │
+```
+
+---
+
+### Checkpoint Analysis Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         CHECKPOINT ANALYSIS FLOW                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    User                  Client App              API               Background Workers
+      │                       │                    │                       │
+      │  Create Checkpoint    │                    │                       │
+      ├──────────────────────►│                    │                       │
+      │                       │                    │                       │
+      │                       │ POST /analyze      │                       │
+      │                       ├───────────────────►│                       │
+      │                       │                    │                       │
+      │                       │                    │ Publish to Pub/Sub    │
+      │                       │                    ├──────────────────────►│
+      │                       │                    │                       │
+      │                       │                    │        ┌──────────────┤
+      │                       │                    │        │ Analysis Fn  │
+      │                       │                    │        │ triggers     │
+      │                       │                    │        │              │
+      │                       │                    │        │ calls Vertex │
+      │                       │                    │        │ AI Vision    │
+      │                       │                    │        │              │
+      │                       │                    │        │ Writes to    │
+      │                       │                    │        │ Firestore    │
+      │                       │                    │        └──────────────┤
+      │                       │                    │                       │
+      │◄──────────────────────┤                    │                       │
+      │  Firestore Listener   │                    │                       │
+      │  Updates UI           │                    │                       │
+      │                       │                    │                       │
       │                       │                    │                       │
 ```
 
