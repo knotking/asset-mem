@@ -189,14 +189,17 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
         onLocationDataChange?.(undefined);
       }
     } else if (type === 'location') {
-      // Keep existing coordinates if available, otherwise prompt for location
-      if (locationData?.locationCoordinates) {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: locationData.locationCoordinates,
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
+      const hasCoordinates = !!locationData?.locationCoordinates;
+      const newLocationData: LocationData = {
+        locationType: 'location',
+        locationCoordinates: locationData?.locationCoordinates,
+        locationRadius: locationRadius,
+      };
+      
+      onLocationDataChange?.(newLocationData);
+
+      if (!hasCoordinates) {
+        handleGetCurrentLocation();
       }
     }
   };
