@@ -274,20 +274,17 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         onLocationDataChange?.(undefined);
       }
     } else if (type === 'location') {
-      const hasCoordinates = !!locationData?.locationCoordinates;
-      const newLocationData: LocationData = {
-        locationType: 'location',
-        locationCoordinates: locationData?.locationCoordinates,
-        locationRadius: locationRadius,
-      };
-      
-      onLocationDataChange?.(newLocationData);
-
-      if (!hasCoordinates) {
-        handleGetCurrentLocation();
+      // Keep existing coordinates if available, otherwise prompt for location
+      if (locationData?.locationCoordinates) {
+        const newLocationData: LocationData = {
+          locationType: 'location',
+          locationCoordinates: locationData.locationCoordinates,
+          locationRadius: locationRadius,
+        };
+        onLocationDataChange?.(newLocationData);
       }
     }
-  }, [propertyAddress, locationRadius, locationData, onLocationDataChange, handleGetCurrentLocation]);
+  }, [propertyAddress, locationRadius, locationData, onLocationDataChange]);
 
   const handleRadiusChange = React.useCallback((radius: number) => {
     setLocationRadius(radius);
