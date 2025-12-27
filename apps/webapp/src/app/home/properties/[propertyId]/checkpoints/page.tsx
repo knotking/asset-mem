@@ -1,116 +1,24 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Search, AlertTriangle, Calendar, MapPin, Camera } from 'lucide-react';
-import type { Checkpoint } from '@/lib/types';
-import { format } from 'date-fns';
-import Image from 'next/image';
+import { Plus, Search } from 'lucide-react';
+import { CheckpointCard } from '@/components/checkpoints/checkpoint-card';
+import { PropertyMetricsCard } from '@/components/checkpoints/property-metrics-card';
+import { CreateCheckpointDialog } from '@/components/checkpoints/create-checkpoint-dialog';
+import { CheckpointDetailDialog } from '@/components/checkpoints/checkpoint-detail-dialog';
+import { CheckpointComparisonDialog } from '@/components/checkpoints/checkpoint-comparison-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const placeholderCheckpointsData: Omit<Checkpoint, 'createdAt'>[] = [
-  {
-    id: '1',
-    propertyId: 'placeholder',
-    userId: 'placeholder',
-    title: 'Property Walkthrough',
-    description: 'Initial inspection of suburban home',
-    location: 'Overall',
-    condition: 'fair',
-    tags: ['inspection', 'baseline'],
-    media: [
-        {
-            id: 'media1',
-            url: 'https://images.unsplash.com/photo-1570905810373-a8ae44f954cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdWJ1cmJhbiUyMGhvdXNlJTIwZXh0ZXJpb3J8ZW58MXx8fHwxNzU3ODkwMDQ4fDA&ixlib=rb-4.1.0&q=80&w=1080',
-            type: 'image',
-            caption: 'Older home needs some attention. Foundation appears solid.'
-        }
-    ]
-  },
-];
-
-function CheckpointCard({ checkpoint }: { checkpoint: Checkpoint }) {
-    const conditionVariant = {
-        good: 'bg-green-100 text-green-800 border-green-200',
-        fair: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        poor: 'bg-red-100 text-red-800 border-red-200',
-        needs_attention: 'bg-orange-100 text-orange-800 border-orange-200',
-    };
-
-    return (
-        <Card>
-            <CardContent className="p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="font-semibold text-foreground">{checkpoint.title}</h3>
-                            <p className="text-sm text-muted-foreground">{checkpoint.description}</p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                                <div className="flex items-center gap-1.5">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{checkpoint.createdAt ? format(checkpoint.createdAt, 'MMM dd, yyyy, hh:mm a') : '...'}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{checkpoint.location}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={conditionVariant[checkpoint.condition]}>
-                            {checkpoint.condition}
-                        </Badge>
-                        {checkpoint.tags.map(tag => (
-                            <Badge key={tag} variant="outline">{tag}</Badge>
-                        ))}
-                    </div>
-                </div>
-
-                {checkpoint.media.length > 0 && (
-                    <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
-                        <p className="text-sm font-medium flex items-center gap-2">
-                            <Camera className="h-4 w-4" /> Media ({checkpoint.media.length})
-                        </p>
-                        <div className="space-y-4">
-                            {checkpoint.media.map(mediaItem => (
-                                <div key={mediaItem.id} className="space-y-2">
-                                    <div className="relative aspect-[4/3] w-full max-w-lg mx-auto overflow-hidden rounded-lg">
-                                        <Image src={mediaItem.url} alt={mediaItem.caption || checkpoint.title} fill className="object-cover" data-ai-hint="house night" />
-                                    </div>
-                                    {mediaItem.caption && <p className="text-sm text-muted-foreground text-center px-4">{mediaItem.caption}</p>}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-function StatItem({ value, label }: { value: number | string, label: string }) {
-    return (
-        <div className="flex-1 text-center px-4 py-6 bg-card border rounded-lg">
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-    );
-}
+import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 function CheckpointsPageSkeleton() {
     return (
         <div className="h-full flex flex-col">
             <div className="p-6 md:p-8 flex-1">
-                <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
                     <header className="mb-8">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                             <div>
@@ -120,64 +28,153 @@ function CheckpointsPageSkeleton() {
                             <Skeleton className="h-10 w-40" />
                         </div>
                     </header>
-                    <div className="mb-6 p-4 rounded-lg border bg-card flex flex-col sm:flex-row gap-4">
-                        <Skeleton className="h-10 flex-1" />
-                        <Skeleton className="h-10 w-[180px]" />
-                        <Skeleton className="h-10 w-[180px]" />
-                    </div>
-                    <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <Skeleton className="h-64 w-full" />
                         <Skeleton className="h-64 w-full" />
                     </div>
-                </div>
+            <div>
+              <Skeleton className="h-96 w-full" />
             </div>
-            <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t">
-                <div className="max-w-5xl mx-auto p-4 flex gap-4">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 flex-1" />)}
-                </div>
-            </footer>
+          </div>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
 
-function PropertyCheckpointsContent() {
-    const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [locationFilter, setLocationFilter] = useState('all');
-    const [conditionFilter, setConditionFilter] = useState('all');
-    const [isClient, setIsClient] = useState(false);
+function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 px-6 border-2 border-dashed rounded-lg">
+      <div className="text-center space-y-4">
+        <div className="h-16 w-16 rounded-full bg-muted mx-auto flex items-center justify-center">
+          <Plus className="h-8 w-8 text-muted-foreground" />
+                </div>
+        <div className="space-y-2">
+          <h3 className="font-semibold text-lg">No checkpoints yet</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Start documenting your property condition by creating your first checkpoint. Upload
+            photos and get AI-powered analysis.
+          </p>
+        </div>
+        <Button onClick={onCreateClick}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create First Checkpoint
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-    useEffect(() => {
-        setIsClient(true);
-        // Add createdAt date on the client to avoid hydration mismatch
-        setCheckpoints(placeholderCheckpointsData.map(c => ({
-            ...c,
-            createdAt: new Date('2024-01-20T05:30:00Z'),
-        })));
-    }, []);
-    
-    if (!isClient) {
+export default function PropertyCheckpointsPage() {
+  const {
+    checkpoints,
+    loading,
+    hasMoreCheckpoints,
+    isLoadingEarlier,
+    loadMoreCheckpoints,
+    selectedCheckpoint,
+    setSelectedCheckpoint,
+  } = useCheckpoint();
+
+    const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'insights' | 'select'>('insights');
+  const [selectedCheckpointIds, setSelectedCheckpointIds] = useState<string[]>([]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
+
+  // Filter checkpoints by search term
+  const filteredCheckpoints = checkpoints.filter((checkpoint) => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      checkpoint.name?.toLowerCase().includes(search) ||
+      checkpoint.description?.toLowerCase().includes(search) ||
+      checkpoint.location?.toLowerCase().includes(search)
+    );
+  });
+
+  const handleCheckpointClick = (checkpointId: string) => {
+    const checkpoint = checkpoints.find((c) => c.id === checkpointId);
+    if (checkpoint) {
+      setSelectedCheckpoint(checkpoint);
+      setDetailDialogOpen(true);
+    }
+  };
+
+  const handleSelectionChange = (checkpointId: string, selected: boolean) => {
+    setSelectedCheckpointIds((prev) => {
+      if (selected) {
+        // Limit to 2 selections for comparison
+        if (prev.length >= 2) {
+          return [prev[1], checkpointId];
+        }
+        return [...prev, checkpointId];
+      }
+      return prev.filter((id) => id !== checkpointId);
+    });
+  };
+
+  const handleCompare = () => {
+    if (selectedCheckpointIds.length === 2) {
+      setComparisonDialogOpen(true);
+    }
+  };
+
+  const selectedCheckpointsForComparison = selectedCheckpointIds
+    .map((id) => checkpoints.find((c) => c.id === id))
+    .filter(Boolean) as [Checkpoint, Checkpoint] | [];
+
+  const [beforeCheckpoint, afterCheckpoint] =
+    selectedCheckpointsForComparison.length === 2
+      ? selectedCheckpointsForComparison[0].createdAt < selectedCheckpointsForComparison[1].createdAt
+        ? selectedCheckpointsForComparison
+        : [selectedCheckpointsForComparison[1], selectedCheckpointsForComparison[0]]
+      : [null, null];
+
+  const handleClearSelection = () => {
+    setSelectedCheckpointIds([]);
+  };
+
+  if (loading) {
         return <CheckpointsPageSkeleton />;
     }
 
     return (
         <div className="h-full flex flex-col">
-            <div className="p-6 md:p-8 flex-1">
-                <div className="max-w-5xl mx-auto">
+      <div className="p-6 md:p-8 flex-1 overflow-auto">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
                     <header className="mb-8">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                             <div>
                                 <h1 className="text-2xl font-bold text-foreground">Property Timeline</h1>
-                                <p className="text-muted-foreground">Visual history of property condition with photos and documentation</p>
+                <p className="text-muted-foreground">
+                  Visual history of property condition with AI-powered analysis
+                </p>
                             </div>
-                            <Button>
+              <Button onClick={() => setCreateDialogOpen(true)}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Checkpoint
                             </Button>
                         </div>
                     </header>
 
-                    <div className="mb-6 p-4 rounded-lg border bg-card flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
+          {checkpoints.length === 0 ? (
+            <EmptyState onCreateClick={() => setCreateDialogOpen(true)} />
+          ) : (
+            <div>
+              {/* Tabs for Insights vs Select mode */}
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'insights' | 'select')}>
+                <div className="flex items-center justify-between mb-6">
+                  <TabsList>
+                    <TabsTrigger value="insights">Insights</TabsTrigger>
+                    <TabsTrigger value="select">Select</TabsTrigger>
+                  </TabsList>
+
+                  {/* Search */}
+                  <div className="relative w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search checkpoints..."
@@ -186,53 +183,127 @@ function PropertyCheckpointsContent() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Select value={locationFilter} onValueChange={setLocationFilter}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
-                                <SelectValue placeholder="All Locations" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Locations</SelectItem>
-                            </SelectContent>
-                        </Select>
-                         <Select value={conditionFilter} onValueChange={setConditionFilter}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
-                                <SelectValue placeholder="All Conditions" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Conditions</SelectItem>
-                                <SelectItem value="good">Good</SelectItem>
-                                <SelectItem value="fair">Fair</SelectItem>
-                                <SelectItem value="poor">Poor</SelectItem>
-                                <SelectItem value="needs_attention">Needs Attention</SelectItem>
-                            </SelectContent>
-                        </Select>
+                </div>
+
+                <TabsContent value="insights" className="mt-0">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Checkpoints List */}
+                    <div className="lg:col-span-2 space-y-4">
+                      {filteredCheckpoints.map((checkpoint) => (
+                        <CheckpointCard
+                          key={checkpoint.id}
+                          checkpoint={checkpoint}
+                          onClick={() => handleCheckpointClick(checkpoint.id)}
+                        />
+                      ))}
+
+                      {hasMoreCheckpoints && (
+                        <div className="py-4">
+                          <Button
+                            variant="outline"
+                            onClick={loadMoreCheckpoints}
+                            disabled={isLoadingEarlier}
+                            className="w-full"
+                          >
+                            {isLoadingEarlier ? 'Loading...' : 'Load More Checkpoints'}
+                          </Button>
+                        </div>
+                      )}
+
+                      {!hasMoreCheckpoints && checkpoints.length > 20 && (
+                        <div className="py-4">
+                          <p className="text-center text-sm text-muted-foreground">
+                            No more checkpoints to load
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                     <div className="space-y-6">
-                        {checkpoints.length > 0 ? (
-                            checkpoints.map(checkpoint => <CheckpointCard key={checkpoint.id} checkpoint={checkpoint} />)
-                        ) : (
-                             <div className="text-center py-20 px-6 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">No checkpoints recorded for this property yet.</p>
+                    {/* Metrics Sidebar */}
+                    <div>
+                      <PropertyMetricsCard />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="select" className="mt-0">
+                  <div className="space-y-4">
+                    {/* Selection toolbar */}
+                    {selectedCheckpointIds.length > 0 && (
+                      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary">
+                            {selectedCheckpointIds.length} selected
+                          </Badge>
+                          <Button
+                            size="sm"
+                            onClick={handleCompare}
+                            disabled={selectedCheckpointIds.length !== 2}
+                          >
+                            Compare Selected
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearSelection}
+                          >
+                            Clear Selection
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Select exactly 2 checkpoints to compare
+                        </p>
                             </div>
                         )}
+
+                    {/* Checkpoints grid with selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredCheckpoints.map((checkpoint) => (
+                        <CheckpointCard
+                          key={checkpoint.id}
+                          checkpoint={checkpoint}
+                          selectionMode={true}
+                          isSelected={selectedCheckpointIds.includes(checkpoint.id)}
+                          onSelectionChange={(selected) =>
+                            handleSelectionChange(checkpoint.id, selected)
+                          }
+                        />
+                      ))}
                     </div>
+
+                    {hasMoreCheckpoints && (
+                      <div className="py-4">
+                        <Button
+                          variant="outline"
+                          onClick={loadMoreCheckpoints}
+                          disabled={isLoadingEarlier}
+                          className="w-full"
+                        >
+                          {isLoadingEarlier ? 'Loading...' : 'Load More Checkpoints'}
+                        </Button>
+                      </div>
+                    )}
                 </div>
+                </TabsContent>
+              </Tabs>
             </div>
-
-            <footer className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t">
-                <div className="max-w-5xl mx-auto p-4 flex gap-4">
-                    <StatItem value={1} label="Total" />
-                    <StatItem value={1} label="Photos" />
-                    <StatItem value={1} label="Locations" />
-                    <StatItem value={0} label="Good+" />
-                    <StatItem value={0} label="Needs Attention" />
-                </div>
-            </footer>
+          )}
         </div>
-    );
-}
+      </div>
 
-export default function PropertyCheckpointsPage() {
-    return <PropertyCheckpointsContent />;
+      {/* Dialogs */}
+      <CreateCheckpointDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <CheckpointDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        checkpoint={selectedCheckpoint}
+      />
+      <CheckpointComparisonDialog
+        open={comparisonDialogOpen}
+        onOpenChange={setComparisonDialogOpen}
+        checkpoint1={beforeCheckpoint}
+        checkpoint2={afterCheckpoint}
+      />
+    </div>
+  );
 }

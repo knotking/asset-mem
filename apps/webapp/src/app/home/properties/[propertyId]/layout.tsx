@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { UploadDialogProvider, useUploadDialog } from '@/contexts/upload-dialog-context';
 import { PropertyDocumentsProvider } from '@/contexts/property-documents-context';
 import { AddressConfirmationProvider } from '@/contexts/address-confirmation-context';
+import { CheckpointProvider } from '@homeapp/common/contexts/checkpoint-context';
 
 
 function PropertyTabs() {
@@ -36,9 +37,9 @@ function PropertyTabs() {
     const tabs = [
         { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat' },
         { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details'},
+        { name: 'Checkpoints', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints' },
         // { name: 'Services', href: '#', segment: 'services' },
         // { name: 'Providers', href: '#', segment: 'providers' },
-        // { name: 'Checkpoints', href: '#', segment: 'checkpoints' },
     ];
 
     return (
@@ -251,11 +252,13 @@ export default function PropertyChatLayout({
     <SessionProvider>
       <PropertyProvider>
         <PropertyDocumentsProvider>
-          <UploadDialogProvider>
-            <AddressConfirmationProvider>
-                <LayoutWithDialog>{children}</LayoutWithDialog>
-            </AddressConfirmationProvider>
-          </UploadDialogProvider>
+          <CheckpointProvider>
+            <UploadDialogProvider>
+              <AddressConfirmationProvider>
+                  <LayoutWithDialog>{children}</LayoutWithDialog>
+              </AddressConfirmationProvider>
+            </UploadDialogProvider>
+          </CheckpointProvider>
         </PropertyDocumentsProvider>
       </PropertyProvider>
     </SessionProvider>
