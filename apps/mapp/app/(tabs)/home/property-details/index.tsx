@@ -41,13 +41,6 @@ import { useSessionSelection } from '@/hooks/useSessionSelection';
 import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react-native';
 
 export default function PropertyDetailsScreen() {
   const {
@@ -613,7 +606,7 @@ function PropertyDetailsScreenContent({
   db,
   storage,
 }: any) {
-  const { checkpoints, deleteCheckpoint } = useCheckpoint();
+  const { checkpoints } = useCheckpoint();
   const property = properties.find((p: any) => p.id === id);
 
   const [selectedCheckpointForDetail, setSelectedCheckpointForDetail] = React.useState<Checkpoint | null>(null);
@@ -623,31 +616,9 @@ function PropertyDetailsScreenContent({
     setCheckpointsDrawerVisible(false);
   };
 
-  const handleNewAddition = (checkpoint?: Checkpoint) => {
+  const handleNewAddition = (checkpoint: Checkpoint) => {
     setErrorMessage('Adding new media to existing checkpoints is coming soon!');
     setErrorAlertOpen(true);
-  };
-
-  const handleDeleteCheckpoints = async () => {
-    if (selectedCheckpoints.length === 0) return;
-    try {
-      await Promise.all(selectedCheckpoints.map((cp: Checkpoint) => deleteCheckpoint(cp.id)));
-      setSelectedCheckpoints([]);
-    } catch (error) {
-      console.error('Error deleting checkpoints:', error);
-      setErrorMessage('Failed to delete checkpoints');
-      setErrorAlertOpen(true);
-    }
-  };
-
-  const handleAnalyzeCheckpoints = () => {
-    if (selectedCheckpoints.length === 0) {
-        setErrorMessage('Please select at least one checkpoint to analyze.');
-        setErrorAlertOpen(true);
-        return;
-    }
-    setPrimaryAgent('analysis');
-    setActiveTab('chat');
   };
 
   // Smart checkpoint selection: Auto-select when checkpoint agent is active
@@ -678,9 +649,12 @@ function PropertyDetailsScreenContent({
       if (selectedCheckpoints.length === 0 && !hasManuallyInteracted) {
         setSelectedCheckpoints(checkpoints);
       }
+    } else if (primaryAgent === 'analysis') {
+      // Clear checkpoints when switching to analysis agent
+      if (selectedCheckpoints.length > 0) {
+        setSelectedCheckpoints([]);
+      }
     }
-    // Removed auto-clearing of checkpoints when switching to analysis agent
-    // to allow "Analyze" feature to work with selected checkpoints
   }, [primaryAgent, checkpoints, selectedCheckpoints.length, hasManuallyInteracted, setSelectedCheckpoints]);
 
   if (!property) {
@@ -819,46 +793,6 @@ function PropertyDetailsScreenContent({
                               </View>
                             )}
                           </>
-                        )}
-                        {activeTab === 'checkpoints' && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Icon as={MoreVertical} size={20} className="text-foreground" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onPress={() => {
-                                  if (selectedCheckpoints.length === 1) {
-                                    handleShowInsights(selectedCheckpoints[0]);
-                                  } else {
-                                    setErrorMessage('Please select exactly one checkpoint to view insights.');
-                                    setErrorAlertOpen(true);
-                                  }
-                                }}>
-                                <Text>View insights</Text>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onPress={() => {
-                                  if (selectedCheckpoints.length === 1) {
-                                    handleNewAddition(selectedCheckpoints[0]);
-                                  } else {
-                                    handleNewAddition();
-                                  }
-                                }}>
-                                <Text>Add New</Text>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onPress={handleAnalyzeCheckpoints}>
-                                <Text>Analyze</Text>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onPress={handleDeleteCheckpoints}
-                                destructive>
-                                <Text>Delete</Text>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         )}
                       </View>
                     </View>
