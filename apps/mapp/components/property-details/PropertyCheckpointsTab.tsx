@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
+import { CheckpointAnalysisModal } from './CheckpointAnalysisModal';
 import * as ImagePicker from 'expo-image-picker';
 
 import { analyzeCheckpoint } from '../../lib/api';
@@ -449,7 +450,15 @@ function CheckpointCard({
   );
 }
 
-export function PropertyCheckpointsTab() {
+interface PropertyCheckpointsTabProps {
+  isCreateModalVisible: boolean;
+  setIsCreateModalVisible: (visible: boolean) => void;
+}
+
+export function PropertyCheckpointsTab({ 
+  isCreateModalVisible, 
+  setIsCreateModalVisible 
+}: PropertyCheckpointsTabProps) {
   const {
     checkpoints,
     loading,
@@ -458,19 +467,24 @@ export function PropertyCheckpointsTab() {
     loadMoreCheckpoints,
     createCheckpoint,
     updateCheckpoint,
+    deleteCheckpoint,
   } = useCheckpoint();
   const { user } = useAuth();
   const { property } = useProperty();
-  const [isCreateModalVisible, setIsCreateModalVisible] = React.useState(false);
+  
+  // Sub-tab state
+  const [activeSubTab, setActiveSubTab] = React.useState<'insights' | 'select'>('insights');
+  
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
   const [isIssuesModalVisible, setIsIssuesModalVisible] = React.useState(false);
   const [issuesFilter, setIssuesFilter] = React.useState<IssueSeverity | 'all'>('all');
 
-  // Comparison State
-  const [isSelectionMode, setIsSelectionMode] = React.useState(false);
-  const [selectedForComparison, setSelectedForComparison] = React.useState<string[]>([]);
+  // Selection State (always active in 'select' sub-tab)
+  const [selectedForActions, setSelectedForActions] = React.useState<string[]>([]);
   const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
+  const [isAnalysisModalVisible, setIsAnalysisModalVisible] = React.useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 
   const handleCreateCheckpoint = async (data: {
     name: string;
@@ -540,33 +554,52 @@ export function PropertyCheckpointsTab() {
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {
-    if (isSelectionMode) {
-      setSelectedForComparison((prev) => {
+    if (activeSubTab === 'select') {
+      // Toggle selection
+      setSelectedForActions((prev) => {
         if (prev.includes(checkpoint.id)) {
           return prev.filter((id) => id !== checkpoint.id);
         } else {
-          if (prev.length >= 2) {
-            // Replace the first one if already 2 selected (FIFO-ish for selection)
-            // Or just prevent selecting more than 2. Let's prevent > 2 for clarity.
-            return prev;
-          }
           return [...prev, checkpoint.id];
         }
       });
     } else {
+      // Open detail modal
       setSelectedCheckpoint(checkpoint);
       setIsDetailModalVisible(true);
     }
   };
 
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    setSelectedForComparison([]);
+  const handleClearSelection = () => {
+    setSelectedForActions([]);
   };
 
   const handleCompare = () => {
-    if (selectedForComparison.length === 2) {
+    if (selectedForActions.length === 2) {
       setIsComparisonModalVisible(true);
+    }
+  };
+  
+  const handleAnalyze = () => {
+    if (selectedForActions.length > 0) {
+      setIsAnalysisModalVisible(true);
+    }
+  };
+  
+  const handleDeleteSelected = () => {
+    if (selectedForActions.length > 0) {
+      setIsDeleteConfirmOpen(true);
+    }
+  };
+  
+  const confirmDelete = async () => {
+    try {
+      // Delete all selected checkpoints
+      await Promise.all(selectedForActions.map(id => deleteCheckpoint(id)));
+      setSelectedForActions([]);
+      setIsDeleteConfirmOpen(false);
+    } catch (error) {
+      console.error('Failed to delete checkpoints', error);
     }
   };
 
@@ -574,105 +607,155 @@ export function PropertyCheckpointsTab() {
     return <CheckpointsTabSkeleton />;
   }
 
+  // Empty state (no checkpoints)
+  if (checkpoints.length === 0) {
+    return (
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
+        <Card className="mb-4 border-dashed border-border">
+          <View className="px-4 py-1">
+            <View className="mb-2 flex-row items-center gap-2">
+              <Icon as={Info} size={18} className="text-primary" />
+              <Text className="text-base font-semibold text-foreground">Property Insights</Text>
+            </View>
+            <Text className="text-sm text-muted-foreground">
+              Once you create checkpoints, you'll see AI-powered insights here including:
+            </Text>
+            <View className="mt-3 gap-2">
+              <View className="flex-row items-start gap-2">
+                <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                <Text className="flex-1 text-xs text-muted-foreground">
+                  Overall condition score (0–100) based on your checkpoint photos
+                </Text>
+              </View>
+              <View className="flex-row items-start gap-2">
+                <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                <Text className="flex-1 text-xs text-muted-foreground">
+                  Change rate tracking to see if your property is improving or deteriorating
+                </Text>
+              </View>
+              <View className="flex-row items-start gap-2">
+                <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                <Text className="flex-1 text-xs text-muted-foreground">
+                  Issue detection grouped by severity (critical, major, moderate, minor)
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Card>
+        <Card
+          className="items-center"
+          style={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: 16 }}>
+          <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Icon as={Camera} size={32} className="text-primary" />
+          </View>
+          <Text className="mb-1 text-center text-lg font-semibold text-foreground">
+            No Checkpoints Yet
+          </Text>
+          <Text className="mb-3 text-center text-sm text-muted-foreground">
+            Create your first checkpoint to start tracking changes over time.
+          </Text>
+          <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
+            <View className="flex-row items-center gap-2">
+              <Icon as={Plus} size={20} className="text-primary-foreground" />
+              <Text className="text-primary-foreground">Create Checkpoint</Text>
+            </View>
+          </Button>
+        </Card>
+        
+        <CreateCheckpointModal
+          visible={isCreateModalVisible}
+          onClose={() => setIsCreateModalVisible(false)}
+          onCreate={handleCreateCheckpoint}
+        />
+      </ScrollView>
+    );
+  }
+
   return (
     <View className="flex-1">
-      {checkpoints.length === 0 ? (
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
-          <Card className="mb-4 border-dashed border-border">
-            <View className="px-4 py-1">
-              <View className="mb-2 flex-row items-center gap-2">
-                <Icon as={Info} size={18} className="text-primary" />
-                <Text className="text-base font-semibold text-foreground">Property Insights</Text>
-              </View>
-              <Text className="text-sm text-muted-foreground">
-                Once you create checkpoints, you'll see AI-powered insights here including:
-              </Text>
-              <View className="mt-3 gap-2">
-                <View className="flex-row items-start gap-2">
-                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                  <Text className="flex-1 text-xs text-muted-foreground">
-                    Overall condition score (0–100) based on your checkpoint photos
-                  </Text>
-                </View>
-                <View className="flex-row items-start gap-2">
-                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                  <Text className="flex-1 text-xs text-muted-foreground">
-                    Change rate tracking to see if your property is improving or deteriorating
-                  </Text>
-                </View>
-                <View className="flex-row items-start gap-2">
-                  <View className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                  <Text className="flex-1 text-xs text-muted-foreground">
-                    Issue detection grouped by severity (critical, major, moderate, minor)
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Card>
-          <Card
-            className="items-center"
-            style={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: 16 }}>
-            <View className="mb-1 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Icon as={Camera} size={32} className="text-primary" />
-            </View>
-            <Text className="mb-1 text-center text-lg font-semibold text-foreground">
-              No Checkpoints Yet
-            </Text>
-            <Text className="mb-3 text-center text-sm text-muted-foreground">
-              Create your first checkpoint to start tracking changes over time.
-            </Text>
-            <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
-              <View className="flex-row items-center gap-2">
-                <Icon as={Plus} size={20} className="text-primary-foreground" />
-                <Text className="text-primary-foreground">Create Checkpoint</Text>
-              </View>
-            </Button>
-          </Card>
-        </ScrollView>
-      ) : (
-        <View className="flex-1 p-4">
+      {/* Sub-tabs */}
+      <View className="flex-row border-b border-border px-4">
+        <Pressable
+          onPress={() => {
+            setActiveSubTab('insights');
+            setSelectedForActions([]);
+          }}
+          className={`flex-1 py-3 ${activeSubTab === 'insights' ? 'border-b-2 border-primary' : ''}`}>
+          <Text
+            className={`text-center font-medium ${
+              activeSubTab === 'insights' ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+            Insights
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setActiveSubTab('select')}
+          className={`flex-1 py-3 ${activeSubTab === 'select' ? 'border-b-2 border-primary' : ''}`}>
+          <Text
+            className={`text-center font-medium ${
+              activeSubTab === 'select' ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+            Select Checkpoints
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Insights Sub-tab Content */}
+      {activeSubTab === 'insights' && (
+        <ScrollView className="flex-1 p-4">
           <PropertyMetricsCard
             checkpoints={checkpoints}
             onOpenIssues={() => setIsIssuesModalVisible(true)}
           />
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-xl font-semibold text-foreground">Checkpoints</Text>
-            <View className="flex-row gap-2">
-              {isSelectionMode ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onPress={toggleSelectionMode}
-                    className="mr-2">
-                    <Text>Cancel</Text>
-                  </Button>
-                  <Button
-                    size="sm"
-                    onPress={handleCompare}
-                    disabled={selectedForComparison.length !== 2}>
-                    <Text className="text-primary-foreground">
-                      Compare ({selectedForComparison.length})
-                    </Text>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button size="sm" variant="ghost" onPress={toggleSelectionMode}>
-                    <Icon as={ArrowRightLeft} size={20} className="text-foreground" />
-                  </Button>
-                  <Button size="sm" onPress={() => setIsCreateModalVisible(true)}>
-                    <View className="flex-row items-center gap-1">
-                      <Icon as={Plus} size={16} className="text-primary-foreground" />
-                      <Text className="text-primary-foreground">Add New</Text>
-                    </View>
-                  </Button>
-                </>
-              )}
+        </ScrollView>
+      )}
+
+      {/* Select Checkpoints Sub-tab Content */}
+      {activeSubTab === 'select' && (
+        <View className="flex-1 p-4">
+          {/* Selection indicator and action buttons */}
+          {selectedForActions.length > 0 && (
+            <View className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm font-medium text-foreground">
+                  {selectedForActions.length} checkpoint{selectedForActions.length !== 1 ? 's' : ''} selected
+                </Text>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={handleClearSelection}
+                  className="h-8">
+                  <Text className="text-xs text-muted-foreground">Clear</Text>
+                </Button>
+              </View>
+              <View className="mt-2 flex-row gap-2">
+                <Button
+                  size="sm"
+                  onPress={handleCompare}
+                  disabled={selectedForActions.length !== 2}
+                  className="flex-1">
+                  <Text className="text-xs text-primary-foreground">Compare (2)</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={handleAnalyze}
+                  disabled={selectedForActions.length === 0}
+                  className="flex-1">
+                  <Text className="text-xs text-foreground">Analyze</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onPress={handleDeleteSelected}
+                  disabled={selectedForActions.length === 0}>
+                  <Icon as={X} size={14} className="text-destructive-foreground" />
+                </Button>
+              </View>
             </View>
-          </View>
+          )}
 
           <FlatList
             data={checkpoints}
@@ -681,8 +764,8 @@ export function PropertyCheckpointsTab() {
               <CheckpointCard
                 checkpoint={item}
                 onPress={handleCheckpointPress}
-                selectionMode={isSelectionMode}
-                isSelected={selectedForComparison.includes(item.id)}
+                selectionMode={true}
+                isSelected={selectedForActions.includes(item.id)}
               />
             )}
             contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
@@ -804,11 +887,44 @@ export function PropertyCheckpointsTab() {
         </View>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal visible={isDeleteConfirmOpen} transparent animationType="fade">
+        <View className="flex-1 items-center justify-center bg-black/50">
+          <View className="mx-4 w-full max-w-sm rounded-lg bg-background p-6">
+            <Text className="mb-2 text-lg font-semibold text-foreground">Delete Checkpoints</Text>
+            <Text className="mb-6 text-sm text-muted-foreground">
+              Are you sure you want to delete {selectedForActions.length} checkpoint
+              {selectedForActions.length !== 1 ? 's' : ''}? This action cannot be undone.
+            </Text>
+            <View className="flex-row gap-3">
+              <Button
+                variant="outline"
+                onPress={() => setIsDeleteConfirmOpen(false)}
+                className="flex-1">
+                <Text className="text-foreground">Cancel</Text>
+              </Button>
+              <Button
+                variant="destructive"
+                onPress={confirmDelete}
+                className="flex-1">
+                <Text className="text-destructive-foreground">Delete</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <CheckpointComparisonModal
         visible={isComparisonModalVisible}
-        checkpoint1={checkpoints.find((c) => c.id === selectedForComparison[0]) || null}
-        checkpoint2={checkpoints.find((c) => c.id === selectedForComparison[1]) || null}
+        checkpoint1={checkpoints.find((c) => c.id === selectedForActions[0]) || null}
+        checkpoint2={checkpoints.find((c) => c.id === selectedForActions[1]) || null}
         onClose={() => setIsComparisonModalVisible(false)}
+      />
+
+      <CheckpointAnalysisModal
+        visible={isAnalysisModalVisible}
+        checkpoints={checkpoints.filter(c => selectedForActions.includes(c.id))}
+        onClose={() => setIsAnalysisModalVisible(false)}
       />
     </View>
   );

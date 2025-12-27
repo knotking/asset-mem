@@ -518,3 +518,74 @@ export async function compareCheckpoints(
     throw error;
   }
 }
+
+export interface AnalyzeMultipleCheckpointsInput {
+  checkpointIds: string[];
+  userId: string;
+  propertyId: string;
+}
+
+export interface CheckpointTrend {
+  label: string;
+  value: string;
+  direction: 'up' | 'down' | 'stable';
+  description: string;
+}
+
+export interface TimelineItem {
+  checkpointId: string;
+  date: string;
+  status: 'good' | 'warning' | 'critical';
+  note: string;
+}
+
+export interface AnalyzeMultipleCheckpointsOutput {
+  summary: string;
+  trends: CheckpointTrend[];
+  recommendations: string[];
+  timeline: TimelineItem[];
+}
+
+/**
+ * Analyze multiple checkpoints to generate insights and trends
+ * Note: This is a placeholder for future backend implementation.
+ * Currently returns a structure that can be populated by the frontend.
+ */
+export async function analyzeMultipleCheckpoints(
+  input: AnalyzeMultipleCheckpointsInput
+): Promise<AnalyzeMultipleCheckpointsOutput> {
+  try {
+    // TODO: Replace with actual backend endpoint when available
+    // const url = CHECKPOINT_MULTI_ANALYSIS_URL;
+    // if (!url) {
+    //   throw new Error('CHECKPOINT_MULTI_ANALYSIS_URL not set.');
+    // }
+
+    // For now, return a structure that indicates backend support is needed
+    // The CheckpointAnalysisModal will generate mock data based on checkpoint info
+    throw new Error('Backend API for multi-checkpoint analysis not yet implemented');
+
+    // Future implementation:
+    // const response = await fetch(url, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(input),
+    // });
+
+    // if (!response.ok) {
+    //   const errorBody = await response.text();
+    //   throw new Error(
+    //     `Failed to analyze checkpoints, status: ${response.status}, body: ${errorBody}`
+    //   );
+    // }
+
+    // const data = await response.json();
+    // return data;
+  } catch (error) {
+    console.error('Error analyzing multiple checkpoints:', error);
+    throw error;
+  }
+}
+

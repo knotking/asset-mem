@@ -85,6 +85,9 @@ export default function PropertyDetailsScreen() {
   // Checkpoint selection state
   const [selectedCheckpoints, setSelectedCheckpoints] = React.useState<Checkpoint[]>([]);
 
+  // Checkpoint modal state
+  const [isCreateCheckpointModalVisible, setIsCreateCheckpointModalVisible] = React.useState(false);
+
   // Primary agent state
   const [primaryAgent, setPrimaryAgent] = React.useState<PrimaryAgent>('analysis');
 
@@ -504,6 +507,8 @@ export default function PropertyDetailsScreen() {
         setSessionsDrawerVisible={setSessionsDrawerVisible}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        isCreateCheckpointModalVisible={isCreateCheckpointModalVisible}
+        setIsCreateCheckpointModalVisible={setIsCreateCheckpointModalVisible}
         selectedSessionId={selectedSessionId}
         setSelectedSessionId={setSelectedSessionId}
         sessionsByProperty={sessionsByProperty}
@@ -566,6 +571,8 @@ function PropertyDetailsScreenContent({
   setSessionsDrawerVisible,
   activeTab,
   setActiveTab,
+  isCreateCheckpointModalVisible,
+  setIsCreateCheckpointModalVisible,
   selectedSessionId,
   setSelectedSessionId,
   sessionsByProperty,
@@ -739,6 +746,15 @@ function PropertyDetailsScreenContent({
                               <Icon as={Plus} size={20} className="text-foreground" />
                             </Button>
                           </View>
+                        )}
+                        {activeTab === 'checkpoints' && (
+                          <Button
+                            onPress={() => setIsCreateCheckpointModalVisible(true)}
+                            variant="ghost"
+                            size="icon"
+                            className="items-center justify-center">
+                            <Icon as={Plus} size={20} className="text-foreground" />
+                          </Button>
                         )}
                         {activeTab !== 'checkpoints' && (
                           <>
@@ -932,7 +948,10 @@ function PropertyDetailsScreenContent({
                       />
                     </MessagesProvider>
                   ) : activeTab === 'checkpoints' ? (
-                    <PropertyCheckpointsTab />
+                    <PropertyCheckpointsTab
+                      isCreateModalVisible={isCreateCheckpointModalVisible}
+                      setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
+                    />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
                       <PropertyDetailsTab property={property} />
