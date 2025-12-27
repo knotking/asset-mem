@@ -761,22 +761,24 @@ function PropertyDetailsScreenContent({
                                 </View>
                               )}
                             </View>
-                            <View className="relative items-center justify-center">
-                              <Button
-                                onPress={() => setActiveTab('checkpoints')}
-                                variant="ghost"
-                                size="icon"
-                                className="items-center justify-center">
-                                <Icon as={Clock} size={20} className="text-foreground" />
-                              </Button>
-                              {selectedCheckpoints.length > 0 && (
-                                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                    {selectedCheckpoints.length}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
+                            {activeTab === 'chat' && primaryAgent === 'checkpoint' && (
+                              <View className="relative items-center justify-center">
+                                <Button
+                                  onPress={() => setCheckpointsDrawerVisible(true)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="items-center justify-center">
+                                  <Icon as={Clock} size={20} className="text-foreground" />
+                                </Button>
+                                {selectedCheckpoints.length > 0 && (
+                                  <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                                    <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                      {selectedCheckpoints.length}
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+                            )}
                           </>
                         )}
                       </View>
@@ -930,10 +932,7 @@ function PropertyDetailsScreenContent({
                       />
                     </MessagesProvider>
                   ) : activeTab === 'checkpoints' ? (
-                    <PropertyCheckpointsTab
-                      selectedCheckpoints={selectedCheckpoints}
-                      onToggleCheckpoint={toggleCheckpointSelection}
-                    />
+                    <PropertyCheckpointsTab />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
                       <PropertyDetailsTab property={property} />

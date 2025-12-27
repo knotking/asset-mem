@@ -88,10 +88,10 @@ function severityLabel(sev: IssueSeverity) {
   return sev === 'critical'
     ? 'Critical'
     : sev === 'major'
-    ? 'Major'
-    : sev === 'moderate'
-    ? 'Moderate'
-    : 'Minor';
+      ? 'Major'
+      : sev === 'moderate'
+        ? 'Moderate'
+        : 'Minor';
 }
 
 function CheckpointsTabSkeleton() {
@@ -223,21 +223,21 @@ function PropertyMetricsCard({
     latestDisplay === null
       ? '—'
       : latestDisplay >= 80
-      ? 'Good'
-      : latestDisplay >= 60
-      ? 'Fair'
-      : latestDisplay >= 40
-      ? 'Needs attention'
-      : 'Poor';
+        ? 'Good'
+        : latestDisplay >= 60
+          ? 'Fair'
+          : latestDisplay >= 40
+            ? 'Needs attention'
+            : 'Poor';
 
   const trendLabel =
     trend === 'improving'
       ? 'Improving'
       : trend === 'stable'
-      ? 'Stable'
-      : trend === 'deteriorating'
-      ? 'Worsening'
-      : 'Unknown';
+        ? 'Stable'
+        : trend === 'deteriorating'
+          ? 'Worsening'
+          : 'Unknown';
   const rateAbs = typeof rate === 'number' && Number.isFinite(rate) ? Math.abs(rate) : null;
   const rateDisplay =
     rateAbs === null
@@ -349,15 +349,11 @@ function CheckpointCard({
   onPress,
   selectionMode,
   isSelected,
-  isSelectedForChat,
-  onToggleChatSelection,
 }: {
   checkpoint: Checkpoint;
   onPress: (checkpoint: Checkpoint) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
-  isSelectedForChat?: boolean;
-  onToggleChatSelection?: () => void;
 }) {
   const media0 = checkpoint.media?.[0];
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
@@ -365,10 +361,12 @@ function CheckpointCard({
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
-    <Card className={`${isSelected || isSelectedForChat ? 'border-primary bg-primary/5' : ''}p-2`}>
-      <View className="flex-row overflow-hidden rounded-lg">
-        <Pressable onPress={() => onPress(checkpoint)} className="h-24 w-24 bg-muted">
-          {/* Thumbnail Image */}
+    <Card className={`${isSelected ? 'border-primary bg-primary/5' : ''}p-2`}>
+      <Pressable
+        onPress={() => onPress(checkpoint)}
+        className="flex-row overflow-hidden rounded-lg">
+        {/* Thumbnail Image */}
+        <View className="h-24 w-24 bg-muted">
           {thumbnail ? (
             <Image source={{ uri: thumbnail }} className="h-full w-full" resizeMode="cover" />
           ) : (
@@ -392,31 +390,15 @@ function CheckpointCard({
               />
             </View>
           )}
-        </Pressable>
+        </View>
 
         {/* Content */}
         <View className="flex-1 justify-between p-3">
           <View>
             <View className="flex-row items-start justify-between">
-              <Pressable onPress={() => onPress(checkpoint)} className="flex-1">
-                <Text className="font-semibold text-foreground" numberOfLines={1}>
-                  {checkpoint.name || 'Untitled Checkpoint'}
-                </Text>
-              </Pressable>
-              
-              {/* Context Selection Toggle */}
-              {onToggleChatSelection && !selectionMode && (
-                <Pressable onPress={onToggleChatSelection} className="ml-2 -mt-1 p-1">
-                   <Icon
-                    as={isSelectedForChat ? CheckCircle : Circle}
-                    size={20}
-                    className={isSelectedForChat ? 'text-primary' : 'text-muted-foreground'}
-                  />
-                </Pressable>
-              )}
-            </View>
-
-             <Pressable onPress={() => onPress(checkpoint)}>
+              <Text className="font-semibold text-foreground" numberOfLines={1}>
+                {checkpoint.name || 'Untitled Checkpoint'}
+              </Text>
               <View className="flex-row items-center gap-1">
                 {/* Analysis Status Badge */}
                 {checkpoint.analysisStatus === 'processing' && (
@@ -441,39 +423,33 @@ function CheckpointCard({
                     </View>
                   )}
               </View>
+            </View>
 
-              {checkpoint.location && (
-                <View className="mt-1 flex-row items-center gap-1">
-                  <Icon as={MapPin} size={12} className="text-muted-foreground" />
-                  <Text className="text-xs text-muted-foreground">{checkpoint.location}</Text>
-                </View>
-              )}
-            </Pressable>
+            {checkpoint.location && (
+              <View className="mt-1 flex-row items-center gap-1">
+                <Icon as={MapPin} size={12} className="text-muted-foreground" />
+                <Text className="text-xs text-muted-foreground">{checkpoint.location}</Text>
+              </View>
+            )}
           </View>
 
-          <Pressable onPress={() => onPress(checkpoint)} className="flex-row items-center justify-between">
+          <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-1">
               <Icon as={Calendar} size={12} className="text-muted-foreground" />
               <Text className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</Text>
             </View>
 
-            {!selectionMode && !onToggleChatSelection && (
+            {!selectionMode && (
               <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
             )}
-          </Pressable>
+          </View>
         </View>
-      </View>
+      </Pressable>
     </Card>
   );
 }
 
-export function PropertyCheckpointsTab({
-  selectedCheckpoints = [],
-  onToggleCheckpoint,
-}: {
-  selectedCheckpoints?: Checkpoint[];
-  onToggleCheckpoint?: (checkpoint: Checkpoint) => void;
-}) {
+export function PropertyCheckpointsTab() {
   const {
     checkpoints,
     loading,
@@ -662,14 +638,7 @@ export function PropertyCheckpointsTab({
             onOpenIssues={() => setIsIssuesModalVisible(true)}
           />
           <View className="mb-4 flex-row items-center justify-between">
-            <View>
-              <Text className="text-xl font-semibold text-foreground">Checkpoints</Text>
-              {!isSelectionMode && onToggleCheckpoint && (
-                <Text className="text-xs text-muted-foreground">
-                  Select checkpoints to analyze in chat
-                </Text>
-              )}
-            </View>
+            <Text className="text-xl font-semibold text-foreground">Checkpoints</Text>
             <View className="flex-row gap-2">
               {isSelectionMode ? (
                 <>
@@ -714,8 +683,6 @@ export function PropertyCheckpointsTab({
                 onPress={handleCheckpointPress}
                 selectionMode={isSelectionMode}
                 isSelected={selectedForComparison.includes(item.id)}
-                isSelectedForChat={selectedCheckpoints.some(cp => cp.id === item.id)}
-                onToggleChatSelection={onToggleCheckpoint ? () => onToggleCheckpoint(item) : undefined}
               />
             )}
             contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
