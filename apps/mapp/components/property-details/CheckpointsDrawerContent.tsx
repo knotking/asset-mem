@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { View, ScrollView, Pressable, Modal } from 'react-native';
+import { View, ScrollView, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { Camera, X, MapPin, Calendar, Info, Plus, MessageSquare } from 'lucide-react-native';
+import { Camera, X, MapPin, Calendar } from 'lucide-react-native';
 import type { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
 
@@ -13,8 +13,6 @@ interface CheckpointsDrawerContentProps {
   activeTab: 'chat' | 'details' | 'checkpoints';
   onClose: () => void;
   onToggleCheckpoint: (checkpoint: Checkpoint) => void;
-  onShowInsights?: (checkpoint: Checkpoint) => void;
-  onNewAddition?: (checkpoint: Checkpoint) => void;
 }
 
 export function CheckpointsDrawerContent({
@@ -23,30 +21,7 @@ export function CheckpointsDrawerContent({
   activeTab,
   onClose,
   onToggleCheckpoint,
-  onShowInsights,
-  onNewAddition,
 }: CheckpointsDrawerContentProps) {
-  const [activeCheckpoint, setActiveCheckpoint] = React.useState<Checkpoint | null>(null);
-
-  const handleCheckpointPress = (checkpoint: Checkpoint) => {
-    if (activeTab === 'chat') {
-      setActiveCheckpoint(checkpoint);
-    }
-  };
-
-  const handleOptionSelect = (action: 'insights' | 'add' | 'query') => {
-    if (!activeCheckpoint) return;
-
-    if (action === 'insights' && onShowInsights) {
-      onShowInsights(activeCheckpoint);
-    } else if (action === 'add' && onNewAddition) {
-      onNewAddition(activeCheckpoint);
-    } else if (action === 'query') {
-      onToggleCheckpoint(activeCheckpoint);
-    }
-    setActiveCheckpoint(null);
-  };
-
   return (
     <>
       <View className="border-b border-border bg-light-background-alt px-4 py-3">
@@ -90,7 +65,9 @@ export function CheckpointsDrawerContent({
             {activeTab === 'chat' && (
               <View className="rounded-lg bg-secondary p-3">
                 <Text className="text-sm text-muted-foreground">
-                  Select a checkpoint to view options.
+                  Select checkpoints to provide context for your chat conversation. The AI will use
+                  these checkpoints to answer questions about property condition, changes, and
+                  history.
                 </Text>
               </View>
             )}
@@ -103,7 +80,11 @@ export function CheckpointsDrawerContent({
               return (
                 <Pressable
                   key={checkpoint.id}
-                  onPress={() => handleCheckpointPress(checkpoint)}
+                  onPress={() => {
+                    if (activeTab === 'chat') {
+                      onToggleCheckpoint(checkpoint);
+                    }
+                  }}
                   className={`rounded-lg border p-4 ${
                     activeTab === 'chat' && isSelected
                       ? 'border-primary bg-secondary'
@@ -160,55 +141,6 @@ export function CheckpointsDrawerContent({
           </View>
         )}
       </ScrollView>
-
-      {/* Checkpoint Options Modal */}
-      <Modal
-        visible={!!activeCheckpoint}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setActiveCheckpoint(null)}>
-        <Pressable
-          className="flex-1 justify-center bg-black/50 px-4"
-          onPress={() => setActiveCheckpoint(null)}>
-          <View className="overflow-hidden rounded-xl bg-background p-4 shadow-lg">
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-foreground">
-                {activeCheckpoint?.name || 'Checkpoint Options'}
-              </Text>
-              <Button
-                variant="ghost"
-                size="icon"
-                onPress={() => setActiveCheckpoint(null)}>
-                <Icon as={X} size={24} className="text-foreground" />
-              </Button>
-            </View>
-
-            <View className="gap-3">
-              <Button
-                variant="outline"
-                className="flex-row justify-start gap-3"
-                onPress={() => handleOptionSelect('insights')}>
-                <Icon as={Info} size={20} className="text-foreground" />
-                <Text className="text-foreground">Insights</Text>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-row justify-start gap-3"
-                onPress={() => handleOptionSelect('add')}>
-                <Icon as={Plus} size={20} className="text-foreground" />
-                <Text className="text-foreground">New Addition</Text>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-row justify-start gap-3"
-                onPress={() => handleOptionSelect('query')}>
-                <Icon as={MessageSquare} size={20} className="text-foreground" />
-                <Text className="text-foreground">Query Checkpoint</Text>
-              </Button>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
     </>
   );
 }

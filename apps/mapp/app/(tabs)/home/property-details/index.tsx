@@ -29,7 +29,6 @@ import type {
 import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
-import { CheckpointDetailModal } from '@/components/property-details/CheckpointDetailModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
@@ -609,18 +608,6 @@ function PropertyDetailsScreenContent({
   const { checkpoints } = useCheckpoint();
   const property = properties.find((p: any) => p.id === id);
 
-  const [selectedCheckpointForDetail, setSelectedCheckpointForDetail] = React.useState<Checkpoint | null>(null);
-
-  const handleShowInsights = (checkpoint: Checkpoint) => {
-    setSelectedCheckpointForDetail(checkpoint);
-    setCheckpointsDrawerVisible(false);
-  };
-
-  const handleNewAddition = (checkpoint: Checkpoint) => {
-    setErrorMessage('Adding new media to existing checkpoints is coming soon!');
-    setErrorAlertOpen(true);
-  };
-
   // Smart checkpoint selection: Auto-select when checkpoint agent is active
   React.useEffect(() => {
     if (primaryAgent === 'checkpoint') {
@@ -966,13 +953,6 @@ function PropertyDetailsScreenContent({
                     onClose={() => setCameraModalVisible(false)}
                     onVideoRecorded={handleVideoRecorded}
                   />
-
-                  {/* Checkpoint Detail Modal */}
-                  <CheckpointDetailModal
-                    visible={!!selectedCheckpointForDetail}
-                    checkpoint={selectedCheckpointForDetail}
-                    onClose={() => setSelectedCheckpointForDetail(null)}
-                  />
                 </SafeAreaView>
               }>
               {/* Sessions Drawer Content */}
@@ -1009,8 +989,6 @@ function PropertyDetailsScreenContent({
         activeTab={activeTab}
         onClose={() => setCheckpointsDrawerVisible(false)}
         onToggleCheckpoint={toggleCheckpointSelection}
-        onShowInsights={handleShowInsights}
-        onNewAddition={handleNewAddition}
       />
     </PushDrawer>
   );
