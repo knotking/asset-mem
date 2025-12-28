@@ -369,6 +369,7 @@ export default function PropertyChatSessionPage() {
           diagnosis_uris: diagnosisURIs,
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
+          primary_agent: 'analysis', // Explicitly set to analysis agent
           analysis_optional_agents: selectedOptionalAgents,
         };
 
@@ -448,6 +449,14 @@ export default function PropertyChatSessionPage() {
             finalAssistantResponse += rawChunk;
           }
         }
+
+        // Debug: Log final response to help diagnose parsing issues
+        console.log('=== Final Assistant Response ===');
+        console.log('Length:', finalAssistantResponse.length);
+        console.log('Has ```json:', finalAssistantResponse.includes('```json'));
+        console.log('First 500 chars:', finalAssistantResponse.substring(0, 500));
+        console.log('Last 500 chars:', finalAssistantResponse.substring(Math.max(0, finalAssistantResponse.length - 500)));
+        console.log('================================');
 
         if (!finalAssistantResponse.trim()) {
           finalAssistantResponse =
