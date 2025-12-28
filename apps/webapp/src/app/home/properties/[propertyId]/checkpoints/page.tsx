@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, TrendingUp, List } from 'lucide-react';
 import { CheckpointList } from '@/components/checkpoints/checkpoint-list';
 import { CreateCheckpointDialog } from '@/components/checkpoints/create-checkpoint-dialog';
 import { CheckpointDetailDialog } from '@/components/checkpoints/checkpoint-detail-dialog';
@@ -10,9 +10,13 @@ import { CheckpointComparisonDialog } from '@/components/checkpoints/checkpoint-
 import { MetricsDashboard } from '@/components/checkpoints/metrics-dashboard';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { Checkpoint } from '@homeapp/common/types';
+import { cn } from '@/lib/utils';
+
+type CheckpointTab = 'insights' | 'select';
 
 export default function PropertyCheckpointsPage() {
   const { checkpoints, loading, setSelectedCheckpoint } = useCheckpoint();
+  const [activeTab, setActiveTab] = useState<CheckpointTab>('insights');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [comparisonCheckpoints, setComparisonCheckpoints] = useState<
@@ -45,33 +49,91 @@ export default function PropertyCheckpointsPage() {
       <div className="flex-1 overflow-auto p-6 md:p-8">
         <div className="mx-auto max-w-5xl">
           {/* Header */}
-                    <header className="mb-8">
+          <header className="mb-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                            <div>
-                                <h1 className="text-2xl font-bold text-foreground">Property Timeline</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Property Timeline</h1>
                 <p className="text-muted-foreground">
                   Visual history of property condition with photos and AI analysis
                 </p>
-                            </div>
+              </div>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                                Add Checkpoint
-                            </Button>
-                        </div>
-                    </header>
+                Add Checkpoint
+              </Button>
+            </div>
+          </header>
 
-          {/* Metrics Dashboard */}
-          <MetricsDashboard />
+          {/* Tab Navigation */}
+          <div className="mb-6 border-b">
+            <nav className="flex gap-6" aria-label="Checkpoint tabs">
+              <button
+                onClick={() => setActiveTab('insights')}
+                className={cn(
+                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  activeTab === 'insights'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Insights
+                </div>
+                {activeTab === 'insights' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('select')}
+                className={cn(
+                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  activeTab === 'select'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Select Checkpoints
+                </div>
+                {activeTab === 'select' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                )}
+              </button>
+            </nav>
+          </div>
 
-          {/* Checkpoint List */}
-          <CheckpointList
-            checkpoints={checkpoints}
-            loading={loading}
-            onCheckpointClick={handleCheckpointClick}
-            onCompare={handleCompare}
-                            />
-                        </div>
-                    </div>
+          {/* Tab Content */}
+          {activeTab === 'insights' ? (
+            <>
+              {/* Metrics Dashboard */}
+              <MetricsDashboard />
+              
+              {/* Timeline View */}
+              <div className="mt-6">
+                <h2 className="mb-4 text-lg font-semibold">Timeline</h2>
+                <CheckpointList
+                  checkpoints={checkpoints}
+                  loading={loading}
+                  onCheckpointClick={handleCheckpointClick}
+                  onCompare={handleCompare}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Select Checkpoints View - Full interactive list */}
+              <CheckpointList
+                checkpoints={checkpoints}
+                loading={loading}
+                onCheckpointClick={handleCheckpointClick}
+                onCompare={handleCompare}
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Stats Footer */}
       <footer className="sticky bottom-0 border-t bg-background/95 backdrop-blur-sm">
