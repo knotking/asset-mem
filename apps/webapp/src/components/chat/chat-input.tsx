@@ -2,17 +2,20 @@
 import { useState, useRef, useEffect, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera as CameraIcon, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType, Checkpoint } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { CheckpointSelector } from "./checkpoint-selector";
+import { Camera } from "lucide-react";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -42,6 +45,10 @@ type Props = {
   documents?: DocumentType[];
   selectedDocuments?: DocumentType[];
   onDocumentSelect?: (doc: DocumentType) => void;
+  // Checkpoint context props
+  checkpoints?: Checkpoint[];
+  selectedCheckpoints?: Checkpoint[];
+  onCheckpointSelect?: (checkpoint: Checkpoint) => void;
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
@@ -63,6 +70,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     documents = [],
     selectedDocuments = [],
     onDocumentSelect,
+    checkpoints = [],
+    selectedCheckpoints = [],
+    onCheckpointSelect,
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
@@ -74,6 +84,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [checkpointSheetOpen, setCheckpointSheetOpen] = useState(false);
   const [showLocationOptions, setShowLocationOptions] = useState(false);
   const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType);
   const [locationRadius, setLocationRadius] = useState<number>(locationData?.locationRadius || 50);
@@ -91,7 +102,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0) {
+    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0 || selectedCheckpoints.length > 0) {
       onSend(content.trim());
       setContent("");
       textareaRef.current?.style.setProperty('height', 'auto');
@@ -113,7 +124,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   };
 
   const isUploading = fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
-  const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0);
+  const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0 && selectedCheckpoints.length === 0);
   
   const [popoverOpen, setPopoverOpen] = useState(false);
   const handleOptionalAgentToggle = (agent: AnalysisOptionalAgent) => {
@@ -266,6 +277,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   const showPropertySelector = false; // Disabled for now
   const showDocumentSelector = false; // Disabled for now
+  const showCheckpointSelector = checkpoints.length > 0 && !!onCheckpointSelect;
   const allowFileAttachment = !!onFileChange;
   const hasFileAttached = !!fileAttachment;
   const handleCameraCapture = (file: File) => {
@@ -604,9 +616,44 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                   type="button"
                   aria-label="Open camera"
                 >
-                  <Camera className="h-5 w-5" />
+                  <CameraIcon className="h-5 w-5" />
                 </Button>
               </div>
+            )}
+
+            {showCheckpointSelector && (
+              <Sheet open={checkpointSheetOpen} onOpenChange={setCheckpointSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-14 top-1/2 -translate-y-1/2 flex-shrink-0"
+                    disabled={isLoading}
+                    type="button"
+                    aria-label="Select checkpoints"
+                  >
+                    <div className="relative">
+                      <Camera className="h-5 w-5" />
+                      {selectedCheckpoints.length > 0 && (
+                        <Badge
+                          variant="default"
+                          className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                        >
+                          {selectedCheckpoints.length}
+                        </Badge>
+                      )}
+                    </div>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md p-0">
+                  <CheckpointSelector
+                    checkpoints={checkpoints}
+                    selectedCheckpoints={selectedCheckpoints}
+                    onToggle={onCheckpointSelect!}
+                    onClose={() => setCheckpointSheetOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
             )}
           </div>
         </div>

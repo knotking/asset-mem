@@ -47,6 +47,7 @@ import { useSession } from "@/contexts/session-context";
 import { useProperty } from "@/contexts/property-context";
 import { ChatContextHeader } from "@/components/chat/chat-context-header";
 import { usePropertyDocuments } from "@/contexts/property-documents-context";
+import { useCheckpoint } from "@/contexts/checkpoint-context";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -71,6 +72,11 @@ export default function PropertyChatSessionPage() {
   } = useProperty();
   const { selectedDocuments, handleDocumentSelect, clearSelectedDocuments } =
     usePropertyDocuments();
+
+  const { checkpoints, loading: isCheckpointsLoading } = useCheckpoint();
+  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>(
+    []
+  );
 
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
@@ -240,6 +246,21 @@ export default function PropertyChatSessionPage() {
     [user]
   );
 
+  const handleCheckpointSelect = useCallback((checkpoint: Checkpoint) => {
+    setSelectedCheckpoints((prev) => {
+      const isSelected = prev.some((cp) => cp.id === checkpoint.id);
+      if (isSelected) {
+        return prev.filter((cp) => cp.id !== checkpoint.id);
+      } else {
+        return [...prev, checkpoint];
+      }
+    });
+  }, []);
+
+  const clearSelectedCheckpoints = useCallback(() => {
+    setSelectedCheckpoints([]);
+  }, []);
+
   const removeFileAttachment = useCallback(async () => {
     if (!fileAttachment) return;
 
@@ -361,12 +382,18 @@ export default function PropertyChatSessionPage() {
           ? [userMessage.file.gsURI]
           : [];
 
+        // Get checkpoint media URIs for chat context
+        const checkpointURIs = selectedCheckpoints
+          .flatMap((cp) => cp.media?.map((m) => m.gsURI) || [])
+          .filter((uri): uri is string => !!uri);
+
         const requestBody: Record<string, any> = {
           user_id: user.uid,
           session_id: agentSessionId,
           user_query: content,
           context_doc_uris: contextDocURIs,
           diagnosis_uris: diagnosisURIs,
+          checkpoint_uris: checkpointURIs, // Pass checkpoint URIs to backend
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
           analysis_optional_agents: selectedOptionalAgents,
@@ -503,11 +530,12 @@ export default function PropertyChatSessionPage() {
       propertyId,
       property,
       selectedDocuments,
+      selectedCheckpoints,
       selectedOptionalAgents,
     ]
   );
 
-  if (authLoading || isMessagesLoading || isDocsLoading) {
+  if (authLoading || isMessagesLoading || isDocsLoading || isCheckpointsLoading) {
     return <ChatPageSkeleton />;
   }
 
@@ -515,8 +543,11 @@ export default function PropertyChatSessionPage() {
     <div className="flex flex-1 flex-col h-full">
       <ChatContextHeader
         documents={selectedDocuments}
+        checkpoints={selectedCheckpoints}
         onClear={clearSelectedDocuments}
         onRemove={handleDocumentSelect}
+        onCheckpointRemove={handleCheckpointSelect}
+        onClearCheckpoints={clearSelectedCheckpoints}
       />
       <main className="flex-1 overflow-hidden">
         <ChatList
@@ -534,6 +565,9 @@ export default function PropertyChatSessionPage() {
             fileAttachment={fileAttachment}
             onFileChange={handleFileUpload}
             onFileRemove={removeFileAttachment}
+            checkpoints={checkpoints}
+            selectedCheckpoints={selectedCheckpoints}
+            onCheckpointSelect={handleCheckpointSelect}
             placeholder="Type a message or attach image/video to diagnose an issue..."
             selectedOptionalAgents={selectedOptionalAgents}
             onOptionalAgentsChange={handleOptionalAgentsChange}

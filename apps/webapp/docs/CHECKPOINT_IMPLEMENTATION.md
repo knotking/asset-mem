@@ -52,6 +52,7 @@ This document summarizes the complete implementation of the Checkpoint feature i
 - **Video Support**: Upload and display video checkpoints
 - **Thumbnail Generation**: Automatic thumbnail creation for videos
 - **Error Handling**: Graceful handling of upload and analysis failures
+- **Chat Integration**: Select checkpoints as context for AI conversations (see [Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md))
 
 ---
 
@@ -389,6 +390,7 @@ service firebase.storage {
 ## Support & Documentation
 
 ### Related Documentation
+- [Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [Chat Session Fix](./CHAT_SESSION_FIX.md)
 - [Deployment Guide](./DEPLOYMENT.md)
