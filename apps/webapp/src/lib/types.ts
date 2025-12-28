@@ -12,8 +12,6 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
-export type PrimaryAgent = 'analysis' | 'checkpoint';
-
 export type Message = {
   id: string;
   role: 'user' | 'assistant';
@@ -31,7 +29,6 @@ export type Message = {
     type: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
   }[];
   agentSteps?: AgentStep[];
-  primaryAgent?: PrimaryAgent;  // NEW: Track which agent handled this message
 };
 
 export type StructuredResponseData = {
@@ -208,125 +205,21 @@ export type Service = {
 export type CheckpointMedia = {
   id: string;
   url: string;
-  gsURI: string;
-  contentType: string;
-  storagePath: string;
-  thumbnailUrl?: string;
-  width?: number;
-  height?: number;
+  type: 'image' | 'video';
+  caption: string;
 }
-
-export type CheckpointAnalysis = {
-  summary: string;
-  detectedItems: string[];
-  conditions: string[];
-  issues?: Array<
-    | string
-    | {
-        description?: string;
-        severity?: "minor" | "moderate" | "major" | "critical";
-        confidence?: number;
-        category?: string;
-      }
-  >;
-  issues_by_severity?: {
-    critical?: number;
-    major?: number;
-    moderate?: number;
-    minor?: number;
-  };
-  aiConfidence?: number;
-  analyzedAt: Timestamp;
-};
-
-export type ChangeRegion = {
-  id: string;
-  bbox: { x: number; y: number; width: number; height: number };
-  changeType: "added" | "removed" | "modified";
-  severity: "minor" | "moderate" | "major" | "critical";
-  confidence: number;
-  description: string;
-  changePercentage: number;
-  damageType?:
-    | "crack"
-    | "water_damage"
-    | "mold"
-    | "paint_degradation"
-    | "structural"
-    | "other";
-};
-
-export type VisualDiffAnalysis = {
-  id: string;
-  status: "processing" | "completed" | "failed";
-  comparedWithCheckpointId?: string;
-  semanticChanges: string[];
-  heatmapUrl?: string;
-  regions: ChangeRegion[];
-  similarityScore: number;
-  completedAt: Timestamp;
-  summary?: string;
-};
 
 export type Checkpoint = {
   id: string;
-  userId: string;
   propertyId: string;
-  name: string;
-  description?: string;
-  createdAt: Timestamp;
-  capturedAt?: Timestamp;
+  userId: string;
+  title: string;
+  description: string;
+  location: string;
+  condition: 'good' | 'fair' | 'poor' | 'needs_attention';
+  tags: string[];
   media: CheckpointMedia[];
-  location?: string;
-  detectedAsset?: string;
-  assetConfidence?: number;
-  assetFeatures?: string[];
-  areaDescription?: string;
-  tags?: string[];
-  analysisStatus?: "pending" | "processing" | "completed" | "failed";
-  skipComparison?: boolean;
-  aiAnalysis?: CheckpointAnalysis;
-  visualDiff?: VisualDiffAnalysis;
-  embedding?: number[];
-  embeddingModel?: string;
-  embeddingGeneratedAt?: Timestamp;
-}
-
-export type CheckpointComparisonPreferences = {
-  enabled: boolean;
-  maxAgeDays: number;
-  minAssetConfidence: number;
-};
-
-export type UserPreferences = {
-  checkpointComparison?: CheckpointComparisonPreferences;
-  updatedAt?: Timestamp;
-};
-
-export type PropertyCheckpointMetrics = {
-  version: number;
-  updatedAt?: Timestamp;
-  window?: {
-    checkpoints_considered: number;
-    trend_points: number;
-  };
-  overall?: {
-    latest_score: number | null;
-    trend: Array<{ t: string; score: number }>;
-  };
-  issues?: {
-    total_by_severity: {
-      critical: number;
-      major: number;
-      moderate: number;
-      minor: number;
-    };
-    total: number;
-  };
-  deterioration?: {
-    rate_points_per_day: number | null;
-    trend: "improving" | "stable" | "deteriorating" | "unknown";
-  };
+  createdAt: Date;
 }
     
 export type Provider = {
