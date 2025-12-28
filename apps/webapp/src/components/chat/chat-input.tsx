@@ -457,41 +457,56 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                       : 'Checkpoint agent analyzes property condition over time and comparisons'}
                   </p>
                 </div>
+
+                {/* Checkpoint Mode: Info Message */}
+                {primaryAgent === 'checkpoint' && (
+                  <div className="mt-3 rounded-lg border border-border bg-secondary/50 px-3 py-1.5">
+                    <p className="text-xs leading-4 text-muted-foreground">
+                      Checkpoint Agent will analyze your property's checkpoint history to answer
+                      questions about changes, trends, and condition over time.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-              Triage required
-            </Badge>
-            {OPTIONAL_AGENT_OPTIONS.map((option) => {
-              const isSelected = selectedOptionalAgents.includes(option.id);
-              const Icon = option.icon;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleOptionalAgentToggle(option.id)}
-                  aria-pressed={isSelected}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "border-border bg-background text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {option.label}
-                </button>
-              );
-            })}
-            {selectedOptionalAgents.length === 0 && (
-              <span className="text-xs text-muted-foreground">Only triage will run</span>
-            )}
-            
-            {/* Checkpoint Selector Button - Only show for Checkpoint Agent */}
-            {showCheckpointSelector && primaryAgent === 'checkpoint' && (
+          {/* Analysis Optional Agents - Only show for Analysis Agent */}
+          {primaryAgent === 'analysis' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                Triage required
+              </Badge>
+              {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                const isSelected = selectedOptionalAgents.includes(option.id);
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleOptionalAgentToggle(option.id)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                );
+              })}
+              {selectedOptionalAgents.length === 0 && (
+                <span className="text-xs text-muted-foreground">Only triage will run</span>
+              )}
+            </div>
+          )}
+          
+          {/* Checkpoint Selector Button - Always show when checkpoints are available */}
+          {showCheckpointSelector && (
+            <div className="flex flex-wrap items-center gap-2">
               <Sheet open={checkpointSheetOpen} onOpenChange={setCheckpointSheetOpen}>
                 <SheetTrigger asChild>
                   <button
@@ -526,8 +541,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                   />
                 </SheetContent>
               </Sheet>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Location Selection */}
           {onLocationDataChange && (
