@@ -10,15 +10,13 @@
     },
     "./firebase-config": "./src/firebase/firebase-config.ts",
     "./types": "./src/types.ts",
-    "./contexts/firebase-context": "./src/contexts/firebase-context.tsx",
-    "./contexts/auth-context": "./src/contexts/auth-context.tsx",
-    "./contexts/session-context": "./src/contexts/session-context.tsx",
-    "./contexts/property-context": "./src/contexts/property-context.tsx",
-    "./contexts/properties-list-context": "./src/contexts/properties-list-context.tsx",
-    "./contexts/property-documents-context": "./src/contexts/property-documents-context.tsx",
-    "./contexts/upload-dialog-context": "./src/contexts/upload-dialog-context.tsx",
-    "./contexts/checkpoint-context": "./src/contexts/checkpoint-context.tsx",
-    "./contexts/preferences-context": "./src/contexts/preferences-context.tsx"
+    "./contexts/firebase": "./src/contexts/firebase-context.tsx",
+    "./contexts/auth": "./src/contexts/auth-context.tsx",
+    "./contexts/session": "./src/contexts/session-context.tsx",
+    "./contexts/property": "./src/contexts/property-context.tsx",
+    "./contexts/properties-list": "./src/contexts/properties-list-context.tsx",
+    "./contexts/property-documents": "./src/contexts/property-documents-context.tsx",
+    "./contexts/upload-dialog": "./src/contexts/upload-dialog-context.tsx"
   },
   "scripts": {
     "build": "tsc --build",

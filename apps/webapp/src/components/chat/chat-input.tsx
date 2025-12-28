@@ -2,18 +2,17 @@
 import { useState, useRef, useEffect, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation, Clock } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType, PrimaryAgent } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
-import type { Checkpoint } from "@homeapp/common/types";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -44,16 +43,8 @@ type Props = {
   selectedDocuments?: DocumentType[];
   onDocumentSelect?: (doc: DocumentType) => void;
   placeholder?: string;
-  // Agent selection
-  primaryAgent: PrimaryAgent;
-  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
-  // Checkpoint selection
-  selectedCheckpoints?: Checkpoint[];
-  onOpenCheckpointDrawer?: () => void;
-  onRemoveCheckpoint?: (checkpoint: Checkpoint) => void;
-  // Location
   locationData?: LocationData;
   onLocationDataChange?: (locationData: LocationData | undefined) => void;
   propertyAddress?: string;
@@ -73,13 +64,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     selectedDocuments = [],
     onDocumentSelect,
     placeholder = "Ask about your property...",
-    primaryAgent,
-    onPrimaryAgentChange,
     selectedOptionalAgents,
     onOptionalAgentsChange,
-    selectedCheckpoints = [],
-    onOpenCheckpointDrawer,
-    onRemoveCheckpoint,
     locationData,
     onLocationDataChange,
     propertyAddress,
@@ -330,116 +316,35 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
         <div className="flex flex-1 flex-col gap-3">
-          {/* Primary Agent Selection */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Agent:</span>
-            <button
-              type="button"
-              onClick={() => onPrimaryAgentChange('analysis')}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                primaryAgent === 'analysis'
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => onPrimaryAgentChange('checkpoint')}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                primaryAgent === 'checkpoint'
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              Checkpoints
-            </button>
-          </div>
-
-          {/* Selected Checkpoints Display */}
-          {primaryAgent === 'checkpoint' && selectedCheckpoints.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Selected:
-              </span>
-              {selectedCheckpoints.map((checkpoint) => (
-                <Badge
-                  key={checkpoint.id}
-                  variant="secondary"
-                  className="gap-1 pl-2 pr-1"
-                >
-                  {checkpoint.name || 'Checkpoint'}
-                  {onRemoveCheckpoint && (
-                    <button
-                      type="button"
-                      onClick={() => onRemoveCheckpoint(checkpoint)}
-                      className="ml-1 rounded-full hover:bg-muted p-0.5"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </Badge>
-              ))}
-              {onOpenCheckpointDrawer && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+              Triage required
+            </Badge>
+            {OPTIONAL_AGENT_OPTIONS.map((option) => {
+              const isSelected = selectedOptionalAgents.includes(option.id);
+              const Icon = option.icon;
+              return (
                 <button
+                  key={option.id}
                   type="button"
-                  onClick={onOpenCheckpointDrawer}
-                  className="text-xs text-primary hover:underline"
+                  onClick={() => handleOptionalAgentToggle(option.id)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  )}
                 >
-                  + Add more
+                  <Icon className="h-3.5 w-3.5" />
+                  {option.label}
                 </button>
-              )}
-            </div>
-          )}
-
-          {/* Checkpoint Selection Button */}
-          {primaryAgent === 'checkpoint' && selectedCheckpoints.length === 0 && onOpenCheckpointDrawer && (
-            <button
-              type="button"
-              onClick={onOpenCheckpointDrawer}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
-            >
-              <Clock className="h-4 w-4" />
-              <span>Select checkpoints for context</span>
-            </button>
-          )}
-
-          {/* Optional Agents (only for analysis agent) */}
-          {primaryAgent === 'analysis' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-                Triage required
-              </Badge>
-              {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                const isSelected = selectedOptionalAgents.includes(option.id);
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleOptionalAgentToggle(option.id)}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border-border bg-background text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {option.label}
-                  </button>
-                );
-              })}
-              {selectedOptionalAgents.length === 0 && (
-                <span className="text-xs text-muted-foreground">Only triage will run</span>
-              )}
-            </div>
-          )}
+              );
+            })}
+            {selectedOptionalAgents.length === 0 && (
+              <span className="text-xs text-muted-foreground">Only triage will run</span>
+            )}
+          </div>
 
           {/* Location Selection */}
           {onLocationDataChange && (
