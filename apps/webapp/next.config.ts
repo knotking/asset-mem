@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  transpilePackages: ['@homeapp/common'],
   webpack: (config, { isServer }) => {
     if (!config.resolve) {
       config.resolve = {};
