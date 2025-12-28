@@ -10,6 +10,8 @@ import type {
   AgentStep,
   AnalysisOptionalAgent,
   LocationData,
+  Checkpoint,
+  PrimaryAgent,
 } from "@/lib/types";
 import { ANALYSIS_OPTIONAL_AGENTS } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
@@ -82,6 +84,7 @@ export default function PropertyChatSessionPage() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [primaryAgent, setPrimaryAgent] = useState<PrimaryAgent>("analysis");
   const [locationData, setLocationData] = useState<LocationData | undefined>(
     undefined
   );
@@ -382,10 +385,10 @@ export default function PropertyChatSessionPage() {
           ? [userMessage.file.gsURI]
           : [];
 
-        // Get checkpoint media URIs for chat context
-        const checkpointURIs = selectedCheckpoints
-          .flatMap((cp) => cp.media?.map((m) => m.gsURI) || [])
-          .filter((uri): uri is string => !!uri);
+        // Get checkpoint IDs (not URIs) for chat context
+        const checkpointIds = selectedCheckpoints
+          .map((cp) => cp.id)
+          .filter((id): id is string => !!id);
 
         const requestBody: Record<string, any> = {
           user_id: user.uid,
@@ -393,9 +396,10 @@ export default function PropertyChatSessionPage() {
           user_query: content,
           context_doc_uris: contextDocURIs,
           diagnosis_uris: diagnosisURIs,
-          checkpoint_uris: checkpointURIs, // Pass checkpoint URIs to backend
+          checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Pass checkpoint IDs (not URIs)
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
+          primary_agent: primaryAgent, // NEW: Pass primary agent
           analysis_optional_agents: selectedOptionalAgents,
         };
 
@@ -484,13 +488,14 @@ export default function PropertyChatSessionPage() {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantPlaceholderId
-              ? { ...m, content: finalAssistantResponse, agentSteps: undefined }
+              ? { ...m, content: finalAssistantResponse, agentSteps: undefined, primaryAgent }
               : m
           )
         );
         const newAssistantMessage = {
           role: "assistant" as const,
           content: finalAssistantResponse,
+          primaryAgent, // Store which agent handled this
         };
 
         if (finalAssistantResponse.trim()) {
@@ -531,7 +536,9 @@ export default function PropertyChatSessionPage() {
       property,
       selectedDocuments,
       selectedCheckpoints,
+      primaryAgent,
       selectedOptionalAgents,
+      locationData,
     ]
   );
 
@@ -568,6 +575,8 @@ export default function PropertyChatSessionPage() {
             checkpoints={checkpoints}
             selectedCheckpoints={selectedCheckpoints}
             onCheckpointSelect={handleCheckpointSelect}
+            primaryAgent={primaryAgent}
+            onPrimaryAgentChange={setPrimaryAgent}
             placeholder="Type a message or attach image/video to diagnose an issue..."
             selectedOptionalAgents={selectedOptionalAgents}
             onOptionalAgentsChange={handleOptionalAgentsChange}

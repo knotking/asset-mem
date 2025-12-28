@@ -12,6 +12,8 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
+export type PrimaryAgent = 'analysis' | 'checkpoint';
+
 export type Message = {
   id: string;
   role: 'user' | 'assistant';
@@ -29,6 +31,7 @@ export type Message = {
     type: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
   }[];
   agentSteps?: AgentStep[];
+  primaryAgent?: PrimaryAgent;  // NEW: Track which agent handled this message
 };
 
 export type StructuredResponseData = {

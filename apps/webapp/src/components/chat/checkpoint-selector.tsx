@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { Checkpoint } from "@/lib/types";
 import { format } from "date-fns";
 import Image from "next/image";
+import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface CheckpointSelectorProps {
   checkpoints: Checkpoint[];
@@ -27,30 +28,34 @@ export function CheckpointSelector({
 
   if (checkpoints.length === 0) {
     return (
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-semibold">Select Checkpoints</h3>
-            <p className="text-xs text-muted-foreground">
-              No checkpoints available
+      <div className="flex flex-col h-full">
+        <SheetHeader className="border-b bg-background px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <SheetTitle className="text-sm font-semibold">Select Checkpoints</SheetTitle>
+              <p className="text-xs text-muted-foreground">
+                No checkpoints available
+              </p>
+            </div>
+            {onClose && (
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </SheetHeader>
+        <div className="p-4">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+              <Camera className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              No checkpoints available for this property.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Create checkpoints to track property condition over time.
             </p>
           </div>
-          {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-            <Camera className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            No checkpoints available for this property.
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Create checkpoints to track property condition over time.
-          </p>
         </div>
       </div>
     );
@@ -58,10 +63,10 @@ export function CheckpointSelector({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b bg-background px-4 py-3">
+      <SheetHeader className="border-b bg-background px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-semibold">Select Checkpoints</h3>
+            <SheetTitle className="text-sm font-semibold">Select Checkpoints</SheetTitle>
             <p className="text-xs text-muted-foreground">
               {selectedCheckpoints.length} selected for chat context
             </p>
@@ -72,7 +77,7 @@ export function CheckpointSelector({
             </Button>
           )}
         </div>
-      </div>
+      </SheetHeader>
 
       <div className="rounded-lg bg-secondary/50 p-3 mx-4 mt-4">
         <p className="text-xs text-muted-foreground">
@@ -170,22 +175,21 @@ export function CheckpointSelector({
                       </p>
                     </div>
 
-                    {checkpoint.analysis?.summary && (
+                    {checkpoint.aiAnalysis?.summary && (
                       <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-                        {checkpoint.analysis.summary}
+                        {checkpoint.aiAnalysis.summary}
                       </p>
                     )}
 
-                    {checkpoint.analysis?.status === "completed" &&
-                      checkpoint.analysis.detectedIssues &&
-                      checkpoint.analysis.detectedIssues.length > 0 && (
+                    {checkpoint.aiAnalysis?.issues &&
+                      checkpoint.aiAnalysis.issues.length > 0 && (
                         <div className="mt-2 flex items-center gap-1">
                           <Badge
                             variant="secondary"
                             className="text-[10px] h-5 px-1.5"
                           >
-                            {checkpoint.analysis.detectedIssues.length} issue
-                            {checkpoint.analysis.detectedIssues.length !== 1
+                            {checkpoint.aiAnalysis.issues.length} issue
+                            {checkpoint.aiAnalysis.issues.length !== 1
                               ? "s"
                               : ""}
                           </Badge>

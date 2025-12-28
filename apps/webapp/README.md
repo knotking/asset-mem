@@ -11,6 +11,8 @@ The HomeApp web application allows property managers and homeowners to access th
 
 ### 💬 AI Chat
 - **Conversational Interface**: Chat with the AI agent about your property.
+- **Dual Agent System**: Choose between Analysis Agent (repairs, diagnosis) and Checkpoint Agent (condition tracking).
+- **Intelligent Suggestions**: AI suggests the best agent based on your query intent.
 - **Document Q&A**: Ask questions about uploaded manuals and docs.
 - **Checkpoint Context**: Select checkpoints to provide visual context for your conversations.
 
