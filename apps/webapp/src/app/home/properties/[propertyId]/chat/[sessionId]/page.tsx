@@ -10,6 +10,8 @@ import type {
   AgentStep,
   AnalysisOptionalAgent,
   LocationData,
+  Checkpoint,
+  PrimaryAgent,
 } from "@/lib/types";
 import { ANALYSIS_OPTIONAL_AGENTS } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
@@ -47,6 +49,7 @@ import { useSession } from "@/contexts/session-context";
 import { useProperty } from "@/contexts/property-context";
 import { ChatContextHeader } from "@/components/chat/chat-context-header";
 import { usePropertyDocuments } from "@/contexts/property-documents-context";
+import { useCheckpoint } from "@/contexts/checkpoint-context";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -72,10 +75,17 @@ export default function PropertyChatSessionPage() {
   const { selectedDocuments, handleDocumentSelect, clearSelectedDocuments } =
     usePropertyDocuments();
 
+  const { checkpoints, loading: isCheckpointsLoading } = useCheckpoint();
+  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>(
+    []
+  );
+  const [hasManuallyInteractedWithCheckpoints, setHasManuallyInteractedWithCheckpoints] = useState(false);
+
   const [isNewSession, setIsNewSession] = useState(false);
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [primaryAgent, setPrimaryAgent] = useState<PrimaryAgent>("analysis");
   const [locationData, setLocationData] = useState<LocationData | undefined>(
     undefined
   );
@@ -145,6 +155,21 @@ export default function PropertyChatSessionPage() {
     };
     checkIsNewSession();
   }, [user, sessionId, toast]);
+
+  // Auto-select checkpoints when checkpoint agent is active (matching mobile app behavior)
+  useEffect(() => {
+    if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0) {
+      // If user switches to checkpoint agent and no checkpoints are selected, auto-select all
+      if (selectedCheckpoints.length === 0 && !hasManuallyInteractedWithCheckpoints) {
+        setSelectedCheckpoints(checkpoints);
+      }
+    } else if (primaryAgent === 'analysis') {
+      // Clear checkpoints when switching to analysis agent
+      if (selectedCheckpoints.length > 0 && !hasManuallyInteractedWithCheckpoints) {
+        setSelectedCheckpoints([]);
+      }
+    }
+  }, [primaryAgent, checkpoints, selectedCheckpoints.length, hasManuallyInteractedWithCheckpoints]);
 
   const handleStop = () => {
     if (abortControllerRef.current) {
@@ -239,6 +264,23 @@ export default function PropertyChatSessionPage() {
     },
     [user]
   );
+
+  const handleCheckpointSelect = useCallback((checkpoint: Checkpoint) => {
+    setHasManuallyInteractedWithCheckpoints(true);
+    setSelectedCheckpoints((prev) => {
+      const isSelected = prev.some((cp) => cp.id === checkpoint.id);
+      if (isSelected) {
+        return prev.filter((cp) => cp.id !== checkpoint.id);
+      } else {
+        return [...prev, checkpoint];
+      }
+    });
+  }, []);
+
+  const clearSelectedCheckpoints = useCallback(() => {
+    setHasManuallyInteractedWithCheckpoints(true);
+    setSelectedCheckpoints([]);
+  }, []);
 
   const removeFileAttachment = useCallback(async () => {
     if (!fileAttachment) return;
@@ -361,16 +403,22 @@ export default function PropertyChatSessionPage() {
           ? [userMessage.file.gsURI]
           : [];
 
+        // Get checkpoint IDs (not URIs) for chat context
+        const checkpointIds = selectedCheckpoints
+          .map((cp) => cp.id)
+          .filter((id): id is string => !!id);
+
         const requestBody: Record<string, any> = {
           user_id: user.uid,
           session_id: agentSessionId,
           user_query: content,
           context_doc_uris: contextDocURIs,
           diagnosis_uris: diagnosisURIs,
+          checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Pass checkpoint IDs (not URIs)
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
-          primary_agent: 'analysis', // Explicitly set to analysis agent
-          analysis_optional_agents: selectedOptionalAgents,
+          primary_agent: primaryAgent, // Use the actual primary agent state
+          analysis_optional_agents: primaryAgent === 'analysis' ? selectedOptionalAgents : undefined, // Only pass optional agents for analysis
         };
 
         // Add location data if provided
@@ -466,13 +514,14 @@ export default function PropertyChatSessionPage() {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantPlaceholderId
-              ? { ...m, content: finalAssistantResponse, agentSteps: undefined }
+              ? { ...m, content: finalAssistantResponse, agentSteps: undefined, primaryAgent }
               : m
           )
         );
         const newAssistantMessage = {
           role: "assistant" as const,
           content: finalAssistantResponse,
+          primaryAgent, // Store which agent handled this
         };
 
         if (finalAssistantResponse.trim()) {
@@ -512,11 +561,14 @@ export default function PropertyChatSessionPage() {
       propertyId,
       property,
       selectedDocuments,
+      selectedCheckpoints,
+      primaryAgent,
       selectedOptionalAgents,
+      locationData,
     ]
   );
 
-  if (authLoading || isMessagesLoading || isDocsLoading) {
+  if (authLoading || isMessagesLoading || isDocsLoading || isCheckpointsLoading) {
     return <ChatPageSkeleton />;
   }
 
@@ -524,8 +576,11 @@ export default function PropertyChatSessionPage() {
     <div className="flex flex-1 flex-col h-full">
       <ChatContextHeader
         documents={selectedDocuments}
+        checkpoints={selectedCheckpoints}
         onClear={clearSelectedDocuments}
         onRemove={handleDocumentSelect}
+        onCheckpointRemove={handleCheckpointSelect}
+        onClearCheckpoints={clearSelectedCheckpoints}
       />
       <main className="flex-1 overflow-hidden">
         <ChatList
@@ -543,6 +598,11 @@ export default function PropertyChatSessionPage() {
             fileAttachment={fileAttachment}
             onFileChange={handleFileUpload}
             onFileRemove={removeFileAttachment}
+            checkpoints={checkpoints}
+            selectedCheckpoints={selectedCheckpoints}
+            onCheckpointSelect={handleCheckpointSelect}
+            primaryAgent={primaryAgent}
+            onPrimaryAgentChange={setPrimaryAgent}
             placeholder="Type a message or attach image/video to diagnose an issue..."
             selectedOptionalAgents={selectedOptionalAgents}
             onOptionalAgentsChange={handleOptionalAgentsChange}

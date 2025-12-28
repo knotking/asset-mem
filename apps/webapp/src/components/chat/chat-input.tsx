@@ -2,17 +2,21 @@
 import { useState, useRef, useEffect, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera as CameraIcon, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation, Stethoscope, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType, Checkpoint, PrimaryAgent } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { CheckpointSelector } from "./checkpoint-selector";
+import { Camera } from "lucide-react";
+import { suggestPrimaryAgent } from "@/lib/query-suggestions";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;
@@ -42,6 +46,13 @@ type Props = {
   documents?: DocumentType[];
   selectedDocuments?: DocumentType[];
   onDocumentSelect?: (doc: DocumentType) => void;
+  // Checkpoint context props
+  checkpoints?: Checkpoint[];
+  selectedCheckpoints?: Checkpoint[];
+  onCheckpointSelect?: (checkpoint: Checkpoint) => void;
+  // Agent props
+  primaryAgent: PrimaryAgent;
+  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   placeholder?: string;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
@@ -63,6 +74,11 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     documents = [],
     selectedDocuments = [],
     onDocumentSelect,
+    checkpoints = [],
+    selectedCheckpoints = [],
+    onCheckpointSelect,
+    primaryAgent,
+    onPrimaryAgentChange,
     placeholder = "Ask about your property...",
     selectedOptionalAgents,
     onOptionalAgentsChange,
@@ -74,7 +90,10 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [checkpointSheetOpen, setCheckpointSheetOpen] = useState(false);
   const [showLocationOptions, setShowLocationOptions] = useState(false);
+  const [showAgentSection, setShowAgentSection] = useState(false);
+  const [suggestedAgent, setSuggestedAgent] = useState<PrimaryAgent | null>(null);
   const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType);
   const [locationRadius, setLocationRadius] = useState<number>(locationData?.locationRadius || 50);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -91,7 +110,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0) {
+    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0 || selectedCheckpoints.length > 0) {
       onSend(content.trim());
       setContent("");
       textareaRef.current?.style.setProperty('height', 'auto');
@@ -113,7 +132,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   };
 
   const isUploading = fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
-  const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0);
+  const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0 && selectedCheckpoints.length === 0);
   
   const [popoverOpen, setPopoverOpen] = useState(false);
   const handleOptionalAgentToggle = (agent: AnalysisOptionalAgent) => {
@@ -223,6 +242,26 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     }
   }, [locationData]);
 
+  // Query-based agent suggestion with debouncing
+  useEffect(() => {
+    if (!content.trim()) {
+      setSuggestedAgent(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const suggestion = suggestPrimaryAgent(content, primaryAgent);
+      setSuggestedAgent(suggestion);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [content, primaryAgent]);
+
+  // Clear suggestion when agent changes manually
+  useEffect(() => {
+    setSuggestedAgent(null);
+  }, [primaryAgent]);
+
 
   const renderPreview = () => {
     if (!fileAttachment) return null;
@@ -266,6 +305,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   const showPropertySelector = false; // Disabled for now
   const showDocumentSelector = false; // Disabled for now
+  const showCheckpointSelector = checkpoints.length > 0 && !!onCheckpointSelect;
   const allowFileAttachment = !!onFileChange;
   const hasFileAttached = !!fileAttachment;
   const handleCameraCapture = (file: File) => {
@@ -316,35 +356,193 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
         <div className="flex flex-1 flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-              Triage required
-            </Badge>
-            {OPTIONAL_AGENT_OPTIONS.map((option) => {
-              const isSelected = selectedOptionalAgents.includes(option.id);
-              const Icon = option.icon;
-              return (
+          {/* Agent Suggestion Banner */}
+          {suggestedAgent && suggestedAgent !== primaryAgent && (
+            <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
+              <div className="flex items-center gap-2 flex-1">
+                {suggestedAgent === 'checkpoint' ? (
+                  <Clock className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                ) : (
+                  <Stethoscope className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                )}
+                <span className="text-xs text-foreground">
+                  Your query suggests using the{' '}
+                  <span className="font-semibold">
+                    {suggestedAgent === 'checkpoint' ? 'Checkpoint' : 'Analysis'} Agent
+                  </span>
+                </span>
+              </div>
+              <div className="flex gap-2">
                 <button
-                  key={option.id}
                   type="button"
-                  onClick={() => handleOptionalAgentToggle(option.id)}
-                  aria-pressed={isSelected}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "border-border bg-background text-muted-foreground hover:bg-muted"
-                  )}
+                  onClick={() => setSuggestedAgent(null)}
+                  className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  {option.label}
+                  Dismiss
                 </button>
-              );
-            })}
-            {selectedOptionalAgents.length === 0 && (
-              <span className="text-xs text-muted-foreground">Only triage will run</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPrimaryAgentChange(suggestedAgent);
+                    setSuggestedAgent(null);
+                  }}
+                  className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  Switch
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Agent Selection Section */}
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAgentSection(!showAgentSection)}
+              className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-left hover:bg-muted transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                {primaryAgent === 'checkpoint' ? (
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Stethoscope className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium text-foreground">
+                  {primaryAgent === 'checkpoint' ? 'Checkpoint Agent' : 'Analysis Agent'}
+                </span>
+              </div>
+              {showAgentSection ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+
+            {showAgentSection && (
+              <div className="rounded-lg border border-border bg-background p-3 space-y-3">
+                {/* Primary Agent Selector */}
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-2 block">Primary Agent</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onPrimaryAgentChange('analysis')}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                        primaryAgent === 'analysis'
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-transparent text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                      Analysis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onPrimaryAgentChange('checkpoint')}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                        primaryAgent === 'checkpoint'
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-transparent text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      Checkpoint
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {primaryAgent === 'analysis'
+                      ? 'Analysis agent helps with repairs, diagnosis, and property issues'
+                      : 'Checkpoint agent analyzes property condition over time and comparisons'}
+                  </p>
+                </div>
+
+                {/* Checkpoint Mode: Info Message */}
+                {primaryAgent === 'checkpoint' && (
+                  <div className="mt-3 rounded-lg border border-border bg-secondary/50 px-3 py-1.5">
+                    <p className="text-xs leading-4 text-muted-foreground">
+                      Checkpoint Agent will analyze your property's checkpoint history to answer
+                      questions about changes, trends, and condition over time.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Analysis Optional Agents - Only show for Analysis Agent */}
+          {primaryAgent === 'analysis' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                Triage required
+              </Badge>
+              {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                const isSelected = selectedOptionalAgents.includes(option.id);
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleOptionalAgentToggle(option.id)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                );
+              })}
+              {selectedOptionalAgents.length === 0 && (
+                <span className="text-xs text-muted-foreground">Only triage will run</span>
+              )}
+            </div>
+          )}
+          
+          {/* Checkpoint Selector Button - Always show when checkpoints are available */}
+          {showCheckpointSelector && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Sheet open={checkpointSheetOpen} onOpenChange={setCheckpointSheetOpen}>
+                <SheetTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      selectedCheckpoints.length > 0
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                    aria-label="Select checkpoints"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <span>Checkpoints</span>
+                    {selectedCheckpoints.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary-foreground text-primary"
+                      >
+                        {selectedCheckpoints.length}
+                      </Badge>
+                    )}
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md p-0">
+                  <CheckpointSelector
+                    checkpoints={checkpoints}
+                    selectedCheckpoints={selectedCheckpoints}
+                    onToggle={onCheckpointSelect!}
+                    onClose={() => setCheckpointSheetOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
 
           {/* Location Selection */}
           {onLocationDataChange && (
@@ -604,7 +802,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                   type="button"
                   aria-label="Open camera"
                 >
-                  <Camera className="h-5 w-5" />
+                  <CameraIcon className="h-5 w-5" />
                 </Button>
               </div>
             )}
