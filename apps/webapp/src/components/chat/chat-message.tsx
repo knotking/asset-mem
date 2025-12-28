@@ -517,7 +517,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     </h2>
                 </div>
             )}
-        <Accordion type="multiple" className="w-full space-y-2">
+        <Accordion type="single" collapsible defaultValue="triage" className="w-full space-y-2">
             {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
@@ -1241,6 +1241,14 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
     try {
         if (!isUser && message.content) {
           let contentToParse = message.content.trim();
+          
+          // Debug logging to help diagnose parsing issues
+          console.log('=== ChatMessage Content Parsing ===');
+          console.log('Content length:', contentToParse.length);
+          console.log('Has ```json:', contentToParse.includes('```json'));
+          console.log('Has ```markdown:', contentToParse.includes('```markdown'));
+          console.log('First 300 chars:', contentToParse.substring(0, 300));
+          console.log('===================================');
           
           // Helper function to check if parsed JSON has structured data keys
           const hasStructuredDataKeys = (parsed: any): boolean => {
