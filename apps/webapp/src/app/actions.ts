@@ -12,7 +12,7 @@ export async function createAgentSessionAction(userId: string): Promise<{ agentS
     try {
         const url = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
         if (!url) {
-            throw new Error("NEXT_PUBLIC_AGENT__SESSION_URL environment variable not set.");
+            throw new Error("NEXT_PUBLIC_AGENT_SESSION_URL environment variable not set.");
         }
         const response = await fetch(url, {
             method: 'POST',
