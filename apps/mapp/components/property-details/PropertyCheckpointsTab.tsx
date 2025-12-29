@@ -29,6 +29,7 @@ import { CreateCheckpointModal } from './CreateCheckpointModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import { CheckpointAnalysisModal } from './CheckpointAnalysisModal';
+import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
 
 import { analyzeCheckpoint } from '../../lib/api';
@@ -485,6 +486,11 @@ export function PropertyCheckpointsTab({
   const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
   const [isAnalysisModalVisible, setIsAnalysisModalVisible] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  
+  // Processing feedback state
+  const [isProcessingModalVisible, setIsProcessingModalVisible] = React.useState(false);
+  const [newCheckpointId, setNewCheckpointId] = React.useState<string>('');
+  const [newCheckpointName, setNewCheckpointName] = React.useState<string>('');
 
   const handleCreateCheckpoint = async (data: {
     name: string;
@@ -505,7 +511,18 @@ export function PropertyCheckpointsTab({
           },
         ]
       );
+      
+      // Set checkpoint data first (before showing modal to prevent blank screen)
+      setNewCheckpointId(result.id);
+      setNewCheckpointName(data.name || 'New Checkpoint');
+      
+      // Close create modal
       setIsCreateModalVisible(false);
+      
+      // Small delay to ensure state is updated before showing processing modal
+      setTimeout(() => {
+        setIsProcessingModalVisible(true);
+      }, 50);
 
       // Set status to pending initially
       await updateCheckpoint(result.id, {
@@ -551,6 +568,20 @@ export function PropertyCheckpointsTab({
     } catch (error) {
       console.error('Failed to create checkpoint', error);
     }
+  };
+
+  const handleViewNewCheckpoint = (checkpointId: string) => {
+    // Find the checkpoint and open detail modal
+    const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
+    if (checkpoint) {
+      setSelectedCheckpoint(checkpoint);
+      setIsDetailModalVisible(true);
+    }
+    setIsProcessingModalVisible(false);
+  };
+
+  const handleContinueFromProcessing = () => {
+    setIsProcessingModalVisible(false);
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {
@@ -925,6 +956,14 @@ export function PropertyCheckpointsTab({
         visible={isAnalysisModalVisible}
         checkpoints={checkpoints.filter(c => selectedForActions.includes(c.id))}
         onClose={() => setIsAnalysisModalVisible(false)}
+      />
+
+      <CheckpointProcessingModal
+        visible={isProcessingModalVisible}
+        checkpointId={newCheckpointId}
+        checkpointName={newCheckpointName}
+        onViewCheckpoint={handleViewNewCheckpoint}
+        onContinue={handleContinueFromProcessing}
       />
     </View>
   );

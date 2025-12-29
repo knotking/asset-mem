@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUploadZone } from './file-upload-zone';
+import { CheckpointProcessingDialog } from './checkpoint-processing-dialog';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
@@ -34,7 +35,7 @@ export function CreateCheckpointDialog({
   open,
   onOpenChange,
 }: CreateCheckpointDialogProps) {
-  const { createCheckpoint } = useCheckpoint();
+  const { createCheckpoint, setSelectedCheckpoint, checkpoints } = useCheckpoint();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -42,6 +43,11 @@ export function CreateCheckpointDialog({
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  
+  // Processing feedback state
+  const [isProcessingDialogOpen, setIsProcessingDialogOpen] = useState(false);
+  const [newCheckpointId, setNewCheckpointId] = useState('');
+  const [newCheckpointName, setNewCheckpointName] = useState('');
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -92,10 +98,11 @@ export function CreateCheckpointDialog({
         mediaFiles
       );
 
-      toast({
-        title: 'Checkpoint Created',
-        description: 'Your checkpoint has been created and is being analyzed.',
-      });
+      // Close create dialog and show processing feedback dialog
+      setNewCheckpointId(result.id);
+      setNewCheckpointName(name.trim());
+      onOpenChange(false);
+      setIsProcessingDialogOpen(true);
 
       // Trigger AI analysis
       if (result.id && result.media.length > 0) {
@@ -107,12 +114,11 @@ export function CreateCheckpointDialog({
         }
       }
 
-      // Reset form and close dialog
+      // Reset form
       setName('');
       setLocation('');
       setDescription('');
       setFiles([]);
-      onOpenChange(false);
     } catch (error) {
       console.error('Failed to create checkpoint:', error);
       toast({
@@ -133,6 +139,15 @@ export function CreateCheckpointDialog({
       setFiles([]);
       onOpenChange(false);
     }
+  };
+
+  const handleViewNewCheckpoint = (checkpointId: string) => {
+    // Find the checkpoint and open detail view
+    const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
+    if (checkpoint) {
+      setSelectedCheckpoint(checkpoint);
+    }
+    setIsProcessingDialogOpen(false);
   };
 
   return (
@@ -208,6 +223,14 @@ export function CreateCheckpointDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <CheckpointProcessingDialog
+        open={isProcessingDialogOpen}
+        onOpenChange={setIsProcessingDialogOpen}
+        checkpointId={newCheckpointId}
+        checkpointName={newCheckpointName}
+        onViewCheckpoint={handleViewNewCheckpoint}
+      />
     </Dialog>
   );
 }
