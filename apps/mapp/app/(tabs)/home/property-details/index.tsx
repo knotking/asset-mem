@@ -814,16 +814,6 @@ function PropertyDetailsScreenContent({
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => setActiveTab('details')}
-                      className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
-                      <Text
-                        className={`text-center font-medium ${
-                          activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                        Details
-                      </Text>
-                    </Pressable>
-                    <Pressable
                       onPress={() => setActiveTab('checkpoints')}
                       className={`flex-1 py-3 ${activeTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
                       <Text
@@ -831,6 +821,16 @@ function PropertyDetailsScreenContent({
                           activeTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'
                         }`}>
                         Checkpoints
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setActiveTab('details')}
+                      className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
+                      <Text
+                        className={`text-center font-medium ${
+                          activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
+                        }`}>
+                        Details
                       </Text>
                     </Pressable>
                   </View>
