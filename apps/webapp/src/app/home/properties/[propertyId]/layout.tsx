@@ -11,6 +11,7 @@ import type { Document as DocumentType, Session, Property } from '@/lib/types';
 import React, { useEffect, useState, useCallback, cloneElement } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyProvider, useProperty } from '@/contexts/property-context';
+import { CheckpointProvider } from '@/contexts/checkpoint-context';
 import { ContextDocumentsPanel } from '@/components/properties/context-documents-panel';
 import { cn } from '@/lib/utils';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
@@ -36,9 +37,9 @@ function PropertyTabs() {
     const tabs = [
         { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat' },
         { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details'},
+        { name: 'Checkpoints', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints' },
         // { name: 'Services', href: '#', segment: 'services' },
         // { name: 'Providers', href: '#', segment: 'providers' },
-        // { name: 'Checkpoints', href: '#', segment: 'checkpoints' },
     ];
 
     return (
@@ -250,13 +251,15 @@ export default function PropertyChatLayout({
   return (
     <SessionProvider>
       <PropertyProvider>
-        <PropertyDocumentsProvider>
-          <UploadDialogProvider>
-            <AddressConfirmationProvider>
-                <LayoutWithDialog>{children}</LayoutWithDialog>
-            </AddressConfirmationProvider>
-          </UploadDialogProvider>
-        </PropertyDocumentsProvider>
+        <CheckpointProvider>
+          <PropertyDocumentsProvider>
+            <UploadDialogProvider>
+              <AddressConfirmationProvider>
+                  <LayoutWithDialog>{children}</LayoutWithDialog>
+              </AddressConfirmationProvider>
+            </UploadDialogProvider>
+          </PropertyDocumentsProvider>
+        </CheckpointProvider>
       </PropertyProvider>
     </SessionProvider>
   );

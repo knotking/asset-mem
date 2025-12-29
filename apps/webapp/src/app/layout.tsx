@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/auth-context';
+import { AppContextProvider } from '@/contexts/firebase-context';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -30,9 +31,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <AppContextProvider>
               <SidebarProvider>
                 {children}
               </SidebarProvider>
+            </AppContextProvider>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>
