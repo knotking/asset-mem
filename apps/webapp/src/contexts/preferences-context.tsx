@@ -16,7 +16,7 @@ import {
   onSnapshot,
   Timestamp,
 } from "firebase/firestore";
-import { UserPreferences, CheckpointComparisonPreferences } from "@homeapp/common/types";
+import { UserPreferences, CheckpointComparisonPreferences } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useFirebase } from "@/contexts/firebase-context";
 

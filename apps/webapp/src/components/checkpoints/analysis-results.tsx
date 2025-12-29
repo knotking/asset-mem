@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckpointAnalysis } from '@homeapp/common/types';
+import { CheckpointAnalysis } from '@/lib/types';
 import { IssuesList } from './issues-list';
 import { Sparkles, Package, Activity } from 'lucide-react';
 import { format } from 'date-fns';

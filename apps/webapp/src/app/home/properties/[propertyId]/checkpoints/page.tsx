@@ -9,7 +9,7 @@ import { CheckpointDetailDialog } from '@/components/checkpoints/checkpoint-deta
 import { CheckpointComparisonDialog } from '@/components/checkpoints/checkpoint-comparison-dialog';
 import { MetricsDashboard } from '@/components/checkpoints/metrics-dashboard';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type CheckpointTab = 'insights' | 'select';

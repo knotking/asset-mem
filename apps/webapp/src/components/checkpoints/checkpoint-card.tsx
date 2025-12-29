@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Camera, Video } from 'lucide-react';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';

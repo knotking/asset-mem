@@ -19,9 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@homeapp/common/*": ["../common/src/*"]
-    }
+      "@/*": ["./src/*"]
+      // Removed @homeapp/common path mapping - types are now local for App Hosting compatibility
+    },
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
