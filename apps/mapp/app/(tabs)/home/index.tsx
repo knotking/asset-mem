@@ -6,7 +6,7 @@ import AddNewProperty from '@/components/AddNewProperty';
 import AddPropertyModal from '@/components/AddPropertyModal';
 import PropertyCard from '@/components/PropertyCard';
 import PropertyListSkeleton from '@/components/PropertyListSkeleton';
-import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
+import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
 import { Input } from '@/components/ui/input';
 import { Icon } from '@/components/ui/icon';
 import { Search, X } from 'lucide-react-native';
