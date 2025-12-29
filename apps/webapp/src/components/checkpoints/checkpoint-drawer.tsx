@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Camera, X, MapPin, Calendar } from 'lucide-react';
-import type { Checkpoint } from '@homeapp/common/types';
+import type { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 

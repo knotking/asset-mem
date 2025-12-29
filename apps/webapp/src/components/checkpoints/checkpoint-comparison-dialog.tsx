@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BeforeAfterSlider } from './before-after-slider';
-import { Checkpoint, VisualDiffAnalysis } from '@homeapp/common/types';
+import { Checkpoint, VisualDiffAnalysis } from '@/lib/types';
 import { Calendar, MapPin, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';

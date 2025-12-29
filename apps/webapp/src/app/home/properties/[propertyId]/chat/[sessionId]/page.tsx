@@ -50,7 +50,7 @@ import { ChatContextHeader } from "@/components/chat/chat-context-header";
 import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
-import type { Checkpoint } from "@homeapp/common/types";
+import type { Checkpoint } from "@/lib/types";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();

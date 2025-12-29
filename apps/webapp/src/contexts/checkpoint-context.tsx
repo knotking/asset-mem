@@ -23,7 +23,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Checkpoint, CheckpointMedia } from "@homeapp/common/types";
+import { Checkpoint, CheckpointMedia } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useProperty } from "@/contexts/property-context";
 import { useFirebase } from "@/contexts/firebase-context";

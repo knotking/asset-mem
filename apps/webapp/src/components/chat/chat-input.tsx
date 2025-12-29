@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
-import type { Checkpoint } from "@homeapp/common/types";
+import type { Checkpoint } from "@/lib/types";
 
 type OptionalAgentOption = {
   id: AnalysisOptionalAgent;

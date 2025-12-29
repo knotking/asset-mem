@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, ArrowRightLeft, X } from 'lucide-react';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
 interface CheckpointListProps {
