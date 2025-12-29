@@ -13,6 +13,9 @@ This repository contains the complete source code for the HomeApp platform, a co
 
 <img width="2752" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/70c8be49-b847-4cdc-b790-2bcfc2cdb113" />
 
+https://github.com/user-attachments/assets/475431cf-cb01-4083-beed-23a06f36c0d4
+
+
 ## Project Structure
 
 The monorepo is organized into two main areas:
