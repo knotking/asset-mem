@@ -1,5 +1,5 @@
 import { View, ScrollView } from 'react-native';
-import { useAuth } from '@homeapp/common/contexts/auth';
+import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { User } from 'firebase/auth';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';

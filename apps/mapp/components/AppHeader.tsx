@@ -5,7 +5,7 @@ import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
 import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { useAuth } from '@homeapp/common/contexts/auth';
+import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { User } from 'firebase/auth';
 
 const THEME_ICONS = {
