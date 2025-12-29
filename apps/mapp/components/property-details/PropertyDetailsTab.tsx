@@ -15,7 +15,7 @@ import {
   NativeSelectScrollView,
 } from '@/components/ui/select';
 import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle } from 'lucide-react-native';
-import { useProperty } from '@homeapp/common/contexts/property';
+import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';

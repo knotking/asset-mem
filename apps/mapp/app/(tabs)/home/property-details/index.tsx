@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list';
-import { useProperty } from '@homeapp/common/contexts/property';
+import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { MessagesProvider } from '@homeapp/common/contexts/messages-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
