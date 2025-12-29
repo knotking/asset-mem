@@ -805,33 +805,30 @@ function PropertyDetailsScreenContent({
                   <View className="flex-row border-b border-border px-4">
                     <Pressable
                       onPress={() => setActiveTab('chat')}
-                      className={`flex-1 py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
-                      <Text
-                        className={`text-center font-medium ${
-                          activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                        AI Chat
-                      </Text>
+                      className={`flex-1 items-center py-3 ${activeTab === 'chat' ? 'border-b-2 border-primary' : ''}`}>
+                      <Icon
+                        as={MessageSquare}
+                        size={20}
+                        className={activeTab === 'chat' ? 'text-primary' : 'text-muted-foreground'}
+                      />
                     </Pressable>
                     <Pressable
                       onPress={() => setActiveTab('checkpoints')}
-                      className={`flex-1 py-3 ${activeTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
-                      <Text
-                        className={`text-center font-medium ${
-                          activeTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                        Checkpoints
-                      </Text>
+                      className={`flex-1 items-center py-3 ${activeTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
+                      <Icon
+                        as={Clock}
+                        size={20}
+                        className={activeTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'}
+                      />
                     </Pressable>
                     <Pressable
                       onPress={() => setActiveTab('details')}
-                      className={`flex-1 py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
-                      <Text
-                        className={`text-center font-medium ${
-                          activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                        Details
-                      </Text>
+                      className={`flex-1 items-center py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
+                      <Icon
+                        as={FileText}
+                        size={20}
+                        className={activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'}
+                      />
                     </Pressable>
                   </View>
 
