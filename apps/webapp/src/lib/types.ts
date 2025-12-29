@@ -12,8 +12,6 @@ export const ANALYSIS_OPTIONAL_AGENTS = ['coverage', 'diy', 'service', 'cost'] a
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
-export type PrimaryAgent = 'analysis' | 'checkpoint';
-
 export type Message = {
   id: string;
   role: 'user' | 'assistant';
@@ -204,17 +202,25 @@ export type Service = {
     createdAt: Date;
 }
 
-// Checkpoint types - imported from common package for consistency across apps
-export type {
-  Checkpoint,
-  CheckpointMedia,
-  CheckpointAnalysis,
-  VisualDiffAnalysis,
-  ChangeRegion,
-  CheckpointComparisonPreferences,
-  UserPreferences,
-  PropertyCheckpointMetrics,
-} from '@homeapp/common/types';
+export type CheckpointMedia = {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  caption: string;
+}
+
+export type Checkpoint = {
+  id: string;
+  propertyId: string;
+  userId: string;
+  title: string;
+  description: string;
+  location: string;
+  condition: 'good' | 'fair' | 'poor' | 'needs_attention';
+  tags: string[];
+  media: CheckpointMedia[];
+  createdAt: Date;
+}
     
 export type Provider = {
   id: string;

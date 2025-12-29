@@ -10,7 +10,6 @@ import type {
   AgentStep,
   AnalysisOptionalAgent,
   LocationData,
-  PrimaryAgent,
 } from "@/lib/types";
 import { ANALYSIS_OPTIONAL_AGENTS } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
@@ -48,9 +47,6 @@ import { useSession } from "@/contexts/session-context";
 import { useProperty } from "@/contexts/property-context";
 import { ChatContextHeader } from "@/components/chat/chat-context-header";
 import { usePropertyDocuments } from "@/contexts/property-documents-context";
-import { useCheckpoint } from "@/contexts/checkpoint-context";
-import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
-import type { Checkpoint } from "@homeapp/common/types";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -76,15 +72,10 @@ export default function PropertyChatSessionPage() {
   const { selectedDocuments, handleDocumentSelect, clearSelectedDocuments } =
     usePropertyDocuments();
 
-  const { checkpoints } = useCheckpoint();
-
   const [isNewSession, setIsNewSession] = useState(false);
-  const [primaryAgent, setPrimaryAgent] = useState<PrimaryAgent>('analysis');
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
-  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>([]);
-  const [isCheckpointDrawerOpen, setIsCheckpointDrawerOpen] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | undefined>(
     undefined
   );
@@ -281,28 +272,6 @@ export default function PropertyChatSessionPage() {
     []
   );
 
-  const handleCheckpointToggle = useCallback((checkpoint: Checkpoint) => {
-    setSelectedCheckpoints((prev) => {
-      const isSelected = prev.some((cp) => cp.id === checkpoint.id);
-      if (isSelected) {
-        return prev.filter((cp) => cp.id !== checkpoint.id);
-      } else {
-        return [...prev, checkpoint];
-      }
-    });
-  }, []);
-
-  const handleRemoveCheckpoint = useCallback((checkpoint: Checkpoint) => {
-    setSelectedCheckpoints((prev) => prev.filter((cp) => cp.id !== checkpoint.id));
-  }, []);
-
-  // Auto-select all checkpoints when switching to checkpoint agent
-  useEffect(() => {
-    if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0 && selectedCheckpoints.length === 0) {
-      setSelectedCheckpoints(checkpoints);
-    }
-  }, [primaryAgent, checkpoints, selectedCheckpoints.length]);
-
   const handleSend = useCallback(
     async (content: string) => {
       if (!user) return;
@@ -392,10 +361,6 @@ export default function PropertyChatSessionPage() {
           ? [userMessage.file.gsURI]
           : [];
 
-        const checkpointIds = selectedCheckpoints
-          .map((cp) => cp.id)
-          .filter((id): id is string => !!id);
-
         const requestBody: Record<string, any> = {
           user_id: user.uid,
           session_id: agentSessionId,
@@ -404,9 +369,8 @@ export default function PropertyChatSessionPage() {
           diagnosis_uris: diagnosisURIs,
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
-          primary_agent: primaryAgent,
+          primary_agent: 'analysis', // Explicitly set to analysis agent
           analysis_optional_agents: selectedOptionalAgents,
-          checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
         };
 
         // Add location data if provided
@@ -548,10 +512,7 @@ export default function PropertyChatSessionPage() {
       propertyId,
       property,
       selectedDocuments,
-      primaryAgent,
       selectedOptionalAgents,
-      selectedCheckpoints,
-      locationData,
     ]
   );
 
@@ -583,26 +544,14 @@ export default function PropertyChatSessionPage() {
             onFileChange={handleFileUpload}
             onFileRemove={removeFileAttachment}
             placeholder="Type a message or attach image/video to diagnose an issue..."
-            primaryAgent={primaryAgent}
-            onPrimaryAgentChange={setPrimaryAgent}
             selectedOptionalAgents={selectedOptionalAgents}
             onOptionalAgentsChange={handleOptionalAgentsChange}
-            selectedCheckpoints={selectedCheckpoints}
-            onOpenCheckpointDrawer={() => setIsCheckpointDrawerOpen(true)}
-            onRemoveCheckpoint={handleRemoveCheckpoint}
             locationData={locationData}
             onLocationDataChange={setLocationData}
             propertyAddress={property?.address}
           />
         </footer>
       </div>
-      <CheckpointDrawer
-        open={isCheckpointDrawerOpen}
-        onOpenChange={setIsCheckpointDrawerOpen}
-        checkpoints={checkpoints || []}
-        selectedCheckpoints={selectedCheckpoints}
-        onToggleCheckpoint={handleCheckpointToggle}
-      />
     </div>
   );
 }
