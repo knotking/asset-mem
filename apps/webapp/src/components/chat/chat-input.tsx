@@ -453,13 +453,17 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">
                     {locationType === 'address'
-                      ? `Address${propertyAddress ? `: ${propertyAddress.substring(0, 30)}...` : ' (not set)'}`
+                      ? propertyAddress 
+                        ? `Address: ${propertyAddress.substring(0, 30)}${propertyAddress.length > 30 ? '...' : ''}`
+                        : 'Address (not set)'
                       : locationType === 'location'
                         ? locationData?.locationCoordinates
-                          ? `Location: ${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)}`
-                          : 'Location (not set)'
+                          ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
+                          : 'Current Location (not set)'
                         : 'Location (optional)'}
-                    {locationData?.locationRadius ? ` • ${locationData.locationRadius} mi` : ''}
+                    {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
+                      ? ` • ${locationData.locationRadius} mi radius` 
+                      : ''}
                   </span>
                 </div>
                 <X className={`h-4 w-4 text-muted-foreground transition-transform ${showLocationOptions ? 'rotate-45' : ''}`} />
@@ -500,30 +504,56 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                     </div>
                   </div>
 
-                  {/* Current Location Button (for location type) */}
-                  {locationType === 'location' && (
-                    <button
-                      type="button"
-                      onClick={handleGetCurrentLocation}
-                      disabled={isGettingLocation}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors"
-                    >
-                      {isGettingLocation ? (
-                        <>
-                          <div className="h-4 w-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
-                          <span>Getting location...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Navigation className="h-4 w-4" />
-                          <span>Use Current Location</span>
-                        </>
-                      )}
-                    </button>
+                  {/* Location Type Descriptions */}
+                  {locationType === 'address' && propertyAddress && (
+                    <div className="rounded-md bg-muted/50 p-2">
+                      <p className="text-xs text-muted-foreground">
+                        Using property address for location-based search. The address will be geocoded to coordinates for precise radius filtering.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {locationType === 'address' && !propertyAddress && (
+                    <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-2">
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                        No property address available. Please select a property or use Current Location instead.
+                      </p>
+                    </div>
                   )}
 
-                  {/* Radius Selector - Only show for location type */}
+                  {/* Current Location Button (for location type) */}
                   {locationType === 'location' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleGetCurrentLocation}
+                        disabled={isGettingLocation}
+                        className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors"
+                      >
+                        {isGettingLocation ? (
+                          <>
+                            <div className="h-4 w-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                            <span>Getting location...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="h-4 w-4" />
+                            <span>Use Current Location</span>
+                          </>
+                        )}
+                      </button>
+                      {locationData?.locationCoordinates && (
+                        <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
+                          <p className="text-xs text-green-700 dark:text-green-400">
+                            ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Radius Selector - Show for both address and location types */}
+                  {(locationType === 'location' || locationType === 'address') && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-semibold text-foreground">Search Radius</label>

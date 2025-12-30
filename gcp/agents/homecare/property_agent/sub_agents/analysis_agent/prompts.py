@@ -193,12 +193,16 @@ def analysis_agent_instructions() -> str:
         4. If `"service"` is in `analysis_optional_agents`, call `service_agent` to provide local professional listings.
            Pass: user_query, context_doc_uris, property_address, location_coordinates (if available), location_radius (if available)
            IMPORTANT: Include the diagnosis from the triage result as context.
-           LOCATION HANDLING:
-           - If `location_coordinates` is provided, pass it along with `location_radius` (default: 50 miles if not specified)
-           - If only `property_address` is available, use that for location-based searches
-           - If neither is available, use "near me" as fallback
-           SEARCH SCOPE: Restrict local professional search to within the specified `location_radius` (default: 50 miles) of the provided location
-           RESULT SIZE: Return the TOP 10 local providers only (rank by rating/relevance; include yelp and serpapi sources)
+           LOCATION HANDLING (PRIORITY ORDER):
+           - **PRIORITY 1 (PREFERRED)**: If `location_coordinates` is provided (from current location OR geocoded address), ALWAYS use coordinates with `location_radius` for precise radius-based search
+             * Coordinates enable accurate distance filtering within the specified radius
+             * Example: Search within 50 miles of lat/lng coordinates
+           - **PRIORITY 2 (FALLBACK)**: If only `property_address` is available without coordinates, use address for location-based searches
+           - **PRIORITY 3 (LAST RESORT)**: If neither coordinates nor address available, use "near me" as fallback
+           - Default `location_radius` to 50 miles if not specified
+           SEARCH SCOPE: Restrict local professional search to within the specified `location_radius` of the provided location
+           RESULT SIZE: Return the TOP 10 local providers only (rank by distance/rating/relevance; include yelp and serpapi sources)
+           DISTANCE SORTING: When using coordinates, sort results by distance (closest first)
            FALLBACK: If SerpAPI and Yelp return no actionable providers, perform a Google search via `google_search_agent` using queries like "[diagnosis] repair service near [address/coordinates]" and return parsed results under `localPros.googleSearchResults`
         
         5. If `"cost"` is in `analysis_optional_agents`, call `cost_agent` to produce DIY vs Service cost estimates as a separate section.

@@ -155,6 +155,34 @@ async def stream_agent_answers(
     location_coordinates = request.location_coordinates
     location_radius = request.location_radius
     
+    # Geocode address to coordinates if location_type is "address" and we have an address
+    if location_type == "address" and property_address and not location_coordinates:
+        try:
+            from common.geocoding import GeocodingClient, GeocodingConfig
+            
+            geocoding_config = GeocodingConfig.from_env()
+            if geocoding_config.is_configured:
+                geocoding_client = GeocodingClient(geocoding_config)
+                geocode_response = await geocoding_client.geocode(property_address, region="us")
+                
+                if geocode_response.success and geocode_response.has_location:
+                    location_coordinates = {
+                        "lat": geocode_response.lat,
+                        "lng": geocode_response.lng
+                    }
+                    logger.info(f"Successfully geocoded address '{property_address}' to coordinates: {location_coordinates}")
+                else:
+                    logger.warning(f"Failed to geocode address '{property_address}': {geocode_response.error_message}")
+            else:
+                logger.debug("Geocoding not configured, skipping address geocoding")
+        except Exception as e:
+            logger.warning(f"Error during geocoding: {e}. Continuing with address only.")
+    
+    # Set default radius if not specified
+    if location_radius is None and (location_coordinates or location_type):
+        location_radius = 50  # Default to 50 miles
+        logger.debug(f"Setting default location_radius to {location_radius} miles")
+    
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(user_id)
@@ -196,28 +224,23 @@ async def stream_agent_answers(
         payload["property_id"] = property_id
     
     # Location handling logic:
-    # If location_type == "address": Use property_address if present, else fall back to location_coordinates
-    # If location_type == "location": Use location_coordinates only
-    if location_type == "address":
-        if property_address:
-            payload["property_address"] = property_address
-        elif location_coordinates:
-            payload["location_coordinates"] = location_coordinates
-    elif location_type == "location":
-        if location_coordinates:
-            payload["location_coordinates"] = location_coordinates
-    else:
-        # Backward compatibility: use property_address if available
-        if property_address:
-            payload["property_address"] = property_address
+    # Always include property_address if available (for context)
+    if property_address:
+        payload["property_address"] = property_address
     
     # Include location metadata when location data is present
     if location_type:
         payload["location_type"] = location_type
+    
+    # Include coordinates (either from request or geocoded from address)
     if location_coordinates:
         payload["location_coordinates"] = location_coordinates
+        logger.info(f"Including location_coordinates in payload: {location_coordinates}")
+    
+    # Include radius (with default of 50 miles)
     if location_radius is not None:
         payload["location_radius"] = location_radius
+        logger.info(f"Including location_radius in payload: {location_radius} miles")
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents

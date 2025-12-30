@@ -727,13 +727,17 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
               <Icon as={MapPin} size={16} className="text-muted-foreground" />
               <Text className="text-sm font-medium text-foreground">
                 {locationType === 'address'
-                  ? `Address${propertyAddress ? `: ${propertyAddress.substring(0, 30)}...` : ' (not set)'}`
+                  ? propertyAddress 
+                    ? `Address: ${propertyAddress.substring(0, 30)}${propertyAddress.length > 30 ? '...' : ''}`
+                    : 'Address (not set)'
                   : locationType === 'location'
                     ? locationData?.locationCoordinates
-                      ? `Location: ${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)}`
-                      : 'Location (not set)'
+                      ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
+                      : 'Current Location (not set)'
                     : 'Location (optional)'}
-                {locationData?.locationRadius ? ` • ${locationData.locationRadius} mi` : ''}
+                {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
+                  ? ` • ${locationData.locationRadius} mi radius` 
+                  : ''}
               </Text>
             </View>
             <Animated.View
@@ -801,6 +805,23 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                 </View>
               </View>
 
+              {/* Location Type Descriptions */}
+              {locationType === 'address' && propertyAddress && (
+                <View className="mb-3 rounded-md bg-muted/50 p-2">
+                  <Text className="text-xs text-muted-foreground">
+                    Using property address for location-based search. The address will be geocoded to coordinates for precise radius filtering.
+                  </Text>
+                </View>
+              )}
+              
+              {locationType === 'address' && !propertyAddress && (
+                <View className="mb-3 rounded-md bg-yellow-500/10 border border-yellow-500/20 p-2">
+                  <Text className="text-xs text-yellow-700 dark:text-yellow-400">
+                    No property address available. Please select a property or use Current Location instead.
+                  </Text>
+                </View>
+              )}
+
               {/* Current Location Button (for location type) */}
               {locationType === 'location' && (
                 <View className="mb-3">
@@ -817,11 +838,18 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                       {isGettingLocation ? 'Getting location...' : 'Use Current Location'}
                     </Text>
                   </Pressable>
+                  {locationData?.locationCoordinates && (
+                    <View className="mt-2 rounded-md bg-green-500/10 border border-green-500/20 p-2">
+                      <Text className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
-              {/* Radius Slider - Only show for location type */}
-              {locationType === 'location' && (
+              {/* Radius Slider - Show for both address and location types */}
+              {(locationType === 'location' || locationType === 'address') && (
                 <View>
                   <View className="mb-2 flex-row items-center justify-between">
                     <Text className="text-xs font-semibold text-foreground">Search Radius</Text>
