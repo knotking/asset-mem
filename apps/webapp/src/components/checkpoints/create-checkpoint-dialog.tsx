@@ -19,6 +19,7 @@ import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CreateCheckpointDialogProps {
   open: boolean;
@@ -31,6 +32,20 @@ interface FileWithPreview {
   type: 'image' | 'video';
 }
 
+const ASSET_TYPES = [
+  { label: 'Real Estate', value: 'real_estate' as const },
+  { label: 'Vehicle', value: 'vehicle' as const },
+  { label: 'Appliance', value: 'appliance' as const },
+  { label: 'Other', value: 'other' as const },
+];
+
+const LOCATION_SUGGESTIONS = {
+  real_estate: ['Kitchen', 'Bathroom', 'Living Room', 'Bedroom', 'Exterior', 'Basement', 'Attic', 'Other'],
+  vehicle: ['Exterior', 'Interior', 'Engine Bay', 'Tires/Wheels', 'Undercarriage', 'Trunk', 'Dashboard', 'Other'],
+  appliance: ['Exterior', 'Interior', 'Controls', 'Seals/Gaskets', 'Filters', 'Connections', 'Other'],
+  other: ['Other'],
+};
+
 export function CreateCheckpointDialog({
   open,
   onOpenChange,
@@ -39,6 +54,7 @@ export function CreateCheckpointDialog({
   const { toast } = useToast();
 
   const [name, setName] = useState('');
+  const [assetType, setAssetType] = useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -92,6 +108,7 @@ export function CreateCheckpointDialog({
       const result = await createCheckpoint(
         {
           name: name.trim(),
+          assetType,
           location: location.trim() || undefined,
           description: description.trim() || undefined,
         },
@@ -107,7 +124,7 @@ export function CreateCheckpointDialog({
       // Trigger AI analysis
       if (result.id && result.media.length > 0) {
         try {
-          await analyzeCheckpoint(result.id, result.media[0].gsURI);
+          await analyzeCheckpoint(result.id, result.media[0].gsURI, assetType);
         } catch (error) {
           console.error('Failed to trigger analysis:', error);
           // Don't show error to user - analysis will happen eventually
@@ -116,6 +133,7 @@ export function CreateCheckpointDialog({
 
       // Reset form
       setName('');
+      setAssetType('real_estate');
       setLocation('');
       setDescription('');
       setFiles([]);
@@ -134,6 +152,7 @@ export function CreateCheckpointDialog({
   const handleCancel = () => {
     if (!isCreating) {
       setName('');
+      setAssetType('real_estate');
       setLocation('');
       setDescription('');
       setFiles([]);
@@ -176,16 +195,57 @@ export function CreateCheckpointDialog({
             />
           </div>
 
+          {/* Asset Type */}
+          <div className="space-y-2">
+            <Label>Asset Type</Label>
+            <div className="flex flex-wrap gap-2">
+              {ASSET_TYPES.map((type) => (
+                <Button
+                  key={type.value}
+                  type="button"
+                  variant={assetType === type.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setAssetType(type.value);
+                    setLocation(''); // Reset location when asset type changes
+                  }}
+                  disabled={isCreating}
+                  className={cn(
+                    'rounded-full',
+                    assetType === type.value && 'bg-primary text-primary-foreground'
+                  )}
+                >
+                  {type.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
             <Input
               id="location"
-              placeholder="e.g., Kitchen, Bathroom, Exterior"
+              placeholder={`e.g., ${LOCATION_SUGGESTIONS[assetType].slice(0, 3).join(', ')}`}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               disabled={isCreating}
             />
+            <div className="flex flex-wrap gap-1 mt-2">
+              {LOCATION_SUGGESTIONS[assetType].map((suggestion) => (
+                <Button
+                  key={suggestion}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocation(suggestion)}
+                  disabled={isCreating}
+                  className="h-7 text-xs rounded-full"
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </div>
             <p className="text-xs text-muted-foreground">
               Leave blank to auto-detect location from photos
             </p>

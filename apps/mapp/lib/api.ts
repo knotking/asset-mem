@@ -421,6 +421,7 @@ export interface AnalyzeCheckpointInput {
   imageUrl: string;
   contentType: string;
   location?: string;
+  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'other';
   checkpointId: string;
   userId: string;
   propertyId: string;

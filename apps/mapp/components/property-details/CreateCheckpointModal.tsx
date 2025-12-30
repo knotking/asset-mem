@@ -15,26 +15,59 @@ interface CreateCheckpointModalProps {
   onClose: () => void;
   onCreate: (data: {
     name: string;
+    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
     location: string;
     mediaAsset: ImagePicker.ImagePickerAsset;
     mediaType: 'image' | 'video';
   }) => Promise<void>;
 }
 
-const LOCATIONS = [
-  { label: 'Kitchen', value: 'Kitchen' },
-  { label: 'Bathroom', value: 'Bathroom' },
-  { label: 'Living Room', value: 'Living Room' },
-  { label: 'Bedroom', value: 'Bedroom' },
-  { label: 'Exterior', value: 'Exterior' },
-  { label: 'Basement', value: 'Basement' },
-  { label: 'Attic', value: 'Attic' },
-  { label: 'Other', value: 'Other' },
+const ASSET_TYPES = [
+  { label: 'Real Estate', value: 'real_estate' as const },
+  { label: 'Vehicle', value: 'vehicle' as const },
+  { label: 'Appliance', value: 'appliance' as const },
+  { label: 'Other', value: 'other' as const },
 ];
+
+const LOCATION_OPTIONS = {
+  real_estate: [
+    { label: 'Kitchen', value: 'Kitchen' },
+    { label: 'Bathroom', value: 'Bathroom' },
+    { label: 'Living Room', value: 'Living Room' },
+    { label: 'Bedroom', value: 'Bedroom' },
+    { label: 'Exterior', value: 'Exterior' },
+    { label: 'Basement', value: 'Basement' },
+    { label: 'Attic', value: 'Attic' },
+    { label: 'Other', value: 'Other' },
+  ],
+  vehicle: [
+    { label: 'Exterior', value: 'Exterior' },
+    { label: 'Interior', value: 'Interior' },
+    { label: 'Engine Bay', value: 'Engine Bay' },
+    { label: 'Tires/Wheels', value: 'Tires/Wheels' },
+    { label: 'Undercarriage', value: 'Undercarriage' },
+    { label: 'Trunk', value: 'Trunk' },
+    { label: 'Dashboard', value: 'Dashboard' },
+    { label: 'Other', value: 'Other' },
+  ],
+  appliance: [
+    { label: 'Exterior', value: 'Exterior' },
+    { label: 'Interior', value: 'Interior' },
+    { label: 'Controls', value: 'Controls' },
+    { label: 'Seals/Gaskets', value: 'Seals/Gaskets' },
+    { label: 'Filters', value: 'Filters' },
+    { label: 'Connections', value: 'Connections' },
+    { label: 'Other', value: 'Other' },
+  ],
+  other: [
+    { label: 'Other', value: 'Other' },
+  ],
+};
 
 export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateCheckpointModalProps) {
   const insets = useSafeAreaInsets();
   const [name, setName] = React.useState('');
+  const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
   const [mediaAsset, setMediaAsset] = React.useState<ImagePicker.ImagePickerAsset | null>(null);
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image');
@@ -58,6 +91,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   React.useEffect(() => {
     if (visible) {
       setName('');
+      setAssetType('real_estate');
       setLocation('');
       setMediaAsset(null);
       setMediaType('image');
@@ -156,7 +190,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         name.trim() || `${(location || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
       const finalLocation = location.trim();
-      await onCreate({ name: finalName, location: finalLocation, mediaAsset, mediaType });
+      await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
       onClose();
     } catch (error) {
       console.error('Error creating checkpoint:', error);
@@ -234,9 +268,36 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
             </View>
 
             <View>
+              <Text className="mb-3 text-sm font-medium text-foreground">Asset Type</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {ASSET_TYPES.map((type) => {
+                  const isSelected = assetType === type.value;
+                  return (
+                    <Pressable
+                      key={type.value}
+                      onPress={() => {
+                        setAssetType(type.value);
+                        setLocation(''); // Reset location when asset type changes
+                      }}
+                      className={`rounded-full border px-3 py-1.5 ${
+                        isSelected ? 'border-primary bg-primary' : 'border-border bg-secondary'
+                      }`}>
+                      <Text
+                        className={`text-xs font-medium ${
+                          isSelected ? 'text-primary-foreground' : 'text-foreground'
+                        }`}>
+                        {type.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View>
               <Text className="mb-3 text-sm font-medium text-foreground">Location</Text>
               <View className="flex-row flex-wrap gap-2">
-                {LOCATIONS.map((loc) => {
+                {LOCATION_OPTIONS[assetType].map((loc) => {
                   const isSelected = location === loc.value;
                   return (
                     <Pressable
@@ -256,7 +317,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
                 })}
               </View>
               <Text className="mt-2 text-xs text-muted-foreground">
-                Optional — we’ll auto-detect this from the photo when possible.
+                Optional — we'll auto-detect this from the photo when possible.
               </Text>
             </View>
           </View>

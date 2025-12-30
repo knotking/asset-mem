@@ -163,6 +163,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           propertyId: property.id,
           name: data.name || "Untitled Checkpoint",
           description: data.description || "",
+          assetType: data.assetType || "real_estate",
           location: data.location || "",
           media: uploadedMedia,
           tags: data.tags || [],

@@ -7,13 +7,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.homegeekpro.com'
 /**
  * Trigger AI analysis for a checkpoint
  */
-export async function analyzeCheckpoint(checkpointId: string, mediaGsURI: string) {
+export async function analyzeCheckpoint(
+  checkpointId: string, 
+  mediaGsURI: string,
+  assetType?: 'real_estate' | 'vehicle' | 'appliance' | 'other'
+) {
   const response = await fetch(`${API_URL}/analyze-checkpoint`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       checkpointId,
       mediaGsURI,
+      assetType,
     }),
   });
 
