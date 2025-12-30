@@ -89,7 +89,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [showLocationOptions, setShowLocationOptions] = useState(false);
-  const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType);
+  // Default to 'location' (current location) if no locationData provided
+  const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType || 'location');
   const [locationRadius, setLocationRadius] = useState<number>(locationData?.locationRadius || 50);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   
@@ -227,13 +228,16 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     }
   };
 
-  // Sync locationData changes
+  // Sync locationData changes and set default to 'location'
   useEffect(() => {
     if (locationData) {
       setLocationType(locationData.locationType);
       if (locationData.locationRadius !== undefined) {
         setLocationRadius(locationData.locationRadius);
       }
+    } else {
+      // Default to 'location' (current location) when no locationData
+      setLocationType('location');
     }
   }, [locationData]);
 
@@ -450,7 +454,11 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-left hover:bg-muted transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  {locationType === 'location' ? (
+                    <Navigation className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  )}
                   <span className="text-sm font-medium text-foreground">
                     {locationType === 'address'
                       ? propertyAddress 
@@ -459,11 +467,13 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                       : locationType === 'location'
                         ? locationData?.locationCoordinates
                           ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
-                          : 'Current Location (not set)'
-                        : 'Location (optional)'}
+                          : 'Current Location (click to set)'
+                        : 'Location'}
                     {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
                       ? ` • ${locationData.locationRadius} mi radius` 
-                      : ''}
+                      : locationType === 'location' && !locationData?.locationCoordinates
+                        ? ` • ${locationRadius} mi radius`
+                        : ''}
                   </span>
                 </div>
                 <X className={`h-4 w-4 text-muted-foreground transition-transform ${showLocationOptions ? 'rotate-45' : ''}`} />

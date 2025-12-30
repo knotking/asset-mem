@@ -8,6 +8,15 @@ This document summarizes the implementation of location-based service agent dete
 
 December 30, 2025
 
+## Key User Experience
+
+When users click the location button:
+1. **"Current Location" is pre-selected by default** - ready to use
+2. Both options are visible: "Current Location" and "Address"
+3. Icon dynamically changes: Navigation icon (📍) for current location, MapPin icon (📌) for address
+4. Default radius of 50 miles is shown even before coordinates are set
+5. Clear call-to-action: "Current Location (click/tap to set)" prompts user to get their location
+
 ## Features Implemented
 
 ### 1. Geocoding Service (`gcp/common/geocoding/`)
@@ -90,31 +99,39 @@ Updated analysis agent to pass location data correctly to service agent:
 Enhanced location UI with better feedback and radius control:
 
 **Changes**:
+- **Default Selection**: "Current Location" is pre-selected when user opens location options
 - Improved location display in collapsed state
 - Shows "Address: ..." or "Current Location (lat, lng)"
-- Displays radius for both location types
+- Dynamic icon: Navigation icon for current location, MapPin icon for address
+- Displays radius for both location types (shows default 50 mi even before coordinates are set)
 - Added descriptive messages:
   - Address option: Explains geocoding to coordinates
   - No address warning: Prompts to select property or use current location
   - Location success: Shows coordinates with checkmark
 - Radius slider now available for both address and location types
+- Clear call-to-action: "Current Location (click to set)" when not yet set
 
 **UI Flow**:
 1. Click location button
-2. Select "Address" or "Current Location"
-3. Set radius (10-100 miles)
-4. See visual feedback with coordinates/address
+2. "Current Location" is pre-selected by default
+3. User can switch between "Current Location" and "Address"
+4. Set radius (10-100 miles)
+5. See visual feedback with coordinates/address
+6. Icon changes based on selection (Navigation icon for current location, MapPin for address)
 
 #### Mobile App (`apps/mapp/components/GiftedChatInputToolbar.tsx`)
 
 Mirror changes from webapp for consistency:
 
 **Changes**:
+- **Default Selection**: "Current Location" is pre-selected when user opens location options
 - Same location display improvements
+- Dynamic icon: Navigation icon for current location, MapPin icon for address
 - Same descriptive messages (adapted for mobile)
 - Radius slider for both location types
 - Visual feedback with success/warning states
 - Native location permission handling
+- Clear call-to-action: "Current Location (tap to set)" when not yet set
 
 ### 5. Testing Infrastructure
 

@@ -108,7 +108,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   const isDark = colorScheme === 'dark';
   const [showMenu, setShowMenu] = React.useState(false);
   const [showLocationOptions, setShowLocationOptions] = React.useState(false);
-  const [locationType, setLocationType] = React.useState<LocationType | undefined>(locationData?.locationType);
+  // Default to 'location' (current location) if no locationData provided
+  const [locationType, setLocationType] = React.useState<LocationType | undefined>(locationData?.locationType || 'location');
   const [locationRadius, setLocationRadius] = React.useState<number>(locationData?.locationRadius || 50);
   const [isGettingLocation, setIsGettingLocation] = React.useState(false);
   const [isAgentSectionExpanded, setIsAgentSectionExpanded] = React.useState(false);
@@ -298,12 +299,16 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     }
   }, [locationType, locationData, onLocationDataChange]);
 
+  // Sync locationData changes and set default to 'location'
   React.useEffect(() => {
     if (locationData) {
       setLocationType(locationData.locationType);
       if (locationData.locationRadius !== undefined) {
         setLocationRadius(locationData.locationRadius);
       }
+    } else {
+      // Default to 'location' (current location) when no locationData
+      setLocationType('location');
     }
   }, [locationData]);
 
@@ -724,7 +729,11 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             onPress={handleLocationSectionToggle}
             className="flex-row items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
             <View className="flex-row items-center gap-2">
-              <Icon as={MapPin} size={16} className="text-muted-foreground" />
+              <Icon 
+                as={locationType === 'location' ? Navigation : MapPin} 
+                size={16} 
+                className="text-muted-foreground" 
+              />
               <Text className="text-sm font-medium text-foreground">
                 {locationType === 'address'
                   ? propertyAddress 
@@ -733,11 +742,13 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                   : locationType === 'location'
                     ? locationData?.locationCoordinates
                       ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
-                      : 'Current Location (not set)'
-                    : 'Location (optional)'}
+                      : 'Current Location (tap to set)'
+                    : 'Location'}
                 {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
                   ? ` • ${locationData.locationRadius} mi radius` 
-                  : ''}
+                  : locationType === 'location' && !locationData?.locationCoordinates
+                    ? ` • ${locationRadius} mi radius`
+                    : ''}
               </Text>
             </View>
             <Animated.View
