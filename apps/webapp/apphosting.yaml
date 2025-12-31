@@ -11,11 +11,6 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  # Reference to secret stored in Google Secret Manager
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
-    availability:
-      - RUNTIME
   # Add this for monorepo support
   - variable: GOOGLE_BUILDABLE
     value: apps/webapp

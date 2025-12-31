@@ -16,17 +16,7 @@ Firebase App Hosting provides full Next.js support including:
 
 ## Prerequisites
 
-Before deploying, ensure you have granted access to secrets used by the app:
-
-```bash
-# Grant access to the GEMINI_API_KEY secret for App Hosting
-firebase apphosting:secrets:grantaccess GEMINI_API_KEY \
-  --project homegeekdemo
-```
-
-This command allows the Firebase App Hosting service to access the `GEMINI_API_KEY` secret stored in Google Secret Manager. You only need to run this once per secret per backend.
-
-**Other prerequisites:**
+**Prerequisites:**
 
 - Firebase CLI installed: `npm install -g firebase-tools@latest`
 - Authenticated to Firebase: `firebase login`
