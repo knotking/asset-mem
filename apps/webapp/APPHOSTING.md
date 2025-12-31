@@ -70,32 +70,18 @@ Each environment has its own configuration:
 
 ### Staging
 - Uses staging-specific Cloud Run URLs (with `-staging` suffix)
-- Uses `GEMINI_API_KEY_STAGING` secret
 - Lower `maxInstances` (2) for cost control
 - `NEXT_PUBLIC_ENV=staging`
 
 ### Production
 - Uses production Cloud Run URLs
-- Uses `GEMINI_API_KEY` secret
 - Higher `maxInstances` (10) for scalability
 - Minimum 1 instance always running
 - `NEXT_PUBLIC_ENV=production`
 
 ## Secret Management
 
-Make sure to create the required secrets in Google Secret Manager:
-
-```bash
-# Create staging secret
-echo -n "your-staging-api-key" | gcloud secrets create GEMINI_API_KEY_STAGING \
-  --data-file=- \
-  --project YOUR_PROJECT_ID
-
-# Create production secret
-echo -n "your-production-api-key" | gcloud secrets create GEMINI_API_KEY \
-  --data-file=- \
-  --project YOUR_PROJECT_ID
-```
+**Note:** The webapp no longer requires `GEMINI_API_KEY` as all AI features now use the backend API which authenticates via GCP service accounts.
 
 ## CI/CD Integration
 

@@ -146,6 +146,7 @@ export const apiUrls = {
   agentSession: () => getApiUrl("/agent-session"),
   agentSse: () => getApiUrl("/firebase-agent-stream"),
   ragFileUpload: () => getApiUrl("/rag-file-upload"),
+  extractDocInfo: () => getApiUrl("/extract-doc-info"),
   analyzeCheckpoint: () => getApiUrl("/analyze-checkpoint"),
   compareCheckpoints: () => getApiUrl("/compare-checkpoints"),
 };
