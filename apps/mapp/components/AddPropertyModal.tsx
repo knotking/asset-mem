@@ -220,18 +220,21 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       onRequestClose={handleClose}>
       <SafeAreaView className="flex-1 bg-background">
         {/* Header */}
-        <View className="border-b border-border bg-background px-4 py-3">
+        <View className="border-b border-border bg-background px-6 py-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-foreground">Upload Property Documents</Text>
+            <Text className="text-xl font-semibold text-foreground">Upload Property Documents</Text>
             <Button onPress={handleClose} variant="ghost" size="icon" disabled={isCreating}>
               <Icon as={X} size={24} className="text-foreground" />
             </Button>
           </View>
+          <Text className="mt-1 text-sm text-muted-foreground">
+            Upload documents related to your property such as inspection reports, floor plans, permits, etc.
+          </Text>
         </View>
 
         {/* Error Alert */}
         {errorMessage && (
-          <View className="mx-4 mt-4">
+          <View className="mx-6 mt-4">
             <Alert icon={AlertCircle} variant="destructive">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{errorMessage}</AlertDescription>
@@ -247,10 +250,10 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         )}
 
         {/* Main Content */}
-        <ScrollView className="flex-1" contentContainerClassName="px-6 py-4">
+        <ScrollView className="flex-1" contentContainerClassName="px-6 py-6">
           {/* Property Type Selection */}
-          <View className="mb-4 w-full max-w-md">
-            <Label className="mb-2 text-sm font-semibold text-foreground">Property Type</Label>
+          <View className="mb-6 w-full">
+            <Label className="mb-2 text-base font-semibold text-foreground">Property Type</Label>
             <Select
               value={propertyType ? { value: propertyType, label: PROPERTY_TYPES.find(t => t.value === propertyType)?.label || propertyType } : undefined}
               onValueChange={(option) => {
@@ -275,8 +278,8 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
           {/* Property Sub-Type Selection */}
           {propertyType && getSubTypesForType(propertyType).length > 0 && (
-            <View className="mb-4 w-full max-w-md">
-              <Label className="mb-2 text-sm font-semibold text-foreground">Sub-Type (Optional)</Label>
+            <View className="mb-6 w-full">
+              <Label className="mb-2 text-base font-semibold text-foreground">Sub-Type (Optional)</Label>
               <Select
                 value={propertySubType ? { value: propertySubType, label: getSubTypesForType(propertyType).find(st => st.value === propertySubType)?.label || propertySubType } : undefined}
                 onValueChange={(option) => {
@@ -300,13 +303,64 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
             </View>
           )}
 
+          {/* Upload Area */}
+          <Pressable
+            onPress={handleChooseFiles}
+            disabled={isCreating}
+            className="mb-6 w-full rounded-lg border-2 border-dashed border-border bg-background py-16">
+            <View className="items-center px-8">
+              {/* Upload Icon */}
+              <View className="mb-4 h-16 w-16 items-center justify-center">
+                <Icon as={Upload} size={40} className="text-muted-foreground" />
+              </View>
+
+              {/* Main Text */}
+              <Text className="mb-2 text-center text-base text-foreground">
+                Drop files here or click to browse
+              </Text>
+
+              {/* Supported Types */}
+              <Text className="mb-6 text-center text-sm text-muted-foreground">
+                Supports PDF, DOC, DOCX, JPG, PNG, XLS, XLSX files
+              </Text>
+
+              {/* Choose Files Button */}
+              <Button
+                onPress={handleChooseFiles}
+                disabled={isCreating}
+                variant="default"
+                size="lg"
+                className="px-8">
+                <Text className="font-semibold text-primary-foreground">Choose Files</Text>
+              </Button>
+            </View>
+          </Pressable>
+
+          {/* OR Divider */}
+          <View className="mb-6 flex-row items-center">
+            <View className="flex-1 border-b border-border" />
+            <Text className="px-4 text-sm text-muted-foreground">OR</Text>
+            <View className="flex-1 border-b border-border" />
+          </View>
+
+          {/* Take Photo Button */}
+          <Button
+            onPress={handleTakePhoto}
+            disabled={isCreating}
+            variant="outline"
+            className="mb-6 w-full"
+            size="lg">
+            <Icon as={Camera} size={20} className="mr-2 text-foreground" />
+            <Text className="font-semibold text-foreground">Take Photo</Text>
+          </Button>
+
           {/* Selected Files List */}
           {selectedFiles.length > 0 && (
-            <View className="mb-4 w-full max-w-md">
-              <Text className="mb-2 text-sm font-semibold text-foreground">
+            <View className="mb-6 w-full">
+              <Text className="mb-3 text-base font-semibold text-foreground">
                 Selected Files ({selectedFiles.length})
               </Text>
-              <View className="max-h-48 gap-2">
+              <View className="gap-2">
                 {selectedFiles.map((file, index) => (
                   <View
                     key={index}
@@ -320,7 +374,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6"
+                      className="h-8 w-8"
                       onPress={() => {
                         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
                       }}
@@ -332,76 +386,31 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               </View>
             </View>
           )}
-
-          {/* Upload Area */}
-          <Pressable
-            onPress={handleChooseFiles}
-            disabled={isCreating}
-            className="w-full max-w-md rounded-xl border-2 border-dashed border-border bg-secondary/30 px-8 py-12">
-            <View className="items-center">
-              {/* Upload Icon */}
-              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <Icon as={Upload} size={32} className="text-primary" />
-              </View>
-
-              {/* Main Text */}
-              <Text className="mb-2 text-center text-lg font-semibold text-foreground">
-                Tap to select files
-              </Text>
-
-              {/* Subtext */}
-              <Text className="mb-4 text-center text-sm text-muted-foreground">
-                Upload documents related to your property such as inspection reports, floor plans, permits, etc.
-              </Text>
-
-              {/* Supported Types */}
-              <Text className="text-center text-xs text-muted-foreground">
-                Supports PDF, DOC, DOCX, JPG, PNG files
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* Action Buttons */}
-          <View className="mt-4 w-full max-w-md flex-row gap-3">
-            <Button
-              onPress={handleTakePhoto}
-              disabled={isCreating}
-              variant="outline"
-              className="flex-1"
-              size="lg">
-              <Icon as={Camera} size={20} className="mr-2 text-foreground" />
-              <Text className="font-semibold text-foreground">Take Photo</Text>
-            </Button>
-            <Button
-              onPress={handleChooseFiles}
-              disabled={isCreating}
-              variant="outline"
-              className="flex-1"
-              size="lg">
-              <Icon as={Upload} size={20} className="mr-2 text-foreground" />
-              <Text className="font-semibold text-foreground">Choose Files</Text>
-            </Button>
-          </View>
-
-          {/* Upload Documents Button */}
-          <Button
-            onPress={handleUploadDocuments}
-            disabled={selectedFiles.length === 0 || isCreating}
-            className="mt-6 w-full max-w-md"
-            size="lg">
-            <Text className="font-semibold text-primary-foreground">
-              {isCreating
-                ? 'Creating property...'
-                : `Upload ${selectedFiles.length} document${selectedFiles.length !== 1 ? 's' : ''}`}
-            </Text>
-          </Button>
         </ScrollView>
 
-        {/* Footer Note */}
+        {/* Bottom Action Buttons */}
         <View className="border-t border-border bg-background px-6 py-4">
-          <Text className="text-center text-xs text-muted-foreground">
-            Select files first, then tap Upload to create your property
-          </Text>
+          <View className="flex-row gap-3">
+            <Button
+              onPress={handleClose}
+              disabled={isCreating}
+              variant="outline"
+              className="flex-1"
+              size="lg">
+              <Text className="font-semibold text-foreground">Cancel</Text>
+            </Button>
+            <Button
+              onPress={handleUploadDocuments}
+              disabled={selectedFiles.length === 0 || isCreating}
+              className="flex-1"
+              size="lg">
+              <Text className="font-semibold text-primary-foreground">
+                {isCreating
+                  ? 'Uploading...'
+                  : `Upload ${selectedFiles.length} Document${selectedFiles.length !== 1 ? 's' : ''}`}
+              </Text>
+            </Button>
+          </View>
         </View>
       </SafeAreaView>
     </Modal>
