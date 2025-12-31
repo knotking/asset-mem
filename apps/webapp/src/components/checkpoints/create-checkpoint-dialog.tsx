@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileUploadZone } from './file-upload-zone';
 import { CheckpointProcessingDialog } from './checkpoint-processing-dialog';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { useAuth } from '@/contexts/auth-context';
+import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
 import { Loader2 } from 'lucide-react';
@@ -51,6 +53,8 @@ export function CreateCheckpointDialog({
   onOpenChange,
 }: CreateCheckpointDialogProps) {
   const { createCheckpoint, setSelectedCheckpoint, checkpoints } = useCheckpoint();
+  const { user } = useAuth();
+  const { property } = useProperty();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -122,9 +126,17 @@ export function CreateCheckpointDialog({
       setIsProcessingDialogOpen(true);
 
       // Trigger AI analysis
-      if (result.id && result.media.length > 0) {
+      if (result.id && result.media.length > 0 && user && property) {
         try {
-          await analyzeCheckpoint(result.id, result.media[0].gsURI, assetType);
+          const firstMedia = result.media[0];
+          await analyzeCheckpoint({
+            imageUrl: firstMedia.gsURI,
+            contentType: firstMedia.contentType,
+            location: location.trim() || undefined,
+            checkpointId: result.id,
+            userId: user.uid,
+            propertyId: property.id,
+          });
         } catch (error) {
           console.error('Failed to trigger analysis:', error);
           // Don't show error to user - analysis will happen eventually

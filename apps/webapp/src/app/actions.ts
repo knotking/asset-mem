@@ -4,16 +4,13 @@
 import { db, storage } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, doc, getDoc, deleteDoc, query, where, writeBatch, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { deleteCollection } from '@/lib/utils';
+import { deleteCollection, apiUrls } from '@/lib/utils';
 import type { Property, Message } from '@/lib/types';
 
 
 export async function createAgentSessionAction(userId: string): Promise<{ agentSessionId?: string; error?: string }> {
     try {
-        const url = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
-        if (!url) {
-            throw new Error("NEXT_PUBLIC_AGENT__SESSION_URL environment variable not set.");
-        }
+        const url = apiUrls.agentSession();
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -38,7 +35,7 @@ export async function createAgentSessionAction(userId: string): Promise<{ agentS
 
         return { agentSessionId };
     } catch (error) {
-        const url = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
+        const url = apiUrls.agentSession();
         console.error('Error creating agent session:', { error, url });
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { error: `Failed to create agent session: ${errorMessage}` };
@@ -47,13 +44,7 @@ export async function createAgentSessionAction(userId: string): Promise<{ agentS
 
 export async function deleteAgentSessionAction(userId: string, agentSessionId: string): Promise<{ success?: boolean; error?: string }> {
     try {
-        const url = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
-        if (!url) {
-            throw new Error("NEXT_PUBLIC_AGENT_SESSION_URL environment variable not set.");
-        }
-        
-        
-
+        const url = apiUrls.agentSession();
         const response = await fetch(url, {
             method: 'DELETE',
             headers: {
@@ -82,11 +73,7 @@ export async function deleteAgentSessionAction(userId: string, agentSessionId: s
 
 export async function postFileToAgent(gsURI: string, userId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
     try {
-        const url = process.env.NEXT_RAG_FILE_UPLOAD_URL;
-        if (!url) {
-            throw new Error("NEXT_AGENT_URL environment variable not set.");
-        }
-        
+        const url = apiUrls.ragFileUpload();
         const response = await fetch(url, {
             method: 'POST',
             headers: {

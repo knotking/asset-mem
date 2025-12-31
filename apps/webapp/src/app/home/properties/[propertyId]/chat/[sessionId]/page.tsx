@@ -51,6 +51,7 @@ import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
 import type { Checkpoint } from "@/lib/types";
+import { apiUrls } from "@/lib/utils";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -423,7 +424,7 @@ export default function PropertyChatSessionPage() {
         }
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_AGENT_SSE_URL}`,
+          apiUrls.agentSse(),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

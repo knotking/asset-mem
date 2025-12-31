@@ -1,10 +1,16 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import { collection, query, getDocs, writeBatch, type CollectionReference } from "firebase/firestore";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import {
+  collection,
+  query,
+  getDocs,
+  writeBatch,
+  type CollectionReference,
+} from "firebase/firestore";
 import { db } from "./firebase";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -14,13 +20,13 @@ export function cn(...inputs: ClassValue[]) {
 export async function deleteCollection(collectionRef: CollectionReference) {
   const q = query(collectionRef);
   const querySnapshot = await getDocs(q);
-  
+
   if (querySnapshot.size === 0) {
     return; // No documents to delete
   }
 
   const batch = writeBatch(db);
-  querySnapshot.docs.forEach(doc => {
+  querySnapshot.docs.forEach((doc) => {
     batch.delete(doc.ref);
   });
 
@@ -33,24 +39,24 @@ export async function deleteCollection(collectionRef: CollectionReference) {
  * @returns A WhatsApp-formatted string.
  */
 export function markdownToWhatsapp(markdown: string): string {
-  if (!markdown) return '';
+  if (!markdown) return "";
 
   let whatsappText = markdown;
 
   // Convert bold: **text** -> *text*
-  whatsappText = whatsappText.replace(/\*\*(.*?)\*\*/g, '*$1*');
-  
+  whatsappText = whatsappText.replace(/\*\*(.*?)\*\*/g, "*$1*");
+
   // Convert links: [text](url) -> text: url
-  whatsappText = whatsappText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2');
+  whatsappText = whatsappText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1: $2");
 
   // Convert headings: # Heading -> *Heading*
-  whatsappText = whatsappText.replace(/^#+\s+(.+)/gm, '*$1*');
-  
+  whatsappText = whatsappText.replace(/^#+\s+(.+)/gm, "*$1*");
+
   // Lists, italic, strikethrough, and code blocks are generally okay.
   // WhatsApp uses similar syntax. We just need to handle things it doesn't support.
 
   // Remove blockquotes
-  whatsappText = whatsappText.replace(/^>\s+/gm, '');
+  whatsappText = whatsappText.replace(/^>\s+/gm, "");
 
   return whatsappText;
 }
@@ -61,27 +67,85 @@ export function markdownToWhatsapp(markdown: string): string {
  * @returns A WhatsApp-formatted string.
  */
 export function htmlToWhatsapp(html: string): string {
-  if (!html) return '';
+  if (!html) return "";
 
   let text = html;
 
   // Convert <br> to newlines
-  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<br\s*\/?>/gi, "\n");
 
   // Convert bold: <b>, <strong> -> *text*
-  text = text.replace(/<(b|strong)>(.*?)<\/\1>/gi, '*$2*');
+  text = text.replace(/<(b|strong)>(.*?)<\/\1>/gi, "*$2*");
 
   // Convert italic: <i>, <em> -> _text_
-  text = text.replace(/<(i|em)>(.*?)<\/\1>/gi, '_$2_');
+  text = text.replace(/<(i|em)>(.*?)<\/\1>/gi, "_$2_");
 
   // Convert strikethrough: <s>, <strike>, <del> -> ~text~
-  text = text.replace(/<(s|strike|del)>(.*?)<\/\1>/gi, '~$2~');
-  
+  text = text.replace(/<(s|strike|del)>(.*?)<\/\1>/gi, "~$2~");
+
   // Convert links: <a href="url">text</a> -> text: url
-  text = text.replace(/<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, '$2: $1');
-  
+  text = text.replace(/<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, "$2: $1");
+
   // Strip any remaining HTML tags
-  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/<[^>]+>/g, "");
 
   return text;
 }
+
+/**
+ * Gets the base API URL from environment variables
+ * Falls back to NEXT_PUBLIC_API_BASE_URL or legacy individual URL variables for backward compatibility
+ */
+function getBaseApiUrl(): string {
+  // Prefer the new unified API base URL
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+
+  // Backward compatibility: also check NEXT_PUBLIC_API_URL
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // Fallback: extract base URL from existing variables for backward compatibility
+  const agentSessionUrl = process.env.NEXT_PUBLIC_AGENT_SESSION_URL;
+  if (agentSessionUrl) {
+    return agentSessionUrl.replace("/agent-session", "");
+  }
+
+  const agentSseUrl = process.env.NEXT_PUBLIC_AGENT_SSE_URL;
+  if (agentSseUrl) {
+    return agentSseUrl.replace("/firebase-agent-stream", "");
+  }
+
+  const ragFileUploadUrl = process.env.NEXT_RAG_FILE_UPLOAD_URL;
+  if (ragFileUploadUrl) {
+    return ragFileUploadUrl.replace("/rag-file-upload", "");
+  }
+
+  throw new Error(
+    "NEXT_PUBLIC_API_BASE_URL or a fallback API URL environment variable must be set"
+  );
+}
+
+/**
+ * Constructs API endpoint URLs from the base API URL
+ */
+export function getApiUrl(endpoint: string): string {
+  const baseUrl = getBaseApiUrl();
+  // Ensure base URL doesn't end with / and endpoint starts with /
+  const cleanBase = baseUrl.replace(/\/$/, "");
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  return `${cleanBase}${cleanEndpoint}`;
+}
+
+/**
+ * API endpoint URL getters
+ */
+export const apiUrls = {
+  agentSession: () => getApiUrl("/agent-session"),
+  agentSse: () => getApiUrl("/firebase-agent-stream"),
+  ragFileUpload: () => getApiUrl("/rag-file-upload"),
+  analyzeCheckpoint: () => getApiUrl("/analyze-checkpoint"),
+  compareCheckpoints: () => getApiUrl("/compare-checkpoints"),
+};
