@@ -153,6 +153,15 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       return;
     }
 
+    // Validate minimum resolution for document capture
+    const MIN_RECOMMENDED_WIDTH = 640;
+    const MIN_RECOMMENDED_HEIGHT = 480;
+    
+    if (video.videoWidth < MIN_RECOMMENDED_WIDTH || video.videoHeight < MIN_RECOMMENDED_HEIGHT) {
+      console.warn('Camera resolution may be low for optimal text extraction:', video.videoWidth, 'x', video.videoHeight);
+      // Don't block - just log warning, AI can still try to process it
+    }
+
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -169,6 +178,13 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       (blob) => {
         if (!blob) {
           setError("Failed to capture photo. Please try again.");
+          return;
+        }
+
+        // Validate blob size
+        const MAX_FILE_SIZE = 10485760; // 10MB
+        if (blob.size > MAX_FILE_SIZE) {
+          setError("Image is too large (max 10MB). Please try again with lower resolution.");
           return;
         }
 

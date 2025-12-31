@@ -72,8 +72,27 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         return;
       }
 
-      // Add new files to existing selection
-      setSelectedFiles((prev) => [...prev, ...result.assets]);
+      // Validate file sizes
+      const MAX_FILE_SIZE = 10485760; // 10MB
+      const validAssets = [];
+      const oversizedFiles = [];
+      
+      for (const asset of result.assets) {
+        if (asset.size && asset.size > MAX_FILE_SIZE) {
+          oversizedFiles.push(asset.name);
+        } else {
+          validAssets.push(asset);
+        }
+      }
+      
+      if (oversizedFiles.length > 0) {
+        setErrorMessage(`Some files are too large (max 10MB): ${oversizedFiles.join(', ')}`);
+      }
+      
+      if (validAssets.length > 0) {
+        // Add new files to existing selection
+        setSelectedFiles((prev) => [...prev, ...validAssets]);
+      }
     } catch (error) {
       console.error('Error picking documents:', error);
       setErrorMessage('Failed to pick documents. Please try again.');
@@ -107,6 +126,22 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
       // Convert ImagePicker asset to DocumentPicker format
       const asset = result.assets[0];
+      
+      // Optional: Validate image size (warn if very small, but don't block)
+      const imageSize = asset.fileSize || 0;
+      const MIN_RECOMMENDED_SIZE = 50000; // 50KB
+      const MAX_FILE_SIZE = 10485760; // 10MB
+      
+      if (imageSize > MAX_FILE_SIZE) {
+        setErrorMessage('Image is too large (max 10MB). Please try again with better lighting or lower resolution.');
+        return;
+      }
+      
+      if (imageSize < MIN_RECOMMENDED_SIZE && imageSize > 0) {
+        console.warn('Image quality may be low for optimal text extraction:', imageSize, 'bytes');
+        // Don't block - just log warning, AI can still try to process it
+      }
+      
       const convertedAsset = {
         uri: asset.uri,
         name: asset.fileName || `photo-${Date.now()}.jpg`,

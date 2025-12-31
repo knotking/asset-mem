@@ -71,12 +71,33 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
 
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadableFile[] = acceptedFiles.map(file => ({
-      file,
-      id: `${file.name}-${file.size}-${Date.now()}`,
-    }));
-    setFiles(prev => [...prev, ...newFiles]);
-  }, []);
+    const MAX_FILE_SIZE = 10485760; // 10MB
+    const validFiles: UploadableFile[] = [];
+    const oversizedFiles: string[] = [];
+    
+    for (const file of acceptedFiles) {
+      if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(file.name);
+      } else {
+        validFiles.push({
+          file,
+          id: `${file.name}-${file.size}-${Date.now()}`,
+        });
+      }
+    }
+    
+    if (oversizedFiles.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Some files are too large',
+        description: `Maximum file size is 10MB. Skipped: ${oversizedFiles.join(', ')}`,
+      });
+    }
+    
+    if (validFiles.length > 0) {
+      setFiles(prev => [...prev, ...validFiles]);
+    }
+  }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -96,6 +117,18 @@ export function UploadDocumentsDialog({ open: controlledOpen, onOpenChange: cont
   };
 
   const handleCameraCapture = (file: File) => {
+    const MAX_FILE_SIZE = 10485760; // 10MB
+    
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        variant: 'destructive',
+        title: 'Image too large',
+        description: 'Maximum file size is 10MB. Please try again with lower resolution.',
+      });
+      setCameraDialogOpen(false);
+      return;
+    }
+    
     const newFile: UploadableFile = {
       file,
       id: `${file.name}-${file.size}-${Date.now()}`,
