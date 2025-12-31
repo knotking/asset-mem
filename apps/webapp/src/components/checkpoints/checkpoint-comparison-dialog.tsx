@@ -17,6 +17,7 @@ import { Checkpoint, VisualDiffAnalysis } from '@/lib/types';
 import { Calendar, MapPin, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { compareCheckpoints } from '@/lib/api-checkpoint';
 
 interface CheckpointComparisonDialogProps {
   open: boolean;
@@ -49,22 +50,31 @@ export function CheckpointComparisonDialog({
   }, [afterCheckpoint]);
 
   const handleCompare = async () => {
+    const image1 = beforeCheckpoint.media?.[0];
+    const image2 = afterCheckpoint.media?.[0];
+
+    // Validate required fields
+    if (!image1?.gsURI || !image2?.gsURI) {
+      console.error('Missing image URLs for comparison');
+      return;
+    }
+
+    if (!image1.contentType || !image2.contentType) {
+      console.error('Missing content types for comparison');
+      return;
+    }
+
     setIsComparing(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.homegeekpro.com';
-      const response = await fetch(`${API_URL}/compare-checkpoints`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          checkpointId1: beforeCheckpoint.id,
-          checkpointId2: afterCheckpoint.id,
-        }),
+      const result = await compareCheckpoints({
+        image1Url: image1.gsURI,
+        image2Url: image2.gsURI,
+        contentType1: image1.contentType,
+        contentType2: image2.contentType,
+        location: afterCheckpoint.location,
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setComparisonResult(result);
-      }
+      setComparisonResult(result);
     } catch (error) {
       console.error('Failed to compare checkpoints:', error);
     } finally {
