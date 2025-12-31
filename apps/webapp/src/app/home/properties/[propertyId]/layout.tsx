@@ -144,7 +144,7 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
         <aside className={cn(
             "lg:relative border-r bg-sidebar transition-all duration-300 z-20",
             "lg:w-64",
-            isSessionSidebarCollapsed ? 'lg:w-14' : 'lg:w-64',
+            isSessionSidebarCollapsed ? 'lg:w-14' : 'lg:w-80',
             !isMobileSessionOpen && "hidden lg:flex flex-col",
             isMobileSessionOpen && "absolute inset-0 w-full max-w-sm flex flex-col"
             )}>

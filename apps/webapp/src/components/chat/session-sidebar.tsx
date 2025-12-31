@@ -587,7 +587,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         ))}
                     </div>
                 ) : filteredSessions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center px-4 py-6 text-center text-sm text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center px-4 py-6 text-center text-sm text-muted-foreground whitespace-normal">
                       {searchTerm.trim().length > 0
                         ? 'No sessions match your search.'
                         : 'No sessions yet. Start a new chat to get started.'}
@@ -700,8 +700,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         onClick={handleItemInteraction}
                         onKeyDown={handleItemKeyDown}
                         className={cn(
-                            "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
-                            isSelectionMode ? "w-[85%]" : "w-[90%]",
+                            "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors w-full",
+                            // isSelectionMode ? "w-[85%]" : "w-[90%]",
                             isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
                             isSelected && "ring-2 ring-primary"
                         )}
