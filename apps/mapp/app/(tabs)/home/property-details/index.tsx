@@ -16,6 +16,7 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import PushDrawer from '@/components/PushDrawer';
 import type {
   Document,
@@ -136,6 +137,41 @@ export default function PropertyDetailsScreen() {
       setSelectedDocuments(documents);
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
+
+  // Auto-set current location when session is created for analysis_agent
+  React.useEffect(() => {
+    const setDefaultLocation = async () => {
+      // Only set location if:
+      // 1. We have a selected session
+      // 2. Primary agent is 'analysis'
+      // 3. Location data is not already set
+      if (selectedSessionId && primaryAgent === 'analysis' && !locationData) {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const currentLocation = await Location.getCurrentPositionAsync({});
+            const defaultLocationData: LocationData = {
+              locationType: 'location',
+              locationCoordinates: {
+                lat: currentLocation.coords.latitude,
+                lng: currentLocation.coords.longitude,
+              },
+              locationRadius: 50, // Default 50 mile radius
+            };
+            setLocationData(defaultLocationData);
+            console.log('[PropertyDetails] Auto-set current location for analysis_agent:', defaultLocationData);
+          } else {
+            console.log('[PropertyDetails] Location permission not granted, skipping auto-location');
+          }
+        } catch (error) {
+          console.error('[PropertyDetails] Error getting default location:', error);
+          // Silently fail - user can manually set location if needed
+        }
+      }
+    };
+
+    setDefaultLocation();
+  }, [selectedSessionId, primaryAgent, locationData]);
 
 
   const handleTakePhoto = React.useCallback(async () => {
@@ -444,6 +480,7 @@ export default function PropertyDetailsScreen() {
       properties,
       selectedOptionalAgents,
       primaryAgent,
+      locationData,
       setFileAttachment,
     ]
   );
