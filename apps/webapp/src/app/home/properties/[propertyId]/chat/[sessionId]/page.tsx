@@ -575,7 +575,7 @@ export default function PropertyChatSessionPage() {
         />
       </main>
       <div className="shrink-0">
-        <footer className="flex items-center p-4 bg-card border-t h-[84px]">
+        <footer className="flex items-center p-4 bg-card border-t">
           <ChatInput
             onSend={handleSend}
             isLoading={isLoading}
