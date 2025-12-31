@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.events import lifespan
-from routers import agent, documents, telegram, service_broker, checkpoint
+from routers import agent, documents, telegram, service_broker, checkpoint, reports
 from services.vertex_service import reasoning_engine_resource
 
 # Configure logging
@@ -55,7 +55,8 @@ if settings.FIREBASE_WEBHOOK_SECRET:
     app.include_router(documents.router, prefix=prefix)
     app.include_router(service_broker.router, prefix=prefix)
     app.include_router(checkpoint.router, prefix=prefix)
-    logger.info(f"Mounted agent, documents, service_broker, and checkpoint routers at {prefix}")
+    app.include_router(reports.router, prefix=prefix)
+    logger.info(f"Mounted agent, documents, service_broker, checkpoint, and reports routers at {prefix}")
 else:
     logger.warning("FIREBASE_WEBHOOK_SECRET not set, agent endpoints not mounted.")
 

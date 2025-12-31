@@ -222,6 +222,8 @@ export type Property = {
   checksCount?: number;
   checkpoints?: number;
   checkpointsCount?: number;
+  reports?: number;
+  reportsCount?: number;
 };
 
 export type Checkpoint = {
@@ -363,4 +365,65 @@ export type PropertyCheckpointMetrics = {
     rate_points_per_day: number | null;
     trend: "improving" | "stable" | "deteriorating" | "unknown";
   };
+};
+
+// Inspection Reports Feature
+export type InspectionReport = {
+  id: string;
+  userId: string;
+  propertyId: string;
+  name: string;
+  url: string;
+  storagePath: string;
+  gsURI: string;
+  contentType: string;
+  createdAt: Timestamp;
+  inspectionDate?: Timestamp;
+  inspectorName?: string;
+  inspectorCompany?: string;
+  reportType: "HOME_INSPECTION" | "PRE_PURCHASE" | "ANNUAL" | "SPECIALIZED" | "OTHER";
+  status: "uploading" | "analyzing" | "complete" | "failed";
+  
+  // AI Analysis Results
+  aiAnalysis?: {
+    summary: string;
+    overallCondition: "excellent" | "good" | "fair" | "poor" | "critical";
+    issues: ReportIssue[];
+    recommendations: ReportRecommendation[];
+    keyFindings: string[];
+    costEstimates?: {
+      immediate: number;
+      shortTerm: number;
+      longTerm: number;
+    };
+    analyzedAt: Timestamp;
+    confidence: number;
+  };
+  
+  // For RAG/Chat
+  embedding?: number[];
+  embeddingModel?: string;
+  embeddingGeneratedAt?: Timestamp;
+};
+
+export type ReportIssue = {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  severity: "minor" | "moderate" | "major" | "critical";
+  location: string;
+  priority: number;
+  estimatedCost?: number;
+  pageNumber?: number;
+  confidence: number;
+};
+
+export type ReportRecommendation = {
+  id: string;
+  issue: string;
+  recommendation: string;
+  timeframe: "immediate" | "short_term" | "long_term" | "monitoring";
+  estimatedCost?: number;
+  diyFeasible: boolean;
 };

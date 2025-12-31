@@ -1,6 +1,18 @@
 import "regenerator-runtime/runtime";
 import type { Timestamp } from "firebase/firestore";
 
+// Re-export types from common
+export type {
+  InspectionReport,
+  ReportIssue,
+  ReportRecommendation,
+  Property,
+  Checkpoint,
+  CheckpointMedia,
+  CheckpointAnalysis,
+  Document,
+} from "@homeapp/common/src/types";
+
 export type AgentStep = {
   name: string;
   status: "transferredto" | "executing" | "completed" | "failed";
