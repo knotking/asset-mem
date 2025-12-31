@@ -30,7 +30,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal, Pencil } from 'lucide-react';
 import type { Session, Message } from '@/lib/types';
 import { deleteCollection, cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
@@ -608,7 +608,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                                             <Share2 className="mr-2 h-4 w-4" /> Share
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => handleRenameSession(session)}>
-                                                            Rename
+                                                            <Pencil className="mr-2 h-4 w-4" /> Rename
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
                                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -688,7 +688,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                         <Share2 className="mr-2 h-4 w-4" /> Share
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleRenameSession(session)}>
-                                        Rename
+                                        <Pencil className="mr-2 h-4 w-4" /> Rename
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
