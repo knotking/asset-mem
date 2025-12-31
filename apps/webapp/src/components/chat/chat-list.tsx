@@ -52,23 +52,26 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
 
   const welcomeMessageVisible = messages.length === 1 && messages[0].id === 'intro-message';
 
+  const isEmpty = messages.length === 0 && !isMessagesLoading;
+
   return (
     <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
-      <div className="p-4 sm:p-6">
-        {messages.length === 0 && !isMessagesLoading && (
-          <div className="flex justify-center items-center h-[calc(100vh-250px)] md:h-[calc(100vh-320px)]">
-            <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80">
-              <Bot className="h-7 w-7 text-primary" />
-              <p className="text-muted-foreground">Ask questions about this property's documents, services, and history.</p>
-            </div>
+      {isEmpty ? (
+        <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+          <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80">
+            <Bot className="h-7 w-7 text-primary" />
+            <p className="text-muted-foreground">Ask questions about this property's documents, services, and history.</p>
           </div>
-        )}
-         <div className="flex flex-col gap-4">
+        </div>
+      ) : (
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4">
             <AnimatePresence>
                 {renderedMessages}
             </AnimatePresence>
+          </div>
         </div>
-      </div>
+      )}
     </ScrollArea>
   );
 }

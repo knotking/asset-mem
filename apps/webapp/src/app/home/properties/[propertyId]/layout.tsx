@@ -157,7 +157,7 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
         </aside>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-            <main className="flex-1 overflow-auto relative">
+            <main className="flex-1 overflow-hidden relative">
                  <div className="absolute top-2 left-2 z-10 lg:hidden">
                     <Button variant="outline" size="icon" onClick={() => setIsMobileSessionOpen(true)}>
                         <PanelLeft className="h-4 w-4" />
