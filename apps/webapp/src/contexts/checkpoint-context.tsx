@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, {
   createContext,
@@ -137,7 +137,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           const fileName = `checkpoint_${timestamp}_${i}.${
             mediaFile.type === "video" ? "mp4" : "jpg"
           }`;
-          const storagePath = `users/${user.uid}/properties/${property.id}/checkpoints/${fileName}`;
+          const storagePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${fileName}`;
           const storageRef = ref(storage, storagePath);
 
           // Convert data URL to blob for web
@@ -233,13 +233,10 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     [user, property, db]
   );
 
-  const compareCheckpoints = useCallback(
-    async (id1: string, id2: string) => {
-      // Comparison is handled by the comparison dialog component
-      console.log("Compare checkpoints:", id1, id2);
-    },
-    []
-  );
+  const compareCheckpoints = useCallback(async (id1: string, id2: string) => {
+    // Comparison is handled by the comparison dialog component
+    console.log("Compare checkpoints:", id1, id2);
+  }, []);
 
   return (
     <CheckpointContext.Provider
