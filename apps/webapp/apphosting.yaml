@@ -19,6 +19,11 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: NEXT_PUBLIC_API_URL
+    value: https://homecare-agent-proxy-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
+    availability:
+      - BUILD
+      - RUNTIME
   # Reference to secret stored in Google Secret Manager
   - variable: GEMINI_API_KEY
     secret: GEMINI_API_KEY
