@@ -30,7 +30,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal, Pencil } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal, Pencil, CheckSquare2, Square } from 'lucide-react';
 import type { Session, Message } from '@/lib/types';
 import { deleteCollection, cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
@@ -451,46 +451,12 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     <>
       <header
         className={cn(
-          "flex items-center p-4 border-b shrink-0 h-[65px]",
-          isCollapsed ? "justify-center px-2" : "justify-between"
+          "flex items-center border-b shrink-0",
+          isCollapsed ? "justify-center px-2 py-2" : "justify-between p-4"
         )}
       >
         <h2 className={cn('text-lg font-semibold', isCollapsed && "sr-only")}>Chat Sessions</h2>
-        <div className={cn("flex items-center gap-2 flex-wrap justify-end", isCollapsed && "w-full justify-center")}>
-          {!isCollapsed && (
-            <Button
-              variant={isSelectionMode ? "secondary" : "ghost"}
-              size="sm"
-              className="flex-shrink-0 h-8 rounded-lg px-3"
-              onClick={handleToggleSelectionMode}
-              disabled={isInitialLoading || filteredSessions.length === 0}
-              aria-pressed={isSelectionMode}
-            >
-              {isSelectionMode ? "Cancel" : "Select"}
-            </Button>
-          )}
-          {isSelectionMode && !isCollapsed && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-shrink-0 h-8 rounded-lg px-3"
-                onClick={handleSelectAll}
-              >
-                {isAllSelected ? "Clear all" : "Select all"}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-shrink-0 h-8 rounded-lg px-3"
-                onClick={() => setIsBulkDeleteDialogOpen(true)}
-                disabled={selectedCount === 0}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete ({selectedCount})
-              </Button>
-            </>
-          )}
+        <div className={cn("flex items-center gap-2", isCollapsed && "w-full justify-center")}>
           <Button
             className={cn("flex-shrink-0 h-8 w-8 rounded-lg p-0", isCollapsed && "hidden")}
             onClick={handleNewChat}
@@ -517,17 +483,100 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           </Button>
         </div>
       </header>
-        {!isCollapsed && (
-          <div className="px-4 py-3 border-b">
+      {!isCollapsed && (
+        <div className="px-4 py-3 border-b space-y-2">
+          <div className="flex items-center gap-2">
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search sessions"
-              className="h-9"
+              className="h-9 flex-1 min-w-0"
               aria-label="Search chat sessions by issue name"
             />
+            {!isSelectionMode ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-shrink-0 h-9 w-9 rounded-lg p-0"
+                    onClick={handleToggleSelectionMode}
+                    disabled={isInitialLoading || filteredSessions.length === 0}
+                    aria-pressed={isSelectionMode}
+                    aria-label="Select sessions"
+                  >
+                    <CheckSquare2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Select sessions</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0 h-9 w-9 rounded-lg p-0"
+                      onClick={handleSelectAll}
+                      aria-label={isAllSelected ? "Clear all selections" : "Select all sessions"}
+                    >
+                      {isAllSelected ? (
+                        <Square className="h-4 w-4" />
+                      ) : (
+                        <CheckSquare2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isAllSelected ? "Clear all" : "Select all"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-shrink-0 h-9 w-9 rounded-lg p-0"
+                      onClick={() => setIsBulkDeleteDialogOpen(true)}
+                      disabled={selectedCount === 0}
+                      aria-label={`Delete ${selectedCount} session${selectedCount !== 1 ? 's' : ''}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Delete {selectedCount} session{selectedCount !== 1 ? 's' : ''}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-shrink-0 h-9 w-9 rounded-lg p-0"
+                      onClick={handleToggleSelectionMode}
+                      aria-label="Cancel selection"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cancel</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
           </div>
-        )}
+          {isSelectionMode && selectedCount > 0 && (
+            <div className="text-xs text-muted-foreground font-medium">
+              {selectedCount} session{selectedCount !== 1 ? 's' : ''} selected
+            </div>
+          )}
+        </div>
+      )}
         <ScrollArea className="flex-1 w-full whitespace-nowrap">
             <TooltipProvider>
                 <div className="flex flex-col w-full space-y-2 p-2">
@@ -651,7 +700,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         onClick={handleItemInteraction}
                         onKeyDown={handleItemKeyDown}
                         className={cn(
-                            "group flex items-center justify-between w-[90%] p-3 rounded-lg cursor-pointer transition-colors",
+                            "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
+                            isSelectionMode ? "w-[85%]" : "w-[90%]",
                             isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
                             isSelected && "ring-2 ring-primary"
                         )}
@@ -659,7 +709,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         <div className='flex-1 flex items-start gap-3 min-w-0'>
                             {isSelectionMode && (
                                 <div
-                                    className="mt-0.5"
+                                    className="mt-0.5 shrink-0"
                                     onClick={(event) => event.stopPropagation()}
                                     onKeyDown={(event) => event.stopPropagation()}
                                 >
@@ -671,9 +721,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                 </div>
                             )}
                             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                            <div className='flex-1 flex flex-col gap-1 min-w-0'>
+                            <div className='flex-1 flex flex-col gap-1 min-w-0 overflow-hidden'>
                                 <p className="text-sm font-medium truncate text-foreground">{session.name}</p>
-                                <p className="text-xs text-muted-foreground">{sessionDate}</p>
+                                <p className="text-xs text-muted-foreground truncate">{sessionDate}</p>
                             </div>
                         </div>
                         {!isSelectionMode && (
