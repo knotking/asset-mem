@@ -574,13 +574,24 @@ export function PropertyCheckpointsTab({
   };
 
   const handleViewNewCheckpoint = (checkpointId: string) => {
+    // Close processing modal first
+    setIsProcessingModalVisible(false);
+    
     // Find the checkpoint and open detail modal
     const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
     if (checkpoint) {
       setSelectedCheckpoint(checkpoint);
       setIsDetailModalVisible(true);
+    } else {
+      // If checkpoint not yet in list, retry after a short delay
+      setTimeout(() => {
+        const retryCheckpoint = checkpoints.find(cp => cp.id === checkpointId);
+        if (retryCheckpoint) {
+          setSelectedCheckpoint(retryCheckpoint);
+          setIsDetailModalVisible(true);
+        }
+      }, 500);
     }
-    setIsProcessingModalVisible(false);
   };
 
   const handleContinueFromProcessing = () => {

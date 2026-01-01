@@ -14,6 +14,8 @@ import {
   Loader2,
   Clock,
   Info,
+  Tag,
+  Award,
 } from 'lucide-react-native';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
@@ -31,6 +33,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { AnalysisResults } from './AnalysisResults';
+import { Separator } from '@/components/ui/separator';
 
 interface CheckpointDetailModalProps {
   visible: boolean;
@@ -122,20 +126,105 @@ export function CheckpointDetailModal({
 
           {/* Content */}
           <View className="gap-6 p-4">
-            {/* Location */}
-            {checkpoint.location && (
+            {/* Metadata */}
+            <View className="gap-3">
+              {/* Created Date */}
               <View className="flex-row items-center gap-2">
                 <View className="h-8 w-8 items-center justify-center rounded-full bg-secondary">
-                  <Icon as={MapPin} size={16} className="text-foreground" />
+                  <Icon as={Calendar} size={16} className="text-foreground" />
                 </View>
                 <View>
-                  <Text className="text-xs text-muted-foreground">Location</Text>
-                  <Text className="font-medium text-foreground">{checkpoint.location}</Text>
+                  <Text className="text-xs text-muted-foreground">Created</Text>
+                  <Text className="font-medium text-foreground">
+                    {format(date, 'MMM d, yyyy · h:mm a')}
+                  </Text>
                 </View>
               </View>
+
+              {/* Location */}
+              {checkpoint.location && (
+                <View className="flex-row items-center gap-2">
+                  <View className="h-8 w-8 items-center justify-center rounded-full bg-secondary">
+                    <Icon as={MapPin} size={16} className="text-foreground" />
+                  </View>
+                  <View>
+                    <Text className="text-xs text-muted-foreground">Location</Text>
+                    <Text className="font-medium text-foreground">{checkpoint.location}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {/* Tags */}
+            {checkpoint.tags && checkpoint.tags.length > 0 && (
+              <>
+                <Separator />
+                <View>
+                  <View className="mb-3 flex-row items-center gap-2">
+                    <Icon as={Tag} size={16} className="text-muted-foreground" />
+                    <Text className="text-sm font-semibold text-foreground">Tags</Text>
+                  </View>
+                  <View className="flex-row flex-wrap gap-2">
+                    {checkpoint.tags.map((tag, idx) => (
+                      <View key={idx} className="rounded-full border border-border bg-card px-3 py-1">
+                        <Text className="text-xs text-foreground">{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* Description */}
+            {checkpoint.description && (
+              <>
+                <Separator />
+                <View>
+                  <Text className="mb-2 text-sm font-semibold text-foreground">Description</Text>
+                  <Text className="text-sm text-muted-foreground">{checkpoint.description}</Text>
+                </View>
+              </>
+            )}
+
+            {/* Auto-detected Asset Info */}
+            {checkpoint.detectedAsset && (
+              <>
+                <Separator />
+                <View>
+                  <View className="mb-3 flex-row items-center gap-2">
+                    <Icon as={Award} size={16} className="text-muted-foreground" />
+                    <Text className="text-sm font-semibold text-foreground">
+                      Auto-detected Information
+                    </Text>
+                  </View>
+                  <View className="gap-2">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-sm text-muted-foreground">Detected as:</Text>
+                      <View className="rounded-full bg-secondary px-2 py-1">
+                        <Text className="text-xs font-medium text-foreground">
+                          {checkpoint.detectedAsset}
+                        </Text>
+                      </View>
+                      {checkpoint.assetConfidence && (
+                        <Text className="text-xs text-muted-foreground">
+                          ({Math.round(checkpoint.assetConfidence * 100)}% confidence)
+                        </Text>
+                      )}
+                    </View>
+                    {checkpoint.assetFeatures && checkpoint.assetFeatures.length > 0 && (
+                      <View>
+                        <Text className="text-sm text-muted-foreground">
+                          Key features: {checkpoint.assetFeatures.join(', ')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </>
             )}
 
             {/* AI Analysis Status */}
+            <Separator />
             <View className="rounded-lg border border-border bg-card p-4">
               <Text className="mb-3 font-semibold text-foreground">AI Analysis</Text>
 
@@ -193,6 +282,14 @@ export function CheckpointDetailModal({
                 </View>
               )}
             </View>
+
+            {/* Full AI Analysis Results */}
+            {checkpoint.aiAnalysis && checkpoint.analysisStatus === 'completed' && (
+              <>
+                <Separator />
+                <AnalysisResults analysis={checkpoint.aiAnalysis} />
+              </>
+            )}
 
             {/* Actions */}
             <View className="mt-4 flex-row gap-4">
