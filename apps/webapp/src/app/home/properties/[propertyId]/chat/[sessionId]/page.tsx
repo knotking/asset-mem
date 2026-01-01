@@ -156,15 +156,14 @@ export default function PropertyChatSessionPage() {
     checkIsNewSession();
   }, [user, sessionId, toast]);
 
-  // Auto-set current location when session is created for analysis_agent
+  // Auto-set current location when session is created
   useEffect(() => {
     const setDefaultLocation = async () => {
       // Only set location if:
       // 1. We have a session
-      // 2. Primary agent is 'analysis'
-      // 3. Location data is not already set
-      // 4. It's a new session
-      if (sessionId && primaryAgent === 'analysis' && !locationData && isNewSession) {
+      // 2. Location data is not already set
+      // 3. It's a new session
+      if (sessionId && !locationData && isNewSession) {
         try {
           if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -178,7 +177,7 @@ export default function PropertyChatSessionPage() {
                   locationRadius: 50, // Default 50 mile radius
                 };
                 setLocationData(defaultLocationData);
-                console.log('[ChatPage] Auto-set current location for analysis_agent:', defaultLocationData);
+                console.log('[ChatPage] Auto-set current location:', defaultLocationData);
               },
               (error) => {
                 console.log('[ChatPage] Location permission not granted or error:', error);
@@ -196,7 +195,7 @@ export default function PropertyChatSessionPage() {
     };
 
     setDefaultLocation();
-  }, [sessionId, primaryAgent, locationData, isNewSession]);
+  }, [sessionId, locationData, isNewSession]);
 
   const handleStop = () => {
     if (abortControllerRef.current) {
