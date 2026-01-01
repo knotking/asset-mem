@@ -1,0 +1,85 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
+
+// Template colors - matching source code
+const LANDING_COLORS = {
+  primary: 'rgb(8, 142, 175)',
+  primary20: 'rgba(8, 142, 175, 0.2)',
+  primary10: 'rgba(8, 142, 175, 0.1)',
+  accent10: 'rgba(175, 42, 8, 0.1)',
+  background: 'rgb(250, 250, 250)',
+  background80: 'rgba(250, 250, 250, 0.8)',
+  background95: 'rgba(250, 250, 250, 0.95)',
+  border: 'hsl(191, 62%, 86%)',
+  border50: 'rgba(191, 219, 254, 0.5)',
+  foreground: 'rgb(10, 10, 10)',
+  mutedForeground: 'rgba(10, 10, 10, 0.6)',
+  white: 'rgb(255, 255, 255)',
+};
+
+export default function AIGraphic() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <div className="relative lg:h-[700px] h-[500px]">
+      {/* Decorative Elements - matching source */}
+      <div 
+        className="absolute -top-4 -right-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        style={{ backgroundColor: LANDING_COLORS.primary20 }}
+      />
+      <div 
+        className="absolute -bottom-4 -left-4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        style={{ backgroundColor: LANDING_COLORS.accent10, animationDelay: '1s' }}
+      />
+      
+      {/* Main Image Container - matching source */}
+      <div 
+        className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 hover:shadow-primary/20 hover:border-primary/30"
+        style={{ borderColor: LANDING_COLORS.border50 }}
+      >
+        <Image
+          src="https://media.gettyimages.com/id/2200128716/photo/ai-powers-big-data-analysis-and-automation-workflows-showcasing-neural-networks-and-data.jpg?b=1&s=2048x2048&w=0&k=20&c=jHsLIgpAOxKQ6mBlb4rEoGxZsBaFQqL7HyBg0lAk8J8="
+          alt="AI neural network technology"
+          fill
+          className="object-cover scale-105 hover:scale-100 transition-transform duration-700"
+          priority
+        />
+        <div 
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(to top, rgba(250, 250, 250, 0.8), rgba(250, 250, 250, 0.2), transparent)' }}
+        />
+        
+        {/* Floating Card - bottom-left matching source */}
+        <div 
+          className="absolute bottom-8 left-8 right-8 rounded-2xl p-6 shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-1"
+          style={{ 
+            backgroundColor: LANDING_COLORS.background95,
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${LANDING_COLORS.border50}`,
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <div 
+              className="h-14 w-14 rounded-xl flex items-center justify-center shadow-sm"
+              style={{ background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary20}, ${LANDING_COLORS.primary10})` }}
+            >
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-lg" style={{ color: LANDING_COLORS.foreground }}>AI Analysis Complete</div>
+              <div className="text-sm font-medium" style={{ color: LANDING_COLORS.mutedForeground }}>3 issues detected, 2 recommendations ready</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
