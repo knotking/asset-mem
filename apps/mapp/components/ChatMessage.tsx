@@ -46,6 +46,7 @@ import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
+import { MediaDetailModal } from './MediaDetailModal';
 
 interface ChatMessageProps {
   message: Message;
@@ -1021,7 +1022,7 @@ const MessageContent = React.memo(({ content, isUser }: { content: string; isUse
 });
 
 const FilePreview = React.memo(
-  ({ file, isUserMessage }: { file: NonNullable<Message['file']>; isUserMessage?: boolean }) => {
+  ({ file, isUserMessage, onPress }: { file: NonNullable<Message['file']>; isUserMessage?: boolean; onPress?: () => void }) => {
     // Media dimensions constants
     const MEDIA_MAX_WIDTH = 200;
     const MEDIA_MIN_WIDTH = 200;
@@ -1062,7 +1063,9 @@ const FilePreview = React.memo(
     });
 
     return (
-      <View style={{ alignSelf: isUserMessage ? 'flex-end' : 'flex-start' }}>
+      <Pressable
+        onPress={onPress}
+        style={{ alignSelf: isUserMessage ? 'flex-end' : 'flex-start' }}>
         {isImage ? (
           imageError ? (
             <View className="flex-row items-center gap-2 rounded-lg border border-border bg-secondary p-3">
@@ -1116,7 +1119,7 @@ const FilePreview = React.memo(
             </Text>
           </View>
         )}
-      </View>
+      </Pressable>
     );
   }
 );
@@ -1125,6 +1128,7 @@ function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
   const [showContextMenu, setShowContextMenu] = useState(false);
+  const [showMediaDetail, setShowMediaDetail] = useState(false);
   const [copyStatus, setCopyStatus] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -1233,7 +1237,13 @@ function ChatMessage({ message }: ChatMessageProps) {
         )}
         <Pressable onLongPress={handleLongPress} delayLongPress={500}>
           <View className={`overflow-hidden rounded-lg ${isUser ? 'bg-muted' : 'bg-secondary'}`}>
-            {message.file && <FilePreview file={message.file} isUserMessage={isUser} />}
+            {message.file && (
+              <FilePreview
+                file={message.file}
+                isUserMessage={isUser}
+                onPress={() => setShowMediaDetail(true)}
+              />
+            )}
             {isLoading ? (
               <>
                 {message.agentSteps && message.agentSteps.length > 0 ? (
@@ -1301,6 +1311,22 @@ function ChatMessage({ message }: ChatMessageProps) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Media Detail Modal */}
+      {message.file && (
+        <MediaDetailModal
+          visible={showMediaDetail}
+          file={message.file}
+          onClose={() => setShowMediaDetail(false)}
+          createdAt={
+            message.createdAt instanceof Date
+              ? message.createdAt
+              : message.createdAt?.toDate
+                ? message.createdAt.toDate()
+                : undefined
+          }
+        />
+      )}
     </View>
   );
 }
