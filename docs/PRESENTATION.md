@@ -267,7 +267,40 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Comparison with DIY options
 - What's included in service
 
-### 7. Document Management & RAG
+### 7. Inspection Reports Analysis
+
+**AI-Powered Report Processing**
+- Upload inspection reports (PDF and images)
+- Automatic extraction of inspector information and metadata
+- Multimodal PDF analysis using Gemini 2.0 Flash
+- Async processing via Pub/Sub for scalability
+
+**Intelligent Issue Identification**
+- Categorized by system (Structural, Electrical, Plumbing, HVAC, etc.)
+- Severity classification (Critical → Major → Moderate → Minor)
+- Priority ranking (1-10 scale)
+- Cost estimates for repairs
+- Page number references
+
+**Actionable Recommendations**
+- Timeframe assignment (Immediate, Short-term, Long-term, Monitoring)
+- DIY feasibility assessment
+- Professional requirements identification
+- Cost-benefit analysis
+
+**Conversational Chat Interface**
+- Ask questions about analyzed reports
+- Context-aware responses with citations
+- Cost breakdowns and severity explanations
+- Page number and section references
+
+**Data Management**
+- Firestore storage with real-time updates
+- Vector embeddings for semantic search
+- Report summary metrics (condition, issues, costs)
+- Export capabilities
+
+### 8. Document Management & RAG
 
 **Document Upload**
 - Support for PDFs, images, videos
@@ -386,6 +419,19 @@ AGENT  AGENT   AGENT                   │              │
         └──────────────┬───────────────┴──────────────┘
                        │
               VERTEX AI RAG ENGINE
+
+
+                   REPORT AGENT
+               (Inspection Reports)
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+   EXTRACTION    ISSUES ANALYSIS   RECOMMENDATIONS
+      AGENT          AGENT              AGENT
+        │              │                   │
+        └──────────────┴───────────────────┘
+                       │
+               REPORT CHAT AGENT
 ```
 
 ### Agent Responsibilities
@@ -408,6 +454,12 @@ AGENT  AGENT   AGENT                   │              │
 #### DocuLink Agent
 - **User Docs Agent**: Retrieves from user-uploaded documents
 - **Knowledge Base Agent**: Accesses general knowledge corpus
+
+#### Report Agent
+- **Extraction Agent**: Extracts metadata and inspector information
+- **Issues Analysis Agent**: Identifies and categorizes issues with severity
+- **Recommendations Agent**: Generates actionable repair recommendations
+- **Report Chat Agent**: Answers questions about analyzed reports
 
 ### Agent Workflow
 
@@ -454,6 +506,12 @@ AGENT  AGENT   AGENT                   │              │
   - Before/after comparison slider
   - Property health metrics dashboard
   - Configurable comparison settings
+- ✅ **Inspection Reports Tab**:
+  - Upload PDF and image inspection reports
+  - View report analysis with issues and recommendations
+  - Real-time status updates (uploading → analyzing → complete)
+  - Chat interface for report Q&A
+  - Summary cards with condition and cost metrics
 
 **Tech Stack**:
 - Expo SDK 54
@@ -481,6 +539,13 @@ AGENT  AGENT   AGENT                   │              │
   - Side-by-side comparison view
   - Property health metrics
   - Checkpoint preferences settings
+- ✅ **Inspection Reports Feature**:
+  - Drag-and-drop report upload (PDF/images)
+  - Real-time analysis status updates
+  - Detailed report view with tabs (Overview, Issues, Recommendations, Chat)
+  - Interactive chat interface for report questions
+  - Export and share capabilities
+  - Report summary dashboard
 
 **Tech Stack**:
 - Next.js 15.3.3
@@ -620,6 +685,38 @@ AGENT  AGENT   AGENT                   │              │
 
 **Output**: Step-by-step reset instructions from user's manual or knowledge base
 
+### Use Case 8: Pre-Purchase Home Inspection Analysis
+
+**Scenario**: Buyer receives 50-page inspection report and needs to understand critical issues and costs
+
+**Flow**:
+1. User uploads pre-purchase inspection report PDF (50 pages)
+2. System uploads to Firebase Storage and creates Firestore document
+3. API triggers async analysis via Pub/Sub
+4. Cloud Function calls Report Agent with Gemini 2.0 Flash
+5. Extraction Agent identifies: Inspector name, company, inspection date, property details
+6. Issues Analysis Agent scans all 50 pages and identifies 23 issues:
+   - 2 critical (electrical panel, foundation crack)
+   - 5 major (roof age, HVAC efficiency, plumbing leaks)
+   - 8 moderate (minor water damage, aging appliances)
+   - 8 minor (cosmetic issues, routine maintenance)
+7. Recommendations Agent generates prioritized action plan with timeframes
+8. System calculates total costs: $8,500 immediate, $12,000 short-term, $15,000 long-term
+9. Analysis completes in 45 seconds, Firestore updates trigger UI refresh
+10. User views report in detail view with tabs
+11. User asks via chat: "Should I negotiate price based on these issues?"
+12. Report Chat Agent provides context-aware answer referencing critical items
+13. User asks: "Which repairs are most urgent?"
+14. Agent responds with prioritized list and safety considerations
+15. User exports summary to share with real estate agent
+
+**Output**:
+- Complete analysis with 23 categorized issues
+- Severity classifications and cost estimates totaling $35,500
+- Actionable recommendations with timeframes
+- Interactive Q&A capability for deeper understanding
+- Professional summary for negotiation purposes
+
 ---
 
 ## Deployment & Infrastructure
@@ -632,11 +729,13 @@ AGENT  AGENT   AGENT                   │              │
   - `pubsub_to_user_docs`: RAG document import worker
   - `pubsub_checkpoint_analysis`: Checkpoint AI analysis worker
   - `pubsub_checkpoint_metrics_aggregate`: Property metrics aggregation worker
+  - `pubsub_report_analysis`: Inspection report analysis worker
 - **Cloud Storage**: Document storage
 - **Pub/Sub**: Asynchronous messaging
   - `user-upload-topic`: Document upload processing
   - `checkpoint-analysis-topic`: Checkpoint analysis queue
   - `checkpoint-metrics-topic`: Metrics aggregation queue
+  - `report-analysis-topic`: Inspection report analysis queue
 - **Vertex AI**: Agent engine, RAG, and Gemini models
 
 **Firebase**
@@ -687,11 +786,14 @@ Mobile/Web App → API Endpoint → Pub/Sub Topic → Cloud Function → Gemini 
 **Firestore Collections**:
 - `users/{userId}/properties/{propertyId}/checkpoints`: Checkpoint documents
 - `users/{userId}/properties/{propertyId}/metrics/summary`: Aggregated metrics
+- `users/{userId}/properties/{propertyId}/reports`: Inspection report documents
 - `users/{userId}/preferences/user`: User preferences (comparison settings)
 
 **Firestore Indexes**:
 - Composite index on checkpoints: `location` (ASC), `createdAt` (DESC)
-- Enables efficient location-based queries for comparison
+- Composite index on reports: `status` (ASC), `createdAt` (DESC)
+- Vector index on reports: `embedding` (768 dimensions) for semantic search
+- Enables efficient queries and semantic report search
 
 ### Infrastructure as Code
 
@@ -808,6 +910,13 @@ terraform apply
   - Automatic before/after comparison
   - Property health metrics
   - Async processing architecture
+
+- [x] **Inspection Reports** (COMPLETED)
+  - AI-powered report analysis
+  - Issue identification with severity classification
+  - Actionable recommendations with timeframes
+  - Conversational chat interface
+  - Vector embeddings for semantic search
 
 - [ ] **Enhanced Checkpoint Features**
   - Firestore vector search for semantic checkpoint queries
@@ -976,6 +1085,14 @@ terraform apply
 - ⏳ Deep links between chat and checkpoints
 - ⏳ Proactive AI notifications
 
+**Inspection Reports Enhancements**:
+- ⏳ Multi-report comparison (current vs. previous inspections)
+- ⏳ Issue resolution tracking over time
+- ⏳ Cost trend analysis across multiple reports
+- ⏳ Integration with service provider recommendations
+- ⏳ Scheduled reminders for repair timeframes
+- ⏳ Professional PDF export with branding
+
 **Future Enhancements**:
 - 📋 Property mind map visualization (web)
 - 📋 Professional PDF/Word report generation
@@ -1037,6 +1154,15 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Scalability Recommendations**: [`./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md`](./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md)
 - **API Documentation**: [`../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md`](../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md)
 - **Workers Documentation**: [`../gcp/proxy/workers/README.md`](../gcp/proxy/workers/README.md)
+
+### Inspection Reports Feature Documentation
+- **Overview**: [`./reports/README.md`](./reports/README.md)
+- **Architecture**: [`./reports/ARCHITECTURE.md`](./reports/ARCHITECTURE.md)
+- **Report Agent**: [`./reports/REPORT_AGENT.md`](./reports/REPORT_AGENT.md)
+- **API Reference**: [`./reports/API.md`](./reports/API.md)
+- **Deployment Guide**: [`./reports/DEPLOYMENT.md`](./reports/DEPLOYMENT.md)
+- **Frontend Integration**: [`./reports/FRONTEND_INTEGRATION.md`](./reports/FRONTEND_INTEGRATION.md)
+- **Implementation Summary**: [`../INSPECTION_REPORTS_IMPLEMENTATION_SUMMARY.md`](../INSPECTION_REPORTS_IMPLEMENTATION_SUMMARY.md)
 
 ---
 
