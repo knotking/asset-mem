@@ -577,7 +577,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           )}
         </div>
       )}
-        <ScrollArea className="flex-1 w-full whitespace-nowrap">
+        <ScrollArea className="flex-1 w-full whitespace-nowrap session-sidebar-scroll">
             <TooltipProvider>
                 <div className="flex flex-col w-full space-y-2 p-2">
                 {isInitialLoading ? (

@@ -127,3 +127,12 @@
     --tw-prose-td-borders: hsl(var(--border));
   }
 }
+
+@layer utilities {
+  /* Fix Radix ScrollArea inner wrapper display issue in session sidebar */
+  /* Target the direct child div of the ScrollArea viewport that Radix UI creates */
+  .session-sidebar-scroll [data-radix-scroll-area-viewport] > div:first-child {
+    display: block !important;
+    width: 100% !important;
+  }
+}
