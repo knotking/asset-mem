@@ -109,7 +109,7 @@ Enhanced location UI with better feedback and radius control:
   - No address warning: Prompts to select property or use current location
   - Location success: Shows coordinates with checkmark
 - Radius slider now available for both address and location types
-- Clear call-to-action: "Current Location (click to set)" when not yet set
+- Location display: Shows "Current Location" with coordinates when available, or "Current Location" alone when loading/not yet obtained
 
 **UI Flow**:
 1. Click location button
