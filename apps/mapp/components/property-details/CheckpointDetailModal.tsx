@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Modal, View, Image, ScrollView, Alert, Dimensions } from 'react-native';
+import { Modal, View, Image, ScrollView, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -16,9 +16,6 @@ import {
   Info,
   Tag,
   Award,
-  ArrowRightLeft,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react-native';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
@@ -38,7 +35,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
-import { Card } from '@/components/ui/card';
 
 interface CheckpointDetailModalProps {
   visible: boolean;
@@ -55,12 +51,11 @@ export function CheckpointDetailModal({
   const { deleteCheckpoint } = useCheckpoint();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
-  const [currentMediaIndex, setCurrentMediaIndex] = React.useState(0);
 
   // IMPORTANT: hooks must be called consistently across renders.
   // This modal can render with checkpoint=null initially and later receive a checkpoint.
   // So we compute safe defaults and always call useVideoPlayer.
-  const media0 = checkpoint?.media?.[currentMediaIndex];
+  const media0 = checkpoint?.media?.[0];
   const isVideo = !!media0?.contentType?.startsWith('video/');
   const mediaUrl = media0?.url;
   const videoSourceUrl = isVideo && mediaUrl ? mediaUrl : '';
@@ -69,20 +64,11 @@ export function CheckpointDetailModal({
     player.loop = false;
   });
 
-  // Reset media index when modal opens or checkpoint changes
-  React.useEffect(() => {
-    if (visible) {
-      setCurrentMediaIndex(0);
-    }
-  }, [visible, checkpoint?.id]);
-
   if (!checkpoint) return null;
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
   // Keep issue detection logic consistent with the list view:
   // treat any non-empty issues array as "issues detected".
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
-  const mediaCount = checkpoint.media?.length || 0;
-  const hasMultipleMedia = mediaCount > 1;
 
   const handleConfirmDelete = async () => {
     try {
@@ -96,14 +82,6 @@ export function CheckpointDetailModal({
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handlePreviousMedia = () => {
-    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaCount - 1));
-  };
-
-  const handleNextMedia = () => {
-    setCurrentMediaIndex((prev) => (prev < mediaCount - 1 ? prev + 1 : 0));
   };
 
   return (
@@ -125,8 +103,8 @@ export function CheckpointDetailModal({
         </View>
 
         <ScrollView className="flex-1">
-          {/* Media (image/video) with carousel controls */}
-          <View className="relative h-72 w-full bg-muted">
+          {/* Media (image/video) */}
+          <View className="h-72 w-full bg-muted">
             {mediaUrl ? (
               isVideo ? (
                 <VideoView
@@ -143,40 +121,6 @@ export function CheckpointDetailModal({
               <View className="h-full w-full items-center justify-center">
                 <Text className="text-muted-foreground">No Media Available</Text>
               </View>
-            )}
-
-            {/* Carousel Navigation */}
-            {hasMultipleMedia && (
-              <>
-                {/* Previous Button */}
-                <View className="absolute left-2 top-1/2 -translate-y-1/2">
-                  <Button
-                    onPress={handlePreviousMedia}
-                    variant="secondary"
-                    size="icon"
-                    className="h-10 w-10 rounded-full bg-black/50">
-                    <Icon as={ChevronLeft} size={24} className="text-white" />
-                  </Button>
-                </View>
-
-                {/* Next Button */}
-                <View className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Button
-                    onPress={handleNextMedia}
-                    variant="secondary"
-                    size="icon"
-                    className="h-10 w-10 rounded-full bg-black/50">
-                    <Icon as={ChevronRight} size={24} className="text-white" />
-                  </Button>
-                </View>
-
-                {/* Media Counter */}
-                <View className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1">
-                  <Text className="text-xs font-medium text-white">
-                    {currentMediaIndex + 1} / {mediaCount}
-                  </Text>
-                </View>
-              </>
             )}
           </View>
 
@@ -344,27 +288,6 @@ export function CheckpointDetailModal({
               <>
                 <Separator />
                 <AnalysisResults analysis={checkpoint.aiAnalysis} />
-              </>
-            )}
-
-            {/* Visual Diff Notice */}
-            {checkpoint.visualDiff && (
-              <>
-                <Separator />
-                <Card className="p-4">
-                  <View className="flex-row items-start gap-3">
-                    <Icon as={ArrowRightLeft} size={20} className="text-muted-foreground" />
-                    <View className="flex-1">
-                      <Text className="font-medium text-foreground">Comparison Available</Text>
-                      <Text className="mt-1 text-sm text-muted-foreground">
-                        This checkpoint has been compared with a previous one
-                      </Text>
-                    </View>
-                    <Button variant="outline" size="sm">
-                      <Text className="text-sm">View</Text>
-                    </Button>
-                  </View>
-                </Card>
               </>
             )}
 
