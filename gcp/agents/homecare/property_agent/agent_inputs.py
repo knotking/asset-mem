@@ -51,15 +51,3 @@ class DocsInput(BaseModel):
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).")
     property_address: Optional[str] = Field(default=None, description="The property address.")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")
-    location_type: Optional[Literal["address", "location"]] = Field(
-        default=None,
-        description="Location selection type: 'address' uses property_address; 'location' uses location_coordinates."
-    )
-    location_coordinates: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Location coordinates as {'lat': float, 'lng': float}."
-    )
-    location_radius: Optional[int] = Field(
-        default=None,
-        description="Search radius in miles (10-100). Used for local professional searches."
-    )
