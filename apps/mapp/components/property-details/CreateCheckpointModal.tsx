@@ -164,7 +164,8 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'videos',
-        allowsEditing: false,
+        allowsEditing: true,
+        aspect: [4, 3],
         quality: 0.8,
         videoMaxDuration: 60,
       });
