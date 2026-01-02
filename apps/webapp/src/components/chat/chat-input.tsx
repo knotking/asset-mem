@@ -92,6 +92,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   // Default to 'location' (current location) if no locationData provided
   const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType || 'location');
   const [locationRadius, setLocationRadius] = useState<number>(locationData?.locationRadius || 50);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -158,6 +159,36 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   }
 
   // Location handling
+  const handleGetCurrentLocation = () => {
+    setIsGettingLocation(true);
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      setIsGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocationData: LocationData = {
+          locationType: 'location',
+          locationCoordinates: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+          locationRadius: locationRadius,
+        };
+        setLocationType('location');
+        onLocationDataChange?.(newLocationData);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        alert('Failed to get current location');
+        setIsGettingLocation(false);
+      }
+    );
+  };
+
   const handleLocationTypeChange = (type: LocationType) => {
     setLocationType(type);
     if (type === 'address') {
@@ -495,18 +526,40 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                   {locationType === 'address' && !propertyAddress && (
                     <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-2">
                       <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                        No property address available. Please select a property or switch to Location type.
+                        No property address available. Please select a property or use Current Location instead.
                       </p>
                     </div>
                   )}
 
-                  {/* Current Location Status Display */}
-                  {locationType === 'location' && locationData?.locationCoordinates && (
-                    <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
-                      <p className="text-xs text-green-700 dark:text-green-400">
-                        ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
-                      </p>
-                    </div>
+                  {/* Current Location Button (for location type) */}
+                  {locationType === 'location' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleGetCurrentLocation}
+                        disabled={isGettingLocation}
+                        className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors"
+                      >
+                        {isGettingLocation ? (
+                          <>
+                            <div className="h-4 w-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                            <span>Getting location...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="h-4 w-4" />
+                            <span>Use Current Location</span>
+                          </>
+                        )}
+                      </button>
+                      {locationData?.locationCoordinates && (
+                        <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
+                          <p className="text-xs text-green-700 dark:text-green-400">
+                            ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Radius Selector - Show for both address and location types */}

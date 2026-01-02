@@ -111,6 +111,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   // Default to 'location' (current location) if no locationData provided
   const [locationType, setLocationType] = React.useState<LocationType | undefined>(locationData?.locationType || 'location');
   const [locationRadius, setLocationRadius] = React.useState<number>(locationData?.locationRadius || 50);
+  const [isGettingLocation, setIsGettingLocation] = React.useState(false);
   const [isAgentSectionExpanded, setIsAgentSectionExpanded] = React.useState(false);
   const [suggestedAgent, setSuggestedAgent] = React.useState<PrimaryAgent | null>(null);
   const [currentText, setCurrentText] = React.useState<string>('');
@@ -230,6 +231,35 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   }, []);
 
   // Location handling
+  const handleGetCurrentLocation = React.useCallback(async () => {
+    setIsGettingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        setIsGettingLocation(false);
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      const newLocationData: LocationData = {
+        locationType: 'location',
+        locationCoordinates: {
+          lat: currentLocation.coords.latitude,
+          lng: currentLocation.coords.longitude,
+        },
+        locationRadius: locationRadius,
+      };
+      setLocationType('location');
+      onLocationDataChange?.(newLocationData);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      alert('Failed to get current location');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [locationRadius, onLocationDataChange]);
+
   const handleLocationTypeChange = React.useCallback((type: LocationType) => {
     setLocationType(type);
     if (type === 'address') {
@@ -798,17 +828,34 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
               {locationType === 'address' && !propertyAddress && (
                 <View className="mb-3 rounded-md bg-yellow-500/10 border border-yellow-500/20 p-2">
                   <Text className="text-xs text-yellow-700 dark:text-yellow-400">
-                    No property address available. Please select a property or switch to Location type.
+                    No property address available. Please select a property or use Current Location instead.
                   </Text>
                 </View>
               )}
 
-              {/* Current Location Status Display */}
-              {locationType === 'location' && locationData?.locationCoordinates && (
-                <View className="mb-3 rounded-md bg-green-500/10 border border-green-500/20 p-2">
-                  <Text className="text-xs text-green-700 dark:text-green-400">
-                    ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
-                  </Text>
+              {/* Current Location Button (for location type) */}
+              {locationType === 'location' && (
+                <View className="mb-3">
+                  <Pressable
+                    onPress={handleGetCurrentLocation}
+                    disabled={isGettingLocation}
+                    className="flex-row items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2">
+                    {isGettingLocation ? (
+                      <ActivityIndicator size="small" color={colors.foreground} />
+                    ) : (
+                      <Icon as={Navigation} size={16} className="text-foreground" />
+                    )}
+                    <Text className="text-sm font-medium text-foreground">
+                      {isGettingLocation ? 'Getting location...' : 'Use Current Location'}
+                    </Text>
+                  </Pressable>
+                  {locationData?.locationCoordinates && (
+                    <View className="mt-2 rounded-md bg-green-500/10 border border-green-500/20 p-2">
+                      <Text className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
