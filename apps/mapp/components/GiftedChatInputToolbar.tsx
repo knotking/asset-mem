@@ -712,7 +712,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
                   : locationType === 'location'
                     ? locationData?.locationCoordinates
                       ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
-                      : 'Current Location'
+                      : 'Current Location (tap to set)'
                     : 'Location'}
                 {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
                   ? ` • ${locationData.locationRadius} mi radius` 

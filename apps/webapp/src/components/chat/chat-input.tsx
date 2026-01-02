@@ -436,7 +436,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                       : locationType === 'location'
                         ? locationData?.locationCoordinates
                           ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
-                          : 'Current Location'
+                          : 'Current Location (click to set)'
                         : 'Location'}
                     {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
                       ? ` • ${locationData.locationRadius} mi radius` 
