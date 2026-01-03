@@ -192,13 +192,13 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
       const finalLocation = location.trim();
       await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
-      onClose();
+      // Note: Don't call onClose() here - let parent handle modal transitions to prevent blank screen
     } catch (error) {
       console.error('Error creating checkpoint:', error);
       alert('Failed to create checkpoint. Please try again.');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only reset loading on error
     }
+    // Don't reset loading on success - keeps modal visible during transition
   };
 
   return (
@@ -207,7 +207,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         {/* Header */}
         <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
           <Text className="text-lg font-semibold text-foreground">New Checkpoint</Text>
-          <Button onPress={onClose} variant="ghost" size="icon">
+          <Button onPress={onClose} variant="ghost" size="icon" disabled={loading}>
             <Icon as={X} size={24} className="text-foreground" />
           </Button>
         </View>
@@ -239,18 +239,21 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
             <View className="flex-row gap-2">
               <Pressable
                 onPress={handleTakePhoto}
+                disabled={loading}
                 className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
                 <Icon as={Camera} size={20} className="mb-1 text-foreground" />
                 <Text className="text-center text-xs font-medium text-foreground">Photo</Text>
               </Pressable>
               <Pressable
                 onPress={handleRecordVideo}
+                disabled={loading}
                 className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
                 <Icon as={VideoIcon} size={20} className="mb-1 text-foreground" />
                 <Text className="text-center text-xs font-medium text-foreground">Video</Text>
               </Pressable>
               <Pressable
                 onPress={handleSelectPhoto}
+                disabled={loading}
                 className="flex-1 items-center rounded-lg border border-border bg-secondary p-3">
                 <Icon as={ImageIcon} size={20} className="mb-1 text-foreground" />
                 <Text className="text-center text-xs font-medium text-foreground">Gallery</Text>

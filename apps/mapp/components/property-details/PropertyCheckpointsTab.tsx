@@ -514,17 +514,16 @@ export function PropertyCheckpointsTab({
         ]
       );
       
-      // Set checkpoint data first (before showing modal to prevent blank screen)
+      // Set checkpoint data AND open processing modal BEFORE closing create modal
+      // This ensures smooth transition without blank screen
       setNewCheckpointId(result.id);
       setNewCheckpointName(data.name || 'New Checkpoint');
+      setIsProcessingModalVisible(true);
       
-      // Close create modal
-      setIsCreateModalVisible(false);
-      
-      // Small delay to ensure state is updated before showing processing modal
-      setTimeout(() => {
-        setIsProcessingModalVisible(true);
-      }, 50);
+      // Close create modal after processing modal is open (using requestAnimationFrame for smooth transition)
+      requestAnimationFrame(() => {
+        setIsCreateModalVisible(false);
+      });
 
       // Set status to pending initially
       await updateCheckpoint(result.id, {

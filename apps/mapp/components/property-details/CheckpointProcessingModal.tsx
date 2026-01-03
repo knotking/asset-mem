@@ -81,18 +81,18 @@ export function CheckpointProcessingModal({
     outputRange: ['0deg', '360deg'],
   });
 
-  // Don't render if we don't have valid data (prevents blank screen)
-  if (!visible) {
-    return null;
-  }
-
   // Provide fallback values for missing data
   const displayName = checkpointName || 'New Checkpoint';
   const hasValidData = isValidModalData(checkpointId, checkpointName);
 
+  // Don't render if not visible OR if we don't have valid data (prevents blank screen)
+  if (!visible || !hasValidData) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={visible}
+      visible={visible && hasValidData}
       transparent
       animationType="fade"
       onRequestClose={onContinue}>
