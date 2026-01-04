@@ -31,13 +31,50 @@ const ASSET_TYPES = [
 
 const LOCATION_OPTIONS = {
   real_estate: [
+    // Rooms
     { label: 'Kitchen', value: 'Kitchen' },
     { label: 'Bathroom', value: 'Bathroom' },
     { label: 'Living Room', value: 'Living Room' },
     { label: 'Bedroom', value: 'Bedroom' },
-    { label: 'Exterior', value: 'Exterior' },
+    { label: 'Dining Room', value: 'Dining Room' },
+    { label: 'Office/Study', value: 'Office/Study' },
+    { label: 'Laundry Room', value: 'Laundry Room' },
+    { label: 'Garage', value: 'Garage' },
     { label: 'Basement', value: 'Basement' },
     { label: 'Attic', value: 'Attic' },
+    { label: 'Hallway', value: 'Hallway' },
+    { label: 'Closet', value: 'Closet' },
+    { label: 'Mudroom', value: 'Mudroom' },
+    { label: 'Pantry', value: 'Pantry' },
+    // Building Systems
+    { label: 'HVAC System', value: 'HVAC System' },
+    { label: 'Plumbing', value: 'Plumbing' },
+    { label: 'Electrical', value: 'Electrical' },
+    { label: 'Roof', value: 'Roof' },
+    { label: 'Foundation', value: 'Foundation' },
+    { label: 'Insulation', value: 'Insulation' },
+    { label: 'Gutters', value: 'Gutters' },
+    // Outdoor Areas
+    { label: 'Front Yard', value: 'Front Yard' },
+    { label: 'Backyard', value: 'Backyard' },
+    { label: 'Driveway', value: 'Driveway' },
+    { label: 'Deck', value: 'Deck' },
+    { label: 'Patio', value: 'Patio' },
+    { label: 'Pool', value: 'Pool' },
+    { label: 'Fence', value: 'Fence' },
+    { label: 'Garden', value: 'Garden' },
+    { label: 'Shed', value: 'Shed' },
+    { label: 'Exterior', value: 'Exterior' },
+    // Specific Features
+    { label: 'Windows', value: 'Windows' },
+    { label: 'Doors', value: 'Doors' },
+    { label: 'Flooring', value: 'Flooring' },
+    { label: 'Walls', value: 'Walls' },
+    { label: 'Ceiling', value: 'Ceiling' },
+    { label: 'Stairs', value: 'Stairs' },
+    { label: 'Fireplace', value: 'Fireplace' },
+    { label: 'Appliances', value: 'Appliances' },
+    // Custom
     { label: 'Other', value: 'Other' },
   ],
   vehicle: [
