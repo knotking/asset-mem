@@ -172,8 +172,8 @@ export function ChatSettingsModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/50">
         <View
-          style={{ backgroundColor: colors.background }}
-          className="max-h-[85%] rounded-t-3xl border-t border-border">
+          style={{ backgroundColor: colors.background, height: '85%' }}
+          className="rounded-t-3xl border-t border-border flex flex-col">
           {/* Header */}
           <View className="flex-row items-center justify-between border-b border-border px-4 py-4">
             <Text className="text-lg font-semibold text-foreground">Chat Settings</Text>
@@ -217,7 +217,7 @@ export function ChatSettingsModal({
           </View>
 
           {/* Content */}
-          <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
+          <ScrollView className="px-4 py-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
             {activeTab === 'agent' && (
               <View className="gap-4">
                 {/* Primary Agent Selection */}
