@@ -106,6 +106,8 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   const [name, setName] = React.useState('');
   const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
+  const [customLocation, setCustomLocation] = React.useState<string>('');
+  const [useCustomLocation, setUseCustomLocation] = React.useState(false);
   const [mediaAsset, setMediaAsset] = React.useState<ImagePicker.ImagePickerAsset | null>(null);
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image');
   const [loading, setLoading] = React.useState(false);
@@ -125,10 +127,11 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   const applyAutoDefaults = React.useCallback(() => {
     // Auto-generate a friendly default name if the user hasn't typed one.
     if (!name.trim()) {
-      const base = location?.trim() || 'Checkpoint';
+      const effectiveLocation = useCustomLocation ? customLocation : location;
+      const base = effectiveLocation?.trim() || 'Checkpoint';
       setName(`${base} • ${format(new Date(), 'MMM d')}`);
     }
-  }, [name, location]);
+  }, [name, location, customLocation, useCustomLocation]);
 
   // Reset form when modal opens
   React.useEffect(() => {
@@ -136,6 +139,8 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
       setName('');
       setAssetType('real_estate');
       setLocation('');
+      setCustomLocation('');
+      setUseCustomLocation(false);
       setMediaAsset(null);
       setMediaType('image');
       setLoading(false);
@@ -230,10 +235,11 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
     try {
       setLoading(true);
+      const effectiveLocation = useCustomLocation ? customLocation : location;
       const finalName =
-        name.trim() || `${(location || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
+        name.trim() || `${(effectiveLocation || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
-      const finalLocation = location.trim();
+      const finalLocation = effectiveLocation.trim();
       await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
       // Note: Don't call onClose() here - let parent handle modal transitions to prevent blank screen
     } catch (error) {
@@ -348,29 +354,74 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
 
             <View>
               <Text className="mb-3 text-sm font-medium text-foreground">Location</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {LOCATION_OPTIONS[assetType].map((loc) => {
-                  const isSelected = location === loc.value;
-                  return (
-                    <Pressable
-                      key={loc.value}
-                      onPress={() => setLocation(loc.value)}
-                      className={`rounded-full border px-3 py-1.5 ${
-                        isSelected ? 'border-primary bg-primary' : 'border-border bg-secondary'
-                      }`}>
-                      <Text
-                        className={`text-xs font-medium ${
-                          isSelected ? 'text-primary-foreground' : 'text-foreground'
-                        }`}>
-                        {loc.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              
+              {/* Toggle between preset and custom */}
+              <View className="mb-3 flex-row gap-2">
+                <Pressable
+                  onPress={() => setUseCustomLocation(false)}
+                  className={`flex-1 items-center rounded-lg border px-3 py-2 ${
+                    !useCustomLocation ? 'border-primary bg-primary/10' : 'border-border bg-secondary'
+                  }`}>
+                  <Text
+                    className={`text-xs font-medium ${
+                      !useCustomLocation ? 'text-primary' : 'text-foreground'
+                    }`}>
+                    Preset Options
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setUseCustomLocation(true)}
+                  className={`flex-1 items-center rounded-lg border px-3 py-2 ${
+                    useCustomLocation ? 'border-primary bg-primary/10' : 'border-border bg-secondary'
+                  }`}>
+                  <Text
+                    className={`text-xs font-medium ${
+                      useCustomLocation ? 'text-primary' : 'text-foreground'
+                    }`}>
+                    Custom Location
+                  </Text>
+                </Pressable>
               </View>
-              <Text className="mt-2 text-xs text-muted-foreground">
-                Optional — we'll auto-detect this from the photo when possible.
-              </Text>
+
+              {/* Show preset options or custom input based on toggle */}
+              {useCustomLocation ? (
+                <View>
+                  <Input
+                    placeholder="Enter custom location..."
+                    value={customLocation}
+                    onChangeText={setCustomLocation}
+                  />
+                  <Text className="mt-2 text-xs text-muted-foreground">
+                    Enter any custom location description.
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  <View className="flex-row flex-wrap gap-2">
+                    {LOCATION_OPTIONS[assetType].map((loc) => {
+                      const isSelected = location === loc.value;
+                      return (
+                        <Pressable
+                          key={loc.value}
+                          onPress={() => setLocation(loc.value)}
+                          className={`rounded-full border px-3 py-1.5 ${
+                            isSelected ? 'border-primary bg-primary' : 'border-border bg-secondary'
+                          }`}>
+                          <Text
+                            className={`text-xs font-medium ${
+                              isSelected ? 'text-primary-foreground' : 'text-foreground'
+                            }`}>
+                            {loc.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Text className="mt-2 text-xs text-muted-foreground">
+                    Optional — we'll auto-detect this from the photo when possible.
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
