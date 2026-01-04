@@ -1,12 +1,11 @@
 
-import { useState, useRef, useEffect, type FormEvent, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, ShieldCheck, Hammer, Wrench, BadgeDollarSign, MapPin, Navigation, Clock } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, Clock } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType, LocationData, LocationType, PrimaryAgent } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, LocationData, PrimaryAgent } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
@@ -14,19 +13,8 @@ import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
 import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
 import type { Checkpoint } from "@/lib/types";
-
-type OptionalAgentOption = {
-  id: AnalysisOptionalAgent;
-  label: string;
-  icon: LucideIcon;
-};
-
-const OPTIONAL_AGENT_OPTIONS: OptionalAgentOption[] = [
-  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
-  { id: 'diy', label: 'DIY', icon: Hammer },
-  { id: 'service', label: 'Service', icon: Wrench },
-  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
-];
+import { CompactSettingsBar } from "./compact-settings-bar";
+import { ChatSettingsPopover } from "./chat-settings-popover";
 
 type Props = {
   onSend: (message: string) => void;
@@ -88,11 +76,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const internalFileInputRef = useRef<HTMLInputElement>(null);
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
-  const [showLocationOptions, setShowLocationOptions] = useState(false);
-  // Default to 'location' (current location) if no locationData provided
-  const [locationType, setLocationType] = useState<LocationType | undefined>(locationData?.locationType || 'location');
-  const [locationRadius, setLocationRadius] = useState<number>(locationData?.locationRadius || 50);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
+  const [settingsPopoverTab, setSettingsPopoverTab] = useState<'agent' | 'location'>('agent');
   
   useImperativeHandle(ref, () => internalFileInputRef.current!);
 
@@ -139,107 +124,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     const canonicalSelection = ANALYSIS_OPTIONAL_AGENTS.filter((item) => nextSelection.includes(item));
     onOptionalAgentsChange(canonicalSelection);
   };
-  
-  const handlePropertySelect = (property: Property) => {
-    if (onPropertySelect) {
-      if (selectedProperty?.address === property.address) {
-          onPropertySelect(null);
-      } else {
-          onPropertySelect(property);
-      }
-    }
-    setPopoverOpen(false);
-  };
-  
-  const handleDocumentSelect = (doc: DocumentType) => {
-    if (onDocumentSelect) {
-        onDocumentSelect(doc);
-    }
-    // Keep popover open for multi-select
-  }
-
-  // Location handling
-  const handleGetCurrentLocation = () => {
-    setIsGettingLocation(true);
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      setIsGettingLocation(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-          locationRadius: locationRadius,
-        };
-        setLocationType('location');
-        onLocationDataChange?.(newLocationData);
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        console.error('Error getting location:', error);
-        alert('Failed to get current location');
-        setIsGettingLocation(false);
-      }
-    );
-  };
-
-  const handleLocationTypeChange = (type: LocationType) => {
-    setLocationType(type);
-    if (type === 'address') {
-      // Use property address if available
-      if (propertyAddress) {
-        const newLocationData: LocationData = {
-          locationType: 'address',
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
-      } else {
-        // Clear location data if no address available
-        onLocationDataChange?.(undefined);
-      }
-    } else if (type === 'location') {
-      // Keep existing coordinates if available, otherwise prompt for location
-      if (locationData?.locationCoordinates) {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: locationData.locationCoordinates,
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
-      }
-    }
-  };
-
-  const handleRadiusChange = (radius: number) => {
-    setLocationRadius(radius);
-    if (locationType && onLocationDataChange) {
-      const newLocationData: LocationData = {
-        locationType,
-        locationCoordinates: locationData?.locationCoordinates,
-        locationRadius: radius,
-      };
-      onLocationDataChange(newLocationData);
-    }
-  };
-
-  // Sync locationData changes and set default to 'location'
-  useEffect(() => {
-    if (locationData) {
-      setLocationType(locationData.locationType);
-      if (locationData.locationRadius !== undefined) {
-        setLocationRadius(locationData.locationRadius);
-      }
-    } else {
-      // Default to 'location' (current location) when no locationData
-      setLocationType('location');
-    }
-  }, [locationData]);
 
 
   const renderPreview = () => {
@@ -334,36 +218,39 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
       <form onSubmit={handleSubmit} className="relative flex w-full items-end gap-2">
         <div className="flex flex-1 flex-col gap-3">
-          {/* Primary Agent Selection */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Agent:</span>
-            <button
-              type="button"
-              onClick={() => onPrimaryAgentChange('analysis')}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                primaryAgent === 'analysis'
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => onPrimaryAgentChange('checkpoint')}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                primaryAgent === 'checkpoint'
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              Checkpoints
-            </button>
-          </div>
-
+          {/* Compact Settings Bar */}
+          <ChatSettingsPopover
+            open={settingsPopoverOpen}
+            onOpenChange={setSettingsPopoverOpen}
+            primaryAgent={primaryAgent}
+            onPrimaryAgentChange={onPrimaryAgentChange}
+            selectedOptionalAgents={selectedOptionalAgents}
+            onToggleOptionalAgent={handleOptionalAgentToggle}
+            locationData={locationData}
+            onLocationDataChange={onLocationDataChange}
+            propertyAddress={propertyAddress}
+            initialTab={settingsPopoverTab}>
+            <div onClick={() => setSettingsPopoverOpen(true)}>
+              <CompactSettingsBar
+                primaryAgent={primaryAgent}
+                selectedOptionalAgents={selectedOptionalAgents}
+                locationData={locationData}
+                propertyAddress={propertyAddress}
+                onOpenSettings={() => {
+                  setSettingsPopoverTab('agent');
+                  setSettingsPopoverOpen(true);
+                }}
+                onAgentPress={() => {
+                  setSettingsPopoverTab('agent');
+                  setSettingsPopoverOpen(true);
+                }}
+                onLocationPress={() => {
+                  setSettingsPopoverTab('location');
+                  setSettingsPopoverOpen(true);
+                }}
+              />
+            </div>
+          </ChatSettingsPopover>
           {/* Selected Checkpoints Display */}
           {primaryAgent === 'checkpoint' && selectedCheckpoints.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
@@ -410,200 +297,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
               <Clock className="h-4 w-4" />
               <span>Select checkpoints for context</span>
             </button>
-          )}
-
-          {/* Optional Agents (only for analysis agent) */}
-          {primaryAgent === 'analysis' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
-                Triage required
-              </Badge>
-              {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                const isSelected = selectedOptionalAgents.includes(option.id);
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleOptionalAgentToggle(option.id)}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border-border bg-background text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {option.label}
-                  </button>
-                );
-              })}
-              {selectedOptionalAgents.length === 0 && (
-                <span className="text-xs text-muted-foreground">Only triage will run</span>
-              )}
-            </div>
-          )}
-
-          {/* Location Selection */}
-          {onLocationDataChange && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setShowLocationOptions(!showLocationOptions)}
-                className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-left hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  {locationType === 'location' ? (
-                    <Navigation className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className="text-sm font-medium text-foreground">
-                    {locationType === 'address'
-                      ? propertyAddress 
-                        ? `Address: ${propertyAddress.substring(0, 30)}${propertyAddress.length > 30 ? '...' : ''}`
-                        : 'Address (not set)'
-                      : locationType === 'location'
-                        ? locationData?.locationCoordinates
-                          ? `Current Location (${locationData.locationCoordinates.lat.toFixed(4)}, ${locationData.locationCoordinates.lng.toFixed(4)})`
-                          : 'Current Location (click to set)'
-                        : 'Location'}
-                    {locationData?.locationRadius && (locationType === 'address' || locationType === 'location') 
-                      ? ` • ${locationData.locationRadius} mi radius` 
-                      : locationType === 'location' && !locationData?.locationCoordinates
-                        ? ` • ${locationRadius} mi radius`
-                        : ''}
-                  </span>
-                </div>
-                <X className={`h-4 w-4 text-muted-foreground transition-transform ${showLocationOptions ? 'rotate-45' : ''}`} />
-              </button>
-
-              {showLocationOptions && (
-                <div className="rounded-lg border border-border bg-background p-3 space-y-3">
-                  {/* Location Type Selector */}
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-2 block">Location Type</label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleLocationTypeChange('address')}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                          locationType === 'address'
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-transparent text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        <MapPin className="h-3.5 w-3.5" />
-                        Address
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleLocationTypeChange('location')}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                          locationType === 'location'
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-transparent text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        <Navigation className="h-3.5 w-3.5" />
-                        Location
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Location Type Descriptions */}
-                  {locationType === 'address' && propertyAddress && (
-                    <div className="rounded-md bg-muted/50 p-2">
-                      <p className="text-xs text-muted-foreground">
-                        Using property address for location-based search. The address will be geocoded to coordinates for precise radius filtering.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {locationType === 'address' && !propertyAddress && (
-                    <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-2">
-                      <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                        No property address available. Please select a property or use Current Location instead.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Current Location Button (for location type) */}
-                  {locationType === 'location' && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleGetCurrentLocation}
-                        disabled={isGettingLocation}
-                        className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium hover:bg-secondary/80 disabled:opacity-50 transition-colors"
-                      >
-                        {isGettingLocation ? (
-                          <>
-                            <div className="h-4 w-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
-                            <span>Getting location...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Navigation className="h-4 w-4" />
-                            <span>Use Current Location</span>
-                          </>
-                        )}
-                      </button>
-                      {locationData?.locationCoordinates && (
-                        <div className="rounded-md bg-green-500/10 border border-green-500/20 p-2">
-                          <p className="text-xs text-green-700 dark:text-green-400">
-                            ✓ Location set: {locationData.locationCoordinates.lat.toFixed(6)}, {locationData.locationCoordinates.lng.toFixed(6)}
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Radius Selector - Show for both address and location types */}
-                  {(locationType === 'location' || locationType === 'address') && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-semibold text-foreground">Search Radius</label>
-                        <span className="text-xs font-medium text-muted-foreground">{locationRadius} miles</span>
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs text-muted-foreground">10</span>
-                        <input
-                          type="range"
-                          min="10"
-                          max="100"
-                          step="5"
-                          value={locationRadius}
-                          onChange={(e) => handleRadiusChange(Number(e.target.value))}
-                          className="flex-1"
-                        />
-                        <span className="text-xs text-muted-foreground">100</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {[10, 25, 50, 75, 100].map((radius) => (
-                          <button
-                            key={radius}
-                            type="button"
-                            onClick={() => handleRadiusChange(radius)}
-                            className={cn(
-                              "flex-1 rounded-lg border px-2 py-1 text-xs font-medium transition-colors",
-                              locationRadius === radius
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border bg-transparent text-muted-foreground hover:bg-muted"
-                            )}
-                          >
-                            {radius}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           )}
 
           <div className="relative flex w-full items-center rounded-lg bg-muted">

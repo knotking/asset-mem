@@ -1,0 +1,466 @@
+import React from 'react';
+import {
+  View,
+  Modal,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  useColorScheme,
+} from 'react-native';
+import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import {
+  X,
+  Stethoscope,
+  Clock,
+  ShieldCheck,
+  Hammer,
+  Wrench,
+  BadgeDollarSign,
+  MapPin,
+  Navigation,
+} from 'lucide-react-native';
+import type {
+  PrimaryAgent,
+  AnalysisOptionalAgent,
+  LocationData,
+  LocationType,
+} from '@homeapp/common/types';
+import * as Location from 'expo-location';
+// Note: Using button-based radius selector instead of slider for better cross-platform compatibility
+
+interface ChatSettingsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  primaryAgent: PrimaryAgent;
+  onPrimaryAgentChange: (agent: PrimaryAgent) => void;
+  selectedOptionalAgents: AnalysisOptionalAgent[];
+  onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  locationData?: LocationData;
+  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  propertyAddress?: string;
+  initialTab?: 'agent' | 'location';
+}
+
+const OPTIONAL_AGENT_OPTIONS: {
+  id: AnalysisOptionalAgent;
+  label: string;
+  icon: typeof ShieldCheck;
+}[] = [
+  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
+  { id: 'diy', label: 'DIY', icon: Hammer },
+  { id: 'service', label: 'Service', icon: Wrench },
+  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
+];
+
+export function ChatSettingsModal({
+  visible,
+  onClose,
+  primaryAgent,
+  onPrimaryAgentChange,
+  selectedOptionalAgents,
+  onToggleOptionalAgent,
+  locationData,
+  onLocationDataChange,
+  propertyAddress,
+  initialTab = 'agent',
+}: ChatSettingsModalProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const [activeTab, setActiveTab] = React.useState<'agent' | 'location'>(initialTab);
+  const [locationType, setLocationType] = React.useState<LocationType | undefined>(
+    locationData?.locationType || 'location'
+  );
+  const [locationRadius, setLocationRadius] = React.useState<number>(
+    locationData?.locationRadius || 50
+  );
+  const [isGettingLocation, setIsGettingLocation] = React.useState(false);
+
+  // Color scheme values
+  const colors = {
+    background: isDark ? '#09090b' : '#ffffff',
+    card: isDark ? '#18181b' : '#f4f4f5',
+    border: isDark ? '#27272a' : '#e4e4e7',
+    foreground: isDark ? '#fafafa' : '#09090b',
+    mutedForeground: isDark ? '#a1a1aa' : '#71717a',
+    primary: isDark ? '#3b82f6' : '#2563eb',
+    primaryForeground: '#ffffff',
+    secondary: isDark ? '#27272a' : '#f4f4f5',
+  };
+
+  React.useEffect(() => {
+    if (visible) {
+      setActiveTab(initialTab);
+    }
+  }, [visible, initialTab]);
+
+  React.useEffect(() => {
+    if (locationData) {
+      setLocationType(locationData.locationType);
+      if (locationData.locationRadius !== undefined) {
+        setLocationRadius(locationData.locationRadius);
+      }
+    }
+  }, [locationData]);
+
+  const handleGetCurrentLocation = async () => {
+    setIsGettingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        setIsGettingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const newLocationData: LocationData = {
+        locationType: 'location',
+        locationCoordinates: {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        },
+        locationRadius: locationRadius,
+      };
+      setLocationType('location');
+      onLocationDataChange?.(newLocationData);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      alert('Failed to get current location');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  const handleLocationTypeChange = (type: LocationType) => {
+    setLocationType(type);
+    if (type === 'address') {
+      if (propertyAddress) {
+        const newLocationData: LocationData = {
+          locationType: 'address',
+          locationRadius: locationRadius,
+        };
+        onLocationDataChange?.(newLocationData);
+      } else {
+        onLocationDataChange?.(undefined);
+      }
+    } else if (type === 'location') {
+      if (locationData?.locationCoordinates) {
+        const newLocationData: LocationData = {
+          locationType: 'location',
+          locationCoordinates: locationData.locationCoordinates,
+          locationRadius: locationRadius,
+        };
+        onLocationDataChange?.(newLocationData);
+      }
+    }
+  };
+
+  const handleRadiusChange = (radius: number) => {
+    setLocationRadius(radius);
+    if (locationType && onLocationDataChange) {
+      const newLocationData: LocationData = {
+        locationType,
+        locationCoordinates: locationData?.locationCoordinates,
+        locationRadius: radius,
+      };
+      onLocationDataChange(newLocationData);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View className="flex-1 justify-end bg-black/50">
+        <View
+          style={{ backgroundColor: colors.background }}
+          className="max-h-[85%] rounded-t-3xl border-t border-border">
+          {/* Header */}
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-4">
+            <Text className="text-lg font-semibold text-foreground">Chat Settings</Text>
+            <Pressable
+              onPress={onClose}
+              className="h-8 w-8 items-center justify-center rounded-full bg-secondary"
+              accessibilityRole="button"
+              accessibilityLabel="Close settings">
+              <Icon as={X} size={20} className="text-foreground" />
+            </Pressable>
+          </View>
+
+          {/* Tabs */}
+          <View className="flex-row border-b border-border px-4">
+            <Pressable
+              onPress={() => setActiveTab('agent')}
+              className={`flex-1 border-b-2 py-3 ${
+                activeTab === 'agent' ? 'border-primary' : 'border-transparent'
+              }`}>
+              <Text
+                className={`text-center text-sm font-medium ${
+                  activeTab === 'agent' ? 'text-primary' : 'text-muted-foreground'
+                }`}>
+                Agent
+              </Text>
+            </Pressable>
+            {onLocationDataChange && (
+              <Pressable
+                onPress={() => setActiveTab('location')}
+                className={`flex-1 border-b-2 py-3 ${
+                  activeTab === 'location' ? 'border-primary' : 'border-transparent'
+                }`}>
+                <Text
+                  className={`text-center text-sm font-medium ${
+                    activeTab === 'location' ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                  Location
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Content */}
+          <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
+            {activeTab === 'agent' && (
+              <View className="gap-4">
+                {/* Primary Agent Selection */}
+                <View>
+                  <Text className="mb-3 text-sm font-semibold text-foreground">Primary Agent</Text>
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={() => onPrimaryAgentChange('analysis')}
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                        primaryAgent === 'analysis'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={Stethoscope}
+                        size={18}
+                        className={
+                          primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-sm font-semibold ${
+                          primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
+                        }`}>
+                        Analysis
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onPrimaryAgentChange('checkpoint')}
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                        primaryAgent === 'checkpoint'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={Clock}
+                        size={18}
+                        className={
+                          primaryAgent === 'checkpoint'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-sm font-semibold ${
+                          primaryAgent === 'checkpoint'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }`}>
+                        Checkpoint
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Optional Agents (Analysis Mode) */}
+                {primaryAgent === 'analysis' && (
+                  <View>
+                    <Text className="mb-3 text-sm font-semibold text-foreground">
+                      Optional Agents
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                        const isSelected = selectedOptionalAgents.includes(option.id);
+                        return (
+                          <Pressable
+                            key={option.id}
+                            onPress={() => onToggleOptionalAgent(option.id)}
+                            className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
+                              isSelected
+                                ? 'border-primary bg-primary'
+                                : 'border-border bg-transparent'
+                            }`}>
+                            <Icon
+                              as={option.icon}
+                              size={14}
+                              className={
+                                isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                              }
+                            />
+                            <Text
+                              className={`text-xs font-medium ${
+                                isSelected ? 'text-primary-foreground' : 'text-foreground'
+                              }`}>
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {selectedOptionalAgents.length === 0 && (
+                      <Text className="mt-2 text-xs text-muted-foreground">
+                        Triage agent will run by default
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Checkpoint Mode Info */}
+                {primaryAgent === 'checkpoint' && (
+                  <View className="rounded-lg bg-secondary/50 p-3">
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      Checkpoint Agent analyzes your property's checkpoint history to answer
+                      questions about changes, trends, and condition over time.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {activeTab === 'location' && onLocationDataChange && (
+              <View className="gap-4">
+                {/* Location Type */}
+                <View>
+                  <Text className="mb-3 text-sm font-semibold text-foreground">Location Type</Text>
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={() => handleLocationTypeChange('address')}
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                        locationType === 'address'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={MapPin}
+                        size={18}
+                        className={
+                          locationType === 'address' ? 'text-primary-foreground' : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-sm font-semibold ${
+                          locationType === 'address' ? 'text-primary-foreground' : 'text-foreground'
+                        }`}>
+                        Address
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleLocationTypeChange('location')}
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                        locationType === 'location'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={Navigation}
+                        size={18}
+                        className={
+                          locationType === 'location' ? 'text-primary-foreground' : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-sm font-semibold ${
+                          locationType === 'location' ? 'text-primary-foreground' : 'text-foreground'
+                        }`}>
+                        Current
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Address Mode Info */}
+                {locationType === 'address' && propertyAddress && (
+                  <View className="rounded-lg bg-muted/50 p-3">
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      Using property address: {propertyAddress.substring(0, 50)}
+                      {propertyAddress.length > 50 ? '...' : ''}
+                    </Text>
+                  </View>
+                )}
+
+                {locationType === 'address' && !propertyAddress && (
+                  <View className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3">
+                    <Text className="text-xs leading-5 text-yellow-700 dark:text-yellow-400">
+                      No property address available. Please select a property or use Current
+                      Location.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Current Location Button */}
+                {locationType === 'location' && (
+                  <View>
+                    <Pressable
+                      onPress={handleGetCurrentLocation}
+                      disabled={isGettingLocation}
+                      className="flex-row items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 py-3">
+                      {isGettingLocation ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Icon as={Navigation} size={18} className="text-foreground" />
+                      )}
+                      <Text className="text-sm font-medium text-foreground">
+                        {isGettingLocation ? 'Getting location...' : 'Get Current Location'}
+                      </Text>
+                    </Pressable>
+                    {locationData?.locationCoordinates && (
+                      <View className="mt-3 rounded-lg border border-green-500/20 bg-green-500/10 p-3">
+                        <Text className="text-xs text-green-700 dark:text-green-400">
+                          ✓ Location set: {locationData.locationCoordinates.lat.toFixed(4)},{' '}
+                          {locationData.locationCoordinates.lng.toFixed(4)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Radius Selector */}
+                {(locationType === 'location' || locationType === 'address') && (
+                  <View>
+                    <View className="mb-2 flex-row items-center justify-between">
+                      <Text className="text-sm font-semibold text-foreground">Search Radius</Text>
+                      <Text className="text-sm font-bold text-primary">{locationRadius} miles</Text>
+                    </View>
+                    <View className="flex-row justify-between">
+                      {[10, 25, 50, 75, 100].map((radius) => (
+                        <Pressable
+                          key={radius}
+                          onPress={() => handleRadiusChange(radius)}
+                          className={`rounded-lg border px-3 py-1.5 ${
+                            locationRadius === radius
+                              ? 'border-primary bg-primary'
+                              : 'border-border bg-transparent'
+                          }`}>
+                          <Text
+                            className={`text-xs font-medium ${
+                              locationRadius === radius
+                                ? 'text-primary-foreground'
+                                : 'text-muted-foreground'
+                            }`}>
+                            {radius}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
