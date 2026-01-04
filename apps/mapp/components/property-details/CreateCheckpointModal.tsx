@@ -16,7 +16,6 @@ interface CreateCheckpointModalProps {
   onClose: () => void;
   onCreate: (data: {
     name: string;
-    description?: string;
     assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
     location: string;
     mediaAsset: ImagePicker.ImagePickerAsset;
@@ -106,7 +105,6 @@ const LOCATION_OPTIONS = {
 export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateCheckpointModalProps) {
   const insets = useSafeAreaInsets();
   const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
   const [assetType, setAssetType] = React.useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = React.useState<string>('');
   const [customLocation, setCustomLocation] = React.useState<string>('');
@@ -140,7 +138,6 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   React.useEffect(() => {
     if (visible) {
       setName('');
-      setDescription('');
       setAssetType('real_estate');
       setLocation('');
       setCustomLocation('');
@@ -244,15 +241,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         name.trim() || `${(effectiveLocation || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
       const finalLocation = effectiveLocation.trim();
-      const finalDescription = description.trim() || undefined;
-      await onCreate({ 
-        name: finalName, 
-        description: finalDescription,
-        assetType, 
-        location: finalLocation, 
-        mediaAsset, 
-        mediaType 
-      });
+      await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
       // Note: Don't call onClose() here - let parent handle modal transitions to prevent blank screen
     } catch (error) {
       console.error('Error creating checkpoint:', error);
@@ -334,21 +323,6 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
               <Input placeholder="e.g., Kitchen Sink Leak" value={name} onChangeText={setName} />
               <Text className="mt-1 text-xs text-muted-foreground">
                 Leave blank to auto-generate.
-              </Text>
-            </View>
-
-            <View>
-              <Text className="mb-2 text-sm font-medium text-foreground">Description (Optional)</Text>
-              <Input 
-                placeholder="Add notes or details about this checkpoint..." 
-                value={description} 
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={3}
-                style={{ minHeight: 80, textAlignVertical: 'top' }}
-              />
-              <Text className="mt-1 text-xs text-muted-foreground">
-                Add any additional context or observations.
               </Text>
             </View>
 
