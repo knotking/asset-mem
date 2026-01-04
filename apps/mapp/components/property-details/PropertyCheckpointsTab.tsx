@@ -454,7 +454,7 @@ function CheckpointCard({
 interface PropertyCheckpointsTabProps {
   isCreateModalVisible: boolean;
   setIsCreateModalVisible: (visible: boolean) => void;
-  setActiveTab: (tab: 'chat' | 'details' | 'checkpoints') => void;
+  setActiveTab: (tab: 'chat' | 'details' | 'timeline') => void;
 }
 
 export function PropertyCheckpointsTab({ 
@@ -476,7 +476,7 @@ export function PropertyCheckpointsTab({
   const { property } = useProperty();
   
   // Sub-tab state
-  const [activeSubTab, setActiveSubTab] = React.useState<'insights' | 'select'>('insights');
+  const [activeSubTab, setActiveSubTab] = React.useState<'checkpoints' | 'insights'>('checkpoints');
   
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
@@ -516,8 +516,8 @@ export function PropertyCheckpointsTab({
         ]
       );
       
-      // Switch to checkpoints tab to show the new checkpoint
-      setActiveTab('checkpoints');
+      // Switch to timeline tab to show the new checkpoint
+      setActiveTab('timeline');
       
       // Set checkpoint data AND open processing modal BEFORE closing create modal
       // This ensures smooth transition without blank screen
@@ -581,8 +581,8 @@ export function PropertyCheckpointsTab({
     // Close processing modal first
     setIsProcessingModalVisible(false);
     
-    // Switch to 'select' tab (but don't auto-select since user is viewing detail)
-    setActiveSubTab('select');
+    // Switch to 'checkpoints' tab (but don't auto-select since user is viewing detail)
+    setActiveSubTab('checkpoints');
     
     // Find the checkpoint and open detail modal
     const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
@@ -603,8 +603,8 @@ export function PropertyCheckpointsTab({
 
   const handleContinueFromProcessing = () => {
     setIsProcessingModalVisible(false);
-    // Switch to 'select' tab after creating a checkpoint
-    setActiveSubTab('select');
+    // Switch to 'checkpoints' tab after creating a checkpoint
+    setActiveSubTab('checkpoints');
     // Auto-select the newly created checkpoint
     if (newCheckpointId) {
       setSelectedForActions([newCheckpointId]);
@@ -612,7 +612,7 @@ export function PropertyCheckpointsTab({
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {
-    if (activeSubTab === 'select') {
+    if (activeSubTab === 'checkpoints') {
       // Toggle selection
       setSelectedForActions((prev) => {
         if (prev.includes(checkpoint.id)) {
@@ -737,9 +737,19 @@ export function PropertyCheckpointsTab({
       <View className="flex-row border-b border-border px-4">
         <Pressable
           onPress={() => {
-            setActiveSubTab('insights');
+            setActiveSubTab('checkpoints');
             setSelectedForActions([]);
           }}
+          className={`flex-1 py-3 ${activeSubTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
+          <Text
+            className={`text-center font-medium ${
+              activeSubTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+            Checkpoints
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setActiveSubTab('insights')}
           className={`flex-1 py-3 ${activeSubTab === 'insights' ? 'border-b-2 border-primary' : ''}`}>
           <Text
             className={`text-center font-medium ${
@@ -748,30 +758,10 @@ export function PropertyCheckpointsTab({
             Insights
           </Text>
         </Pressable>
-        <Pressable
-          onPress={() => setActiveSubTab('select')}
-          className={`flex-1 py-3 ${activeSubTab === 'select' ? 'border-b-2 border-primary' : ''}`}>
-          <Text
-            className={`text-center font-medium ${
-              activeSubTab === 'select' ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-            Select Checkpoints
-          </Text>
-        </Pressable>
       </View>
 
-      {/* Insights Sub-tab Content */}
-      {activeSubTab === 'insights' && (
-        <ScrollView className="flex-1 p-4">
-          <PropertyMetricsCard
-            checkpoints={checkpoints}
-            onOpenIssues={() => setIsIssuesModalVisible(true)}
-          />
-        </ScrollView>
-      )}
-
-      {/* Select Checkpoints Sub-tab Content */}
-      {activeSubTab === 'select' && (
+      {/* Checkpoints Sub-tab Content */}
+      {activeSubTab === 'checkpoints' && (
         <View className="flex-1 p-4">
           {/* Selection indicator and action buttons */}
           {selectedForActions.length > 0 && (
@@ -852,6 +842,16 @@ export function PropertyCheckpointsTab({
             }
           />
         </View>
+      )}
+
+      {/* Insights Sub-tab Content */}
+      {activeSubTab === 'insights' && (
+        <ScrollView className="flex-1 p-4">
+          <PropertyMetricsCard
+            checkpoints={checkpoints}
+            onOpenIssues={() => setIsIssuesModalVisible(true)}
+          />
+        </ScrollView>
       )}
 
       <CreateCheckpointModal

@@ -36,7 +36,7 @@ function PropertyTabs() {
     
     const tabs = [
         { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat' },
-        { name: 'Checkpoints', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints' },
+        { name: 'Timeline', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints' },
         { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details'},
         // { name: 'Services', href: '#', segment: 'services' },
         // { name: 'Providers', href: '#', segment: 'providers' },

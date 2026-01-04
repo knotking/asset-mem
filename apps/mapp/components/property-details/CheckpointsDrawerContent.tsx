@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 interface CheckpointsDrawerContentProps {
   checkpoints: Checkpoint[];
   selectedCheckpoints: Checkpoint[];
-  activeTab: 'chat' | 'details' | 'checkpoints';
+  activeTab: 'chat' | 'details' | 'timeline';
   onClose: () => void;
   onToggleCheckpoint: (checkpoint: Checkpoint) => void;
 }
@@ -54,7 +54,7 @@ export function CheckpointsDrawerContent({
             <Text className="text-center text-muted-foreground">
               No checkpoints available for this property.
             </Text>
-            {activeTab === 'checkpoints' && (
+            {activeTab === 'timeline' && (
               <Text className="mt-2 text-center text-sm text-muted-foreground">
                 Create checkpoints to track property condition over time.
               </Text>

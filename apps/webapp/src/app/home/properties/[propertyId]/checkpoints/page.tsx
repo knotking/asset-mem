@@ -12,11 +12,11 @@ import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { Checkpoint } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type CheckpointTab = 'insights' | 'select';
+type CheckpointTab = 'checkpoints' | 'insights';
 
 export default function PropertyCheckpointsPage() {
   const { checkpoints, loading, setSelectedCheckpoint } = useCheckpoint();
-  const [activeTab, setActiveTab] = useState<CheckpointTab>('insights');
+  const [activeTab, setActiveTab] = useState<CheckpointTab>('checkpoints');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [comparisonCheckpoints, setComparisonCheckpoints] = useState<
@@ -24,8 +24,8 @@ export default function PropertyCheckpointsPage() {
   >(null);
 
   const handleCheckpointCreated = () => {
-    // Switch to select tab when a checkpoint is created
-    setActiveTab('select');
+    // Switch to checkpoints tab when a checkpoint is created
+    setActiveTab('checkpoints');
   };
 
   const handleCheckpointClick = (checkpoint: Checkpoint) => {
@@ -73,6 +73,23 @@ export default function PropertyCheckpointsPage() {
           <div className="mb-6 border-b">
             <nav className="flex gap-6" aria-label="Checkpoint tabs">
               <button
+                onClick={() => setActiveTab('checkpoints')}
+                className={cn(
+                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
+                  activeTab === 'checkpoints'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Checkpoints
+                </div>
+                {activeTab === 'checkpoints' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                )}
+              </button>
+              <button
                 onClick={() => setActiveTab('insights')}
                 className={cn(
                   'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
@@ -89,28 +106,21 @@ export default function PropertyCheckpointsPage() {
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                 )}
               </button>
-              <button
-                onClick={() => setActiveTab('select')}
-                className={cn(
-                  'relative pb-3 text-sm font-medium transition-colors hover:text-foreground',
-                  activeTab === 'select'
-                    ? 'text-foreground'
-                    : 'text-muted-foreground'
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <List className="h-4 w-4" />
-                  Select Checkpoints
-                </div>
-                {activeTab === 'select' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-                )}
-              </button>
             </nav>
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'insights' ? (
+          {activeTab === 'checkpoints' ? (
+            <>
+              {/* Checkpoints View - Full interactive list */}
+              <CheckpointList
+                checkpoints={checkpoints}
+                loading={loading}
+                onCheckpointClick={handleCheckpointClick}
+                onCompare={handleCompare}
+              />
+            </>
+          ) : (
             <>
               {/* Metrics Dashboard */}
               <MetricsDashboard />
@@ -125,16 +135,6 @@ export default function PropertyCheckpointsPage() {
                   onCompare={handleCompare}
                 />
               </div>
-            </>
-          ) : (
-            <>
-              {/* Select Checkpoints View - Full interactive list */}
-              <CheckpointList
-                checkpoints={checkpoints}
-                loading={loading}
-                onCheckpointClick={handleCheckpointClick}
-                onCompare={handleCompare}
-              />
             </>
           )}
         </div>

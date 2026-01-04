@@ -64,11 +64,11 @@ export default function PropertyDetailsScreen() {
   const router = useRouter();
 
   // Tab state
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'checkpoints'>(
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'timeline'>(
     tab === 'details'
       ? 'details'
-      : tab === 'checkpoints'
-        ? 'checkpoints'
+      : tab === 'timeline'
+        ? 'timeline'
         : isNew === 'true'
           ? 'details'
           : 'chat'
@@ -784,7 +784,7 @@ function PropertyDetailsScreenContent({
                             </Button>
                           </View>
                         )}
-                        {activeTab === 'checkpoints' && (
+                        {activeTab === 'timeline' && (
                           <Button
                             onPress={() => setIsCreateCheckpointModalVisible(true)}
                             variant="ghost"
@@ -793,7 +793,7 @@ function PropertyDetailsScreenContent({
                             <Icon as={Plus} size={20} className="text-foreground" />
                           </Button>
                         )}
-                        {activeTab !== 'checkpoints' && (
+                        {activeTab !== 'timeline' && (
                           <>
                             <View className="relative items-center justify-center">
                               <Button
@@ -850,12 +850,12 @@ function PropertyDetailsScreenContent({
                       />
                     </Pressable>
                     <Pressable
-                      onPress={() => setActiveTab('checkpoints')}
-                      className={`flex-1 items-center py-3 ${activeTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
+                      onPress={() => setActiveTab('timeline')}
+                      className={`flex-1 items-center py-3 ${activeTab === 'timeline' ? 'border-b-2 border-primary' : ''}`}>
                       <Icon
                         as={Clock}
                         size={20}
-                        className={activeTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'}
+                        className={activeTab === 'timeline' ? 'text-primary' : 'text-muted-foreground'}
                       />
                     </Pressable>
                     <Pressable
@@ -981,7 +981,7 @@ function PropertyDetailsScreenContent({
                         }}
                       />
                     </MessagesProvider>
-                  ) : activeTab === 'checkpoints' ? (
+                  ) : activeTab === 'timeline' ? (
                     <PropertyCheckpointsTab
                       isCreateModalVisible={isCreateCheckpointModalVisible}
                       setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
