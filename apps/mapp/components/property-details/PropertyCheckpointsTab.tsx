@@ -454,11 +454,13 @@ function CheckpointCard({
 interface PropertyCheckpointsTabProps {
   isCreateModalVisible: boolean;
   setIsCreateModalVisible: (visible: boolean) => void;
+  setActiveTab: (tab: 'chat' | 'details' | 'checkpoints') => void;
 }
 
 export function PropertyCheckpointsTab({ 
   isCreateModalVisible, 
-  setIsCreateModalVisible 
+  setIsCreateModalVisible,
+  setActiveTab 
 }: PropertyCheckpointsTabProps) {
   const {
     checkpoints,
@@ -513,6 +515,9 @@ export function PropertyCheckpointsTab({
           },
         ]
       );
+      
+      // Switch to checkpoints tab to show the new checkpoint
+      setActiveTab('checkpoints');
       
       // Set checkpoint data AND open processing modal BEFORE closing create modal
       // This ensures smooth transition without blank screen

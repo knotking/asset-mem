@@ -985,6 +985,7 @@ function PropertyDetailsScreenContent({
                     <PropertyCheckpointsTab
                       isCreateModalVisible={isCreateCheckpointModalVisible}
                       setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
+                      setActiveTab={setActiveTab}
                     />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
