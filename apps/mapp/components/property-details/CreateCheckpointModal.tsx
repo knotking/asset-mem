@@ -4,6 +4,7 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Camera, Image as ImageIcon, Loader2, Video as VideoIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -326,30 +327,28 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
             </View>
 
             <View>
-              <Text className="mb-3 text-sm font-medium text-foreground">Asset Type</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {ASSET_TYPES.map((type) => {
-                  const isSelected = assetType === type.value;
-                  return (
-                    <Pressable
-                      key={type.value}
-                      onPress={() => {
-                        setAssetType(type.value);
-                        setLocation(''); // Reset location when asset type changes
-                      }}
-                      className={`rounded-full border px-3 py-1.5 ${
-                        isSelected ? 'border-primary bg-primary' : 'border-border bg-secondary'
-                      }`}>
-                      <Text
-                        className={`text-xs font-medium ${
-                          isSelected ? 'text-primary-foreground' : 'text-foreground'
-                        }`}>
+              <Text className="mb-2 text-sm font-medium text-foreground">Asset Type</Text>
+              <Select
+                value={{ value: assetType, label: ASSET_TYPES.find(t => t.value === assetType)?.label || 'Real Estate' }}
+                onValueChange={(option) => {
+                  if (option?.value) {
+                    setAssetType(option.value);
+                    setLocation(''); // Reset location when asset type changes
+                  }
+                }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select asset type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ASSET_TYPES.map((type) => (
+                      <SelectItem key={type.value} label={type.label} value={type.value}>
                         {type.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </View>
 
             <View>
@@ -397,26 +396,26 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
                 </View>
               ) : (
                 <View>
-                  <View className="flex-row flex-wrap gap-2">
-                    {LOCATION_OPTIONS[assetType].map((loc) => {
-                      const isSelected = location === loc.value;
-                      return (
-                        <Pressable
-                          key={loc.value}
-                          onPress={() => setLocation(loc.value)}
-                          className={`rounded-full border px-3 py-1.5 ${
-                            isSelected ? 'border-primary bg-primary' : 'border-border bg-secondary'
-                          }`}>
-                          <Text
-                            className={`text-xs font-medium ${
-                              isSelected ? 'text-primary-foreground' : 'text-foreground'
-                            }`}>
+                  <Select
+                    value={location ? { value: location, label: location } : undefined}
+                    onValueChange={(option) => {
+                      if (option?.value) {
+                        setLocation(option.value);
+                      }
+                    }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select location (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {LOCATION_OPTIONS[assetType].map((loc) => (
+                          <SelectItem key={loc.value} label={loc.label} value={loc.value}>
                             {loc.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <Text className="mt-2 text-xs text-muted-foreground">
                     Optional — we'll auto-detect this from the photo when possible.
                   </Text>

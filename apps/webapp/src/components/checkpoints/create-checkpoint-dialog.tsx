@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { FileUploadZone } from './file-upload-zone';
 import { CheckpointProcessingDialog } from './checkpoint-processing-dialog';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
@@ -265,57 +272,49 @@ export function CreateCheckpointDialog({
 
           {/* Asset Type */}
           <div className="space-y-2">
-            <Label>Asset Type</Label>
-            <div className="flex flex-wrap gap-2">
-              {ASSET_TYPES.map((type) => (
-                <Button
-                  key={type.value}
-                  type="button"
-                  variant={assetType === type.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => {
-                    setAssetType(type.value);
-                    setLocation(''); // Reset location when asset type changes
-                  }}
-                  disabled={isCreating}
-                  className={cn(
-                    'rounded-full',
-                    assetType === type.value && 'bg-primary text-primary-foreground'
-                  )}
-                >
-                  {type.label}
-                </Button>
-              ))}
-            </div>
+            <Label htmlFor="asset-type">Asset Type</Label>
+            <Select
+              value={assetType}
+              onValueChange={(value: 'real_estate' | 'vehicle' | 'appliance' | 'other') => {
+                setAssetType(value);
+                setLocation(''); // Reset location when asset type changes
+              }}
+              disabled={isCreating}
+            >
+              <SelectTrigger id="asset-type">
+                <SelectValue placeholder="Select asset type" />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSET_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Location */}
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder={`e.g., ${LOCATION_SUGGESTIONS[assetType].slice(0, 3).join(', ')}`}
+            <Label htmlFor="location">Location (Optional)</Label>
+            <Select
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onValueChange={(value) => setLocation(value)}
               disabled={isCreating}
-            />
-            <div className="flex flex-wrap gap-1 mt-2">
-              {LOCATION_SUGGESTIONS[assetType].map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLocation(suggestion)}
-                  disabled={isCreating}
-                  className="h-7 text-xs rounded-full"
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
+            >
+              <SelectTrigger id="location">
+                <SelectValue placeholder="Select location or leave blank for auto-detect" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {LOCATION_SUGGESTIONS[assetType].map((suggestion) => (
+                  <SelectItem key={suggestion} value={suggestion}>
+                    {suggestion}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Leave blank to auto-detect location from photos
+              Optional — we'll auto-detect this from the photo when possible
             </p>
           </div>
 
