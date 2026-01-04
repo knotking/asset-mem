@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 interface CreateCheckpointDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCheckpointCreated?: () => void;
 }
 
 interface FileWithPreview {
@@ -51,6 +52,7 @@ const LOCATION_SUGGESTIONS = {
 export function CreateCheckpointDialog({
   open,
   onOpenChange,
+  onCheckpointCreated,
 }: CreateCheckpointDialogProps) {
   const { createCheckpoint, setSelectedCheckpoint, checkpoints } = useCheckpoint();
   const { user } = useAuth();
@@ -181,6 +183,14 @@ export function CreateCheckpointDialog({
     setIsProcessingDialogOpen(false);
   };
 
+  const handleContinue = () => {
+    setIsProcessingDialogOpen(false);
+    // Notify parent that checkpoint was created so it can switch to select tab
+    if (onCheckpointCreated) {
+      onCheckpointCreated();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -302,6 +312,7 @@ export function CreateCheckpointDialog({
         checkpointId={newCheckpointId}
         checkpointName={newCheckpointName}
         onViewCheckpoint={handleViewNewCheckpoint}
+        onContinue={handleContinue}
       />
     </Dialog>
   );

@@ -23,6 +23,11 @@ export default function PropertyCheckpointsPage() {
     [Checkpoint, Checkpoint] | null
   >(null);
 
+  const handleCheckpointCreated = () => {
+    // Switch to select tab when a checkpoint is created
+    setActiveTab('select');
+  };
+
   const handleCheckpointClick = (checkpoint: Checkpoint) => {
     setSelectedCheckpoint(checkpoint);
   };
@@ -149,7 +154,11 @@ export default function PropertyCheckpointsPage() {
             </footer>
 
       {/* Dialogs */}
-      <CreateCheckpointDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateCheckpointDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        onCheckpointCreated={handleCheckpointCreated}
+      />
       <CheckpointDetailDialog />
       {isComparisonOpen && comparisonCheckpoints && (
         <CheckpointComparisonDialog

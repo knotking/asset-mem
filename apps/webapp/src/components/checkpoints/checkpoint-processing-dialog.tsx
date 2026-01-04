@@ -19,6 +19,7 @@ interface CheckpointProcessingDialogProps {
   checkpointId: string;
   checkpointName: string;
   onViewCheckpoint: (checkpointId: string) => void;
+  onContinue?: () => void;
 }
 
 // Defensive check to ensure we have valid props
@@ -32,6 +33,7 @@ export function CheckpointProcessingDialog({
   checkpointId,
   checkpointName,
   onViewCheckpoint,
+  onContinue,
 }: CheckpointProcessingDialogProps) {
   const [countdown, setCountdown] = useState(4);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -69,6 +71,9 @@ export function CheckpointProcessingDialog({
   };
 
   const handleContinue = () => {
+    if (onContinue) {
+      onContinue();
+    }
     onOpenChange(false);
   };
 
