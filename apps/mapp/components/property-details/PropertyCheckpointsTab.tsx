@@ -576,6 +576,9 @@ export function PropertyCheckpointsTab({
     // Close processing modal first
     setIsProcessingModalVisible(false);
     
+    // Switch to 'select' tab (but don't auto-select since user is viewing detail)
+    setActiveSubTab('select');
+    
     // Find the checkpoint and open detail modal
     const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
     if (checkpoint) {
@@ -595,6 +598,12 @@ export function PropertyCheckpointsTab({
 
   const handleContinueFromProcessing = () => {
     setIsProcessingModalVisible(false);
+    // Switch to 'select' tab after creating a checkpoint
+    setActiveSubTab('select');
+    // Auto-select the newly created checkpoint
+    if (newCheckpointId) {
+      setSelectedForActions([newCheckpointId]);
+    }
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {

@@ -2,17 +2,31 @@
 
 ## Problem
 
-When creating checkpoints in the mobile app, users experienced intermittent blank screens during the transition between modals. This happened during the flow:
+When creating checkpoints in the mobile app, users experienced intermittent blank screens at two points:
 
-1. User fills out `CreateCheckpointModal` and submits
-2. Checkpoint is created in backend
-3. `CreateCheckpointModal` closes
-4. `CheckpointProcessingModal` opens
-5. **BLANK SCREEN** occurs between steps 3-4
+1. **When pressing "Create Checkpoint" button** - Blank screen during modal open animation
+2. **After submitting the checkpoint** - Blank screen between modal transitions
 
 ## Root Causes
 
-### 1. Modal Transition Gap
+### Issue 1: Blank Screen When Opening Create Modal
+
+#### 1.1 Video Player Initialization
+The `useVideoPlayer` hook was being called with an empty string when the modal first opened:
+
+```typescript
+// OLD CODE
+const videoPlayer = useVideoPlayer(mediaAsset?.uri ?? '', ...);
+```
+
+This could cause initialization delays or errors.
+
+#### 1.2 Modal Animation with Unready Content  
+React Native's `Modal` with `presentationStyle="pageSheet"` and `animationType="slide"` can show a blank screen during the slide animation if the modal content isn't fully initialized.
+
+### Issue 2: Blank Screen After Submission (Modal Transition Gap)
+
+#### 2.1 Wrong Modal Transition Order
 The original code closed the create modal first, then waited 50ms before opening the processing modal:
 
 ```typescript
@@ -25,7 +39,7 @@ setTimeout(() => {
 
 This 50ms gap exposed the underlying screen, creating a jarring blank screen flash.
 
-### 2. Premature Modal Closure
+### 2.2 Premature Modal Closure
 The `CreateCheckpointModal` component called `onClose()` immediately after the `onCreate` callback completed:
 
 ```typescript
@@ -36,7 +50,7 @@ onClose(); // Closes too early!
 
 This meant the create modal would dismiss before the parent component had a chance to show the processing modal.
 
-### 3. Race Condition in Processing Modal
+### 2.3 Race Condition in Processing Modal
 The `CheckpointProcessingModal` would render with potentially invalid/empty data if opened before the checkpoint state was fully set:
 
 ```typescript
@@ -49,7 +63,44 @@ if (!visible) {
 
 ## Solution
 
-### 1. Reversed Modal Transition Order
+### Fix 1: Video Player Initialization
+
+Use a valid data URI placeholder when no video is selected:
+
+```typescript
+// NEW CODE in CreateCheckpointModal.tsx
+const hasVideoUri = Boolean(mediaAsset?.uri && mediaType === 'video');
+const videoPlayer = useVideoPlayer(
+  hasVideoUri ? mediaAsset!.uri : 'data:,',  // Use data URI as placeholder
+  (player) => {
+    player.loop = false;
+    player.muted = true;
+  }
+);
+```
+
+This prevents the video player from initializing with an invalid empty string, which could cause delays or errors.
+
+### Fix 2: Ensure Background Color During Modal Animation
+
+Added explicit background color and `statusBarTranslucent` to ensure the modal has proper styling during the slide animation:
+
+```typescript
+// NEW CODE in CreateCheckpointModal.tsx
+<Modal 
+  visible={visible} 
+  animationType="slide" 
+  presentationStyle="pageSheet"
+  statusBarTranslucent  // Prevents status bar overlay issues
+  onRequestClose={onClose}>
+  <View className="flex-1 bg-background">
+    {/* Explicit background ensures no blank screen during animation */}
+    ...
+  </View>
+</Modal>
+```
+
+### Fix 3: Reversed Modal Transition Order
 Open the processing modal FIRST, then close the create modal:
 
 ```typescript
@@ -66,7 +117,7 @@ requestAnimationFrame(() => {
 
 This ensures continuous modal coverage - no blank screen gap.
 
-### 2. Parent-Controlled Modal Transitions
+### Fix 4: Parent-Controlled Modal Transitions
 Removed the `onClose()` call from `CreateCheckpointModal.handleSubmit()`:
 
 ```typescript
@@ -77,7 +128,7 @@ await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset
 
 The parent component now fully controls when each modal opens/closes for coordinated transitions.
 
-### 3. Keep Create Modal Visible During Transition
+### Fix 5: Keep Create Modal Visible During Transition
 Don't reset the loading state on success - keep the modal in loading state during transition:
 
 ```typescript
@@ -91,7 +142,7 @@ try {
 }
 ```
 
-### 4. Data Validation in Processing Modal
+### Fix 6: Data Validation in Processing Modal
 Added validation to prevent rendering with invalid data:
 
 ```typescript
@@ -111,7 +162,7 @@ return (
 );
 ```
 
-### 5. UI Interaction Guards
+### Fix 7: UI Interaction Guards
 Disabled interactive elements during loading to prevent race conditions:
 
 - Close button (X) disabled during loading
@@ -141,15 +192,27 @@ Disabled interactive elements during loading to prevent race conditions:
 
 ## Testing
 
-To verify the fix:
+To verify the fixes:
 
+### Test 1: Opening Create Modal
 1. Open property details
-2. Click "Create Checkpoint"
-3. Take/select a photo
-4. Fill out form and submit
-5. **Verify**: Smooth transition from create modal to processing modal with NO blank screen
-6. **Verify**: Processing modal shows checkpoint name correctly
-7. **Verify**: Cannot close create modal while loading
+2. Go to Checkpoints tab
+3. Click "Create Checkpoint" button
+4. **Verify**: Modal opens smoothly with NO blank screen during slide animation
+5. **Verify**: Modal header and form are immediately visible
+
+### Test 2: Submitting Checkpoint
+1. In create modal, take/select a photo
+2. Fill out form and click "Create Checkpoint"
+3. **Verify**: Smooth transition from create modal to processing modal with NO blank screen
+4. **Verify**: Processing modal shows checkpoint name correctly
+5. **Verify**: Cannot close create modal while loading
+
+### Test 3: Video Handling
+1. Open create modal
+2. Select or record a video
+3. **Verify**: Video preview shows without errors
+4. **Verify**: No console errors about video player initialization
 
 ## Technical Notes
 

@@ -73,11 +73,17 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image');
   const [loading, setLoading] = React.useState(false);
 
-  const videoPlayer = useVideoPlayer(mediaAsset?.uri ?? '', (player) => {
-    // Don't auto-play previews in a create modal.
-    player.loop = false;
-    player.muted = true;
-  });
+  // Only initialize video player when we actually have a video URI
+  // Initialize with a dummy URI to prevent initialization issues
+  const hasVideoUri = Boolean(mediaAsset?.uri && mediaType === 'video');
+  const videoPlayer = useVideoPlayer(
+    hasVideoUri ? mediaAsset!.uri : 'data:,', 
+    (player) => {
+      // Don't auto-play previews in a create modal.
+      player.loop = false;
+      player.muted = true;
+    }
+  );
 
   const applyAutoDefaults = React.useCallback(() => {
     // Auto-generate a friendly default name if the user hasn't typed one.
@@ -202,10 +208,15 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal 
+      visible={visible} 
+      animationType="slide" 
+      presentationStyle="pageSheet"
+      statusBarTranslucent
+      onRequestClose={onClose}>
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+        <View className="flex-row items-center justify-between border-b border-border bg-background px-4 py-3">
           <Text className="text-lg font-semibold text-foreground">New Checkpoint</Text>
           <Button onPress={onClose} variant="ghost" size="icon" disabled={loading}>
             <Icon as={X} size={24} className="text-foreground" />
