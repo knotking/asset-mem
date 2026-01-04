@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import type { CheckpointReportAnalysis } from '../types';
 
 export type UploadingDocument = {
   id: string;
@@ -17,6 +18,7 @@ export type UploadingDocument = {
   propertyAddress?: string;
   keyEntities?: Array<{ name: string; value: string }>;
   summary?: string;
+  checkpointAnalysis?: CheckpointReportAnalysis;
 };
 
 export type DocumentPickerAsset = {
@@ -38,6 +40,7 @@ interface DocumentUploadContextType {
         propertyAddress?: string;
         keyEntities?: Array<{ name: string; value: string }>;
         summary?: string;
+        checkpointAnalysis?: CheckpointReportAnalysis;
       }>;
       onComplete?: (doc: UploadingDocument) => void;
     }
@@ -70,6 +73,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
           propertyAddress?: string;
           keyEntities?: Array<{ name: string; value: string }>;
           summary?: string;
+          checkpointAnalysis?: CheckpointReportAnalysis;
         }>;
         onComplete?: (doc: UploadingDocument) => void;
       }
@@ -158,6 +162,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                     propertyAddress?: string;
                     keyEntities?: Array<{ name: string; value: string }>;
                     summary?: string;
+                    checkpointAnalysis?: CheckpointReportAnalysis;
                   } = {};
 
                   if (onAnalyze) {

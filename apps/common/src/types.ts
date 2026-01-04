@@ -180,6 +180,26 @@ export type StructuredResponseData = {
   };
 };
 
+export type CheckpointReportAnalysis = {
+  propertyStatus?: "excellent" | "good" | "fair" | "poor" | "critical";
+  statusScore?: number; // 0-100
+  issues?: Array<{
+    description: string;
+    severity: "critical" | "major" | "moderate" | "minor";
+    category?: string;
+    recommendation?: string;
+    estimatedCost?: string;
+    priority?: number; // 1-5
+  }>;
+  recommendations?: string[];
+  overallAssessment?: string;
+  costEstimates?: {
+    immediate?: string;
+    shortTerm?: string;
+    longTerm?: string;
+  };
+};
+
 export type Document = {
   id: string;
   userId: string;
@@ -197,10 +217,13 @@ export type Document = {
     | "UTILITY_BILL"
     | "INSPECTION_REPORT"
     | "MORTGAGE_STATEMENT"
+    | "CHECKPOINT_REPORT"
     | "OTHER";
   propertyAddress?: string;
   keyEntities?: { name: string; value: string }[];
   status?: "uploading" | "analyzing" | "complete" | "failed";
+  // Checkpoint-specific analysis fields (only present for CHECKPOINT_REPORT documents)
+  checkpointAnalysis?: CheckpointReportAnalysis;
 };
 
 export type Property = {

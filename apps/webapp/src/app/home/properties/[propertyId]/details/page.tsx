@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
+import { CheckpointReportViewer } from '@/components/documents/checkpoint-report-viewer';
 
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
@@ -28,6 +29,7 @@ const docTypeIcons: { [key: string]: React.ElementType } = {
   UTILITY_BILL: ReceiptText,
   INSPECTION_REPORT: Search,
   MORTGAGE_STATEMENT: FileKey,
+  CHECKPOINT_REPORT: Sparkles,
   OTHER: FileIcon,
 };
 
@@ -345,10 +347,30 @@ function PropertyDetailsContent() {
                 </CardHeader>
                 <CardContent>
                      {documents.length > 0 ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t">
-                            {documents.map(doc => (
-                                <DocumentListItem key={doc.id} doc={doc} onDeleteClick={(id, name) => setDocToDelete({id, name})} />
-                            ))}
+                        <div className="space-y-4 pt-4 border-t">
+                            {documents.map(doc => {
+                                // Check if this is a checkpoint report with analysis
+                                const isCheckpointReport = doc.documentType === 'CHECKPOINT_REPORT' && doc.checkpointAnalysis;
+                                
+                                if (isCheckpointReport) {
+                                    return (
+                                        <CheckpointReportViewer 
+                                            key={doc.id}
+                                            document={doc}
+                                            onChatPress={() => {
+                                                // TODO: Navigate to chat with this document selected
+                                                console.log('Chat with checkpoint report:', doc.id);
+                                            }}
+                                        />
+                                    );
+                                }
+                                
+                                return (
+                                    <div key={doc.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <DocumentListItem doc={doc} onDeleteClick={(id, name) => setDocToDelete({id, name})} />
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-12 px-6 border-t">

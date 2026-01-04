@@ -35,6 +35,7 @@ import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySub
 import { extractDocInfo, postFileToAgent } from '@/lib/api';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
+import { CheckpointReportCard } from './CheckpointReportCard';
 
 interface PropertyDetailsTabProps {
   property: any;
@@ -475,6 +476,26 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
               return mergedDocs.map((doc) => {
                 const isUploading = doc.source === 'uploading';
                 const uploadDoc = isUploading ? doc : null;
+                
+                // Check if this is a checkpoint report with analysis
+                const isCheckpointReport = !isUploading && 
+                  doc.documentType === 'CHECKPOINT_REPORT' && 
+                  doc.checkpointAnalysis;
+
+                // Render checkpoint report card if applicable
+                if (isCheckpointReport) {
+                  return (
+                    <View key={doc.id}>
+                      <CheckpointReportCard 
+                        document={doc as Document}
+                        onChatPress={() => {
+                          // TODO: Navigate to chat with this document selected
+                          console.log('Chat with checkpoint report:', doc.id);
+                        }}
+                      />
+                    </View>
+                  );
+                }
 
                 return (
                   <Card key={doc.id} className="mb-2">
