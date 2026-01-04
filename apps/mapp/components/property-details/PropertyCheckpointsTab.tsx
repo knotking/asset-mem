@@ -496,6 +496,7 @@ export function PropertyCheckpointsTab({
 
   const handleCreateCheckpoint = async (data: {
     name: string;
+    description?: string;
     assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
     location: string;
     mediaAsset: ImagePicker.ImagePickerAsset;
@@ -505,6 +506,7 @@ export function PropertyCheckpointsTab({
       const result = await createCheckpoint(
         {
           name: data.name,
+          description: data.description,
           assetType: data.assetType,
           location: data.location,
         },
