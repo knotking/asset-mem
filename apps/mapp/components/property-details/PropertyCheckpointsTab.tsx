@@ -658,13 +658,14 @@ export function PropertyCheckpointsTab({
     }
   };
 
+  // Render content based on state
+  let content;
+  
   if (loading) {
-    return <CheckpointsTabSkeleton />;
-  }
-
-  // Empty state (no checkpoints)
-  if (checkpoints.length === 0) {
-    return (
+    content = <CheckpointsTabSkeleton />;
+  } else if (checkpoints.length === 0) {
+    // Empty state (no checkpoints)
+    content = (
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
@@ -718,20 +719,15 @@ export function PropertyCheckpointsTab({
             </View>
           </Button>
         </Card>
-        
-        <CreateCheckpointModal
-          visible={isCreateModalVisible}
-          onClose={() => setIsCreateModalVisible(false)}
-          onCreate={handleCreateCheckpoint}
-        />
       </ScrollView>
     );
-  }
+  } else {
+    // Main view with checkpoints
+    content = (
 
-  return (
-    <View className="flex-1">
-      {/* Sub-tabs */}
-      <View className="flex-row border-b border-border px-4">
+      <View className="flex-1">
+        {/* Sub-tabs */}
+        <View className="flex-row border-b border-border px-4">
         <Pressable
           onPress={() => {
             setActiveSubTab('checkpoints');
@@ -969,6 +965,30 @@ export function PropertyCheckpointsTab({
         </View>
       </Modal>
 
+      </View>
+    );
+  }
+
+  // Return content with modals always rendered (prevents blank screen during transitions)
+  return (
+    <>
+      {content}
+      
+      {/* Modals - Always rendered to prevent blank screen when transitioning from empty to populated state */}
+      <CreateCheckpointModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onCreate={handleCreateCheckpoint}
+      />
+      
+      <CheckpointProcessingModal
+        visible={isProcessingModalVisible}
+        checkpointId={newCheckpointId}
+        checkpointName={newCheckpointName}
+        onViewCheckpoint={handleViewNewCheckpoint}
+        onContinue={handleContinueFromProcessing}
+      />
+      
       <CheckpointComparisonModal
         visible={isComparisonModalVisible}
         checkpoint1={checkpoints.find((c) => c.id === selectedForActions[0]) || null}
@@ -981,14 +1001,6 @@ export function PropertyCheckpointsTab({
         checkpoints={checkpoints.filter(c => selectedForActions.includes(c.id))}
         onClose={() => setIsAnalysisModalVisible(false)}
       />
-
-      <CheckpointProcessingModal
-        visible={isProcessingModalVisible}
-        checkpointId={newCheckpointId}
-        checkpointName={newCheckpointName}
-        onViewCheckpoint={handleViewNewCheckpoint}
-        onContinue={handleContinueFromProcessing}
-      />
-    </View>
+    </>
   );
 }
