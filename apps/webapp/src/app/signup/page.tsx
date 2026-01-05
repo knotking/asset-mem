@@ -23,7 +23,7 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       await signUp(email, password);
-      router.push('/');
+      router.push('/home');
     } catch (error: any) {
       toast({
         variant: 'destructive',
