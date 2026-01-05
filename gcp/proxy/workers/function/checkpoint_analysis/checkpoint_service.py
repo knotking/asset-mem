@@ -11,6 +11,7 @@ from google import genai
 from google.genai import types
 from area_detection import detect_room_area
 from prompt_builder import get_asset_category, build_analysis_prompt
+from report_parser import parse_inspection_report
 
 logger = logging.getLogger(__name__)
 
@@ -211,4 +212,73 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
         result["areaDescription"] = detected_asset_info["areaDescription"]
 
     return result
+
+
+def analyze_inspection_report(document_uri: str, content_type: str, asset_type: str = None, location: str = None) -> dict:
+    """
+    Analyzes an inspection report document using Gemini AI with document understanding.
+    
+    Args:
+        document_uri: GCS URI of the document (gs://bucket/path)
+        content_type: MIME type of the document (e.g., "application/pdf", "image/jpeg")
+        asset_type: Optional asset type (real_estate, vehicle, appliance, other)
+        location: Optional location description
+        
+    Returns:
+        Dictionary with analysis results in the same format as analyze_checkpoint_image:
+        {
+            "summary": str,
+            "conditions": List[str],
+            "detectedItems": List[str],
+            "issues": List[dict],  # Structured issues with severity
+            "reportFindings": dict,  # Report-specific findings
+            "condition_scores": dict,
+            "damage_scores": dict,
+            "cost_estimates": dict,
+            "issues_by_severity": dict,
+            "inspectorName": Optional[str],
+            "inspectionDate": Optional[str]
+        }
+    """
+    if not client:
+        raise Exception("Google Gen AI SDK not initialized")
+
+    logger.info(f"Starting inspection report analysis: {document_uri}")
+
+    try:
+        # Parse the inspection report using the report parser
+        result = parse_inspection_report(document_uri, content_type, asset_type, location)
+        
+        # Add damage scores based on issues (for consistency with image analysis)
+        issues_by_severity = result.get("issues_by_severity", {})
+        damage_scores = {
+            "structural": 100 - (issues_by_severity.get("critical", 0) * 20 + issues_by_severity.get("major", 0) * 10),
+            "surface": 100 - (issues_by_severity.get("moderate", 0) * 10 + issues_by_severity.get("minor", 0) * 5),
+            "functional": result.get("condition_scores", {}).get("mechanical", 80)
+        }
+        
+        # Ensure damage scores are within bounds
+        for key in damage_scores:
+            damage_scores[key] = max(0, min(100, damage_scores[key]))
+        
+        result["damage_scores"] = damage_scores
+        
+        # Add cost estimates if not present
+        if "cost_estimates" not in result:
+            # Estimate costs based on issues
+            major_issues = result.get("reportFindings", {}).get("majorIssues", [])
+            total_cost = sum(issue.get("estimatedCost", 0) for issue in major_issues if issue.get("estimatedCost"))
+            
+            result["cost_estimates"] = {
+                "repairs_immediate": total_cost if total_cost > 0 else None,
+                "maintenance_annual": None
+            }
+        
+        logger.info(f"Successfully analyzed inspection report. Found {len(result.get('issues', []))} issues.")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error analyzing inspection report: {e}")
+        raise
 

@@ -232,7 +232,18 @@ export type Checkpoint = {
   description?: string;
   createdAt: Timestamp;
   capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
+  sourceType?: "media" | "inspection_report"; // Type of checkpoint source (default: "media")
   media: CheckpointMedia[];
+  inspectionReport?: {
+    documentType: "home_inspection" | "vehicle_inspection" | "appliance_maintenance" | "contractor_assessment" | "other";
+    inspectorName?: string;
+    inspectionDate?: Timestamp;
+    reportUrl: string;
+    reportGsURI: string;
+    fileName: string;
+    fileSize?: number;
+    contentType: string;
+  };
   assetType?: "real_estate" | "vehicle" | "appliance" | "other"; // User-selected asset type
   location?: string; // e.g., "Kitchen", "Living Room", "Exterior" (user-provided or auto-detected)
   detectedAsset?: string; // Auto-detected asset name from AI (e.g., "Kitchen", "Refrigerator", "Car")
@@ -281,6 +292,14 @@ export type CheckpointAnalysis = {
     major?: number;
     moderate?: number;
     minor?: number;
+  };
+  // Report-specific findings (for inspection report checkpoints)
+  reportFindings?: {
+    majorIssues: Array<{description: string; severity: string; estimatedCost?: number}>;
+    minorIssues: Array<{description: string; severity: string}>;
+    recommendations: string[];
+    overallCondition?: string;
+    inspectorNotes?: string;
   };
   aiConfidence?: number;
   analyzedAt: Timestamp;

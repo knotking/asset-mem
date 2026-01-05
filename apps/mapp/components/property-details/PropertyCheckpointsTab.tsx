@@ -19,6 +19,7 @@ import {
   Info,
   Play,
   X,
+  FileText,
 } from 'lucide-react-native';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -26,14 +27,18 @@ import { useProperty } from '@homeapp/common/contexts/property-context';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
+import { CreateInspectionReportModal } from './CreateInspectionReportModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
 import { CheckpointAnalysisModal } from './CheckpointAnalysisModal';
 import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 
 import { analyzeCheckpoint } from '../../lib/api';
 import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { Timestamp } from 'firebase/firestore';
 
 type IssueSeverity = 'critical' | 'major' | 'moderate' | 'minor';
 type IssueRow = {
@@ -360,6 +365,7 @@ function CheckpointCard({
   const media0 = checkpoint.media?.[0];
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
   const isVideo = !!media0?.contentType?.startsWith('video/');
+  const isReport = checkpoint.sourceType === 'inspection_report';
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
@@ -367,16 +373,21 @@ function CheckpointCard({
       <Pressable
         onPress={() => onPress(checkpoint)}
         className="flex-row overflow-hidden rounded-lg">
-        {/* Thumbnail Image */}
+        {/* Thumbnail Image or Document Icon */}
         <View className="h-24 w-24 bg-muted">
-          {thumbnail ? (
+          {isReport ? (
+            <View className="h-full w-full items-center justify-center bg-primary/10">
+              <Icon as={FileText} size={32} className="text-primary" />
+              <Text className="mt-1 text-[10px] font-medium text-primary">Report</Text>
+            </View>
+          ) : thumbnail ? (
             <Image source={{ uri: thumbnail }} className="h-full w-full" resizeMode="cover" />
           ) : (
             <View className="h-full w-full items-center justify-center">
               <Icon as={Camera} size={24} className="text-muted-foreground" />
             </View>
           )}
-          {isVideo && (
+          {isVideo && !isReport && (
             <View className="absolute inset-0 items-center justify-center">
               <View className="rounded-full bg-black/50 p-2">
                 <Icon as={Play} size={18} className="text-white" />
@@ -457,6 +468,8 @@ interface PropertyCheckpointsTabProps {
   setActiveTab: (tab: 'chat' | 'details' | 'timeline') => void;
 }
 
+type CheckpointCreationType = 'media' | 'report';
+
 export function PropertyCheckpointsTab({ 
   isCreateModalVisible, 
   setIsCreateModalVisible,
@@ -477,6 +490,10 @@ export function PropertyCheckpointsTab({
   
   // Sub-tab state
   const [activeSubTab, setActiveSubTab] = React.useState<'checkpoints' | 'insights'>('checkpoints');
+  
+  // Checkpoint creation type state
+  const [checkpointCreationType, setCheckpointCreationType] = React.useState<CheckpointCreationType>('media');
+  const [isTypeSelectionModalVisible, setIsTypeSelectionModalVisible] = React.useState(false);
   
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
@@ -571,6 +588,111 @@ export function PropertyCheckpointsTab({
       }
     } catch (error) {
       console.error('Failed to create checkpoint', error);
+    }
+  };
+
+  const handleCreateInspectionReport = async (data: {
+    name: string;
+    assetType: 'real_estate' | 'vehicle' | 'appliance' | 'other';
+    location: string;
+    documentType: 'home_inspection' | 'vehicle_inspection' | 'appliance_maintenance' | 'contractor_assessment' | 'other';
+    inspectorName?: string;
+    inspectionDate?: Date;
+    document: DocumentPicker.DocumentPickerAsset;
+  }) => {
+    if (!user || !property) {
+      console.error('User or property not available');
+      return;
+    }
+
+    try {
+      const storage = getStorage();
+      const timestamp = Date.now();
+      const fileName = data.document.name || `inspection_report_${timestamp}`;
+      const storagePath = `checkpoints/${user.uid}/${property.id}/${timestamp}_${fileName}`;
+      const storageRef = ref(storage, storagePath);
+
+      // Read file as blob
+      const response = await fetch(data.document.uri);
+      const blob = await response.blob();
+
+      // Upload to Firebase Storage
+      const uploadTask = uploadBytesResumable(storageRef, blob, {
+        contentType: data.document.mimeType || 'application/pdf',
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          null,
+          reject,
+          () => resolve()
+        );
+      });
+
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      const gsURI = `gs://${uploadTask.snapshot.ref.bucket}/${uploadTask.snapshot.ref.fullPath}`;
+
+      // Create checkpoint with inspection report
+      const checkpointData: any = {
+        userId: user.uid,
+        propertyId: property.id,
+        name: data.name,
+        assetType: data.assetType,
+        location: data.location,
+        sourceType: 'inspection_report',
+        media: [], // Empty for report-based checkpoints
+        inspectionReport: {
+          documentType: data.documentType,
+          inspectorName: data.inspectorName,
+          inspectionDate: data.inspectionDate ? Timestamp.fromDate(data.inspectionDate) : undefined,
+          reportUrl: downloadURL,
+          reportGsURI: gsURI,
+          fileName: fileName,
+          fileSize: data.document.size,
+          contentType: data.document.mimeType || 'application/pdf',
+        },
+        createdAt: Timestamp.now(),
+        analysisStatus: 'pending',
+      };
+
+      const result = await createCheckpoint(checkpointData, []);
+
+      // Set checkpoint data and open processing modal
+      setNewCheckpointId(result.id);
+      setNewCheckpointName(data.name || 'New Inspection Report');
+      setIsProcessingModalVisible(true);
+
+      // Close create modal (inspection report modal is controlled by isCreateModalVisible)
+      requestAnimationFrame(() => {
+        setIsCreateModalVisible(false);
+      });
+
+      // Update status to processing
+      await updateCheckpoint(result.id, {
+        analysisStatus: 'processing',
+      });
+
+      // Trigger AI Analysis for inspection report
+      analyzeCheckpoint({
+        imageUrl: gsURI,
+        contentType: data.document.mimeType || 'application/pdf',
+        assetType: data.assetType,
+        location: data.location,
+        checkpointId: result.id,
+        userId: user.uid,
+        propertyId: property.id,
+      }).catch((err) => {
+        console.error('Error publishing inspection report analysis:', err);
+        updateCheckpoint(result.id, {
+          analysisStatus: 'failed',
+        }).catch((updateErr) => {
+          console.error('Error updating checkpoint status to failed:', updateErr);
+        });
+      });
+    } catch (error) {
+      console.error('Failed to create inspection report checkpoint', error);
+      alert('Failed to upload inspection report. Please try again.');
     }
   };
 
@@ -712,7 +834,7 @@ export function PropertyCheckpointsTab({
           <Text className="mb-3 text-center text-sm text-muted-foreground">
             Create your first checkpoint to start tracking changes over time.
           </Text>
-          <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
+          <Button onPress={() => setIsTypeSelectionModalVisible(true)} className="w-full">
             <View className="flex-row items-center gap-2">
               <Icon as={Plus} size={20} className="text-primary-foreground" />
               <Text className="text-primary-foreground">Create Checkpoint</Text>
@@ -975,10 +1097,72 @@ export function PropertyCheckpointsTab({
       {content}
       
       {/* Modals - Always rendered to prevent blank screen when transitioning from empty to populated state */}
+      
+      {/* Type Selection Modal */}
+      <Modal visible={isTypeSelectionModalVisible} transparent animationType="fade">
+        <View className="flex-1 items-center justify-center bg-black/50">
+          <View className="mx-4 w-full max-w-sm rounded-lg bg-background p-6">
+            <Text className="mb-2 text-lg font-semibold text-foreground">Create Checkpoint</Text>
+            <Text className="mb-6 text-sm text-muted-foreground">
+              Choose how you want to create your checkpoint
+            </Text>
+            
+            <View className="gap-3">
+              <Pressable
+                onPress={() => {
+                  setCheckpointCreationType('media');
+                  setIsTypeSelectionModalVisible(false);
+                  setIsCreateModalVisible(true);
+                }}
+                className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4">
+                <Icon as={Camera} size={24} className="text-primary" />
+                <View className="flex-1">
+                  <Text className="font-semibold text-foreground">Photo or Video</Text>
+                  <Text className="text-xs text-muted-foreground">
+                    Take a photo or video of your property
+                  </Text>
+                </View>
+                <Icon as={ChevronRight} size={20} className="text-muted-foreground" />
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setCheckpointCreationType('report');
+                  setIsTypeSelectionModalVisible(false);
+                  setIsCreateModalVisible(true);
+                }}
+                className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4">
+                <Icon as={FileText} size={24} className="text-primary" />
+                <View className="flex-1">
+                  <Text className="font-semibold text-foreground">Inspection Report</Text>
+                  <Text className="text-xs text-muted-foreground">
+                    Upload a PDF or document report
+                  </Text>
+                </View>
+                <Icon as={ChevronRight} size={20} className="text-muted-foreground" />
+              </Pressable>
+            </View>
+
+            <Button
+              variant="outline"
+              onPress={() => setIsTypeSelectionModalVisible(false)}
+              className="mt-4 w-full">
+              <Text className="text-foreground">Cancel</Text>
+            </Button>
+          </View>
+        </View>
+      </Modal>
+
       <CreateCheckpointModal
-        visible={isCreateModalVisible}
+        visible={isCreateModalVisible && checkpointCreationType === 'media'}
         onClose={() => setIsCreateModalVisible(false)}
         onCreate={handleCreateCheckpoint}
+      />
+
+      <CreateInspectionReportModal
+        visible={isCreateModalVisible && checkpointCreationType === 'report'}
+        onClose={() => setIsCreateModalVisible(false)}
+        onCreate={handleCreateInspectionReport}
       />
       
       <CheckpointProcessingModal
