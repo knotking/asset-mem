@@ -27,10 +27,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
-import { Loader2, Camera, FileText } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Timestamp } from 'firebase/firestore';
 
 interface CreateCheckpointDialogProps {
   open: boolean;
@@ -43,27 +41,6 @@ interface FileWithPreview {
   preview: string;
   type: 'image' | 'video';
 }
-
-type CheckpointSourceType = 'media' | 'inspection_report';
-
-const REPORT_TYPES = {
-  real_estate: [
-    { label: 'Home Inspection', value: 'home_inspection' as const },
-    { label: 'Contractor Assessment', value: 'contractor_assessment' as const },
-    { label: 'Other', value: 'other' as const },
-  ],
-  vehicle: [
-    { label: 'Vehicle Inspection', value: 'vehicle_inspection' as const },
-    { label: 'Other', value: 'other' as const },
-  ],
-  appliance: [
-    { label: 'Appliance Maintenance', value: 'appliance_maintenance' as const },
-    { label: 'Other', value: 'other' as const },
-  ],
-  other: [
-    { label: 'Other', value: 'other' as const },
-  ],
-};
 
 const ASSET_TYPES = [
   { label: 'Real Estate', value: 'real_estate' as const },
@@ -135,15 +112,11 @@ export function CreateCheckpointDialog({
   const { property } = useProperty();
   const { toast } = useToast();
 
-  const [sourceType, setSourceType] = useState<CheckpointSourceType>('media');
   const [name, setName] = useState('');
   const [assetType, setAssetType] = useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [reportFile, setReportFile] = useState<File | null>(null);
-  const [reportType, setReportType] = useState<'home_inspection' | 'vehicle_inspection' | 'appliance_maintenance' | 'contractor_assessment' | 'other'>('home_inspection');
-  const [inspectorName, setInspectorName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
   // Processing feedback state
@@ -151,124 +124,7 @@ export function CreateCheckpointDialog({
   const [newCheckpointId, setNewCheckpointId] = useState('');
   const [newCheckpointName, setNewCheckpointName] = useState('');
 
-  const handleCreateInspectionReport = async () => {
-    if (!name.trim()) {
-      toast({
-        title: 'Name Required',
-        description: 'Please provide a name for the checkpoint.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!reportFile) {
-      toast({
-        title: 'Report Required',
-        description: 'Please upload an inspection report document.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!user || !property) {
-      toast({
-        title: 'Error',
-        description: 'User or property information not available.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsCreating(true);
-
-    try {
-      const storage = getStorage();
-      const timestamp = Date.now();
-      const fileName = reportFile.name || `inspection_report_${timestamp}`;
-      const storagePath = `checkpoints/${user.uid}/${property.id}/${timestamp}_${fileName}`;
-      const storageRef = ref(storage, storagePath);
-
-      // Upload to Firebase Storage
-      const uploadTask = uploadBytesResumable(storageRef, reportFile, {
-        contentType: reportFile.type || 'application/pdf',
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        uploadTask.on('state_changed', null, reject, () => resolve());
-      });
-
-      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-      const gsURI = `gs://${uploadTask.snapshot.ref.bucket}/${uploadTask.snapshot.ref.fullPath}`;
-
-      // Create checkpoint with inspection report
-      const checkpointData: any = {
-        userId: user.uid,
-        propertyId: property.id,
-        name: name.trim(),
-        assetType,
-        location: location.trim() || 'Whole Property',
-        sourceType: 'inspection_report',
-        media: [],
-        inspectionReport: {
-          documentType: reportType,
-          inspectorName: inspectorName.trim() || undefined,
-          reportUrl: downloadURL,
-          reportGsURI: gsURI,
-          fileName: fileName,
-          fileSize: reportFile.size,
-          contentType: reportFile.type || 'application/pdf',
-        },
-        createdAt: Timestamp.now(),
-        analysisStatus: 'pending',
-      };
-
-      const result = await createCheckpoint(checkpointData, []);
-
-      // Close create dialog and show processing feedback dialog
-      setNewCheckpointId(result.id);
-      setNewCheckpointName(name.trim());
-      onOpenChange(false);
-      setIsProcessingDialogOpen(true);
-
-      // Trigger AI analysis for inspection report
-      try {
-        await analyzeCheckpoint({
-          imageUrl: gsURI,
-          contentType: reportFile.type || 'application/pdf',
-          assetType,
-          location: location.trim() || undefined,
-          checkpointId: result.id,
-          userId: user.uid,
-          propertyId: property.id,
-        });
-      } catch (error) {
-        console.error('Failed to trigger analysis:', error);
-      }
-
-      // Reset form
-      setName('');
-      setAssetType('real_estate');
-      setLocation('');
-      setDescription('');
-      setReportFile(null);
-      setInspectorName('');
-    } catch (error) {
-      console.error('Failed to create inspection report checkpoint:', error);
-      toast({
-        title: 'Creation Failed',
-        description: 'Failed to create inspection report. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   const handleCreate = async () => {
-    if (sourceType === 'inspection_report') {
-      return handleCreateInspectionReport();
-    }
-
     if (!name.trim()) {
       toast({
         title: 'Name Required',
@@ -362,22 +218,12 @@ export function CreateCheckpointDialog({
 
   const handleCancel = () => {
     if (!isCreating) {
-      setSourceType('media');
       setName('');
       setAssetType('real_estate');
       setLocation('');
       setDescription('');
       setFiles([]);
-      setReportFile(null);
-      setInspectorName('');
       onOpenChange(false);
-    }
-  };
-
-  const handleReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setReportFile(file);
     }
   };
 
@@ -404,44 +250,12 @@ export function CreateCheckpointDialog({
         <DialogHeader>
           <DialogTitle>Create New Checkpoint</DialogTitle>
           <DialogDescription>
-            {sourceType === 'media'
-              ? 'Capture the current state of your property with photos or videos. AI will automatically analyze the condition and detect any issues.'
-              : 'Upload an inspection report document. AI will extract findings, issues, and recommendations.'}
+            Capture the current state of your property with photos or videos. AI will automatically
+            analyze the condition and detect any issues.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Source Type Toggle */}
-          <div className="flex gap-2 p-1 bg-muted rounded-lg">
-            <button
-              type="button"
-              onClick={() => setSourceType('media')}
-              disabled={isCreating}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors',
-                sourceType === 'media'
-                  ? 'bg-background shadow-sm'
-                  : 'hover:bg-background/50'
-              )}
-            >
-              <Camera className="h-4 w-4" />
-              <span className="text-sm font-medium">Photo/Video</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSourceType('inspection_report')}
-              disabled={isCreating}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors',
-                sourceType === 'inspection_report'
-                  ? 'bg-background shadow-sm'
-                  : 'hover:bg-background/50'
-              )}
-            >
-              <FileText className="h-4 w-4" />
-              <span className="text-sm font-medium">Inspection Report</span>
-            </button>
-          </div>
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
@@ -504,96 +318,26 @@ export function CreateCheckpointDialog({
             </p>
           </div>
 
-          {/* Conditional Fields Based on Source Type */}
-          {sourceType === 'media' ? (
-            <>
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Add any notes about this checkpoint..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  disabled={isCreating}
-                  rows={3}
-                />
-              </div>
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Add any notes about this checkpoint..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isCreating}
+              rows={3}
+            />
+          </div>
 
-              {/* File Upload */}
-              <div className="space-y-2">
-                <Label>
-                  Photos/Videos <span className="text-destructive">*</span>
-                </Label>
-                <FileUploadZone onFilesChange={setFiles} maxFiles={10} />
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Report Type */}
-              <div className="space-y-2">
-                <Label htmlFor="report-type">Report Type</Label>
-                <Select
-                  value={reportType}
-                  onValueChange={(value: any) => setReportType(value)}
-                  disabled={isCreating}
-                >
-                  <SelectTrigger id="report-type">
-                    <SelectValue placeholder="Select report type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REPORT_TYPES[assetType].map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Inspector Name */}
-              <div className="space-y-2">
-                <Label htmlFor="inspector">Inspector Name (Optional)</Label>
-                <Input
-                  id="inspector"
-                  placeholder="e.g., John Smith, ABC Inspections"
-                  value={inspectorName}
-                  onChange={(e) => setInspectorName(e.target.value)}
-                  disabled={isCreating}
-                />
-                <p className="text-xs text-muted-foreground">
-                  AI will attempt to extract inspector info from the report if not provided
-                </p>
-              </div>
-
-              {/* Report File Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="report-file">
-                  Report Document <span className="text-destructive">*</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="report-file"
-                    type="file"
-                    accept=".pdf,.doc,.docx,image/*"
-                    onChange={handleReportFileChange}
-                    disabled={isCreating}
-                    className="cursor-pointer"
-                  />
-                </div>
-                {reportFile && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span>{reportFile.name}</span>
-                    <span>({(reportFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Supported: PDF, images (JPG, PNG), Word documents
-                </p>
-              </div>
-            </>
-          )}
+          {/* File Upload */}
+          <div className="space-y-2">
+            <Label>
+              Photos/Videos <span className="text-destructive">*</span>
+            </Label>
+            <FileUploadZone onFilesChange={setFiles} maxFiles={10} />
+          </div>
         </div>
 
         <DialogFooter>
