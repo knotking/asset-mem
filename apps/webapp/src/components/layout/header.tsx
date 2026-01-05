@@ -28,7 +28,7 @@ export function Header() {
   const handleLogout = useCallback(async () => {
     try {
       await signOut(auth);
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       toast({
         variant: 'destructive',
