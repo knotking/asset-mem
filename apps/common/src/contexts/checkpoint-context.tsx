@@ -36,7 +36,7 @@ interface CheckpointContextType {
   loadMoreCheckpoints: () => Promise<void>;
   createCheckpoint: (
     data: Partial<Checkpoint>,
-    mediaFiles: { uri: string; type: "image" | "video" }[] // Empty array for inspection reports
+    mediaFiles: { uri: string; type: "image" | "video" }[]
   ) => Promise<{ id: string; media: CheckpointMedia[] }>;
   updateCheckpoint: (id: string, data: Partial<Checkpoint>) => Promise<void>;
   deleteCheckpoint: (id: string) => Promise<void>;
@@ -135,63 +135,57 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     if (!user || !property) throw new Error("No user or property selected");
 
     try {
-      let uploadedMedia: CheckpointMedia[] = [];
-      
-      // Only upload media files if this is NOT an inspection report
-      // Inspection reports handle their own document upload before calling this function
-      if (data.sourceType !== 'inspection_report') {
-        // 1. Upload media files
-        const mediaPromises = mediaFiles.map(async (file, index) => {
-          const extension = file.type === "video" ? "mp4" : "jpg";
-          const fileName = `checkpoint_${Date.now()}_${index}.${extension}`;
-          const storagePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${fileName}`;
-          const storageRef = ref(storage, storagePath);
+      // 1. Upload media files
+      const mediaPromises = mediaFiles.map(async (file, index) => {
+        const extension = file.type === "video" ? "mp4" : "jpg";
+        const fileName = `checkpoint_${Date.now()}_${index}.${extension}`;
+        const storagePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${fileName}`;
+        const storageRef = ref(storage, storagePath);
 
-          const response = await fetch(file.uri);
-          const blob = await response.blob();
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
 
-          await uploadBytes(storageRef, blob);
-          const downloadURL = await getDownloadURL(storageRef);
+        await uploadBytes(storageRef, blob);
+        const downloadURL = await getDownloadURL(storageRef);
 
-          // For videos, generate + upload a thumbnail image so list items can display a preview.
-          // We do a dynamic import so other platforms/builds that don't include this module
-          // won't fail at import time.
-          let thumbnailUrl: string | undefined;
-          if (file.type === "video") {
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
-              const VideoThumbnails = await import("expo-video-thumbnails");
-              const thumb = await VideoThumbnails.getThumbnailAsync(file.uri, {
-                time: 1000,
-              });
+        // For videos, generate + upload a thumbnail image so list items can display a preview.
+        // We do a dynamic import so other platforms/builds that don't include this module
+        // won't fail at import time.
+        let thumbnailUrl: string | undefined;
+        if (file.type === "video") {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const VideoThumbnails = await import("expo-video-thumbnails");
+            const thumb = await VideoThumbnails.getThumbnailAsync(file.uri, {
+              time: 1000,
+            });
 
-              if (thumb?.uri) {
-                const thumbFileName = `checkpoint_${Date.now()}_${index}_thumb.jpg`;
-                const thumbStoragePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${thumbFileName}`;
-                const thumbRef = ref(storage, thumbStoragePath);
+            if (thumb?.uri) {
+              const thumbFileName = `checkpoint_${Date.now()}_${index}_thumb.jpg`;
+              const thumbStoragePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${thumbFileName}`;
+              const thumbRef = ref(storage, thumbStoragePath);
 
-                const thumbResp = await fetch(thumb.uri);
-                const thumbBlob = await thumbResp.blob();
-                await uploadBytes(thumbRef, thumbBlob);
-                thumbnailUrl = await getDownloadURL(thumbRef);
-              }
-            } catch (e) {
-              console.warn("Failed to generate/upload video thumbnail:", e);
+              const thumbResp = await fetch(thumb.uri);
+              const thumbBlob = await thumbResp.blob();
+              await uploadBytes(thumbRef, thumbBlob);
+              thumbnailUrl = await getDownloadURL(thumbRef);
             }
+          } catch (e) {
+            console.warn("Failed to generate/upload video thumbnail:", e);
           }
+        }
 
-          return {
-            id: fileName,
-            url: downloadURL,
-            gsURI: `gs://${storage.app.options.storageBucket}/${storagePath}`,
-            contentType: file.type === "video" ? "video/mp4" : "image/jpeg",
-            storagePath: storagePath,
-            ...(thumbnailUrl ? { thumbnailUrl } : {}),
-          } as CheckpointMedia;
-        });
+        return {
+          id: fileName,
+          url: downloadURL,
+          gsURI: `gs://${storage.app.options.storageBucket}/${storagePath}`,
+          contentType: file.type === "video" ? "video/mp4" : "image/jpeg",
+          storagePath: storagePath,
+          ...(thumbnailUrl ? { thumbnailUrl } : {}),
+        } as CheckpointMedia;
+      });
 
-        uploadedMedia = await Promise.all(mediaPromises);
-      }
+      const uploadedMedia = await Promise.all(mediaPromises);
 
       // 2. Create checkpoint document
       const checkpointData: Partial<Checkpoint> = {
@@ -199,8 +193,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         userId: user.uid,
         propertyId: property.id,
         createdAt: serverTimestamp() as Timestamp,
-        // Only set media if not an inspection report (preserve data.media for reports)
-        ...(data.sourceType !== 'inspection_report' ? { media: uploadedMedia } : {}),
+        media: uploadedMedia,
       };
 
       const docRef = await addDoc(
@@ -216,7 +209,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       //   checkpointsCount: increment(1)
       // });
 
-      return { id: docRef.id, media: data.media || uploadedMedia };
+      return { id: docRef.id, media: uploadedMedia };
     } catch (error) {
       console.error("Error creating checkpoint:", error);
       throw error;
