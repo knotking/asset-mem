@@ -8,6 +8,7 @@ export interface AnalyzeCheckpointInput {
   imageUrl: string;
   contentType: string;
   location?: string;
+  assetType?: string;
   checkpointId: string;
   userId: string;
   propertyId: string;

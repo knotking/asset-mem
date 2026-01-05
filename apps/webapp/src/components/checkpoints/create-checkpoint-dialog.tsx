@@ -331,6 +331,7 @@ export function CreateCheckpointDialog({
           await analyzeCheckpoint({
             imageUrl: firstMedia.gsURI,
             contentType: firstMedia.contentType,
+            assetType,
             location: location.trim() || undefined,
             checkpointId: result.id,
             userId: user.uid,
