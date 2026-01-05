@@ -516,9 +516,6 @@ export function PropertyCheckpointsTab({
         ]
       );
       
-      // Switch to timeline tab to show the new checkpoint
-      setActiveTab('timeline');
-      
       // Set checkpoint data AND open processing modal BEFORE closing create modal
       // This ensures smooth transition without blank screen
       setNewCheckpointId(result.id);
