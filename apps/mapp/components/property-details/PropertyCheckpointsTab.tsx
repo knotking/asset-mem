@@ -967,12 +967,6 @@ export function PropertyCheckpointsTab({
         </ScrollView>
       )}
 
-      <CreateCheckpointModal
-        visible={isCreateModalVisible}
-        onClose={() => setIsCreateModalVisible(false)}
-        onCreate={handleCreateCheckpoint}
-      />
-
       <CheckpointDetailModal
         visible={isDetailModalVisible}
         checkpoint={selectedCheckpoint}
