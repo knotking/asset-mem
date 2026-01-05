@@ -1106,12 +1106,10 @@ export function PropertyCheckpointsTab({
                   setIsTypeSelectionModalVisible(false);
                   setIsCreateModalVisible(true);
                 }}
-                className="flex-row items-center gap-4 rounded-lg border-2 border-border bg-card p-4 active:bg-accent">
-                <View className="h-14 w-14 items-center justify-center rounded-full bg-blue-500/10">
-                  <Icon as={Camera} size={28} className="text-blue-500" />
-                </View>
+                className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4">
+                <Icon as={Camera} size={24} className="text-primary" />
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">Photo or Video</Text>
+                  <Text className="font-semibold text-foreground">Photo or Video</Text>
                   <Text className="text-xs text-muted-foreground">
                     Take a photo or video of your property
                   </Text>
@@ -1125,12 +1123,10 @@ export function PropertyCheckpointsTab({
                   setIsTypeSelectionModalVisible(false);
                   setIsCreateModalVisible(true);
                 }}
-                className="flex-row items-center gap-4 rounded-lg border-2 border-border bg-card p-4 active:bg-accent">
-                <View className="h-14 w-14 items-center justify-center rounded-full bg-purple-500/10">
-                  <Icon as={FileText} size={28} className="text-purple-500" />
-                </View>
+                className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4">
+                <Icon as={FileText} size={24} className="text-primary" />
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">Inspection Report</Text>
+                  <Text className="font-semibold text-foreground">Inspection Report</Text>
                   <Text className="text-xs text-muted-foreground">
                     Upload a PDF or document report
                   </Text>
