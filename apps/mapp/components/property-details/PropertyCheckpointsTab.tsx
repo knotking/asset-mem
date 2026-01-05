@@ -597,7 +597,6 @@ export function PropertyCheckpointsTab({
     location: string;
     documentType: 'home_inspection' | 'vehicle_inspection' | 'appliance_maintenance' | 'contractor_assessment' | 'other';
     inspectorName?: string;
-    inspectionDate?: Date;
     document: DocumentPicker.DocumentPickerAsset;
   }) => {
     if (!user || !property) {
@@ -645,7 +644,6 @@ export function PropertyCheckpointsTab({
         inspectionReport: {
           documentType: data.documentType,
           inspectorName: data.inspectorName,
-          inspectionDate: data.inspectionDate ? Timestamp.fromDate(data.inspectionDate) : undefined,
           reportUrl: downloadURL,
           reportGsURI: gsURI,
           fileName: fileName,

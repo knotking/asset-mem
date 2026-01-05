@@ -1,15 +1,14 @@
 import * as React from 'react';
-import { Modal, View, Pressable, ScrollView, Platform } from 'react-native';
+import { Modal, View, Pressable, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, FileText, Upload, Loader2, Calendar as CalendarIcon } from 'lucide-react-native';
+import { X, FileText, Upload, Loader2 } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface CreateInspectionReportModalProps {
   visible: boolean;
@@ -20,7 +19,6 @@ interface CreateInspectionReportModalProps {
     location: string;
     documentType: 'home_inspection' | 'vehicle_inspection' | 'appliance_maintenance' | 'contractor_assessment' | 'other';
     inspectorName?: string;
-    inspectionDate?: Date;
     document: DocumentPicker.DocumentPickerAsset;
   }) => Promise<void>;
 }
@@ -98,8 +96,6 @@ export function CreateInspectionReportModal({ visible, onClose, onCreate }: Crea
   const [useCustomLocation, setUseCustomLocation] = React.useState(false);
   const [documentType, setDocumentType] = React.useState<'home_inspection' | 'vehicle_inspection' | 'appliance_maintenance' | 'contractor_assessment' | 'other'>('home_inspection');
   const [inspectorName, setInspectorName] = React.useState('');
-  const [inspectionDate, setInspectionDate] = React.useState<Date | undefined>(undefined);
-  const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [document, setDocument] = React.useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [loading, setLoading] = React.useState(false);
 
@@ -121,7 +117,6 @@ export function CreateInspectionReportModal({ visible, onClose, onCreate }: Crea
       setUseCustomLocation(false);
       setDocumentType('home_inspection');
       setInspectorName('');
-      setInspectionDate(undefined);
       setDocument(null);
       setLoading(false);
     }
@@ -156,13 +151,6 @@ export function CreateInspectionReportModal({ visible, onClose, onCreate }: Crea
     }
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setInspectionDate(selectedDate);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!document) {
       return;
@@ -181,7 +169,6 @@ export function CreateInspectionReportModal({ visible, onClose, onCreate }: Crea
         location: finalLocation,
         documentType,
         inspectorName: inspectorName.trim() || undefined,
-        inspectionDate,
         document,
       });
     } catch (error) {
@@ -384,27 +371,9 @@ export function CreateInspectionReportModal({ visible, onClose, onCreate }: Crea
                 value={inspectorName}
                 onChangeText={setInspectorName}
               />
-            </View>
-
-            <View>
-              <Text className="mb-2 text-sm font-medium text-foreground">Inspection Date (Optional)</Text>
-              <Pressable
-                onPress={() => setShowDatePicker(true)}
-                className="flex-row items-center gap-2 rounded-lg border border-border bg-background px-3 py-3">
-                <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                <Text className="flex-1 text-foreground">
-                  {inspectionDate ? format(inspectionDate, 'MMM d, yyyy') : 'Select date'}
-                </Text>
-              </Pressable>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={inspectionDate || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                />
-              )}
+              <Text className="mt-1 text-xs text-muted-foreground">
+                AI will attempt to extract inspector info from the report if not provided.
+              </Text>
             </View>
           </View>
         </ScrollView>
