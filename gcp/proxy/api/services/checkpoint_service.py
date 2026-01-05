@@ -58,7 +58,6 @@ def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
             "imageUrl": request.imageUrl,
             "contentType": request.contentType,
             "location": request.location,
-            "assetType": request.assetType,
             "checkpointId": request.checkpointId,
             "userId": request.userId,
             "propertyId": request.propertyId,
