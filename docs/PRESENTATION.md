@@ -167,7 +167,6 @@ HomeApp addresses these challenges through an integrated AI platform that:
 
 **Visual Timeline**
 - Capture photos/videos of property areas over time
-- **Upload professional inspection reports (PDFs, images, Word docs)** 🆕
 - Track condition changes with before/after comparisons
 - AI-powered analysis of each checkpoint
 - Automatic room/area detection
@@ -178,17 +177,6 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Detected items and features identification
 - Issue categorization (critical, major, moderate, minor)
 - Cost estimates for repairs and maintenance
-- **Automatic extraction of inspection report findings** 🆕
-- **Inspector information and inspection date extraction** 🆕
-
-**Inspection Report Intelligence** 🆕
-- Upload home inspections, vehicle inspections, appliance maintenance reports
-- AI extracts all findings, issues, and recommendations automatically
-- Severity classification (critical, major, moderate, minor)
-- Cost estimates extracted from reports
-- Inspector notes and observations captured
-- Fully searchable via checkpoint chat
-- Integrates with property health metrics
 
 **Automatic Comparison**
 - Intelligent comparison with previous checkpoints
@@ -198,7 +186,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 
 **Property Health Metrics**
 - Overall condition score with trend analysis
-- Issues summary by severity (includes report findings)
+- Issues summary by severity
 - Deterioration rate tracking
 - Predictive maintenance insights
 
@@ -208,39 +196,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Real-time UI updates via Firestore
 - Scalable to thousands of concurrent users
 
-### 2. Inspection Report Checkpoints 🆕
-
-**Professional Report Upload**
-- Upload PDFs, images (scanned reports), or Word documents
-- Support for multiple report types:
-  - **Real Estate**: Home inspections, contractor assessments, pest inspections, roof certifications, energy audits
-  - **Vehicle**: Pre-purchase inspections, maintenance records, diagnostic reports, emissions tests
-  - **Appliance**: Warranty inspections, repair assessments, maintenance logs, safety certifications
-
-**AI-Powered Extraction**
-- Automatically extracts inspector name and company
-- Identifies inspection date
-- Determines overall condition (Excellent/Good/Fair/Poor/Critical)
-- Extracts ALL issues with severity classification
-- Captures recommendations and inspector notes
-- Identifies cost estimates (if mentioned)
-- Generates comprehensive summary
-
-**Unified Experience**
-- Reports appear in timeline with document icon
-- Same interface as photo/video checkpoints
-- Fully searchable via checkpoint AI chat
-- Contributes to property health metrics
-- Available on mobile (iOS/Android) and web
-
-**Semantic Search Integration**
-- Ask natural language questions about reports
-- "What critical issues were found in my home inspection?"
-- "Show me all major issues from my vehicle inspection"
-- "What did the inspector recommend for the roof?"
-- Cross-reference findings across multiple reports
-
-### 3. Multimodal Diagnostics
+### 2. Multimodal Diagnostics
 
 **Visual Analysis**
 - Upload photos or videos of property issues
@@ -251,7 +207,6 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Extract key information from documents
 - Property address extraction
 - Entity recognition (warranties, policies, receipts)
-- **Inspection report parsing and analysis** 🆕
 
 ### 3. Intelligent Triage
 
@@ -665,65 +620,6 @@ AGENT  AGENT   AGENT                   │              │
 
 **Output**: Step-by-step reset instructions from user's manual or knowledge base
 
-### Use Case 8: Home Inspection Report Analysis 🆕
-
-**Scenario**: User receives home inspection report before purchasing property
-
-**Flow**:
-1. User uploads 45-page PDF inspection report to HomeApp
-2. AI analyzes document in 60-90 seconds
-3. Extracts inspector: "ABC Home Inspections, John Smith"
-4. Identifies inspection date: January 15, 2025
-5. Determines overall condition: "Fair" (65/100 score)
-6. Extracts 23 issues:
-   - 2 Critical: Electrical panel outdated, roof leak damage
-   - 5 Major: Foundation cracks, HVAC system aged, plumbing issues
-   - 8 Moderate: Window seals failing, minor water damage
-   - 8 Minor: Cosmetic issues, paint touch-ups needed
-7. Captures recommendations: "Replace roof within 1-2 years ($8,000-$12,000)"
-8. Extracts cost estimates: $25,000-$35,000 for all major repairs
-9. Report appears in property timeline with document icon
-10. User asks chat: "What are the critical issues?"
-11. AI responds with critical findings and cost estimates
-12. User takes photos of critical areas for visual documentation
-13. User negotiates price reduction based on extracted findings
-
-**Output**:
-- Comprehensive analysis of 45-page report in under 2 minutes
-- All issues categorized and searchable
-- Cost estimates for negotiation
-- Queryable via natural language chat
-- Combined with photos for complete documentation
-- Professional timeline for insurance/contractors
-
-### Use Case 9: Vehicle Pre-Purchase Inspection 🆕
-
-**Scenario**: User considering buying used car, receives mechanic's inspection report
-
-**Flow**:
-1. Mechanic provides 8-page inspection report with photos
-2. User uploads PDF to HomeApp as "Vehicle Inspection" checkpoint
-3. AI extracts:
-   - Inspector: "Joe's Auto Service"
-   - Inspection date: January 10, 2025
-   - Overall condition: "Good" (78/100)
-   - Issues found:
-     - 1 Major: Brake pads need replacement soon ($400)
-     - 2 Moderate: Tire tread wearing, minor oil leak
-     - 3 Minor: Cosmetic scratches, interior wear
-   - Recommendations: "Replace brake pads within 3 months"
-4. User asks chat: "Should I buy this car?"
-5. AI analyzes report and responds: "Overall good condition but budget $400-$600 for immediate brake work"
-6. User negotiates $500 price reduction
-7. After purchase, creates photo checkpoint of same vehicle
-8. Tracks maintenance over time with both reports and photos
-
-**Output**:
-- Instant analysis of mechanic's report
-- Clear cost expectations
-- Informed purchase decision
-- Foundation for ongoing maintenance tracking
-
 ---
 
 ## Deployment & Infrastructure
@@ -913,16 +809,6 @@ terraform apply
   - Property health metrics
   - Async processing architecture
 
-- [x] **Inspection Report Checkpoints** (COMPLETED) 🆕
-  - PDF, image, and Word document upload
-  - AI-powered extraction of findings and issues
-  - Severity classification (critical, major, moderate, minor)
-  - Inspector information and date extraction
-  - Cost estimate extraction
-  - Semantic search integration
-  - Mobile and web support
-  - Unified timeline with photo checkpoints
-
 - [ ] **Enhanced Checkpoint Features**
   - Firestore vector search for semantic checkpoint queries
   - Chat integration for conversational checkpoint creation
@@ -1052,51 +938,35 @@ terraform apply
 
 **Core Functionality**:
 - ✅ Checkpoint creation with photo/video capture
-- ✅ **Inspection report upload (PDF, images, Word docs)** 🆕
 - ✅ Timeline view with real-time updates
 - ✅ AI-powered image analysis using Gemini 2.5 Flash
-- ✅ **AI-powered document analysis with Gemini 2.0 Flash** 🆕
 - ✅ Automatic room/area detection (92%+ accuracy)
-- ✅ **Automatic extraction of report findings** 🆕
 - ✅ Condition scoring (0-100 scale)
 - ✅ Damage detection and severity assessment
 - ✅ Issue categorization (critical, major, moderate, minor)
 - ✅ Cost estimates for repairs
-- ✅ **Inspector information extraction** 🆕
 
 **Advanced Features**:
 - ✅ Async processing architecture (Pub/Sub + Cloud Functions)
-- ✅ **Unified processing for media and reports** 🆕
 - ✅ Automatic comparison with previous checkpoints
 - ✅ Visual diff analysis with similarity scoring
 - ✅ Before/after comparison slider (mobile & web)
 - ✅ Property health metrics aggregation
-- ✅ **Report findings contribute to metrics** 🆕
 - ✅ User preferences for comparison settings
 - ✅ Real-time Firestore listeners
-- ✅ **Semantic search for report queries** 🆕
 - ✅ Observability and monitoring (OpenTelemetry)
 
 **Infrastructure**:
 - ✅ Cloud Function: `pubsub_checkpoint_analysis` (max 10 instances)
-  - **Supports both media and inspection report analysis** 🆕
-  - **Automatic routing based on source type** 🆕
 - ✅ Cloud Function: `pubsub_checkpoint_metrics_aggregate` (max 5 instances)
 - ✅ Pub/Sub topics: `checkpoint-analysis-topic`, `checkpoint-metrics-topic`
 - ✅ Firestore collections and indexes
 - ✅ Shared observability module
-- ✅ **Report parser module with Gemini document understanding** 🆕
 
 **Applications**:
 - ✅ Mobile app (iOS, Android, Web via Expo)
-  - **Inspection report upload modal** 🆕
-  - **Document picker integration** 🆕
-  - **Visual differentiation (document icon)** 🆕
 - ✅ Web app (Next.js with full feature parity)
-  - **Source type toggle (media/report)** 🆕
-  - **File upload with preview** 🆕
 - ✅ Shared contexts and types (`@homeapp/common`)
-  - **Extended checkpoint types** 🆕
 
 ### 🚧 In Progress / Planned
 
@@ -1167,14 +1037,6 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Scalability Recommendations**: [`./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md`](./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md)
 - **API Documentation**: [`../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md`](../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md)
 - **Workers Documentation**: [`../gcp/proxy/workers/README.md`](../gcp/proxy/workers/README.md)
-
-### Inspection Report Feature Documentation 🆕
-- **Documentation Index**: [`./checkpoint/INSPECTION_REPORTS_README.md`](./checkpoint/INSPECTION_REPORTS_README.md)
-- **Quick Reference**: [`./checkpoint/INSPECTION_REPORT_QUICK_REFERENCE.md`](./checkpoint/INSPECTION_REPORT_QUICK_REFERENCE.md)
-- **User Guide**: [`./checkpoint/INSPECTION_REPORT_USER_GUIDE.md`](./checkpoint/INSPECTION_REPORT_USER_GUIDE.md)
-- **API Documentation**: [`./checkpoint/INSPECTION_REPORT_API_DOCS.md`](./checkpoint/INSPECTION_REPORT_API_DOCS.md)
-- **Implementation Summary**: [`./checkpoint/INSPECTION_REPORT_IMPLEMENTATION.md`](./checkpoint/INSPECTION_REPORT_IMPLEMENTATION.md)
-- **Web App Implementation**: [`./checkpoint/INSPECTION_REPORT_WEBAPP_IMPLEMENTATION.md`](./checkpoint/INSPECTION_REPORT_WEBAPP_IMPLEMENTATION.md)
 
 ---
 
