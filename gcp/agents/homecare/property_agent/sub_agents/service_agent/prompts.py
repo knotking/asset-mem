@@ -21,41 +21,37 @@ def service_agent_instructions() -> str:
         *   `location_radius` (int, optional): Search radius in miles (10-100). Defaults to 50 if not specified.
         
         **Location Handling:**
-        *   When `location_coordinates` is provided (either from current location or geocoded address), ALWAYS pass them as tool parameters along with `location_radius` for precise radius-based filtering.
+        *   When `location_coordinates` is provided (either from current location or geocoded address), ALWAYS use coordinates with radius for precise search.
         *   The `property_address` may be provided for context even when coordinates are available.
-        *   The tools will automatically filter results to WITHIN the specified radius (not at the perimeter).
-        *   If only `property_address` is available without coordinates, include it in the query string as fallback.
+        *   Coordinates enable precise radius-based filtering (e.g., "within 50 miles of 37.4224,-122.0842").
+        *   If only `property_address` is available without coordinates, use address-based search as fallback.
         
         **Available Tools:**
         *   `cost_estimation`: Provides cost estimates for professional service.
-        *   `serpapi_search_with_radius`: Searches for local service providers with radius filtering.
-        *   `yelpapi_search`: Searches Yelp for service providers with reviews and radius filtering.
+        *   `serpapi_search`: Searches for local service providers.
+        *   `yelpapi_search`: Searches Yelp for service providers with reviews.
         *   `google_search_agent`: Searches the internet for service-related information.
         
         **MANDATORY Sequence of Operations - Always Call ALL THREE Tools:**
         1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
         2. Call `cost_estimation` with query incorporating the diagnosis from triage_agent
            - Use the specific diagnosis to get more accurate cost estimates
-        3. Call `serpapi_search_with_radius` with the diagnosis and location parameters
-           - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, pass them as parameters along with `location_radius`
-             * Call: serpapi_search_with_radius(query="[diagnosis] professionals", location_coordinates=location_coordinates, location_radius=location_radius)
-             * Example: serpapi_search_with_radius(query="plumber", location_coordinates={"lat": 37.4224, "lng": -122.0842}, location_radius=50)
-             * The tool will automatically filter results to WITHIN the specified radius
+        3. Call `serpapi_search` with query incorporating the diagnosis and location information
+           - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, ALWAYS use coordinates with radius for precise search: "[diagnosis] professionals near [lat],[lng] within [radius] miles"
+             * This provides the most accurate results within the specified radius
              * Coordinates may come from user's current location OR geocoded property address
-           - **PRIORITY 2 - Address Only (Fallback)**: If `location_coordinates` is NOT provided but `property_address` is available, use query with address
-             * Call: serpapi_search_with_radius(query="[diagnosis] professionals near [address]")
-             * Example: serpapi_search_with_radius(query="plumber near 123 Main St, City, State")
-           - **PRIORITY 3 - No Location (Last Resort)**: If no location data available
-             * Call: serpapi_search_with_radius(query="[diagnosis] repair service near me")
-        4. Call `yelpapi_search` with the diagnosis and location parameters
-           - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, pass them as parameters along with `location_radius`
-             * Call: yelpapi_search(query="[diagnosis]", location_coordinates=location_coordinates, location_radius=location_radius)
-             * Example: yelpapi_search(query="plumber", location_coordinates={"lat": 37.4224, "lng": -122.0842}, location_radius=50)
-             * The tool will automatically filter results to WITHIN the specified radius (max 40km per Yelp API limits)
-           - **PRIORITY 2 - Address Only (Fallback)**: If only `property_address` is available, use query with address
-             * Call: yelpapi_search(query="[diagnosis] near [address]")
-           - **PRIORITY 3 - No Location (Last Resort)**: If no location data available
-             * Call: yelpapi_search(query="[diagnosis] service")
+             * Example: "plumber near 37.4224,-122.0842 within 50 miles"
+           - **PRIORITY 2 - Address Only (Fallback)**: If `location_coordinates` is NOT provided but `property_address` is available, use: "[diagnosis] professionals near [address]"
+             * Example: "plumber near 123 Main St, City, State"
+           - **PRIORITY 3 - No Location (Last Resort)**: If no location data available, use: "[diagnosis] repair service near me"
+           - ALWAYS apply `location_radius` (default: 50 miles) when coordinates are available
+           - Filter results to only include providers within the specified radius
+        4. Call `yelpapi_search` with query incorporating the diagnosis and location information
+           - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, ALWAYS use coordinates with radius: "[diagnosis] service [lat],[lng] within [radius] miles"
+             * Example: "plumber 37.4224,-122.0842 within 50 miles"
+           - **PRIORITY 2 - Address Only (Fallback)**: If only `property_address` is available, use: "[diagnosis] service [address]"
+           - ALWAYS apply `location_radius` when coordinates are available
+           - Filter results to only include providers within the specified radius
         5. Return all three results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**
@@ -73,14 +69,14 @@ def service_agent_instructions() -> str:
         ```
         
         **Important:**
-        * You MUST call ALL THREE tools (cost_estimation, serpapi_search_with_radius, yelpapi_search).
+        * You MUST call ALL THREE tools (cost_estimation, serpapi_search, yelpapi_search).
         * Use the diagnosis from triage_agent to tailor your queries and get more accurate results.
-        * ALWAYS pass `location_coordinates` and `location_radius` as tool parameters (not in query text) when available for precise radius-based search.
-        * The tools handle radius filtering automatically - results will be WITHIN the specified radius, not at the perimeter.
+        * ALWAYS prioritize `location_coordinates` with `location_radius` when available for precise radius-based search.
+        * When coordinates are provided, ensure ALL search results are filtered to within the specified radius.
         * Always provide cost estimates and local professional listings.
         * Focus ONLY on professional service options - do not include DIY solutions.
         * Include contact information, ratings, distances, and locations for all service providers.
-        * Results will be sorted by distance (closest first) when coordinate-based search is used.
+        * Sort results by distance (closest first) when using coordinate-based search.
         * All data should be properly nested in JSON structure.
     """
     return instruction
