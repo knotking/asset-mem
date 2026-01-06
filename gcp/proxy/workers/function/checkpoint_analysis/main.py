@@ -8,7 +8,7 @@ import firebase_admin
 from firebase_admin import firestore
 
 from utils import parse_pubsub_message
-from checkpoint_service import analyze_checkpoint_image, analyze_inspection_report
+from checkpoint_service import analyze_checkpoint_image
 from comparison_service import (
     find_previous_checkpoint,
     should_compare_checkpoints,
@@ -73,7 +73,6 @@ def pubsub_checkpoint_analysis(request, context):
         image_url = payload.get("imageUrl")
         content_type = payload.get("contentType")
         location = payload.get("location")
-        asset_type = payload.get("assetType")
         source = payload.get("source", "checkpoint-analysis-api")
 
         if not checkpoint_id or not user_id or not property_id or not image_url:
@@ -96,28 +95,10 @@ def pubsub_checkpoint_analysis(request, context):
 
         db = firestore.client()
 
-        # Get checkpoint to determine source type
-        checkpoint_ref = db.collection("users").document(user_id)\
-            .collection("properties").document(property_id)\
-            .collection("checkpoints").document(checkpoint_id)
-        
-        checkpoint_doc = checkpoint_ref.get()
-        source_type = "media"  # Default
-        if checkpoint_doc.exists:
-            checkpoint_data = checkpoint_doc.to_dict() or {}
-            source_type = checkpoint_data.get("sourceType", "media")
-
         try:
-            # Route to appropriate analysis function based on source type
+            # Analyze the checkpoint image/video using Gemini
             analysis_start_time = time.time()
-            
-            if source_type == "inspection_report":
-                logger.info(f"Analyzing inspection report: {image_url}")
-                analysis_result = analyze_inspection_report(image_url, content_type, asset_type, location)
-            else:
-                logger.info(f"Analyzing checkpoint media: {image_url}")
-                analysis_result = analyze_checkpoint_image(image_url, content_type, location)
-            
+            analysis_result = analyze_checkpoint_image(image_url, content_type, location)
             analysis_duration_ms = (time.time() - analysis_start_time) * 1000
 
             # Update Firestore with analysis results
@@ -164,32 +145,10 @@ def pubsub_checkpoint_analysis(request, context):
                     "damage_scores": damage_scores,
                     "cost_estimates": cost_estimates,
                     "issues_by_severity": issues_by_severity,
-                    "aiConfidence": analysis_result.get("aiConfidence", 0.9),
+                    "aiConfidence": 0.9,
                     "analyzedAt": firestore.SERVER_TIMESTAMP,
                 }
             }
-            
-            # Add report-specific fields if this is an inspection report
-            if source_type == "inspection_report":
-                report_findings = analysis_result.get("reportFindings")
-                if report_findings:
-                    update_data["aiAnalysis"]["reportFindings"] = report_findings
-                
-                # Add inspector info if available
-                inspector_name = analysis_result.get("inspectorName")
-                inspection_date = analysis_result.get("inspectionDate")
-                
-                if inspector_name and "inspectionReport" not in update_data:
-                    # Update the inspection report metadata if inspector info was extracted
-                    checkpoint_data = checkpoint_doc.to_dict() or {}
-                    inspection_report = checkpoint_data.get("inspectionReport", {})
-                    if not inspection_report.get("inspectorName"):
-                        update_data["inspectionReport"] = {
-                            **inspection_report,
-                            "inspectorName": inspector_name
-                        }
-                        if inspection_date:
-                            update_data["inspectionReport"]["inspectionDate"] = inspection_date
 
             # Determine final location (user-provided, detected, or existing)
             final_location = existing_location
