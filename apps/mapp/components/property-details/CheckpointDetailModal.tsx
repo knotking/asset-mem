@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Modal, View, Image, ScrollView, Alert } from 'react-native';
+import { Modal, View, ScrollView, Alert, Dimensions, FlatList, ViewToken, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -8,7 +9,6 @@ import {
   MapPin,
   Calendar,
   Trash2,
-  Edit2,
   AlertTriangle,
   CheckCircle,
   Loader2,
@@ -17,7 +17,7 @@ import {
   Tag,
   Award,
 } from 'lucide-react-native';
-import { Checkpoint } from '@homeapp/common/types';
+import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
@@ -42,6 +42,49 @@ interface CheckpointDetailModalProps {
   onClose: () => void;
 }
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function MediaItem({ media, isVisible }: { media: CheckpointMedia; isVisible: boolean }) {
+  const isVideo = media.contentType?.startsWith('video/');
+  
+  // Initialize player only if it's a video
+  const player = useVideoPlayer(isVideo ? media.url : '', (player) => {
+    player.loop = false;
+  });
+
+  // Pause video when swiped away or modal closed
+  React.useEffect(() => {
+    if (!isVisible && isVideo && player.playing) {
+      player.pause();
+    }
+  }, [isVisible, isVideo, player]);
+
+  if (isVideo) {
+    return (
+      <View className="h-72 w-full bg-black">
+        <VideoView
+          player={player}
+          style={{ width: '100%', height: '100%' } as ViewStyle}
+          contentFit="contain"
+          allowsFullscreen
+          allowsPictureInPicture={false}
+          nativeControls
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View className="h-72 w-full bg-black">
+      <Image
+        source={{ uri: media.url }}
+        style={{ width: '100%', height: '100%' }}
+        contentFit="contain"
+      />
+    </View>
+  );
+}
+
 export function CheckpointDetailModal({
   visible,
   checkpoint,
@@ -51,24 +94,31 @@ export function CheckpointDetailModal({
   const { deleteCheckpoint } = useCheckpoint();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = React.useState(0);
 
-  // IMPORTANT: hooks must be called consistently across renders.
-  // This modal can render with checkpoint=null initially and later receive a checkpoint.
-  // So we compute safe defaults and always call useVideoPlayer.
-  const media0 = checkpoint?.media?.[0];
-  const isVideo = !!media0?.contentType?.startsWith('video/');
-  const mediaUrl = media0?.url;
-  const videoSourceUrl = isVideo && mediaUrl ? mediaUrl : '';
-  const videoPlayer = useVideoPlayer(videoSourceUrl, (player) => {
-    // don't autoplay in a modal; user intent should start playback
-    player.loop = false;
-  });
+  // Reset active index when checkpoint changes
+  React.useEffect(() => {
+    if (visible) {
+      setActiveMediaIndex(0);
+    }
+  }, [visible, checkpoint?.id]);
+
+  const onViewableItemsChanged = React.useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0) {
+      setActiveMediaIndex(viewableItems[0].index ?? 0);
+    }
+  }).current;
+
+  // Viewability config
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
   if (!checkpoint) return null;
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
-  // Keep issue detection logic consistent with the list view:
-  // treat any non-empty issues array as "issues detected".
+  
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
+  const mediaList = checkpoint.media || [];
 
   const handleConfirmDelete = async () => {
     try {
@@ -103,20 +153,36 @@ export function CheckpointDetailModal({
         </View>
 
         <ScrollView className="flex-1">
-          {/* Media (image/video) */}
+          {/* Media Carousel */}
           <View className="h-72 w-full bg-muted">
-            {mediaUrl ? (
-              isVideo ? (
-                <VideoView
-                  player={videoPlayer}
-                  style={{ width: '100%', height: '100%' }}
-                  fullscreenOptions={{ allowed: true }}
-                  allowsPictureInPicture={false}
-                  nativeControls
+            {mediaList.length > 0 ? (
+              <View>
+                <FlatList
+                  data={mediaList}
+                  renderItem={({ item, index }) => (
+                    <View style={{ width: SCREEN_WIDTH, height: 288 }}>
+                      <MediaItem 
+                        media={item} 
+                        isVisible={visible && index === activeMediaIndex} 
+                      />
+                    </View>
+                  )}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onViewableItemsChanged={onViewableItemsChanged}
+                  viewabilityConfig={viewabilityConfig}
+                  scrollEventThrottle={16}
                 />
-              ) : (
-                <Image source={{ uri: mediaUrl }} className="h-full w-full" resizeMode="cover" />
-              )
+                {mediaList.length > 1 && (
+                  <View className="absolute bottom-4 right-4 rounded-full bg-black/50 px-3 py-1">
+                    <Text className="text-xs font-medium text-white">
+                      {activeMediaIndex + 1} / {mediaList.length}
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <View className="h-full w-full items-center justify-center">
                 <Text className="text-muted-foreground">No Media Available</Text>
