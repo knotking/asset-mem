@@ -201,7 +201,7 @@ function PropertyDetailsContent() {
     }
     
     return (
-        <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto">
+        <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto min-h-full">
             <Card className="transition-shadow hover:shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-start">
