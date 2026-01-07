@@ -72,7 +72,7 @@ export function ChatSettingsModal({
     locationData?.locationType || 'location'
   );
   const [locationRadius, setLocationRadius] = React.useState<number>(
-    locationData?.locationRadius || 50
+    locationData?.locationRadius || 5
   );
   const [isGettingLocation, setIsGettingLocation] = React.useState(false);
 
@@ -433,7 +433,7 @@ export function ChatSettingsModal({
                       <Text className="text-sm font-bold text-primary">{locationRadius} miles</Text>
                     </View>
                     <View className="flex-row justify-between">
-                      {[10, 25, 50, 75, 100].map((radius) => (
+                      {[5, 10, 25, 50, 100].map((radius) => (
                         <Pressable
                           key={radius}
                           onPress={() => handleRadiusChange(radius)}

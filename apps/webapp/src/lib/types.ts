@@ -205,7 +205,7 @@ export type LocationCoordinates = {
 export type LocationData = {
   locationType?: LocationType;
   locationCoordinates?: LocationCoordinates;
-  locationRadius?: number; // 10-100 miles
+  locationRadius?: number; // 5-100 miles
 };
 
 export type Service = {

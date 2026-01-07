@@ -156,7 +156,7 @@ export default function PropertyDetailsScreen() {
                 lat: currentLocation.coords.latitude,
                 lng: currentLocation.coords.longitude,
               },
-              locationRadius: 50, // Default 50 mile radius
+              locationRadius: 5, // Default 5 mile radius
             };
             setLocationData(defaultLocationData);
             console.log('[PropertyDetails] Auto-set current location for analysis_agent:', defaultLocationData);

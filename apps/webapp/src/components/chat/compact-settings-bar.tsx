@@ -30,9 +30,9 @@ export function CompactSettingsBar({
   const getLocationLabel = () => {
     if (!hasLocation) return 'No location';
     if (locationData?.locationType === 'location') {
-      return `${locationData.locationRadius || 50}mi`;
+      return `${locationData.locationRadius || 5}mi`;
     }
-    return `${locationData?.locationRadius || 50}mi`;
+    return `${locationData?.locationRadius || 5}mi`;
   };
 
   const AgentIcon = primaryAgent === 'analysis' ? Stethoscope : Clock;

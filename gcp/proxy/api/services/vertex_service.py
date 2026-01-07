@@ -180,7 +180,7 @@ async def stream_agent_answers(
     
     # Set default radius if not specified
     if location_radius is None and (location_coordinates or location_type):
-        location_radius = 50  # Default to 50 miles
+        location_radius = 5  # Default to 5 miles
         logger.debug(f"Setting default location_radius to {location_radius} miles")
     
     if not session_id:
@@ -237,7 +237,7 @@ async def stream_agent_answers(
         payload["location_coordinates"] = location_coordinates
         logger.info(f"Including location_coordinates in payload: {location_coordinates}")
     
-    # Include radius (with default of 50 miles)
+    # Include radius (with default of 5 miles)
     if location_radius is not None:
         payload["location_radius"] = location_radius
         logger.info(f"Including location_radius in payload: {location_radius} miles")

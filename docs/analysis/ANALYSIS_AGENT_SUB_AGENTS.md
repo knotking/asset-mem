@@ -445,7 +445,7 @@ google_search ──┘ (fallback if others fail)
 #### Priority 1: Coordinates + Radius (Preferred)
 ```python
 location_coordinates = {"lat": 37.7749, "lng": -122.4194}
-location_radius = 50  # miles
+location_radius = 5  # miles
 
 # Enables:
 # - Precise distance calculations
@@ -480,7 +480,7 @@ class DiagnosisInput(BaseModel):
     context_doc_uris: Optional[List[str]] = None
     property_address: Optional[str] = None
     location_coordinates: Optional[Dict[str, float]] = None
-    location_radius: Optional[int] = 50  # default 50 miles
+    location_radius: Optional[int] = 5  # default 5 miles
 ```
 
 ### Output Schema

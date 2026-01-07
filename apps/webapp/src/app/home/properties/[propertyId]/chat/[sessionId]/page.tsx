@@ -174,7 +174,7 @@ export default function PropertyChatSessionPage() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude,
                   },
-                  locationRadius: 50, // Default 50 mile radius
+                  locationRadius: 5, // Default 5 mile radius
                 };
                 setLocationData(defaultLocationData);
                 console.log('[ChatPage] Auto-set current location:', defaultLocationData);

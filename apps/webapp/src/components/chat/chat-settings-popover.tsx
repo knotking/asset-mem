@@ -63,7 +63,7 @@ export function ChatSettingsPopover({
     locationData?.locationType || 'location'
   );
   const [locationRadius, setLocationRadius] = useState<number>(
-    locationData?.locationRadius || 50
+    locationData?.locationRadius || 5
   );
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
@@ -315,10 +315,10 @@ export function ChatSettingsPopover({
                     <span className="text-sm font-bold text-primary">{locationRadius} miles</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-muted-foreground">10</span>
+                    <span className="text-xs text-muted-foreground">5</span>
                     <input
                       type="range"
-                      min="10"
+                      min="5"
                       max="100"
                       step="5"
                       value={locationRadius}
@@ -328,7 +328,7 @@ export function ChatSettingsPopover({
                     <span className="text-xs text-muted-foreground">100</span>
                   </div>
                   <div className="flex gap-2">
-                    {[10, 25, 50, 75, 100].map((radius) => (
+                    {[5, 10, 25, 50, 100].map((radius) => (
                       <Button
                         key={radius}
                         type="button"

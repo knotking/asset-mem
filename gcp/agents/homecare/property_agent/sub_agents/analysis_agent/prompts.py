@@ -196,10 +196,10 @@ def analysis_agent_instructions() -> str:
            LOCATION HANDLING (PRIORITY ORDER):
            - **PRIORITY 1 (PREFERRED)**: If `location_coordinates` is provided (from current location OR geocoded address), ALWAYS use coordinates with `location_radius` for precise radius-based search
              * Coordinates enable accurate distance filtering within the specified radius
-             * Example: Search within 50 miles of lat/lng coordinates
+             * Example: Search within 5 miles of lat/lng coordinates
            - **PRIORITY 2 (FALLBACK)**: If only `property_address` is available without coordinates, use address for location-based searches
            - **PRIORITY 3 (LAST RESORT)**: If neither coordinates nor address available, use "near me" as fallback
-           - Default `location_radius` to 50 miles if not specified
+           - Default `location_radius` to 5 miles if not specified
            SEARCH SCOPE: Restrict local professional search to within the specified `location_radius` of the provided location
            RESULT SIZE: Return the TOP 10 local providers only (rank by distance/rating/relevance; include yelp and serpapi sources)
            DISTANCE SORTING: When using coordinates, sort results by distance (closest first)

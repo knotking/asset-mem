@@ -18,12 +18,12 @@ def service_agent_instructions() -> str:
         *   `context_doc_uris` (List[str], optional): Additional context documents.
         *   `property_address` (str, optional): The property address if available.
         *   `location_coordinates` (Dict[str, float], optional): Location coordinates as {"lat": float, "lng": float}. May be from user's current location or geocoded from property_address.
-        *   `location_radius` (int, optional): Search radius in miles (10-100). Defaults to 50 if not specified.
+        *   `location_radius` (int, optional): Search radius in miles (5-100). Defaults to 5 if not specified.
         
         **Location Handling:**
         *   When `location_coordinates` is provided (either from current location or geocoded address), ALWAYS use coordinates with radius for precise search.
         *   The `property_address` may be provided for context even when coordinates are available.
-        *   Coordinates enable precise radius-based filtering (e.g., "within 50 miles of 37.4224,-122.0842").
+        *   Coordinates enable precise radius-based filtering (e.g., "within 5 miles of 37.4224,-122.0842").
         *   If only `property_address` is available without coordinates, use address-based search as fallback.
         
         **Available Tools:**
@@ -40,15 +40,15 @@ def service_agent_instructions() -> str:
            - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, ALWAYS use coordinates with radius for precise search: "[diagnosis] professionals near [lat],[lng] within [radius] miles"
              * This provides the most accurate results within the specified radius
              * Coordinates may come from user's current location OR geocoded property address
-             * Example: "plumber near 37.4224,-122.0842 within 50 miles"
+             * Example: "plumber near 37.4224,-122.0842 within 5 miles"
            - **PRIORITY 2 - Address Only (Fallback)**: If `location_coordinates` is NOT provided but `property_address` is available, use: "[diagnosis] professionals near [address]"
              * Example: "plumber near 123 Main St, City, State"
            - **PRIORITY 3 - No Location (Last Resort)**: If no location data available, use: "[diagnosis] repair service near me"
-           - ALWAYS apply `location_radius` (default: 50 miles) when coordinates are available
+           - ALWAYS apply `location_radius` (default: 5 miles) when coordinates are available
            - Filter results to only include providers within the specified radius
         4. Call `yelpapi_search` with query incorporating the diagnosis and location information
            - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, ALWAYS use coordinates with radius: "[diagnosis] service [lat],[lng] within [radius] miles"
-             * Example: "plumber 37.4224,-122.0842 within 50 miles"
+             * Example: "plumber 37.4224,-122.0842 within 5 miles"
            - **PRIORITY 2 - Address Only (Fallback)**: If only `property_address` is available, use: "[diagnosis] service [address]"
            - ALWAYS apply `location_radius` when coordinates are available
            - Filter results to only include providers within the specified radius
