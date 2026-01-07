@@ -349,11 +349,13 @@ function PropertyMetricsCard({
 function CheckpointCard({
   checkpoint,
   onPress,
+  onLongPress,
   selectionMode,
   isSelected,
 }: {
   checkpoint: Checkpoint;
   onPress: (checkpoint: Checkpoint) => void;
+  onLongPress?: (checkpoint: Checkpoint) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
 }) {
@@ -366,6 +368,7 @@ function CheckpointCard({
     <Card className={`${isSelected ? 'border-primary bg-primary/5' : ''}p-2`}>
       <Pressable
         onPress={() => onPress(checkpoint)}
+        onLongPress={() => onLongPress?.(checkpoint)}
         className="flex-row overflow-hidden rounded-lg">
         {/* Thumbnail Image */}
         <View className="h-24 w-24 bg-muted">
@@ -485,6 +488,7 @@ export function PropertyCheckpointsTab({
 
   // Selection State (always active in 'select' sub-tab)
   const [selectedForActions, setSelectedForActions] = React.useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = React.useState(false);
   const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
   const [isAnalysisModalVisible, setIsAnalysisModalVisible] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
@@ -609,14 +613,19 @@ export function PropertyCheckpointsTab({
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {
-    if (activeSubTab === 'checkpoints') {
+    if (activeSubTab === 'checkpoints' && isSelectionMode) {
       // Toggle selection
       setSelectedForActions((prev) => {
-        if (prev.includes(checkpoint.id)) {
-          return prev.filter((id) => id !== checkpoint.id);
-        } else {
-          return [...prev, checkpoint.id];
+        const newSelection = prev.includes(checkpoint.id)
+          ? prev.filter((id) => id !== checkpoint.id)
+          : [...prev, checkpoint.id];
+          
+        // Exit selection mode if no items selected
+        if (newSelection.length === 0) {
+          setIsSelectionMode(false);
         }
+        
+        return newSelection;
       });
     } else {
       // Open detail modal
@@ -625,8 +634,21 @@ export function PropertyCheckpointsTab({
     }
   };
 
+  const handleCheckpointLongPress = (checkpoint: Checkpoint) => {
+    if (activeSubTab === 'checkpoints') {
+      setIsSelectionMode(true);
+      setSelectedForActions((prev) => {
+        if (!prev.includes(checkpoint.id)) {
+          return [...prev, checkpoint.id];
+        }
+        return prev;
+      });
+    }
+  };
+
   const handleClearSelection = () => {
     setSelectedForActions([]);
+    setIsSelectionMode(false);
   };
 
   const handleCompare = () => {
@@ -652,6 +674,7 @@ export function PropertyCheckpointsTab({
       // Delete all selected checkpoints
       await Promise.all(selectedForActions.map(id => deleteCheckpoint(id)));
       setSelectedForActions([]);
+      setIsSelectionMode(false);
       setIsDeleteConfirmOpen(false);
     } catch (error) {
       console.error('Failed to delete checkpoints', error);
@@ -805,7 +828,8 @@ export function PropertyCheckpointsTab({
               <CheckpointCard
                 checkpoint={item}
                 onPress={handleCheckpointPress}
-                selectionMode={true}
+                onLongPress={handleCheckpointLongPress}
+                selectionMode={isSelectionMode}
                 isSelected={selectedForActions.includes(item.id)}
               />
             )}
