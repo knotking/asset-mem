@@ -131,8 +131,8 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
 
   if (!isChatActive) {
     return (
-        <div className="flex flex-col flex-1 overflow-hidden">
-            <main className="flex-1 overflow-auto relative">
+        <div className="flex flex-col flex-1 min-h-0">
+            <main className="flex-1 overflow-y-auto relative">
                 {children}
             </main>
         </div>
@@ -228,10 +228,10 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
   
     return (
         <>
-            <div className='h-full flex flex-col'>
+            <div className='h-full flex flex-col min-h-0'>
                 <PropertyHeader />
                 <PropertyTabs />
-                <main className="flex-1 overflow-hidden">
+                <main className="flex-1 min-h-0">
                     <PropertyChatLayoutContent>
                         {children}
                     </PropertyChatLayoutContent>

@@ -50,8 +50,8 @@ export default function PropertyCheckpointsPage() {
   ).length;
 
     return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto p-6 md:p-8">
+    <div className="flex h-full flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 min-h-0">
         <div className="mx-auto max-w-5xl">
           {/* Header */}
           <header className="mb-6">
