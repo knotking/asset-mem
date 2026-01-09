@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { CheckpointCard } from './checkpoint-card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from "react";
+import { CheckpointCard } from "./checkpoint-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,7 +86,9 @@ export function CheckpointList({
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set());
+  const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(
+    new Set(),
+  );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
@@ -89,7 +97,7 @@ export function CheckpointList({
 
   // Extract unique locations
   const locations = Array.from(
-    new Set(checkpoints.map((cp) => cp.location).filter(Boolean))
+    new Set(checkpoints.map((cp) => cp.location).filter(Boolean)),
   ).sort();
 
   // Filter checkpoints
@@ -100,13 +108,16 @@ export function CheckpointList({
       cp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cp.location?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesLocation = locationFilter === 'all' || cp.location === locationFilter;
+    const matchesLocation =
+      locationFilter === "all" || cp.location === locationFilter;
 
     const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'analyzed' && cp.aiAnalysis) ||
-      (statusFilter === 'pending' && !cp.aiAnalysis) ||
-      (statusFilter === 'issues' && cp.aiAnalysis?.issues && cp.aiAnalysis.issues.length > 0);
+      statusFilter === "all" ||
+      (statusFilter === "analyzed" && cp.aiAnalysis) ||
+      (statusFilter === "pending" && !cp.aiAnalysis) ||
+      (statusFilter === "issues" &&
+        cp.aiAnalysis?.issues &&
+        cp.aiAnalysis.issues.length > 0);
 
     return matchesSearch && matchesLocation && matchesStatus;
   });
@@ -164,8 +175,8 @@ export function CheckpointList({
       }
 
       toast({
-        title: 'Checkpoints Deleted',
-        description: `${count} checkpoint${count === 1 ? '' : 's'} deleted successfully.`,
+        title: "Checkpoints Deleted",
+        description: `${count} checkpoint${count === 1 ? "" : "s"} deleted successfully.`,
       });
     } catch (error) {
       checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
@@ -399,12 +410,12 @@ export function CheckpointList({
         <div className="flex flex-col gap-3 rounded-lg border bg-muted p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <Badge variant="secondary">
-              {selectedCheckpoints.size} selected
+              {selectedCheckpoints.size} / 2 selected
             </Badge>
             <span className="min-w-0 text-sm text-muted-foreground">
               {selectedCheckpoints.size === 2
-                ? 'Select 2 checkpoints to compare'
-                : 'Select checkpoints to delete or compare'}
+                ? "Select 2 checkpoints to compare"
+                : "Select checkpoints to delete or compare"}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -438,10 +449,13 @@ export function CheckpointList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {selectedCheckpoints.size} checkpoint{selectedCheckpoints.size === 1 ? '' : 's'}?
+              Delete {selectedCheckpoints.size} checkpoint
+              {selectedCheckpoints.size === 1 ? "" : "s"}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the selected checkpoint{selectedCheckpoints.size === 1 ? '' : 's'}. This action cannot be undone.
+              This will permanently delete the selected checkpoint
+              {selectedCheckpoints.size === 1 ? "" : "s"}. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -473,7 +487,7 @@ export function CheckpointList({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div data-testid="checkpoint-list" className="space-y-3">
           {filteredCheckpoints.map((checkpoint) => (
             <CheckpointCard
               key={checkpoint.id}
@@ -538,4 +552,3 @@ function CheckpointListSkeleton() {
     </div>
   );
 }
-

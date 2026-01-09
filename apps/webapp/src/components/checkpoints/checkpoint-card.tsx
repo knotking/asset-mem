@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,8 +47,10 @@ export function CheckpointCard({
       : new Date();
 
   const hasAnalysis = !!checkpoint.aiAnalysis;
-  const isAnalyzing = checkpoint.analysisStatus === 'processing' || checkpoint.analysisStatus === 'pending';
-  const analysisFailed = checkpoint.analysisStatus === 'failed';
+  const isAnalyzing =
+    checkpoint.analysisStatus === "processing" ||
+    checkpoint.analysisStatus === "pending";
+  const analysisFailed = checkpoint.analysisStatus === "failed";
 
   // Determine overall condition from analysis
   const getConditionBadge = () => {
@@ -62,7 +64,12 @@ export function CheckpointCard({
       );
     }
     if (isAnalyzing) {
-      return <Badge variant="outline" className="border-blue-300 text-blue-700"><Clock className="h-3 w-3 mr-1 animate-spin" />Analyzing</Badge>;
+      return (
+        <Badge variant="outline" className="border-blue-300 text-blue-700">
+          <Clock className="h-3 w-3 mr-1 animate-spin" />
+          Analyzing
+        </Badge>
+      );
     }
     if (!hasAnalysis) {
       return <Badge variant="outline">No Analysis</Badge>;
@@ -70,19 +77,35 @@ export function CheckpointCard({
 
     // Severity-tier labels — keep in sync with @homeapp/common/lib/checkpoint-list-badge (mapp uses shared helper).
     const issues = checkpoint.aiAnalysis?.issues || [];
-    const hasCritical = issues.some((i: any) => typeof i === 'object' && i.severity === 'critical');
-    const hasMajor = issues.some((i: any) => typeof i === 'object' && i.severity === 'major');
+    const hasCritical = issues.some(
+      (i: any) => typeof i === "object" && i.severity === "critical"
+    );
+    const hasMajor = issues.some(
+      (i: any) => typeof i === "object" && i.severity === "major"
+    );
 
     if (hasCritical) {
       return <Badge variant="destructive">Critical Issues</Badge>;
     }
     if (hasMajor) {
-      return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Major Issues</Badge>;
+      return (
+        <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+          Major Issues
+        </Badge>
+      );
     }
     if (issues.length > 0) {
-      return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Needs Attention</Badge>;
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          Needs Attention
+        </Badge>
+      );
     }
-    return <Badge className="bg-green-100 text-green-800 border-green-200">Good Condition</Badge>;
+    return (
+      <Badge className="bg-green-100 text-green-800 border-green-200">
+        Good Condition
+      </Badge>
+    );
   };
 
   const handleClick = () => {
@@ -96,6 +119,7 @@ export function CheckpointCard({
 
   return (
     <Card
+      data-testid="checkpoint-card"
       className={cn(
         'relative min-w-0 cursor-pointer transition-all hover:shadow-md',
         selected && 'ring-2 ring-primary',
@@ -111,12 +135,14 @@ export function CheckpointCard({
             {checkpoint.media && checkpoint.media.length > 0 ? (
               <>
                 <Image
-                  src={checkpoint.media[0].thumbnailUrl || checkpoint.media[0].url}
+                  src={
+                    checkpoint.media[0].thumbnailUrl || checkpoint.media[0].url
+                  }
                   alt={checkpoint.name}
                   fill
                   className="object-cover"
                 />
-                {checkpoint.media[0].contentType?.startsWith('video/') && (
+                {checkpoint.media[0].contentType?.startsWith("video/") && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <Video className="h-6 w-6 text-white" />
                   </div>
@@ -160,7 +186,9 @@ export function CheckpointCard({
                 <div className="mt-1.5 shrink-0 sm:mt-0">{getConditionBadge()}</div>
               </div>
               {checkpoint.description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  {checkpoint.description}
+                </p>
               )}
               {isDeleteFailed ? (
                 <div className="mt-1 space-y-1">
@@ -218,4 +246,3 @@ export function CheckpointCard({
     </Card>
   );
 }
-
