@@ -6,9 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, ArrowRightLeft, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Search, ArrowRightLeft, X, Trash2, Loader2 } from 'lucide-react';
 import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { useToast } from '@/hooks/use-toast';
 
 interface CheckpointListProps {
   checkpoints: Checkpoint[];
@@ -23,11 +35,15 @@ export function CheckpointList({
   onCheckpointClick,
   onCompare,
 }: CheckpointListProps) {
+  const { deleteCheckpoint } = useCheckpoint();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set());
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Extract unique locations
   const locations = Array.from(
@@ -56,9 +72,7 @@ export function CheckpointList({
   const handleSelect = (checkpointId: string, selected: boolean) => {
     const newSelection = new Set(selectedCheckpoints);
     if (selected) {
-      if (newSelection.size < 2) {
-        newSelection.add(checkpointId);
-      }
+      newSelection.add(checkpointId);
     } else {
       newSelection.delete(checkpointId);
     }
@@ -81,6 +95,43 @@ export function CheckpointList({
   const handleCancelSelection = () => {
     setSelectionMode(false);
     setSelectedCheckpoints(new Set());
+  };
+
+  const handleDeleteClick = () => {
+    if (selectedCheckpoints.size > 0) {
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedCheckpoints.size === 0) return;
+
+    const count = selectedCheckpoints.size;
+    const checkpointIds = Array.from(selectedCheckpoints);
+    
+    setIsDeleting(true);
+    try {
+      const deletePromises = checkpointIds.map((id) => deleteCheckpoint(id));
+      await Promise.all(deletePromises);
+
+      toast({
+        title: 'Checkpoints Deleted',
+        description: `${count} checkpoint${count === 1 ? '' : 's'} deleted successfully.`,
+      });
+
+      setSelectedCheckpoints(new Set());
+      setSelectionMode(false);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to delete checkpoints:', error);
+      toast({
+        title: 'Deletion Failed',
+        description: 'Failed to delete checkpoints. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) {
@@ -153,9 +204,13 @@ export function CheckpointList({
       {selectionMode && (
         <div className="flex items-center justify-between rounded-lg border bg-muted p-3">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{selectedCheckpoints.size} / 2 selected</Badge>
+            <Badge variant="secondary">
+              {selectedCheckpoints.size} selected
+            </Badge>
             <span className="text-sm text-muted-foreground">
-              Select 2 checkpoints to compare
+              {selectedCheckpoints.size === 2
+                ? 'Select 2 checkpoints to compare'
+                : 'Select checkpoints to delete or compare'}
             </span>
           </div>
           <div className="flex gap-2">
@@ -166,12 +221,50 @@ export function CheckpointList({
             >
               Compare Selected
             </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDeleteClick}
+              disabled={selectedCheckpoints.size === 0}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
             <Button size="sm" variant="ghost" onClick={handleCancelSelection}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        if (!open && !isDeleting) {
+          setIsDeleteDialogOpen(false);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedCheckpoints.size} checkpoint{selectedCheckpoints.size === 1 ? '' : 's'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected checkpoint{selectedCheckpoints.size === 1 ? '' : 's'}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting || selectedCheckpoints.size === 0}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Checkpoints List */}
       {filteredCheckpoints.length === 0 ? (
