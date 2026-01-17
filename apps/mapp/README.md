@@ -19,10 +19,13 @@ The HomeApp mobile application is a comprehensive property care tool built with 
 - **Context-Aware Chat**: Chat with an AI agent that knows your property details.
 - **Multimodal Support**: Send photos and documents to the AI for analysis.
 - **Document Q&A**: Ask questions about your uploaded user manuals, warranties, and receipts.
+- **Inspection Reports**: Query and analyze property inspection reports with natural language.
 
 ### 📄 Document Management
 - **Central Repository**: Store and organize important property documents.
 - **AI-Powered Search**: Find information within documents using natural language queries.
+- **Inspection Reports**: Dedicated section for property inspection reports with analysis results.
+- **Document Types**: Support for deeds, insurance policies, utility bills, inspection reports, and more.
 
 ## Technology Stack
 
@@ -54,13 +57,15 @@ The HomeApp mobile application is a comprehensive property care tool built with 
 
 - `app/`: Expo Router pages and navigation structure.
 - `components/`: Reusable UI components.
-  - `property-details/`: Components specific to the property details screen (Checkpoints, Chat, Documents).
+  - `property-details/`: Components specific to the property details screen (Checkpoints, Chat, Documents, Inspections).
   - `ui/`: Core UI primitives (Buttons, Cards, Inputs).
 - `contexts/`: React Context providers (Auth, Property, Checkpoint).
 - `hooks/`: Custom React hooks.
 - `lib/`: Utility functions and API clients.
 
-## Checkpoint Feature Details
+## Feature Details
+
+### Checkpoint Feature
 
 The Checkpoints feature is a core part of the app, allowing users to create a visual history of their property.
 
@@ -69,3 +74,15 @@ The Checkpoints feature is a core part of the app, allowing users to create a vi
 - **Analysis**: Images are uploaded to Firebase Storage, which triggers a background process on GCP to analyze them using Gemini Flash 2.5.
 - **Real-time Updates**: The app listens to Firestore for analysis results and updates the UI automatically.
 
+### Inspection Reports Feature
+
+The Inspection Reports feature provides a dedicated interface for managing and querying property inspection reports.
+
+- **Frontend**: Located in `components/property-details/PropertyInspectionsTab.tsx`.
+- **Components**:
+  - `PropertyInspectionsTab`: Main tab view with stats and report list.
+  - `InspectionsDrawerContent`: Drawer for selecting reports in chat context.
+  - `InspectionDetailModal`: Modal for viewing report details.
+- **Document Type**: Reports are stored as `INSPECTION_REPORT` document type in Firestore.
+- **AI Integration**: Reports can be queried via chat using the inspection_agent backend.
+- **Features**: Stats dashboard, status indicators, issue badges, download/view actions.

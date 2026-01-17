@@ -398,6 +398,29 @@ Documents uploaded with analysis results are automatically:
 
 The extracted information (address, type, entities, summary) helps the AI provide more accurate responses about the property.
 
+### Inspection Reports Integration
+
+Inspection reports receive special handling:
+
+1. **Dedicated UI Tab**: PropertyInspectionsTab provides a specialized view for inspection reports
+2. **Inspection Agent**: Backend inspection_agent analyzes and queries inspection reports specifically
+3. **Drawer Access**: InspectionsDrawerContent allows selection of reports in chat context
+4. **Natural Language Queries**: Ask questions like "What are the critical issues?" or "Show me electrical problems"
+5. **Stats Dashboard**: View aggregated statistics (total reports, analyzed, with issues)
+6. **Detail Modal**: InspectionDetailModal shows complete report information with download/view actions
+
+**Components:**
+- `PropertyInspectionsTab.tsx` - Main inspections tab view
+- `InspectionsDrawerContent.tsx` - Drawer for chat context selection
+- `InspectionDetailModal.tsx` - Full report detail modal
+
+**Features:**
+- Status indicators (analyzing, complete, failed)
+- Issue badges for reports with critical/major problems
+- Key entities display (inspector, inspection date, findings)
+- Pull-to-refresh functionality
+- Empty states with upload prompts
+
 ## Testing
 
 ### Manual Testing Checklist

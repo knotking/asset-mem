@@ -273,6 +273,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Support for PDFs, images, videos
 - Automatic indexing to RAG corpus
 - User-specific document corpus
+- Document type classification (deeds, insurance, inspection reports, etc.)
 
 **Knowledge Retrieval**
 - Q&A from user documents
@@ -283,6 +284,32 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Semantic search across documents
 - Context-aware retrieval
 - Multi-document synthesis
+
+### 8. Inspection Reports Analysis
+
+**Report Management**
+- Dedicated interface for property inspection reports
+- Upload and categorize inspection documents
+- Automatic metadata extraction
+
+**AI-Powered Analysis**
+- Extracts key findings by category (structural, electrical, plumbing, HVAC, etc.)
+- Classifies issues by severity (critical, major, moderate, minor)
+- Identifies urgent vs. long-term repairs
+- Estimates repair costs
+
+**Natural Language Queries**
+- Ask questions about inspection findings
+- "What are the critical issues?"
+- "Show me electrical problems"
+- "What will repairs cost?"
+
+**Features**
+- Stats dashboard (total reports, analyzed, with issues)
+- Status indicators (analyzing, complete, failed)
+- Issue badges for reports with problems
+- Detail views with download/view actions
+- Integration with chat for contextual queries
 
 ---
 
@@ -371,21 +398,21 @@ HomeApp addresses these challenges through an integrated AI platform that:
    ANALYSIS AGENT                      DOCULINK AGENT
    (Multimodal Diagnostics)            (Document Retrieval)
         │                                      │
-   ┌────┴────┐                          ┌──────┴──────┐
-   │        │                          │              │
-TRIAGE   COVERAGE                    USER DOCS    KNOWLEDGE
-AGENT    AGENT                       AGENT        BASE AGENT
-   │        │                          │              │
-   │    ┌───┴───┐                      │              │
-   │    │       │                      │              │
-DIY   SERVICE  COST                    │              │
-AGENT  AGENT   AGENT                   │              │
-   │    │       │                      │              │
-   └────┼───────┘                      │              │
-        │                              │              │
-        └──────────────┬───────────────┴──────────────┘
-                       │
-              VERTEX AI RAG ENGINE
+   ┌────┴────┐                    ┌────────────┼────────────┐
+   │         │                    │            │            │
+TRIAGE   COVERAGE              USER DOCS  INSPECTION  KNOWLEDGE
+AGENT    AGENT                 AGENT      AGENT       BASE AGENT
+   │         │                    │            │            │
+   │    ┌────┴───┐                │            │            │
+   │    │        │                │            │            │
+DIY   SERVICE  COST               │            │            │
+AGENT  AGENT   AGENT               │            │            │
+   │    │        │                │            │            │
+   └────┼────────┘                │            │            │
+        │                         │            │            │
+        └───────────┬─────────────┴────────────┴────────────┘
+                    │
+           VERTEX AI RAG ENGINE
 ```
 
 ### Agent Responsibilities
@@ -407,6 +434,8 @@ AGENT  AGENT   AGENT                   │              │
 
 #### DocuLink Agent
 - **User Docs Agent**: Retrieves from user-uploaded documents
+- **Inspection Agent**: Analyzes and queries property inspection reports
+- **Checkpoint Agent**: Retrieves property checkpoint information
 - **Knowledge Base Agent**: Accesses general knowledge corpus
 
 ### Agent Workflow
@@ -454,6 +483,12 @@ AGENT  AGENT   AGENT                   │              │
   - Before/after comparison slider
   - Property health metrics dashboard
   - Configurable comparison settings
+- ✅ **Inspection Reports Tab**:
+  - Dedicated view for inspection reports
+  - Stats dashboard (total, analyzed, with issues)
+  - Detail modal with download/view actions
+  - Status and issue indicators
+  - Integration with chat context
 
 **Tech Stack**:
 - Expo SDK 54
@@ -481,6 +516,13 @@ AGENT  AGENT   AGENT                   │              │
   - Side-by-side comparison view
   - Property health metrics
   - Checkpoint preferences settings
+- ✅ **Inspection Reports Feature**:
+  - Dedicated inspections tab
+  - Stats cards and report list
+  - Detail dialog with full information
+  - Status badges and issue indicators
+  - Search and filter functionality
+  - Download/view actions
 
 **Tech Stack**:
 - Next.js 15.3.3
@@ -809,6 +851,13 @@ terraform apply
   - Property health metrics
   - Async processing architecture
 
+- [x] **Inspection Reports** (COMPLETED)
+  - Dedicated inspection reports interface
+  - AI-powered report analysis
+  - Natural language queries
+  - Stats dashboard and metrics
+  - Mobile and web implementations
+
 - [ ] **Enhanced Checkpoint Features**
   - Firestore vector search for semantic checkpoint queries
   - Chat integration for conversational checkpoint creation
@@ -1037,6 +1086,12 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Scalability Recommendations**: [`./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md`](./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md)
 - **API Documentation**: [`../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md`](../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md)
 - **Workers Documentation**: [`../gcp/proxy/workers/README.md`](../gcp/proxy/workers/README.md)
+
+### Inspection Reports Documentation
+- **Backend Agent**: [`../gcp/agents/homecare/property_agent/sub_agents/inspection_agent/README.md`](../gcp/agents/homecare/property_agent/sub_agents/inspection_agent/README.md)
+- **Testing Guide**: [`../gcp/agents/homecare/property_agent/sub_agents/inspection_agent/TESTING.md`](../gcp/agents/homecare/property_agent/sub_agents/inspection_agent/TESTING.md)
+- **Mobile Implementation**: [`./inspection/INSPECTION_AGENT_IMPLEMENTATION_SUMMARY.md`](./inspection/INSPECTION_AGENT_IMPLEMENTATION_SUMMARY.md)
+- **Quick Reference**: [`./inspection/INSPECTION_AGENT_QUICK_REFERENCE.md`](./inspection/INSPECTION_AGENT_QUICK_REFERENCE.md)
 
 ---
 
