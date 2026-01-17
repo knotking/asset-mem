@@ -8,7 +8,6 @@ from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
 from .sub_agents.analysis_agent import analysis_agent
 from .sub_agents.checkpoint_agent import checkpoint_agent
-from .sub_agents.inspection_report_agent import inspection_report_agent
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from .agent_inputs import DiagnosisInput, DocsInput
@@ -39,7 +38,6 @@ doculink_agent = Agent(
         AgentTool(user_docs_agent),
         AgentTool(knowledge_base_agent),
         AgentTool(checkpoint_agent),
-        AgentTool(inspection_report_agent),
     ],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback

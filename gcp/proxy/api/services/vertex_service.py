@@ -20,8 +20,6 @@ _DISPLAY_NAME_MAP = {
     "diagnostic_agent": "Diagnostic Agent",
     "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
     "ask_user_docs_agent": "Scanning your documents",
-    "inspection_report_agent": "Analyzing inspection reports",
-    "ask_inspection_reports_retrieval": "Searching inspection reports",
     "transfer_to_agent": "Transfer to Agent",
     "ask_knowledge_base_retrieval": "Accessing HomeGeekAI catalog",
     "ask_user_docs_retrieval": "Accessing your documents",
@@ -146,17 +144,13 @@ async def stream_agent_answers(
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
     checkpoint_ids = request.checkpoint_ids  # Checkpoint IDs for checkpoint context
-    inspection_report_ids = request.inspection_report_ids
     if checkpoint_ids:
         logger.info(f"Received checkpoint_ids in request: {checkpoint_ids} (count: {len(checkpoint_ids)})")
     else:
         logger.debug("No checkpoint_ids provided in request")
-    if inspection_report_ids:
-        logger.info(f"Received inspection_report_ids in request: {inspection_report_ids} (count: {len(inspection_report_ids)})")
     property_address = request.property_address
     property_id = request.property_id  # Option 1: property_id from request
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
-    primary_agent = request.primary_agent
     location_type = request.location_type
     location_coordinates = request.location_coordinates
     location_radius = request.location_radius
@@ -223,11 +217,6 @@ async def stream_agent_answers(
         logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
     else:
         logger.debug("No checkpoint_ids to include in agent payload")
-
-    # Include inspection_report_ids if provided (enables inspection_report_agent routing)
-    if inspection_report_ids:
-        payload["inspection_report_ids"] = inspection_report_ids
-        logger.info(f"Including inspection_report_ids in agent payload: {inspection_report_ids} (count: {len(inspection_report_ids)})")
     
     # Include property_id if available (for checkpoint queries, etc.)
     if property_id:
@@ -255,9 +244,6 @@ async def stream_agent_answers(
 
     if analysis_optional_agents:
         payload["analysis_optional_agents"] = analysis_optional_agents
-
-    if primary_agent:
-        payload["primary_agent"] = primary_agent
 
     message = json.dumps(payload)
     logger.info(f"Sending message to Reasoning Engine: {message}")

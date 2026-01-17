@@ -95,16 +95,6 @@ This directory contains comprehensive documentation for the Analysis Agent, a so
 
 **Audience:** DevOps engineers, SREs, system administrators
 
-### 7. [INSPECTION_REPORT_AGENT.md](./INSPECTION_REPORT_AGENT.md)
-**Inspection Report Analysis Agent (DocuLink sub-agent)**
-
-- Architecture and data flow
-- Inputs, outputs, and API
-- Frontend integration (Primary Agent: Inspection, report selector)
-- Dependencies and file locations
-
-**Audience:** Developers integrating or extending inspection report analysis
-
 ## Quick Start
 
 ### For Product/Business Teams
@@ -173,7 +163,6 @@ Every response includes both:
 ### In This Repository
 
 - **Property Agent**: `/gcp/agents/homecare/property_agent/README.md`
-- **Inspection Report Agent**: [INSPECTION_REPORT_AGENT.md](./INSPECTION_REPORT_AGENT.md)
 - **Architecture**: `/docs/ARCHITECTURE_DIAGRAM.md`
 - **Tech Stack**: `/docs/TECH_STACK.md`
 - **Checkpoint Feature**: `/docs/checkpoint/`

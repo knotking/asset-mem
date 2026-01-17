@@ -13,7 +13,6 @@ import {
   X,
   Stethoscope,
   Clock,
-  FileSearch,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -271,31 +270,6 @@ export function ChatSettingsModal({
                         Checkpoint
                       </Text>
                     </Pressable>
-                    <Pressable
-                      onPress={() => onPrimaryAgentChange('inspection')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
-                        primaryAgent === 'inspection'
-                          ? 'border-primary bg-primary'
-                          : 'border-border bg-secondary'
-                      }`}>
-                      <Icon
-                        as={FileSearch}
-                        size={18}
-                        className={
-                          primaryAgent === 'inspection'
-                            ? 'text-primary-foreground'
-                            : 'text-foreground'
-                        }
-                      />
-                      <Text
-                        className={`text-sm font-semibold ${
-                          primaryAgent === 'inspection'
-                            ? 'text-primary-foreground'
-                            : 'text-foreground'
-                        }`}>
-                        Inspection
-                      </Text>
-                    </Pressable>
                   </View>
                 </View>
 
@@ -348,16 +322,6 @@ export function ChatSettingsModal({
                     <Text className="text-xs leading-5 text-muted-foreground">
                       Checkpoint Agent analyzes your property's checkpoint history to answer
                       questions about changes, trends, and condition over time.
-                    </Text>
-                  </View>
-                )}
-
-                {/* Inspection Mode Info */}
-                {primaryAgent === 'inspection' && (
-                  <View className="rounded-lg bg-secondary/50 p-3">
-                    <Text className="text-xs leading-5 text-muted-foreground">
-                      Inspection Agent analyzes selected inspection reports to answer questions
-                      about findings, issues, and recommendations.
                     </Text>
                   </View>
                 )}

@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict
 
 AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
-PrimaryAgent = Literal["analysis", "checkpoint", "inspection"]
+PrimaryAgent = Literal["analysis", "checkpoint"]
 
 DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
 
@@ -11,14 +11,13 @@ class DiagnosisInput(BaseModel):
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).")
-    inspection_report_ids: Optional[List[str]] = Field(default=None, description="Document IDs of inspection reports selected by the user (routes to doculink_agent for inspection report analysis when provided).")
     property_address: Optional[str] = Field(default=None, description="The property address.")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")
     primary_agent: Optional[PrimaryAgent] = Field(
         default=None,
         description=(
             "Primary agent selection. When provided, this takes precedence in routing decisions. "
-            "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries, 'inspection' routes to doculink_agent for inspection report analysis. "
+            "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries. "
             "If not provided, routing falls back to legacy logic based on checkpoint_ids and diagnosis_uris."
         ),
     )
@@ -48,8 +47,7 @@ class DiagnosisInput(BaseModel):
 
 class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
-    context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs (GCS gs://) for DocuLink Agent. For inspection reports, these are the gsURIs of the selected reports.")
+    context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for DocuLink Agent.")
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).")
-    inspection_report_ids: Optional[List[str]] = Field(default=None, description="Document IDs of inspection reports selected by the user (triggers inspection_report_agent when provided). context_doc_uris should contain the gsURIs of these reports.")
     property_address: Optional[str] = Field(default=None, description="The property address.")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")

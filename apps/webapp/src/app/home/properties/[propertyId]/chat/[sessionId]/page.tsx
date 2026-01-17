@@ -50,7 +50,6 @@ import { ChatContextHeader } from "@/components/chat/chat-context-header";
 import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
-import { InspectionReportSelector } from "@/components/chat/inspection-report-selector";
 import type { Checkpoint } from "@/lib/types";
 import { apiUrls } from "@/lib/utils";
 
@@ -87,14 +86,8 @@ export default function PropertyChatSessionPage() {
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>([]);
   const [isCheckpointDrawerOpen, setIsCheckpointDrawerOpen] = useState(false);
-  const [selectedInspectionReports, setSelectedInspectionReports] = useState<DocumentType[]>([]);
-  const [isInspectionReportDrawerOpen, setIsInspectionReportDrawerOpen] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | undefined>(
     undefined
-  );
-
-  const inspectionReports = (contextDocuments || []).filter(
-    (d) => d.documentType === "INSPECTION_REPORT"
   );
 
   // Redirect if not logged in
@@ -345,19 +338,6 @@ export default function PropertyChatSessionPage() {
     setSelectedCheckpoints((prev) => prev.filter((cp) => cp.id !== checkpoint.id));
   }, []);
 
-  const handleInspectionReportToggle = useCallback((doc: DocumentType) => {
-    setSelectedInspectionReports((prev) => {
-      const isSelected = prev.some((d) => d.id === doc.id);
-      if (isSelected) {
-        return prev.filter((d) => d.id !== doc.id);
-      }
-      return [...prev, doc];
-    });
-  }, []);
-  const handleRemoveInspectionReport = useCallback((doc: DocumentType) => {
-    setSelectedInspectionReports((prev) => prev.filter((d) => d.id !== doc.id));
-  }, []);
-
   // Auto-select all checkpoints when switching to checkpoint agent
   useEffect(() => {
     if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0 && selectedCheckpoints.length === 0) {
@@ -382,8 +362,7 @@ export default function PropertyChatSessionPage() {
       if (
         !content.trim() &&
         !fileAttachment &&
-        selectedDocuments.length === 0 &&
-        selectedInspectionReports.length === 0
+        selectedDocuments.length === 0
       ) {
         return;
       }
@@ -448,14 +427,9 @@ export default function PropertyChatSessionPage() {
           ? sessionDoc.data().agentSessionId
           : undefined;
 
-        const contextDocURIs =
-          primaryAgent === "inspection" && selectedInspectionReports.length > 0
-            ? selectedInspectionReports
-                .map((d) => d.gsURI)
-                .filter((uri): uri is string => !!uri)
-            : selectedDocuments
-                .map((d) => d.gsURI)
-                .filter((uri): uri is string => !!uri);
+        const contextDocURIs = selectedDocuments
+          .map((d) => d.gsURI)
+          .filter((uri): uri is string => !!uri);
         const diagnosisURIs = userMessage.file?.gsURI
           ? [userMessage.file.gsURI]
           : [];
@@ -464,11 +438,6 @@ export default function PropertyChatSessionPage() {
           .map((cp) => cp.id)
           .filter((id): id is string => !!id);
 
-        const inspectionReportIds =
-          primaryAgent === "inspection" && selectedInspectionReports.length > 0
-            ? selectedInspectionReports.map((d) => d.id)
-            : undefined;
-
         const requestBody: Record<string, any> = {
           user_id: user.uid,
           session_id: agentSessionId,
@@ -476,11 +445,10 @@ export default function PropertyChatSessionPage() {
           context_doc_uris: contextDocURIs,
           diagnosis_uris: diagnosisURIs,
           property_address: property?.address,
-          property_id: property?.id,
+          property_id: property?.id, // Pass property_id for checkpoint queries
           primary_agent: primaryAgent,
           analysis_optional_agents: selectedOptionalAgents,
           checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
-          inspection_report_ids: inspectionReportIds,
         };
 
         // Add location data if provided
@@ -622,7 +590,6 @@ export default function PropertyChatSessionPage() {
       propertyId,
       property,
       selectedDocuments,
-      selectedInspectionReports,
       primaryAgent,
       selectedOptionalAgents,
       selectedCheckpoints,
@@ -665,9 +632,6 @@ export default function PropertyChatSessionPage() {
             selectedCheckpoints={selectedCheckpoints}
             onOpenCheckpointDrawer={() => setIsCheckpointDrawerOpen(true)}
             onRemoveCheckpoint={handleRemoveCheckpoint}
-            selectedInspectionReports={selectedInspectionReports}
-            onOpenInspectionReportDrawer={() => setIsInspectionReportDrawerOpen(true)}
-            onRemoveInspectionReport={handleRemoveInspectionReport}
             locationData={locationData}
             onLocationDataChange={setLocationData}
             propertyAddress={property?.address}
@@ -680,13 +644,6 @@ export default function PropertyChatSessionPage() {
         checkpoints={checkpoints || []}
         selectedCheckpoints={selectedCheckpoints}
         onToggleCheckpoint={handleCheckpointToggle}
-      />
-      <InspectionReportSelector
-        open={isInspectionReportDrawerOpen}
-        onOpenChange={setIsInspectionReportDrawerOpen}
-        inspectionReports={inspectionReports}
-        selectedInspectionReports={selectedInspectionReports}
-        onToggleInspectionReport={handleInspectionReportToggle}
       />
     </div>
   );

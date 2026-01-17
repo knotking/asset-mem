@@ -2,7 +2,7 @@
 import { useState, useRef, type FormEvent, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, FileSearch, Send, Camera, Clock } from "lucide-react";
+import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, Clock } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
 import type { FileAttachment, Property, Document as DocumentType, LocationData, PrimaryAgent } from "@/lib/types";
@@ -41,10 +41,6 @@ type Props = {
   selectedCheckpoints?: Checkpoint[];
   onOpenCheckpointDrawer?: () => void;
   onRemoveCheckpoint?: (checkpoint: Checkpoint) => void;
-  // Inspection report selection
-  selectedInspectionReports?: DocumentType[];
-  onOpenInspectionReportDrawer?: () => void;
-  onRemoveInspectionReport?: (doc: DocumentType) => void;
   // Location
   locationData?: LocationData;
   onLocationDataChange?: (locationData: LocationData | undefined) => void;
@@ -72,9 +68,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     selectedCheckpoints = [],
     onOpenCheckpointDrawer,
     onRemoveCheckpoint,
-    selectedInspectionReports = [],
-    onOpenInspectionReportDrawer,
-    onRemoveInspectionReport,
     locationData,
     onLocationDataChange,
     propertyAddress,
@@ -98,7 +91,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0 || selectedInspectionReports.length > 0) {
+    if (content.trim() || fileAttachment?.downloadURL || selectedProperty || selectedDocuments.length > 0) {
       onSend(content.trim());
       setContent("");
       textareaRef.current?.style.setProperty('height', 'auto');
@@ -120,14 +113,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
   };
 
   const isUploading = fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
-  const isSendDisabled =
-    isLoading ||
-    (fileAttachment && !fileAttachment.downloadURL) ||
-    (!content.trim() &&
-      !fileAttachment?.downloadURL &&
-      !selectedProperty &&
-      selectedDocuments.length === 0 &&
-      selectedInspectionReports.length === 0);
+  const isSendDisabled = isLoading || (fileAttachment && !fileAttachment.downloadURL) || (!content.trim() && !fileAttachment?.downloadURL && !selectedProperty && selectedDocuments.length === 0);
   
   const [popoverOpen, setPopoverOpen] = useState(false);
   const handleOptionalAgentToggle = (agent: AnalysisOptionalAgent) => {
@@ -310,54 +296,6 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             >
               <Clock className="h-4 w-4" />
               <span>Select checkpoints for context</span>
-            </button>
-          )}
-
-          {/* Selected Inspection Reports Display */}
-          {primaryAgent === 'inspection' && selectedInspectionReports.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Reports:
-              </span>
-              {selectedInspectionReports.map((doc) => (
-                <Badge
-                  key={doc.id}
-                  variant="secondary"
-                  className="gap-1 pl-2 pr-1"
-                >
-                  {doc.name || 'Report'}
-                  {onRemoveInspectionReport && (
-                    <button
-                      type="button"
-                      onClick={() => onRemoveInspectionReport(doc)}
-                      className="ml-1 rounded-full hover:bg-muted p-0.5"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </Badge>
-              ))}
-              {onOpenInspectionReportDrawer && (
-                <button
-                  type="button"
-                  onClick={onOpenInspectionReportDrawer}
-                  className="text-xs text-primary hover:underline"
-                >
-                  + Add more
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Inspection Report Selection Button */}
-          {primaryAgent === 'inspection' && selectedInspectionReports.length === 0 && onOpenInspectionReportDrawer && (
-            <button
-              type="button"
-              onClick={onOpenInspectionReportDrawer}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
-            >
-              <FileSearch className="h-4 w-4" />
-              <span>Select inspection reports to analyze</span>
             </button>
           )}
 

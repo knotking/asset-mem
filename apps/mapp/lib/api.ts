@@ -108,7 +108,6 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   diagnosisURIs?: string[];
   checkpointIds?: string[]; // Checkpoint IDs for checkpoint context
-  inspectionReportIds?: string[]; // Document IDs of inspection reports for inspection_report_agent
   propertyAddress?: string;
   primaryAgent?: PrimaryAgent;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
@@ -127,7 +126,6 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   diagnosisURIs = [],
   checkpointIds = [],
-  inspectionReportIds,
   propertyAddress,
   primaryAgent = 'analysis',
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
@@ -150,8 +148,7 @@ export async function streamAgentResponse({
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
-      checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
-      inspection_report_ids: inspectionReportIds && inspectionReportIds.length > 0 ? inspectionReportIds : undefined,
+      checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Only include if checkpoints selected
       property_address: propertyAddress,
       primary_agent: primaryAgent,
       analysis_optional_agents: analysisOptionalAgents,
