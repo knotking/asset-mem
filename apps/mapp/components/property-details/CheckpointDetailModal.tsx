@@ -109,6 +109,14 @@ export function CheckpointDetailModal({
     }
   }, [visible, checkpoint?.id]);
 
+  // Reset edit mode when modal closes or checkpoint changes
+  React.useEffect(() => {
+    if (!visible) {
+      setIsEditing(false);
+      setEditedName('');
+    }
+  }, [visible, checkpoint?.id]);
+
   const onViewableItemsChanged = React.useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0) {
       setActiveMediaIndex(viewableItems[0].index ?? 0);

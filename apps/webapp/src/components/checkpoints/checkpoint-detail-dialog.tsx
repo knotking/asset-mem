@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,14 @@ export function CheckpointDetailDialog() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Reset edit mode when dialog closes
+  useEffect(() => {
+    if (!selectedCheckpoint) {
+      setIsEditing(false);
+      setEditedName('');
+    }
+  }, [selectedCheckpoint]);
 
   if (!selectedCheckpoint) return null;
 

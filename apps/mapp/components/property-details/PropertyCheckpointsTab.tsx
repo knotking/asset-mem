@@ -879,7 +879,7 @@ export function PropertyCheckpointsTab({
 
       <CheckpointDetailModal
         visible={isDetailModalVisible}
-        checkpoint={selectedCheckpoint}
+        checkpoint={selectedCheckpoint ? checkpoints.find(cp => cp.id === selectedCheckpoint.id) || selectedCheckpoint : null}
         onClose={() => setIsDetailModalVisible(false)}
       />
 
