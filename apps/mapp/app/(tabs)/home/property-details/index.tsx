@@ -5,7 +5,7 @@ import { ScrollView, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock, Settings } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -34,7 +34,6 @@ import { PropertyDetailsTab } from '@/components/property-details/PropertyDetail
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
 import { DocumentsDrawerContent } from '@/components/property-details/DocumentsDrawerContent';
-import { InspectionsDrawerContent } from '@/components/property-details/InspectionsDrawerContent';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDocumentAutoUpload } from '@/hooks/useDocumentAutoUpload';
@@ -65,21 +64,18 @@ export default function PropertyDetailsScreen() {
   const router = useRouter();
 
   // Tab state
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'timeline' | 'inspections'>(
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'timeline'>(
     tab === 'details'
       ? 'details'
       : tab === 'timeline'
         ? 'timeline'
-        : tab === 'inspections'
-          ? 'inspections'
-          : isNew === 'true'
-            ? 'details'
-            : 'chat'
+        : isNew === 'true'
+          ? 'details'
+          : 'chat'
   );
 
   // Drawer state
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
-  const [inspectionsDrawerVisible, setInspectionsDrawerVisible] = React.useState(false);
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
   const [checkpointsDrawerVisible, setCheckpointsDrawerVisible] = React.useState(false);
 
@@ -714,17 +710,11 @@ function PropertyDetailsScreenContent({
       direction="right"
       mainContent={
         <PushDrawer
-          visible={inspectionsDrawerVisible}
-          onClose={() => setInspectionsDrawerVisible(false)}
+          visible={documentsDrawerVisible}
+          onClose={() => setDocumentsDrawerVisible(false)}
           width={75}
           direction="right"
           mainContent={
-            <PushDrawer
-              visible={documentsDrawerVisible}
-              onClose={() => setDocumentsDrawerVisible(false)}
-              width={75}
-              direction="right"
-              mainContent={
             <PushDrawer
               visible={sessionsDrawerVisible}
               onClose={() => setSessionsDrawerVisible(false)}
@@ -869,19 +859,10 @@ function PropertyDetailsScreenContent({
                       />
                     </Pressable>
                     <Pressable
-                      onPress={() => setActiveTab('inspections')}
-                      className={`flex-1 items-center py-3 ${activeTab === 'inspections' ? 'border-b-2 border-primary' : ''}`}>
-                      <Icon
-                        as={FileText}
-                        size={20}
-                        className={activeTab === 'inspections' ? 'text-primary' : 'text-muted-foreground'}
-                      />
-                    </Pressable>
-                    <Pressable
                       onPress={() => setActiveTab('details')}
                       className={`flex-1 items-center py-3 ${activeTab === 'details' ? 'border-b-2 border-primary' : ''}`}>
                       <Icon
-                        as={Settings}
+                        as={FileText}
                         size={20}
                         className={activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'}
                       />
@@ -1006,8 +987,6 @@ function PropertyDetailsScreenContent({
                       setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
                       setActiveTab={setActiveTab}
                     />
-                  ) : activeTab === 'inspections' ? (
-                    <PropertyInspectionsTab setActiveTab={setActiveTab} />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
                       <PropertyDetailsTab property={property} />
@@ -1045,7 +1024,6 @@ function PropertyDetailsScreenContent({
                   setSessionsDrawerVisible(false);
                 }}
               />
-              />
             </PushDrawer>
           }>
           {/* Documents Drawer Content */}
@@ -1058,24 +1036,14 @@ function PropertyDetailsScreenContent({
           />
         </PushDrawer>
       }>
-      {/* Inspections Drawer Content */}
-      <InspectionsDrawerContent
-        documents={documents}
-        selectedDocuments={selectedDocuments}
+      {/* Checkpoints Drawer Content */}
+      <CheckpointsDrawerContent
+        checkpoints={checkpoints}
+        selectedCheckpoints={selectedCheckpoints}
         activeTab={activeTab}
-        onClose={() => setInspectionsDrawerVisible(false)}
-        onToggleDocument={toggleDocumentSelection}
+        onClose={() => setCheckpointsDrawerVisible(false)}
+        onToggleCheckpoint={toggleCheckpointSelection}
       />
     </PushDrawer>
-  }>
-  {/* Checkpoints Drawer Content */}
-  <CheckpointsDrawerContent
-    checkpoints={checkpoints}
-    selectedCheckpoints={selectedCheckpoints}
-    activeTab={activeTab}
-    onClose={() => setCheckpointsDrawerVisible(false)}
-    onToggleCheckpoint={toggleCheckpointSelection}
-  />
-</PushDrawer>
   );
 }

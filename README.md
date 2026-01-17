@@ -21,8 +21,8 @@ https://github.com/user-attachments/assets/475431cf-cb01-4083-beed-23a06f36c0d4
 The monorepo is organized into two main areas:
 
 -   **Frontend Applications (`apps/`)**:
-    -   `mapp`: Mobile application built with React Native and Expo. Features include AI-powered property diagnostics, visual checkpoints timeline, document management, and inspection reports analysis.
-    -   `webapp`: Web application built with Next.js. Provides property management, AI chat, checkpoints tracking, and inspection reports interface.
+    -   `mapp`: Mobile application built with React Native and Expo. Features include AI-powered property diagnostics, visual checkpoints timeline, and document management.
+    -   `webapp`: Web application built with Next.js.
     -   `common`: Shared TypeScript library, types, and Firebase configuration.
 
 -   **Backend Services (`gcp/`)**:
@@ -120,7 +120,7 @@ The backend logic is powered by Google Cloud Platform, utilizing Vertex AI for t
 ### Core Components
 
 1.  **AI Agents (`gcp/agents/homecare`)**:
-    -   A multi-agent system including Property Agent, Analysis Agent, DocuLink Agent, Checkpoint Agent, and Inspection Agent.
+    -   A multi-agent system including Property Agent, Analysis Agent, and DocuLink Agent.
     -   Uses Vertex AI Reasoning Engine.
     -   [Read the Agent Documentation](./gcp/agents/homecare/README.md)
 
