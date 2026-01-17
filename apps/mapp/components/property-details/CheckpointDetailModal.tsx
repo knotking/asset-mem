@@ -50,10 +50,13 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 function MediaItem({ media, isVisible }: { media: CheckpointMedia; isVisible: boolean }) {
   const isVideo = media.contentType?.startsWith('video/');
   
-  // Initialize player only if it's a video
-  const player = useVideoPlayer(isVideo ? media.url : '', (player) => {
-    player.loop = false;
-  });
+  // Always initialize player (with fallback for non-videos) to maintain consistent hook order
+  const player = useVideoPlayer(
+    isVideo ? media.url : 'data:,',
+    (player) => {
+      player.loop = false;
+    }
+  );
 
   // Pause video when swiped away or modal closed
   React.useEffect(() => {
