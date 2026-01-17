@@ -4,7 +4,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X } from 'lucide-react';
+import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X, MessageSquare, Clock } from 'lucide-react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import type { Document as DocumentType, Session, Property } from '@/lib/types';
@@ -35,9 +35,9 @@ function PropertyTabs() {
     const propertyId = params.propertyId as string;
     
     const tabs = [
-        { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat' },
-        { name: 'Timeline', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints' },
-        { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details'},
+        { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat', icon: MessageSquare },
+        { name: 'Timeline', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints', icon: Clock },
+        { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details', icon: FileText},
         // { name: 'Services', href: '#', segment: 'services' },
         // { name: 'Providers', href: '#', segment: 'providers' },
     ];
@@ -47,6 +47,7 @@ function PropertyTabs() {
              <nav className="flex space-x-0 p-1  bg-muted" aria-label="Tabs">
                 {tabs.map((tab) => {
                     const isActive = pathname.includes(`/${tab.segment}`);
+                    const Icon = tab.icon;
                     
                     if (tab.href === '#') {
                          return (
@@ -54,9 +55,10 @@ function PropertyTabs() {
                                 key={tab.name}
                                 disabled
                                 className={cn(
-                                    'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-muted-foreground/50 cursor-not-allowed'
+                                    'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-muted-foreground/50 cursor-not-allowed flex items-center justify-center gap-2'
                                 )}
                             >
+                                {Icon && <Icon className="h-4 w-4" />}
                                 {tab.name}
                             </button>
                         )
@@ -67,12 +69,13 @@ function PropertyTabs() {
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm transition-colors',
+                                'flex-1 text-center whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2',
                                 isActive
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
                             )}
                         >
+                            {Icon && <Icon className="h-4 w-4" />}
                             {tab.name}
                         </Link>
                     )
