@@ -18,7 +18,6 @@ from ..cost_agent.agent import cost_agent
 from ..diy_agent.agent import diy_agent
 from ..service_agent.agent import service_agent
 from ..coverage_agent.agent import coverage_agent
-from ..inspection_report_agent.agent import inspection_report_agent
 from ...agent_inputs import DiagnosisInput, DocsInput
 
 logger = logging.getLogger(__name__)
@@ -80,11 +79,10 @@ triage_agent = Agent(
 analysis_agent = Agent(
     name='analysis_agent',
     model='gemini-2.5-flash',
-    description="Orchestrates Triage, Coverage, DIY, Service, and Inspection Report agents to provide comprehensive problem analysis.",
+    description="Orchestrates Triage, Coverage, DIY, and Service agents to provide comprehensive problem analysis.",
     instruction=analysis_agent_instructions(),
     tools=[
         AgentTool(triage_agent),
-        AgentTool(inspection_report_agent),
         AgentTool(coverage_agent),
         AgentTool(diy_agent),
         AgentTool(service_agent),
