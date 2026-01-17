@@ -5,7 +5,7 @@ import { ScrollView, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock, FileSearch } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -41,6 +41,7 @@ import { useSessionSelection } from '@/hooks/useSessionSelection';
 import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
+import { InspectionReportsDrawerContent } from '@/components/property-details/InspectionReportsDrawerContent';
 
 export default function PropertyDetailsScreen() {
   const {
@@ -85,6 +86,11 @@ export default function PropertyDetailsScreen() {
 
   // Checkpoint selection state
   const [selectedCheckpoints, setSelectedCheckpoints] = React.useState<Checkpoint[]>([]);
+
+  // Inspection report selection state
+  const [selectedInspectionReports, setSelectedInspectionReports] = React.useState<Document[]>([]);
+  const [inspectionReportsDrawerVisible, setInspectionReportsDrawerVisible] =
+    React.useState(false);
 
   // Checkpoint modal state
   const [isCreateCheckpointModalVisible, setIsCreateCheckpointModalVisible] = React.useState(false);
@@ -319,7 +325,9 @@ export default function PropertyDetailsScreen() {
     async (textOverride?: string) => {
       const messageText = textOverride !== undefined ? textOverride : message;
       const hasContent =
-        messageText.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
+        messageText.trim() ||
+        (fileAttachment?.downloadURL && !fileAttachment?.error) ||
+        (primaryAgent === 'inspection' && selectedInspectionReports.length > 0);
       if (!user || !selectedSessionId || !hasContent || isSending) return;
 
       if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
@@ -386,11 +394,19 @@ export default function PropertyDetailsScreen() {
           }
         );
 
-        const contextDocURIs = selectedDocuments
-          .map((doc) => doc.gsURI)
-          .filter((uri): uri is string => !!uri);
+        const contextDocURIs =
+          primaryAgent === 'inspection' && selectedInspectionReports.length > 0
+            ? selectedInspectionReports
+                .map((d) => d.gsURI)
+                .filter((uri): uri is string => !!uri)
+            : selectedDocuments.map((d) => d.gsURI).filter((uri): uri is string => !!uri);
 
         const diagnosisURIs = fileData?.gsURI ? [fileData.gsURI] : [];
+
+        const inspectionReportIds =
+          primaryAgent === 'inspection' && selectedInspectionReports.length > 0
+            ? selectedInspectionReports.map((d) => d.id)
+            : undefined;
 
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
@@ -414,6 +430,7 @@ export default function PropertyDetailsScreen() {
           contextDocURIs,
           diagnosisURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
+          inspectionReportIds,
           propertyAddress,
           primaryAgent,
           analysisOptionalAgents: selectedOptionalAgents,
@@ -477,6 +494,7 @@ export default function PropertyDetailsScreen() {
       id,
       selectedDocuments,
       selectedCheckpoints,
+      selectedInspectionReports,
       properties,
       selectedOptionalAgents,
       primaryAgent,
@@ -508,6 +526,14 @@ export default function PropertyDetailsScreen() {
     });
   };
 
+  const toggleInspectionReportSelection = (doc: Document) => {
+    setSelectedInspectionReports((prev) => {
+      const isSelected = prev.some((d) => d.id === doc.id);
+      if (isSelected) return prev.filter((d) => d.id !== doc.id);
+      return [...prev, doc];
+    });
+  };
+
   const property = properties.find((p: any) => p.id === id);
 
   if (!property) {
@@ -532,14 +558,19 @@ export default function PropertyDetailsScreen() {
         documents={documents}
         selectedDocuments={selectedDocuments}
         selectedCheckpoints={selectedCheckpoints}
+        selectedInspectionReports={selectedInspectionReports}
+        setSelectedInspectionReports={setSelectedInspectionReports}
         toggleDocumentSelection={toggleDocumentSelection}
         toggleCheckpointSelection={toggleCheckpointSelection}
+        toggleInspectionReportSelection={toggleInspectionReportSelection}
         setSelectedDocuments={setSelectedDocuments}
         setSelectedCheckpoints={setSelectedCheckpoints}
         documentsDrawerVisible={documentsDrawerVisible}
         setDocumentsDrawerVisible={setDocumentsDrawerVisible}
         checkpointsDrawerVisible={checkpointsDrawerVisible}
         setCheckpointsDrawerVisible={setCheckpointsDrawerVisible}
+        inspectionReportsDrawerVisible={inspectionReportsDrawerVisible}
+        setInspectionReportsDrawerVisible={setInspectionReportsDrawerVisible}
         sessionsDrawerVisible={sessionsDrawerVisible}
         setSessionsDrawerVisible={setSessionsDrawerVisible}
         activeTab={activeTab}
@@ -596,14 +627,19 @@ function PropertyDetailsScreenContent({
   documents,
   selectedDocuments,
   selectedCheckpoints,
+  selectedInspectionReports,
+  setSelectedInspectionReports,
   toggleDocumentSelection,
   toggleCheckpointSelection,
+  toggleInspectionReportSelection,
   setSelectedDocuments,
   setSelectedCheckpoints,
   documentsDrawerVisible,
   setDocumentsDrawerVisible,
   checkpointsDrawerVisible,
   setCheckpointsDrawerVisible,
+  inspectionReportsDrawerVisible,
+  setInspectionReportsDrawerVisible,
   sessionsDrawerVisible,
   setSessionsDrawerVisible,
   activeTab,
@@ -651,6 +687,9 @@ function PropertyDetailsScreenContent({
 }: any) {
   const { checkpoints } = useCheckpoint();
   const property = properties.find((p: any) => p.id === id);
+  const inspectionReports = (documents || []).filter(
+    (d) => d.documentType === 'INSPECTION_REPORT'
+  );
 
   // Smart checkpoint selection: Auto-select when checkpoint agent is active
   React.useEffect(() => {
@@ -672,21 +711,33 @@ function PropertyDetailsScreenContent({
     setSelectedCheckpoints,
     primaryAgent,
   ]);
-  
-  // Handle checkpoint selection when switching agents
+
+  // Handle selection when switching agents: clear context for other agents
   React.useEffect(() => {
     if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0) {
-      // If user switches to checkpoint agent and no checkpoints are selected, auto-select all
       if (selectedCheckpoints.length === 0 && !hasManuallyInteracted) {
         setSelectedCheckpoints(checkpoints);
       }
-    } else if (primaryAgent === 'analysis') {
-      // Clear checkpoints when switching to analysis agent
+      if (selectedInspectionReports.length > 0) {
+        setSelectedInspectionReports([]);
+      }
+    } else if (primaryAgent === 'inspection') {
       if (selectedCheckpoints.length > 0) {
         setSelectedCheckpoints([]);
       }
+    } else if (primaryAgent === 'analysis') {
+      if (selectedCheckpoints.length > 0) setSelectedCheckpoints([]);
+      if (selectedInspectionReports.length > 0) setSelectedInspectionReports([]);
     }
-  }, [primaryAgent, checkpoints, selectedCheckpoints.length, hasManuallyInteracted, setSelectedCheckpoints]);
+  }, [
+    primaryAgent,
+    checkpoints,
+    selectedCheckpoints.length,
+    selectedInspectionReports.length,
+    hasManuallyInteracted,
+    setSelectedCheckpoints,
+    setSelectedInspectionReports,
+  ]);
 
   if (!property) {
     return (
@@ -703,6 +754,12 @@ function PropertyDetailsScreenContent({
   }
 
   return (
+    <PushDrawer
+      visible={inspectionReportsDrawerVisible}
+      onClose={() => setInspectionReportsDrawerVisible(false)}
+      width={75}
+      direction="right"
+      mainContent={
     <PushDrawer
       visible={checkpointsDrawerVisible}
       onClose={() => setCheckpointsDrawerVisible(false)}
@@ -832,6 +889,24 @@ function PropertyDetailsScreenContent({
                                 )}
                               </View>
                             )}
+                            {activeTab === 'chat' && primaryAgent === 'inspection' && (
+                              <View className="relative items-center justify-center">
+                                <Button
+                                  onPress={() => setInspectionReportsDrawerVisible(true)}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="items-center justify-center">
+                                  <Icon as={FileSearch} size={20} className="text-foreground" />
+                                </Button>
+                                {selectedInspectionReports.length > 0 && (
+                                  <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                                    <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                      {selectedInspectionReports.length}
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+                            )}
                           </>
                         )}
                       </View>
@@ -869,13 +944,15 @@ function PropertyDetailsScreenContent({
                     </Pressable>
                   </View>
 
-                  {/* Selected Context Display (Documents + Checkpoints) */}
+                  {/* Selected Context Display (Documents / Checkpoints / Inspection Reports) */}
                   {activeTab === 'chat' &&
-                    (selectedDocuments.length > 0 || selectedCheckpoints.length > 0) && (
+                    ((primaryAgent === 'analysis' && selectedDocuments.length > 0) ||
+                      (primaryAgent === 'checkpoint' && selectedCheckpoints.length > 0) ||
+                      (primaryAgent === 'inspection' && selectedInspectionReports.length > 0)) && (
                       <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                           <View className="flex-row items-center gap-1.5">
-                            {selectedDocuments.length > 0 && (
+                            {primaryAgent === 'analysis' && selectedDocuments.length > 0 && (
                               <>
                                 <View className="mr-1 flex-row items-center gap-1">
                                   <Icon as={FileText} size={12} className="text-muted-foreground" />
@@ -898,11 +975,8 @@ function PropertyDetailsScreenContent({
                                 ))}
                               </>
                             )}
-                            {selectedCheckpoints.length > 0 && (
+                            {primaryAgent === 'checkpoint' && selectedCheckpoints.length > 0 && (
                               <>
-                                {selectedDocuments.length > 0 && (
-                                  <View className="h-4 w-px bg-border" />
-                                )}
                                 <View className="mr-1 flex-row items-center gap-1">
                                   <Icon as={Camera} size={12} className="text-muted-foreground" />
                                   <Text className="text-xs font-medium text-muted-foreground">
@@ -924,11 +998,35 @@ function PropertyDetailsScreenContent({
                                 ))}
                               </>
                             )}
+                            {primaryAgent === 'inspection' && selectedInspectionReports.length > 0 && (
+                              <>
+                                <View className="mr-1 flex-row items-center gap-1">
+                                  <Icon as={FileSearch} size={12} className="text-muted-foreground" />
+                                  <Text className="text-xs font-medium text-muted-foreground">
+                                    {selectedInspectionReports.length}
+                                  </Text>
+                                </View>
+                                {selectedInspectionReports.map((doc) => (
+                                  <Pressable
+                                    key={doc.id}
+                                    onPress={() => toggleInspectionReportSelection(doc)}
+                                    className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
+                                    <Text
+                                      className="max-w-24 text-xs text-foreground"
+                                      numberOfLines={1}>
+                                      {doc.name}
+                                    </Text>
+                                    <Icon as={X} size={12} className="text-muted-foreground" />
+                                  </Pressable>
+                                ))}
+                              </>
+                            )}
                             <Pressable
                               onPress={() => {
                                 setHasManuallyInteracted(true);
                                 setSelectedDocuments([]);
                                 setSelectedCheckpoints([]);
+                                setSelectedInspectionReports([]);
                               }}
                               className="ml-1 rounded-full bg-background px-2 py-0.5">
                               <Text className="text-xs text-muted-foreground">Clear All</Text>
@@ -1043,6 +1141,15 @@ function PropertyDetailsScreenContent({
         activeTab={activeTab}
         onClose={() => setCheckpointsDrawerVisible(false)}
         onToggleCheckpoint={toggleCheckpointSelection}
+      />
+    </PushDrawer>
+      }>
+      {/* Inspection Reports Drawer Content */}
+      <InspectionReportsDrawerContent
+        inspectionReports={inspectionReports}
+        selectedInspectionReports={selectedInspectionReports}
+        onClose={() => setInspectionReportsDrawerVisible(false)}
+        onToggleInspectionReport={toggleInspectionReportSelection}
       />
     </PushDrawer>
   );

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Stethoscope,
   Clock,
+  FileSearch,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -171,22 +172,30 @@ export function ChatSettingsPopover({
             {/* Primary Agent Selection */}
             <div>
               <label className="text-sm font-semibold mb-3 block">Primary Agent</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   variant={primaryAgent === 'analysis' ? 'default' : 'outline'}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 min-w-0"
                   onClick={() => onPrimaryAgentChange('analysis')}>
-                  <Stethoscope className="h-4 w-4" />
+                  <Stethoscope className="h-4 w-4 shrink-0" />
                   <span>Analysis</span>
                 </Button>
                 <Button
                   type="button"
                   variant={primaryAgent === 'checkpoint' ? 'default' : 'outline'}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 min-w-0"
                   onClick={() => onPrimaryAgentChange('checkpoint')}>
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 shrink-0" />
                   <span>Checkpoint</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={primaryAgent === 'inspection' ? 'default' : 'outline'}
+                  className="flex-1 gap-2 min-w-0"
+                  onClick={() => onPrimaryAgentChange('inspection')}>
+                  <FileSearch className="h-4 w-4 shrink-0" />
+                  <span>Inspection</span>
                 </Button>
               </div>
             </div>
@@ -227,6 +236,16 @@ export function ChatSettingsPopover({
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Checkpoint Agent analyzes your property's checkpoint history to answer questions
                   about changes, trends, and condition over time.
+                </p>
+              </div>
+            )}
+
+            {/* Inspection Report Mode Info */}
+            {primaryAgent === 'inspection' && (
+              <div className="rounded-lg bg-secondary/50 p-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Inspection Report Agent analyzes your selected inspection reports to extract
+                  findings, recommendations, and issue summaries. Select reports to get started.
                 </p>
               </div>
             )}

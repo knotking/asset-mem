@@ -173,6 +173,8 @@ This directory contains **122KB** of comprehensive documentation covering all as
 ### In Repository
 - `/gcp/agents/homecare/property_agent/README.md` - Property Agent overview
 - `/gcp/agents/homecare/property_agent/sub_agents/analysis_agent/README.md` - Analysis Agent source
+- `/docs/analysis/INSPECTION_REPORT_AGENT.md` - Inspection Report Analysis Agent (DocuLink sub-agent)
+- `/docs/inspection/` - Inspection Report feature (user flows, API, webapp & mapp)
 - `/docs/ARCHITECTURE_DIAGRAM.md` - Overall system architecture
 - `/docs/TECH_STACK.md` - Technology stack details
 - `/docs/checkpoint/` - Checkpoint feature documentation
