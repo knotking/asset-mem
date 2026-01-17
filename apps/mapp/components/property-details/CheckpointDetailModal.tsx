@@ -1,9 +1,8 @@
 import * as React from 'react';
-import { Modal, View, ScrollView, Alert, Dimensions, FlatList, ViewToken, ViewStyle, TextInput } from 'react-native';
+import { Modal, View, ScrollView, Alert, Dimensions, FlatList, ViewToken, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Icon } from '@/components/ui/icon';
 import {
   X,
@@ -17,8 +16,6 @@ import {
   Info,
   Tag,
   Award,
-  Pencil,
-  Check,
 } from 'lucide-react-native';
 import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
 import { format } from 'date-fns';
@@ -97,26 +94,15 @@ export function CheckpointDetailModal({
   onClose,
 }: CheckpointDetailModalProps) {
   const insets = useSafeAreaInsets();
-  const { deleteCheckpoint, updateCheckpoint } = useCheckpoint();
+  const { deleteCheckpoint } = useCheckpoint();
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = React.useState(0);
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [editedName, setEditedName] = React.useState('');
-  const [isSaving, setIsSaving] = React.useState(false);
 
   // Reset active index when checkpoint changes
   React.useEffect(() => {
     if (visible) {
       setActiveMediaIndex(0);
-    }
-  }, [visible, checkpoint?.id]);
-
-  // Reset edit mode when modal closes or checkpoint changes
-  React.useEffect(() => {
-    if (!visible) {
-      setIsEditing(false);
-      setEditedName('');
     }
   }, [visible, checkpoint?.id]);
 
@@ -136,43 +122,6 @@ export function CheckpointDetailModal({
   
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
   const mediaList = checkpoint.media || [];
-  const isAnalyzed = checkpoint.analysisStatus === 'completed' && !!checkpoint.aiAnalysis;
-
-  const handleStartEdit = () => {
-    setEditedName(checkpoint.name);
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedName('');
-  };
-
-  const handleSaveEdit = async () => {
-    const trimmedName = editedName.trim();
-    
-    if (!trimmedName) {
-      Alert.alert('Invalid Name', 'Checkpoint name cannot be empty.');
-      return;
-    }
-
-    if (trimmedName === checkpoint.name) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      await updateCheckpoint(checkpoint.id, { name: trimmedName });
-      Alert.alert('Success', 'Checkpoint renamed successfully.');
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to rename checkpoint:', error);
-      Alert.alert('Error', 'Failed to rename checkpoint. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleConfirmDelete = async () => {
     try {
@@ -193,65 +142,19 @@ export function CheckpointDetailModal({
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-          {isEditing ? (
-            <View className="flex-1 flex-row items-center gap-2">
-              <Input
-                value={editedName}
-                onChangeText={setEditedName}
-                placeholder="Enter checkpoint name"
-                editable={!isSaving}
-                autoFocus
-                className="flex-1"
-                onSubmitEditing={handleSaveEdit}
-                returnKeyType="done"
-              />
-              <Button
-                onPress={handleSaveEdit}
-                variant="ghost"
-                size="icon"
-                disabled={isSaving || !editedName.trim()}
-              >
-                {isSaving ? (
-                  <Icon as={Loader2} size={20} className="animate-spin text-foreground" />
-                ) : (
-                  <Icon as={Check} size={20} className="text-foreground" />
-                )}
-              </Button>
-              <Button
-                onPress={handleCancelEdit}
-                variant="ghost"
-                size="icon"
-                disabled={isSaving}
-              >
-                <Icon as={X} size={20} className="text-foreground" />
-              </Button>
+          <View className="flex-1 flex-row items-center gap-2">
+            <View className="flex-1">
+              <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+                {checkpoint.name || 'Untitled Checkpoint'}
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                {format(date, 'MMMM d, yyyy • h:mm a')}
+              </Text>
             </View>
-          ) : (
-            <>
-              <View className="flex-1 flex-row items-center gap-2">
-                <View className="flex-1">
-                  <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
-                    {checkpoint.name || 'Untitled Checkpoint'}
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
-                    {format(date, 'MMMM d, yyyy • h:mm a')}
-                  </Text>
-                </View>
-                {isAnalyzed && (
-                  <Button
-                    onPress={handleStartEdit}
-                    variant="ghost"
-                    size="icon"
-                  >
-                    <Icon as={Pencil} size={18} className="text-foreground" />
-                  </Button>
-                )}
-              </View>
-              <Button onPress={onClose} variant="ghost" size="icon">
-                <Icon as={X} size={24} className="text-foreground" />
-              </Button>
-            </>
-          )}
+          </View>
+          <Button onPress={onClose} variant="ghost" size="icon">
+            <Icon as={X} size={24} className="text-foreground" />
+          </Button>
         </View>
 
         <ScrollView className="flex-1">
