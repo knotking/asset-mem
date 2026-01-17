@@ -16,6 +16,7 @@ from comparison_service import (
     get_user_preferences
 )
 from embedding_service import generate_checkpoint_embedding
+from name_generator import generate_checkpoint_name
 
 # Initialize observability
 from common.observability import initialize_observability, checkpoint
@@ -172,13 +173,16 @@ def pubsub_checkpoint_analysis(request, context):
                 else:
                     logger.info(f"Location already set to '{final_location}', keeping user-provided value")
 
-            # Auto-generate a checkpoint name if missing/blank.
+            # Auto-generate an intelligent checkpoint name if missing/blank.
             # Keep any user-provided value.
             if not (isinstance(existing_name, str) and existing_name.strip()):
-                base = (final_location or detected_asset or "Checkpoint").strip()
-                auto_name = f"{base} • {datetime.utcnow().strftime('%b %d')}"
+                auto_name = generate_checkpoint_name(
+                    analysis_result=analysis_result,
+                    location=final_location,
+                    detected_asset=detected_asset
+                )
                 update_data["name"] = auto_name
-                logger.info(f"Auto-setting checkpoint name to: {auto_name}")
+                logger.info(f"AI-generated checkpoint name: {auto_name}")
             
             # Update checkpoint with analysis results first
             checkpoint_ref.update(update_data)

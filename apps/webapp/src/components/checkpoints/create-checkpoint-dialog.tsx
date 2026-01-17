@@ -125,15 +125,8 @@ export function CreateCheckpointDialog({
   const [newCheckpointName, setNewCheckpointName] = useState('');
 
   const handleCreate = async () => {
-    if (!name.trim()) {
-      toast({
-        title: 'Name Required',
-        description: 'Please provide a name for the checkpoint.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+    // Name is now optional - will be AI-generated if empty
+    
     if (files.length === 0) {
       toast({
         title: 'Media Required',
@@ -166,7 +159,7 @@ export function CreateCheckpointDialog({
 
       const result = await createCheckpoint(
         {
-          name: name.trim(),
+          name: name.trim() || 'Analyzing...', // Temporary name, will be updated by AI
           assetType,
           location: location.trim() || undefined,
           description: description.trim() || undefined,
@@ -176,7 +169,7 @@ export function CreateCheckpointDialog({
 
       // Close create dialog and show processing feedback dialog
       setNewCheckpointId(result.id);
-      setNewCheckpointName(name.trim());
+      setNewCheckpointName(name.trim() || 'New Checkpoint');
       onOpenChange(false);
       setIsProcessingDialogOpen(true);
 
@@ -259,15 +252,18 @@ export function CreateCheckpointDialog({
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
-              Name <span className="text-destructive">*</span>
+              Name <span className="text-muted-foreground text-sm">(optional)</span>
             </Label>
             <Input
               id="name"
-              placeholder="e.g., Monthly Kitchen Inspection"
+              placeholder="e.g., Monthly Kitchen Inspection (leave empty for AI-generated name)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isCreating}
             />
+            <p className="text-xs text-muted-foreground">
+              If left empty, AI will generate a descriptive name based on the analysis
+            </p>
           </div>
 
           {/* Asset Type */}

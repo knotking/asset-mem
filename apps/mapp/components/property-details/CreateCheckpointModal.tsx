@@ -237,6 +237,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
     try {
       setLoading(true);
       const effectiveLocation = useCustomLocation ? customLocation : location;
+      // Use user-provided name or temporary placeholder (AI will generate a better name)
       const finalName =
         name.trim() || `${(effectiveLocation || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
@@ -319,10 +320,10 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
           {/* Form Section */}
           <View className="gap-4">
             <View>
-              <Text className="mb-2 text-sm font-medium text-foreground">Checkpoint Name</Text>
+              <Text className="mb-2 text-sm font-medium text-foreground">Checkpoint Name (Optional)</Text>
               <Input placeholder="e.g., Kitchen Sink Leak" value={name} onChangeText={setName} />
               <Text className="mt-1 text-xs text-muted-foreground">
-                Leave blank to auto-generate.
+                Leave blank for AI to generate a descriptive name based on analysis.
               </Text>
             </View>
 
