@@ -130,7 +130,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
     if (!name.trim()) {
       const effectiveLocation = useCustomLocation ? customLocation : location;
       const base = effectiveLocation?.trim() || 'Checkpoint';
-      setName(`${base} • ${format(new Date(), 'MMM d')}`);
+      setName(`${base} • ${format(new Date(), 'MMM d • h:mm a')}`);
     }
   }, [name, location, customLocation, useCustomLocation]);
 

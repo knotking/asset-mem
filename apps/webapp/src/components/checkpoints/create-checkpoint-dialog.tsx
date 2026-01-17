@@ -128,7 +128,7 @@ export function CreateCheckpointDialog({
   // Auto-generate a friendly default name if the user hasn't typed one
   const generateDefaultName = useCallback(() => {
     const base = location.trim() || 'Checkpoint';
-    return `${base} • ${format(new Date(), 'MMM d')}`;
+    return `${base} • ${format(new Date(), 'MMM d • h:mm a')}`;
   }, [location]);
 
   const handleCreate = async () => {
