@@ -47,7 +47,7 @@ interface CheckpointDetailModalProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-function MediaItem({ media, isVisible }: { media: CheckpointMedia; isVisible: boolean }) {
+const MediaItem = React.memo(({ media, isVisible }: { media: CheckpointMedia; isVisible: boolean }) => {
   const isVideo = media.contentType?.startsWith('video/');
   
   // Always initialize player (with fallback for non-videos) to maintain consistent hook order
@@ -89,7 +89,7 @@ function MediaItem({ media, isVisible }: { media: CheckpointMedia; isVisible: bo
       />
     </View>
   );
-}
+});
 
 export function CheckpointDetailModal({
   visible,
