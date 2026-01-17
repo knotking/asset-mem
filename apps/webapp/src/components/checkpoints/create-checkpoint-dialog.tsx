@@ -159,7 +159,7 @@ export function CreateCheckpointDialog({
 
       const result = await createCheckpoint(
         {
-          name: name.trim() || 'Analyzing...', // Temporary name, will be updated by AI
+          name: name.trim() || '', // Empty string triggers AI name generation
           assetType,
           location: location.trim() || undefined,
           description: description.trim() || undefined,

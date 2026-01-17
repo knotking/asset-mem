@@ -237,9 +237,8 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
     try {
       setLoading(true);
       const effectiveLocation = useCustomLocation ? customLocation : location;
-      // Use user-provided name or temporary placeholder (AI will generate a better name)
-      const finalName =
-        name.trim() || `${(effectiveLocation || 'Checkpoint').trim()} • ${format(new Date(), 'MMM d')}`;
+      // Use user-provided name or empty string (AI will generate a descriptive name)
+      const finalName = name.trim() || ''; // Empty string triggers AI name generation
       // Location can be empty; the analysis worker will auto-set it from detected room when possible.
       const finalLocation = effectiveLocation.trim();
       await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
