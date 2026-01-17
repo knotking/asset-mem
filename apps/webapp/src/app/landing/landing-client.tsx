@@ -7,53 +7,41 @@ import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
 import "./landing-animations.css";
 
-// Template colors from extracted design - used only in landing page
+// Dark theme - landing page only
 const LANDING_COLORS = {
-  primary: "rgb(8, 142, 175)", // hsl(192, 91%, 36%)
-  primaryHover: "rgba(8, 142, 175, 0.9)",
-  primaryLight: "rgba(8, 142, 175, 0.1)",
-  primaryBorder: "rgba(8, 142, 175, 0.2)",
-  primary20: "rgba(8, 142, 175, 0.2)",
-  primary10: "rgba(8, 142, 175, 0.1)",
-  background: "rgb(250, 250, 250)", // hsl(0, 0%, 98%)
-  backgroundOverlay: "rgba(250, 250, 250, 0.8)",
-  background95: "rgba(250, 250, 250, 0.95)",
-  foreground: "rgb(10, 10, 10)", // hsl(0, 0%, 4%)
-  foreground90: "rgba(10, 10, 10, 0.9)",
-  foreground70: "rgba(10, 10, 10, 0.7)",
-  foreground60: "rgba(10, 10, 10, 0.6)",
-  card: "hsl(192, 71%, 72%)",
-  cardOverlay: "hsla(192, 71%, 72%, 0.3)",
-  muted: "hsl(192, 71%, 72%)",
-  muted30: "hsla(192, 71%, 72%, 0.3)",
-  mutedForeground: "rgba(10, 10, 10, 0.6)",
-  border: "hsl(191, 62%, 86%)",
-  borderOverlay: "rgba(191, 219, 254, 0.4)",
-  border50: "rgba(191, 219, 254, 0.5)",
-  secondary: "rgb(8, 142, 175)", // Using primary for secondary
-  secondaryLight: "rgba(8, 142, 175, 0.1)",
-  secondaryBorder: "rgba(8, 142, 175, 0.2)",
-  accent: "rgb(175, 42, 8)", // hsl(12, 91%, 36%)
-  accentLight: "rgba(175, 42, 8, 0.05)",
-  accent10: "rgba(175, 42, 8, 0.1)",
+  primary: "#22d3ee",
+  primaryHover: "rgba(34, 211, 238, 0.9)",
+  primaryLight: "rgba(34, 211, 238, 0.1)",
+  primaryBorder: "rgba(34, 211, 238, 0.2)",
+  primary20: "rgba(34, 211, 238, 0.2)",
+  primary10: "rgba(34, 211, 238, 0.1)",
+  background: "#0a0a0f",
+  backgroundOverlay: "rgba(10, 10, 15, 0.85)",
+  background95: "rgba(10, 10, 15, 0.95)",
+  foreground: "#fafafa",
+  foreground90: "rgba(250, 250, 250, 0.9)",
+  foreground70: "rgba(250, 250, 250, 0.7)",
+  foreground60: "rgba(250, 250, 250, 0.6)",
+  card: "#14141c",
+  cardOverlay: "rgba(20, 20, 28, 0.5)",
+  muted: "#14141c",
+  muted30: "rgba(255, 255, 255, 0.08)",
+  mutedForeground: "rgba(255, 255, 255, 0.65)",
+  border: "rgba(255, 255, 255, 0.08)",
+  borderOverlay: "rgba(255, 255, 255, 0.1)",
+  border50: "rgba(255, 255, 255, 0.12)",
+  secondary: "#22d3ee",
+  secondaryLight: "rgba(34, 211, 238, 0.1)",
+  secondaryBorder: "rgba(34, 211, 238, 0.2)",
+  accent: "#f97316",
+  accentLight: "rgba(249, 115, 22, 0.1)",
+  accent10: "rgba(249, 115, 22, 0.1)",
   white: "rgb(255, 255, 255)",
 };
 
 export default function LandingPageClient() {
   const { user, loading } = useAuth();
   const [activeSection, setActiveSection] = useState<string>("");
-
-  // Debug logging for auth state
-  useEffect(() => {
-    console.log("[LandingPage] Auth State Debug:", {
-      user: user
-        ? `Logged in: ${user.email || "No email"}`
-        : "Not logged in (null/undefined)",
-      loading,
-      shouldShowSignIn: !loading && !user,
-      shouldShowGoToApp: !loading && !!user,
-    });
-  }, [user, loading]);
 
   useEffect(() => {
     // Only run on client side to avoid hydration issues
@@ -65,25 +53,28 @@ export default function LandingPageClient() {
     const checkScrollPosition = () => {
       const scrollY = window.scrollY;
 
-      // If at the top, set active section to empty (Home)
       if (scrollY < 100) {
         setActiveSection("");
         return;
       }
 
-      // Check which section is in view
-      const featuresEl = document.querySelector("#features");
+      const sections = [
+        { id: "top-things", el: document.querySelector("#top-things") },
+        { id: "timeline-feature", el: document.querySelector("#timeline-feature") },
+        { id: "how-it-works", el: document.querySelector("#how-it-works") },
+      ];
 
-      if (featuresEl) {
-        const rect = featuresEl.getBoundingClientRect();
-        // Check if features section is in the upper portion of viewport
-        if (rect.top <= 150 && rect.bottom >= 150) {
-          setActiveSection("features");
-        } else if (rect.top > 150) {
-          // If features is below viewport, we're still at home
-          setActiveSection("");
+      for (const { id, el } of sections) {
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            setActiveSection(id);
+            return;
+          }
+          if (rect.top > 150) break; // Section below viewport, stop
         }
       }
+      setActiveSection("");
     };
 
     // Initial check
@@ -203,27 +194,24 @@ export default function LandingPageClient() {
         onButtonClick={handleButtonClick}
       />
 
-      {/* Hero Section - matching source exactly */}
+      {/* Hero Section - dark gradient and radial glows */}
       <section className="relative overflow-hidden w-full">
-        {/* Animated Background Gradient */}
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: `linear-gradient(to right bottom, ${LANDING_COLORS.primaryLight}, ${LANDING_COLORS.background}, ${LANDING_COLORS.accentLight})`,
+            background: "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background:
-              "radial-gradient(circle at 30% 20%, rgba(8,145,178,0.1), transparent 50%)",
+            background: "radial-gradient(circle at 30% 20%, rgba(34,211,238,0.12), transparent 50%)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background:
-              "radial-gradient(circle at 70% 80%, rgba(178,41,8,0.05), transparent 50%)",
+            background: "radial-gradient(circle at 70% 80%, rgba(249,115,22,0.08), transparent 50%)",
           }}
         />
 
@@ -274,7 +262,7 @@ export default function LandingPageClient() {
                   <span
                     className="font-bold"
                     style={{
-                      background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(8, 142, 175, 0.6))`,
+                      background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
@@ -320,7 +308,7 @@ export default function LandingPageClient() {
                     className="inline-flex items-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
                     style={{
                       backgroundColor: LANDING_COLORS.primary,
-                      color: LANDING_COLORS.white,
+                      color: "#0a0a0f",
                     }}
                   >
                     Dashboard
@@ -355,7 +343,7 @@ export default function LandingPageClient() {
                     className="inline-flex items-center text-base px-10 py-7 rounded-lg font-medium shadow-xl hover:shadow-2xl transition-all group"
                     style={{
                       backgroundColor: LANDING_COLORS.primary,
-                      color: LANDING_COLORS.white,
+                      color: "#0a0a0f",
                     }}
                   >
                     Get Started
@@ -374,13 +362,14 @@ export default function LandingPageClient() {
                     </svg>
                   </Link>
                 )}
-                <button
+                <a
+                  href="#how-it-works"
                   className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all"
                   style={{
                     backgroundColor: "transparent",
                     borderColor: LANDING_COLORS.border,
                     color: LANDING_COLORS.foreground,
-                    padding: "1.75rem 2.5rem", // py-7 px-10
+                    padding: "1.75rem 2.5rem",
                     height: "auto",
                   }}
                   onMouseEnter={(e) =>
@@ -392,7 +381,7 @@ export default function LandingPageClient() {
                   }
                 >
                   Watch Demo
-                </button>
+                </a>
               </div>
 
               {/* Stats Row */}
@@ -490,25 +479,21 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* Features Section - matching source exactly */}
+      {/* Top Things Section */}
       <section
-        id="features"
+        id="top-things"
         className="py-32 relative overflow-hidden w-full transition-all duration-1000"
-        style={{ backgroundColor: LANDING_COLORS.muted30 }}
+        style={{ backgroundColor: "#0f0f14" }}
       >
         <div
           className="absolute inset-0 w-full"
           style={{
             backgroundImage:
-              "linear-gradient(to right, rgba(128, 128, 128, 0.07) 1px, transparent 1px), linear-gradient(rgba(128, 128, 128, 0.07) 1px, transparent 1px)",
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
-
-        <div
-          className="container relative mx-auto px-4"
-          style={{ maxWidth: "1400px" }}
-        >
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
           <div className="text-center mb-20 space-y-6">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
@@ -517,18 +502,12 @@ export default function LandingPageClient() {
                 borderColor: LANDING_COLORS.primaryBorder,
               }}
             >
-              <span
-                className="text-sm font-semibold tracking-wide"
-                style={{ color: LANDING_COLORS.primary }}
-              >
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
                 PLATFORM FEATURES
               </span>
             </div>
-            <h2
-              className="text-5xl lg:text-6xl font-light tracking-tight"
-              style={{ color: LANDING_COLORS.foreground }}
-            >
-              Everything You Need,
+            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+              The Top Things
               <br />
               <span
                 className="font-bold"
@@ -539,294 +518,212 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                Nothing You Don't
+                We Do for You
               </span>
             </h2>
-            <p
-              className="text-xl max-w-2xl mx-auto font-light"
-              style={{ color: LANDING_COLORS.mutedForeground }}
-            >
-              Powerful AI-driven tools designed to simplify property maintenance
-              and maximize efficiency
+            <p className="text-xl max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {/* Feature 1 */}
-            <div
-              className="border-2 rounded-lg transition-all duration-500 hover:-translate-y-2 group"
-              style={{
-                backgroundColor: `${LANDING_COLORS.background}80`,
-                backdropFilter: "blur(4px)",
-                borderColor: LANDING_COLORS.border,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${LANDING_COLORS.primary}80`;
-                e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary}20`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div className="pt-12 pb-12 px-8 space-y-6">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {[
+              {
+                title: "Instant Diagnostics",
+                desc: "Get AI-powered analysis of property issues in seconds.",
+                icon: "M13 10V3L4 14h7v7l9-11h-7z",
+              },
+              {
+                title: "Property Checkpoints",
+                desc: "Visual timeline, condition scores, before/after comparison, and health metrics.",
+                icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+              },
+              {
+                title: "Multimodal Analysis",
+                desc: "Photos, videos, and documents analyzed by Gemini-powered AI.",
+                icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
+              },
+              {
+                title: "Document Intelligence",
+                desc: "Your warranties, manuals, and receipts become a searchable RAG knowledge base.",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+              },
+              {
+                title: "DIY + Service Discovery",
+                desc: "Step-by-step guidance, local providers, and product recommendations.",
+                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
+              },
+              {
+                title: "Cost Transparency",
+                desc: "Compare DIY vs. professional costs and coverage.",
+                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.08}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
                 <div
-                  className="h-20 w-20 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
                   style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(8, 142, 175, 0.6))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.1) rotate(3deg)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1) rotate(0deg)";
+                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                   }}
                 >
-                  <svg
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: LANDING_COLORS.white }}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                    />
+                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                   </svg>
                 </div>
-                <div className="space-y-4">
-                  <h3
-                    className="text-2xl font-bold transition-colors"
-                    style={{ color: LANDING_COLORS.foreground }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.primary)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
-                    }
-                  >
-                    AI-Powered Diagnostics
-                  </h3>
-                  <p
-                    className="leading-relaxed font-light"
-                    style={{ color: LANDING_COLORS.mutedForeground }}
-                  >
-                    Advanced multimodal AI analyzes images, videos, and sensor
-                    data to identify issues before they become costly problems.
-                    Get accurate assessments in seconds.
-                  </p>
-                </div>
-                <div
-                  className="flex items-center gap-2 font-semibold transition-all cursor-pointer"
-                  style={{ color: LANDING_COLORS.primary }}
-                  onMouseEnter={(e) => (e.currentTarget.style.gap = "1rem")}
-                  onMouseLeave={(e) => (e.currentTarget.style.gap = "0.5rem")}
-                >
-                  Learn more{" "}
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
+                <h3 className="text-xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  {item.desc}
+                </p>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Feature 2 */}
-            <div
-              className="border-2 rounded-lg transition-all duration-500 hover:-translate-y-2 group"
-              style={{
-                backgroundColor: `${LANDING_COLORS.background}80`,
-                backdropFilter: "blur(4px)",
-                borderColor: LANDING_COLORS.border,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${LANDING_COLORS.primary}80`;
-                e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary}20`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div className="pt-12 pb-12 px-8 space-y-6">
-                <div
-                  className="h-20 w-20 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
-                  style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(8, 142, 175, 0.6))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.1) rotate(3deg)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1) rotate(0deg)";
-                  }}
-                >
-                  <svg
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: LANDING_COLORS.white }}
+      {/* Timeline Feature Details - Property Checkpoints */}
+      <section
+        id="timeline-feature"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: "#0a0a0f" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div className="space-y-10">
+              <div>
+                <h2 className="text-4xl lg:text-5xl font-light tracking-tight mb-4" style={{ color: LANDING_COLORS.foreground }}>
+                  Property Checkpoints:
+                  <br />
+                  <span
+                    className="font-bold"
+                    style={{
+                      background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.7))`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="space-y-4">
-                  <h3
-                    className="text-2xl font-bold transition-colors"
-                    style={{ color: LANDING_COLORS.foreground }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.primary)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
-                    }
-                  >
-                    Cross-Platform Access
-                  </h3>
-                  <p
-                    className="leading-relaxed font-light"
-                    style={{ color: LANDING_COLORS.mutedForeground }}
-                  >
-                    Seamlessly sync across web and mobile devices. Access your
-                    property data, maintenance history, and AI insights
-                    anywhere, anytime.
-                  </p>
-                </div>
-                <div
-                  className="flex items-center gap-2 font-semibold transition-all cursor-pointer"
-                  style={{ color: LANDING_COLORS.primary }}
-                  onMouseEnter={(e) => (e.currentTarget.style.gap = "1rem")}
-                  onMouseLeave={(e) => (e.currentTarget.style.gap = "0.5rem")}
-                >
-                  Learn more{" "}
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
+                    Your Visual Timeline
+                  </span>
+                </h2>
+                <p className="text-lg font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  Photos, scores, before/after—and health metrics that help you stay ahead.
+                </p>
               </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div
-              className="border-2 rounded-lg transition-all duration-500 hover:-translate-y-2 group"
-              style={{
-                backgroundColor: `${LANDING_COLORS.background}80`,
-                backdropFilter: "blur(4px)",
-                borderColor: LANDING_COLORS.border,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${LANDING_COLORS.primary}80`;
-                e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary}20`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div className="pt-12 pb-12 px-8 space-y-6">
+              {[
+                {
+                  title: "Visual Timeline",
+                  desc: "Capture photos/videos of property areas over time; track condition with before/after comparisons; AI-powered analysis; automatic room/area detection.",
+                  icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+                },
+                {
+                  title: "AI-Powered Analysis",
+                  desc: "Condition scoring (0–100); damage detection and severity; detected items/features; issue categories (critical, major, moderate, minor); cost estimates.",
+                  icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 4a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v10a2 2 0 002 2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14",
+                },
+                {
+                  title: "Automatic Comparison",
+                  desc: "Intelligent comparison with previous checkpoints; visual diff and similarity scoring; change detection; configurable comparison preferences.",
+                  icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
+                },
+                {
+                  title: "Property Health Metrics",
+                  desc: "Overall condition score and trend; issues summary by severity; deterioration rate; predictive maintenance insights.",
+                  icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
+                },
+                {
+                  title: "Real-Time & Scalable",
+                  desc: "Non-blocking creation; real-time UI updates; built to scale.",
+                  icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
+                },
+              ].map((block, i) => (
                 <div
-                  className="h-20 w-20 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+                  key={block.title}
+                  className="flex gap-4 p-4 rounded-lg border transition-all animate-stagger-in"
                   style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(8, 142, 175, 0.6))`,
+                    borderColor: LANDING_COLORS.border,
+                    backgroundColor: "rgba(20,20,28,0.4)",
+                    animationDelay: `${i * 0.1}s`,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.1) rotate(3deg)";
+                    e.currentTarget.style.borderColor = "rgba(34,211,238,0.3)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1) rotate(0deg)";
+                    e.currentTarget.style.borderColor = LANDING_COLORS.border;
                   }}
                 >
-                  <svg
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: LANDING_COLORS.white }}
+                  <div
+                    className="h-12 w-12 rounded-lg flex-shrink-0 flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary20}, ${LANDING_COLORS.primary10})`,
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={block.icon} />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-bold mb-1" style={{ color: LANDING_COLORS.foreground }}>
+                      {block.title}
+                    </h3>
+                    <p className="text-sm font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                      {block.desc}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-4">
-                  <h3
-                    className="text-2xl font-bold transition-colors"
-                    style={{ color: LANDING_COLORS.foreground }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.primary)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
-                    }
+              ))}
+            </div>
+            <div className="flex items-center justify-center lg:justify-end">
+              <div
+                className="w-full max-w-sm aspect-[4/3] rounded-2xl border flex items-center justify-center"
+                style={{
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                }}
+              >
+                <div className="text-center px-6">
+                  <div
+                    className="inline-flex h-16 w-16 rounded-2xl items-center justify-center mx-auto mb-4"
+                    style={{
+                      background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                    }}
                   >
-                    Expert Recommendations
-                  </h3>
-                  <p
-                    className="leading-relaxed font-light"
-                    style={{ color: LANDING_COLORS.mutedForeground }}
-                  >
-                    Receive personalized maintenance guidance and connect with
-                    verified service providers. Get the right help at the right
-                    time.
+                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium" style={{ color: LANDING_COLORS.foreground }}>
+                    Timeline
                   </p>
-                </div>
-                <div
-                  className="flex items-center gap-2 font-semibold transition-all cursor-pointer"
-                  style={{ color: LANDING_COLORS.primary }}
-                  onMouseEnter={(e) => (e.currentTarget.style.gap = "1rem")}
-                  onMouseLeave={(e) => (e.currentTarget.style.gap = "0.5rem")}
-                >
-                  Learn more{" "}
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  <p className="text-xs font-light mt-1" style={{ color: LANDING_COLORS.mutedForeground }}>
+                    Before / After
+                  </p>
                 </div>
               </div>
             </div>
@@ -834,19 +731,88 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* CTA Section - matching source exactly */}
+      {/* How It Works */}
+      <section
+        id="how-it-works"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: "#0f0f14" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="text-center mb-16 space-y-4">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                SIMPLE FLOW
+              </span>
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+              How It Works
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+              Four steps from your question to actionable recommendations
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {[
+              { step: 1, title: "Upload or Ask", desc: "Share photos, videos, documents, or just type your question in chat." },
+              { step: 2, title: "AI Analyzes", desc: "Multi-agent system: Triage, Coverage, DIY, Service, and Cost agents work together." },
+              { step: 3, title: "Get Recommendations", desc: "Diagnosis, DIY steps, local providers, warranty info, and cost comparison." },
+              { step: 4, title: "Take Action", desc: "Track changes in Checkpoints, share with contractors, or handle it yourself." },
+            ].map((item, i) => (
+              <div
+                key={item.step}
+                className="relative flex flex-col items-center text-center animate-stagger-in"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <div
+                  className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4 font-bold text-xl"
+                  style={{
+                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                    color: LANDING_COLORS.white,
+                  }}
+                >
+                  {item.step}
+                </div>
+                <h3 className="font-bold text-lg mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                  {item.title}
+                </h3>
+                <p className="text-sm font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  {item.desc}
+                </p>
+                {item.step < 4 && (
+                  <div className="hidden lg:block absolute top-8 -right-4 w-8 h-0.5" style={{ backgroundColor: LANDING_COLORS.primary20 }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - dark base and radial highlight */}
       <section className="py-32 relative overflow-hidden w-full">
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: `linear-gradient(to right bottom, ${LANDING_COLORS.primaryLight}, ${LANDING_COLORS.background}, ${LANDING_COLORS.accentLight})`,
+            background: "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background:
-              "radial-gradient(circle at 50% 50%, rgba(8,145,178,0.15), transparent 70%)",
+            background: "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.12), transparent 70%)",
           }}
         />
         <div
@@ -863,7 +829,7 @@ export default function LandingPageClient() {
               <span
                 className="font-bold"
                 style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.primary}, rgba(8, 142, 175, 0.6))`,
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -897,7 +863,7 @@ export default function LandingPageClient() {
                   className="inline-flex items-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
                   style={{
                     backgroundColor: LANDING_COLORS.primary,
-                    color: LANDING_COLORS.white,
+                    color: "#0a0a0f",
                   }}
                 >
                   Dashboard
@@ -932,7 +898,7 @@ export default function LandingPageClient() {
                   className="inline-flex items-center text-base px-12 py-8 rounded-lg font-medium shadow-2xl hover:shadow-primary/30 transition-all text-lg group"
                   style={{
                     backgroundColor: LANDING_COLORS.primary,
-                    color: LANDING_COLORS.white,
+                    color: "#0a0a0f",
                   }}
                 >
                   Get Started
@@ -951,14 +917,15 @@ export default function LandingPageClient() {
                   </svg>
                 </Link>
               )}
-              <button
+              <a
+                href="#how-it-works"
                 className="inline-flex items-center justify-center rounded-lg font-medium border-2 transition-all"
                 style={{
                   backgroundColor: "transparent",
                   borderColor: LANDING_COLORS.border,
                   color: LANDING_COLORS.foreground,
-                  padding: "2rem 3rem", // py-8 px-12
-                  fontSize: "1.125rem", // text-lg
+                  padding: "2rem 3rem",
+                  fontSize: "1.125rem",
                   height: "auto",
                 }}
                 onMouseEnter={(e) =>
@@ -970,18 +937,18 @@ export default function LandingPageClient() {
                 }
               >
                 Schedule Demo
-              </button>
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer - matching source exactly */}
+      {/* Footer - dark */}
       <footer
         className="mt-auto border-t py-12 w-full"
         style={{
           borderColor: LANDING_COLORS.border,
-          backgroundColor: LANDING_COLORS.cardOverlay,
+          backgroundColor: LANDING_COLORS.background,
         }}
       >
         <div className="container mx-auto px-4" style={{ maxWidth: "1400px" }}>
@@ -1016,7 +983,7 @@ export default function LandingPageClient() {
               >
                 <li>
                   <Link
-                    href="#features"
+                    href="#top-things"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)
@@ -1078,7 +1045,7 @@ export default function LandingPageClient() {
               >
                 <li>
                   <Link
-                    href="#about"
+                    href="#"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)

@@ -3,19 +3,19 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-// Template colors - matching source code
+// Dark theme - landing page only
 const LANDING_COLORS = {
-  primary: 'rgb(8, 142, 175)',
-  primary20: 'rgba(8, 142, 175, 0.2)',
-  primary10: 'rgba(8, 142, 175, 0.1)',
-  accent10: 'rgba(175, 42, 8, 0.1)',
-  background: 'rgb(250, 250, 250)',
-  background80: 'rgba(250, 250, 250, 0.8)',
-  background95: 'rgba(250, 250, 250, 0.95)',
-  border: 'hsl(191, 62%, 86%)',
-  border50: 'rgba(191, 219, 254, 0.5)',
-  foreground: 'rgb(10, 10, 10)',
-  mutedForeground: 'rgba(10, 10, 10, 0.6)',
+  primary: '#22d3ee',
+  primary20: 'rgba(34, 211, 238, 0.2)',
+  primary10: 'rgba(34, 211, 238, 0.1)',
+  accent10: 'rgba(249, 115, 22, 0.1)',
+  background: '#0a0a0f',
+  background80: 'rgba(10, 10, 15, 0.8)',
+  background95: 'rgba(20, 20, 28, 0.95)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  border50: 'rgba(255, 255, 255, 0.12)',
+  foreground: '#fafafa',
+  mutedForeground: 'rgba(255, 255, 255, 0.65)',
   white: 'rgb(255, 255, 255)',
 };
 
@@ -38,10 +38,18 @@ export default function AIGraphic() {
         style={{ backgroundColor: LANDING_COLORS.accent10, animationDelay: '1s' }}
       />
       
-      {/* Main Image Container - matching source */}
+      {/* Main Image Container - dark border, cyan glow on hover */}
       <div 
-        className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 hover:shadow-primary/20 hover:border-primary/30"
-        style={{ borderColor: LANDING_COLORS.border50 }}
+        className="relative h-full rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500"
+        style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(34,211,238,0.3)';
+          e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(34,211,238,0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+          e.currentTarget.style.boxShadow = '';
+        }}
       >
         <Image
           src="https://media.gettyimages.com/id/2200128716/photo/ai-powers-big-data-analysis-and-automation-workflows-showcasing-neural-networks-and-data.jpg?b=1&s=2048x2048&w=0&k=20&c=jHsLIgpAOxKQ6mBlb4rEoGxZsBaFQqL7HyBg0lAk8J8="
@@ -52,16 +60,17 @@ export default function AIGraphic() {
         />
         <div 
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(250, 250, 250, 0.8), rgba(250, 250, 250, 0.2), transparent)' }}
+          style={{ background: 'linear-gradient(to top, rgba(10,10,15,0.85), rgba(10,10,15,0.3), transparent)' }}
         />
         
-        {/* Floating Card - bottom-left matching source */}
+        {/* Floating Card - dark glass, cyan border */}
         <div 
-          className="absolute bottom-8 left-8 right-8 rounded-2xl p-6 shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-1"
+          className="absolute bottom-8 left-8 right-8 rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1"
           style={{ 
-            backgroundColor: LANDING_COLORS.background95,
+            backgroundColor: 'rgba(20,20,28,0.92)',
             backdropFilter: 'blur(12px)',
-            border: `1px solid ${LANDING_COLORS.border50}`,
+            border: '1px solid rgba(34,211,238,0.25)',
+            boxShadow: '0 25px 50px -12px rgba(34,211,238,0.15)',
           }}
         >
           <div className="flex items-center gap-4">
