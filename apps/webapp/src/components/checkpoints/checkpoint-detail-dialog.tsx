@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,17 +11,21 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { AnalysisResults } from './analysis-results';
-import { Calendar, MapPin, Tag, Trash2, ArrowRightLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, MapPin, Tag, Trash2, ArrowRightLeft, Loader2, AlertCircle, Pencil, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
 
 export function CheckpointDetailDialog() {
-  const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint } = useCheckpoint();
+  const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint, updateCheckpoint } = useCheckpoint();
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!selectedCheckpoint) return null;
 
@@ -35,6 +39,54 @@ export function CheckpointDetailDialog() {
   const hasAnalysis = !!checkpoint.aiAnalysis;
   const isAnalyzing = checkpoint.analysisStatus === 'processing' || checkpoint.analysisStatus === 'pending';
   const analysisFailed = checkpoint.analysisStatus === 'failed';
+  const isAnalyzed = checkpoint.analysisStatus === 'completed' && hasAnalysis;
+
+  const handleStartEdit = () => {
+    setEditedName(checkpoint.name);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedName('');
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmedName = editedName.trim();
+    
+    if (!trimmedName) {
+      toast({
+        title: 'Invalid Name',
+        description: 'Checkpoint name cannot be empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (trimmedName === checkpoint.name) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await updateCheckpoint(checkpoint.id, { name: trimmedName });
+      toast({
+        title: 'Checkpoint Renamed',
+        description: 'The checkpoint name has been updated successfully.',
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to rename checkpoint:', error);
+      toast({
+        title: 'Rename Failed',
+        description: 'Failed to rename checkpoint. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this checkpoint? This action cannot be undone.')) {
@@ -64,7 +116,66 @@ export function CheckpointDetailDialog() {
     <Dialog open={!!selectedCheckpoint} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">{checkpoint.name}</DialogTitle>
+          {isEditing ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Enter checkpoint name"
+                  disabled={isSaving}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveEdit();
+                    } else if (e.key === 'Escape') {
+                      handleCancelEdit();
+                    }
+                  }}
+                  className="text-xl"
+                />
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSaveEdit}
+                    disabled={isSaving || !editedName.trim()}
+                    title="Save"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                    title="Cancel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-xl">{checkpoint.name}</DialogTitle>
+              {isAnalyzed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartEdit}
+                  title="Rename checkpoint"
+                  className="h-8 w-8"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
           <DialogDescription>
             Checkpoint details and AI analysis results
           </DialogDescription>
