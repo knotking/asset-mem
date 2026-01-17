@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timezone
 import os
 import json
-import re
 import firebase_admin
 from firebase_admin import firestore
 
@@ -174,18 +173,10 @@ def pubsub_checkpoint_analysis(request, context):
                 else:
                     logger.info(f"Location already set to '{final_location}', keeping user-provided value")
 
-            # Auto-generate an intelligent checkpoint name if:
-            # 1. Name is missing/blank, OR
-            # 2. Name follows the auto-generated pattern: "{text} • {date}" (e.g., "Kitchen • Jan 16")
-            # Keep user-provided custom names.
+            # Auto-generate an intelligent checkpoint name only if name is missing/blank
+            # If a checkpoint has been named previously (by user, default app naming, or AI), preserve that name
+            # This includes default names like "checkpoint + UTC datetime" that apps may set initially
             should_rename = not (isinstance(existing_name, str) and existing_name.strip())
-            if not should_rename and isinstance(existing_name, str):
-                # Check if it matches the auto-generated pattern: "{text} • {short_date}"
-                # Pattern matches: "Kitchen • Jan 16", "Checkpoint • Jan 17", etc.
-                auto_pattern = r'^.+\s•\s[A-Z][a-z]{2}\s\d{1,2}$'
-                if re.match(auto_pattern, existing_name.strip()):
-                    should_rename = True
-                    logger.info(f"Detected auto-generated name pattern, will rename: {existing_name}")
 
             if should_rename:
                 auto_name = generate_checkpoint_name(
@@ -196,7 +187,7 @@ def pubsub_checkpoint_analysis(request, context):
                 update_data["name"] = auto_name
                 logger.info(f"AI-generated checkpoint name: {auto_name}")
             else:
-                logger.info(f"Keeping user-provided name: {existing_name}")
+                logger.info(f"Keeping existing checkpoint name: {existing_name}")
             
             # Update checkpoint with analysis results first
             checkpoint_ref.update(update_data)
