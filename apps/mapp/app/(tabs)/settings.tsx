@@ -46,7 +46,8 @@ export default function SettingsScreen() {
   const handleSignOut = async () => {
     try {
       await logout();
-      router.replace('/auth/login');
+      // Redirect to landing page after logout
+      router.replace('/');
     } catch (error) {
       console.error('Error signing out:', error);
       // Optionally, show an error message to the user

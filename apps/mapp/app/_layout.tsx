@@ -91,10 +91,10 @@ function Routes() {
       // User is signed in but in auth screens, redirect to tabs
       console.log('[ROUTES] Redirecting to /(tabs)/home');
       router.replace('/(tabs)/home');
-    } else if (!isSignedIn && !inAuthGroup) {
-      // User is not signed in but not in auth screens, redirect to login
-      console.log('[ROUTES] Redirecting to /auth/login');
-      router.replace('/auth/login');
+    } else if (!isSignedIn && !inAuthGroup && !isAtRoot) {
+      // User is not signed in but not in auth/landing screens, redirect to landing page
+      console.log('[ROUTES] Redirecting to landing page');
+      router.replace('/');
     }
   }, [isSignedIn, isLoaded, segments, router]);
 
@@ -114,6 +114,7 @@ function Routes() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
