@@ -123,7 +123,9 @@ export function CheckpointCard({
           <div className="flex flex-1 flex-col justify-between">
             <div>
               <div className="flex items-start justify-between">
-                <h3 className="font-semibold text-foreground line-clamp-1">{checkpoint.name}</h3>
+                <h3 className="font-semibold text-foreground line-clamp-1">
+                  {checkpoint.name || (isAnalyzing ? 'Analyzing...' : 'Untitled Checkpoint')}
+                </h3>
                 {getConditionBadge()}
               </div>
               {checkpoint.description && (

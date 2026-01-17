@@ -157,13 +157,19 @@ export function CreateCheckpointDialog({
         })
       );
 
+      const checkpointData: any = {
+        assetType,
+        location: location.trim() || undefined,
+        description: description.trim() || undefined,
+      };
+      
+      // Only include name if user provided one (omit entirely if empty)
+      if (name.trim()) {
+        checkpointData.name = name.trim();
+      }
+      
       const result = await createCheckpoint(
-        {
-          name: name.trim() || '', // Empty string triggers AI name generation
-          assetType,
-          location: location.trim() || undefined,
-          description: description.trim() || undefined,
-        },
+        checkpointData,
         mediaFiles
       );
 
