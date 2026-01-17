@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -124,6 +125,12 @@ export function CreateCheckpointDialog({
   const [newCheckpointId, setNewCheckpointId] = useState('');
   const [newCheckpointName, setNewCheckpointName] = useState('');
 
+  // Auto-generate a friendly default name if the user hasn't typed one
+  const generateDefaultName = useCallback(() => {
+    const base = location.trim() || 'Checkpoint';
+    return `${base} • ${format(new Date(), 'MMM d')}`;
+  }, [location]);
+
   const handleCreate = async () => {
     // Name is now optional - will be AI-generated if empty
     
@@ -158,15 +165,11 @@ export function CreateCheckpointDialog({
       );
 
       const checkpointData: any = {
+        name: name.trim() || generateDefaultName(), // Auto-generate instead of omitting
         assetType,
         location: location.trim() || undefined,
         description: description.trim() || undefined,
       };
-      
-      // Only include name if user provided one (omit entirely if empty)
-      if (name.trim()) {
-        checkpointData.name = name.trim();
-      }
       
       const result = await createCheckpoint(
         checkpointData,
@@ -175,7 +178,7 @@ export function CreateCheckpointDialog({
 
       // Close create dialog and show processing feedback dialog
       setNewCheckpointId(result.id);
-      setNewCheckpointName(name.trim() || 'New Checkpoint');
+      setNewCheckpointName(name.trim() || generateDefaultName());
       onOpenChange(false);
       setIsProcessingDialogOpen(true);
 

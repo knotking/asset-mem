@@ -161,7 +161,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         const checkpointData = {
           userId: user.uid,
           propertyId: property.id,
-          name: data.name || "Untitled Checkpoint",
+          name: data.name, // No fallback needed - always provided
           description: data.description || "",
           assetType: data.assetType || "real_estate",
           location: data.location || "",
