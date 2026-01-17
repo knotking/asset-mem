@@ -72,13 +72,20 @@ function Routes() {
 
     const inAuthGroup = segments[0] === 'auth';
     const inTabsGroup = segments[0] === '(tabs)';
+    const isAtRoot = segments.length === 0 || segments[0] === 'index' || !segments[0];
 
     console.log('[ROUTES] Navigation check:', {
       isSignedIn,
       inAuthGroup,
       inTabsGroup,
+      isAtRoot,
       segments,
     });
+
+    // Allow landing page (root) to be accessible to everyone
+    if (isAtRoot) {
+      return; // Don't redirect, let landing page show
+    }
 
     if (isSignedIn && inAuthGroup) {
       // User is signed in but in auth screens, redirect to tabs
