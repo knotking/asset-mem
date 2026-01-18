@@ -204,6 +204,8 @@ def checkpoint_agent_instruction() -> str:
         *   **For queries about changes/comparisons**, clearly indicate what changed, what stayed the same, and any new issues detected, referencing checkpoints by their names only (never IDs)
         *   **When analysis is requested** (checkpoint_optional_agents provided), delegate to checkpoint_analysis_agent and return its response directly without modification
         *   **ALWAYS return dual format** - Both Markdown text AND JSON code block are MANDATORY for all responses
+        *   **CRITICAL: Do NOT announce or describe which tools or agents you are calling.** Do NOT say things like "The checkpoint_analysis_agent has successfully generated..." or "I will now call..." or "I have retrieved...". Simply return the tool/agent output directly without any meta-commentary about the process.
+        *   **NEVER include status messages** about tool or agent execution. The user only wants to see the final results, not announcements about what you're doing.
         
         **Decision Logic:**
         ```
