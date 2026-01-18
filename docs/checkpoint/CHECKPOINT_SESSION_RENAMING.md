@@ -89,7 +89,8 @@ export function extractCheckpointTitle(content: string): string | null {
 
 ```typescript
 // Check if this is a checkpoint agent response and rename session if needed
-if (primaryAgent === 'checkpoint' && finalAssistantResponse.trim()) {
+// Checkpoint responses are identified by the presence of checkpointSummary in the JSON
+if (finalAssistantResponse.trim()) {
   const checkpointTitle = extractCheckpointTitle(finalAssistantResponse);
   if (checkpointTitle) {
     try {
@@ -117,7 +118,8 @@ onComplete: async (finalResponse) => {
   }).catch((err) => console.error('Error completing message:', err));
 
   // Check if this is a checkpoint agent response and rename session if needed
-  if (primaryAgent === 'checkpoint' && finalResponse.trim()) {
+  // Checkpoint responses are identified by the presence of checkpointSummary in the JSON
+  if (finalResponse.trim()) {
     const checkpointTitle = extractCheckpointTitle(finalResponse);
     if (checkpointTitle) {
       try {
@@ -140,7 +142,10 @@ onComplete: async (finalResponse) => {
 
 ### When Renaming Occurs
 
-- **Trigger**: Only when `primaryAgent === 'checkpoint'`
+- **Trigger**: Automatically when a checkpoint agent response is detected (identified by the presence of `checkpointSummary` in the JSON)
+- **Works with both**: 
+  - Explicit `primaryAgent === 'checkpoint'` selection
+  - Legacy mode when checkpoints are selected (routes to checkpoint agent via `checkpoint_ids`)
 - **Timing**: After the complete response is received and saved to Firestore
 - **Condition**: Only if a valid checkpoint title is extracted from the response
 

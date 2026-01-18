@@ -457,7 +457,8 @@ export default function PropertyDetailsScreen() {
             }).catch((err) => console.error('Error completing message:', err));
 
             // Check if this is a checkpoint agent response and rename session if needed
-            if (primaryAgent === 'checkpoint' && finalResponse.trim()) {
+            // Checkpoint responses are identified by the presence of checkpointSummary in the JSON
+            if (finalResponse.trim()) {
               const checkpointTitle = extractCheckpointTitle(finalResponse);
               if (checkpointTitle) {
                 try {

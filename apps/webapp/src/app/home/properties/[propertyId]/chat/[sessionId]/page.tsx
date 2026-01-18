@@ -567,7 +567,8 @@ export default function PropertyChatSessionPage() {
         }
 
         // Check if this is a checkpoint agent response and rename session if needed
-        if (primaryAgent === 'checkpoint' && finalAssistantResponse.trim()) {
+        // Checkpoint responses are identified by the presence of checkpointSummary in the JSON
+        if (finalAssistantResponse.trim()) {
           const checkpointTitle = extractCheckpointTitle(finalAssistantResponse);
           if (checkpointTitle) {
             try {
