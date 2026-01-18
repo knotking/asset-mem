@@ -59,6 +59,7 @@ export default function LandingPageClient() {
       }
 
       const sections = [
+        { id: "ai-agents", el: document.querySelector("#ai-agents") },
         { id: "top-things", el: document.querySelector("#top-things") },
         { id: "timeline-feature", el: document.querySelector("#timeline-feature") },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
