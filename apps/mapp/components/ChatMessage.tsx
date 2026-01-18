@@ -565,7 +565,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
           <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
         </View>
       )}
-      <Accordion type="single" collapsible defaultValue="triage">
+      <Accordion type="single" collapsible defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"}>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">

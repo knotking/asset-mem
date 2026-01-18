@@ -524,7 +524,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     </h2>
                 </div>
             )}
-        <Accordion type="single" collapsible defaultValue="triage" className="w-full space-y-2">
+        <Accordion type="single" collapsible defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"} className="w-full space-y-2">
             {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
