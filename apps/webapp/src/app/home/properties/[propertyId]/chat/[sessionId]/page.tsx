@@ -377,8 +377,14 @@ export default function PropertyChatSessionPage() {
       // Claim draft session if it's a new one
       if (isNewSession) {
         const sessionRef = doc(db, "users", user.uid, "chats", activeSessionId);
-        const newName =
-          content.substring(0, 30) || fileAttachment?.file.name || "New Chat";
+        const newName = `session: ${new Date().toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })}`;
         await updateDoc(sessionRef, {
           name: newName,
           propertyId: propertyId, // Explicitly link to property

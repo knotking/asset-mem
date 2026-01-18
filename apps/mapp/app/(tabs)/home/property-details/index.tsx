@@ -353,11 +353,14 @@ export default function PropertyDetailsScreen() {
         const sessionData = sessionDoc.data();
 
         if (sessionDoc.exists() && sessionData?.name === 'draft') {
-          const newName =
-            userMessage.substring(0, 30) ||
-            (currentFileAttachment
-              ? `File: ${currentFileAttachment.fileName.substring(0, 20)}`
-              : 'New Chat');
+          const newName = `session: ${new Date().toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })}`;
           await updateDoc(sessionRef, {
             name: newName,
             propertyId: id,

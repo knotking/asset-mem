@@ -62,7 +62,7 @@ users/{userId}/chats/{sessionId}
 **Purpose**: Active conversation threads with message history
 
 **Characteristics**:
-- Named after first message (first 30 characters)
+- Named with timestamp format: "session: MMM d, yyyy, h:mm AM/PM"
 - Contains message count and last message timestamp
 - Immutable once created (name doesn't change)
 - Grouped by property in UI
@@ -140,7 +140,7 @@ sequenceDiagram
     UI->>Firestore: Check if name === 'draft'
 
     alt Is draft
-        UI->>Firestore: updateDoc({ name: message.substring(0, 30) })
+        UI->>Firestore: updateDoc({ name: "session: [timestamp]" })
         Firestore-->>Listener: Document changed
         Listener->>Listener: Detect draft claimed
         Listener->>Firestore: Create new draft
@@ -152,8 +152,14 @@ sequenceDiagram
 ```typescript
 // When sending first message
 if (sessionDoc.exists() && sessionData?.name === 'draft') {
-  const newName = userMessage.substring(0, 30) ||
-                  (fileAttachment ? `File: ${fileName}` : 'New Chat');
+  const newName = `session: ${new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })}`;
 
   await updateDoc(sessionRef, {
     name: newName,
