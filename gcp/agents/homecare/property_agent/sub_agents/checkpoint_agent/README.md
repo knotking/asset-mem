@@ -88,12 +88,65 @@ The checkpoint agent is integrated into the `doculink_agent` as one of its tools
 
 ## Response Format
 
-The agent synthesizes answers from retrieved checkpoint data, including:
+The agent returns responses in **dual format** (Markdown + JSON) to support multiple client platforms:
 
-- Summaries of relevant checkpoints
-- Comparison information when multiple checkpoints are retrieved
-- Timeline and trend information
-- Specific findings (issues, conditions, detected items)
+### 1. Markdown Format (for Telegram and human readability)
+Human-readable text with:
+- Clear heading with query results title
+- Structured sections for each checkpoint
+- Detailed findings and comparisons
+- Insights and recommendations
+
+### 2. JSON Format (for Web App and Mobile App)
+Structured data with:
+- `analysis.title`: Concise summary of the query results
+- `analysis.checkpointSummary`: Metadata about checkpoints analyzed (count, query type, locations, date range)
+- `analysis.checkpointDetails`: Array of checkpoint objects with all relevant information
+- `analysis.insights`: Changes, patterns, and recommendations based on query type
+
+### Response Structure
+
+**Simple Query Mode** (no optional agents):
+```json
+{
+  "analysis": {
+    "title": "Checkpoint Query Results",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "queryType": "comparison|single|trend|location-specific",
+      "locations": ["Kitchen", "Bathroom"],
+      "dateRange": "Jan 2025 - Jan 2026"
+    },
+    "checkpointDetails": [
+      {
+        "name": "Monthly Inspection - Jan 2025",
+        "location": "Kitchen",
+        "date": "2025-01-15",
+        "summary": "Brief summary",
+        "detectedItems": ["item1", "item2"],
+        "conditions": ["condition1"],
+        "issues": ["issue1"]
+      }
+    ],
+    "insights": {
+      "changes": "Description of changes (for comparison queries)",
+      "patterns": "Description of patterns (for trend queries)",
+      "recommendations": "Brief recommendations if applicable"
+    }
+  }
+}
+```
+
+**Analysis Mode** (with optional agents):
+When `checkpoint_optional_agents` is provided, the agent delegates to `checkpoint_analysis_agent` which returns comprehensive analysis with coverage, DIY, service, and/or cost recommendations in dual format.
+
+### Query Types
+
+The agent handles various query types:
+- **Single checkpoint queries**: "Show me the latest kitchen checkpoint"
+- **Comparison queries**: "What changed in my bathroom between checkpoints?"
+- **Trend queries**: "How has my property condition changed over time?"
+- **Location-specific queries**: "Show me all exterior checkpoints"
 
 If no checkpoints are found, returns: "No matching checkpoints found for your query. Try rephrasing your question or check if you have any checkpoints created."
 

@@ -62,6 +62,23 @@ export type StructuredResponseData = {
       issuesDetected?: string[];
       overallCondition?: string;
       locations?: string[];
+      queryType?: "single" | "comparison" | "trend" | "location-specific";
+      dateRange?: string;
+    };
+    checkpointDetails?: Array<{
+      name?: string;
+      location?: string;
+      date?: string;
+      summary?: string;
+      detectedItems?: string[];
+      conditions?: string[];
+      issues?: string[];
+      [key: string]: any; // Allow additional fields
+    }>;
+    insights?: {
+      changes?: string;
+      patterns?: string;
+      recommendations?: string;
     };
     coverageResult?: {
       warrantyInfo?: string;

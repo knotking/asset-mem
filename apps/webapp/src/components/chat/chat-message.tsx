@@ -579,6 +579,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                     <span className="text-sm font-semibold">{checkpointSummary.checkpointsAnalyzed}</span>
                                 </div>
                             )}
+                            {checkpointSummary?.queryType && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Query Type:</span>
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                        {checkpointSummary.queryType}
+                                    </Badge>
+                                </div>
+                            )}
                             {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
                                 <div className="flex items-start gap-2">
                                     <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Locations:</span>
@@ -589,6 +597,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                             </Badge>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+                            {checkpointSummary?.dateRange && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Date Range:</span>
+                                    <span className="text-sm">{checkpointSummary.dateRange}</span>
                                 </div>
                             )}
                             {checkpointSummary?.overallCondition && (
@@ -605,6 +619,61 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                             <li key={idx} className="text-sm">{issue}</li>
                                         ))}
                                     </ul>
+                                </div>
+                            )}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            
+            {analysis?.checkpointDetails && Array.isArray(analysis.checkpointDetails) && analysis.checkpointDetails.length > 0 && (
+                <AccordionItem value="checkpoint-details" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <Info className="h-5 w-5 text-blue-600" />
+                            <span className="font-semibold">Checkpoint Details</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4 pt-0">
+                        <Accordion type="multiple" className="space-y-2">
+                            {analysis.checkpointDetails.map((checkpoint: any, idx: number) => 
+                                renderRecursiveDetails(
+                                    checkpoint.name || `Checkpoint ${idx + 1}`,
+                                    checkpoint,
+                                    `checkpoint-detail-${idx}`
+                                )
+                            )}
+                        </Accordion>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            
+            {analysis?.insights && typeof analysis.insights === 'object' && Object.keys(analysis.insights).length > 0 && (
+                <AccordionItem value="checkpoint-insights" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <Lightbulb className="h-5 w-5 text-yellow-600" />
+                            <span className="font-semibold">Insights & Recommendations</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4 pt-0">
+                        <div className="space-y-3">
+                            {analysis.insights.changes && (
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">Changes Observed</h4>
+                                    <p className="text-sm">{analysis.insights.changes}</p>
+                                </div>
+                            )}
+                            {analysis.insights.patterns && (
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">Patterns Identified</h4>
+                                    <p className="text-sm">{analysis.insights.patterns}</p>
+                                </div>
+                            )}
+                            {analysis.insights.recommendations && (
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">Recommendations</h4>
+                                    <p className="text-sm">{analysis.insights.recommendations}</p>
                                 </div>
                             )}
                         </div>

@@ -28,6 +28,8 @@ import {
   DollarSign,
   Clock,
   Sparkles,
+  Info,
+  Lightbulb,
 } from 'lucide-react-native';
 import type {
   Message,
@@ -623,6 +625,18 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                     </Text>
                   </View>
                 )}
+                {(checkpointSummary as any)?.queryType && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Query Type:
+                    </Text>
+                    <View className="rounded-md border border-border bg-background px-2 py-1">
+                      <Text className="text-xs text-foreground capitalize">
+                        {(checkpointSummary as any).queryType}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
                   <View className="flex-row items-start gap-2">
                     <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
@@ -638,6 +652,16 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                         </View>
                       ))}
                     </View>
+                  </View>
+                )}
+                {(checkpointSummary as any)?.dateRange && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Date Range:
+                    </Text>
+                    <Text className="flex-1 text-sm text-foreground">
+                      {(checkpointSummary as any).dateRange}
+                    </Text>
                   </View>
                 )}
                 {checkpointSummary?.overallCondition && (
@@ -663,6 +687,119 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                         </View>
                       ))}
                     </View>
+                  </View>
+                )}
+              </View>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(analysis as any)?.checkpointDetails && Array.isArray((analysis as any).checkpointDetails) && (analysis as any).checkpointDetails.length > 0 && (
+          <AccordionItem value="checkpoint-details" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Info} size={16} className="text-info" />
+                <Text className="font-medium text-foreground">Checkpoint Details</Text>
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              <View className="space-y-4">
+                {(analysis as any).checkpointDetails.map((checkpoint: any, idx: number) => (
+                  <View key={idx} className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
+                    <Text className="text-sm font-semibold text-foreground">
+                      {checkpoint.name || `Checkpoint ${idx + 1}`}
+                    </Text>
+                    {checkpoint.location && (
+                      <View className="flex-row items-start gap-2">
+                        <Text className="text-xs font-medium text-muted-foreground min-w-[80px]">
+                          Location:
+                        </Text>
+                        <Text className="flex-1 text-xs text-foreground">{checkpoint.location}</Text>
+                      </View>
+                    )}
+                    {checkpoint.date && (
+                      <View className="flex-row items-start gap-2">
+                        <Text className="text-xs font-medium text-muted-foreground min-w-[80px]">
+                          Date:
+                        </Text>
+                        <Text className="flex-1 text-xs text-foreground">{checkpoint.date}</Text>
+                      </View>
+                    )}
+                    {checkpoint.summary && (
+                      <View className="flex-row items-start gap-2">
+                        <Text className="text-xs font-medium text-muted-foreground min-w-[80px]">
+                          Summary:
+                        </Text>
+                        <Text className="flex-1 text-xs text-foreground">{checkpoint.summary}</Text>
+                      </View>
+                    )}
+                    {checkpoint.detectedItems && checkpoint.detectedItems.length > 0 && (
+                      <View className="space-y-1">
+                        <Text className="text-xs font-medium text-muted-foreground">Detected Items:</Text>
+                        <View className="flex-row flex-wrap gap-1">
+                          {checkpoint.detectedItems.map((item: string, i: number) => (
+                            <View key={i} className="rounded-md bg-secondary px-2 py-0.5">
+                              <Text className="text-xs text-secondary-foreground">{item}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                    {checkpoint.conditions && checkpoint.conditions.length > 0 && (
+                      <View className="space-y-1">
+                        <Text className="text-xs font-medium text-muted-foreground">Conditions:</Text>
+                        {checkpoint.conditions.map((condition: string, i: number) => (
+                          <View key={i} className="flex-row gap-1">
+                            <Text className="text-xs text-foreground">•</Text>
+                            <Text className="flex-1 text-xs text-foreground">{condition}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                    {checkpoint.issues && checkpoint.issues.length > 0 && (
+                      <View className="space-y-1">
+                        <Text className="text-xs font-medium text-destructive">Issues:</Text>
+                        {checkpoint.issues.map((issue: string, i: number) => (
+                          <View key={i} className="flex-row gap-1">
+                            <Text className="text-xs text-destructive">•</Text>
+                            <Text className="flex-1 text-xs text-destructive">{issue}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(analysis as any)?.insights && typeof (analysis as any).insights === 'object' && Object.keys((analysis as any).insights).length > 0 && (
+          <AccordionItem value="checkpoint-insights" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Lightbulb} size={16} className="text-warning" />
+                <Text className="font-medium text-foreground">Insights & Recommendations</Text>
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              <View className="space-y-3">
+                {(analysis as any).insights.changes && (
+                  <View className="space-y-1">
+                    <Text className="text-sm font-semibold text-warning">Changes Observed</Text>
+                    <Text className="text-sm text-foreground">{(analysis as any).insights.changes}</Text>
+                  </View>
+                )}
+                {(analysis as any).insights.patterns && (
+                  <View className="space-y-1">
+                    <Text className="text-sm font-semibold text-warning">Patterns Identified</Text>
+                    <Text className="text-sm text-foreground">{(analysis as any).insights.patterns}</Text>
+                  </View>
+                )}
+                {(analysis as any).insights.recommendations && (
+                  <View className="space-y-1">
+                    <Text className="text-sm font-semibold text-warning">Recommendations</Text>
+                    <Text className="text-sm text-foreground">{(analysis as any).insights.recommendations}</Text>
                   </View>
                 )}
               </View>

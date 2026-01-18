@@ -168,6 +168,23 @@ export type StructuredResponseData = {
       issuesDetected?: string[];
       overallCondition?: string;
       locations?: string[];
+      queryType?: "single" | "comparison" | "trend" | "location-specific";
+      dateRange?: string;
+    };
+    checkpointDetails?: Array<{
+      name?: string;
+      location?: string;
+      date?: string;
+      summary?: string;
+      detectedItems?: string[];
+      conditions?: string[];
+      issues?: string[];
+      [key: string]: any; // Allow additional fields
+    }>;
+    insights?: {
+      changes?: string;
+      patterns?: string;
+      recommendations?: string;
     };
     coverageResult?: {
       warrantyInfo?: string;
@@ -190,6 +207,28 @@ export type StructuredResponseData = {
       localPros?: {
         serpAPIResults?: ServiceProvider[];
         yelpAPIResults?: ServiceProvider[];
+      };
+    };
+    costEstimationResults?: {
+      costEstimates?: {
+        repair_type?: string;
+        DIY?: {
+          cost_range?: string;
+          includes?: string[];
+          savings?: string;
+          complexity?: string;
+        };
+        Service?: {
+          cost_range?: string;
+          includes?: string[];
+          benefits?: string;
+          complexity?: string;
+        };
+        comparison?: {
+          diy_savings?: string;
+          professional_benefits?: string;
+          considerations?: string;
+        };
       };
     };
   };
