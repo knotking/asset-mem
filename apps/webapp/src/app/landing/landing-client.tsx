@@ -59,8 +59,8 @@ export default function LandingPageClient() {
       }
 
       const sections = [
-        { id: "ai-agents", el: document.querySelector("#ai-agents") },
         { id: "top-things", el: document.querySelector("#top-things") },
+        { id: "ai-agents", el: document.querySelector("#ai-agents") },
         { id: "timeline-feature", el: document.querySelector("#timeline-feature") },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
       ];
@@ -480,6 +480,126 @@ export default function LandingPageClient() {
         </div>
       </section>
 
+      {/* Top Things Section */}
+      <section
+        id="top-things"
+        className="py-32 relative overflow-hidden w-full transition-all duration-1000"
+        style={{ backgroundColor: "#0f0f14" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="text-center mb-20 space-y-6">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                PLATFORM FEATURES
+              </span>
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+              The Top Things
+              <br />
+              <span
+                className="font-bold"
+                style={{
+                  background: `linear-gradient(to right, ${LANDING_COLORS.foreground}, ${LANDING_COLORS.foreground70})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                We Do for You
+              </span>
+            </h2>
+            <p className="text-xl max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {[
+              {
+                title: "Instant Diagnostics",
+                desc: "Get AI-powered analysis of property issues in seconds.",
+                icon: "M13 10V3L4 14h7v7l9-11h-7z",
+              },
+              {
+                title: "Property Checkpoints",
+                desc: "Visual timeline, condition scores, before/after comparison, and health metrics.",
+                icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+              },
+              {
+                title: "Multimodal Analysis",
+                desc: "Photos, videos, and documents analyzed by Gemini-powered AI.",
+                icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
+              },
+              {
+                title: "Document Intelligence",
+                desc: "Your warranties, manuals, and receipts become a searchable RAG knowledge base.",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+              },
+              {
+                title: "DIY + Service Discovery",
+                desc: "Step-by-step guidance, local providers, and product recommendations.",
+                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
+              },
+              {
+                title: "Cost Transparency",
+                desc: "Compare DIY vs. professional costs and coverage.",
+                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.08}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <div
+                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
+                  style={{
+                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                  }}
+                >
+                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* AI Agents Section */}
       <section
         id="ai-agents"
@@ -604,126 +724,6 @@ export default function LandingPageClient() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: LANDING_COLORS.foreground }}>
-                  {item.title}
-                </h3>
-                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Top Things Section */}
-      <section
-        id="top-things"
-        className="py-32 relative overflow-hidden w-full transition-all duration-1000"
-        style={{ backgroundColor: "#0f0f14" }}
-      >
-        <div
-          className="absolute inset-0 w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
-          <div className="text-center mb-20 space-y-6">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
-              style={{
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderColor: LANDING_COLORS.primaryBorder,
-              }}
-            >
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
-                PLATFORM FEATURES
-              </span>
-            </div>
-            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              The Top Things
-              <br />
-              <span
-                className="font-bold"
-                style={{
-                  background: `linear-gradient(to right, ${LANDING_COLORS.foreground}, ${LANDING_COLORS.foreground70})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
-                We Do for You
-              </span>
-            </h2>
-            <p className="text-xl max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {[
-              {
-                title: "Instant Diagnostics",
-                desc: "Get AI-powered analysis of property issues in seconds.",
-                icon: "M13 10V3L4 14h7v7l9-11h-7z",
-              },
-              {
-                title: "Property Checkpoints",
-                desc: "Visual timeline, condition scores, before/after comparison, and health metrics.",
-                icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
-              },
-              {
-                title: "Multimodal Analysis",
-                desc: "Photos, videos, and documents analyzed by Gemini-powered AI.",
-                icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
-              },
-              {
-                title: "Document Intelligence",
-                desc: "Your warranties, manuals, and receipts become a searchable RAG knowledge base.",
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-              },
-              {
-                title: "DIY + Service Discovery",
-                desc: "Step-by-step guidance, local providers, and product recommendations.",
-                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
-              },
-              {
-                title: "Cost Transparency",
-                desc: "Compare DIY vs. professional costs and coverage.",
-                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-              },
-            ].map((item, i) => (
-              <div
-                key={item.title}
-                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
-                style={{
-                  backgroundColor: "rgba(20,20,28,0.6)",
-                  backdropFilter: "blur(4px)",
-                  borderColor: LANDING_COLORS.border,
-                  animationDelay: `${i * 0.08}s`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <div
-                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
-                  style={{
-                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
-                  }}
-                >
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
                   {item.title}
                 </h3>
                 <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>

@@ -273,6 +273,101 @@ export default function LandingPage() {
           </View>
         </View>
 
+        {/* Features Section */}
+        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 36,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                PLATFORM FEATURES
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 36,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 44,
+              }}>
+              The Top Things{'\n'}
+              <Text style={{ fontWeight: 'bold' }}>We Do for You</Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 18,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 20,
+                lineHeight: 26,
+              }}>
+              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
+            </Text>
+          </View>
+
+          <View style={{ gap: 20 }}>
+            {features.map((feature, i) => (
+              <View
+                key={feature.title}
+                style={{
+                  padding: 20,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(20,20,28,0.6)',
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 12,
+                      backgroundColor: LANDING_COLORS.primary,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}>
+                    <Icon as={feature.icon} size={28} style={{ color: LANDING_COLORS.white }} />
+                  </View>
+                  <View style={{ flex: 1, paddingTop: 2 }}>
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 'bold',
+                        color: LANDING_COLORS.foreground,
+                        marginBottom: 8,
+                        lineHeight: 26,
+                      }}>
+                      {feature.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 22,
+                        color: LANDING_COLORS.mutedForeground,
+                      }}>
+                      {feature.desc}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* AI Agents Section */}
         <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
@@ -391,101 +486,6 @@ export default function LandingPage() {
                         color: LANDING_COLORS.mutedForeground,
                       }}>
                       {agent.desc}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Features Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: LANDING_COLORS.primaryLight,
-                borderWidth: 1,
-                borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 36,
-              }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                PLATFORM FEATURES
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 36,
-                fontWeight: '300',
-                textAlign: 'center',
-                color: LANDING_COLORS.foreground,
-                marginBottom: 20,
-                paddingHorizontal: 10,
-                lineHeight: 44,
-              }}>
-              The Top Things{'\n'}
-              <Text style={{ fontWeight: 'bold' }}>We Do for You</Text>
-            </Text>
-            <Text
-              style={{
-                fontSize: 18,
-                textAlign: 'center',
-                color: LANDING_COLORS.mutedForeground,
-                paddingHorizontal: 20,
-                lineHeight: 26,
-              }}>
-              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
-            </Text>
-          </View>
-
-          <View style={{ gap: 20 }}>
-            {features.map((feature, i) => (
-              <View
-                key={feature.title}
-                style={{
-                  padding: 20,
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(20,20,28,0.6)',
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                  <View
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 12,
-                      backgroundColor: LANDING_COLORS.primary,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}>
-                    <Icon as={feature.icon} size={28} style={{ color: LANDING_COLORS.white }} />
-                  </View>
-                  <View style={{ flex: 1, paddingTop: 2 }}>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        color: LANDING_COLORS.foreground,
-                        marginBottom: 8,
-                        lineHeight: 26,
-                      }}>
-                      {feature.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 22,
-                        color: LANDING_COLORS.mutedForeground,
-                      }}>
-                      {feature.desc}
                     </Text>
                   </View>
                 </View>
