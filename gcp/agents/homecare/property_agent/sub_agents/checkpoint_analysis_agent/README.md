@@ -67,7 +67,9 @@ Agents are executed in canonical order: coverage → diy → service → cost
 
 ## Output Format
 
-### Dual Format Response
+### ⚠️ CRITICAL: Dual Format Response (BOTH Required)
+
+The agent **MUST ALWAYS** return both formats. Never return only markdown without JSON.
 
 **Markdown (First):**
 ```markdown
@@ -92,7 +94,7 @@ Agents are executed in canonical order: coverage → diy → service → cost
 [Cost agent results if requested]
 ```
 
-**JSON (Second):**
+**JSON (Second - MANDATORY):**
 ```json
 {
   "analysis": {
@@ -110,6 +112,11 @@ Agents are executed in canonical order: coverage → diy → service → cost
   }
 }
 ```
+
+**Why Both Formats:**
+- **Markdown**: For messaging platforms (Telegram, etc.) and human readability
+- **JSON**: For webapp and mobile app to render structured dropdowns/accordions
+- Without JSON, the web/mobile UI cannot display the interactive dropdown interface
 
 ## Usage Example
 

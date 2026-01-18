@@ -74,58 +74,68 @@ def checkpoint_analysis_agent_instructions() -> str:
         
         **MANDATORY Output Format - Return BOTH Markdown and JSON:**
         
-        You MUST return your response in a dual format that includes:
+        ⚠️ CRITICAL: You MUST return your response in a dual format that includes:
         1. A human-readable Markdown formatted response (for Telegram consumption) - FIRST
-        2. A JSON code block with the structured data (for webapp consumption) - SECOND
+        2. A JSON code block with the structured data (for webapp/mobile app consumption) - SECOND
+        
+        ⚠️ NEVER return ONLY markdown without the JSON code block. Both formats are REQUIRED.
         
         **Title Requirement:**
         - Create a concise, user-friendly `analysis.title` that summarizes the analysis
         - Examples: "Kitchen & Bathroom Checkpoint Analysis", "Property Condition Assessment", "Maintenance Recommendations"
         - The Markdown response MUST begin with a level-one heading (`#`) using the same title
         
-        Format your response as follows:
+        **EXACT Format Template:**
         
-        [First, provide a human-readable Markdown formatted summary. Start with `# {analysis.title}` followed by well-structured sections for checkpoint summary and each optional agent result.]
+        # [Title matching analysis.title]
+        
+        ## Checkpoint Summary
+        - **Checkpoints Analyzed**: [number]
+        - **Issues Detected**: [list issues]
+        - **Locations**: [list locations]
+        - **Overall Condition**: [assessment]
+        
+        [Include sections for each optional agent that was called: Coverage, DIY, Service, Cost]
         
         ```json
         {
           "analysis": {
             "title": "[Concise title for the checkpoint analysis]",
             "checkpointSummary": {
-              "checkpointsAnalyzed": [number of checkpoints],
-              "issuesDetected": ["Issue 1", "Issue 2", ...],
-              "overallCondition": "[Brief overall assessment]",
-              "locations": ["Location 1", "Location 2", ...]
+              "checkpointsAnalyzed": 3,
+              "issuesDetected": ["Issue 1", "Issue 2", "Issue 3"],
+              "overallCondition": "Brief overall assessment",
+              "locations": ["Location 1", "Location 2"]
             },
             "coverageResult": {
-              "warrantyInfo": "[warranty information if coverage agent was called]",
-              "insuranceInfo": "[insurance information if coverage agent was called]"
+              "warrantyInfo": "warranty information if coverage agent was called",
+              "insuranceInfo": "insurance information if coverage agent was called"
             },
             "diyResults": {
               "diySteps": {
-                "summary": "[Google search summary]",
-                "steps": "[array of numbered steps]"
+                "summary": "Google search summary",
+                "steps": [{"stepNumber": 1, "description": "Step 1"}, {"stepNumber": 2, "description": "Step 2"}]
               },
               "youtubeSearch": {
-                "videos": "[array of video objects with title, url, description]"
+                "videos": [{"title": "Video Title", "url": "https://youtube.com/...", "description": "Video description"}]
               },
               "recommendedProducts": {
-                "products": "[array of product objects with vendor, url, description, price]"
+                "products": [{"item_name": "Product", "vendor": "Store", "url": "https://...", "price": "$XX.XX"}]
               }
             },
             "serviceResults": {
               "localPros": {
-                "serpAPIResults": "[local professional listings from serpapi_search]",
-                "yelpAPIResults": "[local professional listings from yelpapi_search]",
-                "googleSearchResults": "[parsed providers from google_search_agent when needed]"
+                "serpAPIResults": [{"name": "Business", "contact_info": "phone", "location": "address", "rating": "4.5"}],
+                "yelpAPIResults": [{"name": "Business", "contact_info": "phone", "location": "address", "rating": "4.5"}],
+                "googleSearchResults": []
               }
             },
             "costEstimationResults": {
               "costEstimates": {
-                "repair_type": "[derived from checkpoint issues]",
-                "DIY": { "cost_range": "[e.g., $50-300]", "includes": ["Material/product costs", "Basic tools", "Time"], "savings": "[text]", "complexity": "[text]" },
-                "Service": { "cost_range": "[e.g., $200-800]", "includes": ["Labor", "Expertise", "Warranty"], "benefits": "[text]", "complexity": "[text]" },
-                "comparison": { "diy_savings": "[text]", "professional_benefits": "[text]", "considerations": "[text]" }
+                "repair_type": "derived from checkpoint issues",
+                "DIY": { "cost_range": "$50-300", "includes": ["Materials", "Tools"], "savings": "text", "complexity": "text" },
+                "Service": { "cost_range": "$200-800", "includes": ["Labor", "Warranty"], "benefits": "text", "complexity": "text" },
+                "comparison": { "diy_savings": "text", "professional_benefits": "text", "considerations": "text" }
               }
             }
           }
@@ -133,23 +143,70 @@ def checkpoint_analysis_agent_instructions() -> str:
         ```
         
         **CRITICAL Guidelines:**
+        * ⚠️ NEVER return a response without the JSON code block - both Markdown AND JSON are MANDATORY
         * Only include sections for agents that were actually called (based on `checkpoint_optional_agents`)
         * If an agent is not in the list, omit its section entirely from both Markdown and JSON
-        * Always include `checkpointSummary` as it provides context for the analysis
+        * Always include `checkpointSummary` - it is REQUIRED in every response
+        * The JSON code block MUST start with ```json and end with ```
         * Use the checkpoint data to create specific, actionable problem statements for downstream agents
-        * ALWAYS include BOTH the Markdown formatted response (FIRST) AND the JSON code block (SECOND)
         * The Markdown response should be well-formatted, readable, and suitable for messaging platforms
-        * The JSON code block must be valid JSON and properly formatted
+        * The JSON must be valid, properly formatted, and parseable
         * Extract specific details from checkpoints (locations, detected items, conditions) to enrich the analysis
         
-        **Example Issue Synthesis:**
+        **Complete Example Response:**
+        
         If checkpoint data shows:
         - Checkpoint 1: Kitchen - water stain under sink, cabinet door loose
         - Checkpoint 2: Bathroom - cracked tile, grout discoloration
         - Checkpoint 3: Exterior - roof shingles missing, gutter detached
         
-        Synthesize as: "Multiple maintenance issues detected: kitchen plumbing leak with water damage and loose cabinet, bathroom tile damage with potential moisture issues, and exterior roof and gutter repairs needed"
+        And checkpoint_optional_agents = ["diy", "cost"]
         
-        Then pass this synthesized problem to each optional agent for tailored recommendations.
+        Your response MUST be:
+        
+        # Kitchen, Bathroom & Exterior Maintenance Issues
+        
+        ## Checkpoint Summary
+        - **Checkpoints Analyzed**: 3
+        - **Issues Detected**: Water damage under kitchen sink, loose cabinet door, cracked bathroom tile, grout discoloration, missing roof shingles, detached gutter
+        - **Locations**: Kitchen, Bathroom, Exterior
+        - **Overall Condition**: Multiple moderate issues requiring attention across property
+        
+        ## DIY Recommendations
+        [DIY agent results here]
+        
+        ## Cost Estimates
+        [Cost agent results here]
+        
+        ```json
+        {
+          "analysis": {
+            "title": "Kitchen, Bathroom & Exterior Maintenance Issues",
+            "checkpointSummary": {
+              "checkpointsAnalyzed": 3,
+              "issuesDetected": [
+                "Water damage under kitchen sink",
+                "Loose cabinet door",
+                "Cracked bathroom tile",
+                "Grout discoloration",
+                "Missing roof shingles",
+                "Detached gutter"
+              ],
+              "overallCondition": "Multiple moderate issues requiring attention across property",
+              "locations": ["Kitchen", "Bathroom", "Exterior"]
+            },
+            "diyResults": {
+              "diySteps": { ... },
+              "youtubeSearch": { ... },
+              "recommendedProducts": { ... }
+            },
+            "costEstimationResults": {
+              "costEstimates": { ... }
+            }
+          }
+        }
+        ```
+        
+        Note: Coverage and service sections are omitted because they were not in checkpoint_optional_agents.
     """
     return instruction
