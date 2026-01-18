@@ -95,7 +95,7 @@ Agents are executed in canonical order: coverage → diy → service → cost
 **JSON (Second):**
 ```json
 {
-  "checkpointAnalysis": {
+  "analysis": {
     "title": "Checkpoint Analysis: Kitchen & Bathroom Issues",
     "checkpointSummary": {
       "checkpointsAnalyzed": 3,
@@ -154,6 +154,8 @@ Agents are executed in canonical order: coverage → diy → service → cost
 - **Context-Aware**: Uses checkpoint data to tailor recommendations
 - **Dual Format**: Supports both messaging platforms and web apps
 - **Issue Synthesis**: Intelligently combines multiple checkpoint issues
+- **Unified Format**: Uses the same `analysis` root key as the Analysis Agent for consistent parsing across webapp and mobile app
+- **Distinguishing Field**: The `checkpointSummary` field identifies checkpoint-based analyses vs regular analysis responses
 
 ## Model
 

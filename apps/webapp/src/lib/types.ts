@@ -57,6 +57,12 @@ export type StructuredResponseData = {
     triageResult?: {
       diagnosis?: string;
     };
+    checkpointSummary?: {
+      checkpointsAnalyzed?: number;
+      issuesDetected?: string[];
+      overallCondition?: string;
+      locations?: string[];
+    };
     coverageResult?: {
       warrantyInfo?: string;
       insuranceInfo?: string;

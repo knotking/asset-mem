@@ -79,17 +79,17 @@ def checkpoint_analysis_agent_instructions() -> str:
         2. A JSON code block with the structured data (for webapp consumption) - SECOND
         
         **Title Requirement:**
-        - Create a concise, user-friendly `checkpointAnalysis.title` that summarizes the analysis
+        - Create a concise, user-friendly `analysis.title` that summarizes the analysis
         - Examples: "Kitchen & Bathroom Checkpoint Analysis", "Property Condition Assessment", "Maintenance Recommendations"
         - The Markdown response MUST begin with a level-one heading (`#`) using the same title
         
         Format your response as follows:
         
-        [First, provide a human-readable Markdown formatted summary. Start with `# {checkpointAnalysis.title}` followed by well-structured sections for checkpoint summary and each optional agent result.]
+        [First, provide a human-readable Markdown formatted summary. Start with `# {analysis.title}` followed by well-structured sections for checkpoint summary and each optional agent result.]
         
         ```json
         {
-          "checkpointAnalysis": {
+          "analysis": {
             "title": "[Concise title for the checkpoint analysis]",
             "checkpointSummary": {
               "checkpointsAnalyzed": [number of checkpoints],

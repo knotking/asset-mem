@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { Message, ServiceProvider, StructuredResponseData, Product } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -268,6 +268,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
     // Support both nested (analysis.*) and flat structures (top-level keys)
     const triage = analysis?.triageResult || (data as any)?.triageResult;
+    const checkpointSummary = analysis?.checkpointSummary;
     const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
     const diy = analysis?.diyResults || (data as any)?.diyResults;
     const service = analysis?.serviceResults || (data as any)?.serviceResults || {};
@@ -358,6 +359,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     const needsClarification = !!(triage?.needs_clarification === true);
     const hasClarificationQuestions = !!(needsClarification && Array.isArray(triage?.clarification_questions) && triage.clarification_questions.length > 0);
     const hasTriage = !!(triage?.diagnosis && typeof triage.diagnosis === 'string' && triage.diagnosis.trim() !== '');
+    const hasCheckpointSummary = !!(checkpointSummary && (
+        checkpointSummary.checkpointsAnalyzed || 
+        (checkpointSummary.issuesDetected && checkpointSummary.issuesDetected.length > 0) ||
+        checkpointSummary.overallCondition ||
+        (checkpointSummary.locations && checkpointSummary.locations.length > 0)
+    ));
     const hasCoverage = !needsClarification && !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
     const hasDIY = !needsClarification && !!(diy && (
         diy.diySteps?.summary || 
@@ -552,6 +559,55 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 {String(triage!.diagnosis!)}
                             </ReactMarkdown>
                         ) : null}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            
+            {hasCheckpointSummary && (
+                <AccordionItem value="checkpoint-summary" className="border rounded-lg">
+                    <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
+                        <div className="flex items-center gap-2 flex-1 text-left">
+                            <Sparkles className="h-5 w-5 text-purple-600" />
+                            <span className="font-semibold">Checkpoint Summary</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4 pt-0">
+                        <div className="space-y-3">
+                            {checkpointSummary?.checkpointsAnalyzed && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Checkpoints Analyzed:</span>
+                                    <span className="text-sm font-semibold">{checkpointSummary.checkpointsAnalyzed}</span>
+                                </div>
+                            )}
+                            {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Locations:</span>
+                                    <div className="flex flex-wrap gap-1">
+                                        {checkpointSummary.locations.map((location, idx) => (
+                                            <Badge key={idx} variant="secondary" className="text-xs">
+                                                {location}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {checkpointSummary?.overallCondition && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Overall Condition:</span>
+                                    <span className="text-sm">{checkpointSummary.overallCondition}</span>
+                                </div>
+                            )}
+                            {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Issues Detected:</span>
+                                    <ul className="list-disc pl-5 space-y-1 flex-1">
+                                        {checkpointSummary.issuesDetected.map((issue, idx) => (
+                                            <li key={idx} className="text-sm">{issue}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
             )}

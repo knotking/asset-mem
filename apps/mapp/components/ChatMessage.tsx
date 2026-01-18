@@ -455,6 +455,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   // Support both nested (analysis.*) and flat structures (top-level keys)
   const analysis = data.analysis || ({} as NonNullable<StructuredResponseData['analysis']>);
   const triage = analysis?.triageResult || (data as any)?.triageResult;
+  const checkpointSummary = analysis?.checkpointSummary;
   const coverage = analysis?.coverageResult || (data as any)?.coverageResult;
   const diy = analysis?.diyResults || (data as any)?.diyResults;
   const service = analysis?.serviceResults || (data as any)?.serviceResults;
@@ -515,6 +516,18 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         triage.diagnosis.trim() !== ''
       ),
     [triage]
+  );
+
+  const hasCheckpointSummary = useMemo(
+    () =>
+      !!(
+        checkpointSummary &&
+        (checkpointSummary.checkpointsAnalyzed ||
+          (checkpointSummary.issuesDetected && checkpointSummary.issuesDetected.length > 0) ||
+          checkpointSummary.overallCondition ||
+          (checkpointSummary.locations && checkpointSummary.locations.length > 0))
+      ),
+    [checkpointSummary]
   );
 
   const hasCoverage = useMemo(
@@ -586,6 +599,73 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
                   {triage!.diagnosis!}
                 </Markdown>
               ) : null}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {hasCheckpointSummary && (
+          <AccordionItem value="checkpoint-summary" className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="flex-row items-center gap-2">
+                <Icon as={Sparkles} size={16} className="text-purple-600" />
+                <Text className="font-medium text-foreground">Checkpoint Summary</Text>
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              <View className="space-y-3">
+                {checkpointSummary?.checkpointsAnalyzed && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Checkpoints Analyzed:
+                    </Text>
+                    <Text className="text-sm font-semibold text-foreground">
+                      {checkpointSummary.checkpointsAnalyzed}
+                    </Text>
+                  </View>
+                )}
+                {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Locations:
+                    </Text>
+                    <View className="flex-1 flex-row flex-wrap gap-1">
+                      {checkpointSummary.locations.map((location, idx) => (
+                        <View
+                          key={idx}
+                          className="rounded-md bg-secondary px-2 py-1"
+                        >
+                          <Text className="text-xs text-secondary-foreground">{location}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                {checkpointSummary?.overallCondition && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Overall Condition:
+                    </Text>
+                    <Text className="flex-1 text-sm text-foreground">
+                      {checkpointSummary.overallCondition}
+                    </Text>
+                  </View>
+                )}
+                {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 && (
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
+                      Issues Detected:
+                    </Text>
+                    <View className="flex-1 space-y-1">
+                      {checkpointSummary.issuesDetected.map((issue, idx) => (
+                        <View key={idx} className="flex-row gap-2">
+                          <Text className="text-sm text-foreground">•</Text>
+                          <Text className="flex-1 text-sm text-foreground">{issue}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
             </AccordionContent>
           </AccordionItem>
         )}

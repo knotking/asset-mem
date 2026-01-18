@@ -163,6 +163,12 @@ export type StructuredResponseData = {
       message?: string;
       clarification_questions?: string[];
     };
+    checkpointSummary?: {
+      checkpointsAnalyzed?: number;
+      issuesDetected?: string[];
+      overallCondition?: string;
+      locations?: string[];
+    };
     coverageResult?: {
       warrantyInfo?: string;
       insuranceInfo?: string;
