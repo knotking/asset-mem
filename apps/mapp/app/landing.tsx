@@ -148,7 +148,7 @@ export default function LandingPage() {
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 20,
+                marginBottom: 32,
                 gap: 8,
               }}>
               <Icon as={Zap} size={16} style={{ color: LANDING_COLORS.primary }} />
@@ -164,6 +164,7 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
+                marginTop: 0,
                 marginBottom: 20,
                 lineHeight: 56,
               }}>
@@ -285,7 +286,7 @@ export default function LandingPage() {
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 20,
+                marginBottom: 32,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
                 PLATFORM FEATURES
@@ -297,7 +298,8 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginBottom: 10,
+                marginTop: 0,
+                marginBottom: 16,
               }}>
               The Top Things{'\n'}
               <Text style={{ fontWeight: 'bold' }}>We Do for You</Text>
@@ -308,6 +310,7 @@ export default function LandingPage() {
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
                 paddingHorizontal: 20,
+                marginTop: 8,
               }}>
               Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
             </Text>
@@ -374,7 +377,7 @@ export default function LandingPage() {
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 20,
+                marginBottom: 32,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>SIMPLE FLOW</Text>
             </View>
@@ -384,7 +387,8 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginBottom: 10,
+                marginTop: 0,
+                marginBottom: 16,
               }}>
               How It Works
             </Text>
@@ -394,6 +398,7 @@ export default function LandingPage() {
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
                 paddingHorizontal: 20,
+                marginTop: 8,
               }}>
               Four steps from your question to actionable recommendations
             </Text>
