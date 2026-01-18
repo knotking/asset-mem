@@ -1,129 +1,39 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { query, getDocs, writeBatch, type CollectionReference, type Firestore } from 'firebase/firestore';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 /**
- * Deletes all documents in a Firestore collection using batched writes
- * @param db Firestore instance
- * @param collectionRef The collection reference to delete documents from
+ * Extracts the title from a checkpoint agent response.
+ * Checkpoint agents return responses in dual format: Markdown + JSON code block.
+ * The JSON contains an analysis.title field that should be used to rename the session.
+ * 
+ * @param content The agent response content
+ * @returns The title string if found, null otherwise
  */
-export async function deleteCollection(db: Firestore, collectionRef: CollectionReference) {
-  const q = query(collectionRef);
-  const querySnapshot = await getDocs(q);
+export function extractCheckpointTitle(content: string): string | null {
+  if (!content) return null;
 
-  if (querySnapshot.size === 0) {
-    return; // No documents to delete
-  }
+  try {
+    // Look for JSON code block in the response
+    const jsonMatch = content.match(/```json\s*\n?([\s\S]*?)```/);
+    if (!jsonMatch) return null;
 
-  const batch = writeBatch(db);
-  querySnapshot.docs.forEach(doc => {
-    batch.delete(doc.ref);
-  });
+    const jsonStr = jsonMatch[1].trim();
+    const parsed = JSON.parse(jsonStr);
 
-  await batch.commit();
-}
+    // Check for checkpoint-specific fields to confirm this is a checkpoint response
+    const analysis = parsed.analysis || parsed;
+    const hasCheckpointData = !!(
+      analysis.checkpointSummary ||
+      analysis.checkpointDetails
+    );
 
-/**
- * Converts a string of markdown to a format compatible with WhatsApp.
- * @param markdown The markdown string to convert.
- * @returns A WhatsApp-formatted string.
- */
-export function markdownToWhatsapp(markdown: string): string {
-  if (!markdown) return '';
+    if (!hasCheckpointData) return null;
 
-  let whatsappText = markdown;
-
-  // Convert bold: **text** -> *text*
-  whatsappText = whatsappText.replace(/\*\*(.*?)\*\*/g, '*$1*');
-
-  // Convert links: [text](url) -> text: url
-  whatsappText = whatsappText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2');
-
-  // Convert headings: # Heading -> *Heading*
-  whatsappText = whatsappText.replace(/^#+\s+(.+)/gm, '*$1*');
-
-  // Lists, italic, strikethrough, and code blocks are generally okay.
-  // WhatsApp uses similar syntax. We just need to handle things it doesn't support.
-
-  // Remove blockquotes
-  whatsappText = whatsappText.replace(/^>\s+/gm, '');
-
-  return whatsappText;
-}
-
-/**
- * Converts a JSON object into a WhatsApp-readable format.
- * Fields are shown in bold, arrays as bullet points, and nested objects are indented.
- * @param obj The JSON object to format.
- * @param indentLevel The current indentation level (for recursion).
- * @returns A WhatsApp-formatted string.
- */
-export function jsonToWhatsapp(obj: any, indentLevel: number = 0): string {
-  if (obj === null || obj === undefined) return '';
-
-  const indent = '  '.repeat(indentLevel);
-  const lines: string[] = [];
-
-  // Handle primitive types
-  if (typeof obj !== 'object') {
-    return String(obj);
-  }
-
-  // Handle arrays
-  if (Array.isArray(obj)) {
-    obj.forEach((item, index) => {
-      if (typeof item === 'object' && item !== null) {
-        // For object items in array, show index and recurse
-        if (Array.isArray(item)) {
-          lines.push(`${indent}${index + 1}. ${jsonToWhatsapp(item, indentLevel + 1)}`);
-        } else {
-          lines.push(`${indent}${index + 1}.`);
-          lines.push(jsonToWhatsapp(item, indentLevel + 1));
-        }
-      } else {
-        // For primitive items, use bullet points
-        lines.push(`${indent}• ${item}`);
-      }
-    });
-    return lines.join('\n');
-  }
-
-  // Handle objects
-  Object.entries(obj).forEach(([key, value]) => {
-    // Format key name (convert camelCase to Title Case)
-    const formattedKey = key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
-      .trim();
-
-    if (value === null || value === undefined || value === '') {
-      // Skip empty values
-      return;
+    // Extract title from analysis.title
+    if (analysis.title && typeof analysis.title === 'string') {
+      return analysis.title.trim();
     }
 
-    if (typeof value === 'object' && value !== null) {
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          // Skip empty arrays
-          return;
-        }
-        // Field name in bold, then list items
-        lines.push(`${indent}*${formattedKey}:*`);
-        lines.push(jsonToWhatsapp(value, indentLevel + 1));
-      } else {
-        // Nested object - show field name and recurse
-        lines.push(`${indent}*${formattedKey}:*`);
-        lines.push(jsonToWhatsapp(value, indentLevel + 1));
-      }
-    } else {
-      // Primitive value - show in "Field: value" format with bold field
-      lines.push(`${indent}*${formattedKey}:* ${value}`);
-    }
-  });
-
-  return lines.join('\n');
+    return null;
+  } catch (error) {
+    // Failed to parse JSON or extract title
+    return null;
+  }
 }

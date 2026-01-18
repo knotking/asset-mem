@@ -30,6 +30,7 @@ import type {
 } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
+import { extractCheckpointTitle } from '@/lib/utils';
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
@@ -449,11 +450,29 @@ export default function PropertyDetailsScreen() {
               });
             }
           },
-          onComplete: (finalResponse) => {
+          onComplete: async (finalResponse) => {
             updateDoc(assistantMessageRef, {
               content: finalResponse,
               primaryAgent,
             }).catch((err) => console.error('Error completing message:', err));
+
+            // Check if this is a checkpoint agent response and rename session if needed
+            if (primaryAgent === 'checkpoint' && finalResponse.trim()) {
+              const checkpointTitle = extractCheckpointTitle(finalResponse);
+              if (checkpointTitle) {
+                try {
+                  const sessionRef = doc(db, 'users', user.uid, 'chats', agentSessionId);
+                  await updateDoc(sessionRef, {
+                    name: checkpointTitle,
+                    updatedAt: serverTimestamp(),
+                  });
+                  console.log('Session renamed to:', checkpointTitle);
+                } catch (error) {
+                  console.error('Failed to rename session:', error);
+                  // Don't show error to user as this is not critical
+                }
+              }
+            }
           },
           onError: (error) => {
             updateDoc(assistantMessageRef, {
