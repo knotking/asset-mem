@@ -52,7 +52,7 @@ import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
 import type { Checkpoint } from "@/lib/types";
-import { apiUrls, extractCheckpointTitle } from "@/lib/utils";
+import { apiUrls } from "@/lib/utils";
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -564,24 +564,6 @@ export default function PropertyChatSessionPage() {
 
         if (finalAssistantResponse.trim()) {
           addMessageToFirestore(activeSessionId, newAssistantMessage);
-        }
-
-        // Check if this is a checkpoint agent response and rename session if needed
-        if (primaryAgent === 'checkpoint' && finalAssistantResponse.trim()) {
-          const checkpointTitle = extractCheckpointTitle(finalAssistantResponse);
-          if (checkpointTitle) {
-            try {
-              const sessionRef = doc(db, 'users', user.uid, 'chats', activeSessionId);
-              await updateDoc(sessionRef, {
-                name: checkpointTitle,
-                updatedAt: serverTimestamp(),
-              });
-              console.log('Session renamed to:', checkpointTitle);
-            } catch (error) {
-              console.error('Failed to rename session:', error);
-              // Don't show error to user as this is not critical
-            }
-          }
         }
       } catch (error: any) {
         if (error.name !== "AbortError") {
