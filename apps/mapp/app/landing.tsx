@@ -196,58 +196,13 @@ export default function LandingPage() {
                 fontSize: 18,
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground60,
-                marginBottom: 32,
+                marginBottom: 48,
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
               Transform property maintenance with advanced AI diagnostics. Get instant insights,
               expert recommendations, and proactive guidance—powered by cutting-edge artificial intelligence.
             </Text>
-
-            {/* AI Agents Note */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                marginHorizontal: 20,
-                marginBottom: 32,
-                borderRadius: 12,
-                backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                borderWidth: 1,
-                borderColor: 'rgba(34, 211, 238, 0.3)',
-                gap: 12,
-              }}>
-              <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  marginTop: 2,
-                  flexShrink: 0,
-                }}>
-                <Icon as={Zap} size={20} style={{ color: LANDING_COLORS.primary }} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: LANDING_COLORS.primary,
-                    marginBottom: 6,
-                  }}>
-                  Powered by Specialized AI Agents
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 20,
-                    color: LANDING_COLORS.foreground70,
-                  }}>
-                  Our multi-agent AI system uses specialized agents (Triage, Coverage, DIY, Service, Cost) that work together to analyze your property issues and deliver comprehensive, actionable solutions.
-                </Text>
-              </View>
-            </View>
 
             {/* CTA Buttons */}
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 48, paddingHorizontal: 20, width: '100%' }}>
@@ -315,6 +270,132 @@ export default function LandingPage() {
                 </Text>
               </View>
             </View>
+          </View>
+        </View>
+
+        {/* AI Agents Section */}
+        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 36,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                AI-POWERED INTELLIGENCE
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 36,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 44,
+              }}>
+              Specialized AI Agents{'\n'}
+              <Text style={{ fontWeight: 'bold' }}>Working Together</Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 20,
+                lineHeight: 24,
+              }}>
+              Our multi-agent AI system orchestrates specialized agents that collaborate to analyze your property issues from every angle
+            </Text>
+          </View>
+
+          <View style={{ gap: 20 }}>
+            {[
+              {
+                title: 'Triage Agent',
+                desc: 'Analyzes your issue to understand the problem, severity, and urgency. Identifies affected areas and determines the best course of action.',
+                icon: FileText,
+              },
+              {
+                title: 'Coverage Agent',
+                desc: 'Searches your warranties, insurance policies, and service contracts to determine if your issue is covered.',
+                icon: CheckCircle,
+              },
+              {
+                title: 'DIY Agent',
+                desc: 'Provides step-by-step instructions for fixing issues yourself. Includes tools, materials, safety precautions, and time estimates.',
+                icon: Settings,
+              },
+              {
+                title: 'Service Agent',
+                desc: 'Finds qualified local service providers for your issue using location-based search with ratings and reviews.',
+                icon: TrendingUp,
+              },
+              {
+                title: 'Cost Agent',
+                desc: 'Provides transparent cost estimates comparing DIY vs. professional service options with material costs and labor estimates.',
+                icon: DollarSign,
+              },
+              {
+                title: 'Orchestration',
+                desc: 'All agents work in harmony, sharing insights to provide you with a complete, unified solution for your property issue.',
+                icon: Zap,
+              },
+            ].map((agent, i) => (
+              <View
+                key={agent.title}
+                style={{
+                  padding: 20,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(20,20,28,0.6)',
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 12,
+                      backgroundColor: LANDING_COLORS.primary,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}>
+                    <Icon as={agent.icon} size={28} style={{ color: LANDING_COLORS.white }} />
+                  </View>
+                  <View style={{ flex: 1, paddingTop: 2 }}>
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 'bold',
+                        color: LANDING_COLORS.foreground,
+                        marginBottom: 8,
+                        lineHeight: 26,
+                      }}>
+                      {agent.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 22,
+                        color: LANDING_COLORS.mutedForeground,
+                      }}>
+                      {agent.desc}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 

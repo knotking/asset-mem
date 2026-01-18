@@ -290,44 +290,6 @@ export default function LandingPageClient() {
                 guidance—powered by cutting-edge artificial intelligence.
               </p>
 
-              {/* AI Agents Note */}
-              <div
-                className="inline-flex items-start gap-3 p-4 rounded-lg border max-w-xl"
-                style={{
-                  backgroundColor: "rgba(34, 211, 238, 0.05)",
-                  borderColor: "rgba(34, 211, 238, 0.3)",
-                }}
-              >
-                <svg
-                  className="h-5 w-5 flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  style={{ color: LANDING_COLORS.primary }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-                <div>
-                  <p
-                    className="text-sm font-medium mb-1"
-                    style={{ color: LANDING_COLORS.primary }}
-                  >
-                    Powered by Specialized AI Agents
-                  </p>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: LANDING_COLORS.foreground70 }}
-                  >
-                    Our multi-agent AI system uses specialized agents (Triage, Coverage, DIY, Service, Cost) that work together to analyze your property issues and deliver comprehensive, actionable solutions.
-                  </p>
-                </div>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <Link
@@ -513,6 +475,141 @@ export default function LandingPageClient() {
 
             {/* Right: Hero Visual */}
             <AIGraphic />
+          </div>
+        </div>
+      </section>
+
+      {/* AI Agents Section */}
+      <section
+        id="ai-agents"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: LANDING_COLORS.background }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="text-center mb-20 space-y-6">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2Z" />
+              </svg>
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                AI-POWERED INTELLIGENCE
+              </span>
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+              Specialized AI Agents
+              <br />
+              <span
+                className="font-bold"
+                style={{
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Working Together
+              </span>
+            </h2>
+            <p className="text-xl max-w-3xl mx-auto font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+              Our multi-agent AI system orchestrates specialized agents that collaborate to analyze your property issues from every angle, delivering comprehensive and actionable solutions tailored to your needs.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {[
+              {
+                title: "Triage Agent",
+                desc: "Analyzes your issue to understand the problem, severity, and urgency. Identifies the affected property areas and determines the best course of action.",
+                icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+              },
+              {
+                title: "Coverage Agent",
+                desc: "Searches your warranties, insurance policies, and service contracts to determine if your issue is covered. Provides relevant policy details and claim guidance.",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+              },
+              {
+                title: "DIY Agent",
+                desc: "Provides step-by-step instructions for fixing issues yourself. Includes required tools, materials, safety precautions, and estimated time to complete.",
+                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
+              },
+              {
+                title: "Service Agent",
+                desc: "Finds qualified local service providers for your issue. Uses location-based search to recommend contractors, handymen, and specialists with ratings and reviews.",
+                icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
+              },
+              {
+                title: "Cost Agent",
+                desc: "Provides transparent cost estimates comparing DIY vs. professional service options. Includes material costs, labor estimates, and potential savings.",
+                icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+              },
+              {
+                title: "Orchestration",
+                desc: "All agents work in harmony, sharing insights and coordinating their analyses to provide you with a complete, unified solution that addresses every aspect of your property issue.",
+                icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="border rounded-lg transition-all duration-500 hover:-translate-y-2 p-6 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.08}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <div
+                  className="h-14 w-14 rounded-xl flex items-center justify-center mb-4"
+                  style={{
+                    background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
+                  }}
+                >
+                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold mb-3" style={{ color: LANDING_COLORS.foreground }}>
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
