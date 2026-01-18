@@ -533,6 +533,10 @@ export default function PropertyChatSessionPage() {
           }
         }
 
+        // Strip agent name prefix (e.g., "**Doculink Agent**: " or "**Analysis Agent**: ")
+        // This removes the prefix added by the backend streaming function
+        finalAssistantResponse = finalAssistantResponse.replace(/^\*\*[^*]+\*\*:\s*/, '');
+
         // Debug: Log final response to help diagnose parsing issues
         console.log('=== Final Assistant Response ===');
         console.log('Length:', finalAssistantResponse.length);

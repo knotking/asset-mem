@@ -297,9 +297,13 @@ export async function streamAgentResponse({
 
     // Complete
     if (onComplete) {
+      // Strip agent name prefix (e.g., "**Doculink Agent**: " or "**Analysis Agent**: ")
+      // This removes the prefix added by the backend streaming function
+      const strippedResponse = finalAssistantResponse.replace(/^\*\*[^*]+\*\*:\s*/, '');
+      
       // Check if response is empty and provide helpful error message
       const finalResponse =
-        finalAssistantResponse.trim() ||
+        strippedResponse.trim() ||
         "I apologize, but I wasn't able to generate a response. This might be due to a temporary issue. Please try asking your question again after some time.";
       onComplete(finalResponse, agentSteps);
     }
