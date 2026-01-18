@@ -36,7 +36,7 @@ export function AgentStatus({ steps }: Props) {
         <CardTitle className="text-sm font-medium flex items-center gap-2 animate-pulse">
           <Sparkles className="h-4 w-4 " />
           <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
-             {transferredStep ? `Thinking: ${transferredStep.name.replace(/\*\*/g, '')}` : 'Thinking...'}
+             {'Thinking...'}
           </span>
         </CardTitle>
       </CardHeader>

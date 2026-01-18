@@ -191,9 +191,7 @@ export function AgentStatus({ steps }: Props) {
   const transferredStep = steps.find((step) => step.status === 'transferredto');
   const otherSteps = steps.filter((step) => step.status !== 'transferredto');
 
-  const thinkingText = transferredStep
-    ? `Thinking: ${transferredStep.name.replace(/\*\*/g, '')}`
-    : 'Thinking...';
+  const thinkingText = 'Thinking...';
 
   return (
     <View className="w-full rounded-xl border border-border bg-background p-4 shadow-sm">
