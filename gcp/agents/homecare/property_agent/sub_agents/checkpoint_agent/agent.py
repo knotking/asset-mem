@@ -188,24 +188,27 @@ def ask_checkpoints_retrieval(
         return []
 
 
-# Import checkpoint_analysis_agent lazily to avoid circular imports
-def get_checkpoint_analysis_agent():
-    """Lazy import of checkpoint_analysis_agent to avoid circular dependencies."""
-    from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
-    return checkpoint_analysis_agent
-
-
 checkpoint_agent = Agent(
     model='gemini-2.5-flash',
     name='checkpoint_agent',
     instruction=checkpoint_agent_instruction(),
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
-        ask_checkpoints_retrieval,
-        AgentTool(get_checkpoint_analysis_agent)  # Add analysis agent as tool
+        ask_checkpoints_retrieval
+        # Note: checkpoint_analysis_agent will be added dynamically after initialization
+        # to avoid circular import issues
     ],
     disallow_transfer_to_parent=True,
     output_key='checkpoint_result'
 )
+
+# Add checkpoint_analysis_agent as a tool after checkpoint_agent is created
+# This avoids circular import issues
+try:
+    from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
+    checkpoint_agent.tools.append(AgentTool(checkpoint_analysis_agent))
+except ImportError:
+    # checkpoint_analysis_agent not available yet, will be added later
+    logger.warning("checkpoint_analysis_agent not available during initialization")
 
 __all__ = ["checkpoint_agent"]

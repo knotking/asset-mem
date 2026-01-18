@@ -23,6 +23,7 @@ import {
 import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   LocationType,
 } from '@homeapp/common/types';
@@ -36,6 +37,8 @@ interface ChatSettingsModalProps {
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   locationData?: LocationData;
   onLocationDataChange?: (locationData: LocationData | undefined) => void;
   propertyAddress?: string;
@@ -53,6 +56,17 @@ const OPTIONAL_AGENT_OPTIONS: {
   { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
 ];
 
+const CHECKPOINT_OPTIONAL_AGENT_OPTIONS: {
+  id: CheckpointOptionalAgent;
+  label: string;
+  icon: typeof ShieldCheck;
+}[] = [
+  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
+  { id: 'diy', label: 'DIY', icon: Hammer },
+  { id: 'service', label: 'Service', icon: Wrench },
+  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
+];
+
 export function ChatSettingsModal({
   visible,
   onClose,
@@ -60,6 +74,8 @@ export function ChatSettingsModal({
   onPrimaryAgentChange,
   selectedOptionalAgents,
   onToggleOptionalAgent,
+  selectedCheckpointOptionalAgents,
+  onToggleCheckpointOptionalAgent,
   locationData,
   onLocationDataChange,
   propertyAddress,
@@ -316,13 +332,46 @@ export function ChatSettingsModal({
                   </View>
                 )}
 
-                {/* Checkpoint Mode Info */}
+                {/* Optional Agents (Checkpoint Mode) */}
                 {primaryAgent === 'checkpoint' && (
-                  <View className="rounded-lg bg-secondary/50 p-3">
-                    <Text className="text-xs leading-5 text-muted-foreground">
-                      Checkpoint Agent analyzes your property's checkpoint history to answer
-                      questions about changes, trends, and condition over time.
+                  <View>
+                    <Text className="mb-3 text-sm font-semibold text-foreground">
+                      Optional Agents
                     </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {CHECKPOINT_OPTIONAL_AGENT_OPTIONS.map((option) => {
+                        const isSelected = selectedCheckpointOptionalAgents.includes(option.id);
+                        return (
+                          <Pressable
+                            key={option.id}
+                            onPress={() => onToggleCheckpointOptionalAgent(option.id)}
+                            className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
+                              isSelected
+                                ? 'border-primary bg-primary'
+                                : 'border-border bg-transparent'
+                            }`}>
+                            <Icon
+                              as={option.icon}
+                              size={14}
+                              className={
+                                isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                              }
+                            />
+                            <Text
+                              className={`text-xs font-medium ${
+                                isSelected ? 'text-primary-foreground' : 'text-foreground'
+                              }`}>
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {selectedCheckpointOptionalAgents.length === 0 && (
+                      <Text className="mt-2 text-xs text-muted-foreground">
+                        Basic checkpoint query will run by default
+                      </Text>
+                    )}
                   </View>
                 )}
               </View>

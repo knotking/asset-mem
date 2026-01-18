@@ -12,6 +12,7 @@ import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import type {
   FileAttachment,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
@@ -29,6 +30,8 @@ interface PropertyChatTabProps {
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   isSending: boolean;
   onStop: () => void;
   attachmentOptionsVisible: boolean;
@@ -54,6 +57,8 @@ export function PropertyChatTab({
   onPrimaryAgentChange,
   selectedOptionalAgents,
   onToggleOptionalAgent,
+  selectedCheckpointOptionalAgents,
+  onToggleCheckpointOptionalAgent,
   isSending,
   onStop,
   attachmentOptionsVisible,
@@ -166,6 +171,8 @@ export function PropertyChatTab({
             onPrimaryAgentChange={onPrimaryAgentChange}
             selectedOptionalAgents={selectedOptionalAgents}
             onToggleOptionalAgent={onToggleOptionalAgent}
+            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+            onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
             isSending={isSending}
             onStop={onStop}
             attachmentOptionsVisible={attachmentOptionsVisible}

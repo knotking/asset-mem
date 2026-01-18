@@ -9,11 +9,12 @@ import {
   Navigation,
   Settings,
 } from 'lucide-react-native';
-import type { PrimaryAgent, LocationData, AnalysisOptionalAgent } from '@homeapp/common/types';
+import type { PrimaryAgent, LocationData, AnalysisOptionalAgent, CheckpointOptionalAgent } from '@homeapp/common/types';
 
 interface CompactSettingsBarProps {
   primaryAgent: PrimaryAgent;
   selectedOptionalAgents: AnalysisOptionalAgent[];
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
   locationData?: LocationData;
   propertyAddress?: string;
   onOpenSettings: () => void;
@@ -24,6 +25,7 @@ interface CompactSettingsBarProps {
 export function CompactSettingsBar({
   primaryAgent,
   selectedOptionalAgents,
+  selectedCheckpointOptionalAgents,
   locationData,
   propertyAddress,
   onOpenSettings,
@@ -63,6 +65,13 @@ export function CompactSettingsBar({
           <View className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5">
             <Text className="text-[9px] font-bold text-primary-foreground">
               +{selectedOptionalAgents.length}
+            </Text>
+          </View>
+        )}
+        {primaryAgent === 'checkpoint' && selectedCheckpointOptionalAgents.length > 0 && (
+          <View className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5">
+            <Text className="text-[9px] font-bold text-primary-foreground">
+              +{selectedCheckpointOptionalAgents.length}
             </Text>
           </View>
         )}
