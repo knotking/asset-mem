@@ -262,10 +262,14 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Google Maps integration
 - Yelp reviews
 
-**Cost Estimates**
-- Professional service cost ranges
-- Comparison with DIY options
-- What's included in service
+**AI-Powered Cost Estimates** ⭐ NEW
+- Real-time pricing using Gemini with Google Search grounding
+- Location-aware cost adjustments (San Francisco vs rural areas)
+- Service provider calibration with real market data
+- Professional vs DIY cost comparison
+- Current 2026 pricing from web sources
+- Intelligent complexity analysis
+- Reliable fallback with hardcoded library
 
 ### 7. Document Management & RAG
 
@@ -403,7 +407,7 @@ AGENT  AGENT   AGENT                   │              │
 - **DIY Agent**: Step-by-step instructions, videos, products
 - **Service Agent**: Local provider discovery
 - **Shopping Agent**: Product recommendations
-- **Cost Agent**: Cost estimates and comparisons
+- **Cost Agent**: AI-powered cost estimates with location-aware pricing
 
 #### DocuLink Agent
 - **User Docs Agent**: Retrieves from user-uploaded documents
@@ -620,6 +624,50 @@ AGENT  AGENT   AGENT                   │              │
 
 **Output**: Step-by-step reset instructions from user's manual or knowledge base
 
+### Use Case 8: AI-Powered Cost Estimation ⭐ NEW
+
+**Scenario**: User in San Francisco needs plumbing repair and wants accurate local pricing
+
+**Flow**:
+1. User uploads photo of leaking pipe under kitchen sink
+2. Triage Agent diagnoses: "Loose connection at P-trap, minor leak"
+3. Cost Agent (AI-powered) activates:
+   - Extracts location: San Francisco, CA
+   - Analyzes repair complexity: Moderate (plumbing knowledge needed)
+   - Calls Gemini with Google Search grounding
+   - AI searches: "plumber hourly rate San Francisco 2026"
+   - AI searches: "PEX pipe fittings cost 2026"
+   - Applies regional multiplier: 1.4x for San Francisco
+4. Service Agent provides local plumber listings
+5. Cost Agent calibrates AI estimate with real provider pricing:
+   - Extracts pricing from 3 SerpAPI results
+   - Parses Yelp price levels ($$)
+   - Combines: AI estimate + provider data
+   - Weighted calibration: 70% AI + 30% provider data
+6. Validates cost ranges and confidence score (0.85)
+7. Returns comprehensive estimate
+
+**Output**: 
+- **DIY Cost**: $25-120 (materials: pipe clamp, fittings, sealant)
+  - Includes: San Francisco hardware store pricing
+  - Time: 1-3 hours
+  - Savings: 60-75% vs professional
+- **Professional Cost**: $280-620 (San Francisco rates)
+  - Includes: Labor at $150-180/hr (SF market rate)
+  - Materials with markup
+  - Warranty coverage
+  - Calibrated with 3 local plumber quotes
+- **Comparison**: Detailed DIY vs Pro analysis
+- **Recommendation**: "DIY feasible for temporary fix; professional recommended for permanent repair"
+- **Confidence**: 85% (location + calibration + valid extraction)
+
+**Benefits**:
+- Accurate regional pricing (SF 40% higher than national average)
+- Real-time 2026 pricing (not outdated hardcoded values)
+- Validated against actual local market data
+- Intelligent complexity assessment
+- Reliable fallback if AI confidence low
+
 ---
 
 ## Deployment & Infrastructure
@@ -808,6 +856,14 @@ terraform apply
   - Automatic before/after comparison
   - Property health metrics
   - Async processing architecture
+
+- [x] **AI-Powered Cost Estimation** (COMPLETED) ⭐ NEW
+  - Gemini with Google Search grounding for real-time pricing
+  - Location-aware cost adjustments based on regional markets
+  - Service provider calibration using SerpAPI and Yelp data
+  - Intelligent complexity analysis and safety assessments
+  - Hardcoded library fallback for reliability
+  - Feature flags for controlled rollout
 
 - [ ] **Enhanced Checkpoint Features**
   - Firestore vector search for semantic checkpoint queries
@@ -1037,6 +1093,17 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Scalability Recommendations**: [`./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md`](./CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md)
 - **API Documentation**: [`../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md`](../gcp/proxy/api/docs/CHECKPOINT_ANALYSIS_API.md)
 - **Workers Documentation**: [`../gcp/proxy/workers/README.md`](../gcp/proxy/workers/README.md)
+
+### Cost Estimation Feature Documentation ⭐ NEW
+- **Overview & Architecture**: [`./costing/OVERVIEW.md`](./costing/OVERVIEW.md)
+- **AI Cost Estimation**: [`./costing/AI_COST_ESTIMATION.md`](./costing/AI_COST_ESTIMATION.md)
+- **Configuration Guide**: [`./costing/CONFIGURATION.md`](./costing/CONFIGURATION.md)
+- **API Integration**: [`./costing/API_INTEGRATION.md`](./costing/API_INTEGRATION.md)
+- **Testing Guide**: [`./costing/TESTING.md`](./costing/TESTING.md)
+- **Deployment Guide**: [`./costing/DEPLOYMENT.md`](./costing/DEPLOYMENT.md)
+- **Troubleshooting**: [`./costing/TROUBLESHOOTING.md`](./costing/TROUBLESHOOTING.md)
+- **Documentation Index**: [`./costing/INDEX.md`](./costing/INDEX.md)
+- **Implementation Summary**: [`../gcp/agents/homecare/property_agent/sub_agents/cost_agent/IMPLEMENTATION_SUMMARY.md`](../gcp/agents/homecare/property_agent/sub_agents/cost_agent/IMPLEMENTATION_SUMMARY.md)
 
 ---
 

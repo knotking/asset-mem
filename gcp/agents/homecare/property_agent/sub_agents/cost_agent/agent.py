@@ -1,8 +1,16 @@
 import json
+import logging
 import re
 from typing import Any, Dict, List, Optional
 
 from google.adk.agents import Agent
+from google import genai
+
+from .config import config
+from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
+from .service_pricing_extractor import extract_and_combine_all_pricing, calibrate_ai_estimate_with_provider_data
+
+logger = logging.getLogger(__name__)
 
 
 def _extract_diagnosis_from_query(query: str) -> Optional[str]:
@@ -45,6 +53,72 @@ def _extract_diagnosis_from_query(query: str) -> Optional[str]:
             diagnosis = diag_match.group(1).splitlines()[0].strip()
 
     return diagnosis
+
+
+def _extract_property_address_from_query(query: str) -> Optional[str]:
+    """Attempts to extract property address from the query payload."""
+    property_address: Optional[str] = None
+
+    # Try direct JSON parsing first
+    try:
+        parsed = json.loads(query)
+        if isinstance(parsed, dict):
+            property_address = (
+                parsed.get("property_address")
+                or parsed.get("address")
+                or parsed.get("location")
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # If JSON parse failed, try to locate JSON substring within the query
+    if property_address is None:
+        json_match = re.search(r'\{.*\}', query, re.DOTALL)
+        if json_match:
+            try:
+                nested = json.loads(json_match.group(0))
+                if isinstance(nested, dict):
+                    property_address = (
+                        nested.get("property_address")
+                        or nested.get("address")
+                        or nested.get("location")
+                    )
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    return property_address
+
+
+def _extract_service_results_from_query(query: str) -> Optional[Dict[str, Any]]:
+    """Attempts to extract service provider results from the query payload."""
+    service_results: Optional[Dict[str, Any]] = None
+
+    # Try direct JSON parsing first
+    try:
+        parsed = json.loads(query)
+        if isinstance(parsed, dict):
+            service_results = (
+                parsed.get("serviceResults")
+                or parsed.get("service_results")
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # If JSON parse failed, try to locate JSON substring within the query
+    if service_results is None:
+        json_match = re.search(r'\{.*\}', query, re.DOTALL)
+        if json_match:
+            try:
+                nested = json.loads(json_match.group(0))
+                if isinstance(nested, dict):
+                    service_results = (
+                        nested.get("serviceResults")
+                        or nested.get("service_results")
+                    )
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    return service_results
 
 
 def _match_cost_category(context: str) -> Optional[Dict[str, Any]]:
@@ -142,6 +216,83 @@ def _match_cost_category(context: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _estimate_with_ai(
+    diagnosis: str,
+    property_address: Optional[str] = None,
+    service_results: Optional[Dict[str, Any]] = None
+) -> tuple[Optional[Dict[str, Any]], float, str]:
+    """
+    Estimate costs using AI with Google Search grounding.
+    
+    Args:
+        diagnosis: Triage diagnosis text
+        property_address: Property address for location-aware pricing
+        service_results: Optional service provider results for calibration
+        
+    Returns:
+        Tuple of (cost_estimate, confidence, source)
+        source is "ai", "ai_calibrated", or "fallback"
+    """
+    if not config.should_use_ai_estimation():
+        logger.info("AI cost estimation disabled by config")
+        return None, 0.0, "disabled"
+    
+    if not diagnosis or len(diagnosis.strip()) < 10:
+        logger.warning("Diagnosis too short for AI estimation")
+        return None, 0.0, "invalid_input"
+    
+    try:
+        # Initialize Gemini client
+        client = genai.Client()
+        
+        # Extract service provider pricing data if available
+        provider_pricing = None
+        if service_results and config.should_calibrate_with_provider_data():
+            provider_pricing = extract_and_combine_all_pricing(service_results)
+        
+        # Call AI cost estimator
+        logger.info(f"Calling AI cost estimator for: {diagnosis[:100]}...")
+        ai_estimate, confidence = estimate_costs_with_ai(
+            diagnosis=diagnosis,
+            property_address=property_address,
+            service_provider_data=provider_pricing,
+            client=client
+        )
+        
+        if not ai_estimate:
+            logger.warning("AI cost estimation returned no result")
+            return None, 0.0, "ai_failed"
+        
+        # Validate the estimate
+        if not validate_cost_ranges(ai_estimate):
+            logger.warning("AI cost estimate failed validation")
+            return None, 0.0, "validation_failed"
+        
+        # Check confidence threshold
+        if confidence < config.MIN_AI_CONFIDENCE_THRESHOLD:
+            logger.warning(f"AI confidence {confidence:.2f} below threshold {config.MIN_AI_CONFIDENCE_THRESHOLD}")
+            return None, confidence, "low_confidence"
+        
+        # Calibrate with provider data if available and confidence is sufficient
+        source = "ai"
+        if provider_pricing and provider_pricing.get("confidence", 0) >= config.MIN_PROVIDER_DATA_CONFIDENCE:
+            logger.info("Calibrating AI estimate with provider pricing data")
+            ai_estimate = calibrate_ai_estimate_with_provider_data(
+                ai_estimate,
+                provider_pricing,
+                calibration_weight=config.PROVIDER_DATA_WEIGHT
+            )
+            source = "ai_calibrated"
+            confidence = min(confidence + 0.1, 1.0)  # Boost confidence slightly
+        
+        logger.info(f"AI cost estimation successful: source={source}, confidence={confidence:.2f}")
+        return ai_estimate, confidence, source
+        
+    except Exception as e:
+        logger.error(f"AI cost estimation error: {str(e)}", exc_info=True)
+        return None, 0.0, "error"
+
+
 def _build_cost_response(
     category: Optional[Dict[str, Any]],
     diagnosis: Optional[str],
@@ -205,11 +356,55 @@ def _build_cost_response(
 
 
 def cost_estimation(query: str) -> str:
-    """Provides cost estimates grounded in the triage diagnosis."""
+    """
+    Provides cost estimates grounded in the triage diagnosis.
+    
+    Uses AI-powered estimation with Google Search grounding when enabled,
+    falls back to hardcoded cost library when AI fails or confidence is low.
+    
+    Args:
+        query: Query string containing diagnosis and optional context
+        
+    Returns:
+        JSON string with cost estimates
+    """
+    # Extract context from query
     diagnosis = _extract_diagnosis_from_query(query)
+    property_address = _extract_property_address_from_query(query)
+    service_results = _extract_service_results_from_query(query)
+    
+    if not diagnosis:
+        diagnosis = query
+    
+    logger.info(f"Cost estimation request - diagnosis: {diagnosis[:100]}, location: {property_address or 'not provided'}")
+    
+    # Try AI estimation first if enabled
+    if config.should_use_ai_estimation():
+        ai_estimate, confidence, source = _estimate_with_ai(
+            diagnosis=diagnosis,
+            property_address=property_address,
+            service_results=service_results
+        )
+        
+        if ai_estimate and confidence >= config.MIN_AI_CONFIDENCE_THRESHOLD:
+            logger.info(f"Using AI cost estimate (source: {source}, confidence: {confidence:.2f})")
+            if config.LOG_AI_RESPONSES:
+                logger.debug(f"AI estimate: {json.dumps(ai_estimate)}")
+            return json.dumps(ai_estimate)
+        else:
+            # Log fallback reason
+            fallback_reason = f"AI estimation failed or low confidence (source: {source}, confidence: {confidence:.2f})"
+            if config.LOG_FALLBACK_USAGE:
+                logger.warning(fallback_reason)
+                fallback_log = config.get_fallback_reason_log(fallback_reason, diagnosis)
+                logger.info(f"Fallback event: {json.dumps(fallback_log)}")
+    
+    # Fallback to hardcoded cost library
+    logger.info("Using hardcoded cost library (fallback)")
     context_source = diagnosis or query
     matched = _match_cost_category(context_source)
     response_data = _build_cost_response(matched, diagnosis, fallback_query=query)
+    
     return json.dumps(response_data)
 
 
@@ -260,11 +455,28 @@ def cost_estimation_diy(query: str) -> str:
 cost_agent = Agent(
     model='gemini-2.5-flash',
     name='cost_agent',
-    description='Provides DIY vs Service cost estimations and DIY-only estimates.',
+    description='Provides AI-powered, location-aware DIY vs Service cost estimations and DIY-only estimates.',
     instruction=(
-        'Ground every cost estimate in the triage diagnosis provided in the input payload. '
-        'Extract the diagnosis details before calling a tool and prefer the most specific category. '
-        'Always return structured JSON exactly as produced by the tools.'
+        'You are an AI-powered cost estimation agent that provides accurate, location-aware repair cost estimates. '
+        '\n\n'
+        'Your cost estimation uses:\n'
+        '1. AI with Google Search grounding for real-time, location-specific pricing\n'
+        '2. Service provider pricing data calibration when available\n'
+        '3. Hardcoded cost library as fallback for reliability\n'
+        '\n'
+        'When calling tools:\n'
+        '- Ground every cost estimate in the triage diagnosis provided in the input payload\n'
+        '- Extract diagnosis, property_address, and serviceResults from the input when available\n'
+        '- The tools will automatically use AI estimation when enabled and fall back to hardcoded values if needed\n'
+        '- Always return structured JSON exactly as produced by the tools\n'
+        '\n'
+        'The cost estimates consider:\n'
+        '- Regional labor rates and cost-of-living adjustments\n'
+        '- Current 2026 material and service costs from real-time data\n'
+        '- Repair complexity and safety factors\n'
+        '- Local service provider pricing when available\n'
+        '\n'
+        'Always provide comprehensive cost breakdowns with DIY and professional service options.'
     ),
     tools=[
         cost_estimation,

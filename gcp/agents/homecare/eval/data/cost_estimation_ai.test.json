@@ -1,0 +1,235 @@
+[
+  {
+    "test_name": "AI estimation with location - San Francisco plumbing",
+    "query": "{\"diagnosis\": \"Leaking pipe under kitchen sink, appears to be a loose connection\", \"property_address\": \"123 Market St, San Francisco, CA 94103\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_have_location_context": true,
+      "expected_cost_range_diy": "$25-150",
+      "expected_cost_range_pro": "$200-600",
+      "should_reflect_sf_pricing": true
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "has_diy_section": true,
+      "has_service_section": true,
+      "has_comparison": true,
+      "diy_lower_than_pro": true,
+      "cost_ranges_valid_format": true
+    }
+  },
+  {
+    "test_name": "AI estimation with location - Rural area HVAC",
+    "query": "{\"diagnosis\": \"Air conditioner not cooling, possible refrigerant issue\", \"property_address\": \"456 Country Rd, Topeka, KS 66612\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_have_location_context": true,
+      "expected_cost_range_diy": "$50-200",
+      "expected_cost_range_pro": "$250-900",
+      "should_reflect_regional_pricing": true
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "has_diy_section": true,
+      "has_service_section": true,
+      "includes_hvac_specific_details": true
+    }
+  },
+  {
+    "test_name": "AI estimation without location - Electrical repair",
+    "query": "{\"diagnosis\": \"Electrical outlet not working, needs replacement\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_have_location_context": false,
+      "expected_cost_range_diy": "$20-80",
+      "expected_cost_range_pro": "$150-350",
+      "should_use_national_averages": true
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "has_safety_warnings": true,
+      "mentions_licensed_electrician": true
+    }
+  },
+  {
+    "test_name": "Complex repair with high severity - Roof damage",
+    "query": "{\"diagnosis\": \"Major roof leak with structural damage, multiple missing shingles and water intrusion\", \"property_address\": \"789 Oak Ave, Seattle, WA 98101\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "complexity": "high",
+      "expected_cost_range_diy": "$200-800",
+      "expected_cost_range_pro": "$1000-5000",
+      "should_recommend_professional": true
+    },
+    "validation_rules": {
+      "has_complexity_assessment": true,
+      "has_safety_considerations": true,
+      "professional_benefits_emphasized": true
+    }
+  },
+  {
+    "test_name": "Simple DIY-friendly repair - Drywall patch",
+    "query": "{\"diagnosis\": \"Small hole in drywall, approximately 2 inches diameter\", \"property_address\": \"321 Pine St, Denver, CO 80202\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "complexity": "low",
+      "expected_cost_range_diy": "$15-60",
+      "expected_cost_range_pro": "$150-400",
+      "diy_feasibility": "high"
+    },
+    "validation_rules": {
+      "has_diy_steps_reference": true,
+      "emphasizes_diy_savings": true,
+      "includes_material_list": true
+    }
+  },
+  {
+    "test_name": "Automotive repair - Paint scratch",
+    "query": "{\"diagnosis\": \"Deep paint scratch on car door, exposing primer layer\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "repair_category": "automotive",
+      "expected_cost_range_diy": "$30-100",
+      "expected_cost_range_pro": "$250-700"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "mentions_paint_matching": true,
+      "includes_automotive_specific_details": true
+    }
+  },
+  {
+    "test_name": "Appliance repair - Refrigerator not cooling",
+    "query": "{\"diagnosis\": \"Refrigerator not maintaining temperature, compressor running constantly\", \"property_address\": \"555 Broadway, New York, NY 10012\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_reflect_nyc_pricing": true,
+      "expected_cost_range_diy": "$80-250",
+      "expected_cost_range_pro": "$300-800",
+      "complexity": "moderate"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "mentions_diagnostics": true,
+      "includes_warranty_considerations": true
+    }
+  },
+  {
+    "test_name": "Pest control - Termite infestation",
+    "query": "{\"diagnosis\": \"Active termite infestation detected in basement, visible damage to wooden beams\", \"property_address\": \"888 Magnolia Dr, Atlanta, GA 30303\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "repair_category": "pest_control",
+      "expected_cost_range_pro": "$500-3000",
+      "should_strongly_recommend_professional": true
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "professional_service_emphasized": true,
+      "mentions_inspection_and_treatment": true
+    }
+  },
+  {
+    "test_name": "Fallback test - Very short diagnosis",
+    "query": "{\"diagnosis\": \"Broken\"}",
+    "expected_behavior": {
+      "should_use_ai": false,
+      "should_fallback_to_hardcoded": true,
+      "fallback_reason": "invalid_input"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "uses_generic_ranges": true
+    }
+  },
+  {
+    "test_name": "Edge case - No diagnosis provided",
+    "query": "{\"property_address\": \"123 Main St, Boston, MA 02101\"}",
+    "expected_behavior": {
+      "should_use_ai": false,
+      "should_fallback_to_hardcoded": true,
+      "fallback_reason": "no_diagnosis"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "uses_generic_ranges": true
+    }
+  },
+  {
+    "test_name": "AI with service provider calibration",
+    "query": "{\"diagnosis\": \"Clogged drain in bathroom sink, water draining very slowly\", \"property_address\": \"999 Lake Shore Dr, Chicago, IL 60611\", \"serviceResults\": {\"localPros\": {\"serpAPIResults\": [{\"name\": \"ABC Plumbing\", \"description\": \"Drain cleaning $150-300\"}], \"yelpAPIResults\": [{\"name\": \"XYZ Plumbing\", \"price\": \"$$\"}]}}}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_calibrate_with_provider_data": true,
+      "expected_cost_range_diy": "$15-70",
+      "expected_cost_range_pro": "$150-350",
+      "calibration_source": "ai_calibrated"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "mentions_local_provider_data": true,
+      "cost_reflects_calibration": true
+    }
+  },
+  {
+    "test_name": "Multiple complexity factors - Electrical with permits",
+    "query": "{\"diagnosis\": \"Need to upgrade electrical panel, current panel outdated and insufficient for home needs, requires permit and inspection\", \"property_address\": \"777 Sunset Blvd, Los Angeles, CA 90028\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "complexity": "high",
+      "complexity_factors": ["permits required", "safety concerns"],
+      "expected_cost_range_pro": "$1500-5000",
+      "should_strongly_recommend_professional": true
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "mentions_permits": true,
+      "mentions_code_compliance": true,
+      "emphasizes_licensed_professional": true
+    }
+  },
+  {
+    "test_name": "Seasonal repair - Roof before winter",
+    "query": "{\"diagnosis\": \"Missing roof shingles need replacement before winter season\", \"property_address\": \"444 Mountain View Rd, Boulder, CO 80302\"}",
+    "expected_behavior": {
+      "should_use_ai": true,
+      "should_consider_seasonal_factors": true,
+      "expected_cost_range_diy": "$100-350",
+      "expected_cost_range_pro": "$400-1200"
+    },
+    "validation_rules": {
+      "has_cost_estimates": true,
+      "may_mention_seasonal_considerations": true,
+      "includes_safety_equipment": true
+    }
+  },
+  {
+    "test_name": "Cost validation - Unrealistic estimate rejection",
+    "description": "This test ensures the system validates AI estimates and falls back if ranges are unrealistic",
+    "query": "{\"diagnosis\": \"Standard faucet washer replacement\"}",
+    "expected_behavior": {
+      "should_validate_estimates": true,
+      "should_reject_if_invalid": true,
+      "min_valid_cost": 5,
+      "max_valid_cost": 50000
+    },
+    "validation_rules": {
+      "cost_within_valid_range": true,
+      "diy_not_exceeding_pro_by_much": true
+    }
+  },
+  {
+    "test_name": "DIY-only estimation",
+    "query": "{\"diagnosis\": \"Replace air filter in HVAC system\"}",
+    "expected_tool": "cost_estimation_diy",
+    "expected_behavior": {
+      "should_return_diy_only": true,
+      "expected_cost_range_diy": "$20-80"
+    },
+    "validation_rules": {
+      "has_diy_cost_estimates": true,
+      "no_professional_section": true,
+      "includes_material_costs": true
+    }
+  }
+]
