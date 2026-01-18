@@ -164,9 +164,10 @@ const normalizeUrl = (u?: string): string | undefined => {
 
 const hasStructuredDataKeys = (parsed: any): boolean => {
   if (!parsed || typeof parsed !== 'object') return false;
+  
   // Check for nested structure (analysis.*)
   if (parsed.analysis && typeof parsed.analysis === 'object') {
-    return !!(
+    const hasFields = !!(
       parsed.analysis.triageResult ||
       parsed.analysis.coverageResult ||
       parsed.analysis.diyResults ||
@@ -174,9 +175,24 @@ const hasStructuredDataKeys = (parsed: any): boolean => {
       parsed.analysis.checkpointSummary ||
       parsed.analysis.checkpointDetails
     );
+    
+    if (__DEV__) {
+      console.log('🔍 Checkpoint Response Validation (nested):', {
+        hasTriageResult: !!parsed.analysis.triageResult,
+        hasCoverageResult: !!parsed.analysis.coverageResult,
+        hasDiyResults: !!parsed.analysis.diyResults,
+        hasServiceResults: !!parsed.analysis.serviceResults,
+        hasCheckpointSummary: !!parsed.analysis.checkpointSummary,
+        hasCheckpointDetails: !!parsed.analysis.checkpointDetails,
+        isValid: hasFields
+      });
+    }
+    
+    return hasFields;
   }
+  
   // Check for flat structure
-  return !!(
+  const hasFields = !!(
     parsed.triageResult ||
     parsed.diyResults ||
     parsed.serviceResults ||
@@ -184,6 +200,20 @@ const hasStructuredDataKeys = (parsed: any): boolean => {
     parsed.checkpointSummary ||
     parsed.checkpointDetails
   );
+  
+  if (__DEV__) {
+    console.log('🔍 Checkpoint Response Validation (flat):', {
+      hasTriageResult: !!parsed.triageResult,
+      hasDiyResults: !!parsed.diyResults,
+      hasServiceResults: !!parsed.serviceResults,
+      hasCoverageResult: !!parsed.coverageResult,
+      hasCheckpointSummary: !!parsed.checkpointSummary,
+      hasCheckpointDetails: !!parsed.checkpointDetails,
+      isValid: hasFields
+    });
+  }
+  
+  return hasFields;
 };
 
 const getPreviewText = (value?: string, max = 240): string | undefined => {

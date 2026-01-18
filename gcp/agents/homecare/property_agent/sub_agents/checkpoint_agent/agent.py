@@ -14,6 +14,7 @@ from google.adk.tools.agent_tool import AgentTool
 from dotenv import load_dotenv
 from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
+from .response_processor import ensure_dual_format_response, validate_checkpoint_response
 from ...agent_inputs import DocsInput
 
 load_dotenv()
@@ -181,11 +182,54 @@ def ask_checkpoints_retrieval(
         logger.info(f"Successfully formatted {len(formatted_results)} checkpoints for query: '{user_query[:100]}'")
         if formatted_results:
             logger.info(f"Sample formatted checkpoint text (first 200 chars): {formatted_results[0].get('text', '')[:200]}")
+        
+        # Store formatted checkpoints in tool context for potential post-processing
+        if tool_context:
+            tool_context.state["last_retrieved_checkpoints"] = formatted_results
+            tool_context.state["last_checkpoint_query"] = user_query
+            logger.debug("Stored checkpoint data in tool context for post-processing")
+        
         return formatted_results
         
     except Exception as e:
         logger.error(f"Error retrieving checkpoints: {e}", exc_info=True)
         return []
+
+
+def after_agent_response_callback(response: str, tool_context: ToolContext, **kwargs) -> str:
+    """
+    Post-processes checkpoint agent responses to ensure dual-format compliance.
+    This is called after the agent generates its response.
+    """
+    try:
+        # Get stored checkpoint data from tool context
+        checkpoints = tool_context.state.get("last_retrieved_checkpoints", [])
+        user_query = tool_context.state.get("last_checkpoint_query", "")
+        
+        if not checkpoints:
+            logger.warning("No checkpoint data found in tool context for post-processing")
+            return response
+        
+        logger.info(f"Post-processing checkpoint response (query: '{user_query[:50]}...', {len(checkpoints)} checkpoints)")
+        
+        # Validate and fix the response
+        is_valid, processed_response, extracted_json = validate_checkpoint_response(response)
+        
+        if is_valid:
+            logger.info("✓ Checkpoint response is valid - no post-processing needed")
+            return response
+        
+        # Response needs fixing - use fallback JSON generation
+        logger.warning("⚠ Checkpoint response invalid - applying post-processing fix")
+        fixed_response = ensure_dual_format_response(response, checkpoints, user_query)
+        
+        logger.info("✓ Post-processing complete - response now has dual format")
+        return fixed_response
+        
+    except Exception as e:
+        logger.error(f"Error in checkpoint response post-processing: {e}", exc_info=True)
+        # Return original response if post-processing fails
+        return response
 
 
 checkpoint_agent = Agent(
@@ -202,6 +246,10 @@ checkpoint_agent = Agent(
     output_key='checkpoint_result'
 )
 
+# Note: Google ADK doesn't support after_agent_response_callback directly on Agent class
+# The post-processing will need to be applied at the parent agent level or in the API layer
+# For now, we've added the infrastructure and the function is available for manual invocation
+
 # Add checkpoint_analysis_agent as a tool after checkpoint_agent is created
 # This avoids circular import issues
 try:
@@ -211,4 +259,4 @@ except ImportError:
     # checkpoint_analysis_agent not available yet, will be added later
     logger.warning("checkpoint_analysis_agent not available during initialization")
 
-__all__ = ["checkpoint_agent"]
+__all__ = ["checkpoint_agent", "after_agent_response_callback"]

@@ -1378,15 +1378,45 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
           // Helper function to check if parsed JSON has structured data keys
           const hasStructuredDataKeys = (parsed: any): boolean => {
               if (!parsed || typeof parsed !== 'object') return false;
+              
               // Check for nested structure (analysis.*)
               if (parsed.analysis && typeof parsed.analysis === 'object') {
-                  return !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
+                  const hasFields = !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
                            parsed.analysis.diyResults || parsed.analysis.serviceResults ||
                            parsed.analysis.checkpointSummary || parsed.analysis.checkpointDetails);
+                  
+                  if (process.env.NODE_ENV === 'development') {
+                      console.log('🔍 Checkpoint Response Validation (nested):', {
+                          hasTriageResult: !!parsed.analysis.triageResult,
+                          hasCoverageResult: !!parsed.analysis.coverageResult,
+                          hasDiyResults: !!parsed.analysis.diyResults,
+                          hasServiceResults: !!parsed.analysis.serviceResults,
+                          hasCheckpointSummary: !!parsed.analysis.checkpointSummary,
+                          hasCheckpointDetails: !!parsed.analysis.checkpointDetails,
+                          isValid: hasFields
+                      });
+                  }
+                  
+                  return hasFields;
               }
+              
               // Check for flat structure
-              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || 
+              const hasFields = !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || 
                        parsed.coverageResult || parsed.checkpointSummary || parsed.checkpointDetails);
+              
+              if (process.env.NODE_ENV === 'development') {
+                  console.log('🔍 Checkpoint Response Validation (flat):', {
+                      hasTriageResult: !!parsed.triageResult,
+                      hasDiyResults: !!parsed.diyResults,
+                      hasServiceResults: !!parsed.serviceResults,
+                      hasCoverageResult: !!parsed.coverageResult,
+                      hasCheckpointSummary: !!parsed.checkpointSummary,
+                      hasCheckpointDetails: !!parsed.checkpointDetails,
+                      isValid: hasFields
+                  });
+              }
+              
+              return hasFields;
           };
           
           // Method 1: PRIORITY - Extract JSON from ```json code block (for dual-format responses)
