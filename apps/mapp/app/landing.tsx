@@ -114,12 +114,12 @@ export default function LandingPage() {
       contentContainerStyle={{ flexGrow: 1 }}
       showsVerticalScrollIndicator={false}>
       
-      {/* Hero Section */}
       <Animated.View style={{ opacity: fadeAnim }}>
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 60, paddingBottom: 80, paddingHorizontal: 20 }}>
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+        {/* Hero Section */}
+        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 60, paddingBottom: 40, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center' }}>
             {/* Logo/Brand */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 30 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
               <View
                 style={{
                   width: 40,
@@ -148,7 +148,7 @@ export default function LandingPage() {
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 32,
+                marginBottom: 36,
                 gap: 8,
               }}>
               <Icon as={Zap} size={16} style={{ color: LANDING_COLORS.primary }} />
@@ -164,9 +164,9 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginTop: 0,
-                marginBottom: 20,
+                marginBottom: 24,
                 lineHeight: 56,
+                paddingHorizontal: 10,
               }}>
               HomeGeek{'\n'}
               <Text
@@ -184,7 +184,8 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground90,
-                marginBottom: 10,
+                marginBottom: 16,
+                paddingHorizontal: 10,
               }}>
               Intelligent Home Care &{'\n'}
               <Text style={{ fontWeight: '500' }}>Property Diagnostics</Text>
@@ -195,8 +196,7 @@ export default function LandingPage() {
                 fontSize: 18,
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground60,
-                marginTop: 20,
-                marginBottom: 40,
+                marginBottom: 48,
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
@@ -205,7 +205,7 @@ export default function LandingPage() {
             </Text>
 
             {/* CTA Buttons */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 40, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 48, paddingHorizontal: 20, width: '100%' }}>
               <TouchableOpacity
                 onPress={handleGetStarted}
                 style={{
@@ -232,8 +232,8 @@ export default function LandingPage() {
             </View>
 
             {/* Stats */}
-            <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
-              <View style={{ alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: 32, paddingBottom: 20 }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
                 <View
                   style={{
                     width: 56,
@@ -242,16 +242,16 @@ export default function LandingPage() {
                     backgroundColor: LANDING_COLORS.primary20,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 12,
                   }}>
                   <Icon as={CheckCircle} size={28} style={{ color: LANDING_COLORS.primary }} />
                 </View>
-                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground }}>10,000+</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground }}>
+                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground, marginBottom: 4 }}>10,000+</Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground, textAlign: 'center' }}>
                   Active Users
                 </Text>
               </View>
-              <View style={{ alignItems: 'center' }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
                 <View
                   style={{
                     width: 56,
@@ -260,12 +260,12 @@ export default function LandingPage() {
                     backgroundColor: LANDING_COLORS.primary20,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 12,
                   }}>
                   <Icon as={TrendingUp} size={28} style={{ color: LANDING_COLORS.primary }} />
                 </View>
-                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground }}>98%</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground }}>
+                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground, marginBottom: 4 }}>98%</Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground, textAlign: 'center' }}>
                   Accuracy Rate
                 </Text>
               </View>
@@ -274,19 +274,20 @@ export default function LandingPage() {
         </View>
 
         {/* Features Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingVertical: 60, paddingHorizontal: 20 }}>
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 20,
                 paddingVertical: 10,
                 borderRadius: 999,
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 32,
+                marginBottom: 36,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
                 PLATFORM FEATURES
@@ -298,8 +299,9 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginTop: 0,
-                marginBottom: 16,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 44,
               }}>
               The Top Things{'\n'}
               <Text style={{ fontWeight: 'bold' }}>We Do for You</Text>
@@ -310,13 +312,13 @@ export default function LandingPage() {
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
                 paddingHorizontal: 20,
-                marginTop: 8,
+                lineHeight: 26,
               }}>
               Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
             </Text>
           </View>
 
-          <View style={{ gap: 16 }}>
+          <View style={{ gap: 20 }}>
             {features.map((feature, i) => (
               <View
                 key={feature.title}
@@ -336,23 +338,25 @@ export default function LandingPage() {
                       backgroundColor: LANDING_COLORS.primary,
                       justifyContent: 'center',
                       alignItems: 'center',
+                      flexShrink: 0,
                     }}>
                     <Icon as={feature.icon} size={28} style={{ color: LANDING_COLORS.white }} />
                   </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, paddingTop: 2 }}>
                     <Text
                       style={{
                         fontSize: 20,
                         fontWeight: 'bold',
                         color: LANDING_COLORS.foreground,
                         marginBottom: 8,
+                        lineHeight: 26,
                       }}>
                       {feature.title}
                     </Text>
                     <Text
                       style={{
                         fontSize: 14,
-                        lineHeight: 20,
+                        lineHeight: 22,
                         color: LANDING_COLORS.mutedForeground,
                       }}>
                       {feature.desc}
@@ -365,19 +369,20 @@ export default function LandingPage() {
         </View>
 
         {/* How It Works Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingVertical: 60, paddingHorizontal: 20 }}>
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: 20,
                 paddingVertical: 10,
                 borderRadius: 999,
                 backgroundColor: LANDING_COLORS.primaryLight,
                 borderWidth: 1,
                 borderColor: LANDING_COLORS.primaryBorder,
-                marginBottom: 32,
+                marginBottom: 36,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>SIMPLE FLOW</Text>
             </View>
@@ -387,8 +392,9 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginTop: 0,
-                marginBottom: 16,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 40,
               }}>
               How It Works
             </Text>
@@ -398,20 +404,20 @@ export default function LandingPage() {
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
                 paddingHorizontal: 20,
-                marginTop: 8,
+                lineHeight: 24,
               }}>
               Four steps from your question to actionable recommendations
             </Text>
           </View>
 
-          <View style={{ gap: 24 }}>
+          <View style={{ gap: 28 }}>
             {steps.map((item) => (
               <View
                 key={item.step}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'flex-start',
-                  gap: 16,
+                  gap: 20,
                 }}>
                 <View
                   style={{
@@ -421,23 +427,25 @@ export default function LandingPage() {
                     backgroundColor: LANDING_COLORS.primary,
                     justifyContent: 'center',
                     alignItems: 'center',
+                    flexShrink: 0,
                   }}>
                   <Text style={{ fontSize: 20, fontWeight: 'bold', color: LANDING_COLORS.white }}>{item.step}</Text>
                 </View>
-                <View style={{ flex: 1, paddingTop: 8 }}>
+                <View style={{ flex: 1, paddingTop: 6 }}>
                   <Text
                     style={{
                       fontSize: 18,
                       fontWeight: 'bold',
                       color: LANDING_COLORS.foreground,
                       marginBottom: 8,
+                      lineHeight: 24,
                     }}>
                     {item.title}
                   </Text>
                   <Text
                     style={{
                       fontSize: 14,
-                      lineHeight: 20,
+                      lineHeight: 22,
                       color: LANDING_COLORS.mutedForeground,
                     }}>
                     {item.desc}
@@ -449,7 +457,7 @@ export default function LandingPage() {
         </View>
 
         {/* Final CTA Section */}
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingVertical: 80, paddingHorizontal: 20 }}>
+        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
           <View style={{ alignItems: 'center' }}>
             <Text
               style={{
@@ -457,7 +465,9 @@ export default function LandingPage() {
                 fontWeight: '300',
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground,
-                marginBottom: 20,
+                marginBottom: 24,
+                paddingHorizontal: 10,
+                lineHeight: 44,
               }}>
               Ready to Transform Your{'\n'}
               <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Property Management?</Text>
@@ -467,8 +477,9 @@ export default function LandingPage() {
                 fontSize: 18,
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
-                marginBottom: 40,
+                marginBottom: 48,
                 paddingHorizontal: 20,
+                lineHeight: 26,
               }}>
               Join thousands of homeowners and property managers who trust HomeGeek AI
             </Text>
@@ -504,11 +515,12 @@ export default function LandingPage() {
             borderTopWidth: 1,
             borderTopColor: LANDING_COLORS.border,
             backgroundColor: LANDING_COLORS.background,
-            paddingVertical: 40,
+            paddingTop: 60,
+            paddingBottom: 40,
             paddingHorizontal: 20,
           }}>
           <View style={{ alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
               <View
                 style={{
                   width: 32,
@@ -530,7 +542,6 @@ export default function LandingPage() {
                 fontSize: 12,
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
-                marginTop: 10,
               }}>
               © {new Date().getFullYear()} HomeGeek AI. All rights reserved.
             </Text>
