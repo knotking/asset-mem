@@ -160,18 +160,12 @@ export const apiUrls = {
  * @returns The title string if found, null otherwise
  */
 export function extractCheckpointTitle(content: string): string | null {
-  if (!content) {
-    console.log('[extractCheckpointTitle] No content provided');
-    return null;
-  }
+  if (!content) return null;
 
   try {
     // Look for JSON code block in the response
     const jsonMatch = content.match(/```json\s*\n?([\s\S]*?)```/);
-    if (!jsonMatch) {
-      console.log('[extractCheckpointTitle] No JSON code block found in response');
-      return null;
-    }
+    if (!jsonMatch) return null;
 
     const jsonStr = jsonMatch[1].trim();
     const parsed = JSON.parse(jsonStr);
@@ -183,23 +177,16 @@ export function extractCheckpointTitle(content: string): string | null {
       analysis.checkpointDetails
     );
 
-    if (!hasCheckpointData) {
-      console.log('[extractCheckpointTitle] No checkpoint data found in JSON');
-      return null;
-    }
+    if (!hasCheckpointData) return null;
 
     // Extract title from analysis.title
     if (analysis.title && typeof analysis.title === "string") {
-      const title = analysis.title.trim();
-      console.log('[extractCheckpointTitle] Successfully extracted title:', title);
-      return title;
+      return analysis.title.trim();
     }
 
-    console.log('[extractCheckpointTitle] No title field found in analysis');
     return null;
   } catch (error) {
     // Failed to parse JSON or extract title
-    console.error('[extractCheckpointTitle] Error parsing response:', error);
     return null;
   }
 }
