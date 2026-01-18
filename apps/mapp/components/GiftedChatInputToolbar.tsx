@@ -29,6 +29,7 @@ import {
 import type {
   FileAttachment,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
@@ -46,6 +47,8 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   isSending: boolean;
   onStop: () => void;
   attachmentOptionsVisible: boolean;
@@ -68,6 +71,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onPrimaryAgentChange,
     selectedOptionalAgents,
     onToggleOptionalAgent,
+    selectedCheckpointOptionalAgents,
+    onToggleCheckpointOptionalAgent,
     isSending,
     onStop,
     attachmentOptionsVisible,
@@ -420,6 +425,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
       <CompactSettingsBar
         primaryAgent={primaryAgent}
         selectedOptionalAgents={selectedOptionalAgents}
+        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
         locationData={locationData}
         propertyAddress={propertyAddress}
         onOpenSettings={handleOpenSettings}
@@ -435,6 +441,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         onPrimaryAgentChange={onPrimaryAgentChange}
         selectedOptionalAgents={selectedOptionalAgents}
         onToggleOptionalAgent={onToggleOptionalAgent}
+        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+        onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
         locationData={locationData}
         onLocationDataChange={onLocationDataChange}
         propertyAddress={propertyAddress}

@@ -15,6 +15,15 @@ export const ANALYSIS_OPTIONAL_AGENTS = [
 
 export type AnalysisOptionalAgent = (typeof ANALYSIS_OPTIONAL_AGENTS)[number];
 
+export const CHECKPOINT_OPTIONAL_AGENTS = [
+  "coverage",
+  "diy",
+  "service",
+  "cost",
+] as const;
+
+export type CheckpointOptionalAgent = (typeof CHECKPOINT_OPTIONAL_AGENTS)[number];
+
 export type PrimaryAgent = "analysis" | "checkpoint";
 
 export type Message = {

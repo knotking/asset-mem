@@ -133,6 +133,19 @@ PropertyChatSessionPage
 - Support checkpoint creation from chat
 - Show checkpoint timeline visualization in chat
 
+## Related Features
+
+### Checkpoint AI Chat Analysis (January 2026)
+
+The checkpoint chat integration has been extended with comprehensive analysis capabilities:
+
+- **Coverage Analysis**: Check warranty/insurance for checkpoint issues
+- **DIY Solutions**: Get repair guides and product recommendations
+- **Service Providers**: Find local professionals for detected issues
+- **Cost Estimates**: Compare DIY vs professional repair costs
+
+See [Checkpoint AI Chat Analysis](./CHECKPOINT_AI_CHAT_ANALYSIS.md) for complete details.
+
 ## Notes
 - Implementation matches mobile app patterns for consistency
 - Uses shadcn/ui Sheet component for drawer (web equivalent of mobile drawer)

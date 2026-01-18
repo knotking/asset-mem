@@ -4,6 +4,8 @@
 
 The Analysis Agent is a comprehensive AI-powered orchestrator designed to handle property-related queries including repairs, maintenance, pest control, service recommendations, and product requests. It provides a complete workflow from problem diagnosis to actionable solutions.
 
+**Related Feature**: The [Checkpoint Analysis Agent](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md) extends similar capabilities to checkpoint data, enabling users to get coverage, DIY, service, and cost recommendations based on issues detected in their property checkpoints.
+
 ## Purpose
 
 The Analysis Agent serves as the primary diagnostic and solution-finding system for property care needs. It:
@@ -208,12 +210,26 @@ Both formats are included in every response, ensuring compatibility across all c
 - **Data Encryption**: All data encrypted in transit and at rest
 - **Session Management**: Secure session handling with Firebase Auth
 
+## Related Features
+
+### Checkpoint Analysis Agent (January 2026)
+
+The analysis agent's capabilities have been extended to checkpoint data through the **Checkpoint Analysis Agent**. This allows users to:
+
+- Select checkpoints and get comprehensive analysis of detected issues
+- Receive coverage, DIY, service, and cost recommendations
+- Analyze property condition trends over time
+- Get actionable insights based on checkpoint history
+
+See [Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md) for details.
+
 ## Future Enhancements
 
 - **Multi-language Support**: Expand beyond English
 - **Voice Input**: Accept voice descriptions of problems
 - **AR Integration**: Augmented reality for guided repairs
-- **Predictive Maintenance**: Proactive issue detection
+- **Predictive Maintenance**: Proactive issue detection based on checkpoint trends
 - **Cost Tracking**: Historical cost analysis and trends
 - **Contractor Ratings**: User feedback and rating system
+- **Parallel Agent Execution**: Run DIY and Service agents simultaneously for faster results
 

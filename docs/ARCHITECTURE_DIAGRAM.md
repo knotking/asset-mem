@@ -81,15 +81,29 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │  │   │  └───────┬──────┘   └──────────────────┘    │   │                      │   │   │
 │  │   │          │                                   │   │  3. Metrics Worker   │   │   │
 │  │   │   ┌──────┴──────┐                           │   └──────────┬───────────┘   │   │
-│  │   │   ┌──────┴──────┐                           │              │               │   │
 │  │   │   ▼             ▼                           │              │               │   │
 │  │   │ ┌──────────┐ ┌─────────────────┐            │              │               │   │
-│  │   │ │USER DOCS │ │KNOWLEDGE BASE   │            │              │               │   │
+│  │   │ │CHECKPOINT│ │KNOWLEDGE BASE   │            │              │               │   │
 │  │   │ │ AGENT    │ │  AGENT          │            │              │               │   │
 │  │   │ │          │ │                 │            │              │               │   │
-│  │   │ │User      │ │General          │            │              │               │   │
-│  │   │ │Uploads   │ │RAG Corpus       │            │              │               │   │
+│  │   │ │Timeline  │ │General          │            │              │               │   │
+│  │   │ │Queries + │ │RAG Corpus       │            │              │               │   │
+│  │   │ │Analysis* │ │                 │            │              │               │   │
 │  │   │ └────┬─────┘ └────────┬────────┘            │              │               │   │
+│  │   │      │                │                     │              │               │   │
+│  │   │      │  ┌─────────────┴──────┐              │              │               │   │
+│  │   │      │  │   USER DOCS AGENT  │              │              │               │   │
+│  │   │      │  │   (User Uploads)   │              │              │               │   │
+│  │   │      │  └────────────────────┘              │              │               │   │
+│  │   │      │                                      │              │               │   │
+│  │   │      ▼ *Checkpoint Analysis Agent          │              │               │   │
+│  │   │   ┌────────────────────────────────┐       │              │               │   │
+│  │   │   │  Orchestrates:                 │       │              │               │   │
+│  │   │   │  • Coverage Agent              │       │              │               │   │
+│  │   │   │  • DIY Agent                   │       │              │               │   │
+│  │   │   │  • Service Agent               │       │              │               │   │
+│  │   │   │  • Cost Agent                  │       │              │               │   │
+│  │   │   └────────────────────────────────┘       │              │               │   │
 │  │   │      │                │                     │              │               │   │
 │  │   └──────┼────────────────┼─────────────────────┘              │               │   │
 │  │          │                │                                    │               │   │

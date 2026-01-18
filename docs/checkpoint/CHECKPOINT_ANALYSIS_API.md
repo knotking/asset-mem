@@ -1,350 +1,585 @@
-# Checkpoint API
+# Checkpoint Analysis API Reference
 
-This document describes the checkpoint API endpoints for processing property checkpoint images.
+## Overview
+
+This document provides detailed API reference for the Checkpoint Analysis feature, including request/response formats, parameters, and integration examples.
 
 ## Endpoints
 
-### 1. Analyze Checkpoint (Async)
+### Agent SSE Endpoint
 
-The Checkpoint Analysis API provides asynchronous image analysis for property checkpoints. The endpoint publishes analysis requests to Pub/Sub for background processing.
+**URL**: `/api/agent/sse`  
+**Method**: `POST`  
+**Content-Type**: `application/json`  
+**Response**: Server-Sent Events (SSE) stream
 
-**Endpoint:** `POST /{SECRET}/analyze-checkpoint`
+## Request Schema
 
-See [Architecture](#architecture-async-analysis) below for details.
-
-### 2. Compare Checkpoints (Sync)
-
-The Checkpoint Comparison API compares two checkpoint images (e.g., "Before" vs "After") to identify changes, damage, or repairs. This is a synchronous endpoint that returns results immediately using Gemini AI.
-
-**Endpoint:** `POST /{SECRET}/compare-checkpoints`
-
-**Request Body:**
-
-```json
-{
-  "image1Url": "gs://bucket/path/to/before.jpg",
-  "image2Url": "gs://bucket/path/to/after.jpg",
-  "contentType1": "image/jpeg",
-  "contentType2": "image/jpeg",
-  "location": "Kitchen"
-}
-```
-
-**Response:**
-
-```json
-{
-  "summary": "The wall has been painted...",
-  "similarityScore": 0.85,
-  "semanticChanges": ["Wall color changed", "Crack repaired"],
-  "regions": [
-    {
-      "description": "Crack repair",
-      "changeType": "modified",
-      "severity": "minor",
-      "confidence": 0.95,
-      "bbox": { ... }
-    }
-  ]
-}
-```
-
-## Architecture (Async Analysis)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Client Application (Mobile/Web)                │
-│  - Creates checkpoint with image                            │
-│  - Sets analysisStatus: 'pending'                           │
-└───────────┬─────────────────────────────────────────────────┘
-            │
-            │ POST /analyze-checkpoint
-            │ {imageUrl, contentType, location, checkpointId, userId, propertyId}
-            │
-            ▼
-┌─────────────────────────────────────────────────────────────┐
-│              GCP Proxy API (Cloud Run)                      │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Checkpoint Analysis Endpoint                        │  │
-│  │  - Validates request                                 │  │
-│  │  - Publishes to checkpoint-analysis-topic            │  │
-│  │  - Returns 202 Accepted immediately                  │  │
-│  └──────────────────────┬───────────────────────────────┘  │
-└─────────────────────────┼───────────────────────────────────┘
-                          │
-                          │ Pub/Sub Message
-                          │ {imageUrl, contentType, location, checkpointId, userId, propertyId}
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│     Cloud Function: pubsub_checkpoint_analysis             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  1. Receives Pub/Sub message                        │  │
-│  │  2. Calls Gemini AI for image analysis              │  │
-│  │  3. Updates Firestore checkpoint document           │  │
-│  │     - Sets analysisStatus: 'completed'              │  │
-│  │     - Adds aiAnalysis field                         │  │
-│  └──────────────────────┬───────────────────────────────┘  │
-└─────────────────────────┼───────────────────────────────────┘
-                          │
-                          │ Firestore Update
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│         Client Application (Real-time Listener)            │
-│  - Listens to Firestore changes                            │
-│  - Updates UI when analysis completes                      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Files
-
-### API Layer (`gcp/proxy/api`)
-
-- **`routers/checkpoint.py`**: FastAPI router with `/analyze-checkpoint` and `/compare-checkpoints` endpoints
-- **`services/checkpoint_service.py`**: Service handling Pub/Sub publishing and checkpoint comparison logic
-- **`schemas/checkpoint.py`**: Pydantic models for request/response validation
-
-### Worker Layer (`gcp/proxy/workers/function`)
-
-- **`main.py`**: Contains `pubsub_checkpoint_analysis()` Cloud Function entry point
-- **`checkpoint_service.py`**: Service that calls Gemini AI and updates Firestore
-
-## Configuration
-
-### Environment Variables
-
-The API requires the following environment variable:
-
-| Variable                    | Description                                | Example                     |
-| --------------------------- | ------------------------------------------ | --------------------------- |
-| `CHECKPOINT_ANALYSIS_TOPIC` | Pub/Sub topic name for checkpoint analysis | `checkpoint-analysis-topic` |
-| `GCP_PROJECT_ID`            | Google Cloud Project ID                    | `homegeekdemo`              |
-| `GCP_LOCATION`              | GCP location for Vertex AI                 | `us-central1`               |
-
-### Pub/Sub Setup
-
-1. **Create Topic:**
-
-   ```bash
-   gcloud pubsub topics create checkpoint-analysis-topic
-   ```
-
-2. **Create Subscription (for Cloud Function):**
-
-   ```bash
-   gcloud pubsub subscriptions create checkpoint-analysis-subscription \
-     --topic=checkpoint-analysis-topic
-   ```
-
-3. **Grant Permissions:**
-   - API service account needs `roles/pubsub.publisher` on the topic
-   - Worker service account needs `roles/pubsub.subscriber` on the subscription
-
-## Worker Function
-
-The `pubsub_checkpoint_analysis` Cloud Function processes checkpoint analysis requests.
-
-### Processing Flow
-
-1. **Receives Pub/Sub Message:**
-   - Parses message payload
-   - Extracts `checkpointId`, `userId`, `propertyId`, `imageUrl`, `contentType`, `location`
-
-2. **Analyzes Image:**
-   - Calls `checkpoint_service.analyze_checkpoint_image()`
-   - Uses Gemini 2.5 Flash model
-   - Returns structured JSON:
-     ```python
-     {
-       "summary": str,
-       "conditions": List[str],
-       "detectedItems": List[str],
-       "issues": List[str]
-     }
-     ```
-
-3. **Updates Firestore:**
-   - Updates checkpoint document at path:
-     ```
-     users/{userId}/properties/{propertyId}/checkpoints/{checkpointId}
-     ```
-   - Sets `analysisStatus: "completed"`
-   - Adds `aiAnalysis` field with results
-
-4. **Error Handling:**
-   - On failure, sets `analysisStatus: "failed"`
-   - Logs errors for monitoring
-
-### Worker Configuration
-
-The worker requires these environment variables:
-
-| Variable         | Description                | Example        |
-| ---------------- | -------------------------- | -------------- |
-| `GCP_PROJECT_ID` | Google Cloud Project ID    | `homegeekdemo` |
-| `GCP_LOCATION`   | GCP location for Vertex AI | `us-central1`  |
-
-The worker uses Firebase Admin SDK with default GCP service account credentials.
-
-## Usage Examples
-
-### Frontend (React/TypeScript)
+### Base Request
 
 ```typescript
-import { analyzeCheckpoint } from "@/lib/api";
+interface AgentRequest {
+  user_id: string;                    // Required: Firebase user ID
+  session_id?: string;                // Optional: Agent session ID
+  user_query: string;                 // Required: User's question
+  property_id?: string;               // Required for checkpoint queries
+  primary_agent: 'analysis' | 'checkpoint';  // Required: Agent type
+  
+  // Checkpoint-specific fields
+  checkpoint_ids?: string[];          // Optional: Specific checkpoint IDs
+  checkpoint_optional_agents?: CheckpointOptionalAgent[];  // Optional: Analysis agents
+  
+  // Context fields
+  context_doc_uris?: string[];        // Optional: Document URIs for coverage
+  diagnosis_uris?: string[];          // Optional: Media URIs for analysis
+  property_address?: string;          // Optional: Property address
+  
+  // Location fields (for service agent)
+  location_type?: 'address' | 'location';
+  location_coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  location_radius?: number;           // Miles, default: 5
+  
+  // Analysis agent fields
+  analysis_optional_agents?: AnalysisOptionalAgent[];
+}
 
-// After creating checkpoint
-const result = await createCheckpoint(data, mediaFiles);
+type CheckpointOptionalAgent = 'coverage' | 'diy' | 'service' | 'cost';
+type AnalysisOptionalAgent = 'coverage' | 'diy' | 'service' | 'cost';
+```
 
-// Trigger analysis
-analyzeCheckpoint({
-  imageUrl: imageMedia.gsURI,
-  contentType: imageMedia.contentType,
-  location: data.location,
-  checkpointId: result.id,
-  userId: user.uid,
-  propertyId: property.id,
-}).catch((err) => {
-  console.error("Failed to queue analysis:", err);
-});
+### Checkpoint Analysis Request
 
-// Listen to Firestore changes for status updates
-const unsubscribe = onSnapshot(
-  doc(
-    db,
-    `users/${userId}/properties/${propertyId}/checkpoints/${checkpointId}`
-  ),
-  (snapshot) => {
-    const checkpoint = snapshot.data();
-    if (checkpoint.analysisStatus === "completed") {
-      // Show analysis results
-      console.log(checkpoint.aiAnalysis);
+```typescript
+// Simple Query (No Optional Agents)
+{
+  "user_id": "user123",
+  "session_id": "session456",
+  "user_query": "What changed in my kitchen?",
+  "property_id": "prop789",
+  "primary_agent": "checkpoint",
+  "checkpoint_ids": ["cp1", "cp2", "cp3"]
+}
+
+// Analysis with Optional Agents
+{
+  "user_id": "user123",
+  "session_id": "session456",
+  "user_query": "Analyze my bathroom checkpoints and give me DIY solutions",
+  "property_id": "prop789",
+  "primary_agent": "checkpoint",
+  "checkpoint_ids": ["cp4", "cp5"],
+  "checkpoint_optional_agents": ["diy", "cost"],
+  "context_doc_uris": ["gs://bucket/warranty.pdf"],
+  "property_address": "123 Main St, San Francisco, CA"
+}
+
+// Full Analysis with Location
+{
+  "user_id": "user123",
+  "session_id": "session456",
+  "user_query": "Complete analysis of all property issues",
+  "property_id": "prop789",
+  "primary_agent": "checkpoint",
+  "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+  "context_doc_uris": ["gs://bucket/warranty.pdf", "gs://bucket/insurance.pdf"],
+  "property_address": "123 Main St, San Francisco, CA",
+  "location_type": "location",
+  "location_coordinates": {
+    "lat": 37.7749,
+    "lng": -122.4194
+  },
+  "location_radius": 10
+}
+```
+
+## Response Schema
+
+### SSE Stream Format
+
+The response is a Server-Sent Events stream with the following event types:
+
+```
+event: agent_step
+data: {"name": "checkpoint_agent", "status": "executing"}
+
+event: chunk
+data: {"content": "Based on your checkpoints..."}
+
+event: complete
+data: {"final_response": "..."}
+```
+
+### Response Structure
+
+#### Simple Query Response
+
+```typescript
+// Plain text response
+"Based on your checkpoints, I found 3 relevant checkpoints:
+
+Checkpoint 'Kitchen Inspection - Jan 2026' from Kitchen:
+Water damage detected under sink, loose cabinet door.
+
+Checkpoint 'Kitchen Follow-up - Feb 2026' from Kitchen:
+Water damage persists, cabinet door repaired."
+```
+
+#### Analysis Response (Dual Format)
+
+**Markdown (First)**:
+```markdown
+# Kitchen Checkpoint Analysis
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 3
+- **Issues Detected**: Water damage under sink, loose cabinet door, grout discoloration
+- **Locations**: Kitchen, Bathroom
+- **Overall Condition**: Moderate issues requiring attention
+
+## Coverage Information
+Your home warranty covers plumbing repairs under the Premium Plan...
+
+## DIY Solutions
+
+### Repair Steps
+1. Turn off water supply to sink
+2. Inspect pipe connections for leaks
+3. Tighten loose connections with wrench
+4. Replace damaged pipes if necessary
+
+### Video Tutorials
+- [How to Fix a Leaky Sink](https://youtube.com/watch?v=...)
+- [Cabinet Repair Guide](https://youtube.com/watch?v=...)
+
+### Recommended Products
+- Pipe Wrench Set - $29.99 (Home Depot)
+- Plumber's Tape - $4.99 (Amazon)
+
+## Local Service Providers
+
+### Top Plumbers Near You
+1. **ABC Plumbing** - 4.8★ (245 reviews)
+   - Distance: 1.2 miles
+   - Phone: (555) 123-4567
+   
+2. **Quick Fix Plumbing** - 4.6★ (189 reviews)
+   - Distance: 2.5 miles
+   - Phone: (555) 987-6543
+
+## Cost Estimates
+
+### DIY Approach
+- **Cost Range**: $50-150
+- **Includes**: Materials, basic tools, your time
+- **Complexity**: Moderate - requires basic plumbing skills
+
+### Professional Service
+- **Cost Range**: $200-500
+- **Includes**: Labor, expertise, warranty
+- **Complexity**: Simple - professional handles everything
+
+### Comparison
+- **DIY Savings**: $150-350 (60-70% savings)
+- **Professional Benefits**: Guaranteed work, faster completion, proper diagnosis
+```
+
+**JSON (Second)**:
+```json
+{
+  "checkpointAnalysis": {
+    "title": "Kitchen Checkpoint Analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 3,
+      "issuesDetected": [
+        "Water damage under sink",
+        "Loose cabinet door",
+        "Grout discoloration"
+      ],
+      "overallCondition": "Moderate issues requiring attention",
+      "locations": ["Kitchen", "Bathroom"]
+    },
+    "coverageResult": {
+      "warrantyInfo": "Your home warranty covers plumbing repairs...",
+      "insuranceInfo": "Standard homeowner's policy may cover water damage..."
+    },
+    "diyResults": {
+      "diySteps": {
+        "summary": "Fix leaky sink and repair cabinet",
+        "steps": [
+          "Turn off water supply to sink",
+          "Inspect pipe connections for leaks",
+          "Tighten loose connections with wrench",
+          "Replace damaged pipes if necessary"
+        ]
+      },
+      "youtubeSearch": {
+        "videos": [
+          {
+            "title": "How to Fix a Leaky Sink",
+            "url": "https://youtube.com/watch?v=...",
+            "description": "Step-by-step guide to fixing common sink leaks"
+          }
+        ]
+      },
+      "recommendedProducts": {
+        "products": [
+          {
+            "vendor": "Home Depot",
+            "url": "https://homedepot.com/...",
+            "description": "Pipe Wrench Set",
+            "price": "$29.99"
+          }
+        ]
+      }
+    },
+    "serviceResults": {
+      "localPros": {
+        "serpAPIResults": [
+          {
+            "name": "ABC Plumbing",
+            "rating": 4.8,
+            "reviews": 245,
+            "distance": "1.2 miles",
+            "phone": "(555) 123-4567",
+            "address": "456 Oak St, San Francisco, CA"
+          }
+        ],
+        "yelpAPIResults": [
+          {
+            "name": "Quick Fix Plumbing",
+            "rating": 4.6,
+            "review_count": 189,
+            "distance": 2.5,
+            "phone": "(555) 987-6543"
+          }
+        ]
+      }
+    },
+    "costEstimationResults": {
+      "costEstimates": {
+        "repair_type": "Plumbing leak repair",
+        "DIY": {
+          "cost_range": "$50-150",
+          "includes": ["Materials", "Basic tools", "Your time"],
+          "savings": "$150-350 compared to professional",
+          "complexity": "Moderate - requires basic plumbing skills"
+        },
+        "Service": {
+          "cost_range": "$200-500",
+          "includes": ["Labor", "Expertise", "Warranty"],
+          "benefits": "Guaranteed work, faster completion",
+          "complexity": "Simple - professional handles everything"
+        },
+        "comparison": {
+          "diy_savings": "60-70% savings",
+          "professional_benefits": "Warranty, expertise, time savings",
+          "considerations": "DIY requires skills and tools"
+        }
+      }
     }
   }
-);
+}
 ```
 
-### cURL Example
+## Request Parameters
 
-```bash
-curl -X POST "https://your-api-url/{SECRET}/analyze-checkpoint" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "imageUrl": "gs://bucket/path/to/image.jpg",
-    "contentType": "image/jpeg",
-    "location": "Kitchen",
-    "checkpointId": "checkpoint-123",
-    "userId": "user-456",
-    "propertyId": "property-789"
-  }'
-```
+### Required Parameters
 
-**Expected Response:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `user_id` | string | Firebase user ID |
+| `user_query` | string | User's question or request |
+| `property_id` | string | Property ID (required for checkpoint queries) |
+| `primary_agent` | string | Must be "checkpoint" for checkpoint analysis |
+
+### Optional Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `session_id` | string | null | Agent session ID for conversation continuity |
+| `checkpoint_ids` | string[] | null | Specific checkpoint IDs to analyze |
+| `checkpoint_optional_agents` | string[] | [] | Optional analysis agents to invoke |
+| `context_doc_uris` | string[] | [] | Document URIs for coverage checks |
+| `property_address` | string | null | Property address for location-based services |
+| `location_type` | string | "address" | "address" or "location" |
+| `location_coordinates` | object | null | {lat, lng} for precise location |
+| `location_radius` | number | 5 | Search radius in miles (10-100) |
+
+### checkpoint_optional_agents Values
+
+| Value | Description | Output Section |
+|-------|-------------|----------------|
+| `"coverage"` | Check warranty/insurance | `coverageResult` |
+| `"diy"` | DIY solutions and products | `diyResults` |
+| `"service"` | Local service providers | `serviceResults` |
+| `"cost"` | Cost estimates | `costEstimationResults` |
+
+**Note**: Agents execute in canonical order: coverage → diy → service → cost
+
+## Response Fields
+
+### checkpointSummary
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `checkpointsAnalyzed` | number | Number of checkpoints analyzed |
+| `issuesDetected` | string[] | List of detected issues |
+| `overallCondition` | string | Overall condition assessment |
+| `locations` | string[] | Locations/areas analyzed |
+
+### coverageResult
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `warrantyInfo` | string | Warranty coverage information |
+| `insuranceInfo` | string | Insurance coverage information |
+
+### diyResults
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `diySteps.summary` | string | Summary of DIY approach |
+| `diySteps.steps` | string[] | Step-by-step instructions |
+| `youtubeSearch.videos` | object[] | Video tutorial links |
+| `recommendedProducts.products` | object[] | Product recommendations |
+
+### serviceResults
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `localPros.serpAPIResults` | object[] | Google search results |
+| `localPros.yelpAPIResults` | object[] | Yelp search results |
+| `localPros.googleSearchResults` | object[] | Fallback search results |
+
+### costEstimationResults
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `costEstimates.repair_type` | string | Type of repair |
+| `costEstimates.DIY` | object | DIY cost breakdown |
+| `costEstimates.Service` | object | Professional cost breakdown |
+| `costEstimates.comparison` | object | Cost comparison |
+
+## Error Responses
+
+### No Checkpoints Found
 
 ```json
 {
-  "status": "accepted",
-  "message": "Analysis queued for processing",
-  "checkpointId": "checkpoint-123"
+  "error": "no_checkpoints",
+  "message": "No matching checkpoints found for your query. Try rephrasing your question or check if you have any checkpoints created."
 }
 ```
 
-## Firestore Document Structure
+### Missing Property ID
 
-The checkpoint document is updated with the following structure:
-
-```typescript
+```json
 {
-  // ... existing checkpoint fields ...
-  analysisStatus: 'pending' | 'processing' | 'completed' | 'failed',
-  aiAnalysis?: {
-    summary: string;
-    conditions: string[];
-    detectedItems: string[];
-    issues: string[];
-    aiConfidence: number;
-    analyzedAt: Timestamp;
+  "error": "missing_property_id",
+  "message": "Property ID is required for checkpoint queries."
+}
+```
+
+### Invalid Optional Agents
+
+```json
+{
+  "error": "invalid_optional_agents",
+  "message": "Invalid optional agent names. Allowed values: coverage, diy, service, cost",
+  "invalid_agents": ["invalid_agent_name"]
+}
+```
+
+### Analysis Failed
+
+```json
+{
+  "checkpointAnalysis": {
+    "title": "Analysis Partially Completed",
+    "checkpointSummary": { /* ... */ },
+    "error": "Some optional agents failed to complete",
+    "failed_agents": ["service"],
+    "diyResults": { /* ... */ },
+    "costEstimationResults": { /* ... */ }
   }
 }
 ```
 
-## Testing
+## Integration Examples
 
-### Manual Testing
+### JavaScript/TypeScript (Webapp)
 
-1. Create a checkpoint via the mobile app
-2. Check Firestore to see `analysisStatus` transition:
-   - `pending` → `processing` → `completed`
-3. Verify `aiAnalysis` field is populated with results
+```typescript
+async function analyzeCheckpoints(
+  checkpointIds: string[],
+  optionalAgents: CheckpointOptionalAgent[]
+) {
+  const response = await fetch('/api/agent/sse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: user.uid,
+      session_id: sessionId,
+      user_query: 'Analyze my checkpoints',
+      property_id: propertyId,
+      primary_agent: 'checkpoint',
+      checkpoint_ids: checkpointIds,
+      checkpoint_optional_agents: optionalAgents,
+      property_address: property.address,
+    }),
+  });
 
-### Unit Testing
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
 
-The worker function can be tested with mocked dependencies:
+  while (true) {
+    const { done, value } = await reader!.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = JSON.parse(line.slice(6));
+        
+        if (data.content) {
+          // Handle content chunk
+          updateMessage(data.content);
+        }
+      }
+    }
+  }
+}
+```
+
+### React Native (Mobile App)
+
+```typescript
+import { streamAgentResponse } from '@/lib/api';
+
+async function analyzeCheckpoints(
+  checkpointIds: string[],
+  optionalAgents: CheckpointOptionalAgent[]
+) {
+  await streamAgentResponse({
+    userId: user.uid,
+    agentSessionId: sessionId,
+    userQuery: 'Analyze my checkpoints',
+    propertyAddress: property.address,
+    primaryAgent: 'checkpoint',
+    checkpointIds,
+    checkpointOptionalAgents: optionalAgents,
+    locationData: {
+      locationType: 'location',
+      locationCoordinates: { lat: 37.7749, lng: -122.4194 },
+      locationRadius: 5,
+    },
+    signal: abortController.signal,
+    onChunk: (chunk) => {
+      // Handle content chunk
+      updateMessage(chunk);
+    },
+    onAgentStep: (step) => {
+      // Handle agent step update
+      updateAgentSteps(step);
+    },
+    onComplete: (finalResponse) => {
+      // Handle completion
+      saveMessage(finalResponse);
+    },
+    onError: (error) => {
+      // Handle error
+      showError(error.message);
+    },
+  });
+}
+```
+
+### Python (Backend Testing)
 
 ```python
-from unittest.mock import patch, MagicMock
+import requests
+import json
 
-@patch('main.analyze_checkpoint_image')
-@patch('main.firestore.client')
-def test_pubsub_checkpoint_analysis(mock_firestore, mock_analyze):
-    # Setup mocks
-    mock_analyze.return_value = {
-        "summary": "Test summary",
-        "conditions": ["good"],
-        "detectedItems": ["furniture"],
-        "issues": []
+def analyze_checkpoints(
+    user_id: str,
+    property_id: str,
+    checkpoint_ids: list[str],
+    optional_agents: list[str]
+):
+    url = "https://api.example.com/api/agent/sse"
+    
+    payload = {
+        "user_id": user_id,
+        "user_query": "Analyze my checkpoints",
+        "property_id": property_id,
+        "primary_agent": "checkpoint",
+        "checkpoint_ids": checkpoint_ids,
+        "checkpoint_optional_agents": optional_agents,
     }
-
-    # Call function
-    # Assert Firestore update
+    
+    response = requests.post(
+        url,
+        json=payload,
+        stream=True,
+        headers={"Content-Type": "application/json"}
+    )
+    
+    for line in response.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith('data: '):
+                data = json.loads(decoded_line[6:])
+                if 'content' in data:
+                    print(data['content'], end='', flush=True)
 ```
 
-## Error Handling
+## Rate Limiting
 
-The API handles errors gracefully:
+- **Rate Limit**: 60 requests per minute per user
+- **Concurrent Requests**: 3 simultaneous requests per user
+- **Timeout**: 60 seconds per request
 
-- **Validation Errors**: Returns 400 with descriptive message
-- **Pub/Sub Errors**: Returns 500, logs error
-- **Worker Errors**: Worker sets `analysisStatus: "failed"`, logs error
+## Best Practices
 
-## Monitoring
+### 1. Checkpoint Selection
+- Limit to 10 checkpoints per analysis for optimal performance
+- Select relevant checkpoints based on user query
+- Use checkpoint_ids to filter specific checkpoints
 
-Key metrics to monitor:
+### 2. Optional Agent Selection
+- Only select agents needed for the user's query
+- Full analysis (all agents) takes 20-40 seconds
+- Single agent analysis takes 5-10 seconds
 
-- **API Latency**: Time to publish to Pub/Sub (should be <100ms)
-- **Worker Processing Time**: Time from Pub/Sub message to Firestore update
-- **Success Rate**: Percentage of analyses that complete successfully
-- **Error Rate**: Frequency of `analysisStatus: "failed"`
+### 3. Location Data
+- Provide location_coordinates for accurate service searches
+- Use appropriate location_radius (5-10 miles typical)
+- Include property_address as fallback
 
-## Security
+### 4. Error Handling
+- Implement retry logic for transient failures
+- Handle partial results gracefully
+- Display user-friendly error messages
 
-- Endpoint protected by webhook secret (`FIREBASE_WEBHOOK_SECRET`)
-- Uses HTTPS in production
-- Service accounts use least-privilege IAM roles
-- Firestore security rules control document access
+### 5. Response Parsing
+- Parse both Markdown and JSON formats
+- Extract structured data from JSON for programmatic use
+- Display Markdown for human-readable output
 
-## Deployment
+## Versioning
 
-Deploy the worker function separately from the API:
+**Current Version**: 1.0  
+**API Stability**: Stable  
+**Breaking Changes**: None planned
 
-```bash
-gcloud functions deploy pubsub_checkpoint_analysis \
-  --gen2 \
-  --max-instances 10 \
-  --concurrency 1 \
-  --region us-central1 \
-  --runtime python313 \
-  --trigger-topic checkpoint-analysis-topic \
-  --memory=512MB \
-  --source gcp/proxy/workers/function \
-  --entry-point pubsub_checkpoint_analysis \
-  --set-env-vars GCP_PROJECT_ID=homegeekdemo \
-  --set-env-vars GCP_LOCATION=us-central1
-```
+## Support
 
-## Related Documentation
-
-- [Workers README](../../workers/README.md) - Background workers documentation
-- [Adding Functions](./ADDING_FUNCTIONS.md) - Guide for adding new API endpoints
-- [Architecture](../../docs/ARCHITECTURE.md) - System architecture overview
+For API support or questions:
+- Documentation: `/docs/checkpoint/`
+- Issues: GitHub Issues
+- Email: support@example.com

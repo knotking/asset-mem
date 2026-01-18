@@ -9,10 +9,11 @@ import type {
   Document as DocumentType,
   AgentStep,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   PrimaryAgent,
 } from "@/lib/types";
-import { ANALYSIS_OPTIONAL_AGENTS } from "@/lib/types";
+import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { useAuth } from "@/contexts/auth-context";
@@ -84,6 +85,9 @@ export default function PropertyChatSessionPage() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  const [selectedCheckpointOptionalAgents, setSelectedCheckpointOptionalAgents] = useState<
+    CheckpointOptionalAgent[]
+  >([]);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>([]);
   const [isCheckpointDrawerOpen, setIsCheckpointDrawerOpen] = useState(false);
   const [locationData, setLocationData] = useState<LocationData | undefined>(
@@ -448,6 +452,7 @@ export default function PropertyChatSessionPage() {
           property_id: property?.id, // Pass property_id for checkpoint queries
           primary_agent: primaryAgent,
           analysis_optional_agents: selectedOptionalAgents,
+          checkpoint_optional_agents: selectedCheckpointOptionalAgents.length > 0 ? selectedCheckpointOptionalAgents : undefined,
           checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
         };
 
@@ -629,6 +634,8 @@ export default function PropertyChatSessionPage() {
             onPrimaryAgentChange={setPrimaryAgent}
             selectedOptionalAgents={selectedOptionalAgents}
             onOptionalAgentsChange={handleOptionalAgentsChange}
+            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+            onCheckpointOptionalAgentsChange={setSelectedCheckpointOptionalAgents}
             selectedCheckpoints={selectedCheckpoints}
             onOpenCheckpointDrawer={() => setIsCheckpointDrawerOpen(true)}
             onRemoveCheckpoint={handleRemoveCheckpoint}

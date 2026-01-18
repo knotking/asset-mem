@@ -19,6 +19,7 @@ import {
 import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   LocationType,
 } from "@/lib/types";
@@ -32,6 +33,8 @@ interface ChatSettingsPopoverProps {
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   locationData?: LocationData;
   onLocationDataChange?: (locationData: LocationData | undefined) => void;
   propertyAddress?: string;
@@ -39,10 +42,10 @@ interface ChatSettingsPopoverProps {
 }
 
 const OPTIONAL_AGENT_OPTIONS = [
-  { id: 'coverage' as AnalysisOptionalAgent, label: 'Coverage', icon: ShieldCheck },
-  { id: 'diy' as AnalysisOptionalAgent, label: 'DIY', icon: Hammer },
-  { id: 'service' as AnalysisOptionalAgent, label: 'Service', icon: Wrench },
-  { id: 'cost' as AnalysisOptionalAgent, label: 'Cost', icon: BadgeDollarSign },
+  { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
+  { id: 'diy', label: 'DIY', icon: Hammer },
+  { id: 'service', label: 'Service', icon: Wrench },
+  { id: 'cost', label: 'Cost', icon: BadgeDollarSign },
 ];
 
 export function ChatSettingsPopover({
@@ -53,6 +56,8 @@ export function ChatSettingsPopover({
   onPrimaryAgentChange,
   selectedOptionalAgents,
   onToggleOptionalAgent,
+  selectedCheckpointOptionalAgents,
+  onToggleCheckpointOptionalAgent,
   locationData,
   onLocationDataChange,
   propertyAddress,
@@ -221,13 +226,37 @@ export function ChatSettingsPopover({
               </div>
             )}
 
-            {/* Checkpoint Mode Info */}
+            {/* Optional Agents (Checkpoint Mode) */}
             {primaryAgent === 'checkpoint' && (
-              <div className="rounded-lg bg-secondary/50 p-3">
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Checkpoint Agent analyzes your property's checkpoint history to answer questions
-                  about changes, trends, and condition over time.
-                </p>
+              <div>
+                <label className="text-sm font-semibold mb-3 block">Optional Agents</label>
+                <div className="flex flex-wrap gap-2">
+                  {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                    const isSelected = selectedCheckpointOptionalAgents.includes(option.id as CheckpointOptionalAgent);
+                    const Icon = option.icon;
+                    return (
+                      <Button
+                        key={option.id}
+                        type="button"
+                        variant={isSelected ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => onToggleCheckpointOptionalAgent(option.id as CheckpointOptionalAgent)}
+                        className="gap-1.5">
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{option.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                {selectedCheckpointOptionalAgents.length === 0 ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Checkpoint Agent will answer questions about your checkpoints without recommendations
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Checkpoint Agent will analyze checkpoints and provide {selectedCheckpointOptionalAgents.join(', ')} recommendations
+                  </p>
+                )}
               </div>
             )}
           </TabsContent>

@@ -23,11 +23,12 @@ import type {
   AgentStep,
   Session,
   AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
   LocationData,
   Checkpoint,
   PrimaryAgent,
 } from '@homeapp/common/types';
-import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
+import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
@@ -96,6 +97,10 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
+  
+  const [selectedCheckpointOptionalAgents, setSelectedCheckpointOptionalAgents] = React.useState<
+    CheckpointOptionalAgent[]
+  >([]);
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
@@ -307,6 +312,14 @@ export default function PropertyDetailsScreen() {
     });
   }, []);
 
+  const toggleCheckpointOptionalAgent = React.useCallback((agent: CheckpointOptionalAgent) => {
+    setSelectedCheckpointOptionalAgents((prev) => {
+      const isSelected = prev.includes(agent);
+      const next = isSelected ? prev.filter((item) => item !== agent) : [...prev, agent];
+      return CHECKPOINT_OPTIONAL_AGENTS.filter((item) => next.includes(item));
+    });
+  }, []);
+
   const handleStop = React.useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -417,6 +430,7 @@ export default function PropertyDetailsScreen() {
           propertyAddress,
           primaryAgent,
           analysisOptionalAgents: selectedOptionalAgents,
+          checkpointOptionalAgents: selectedCheckpointOptionalAgents.length > 0 ? selectedCheckpointOptionalAgents : undefined,
           locationData,
           signal,
           onChunk: (chunk) => {
@@ -954,6 +968,8 @@ function PropertyDetailsScreenContent({
                         onPrimaryAgentChange={setPrimaryAgent}
                         selectedOptionalAgents={selectedOptionalAgents}
                         onToggleOptionalAgent={toggleOptionalAgent}
+                        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+                        onToggleCheckpointOptionalAgent={toggleCheckpointOptionalAgent}
                         isSending={isSending}
                         onStop={handleStop}
                         attachmentOptionsVisible={false}

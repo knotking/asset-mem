@@ -2,6 +2,7 @@
 Checkpoint Agent
 
 Retrieves checkpoint information using Firestore Vector Search for semantic query matching.
+Can optionally trigger comprehensive analysis with coverage, DIY, service, and cost recommendations.
 """
 
 import os
@@ -9,6 +10,7 @@ import logging
 from typing import Optional, List, Dict
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext
+from google.adk.tools.agent_tool import AgentTool
 from dotenv import load_dotenv
 from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
@@ -186,13 +188,21 @@ def ask_checkpoints_retrieval(
         return []
 
 
+# Import checkpoint_analysis_agent lazily to avoid circular imports
+def get_checkpoint_analysis_agent():
+    """Lazy import of checkpoint_analysis_agent to avoid circular dependencies."""
+    from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
+    return checkpoint_analysis_agent
+
+
 checkpoint_agent = Agent(
     model='gemini-2.5-flash',
     name='checkpoint_agent',
     instruction=checkpoint_agent_instruction(),
-    input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, etc.)
+    input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
-        ask_checkpoints_retrieval
+        ask_checkpoints_retrieval,
+        AgentTool(get_checkpoint_analysis_agent)  # Add analysis agent as tool
     ],
     disallow_transfer_to_parent=True,
     output_key='checkpoint_result'

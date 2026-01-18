@@ -8,6 +8,8 @@ This repository contains the complete source code for the HomeApp platform, a co
 > 🏗️ **Architecture**: For visual diagrams of the system architecture, data flows, and component relationships, see [ARCHITECTURE_DIAGRAM.md](./docs/ARCHITECTURE_DIAGRAM.md).
 >
 > 📊 **Presentation**: For project presentations, demos, and overview slides, see [PRESENTATION.md](./docs/PRESENTATION.md).
+>
+> 🤖 **AI Agents**: For documentation on AI agents including Analysis and Checkpoint agents, see [Analysis Agent](./docs/analysis/README.md) and [Checkpoint Features](./docs/checkpoint/README.md).
 
 <img width="1241" height="694" alt="HomeGeek AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
 
@@ -26,9 +28,30 @@ The monorepo is organized into two main areas:
     -   `common`: Shared TypeScript library, types, and Firebase configuration.
 
 -   **Backend Services (`gcp/`)**:
-    -   `agents`: Vertex AI Agents for property diagnostics and document analysis.
+    -   `agents`: Vertex AI Agents for property diagnostics, document analysis, and checkpoint analysis.
     -   `proxy`: FastAPI Gateway managing communication between clients and agents.
     -   `terraform`: Infrastructure as Code for GCP resources.
+
+## Key Features
+
+### AI-Powered Analysis
+- **Analysis Agent**: Multimodal problem diagnosis with coverage, DIY, service, and cost recommendations
+- **Checkpoint Agent**: Property condition tracking with timeline queries and comprehensive analysis
+- **Document Q&A**: RAG-powered document retrieval for warranty and insurance information
+
+### Property Management
+- **Checkpoints**: Visual timeline of property condition with AI-powered change detection
+- **Documents**: Organized document storage with AI-powered search and retrieval
+- **Chat Interface**: Natural language interaction with AI agents for property care
+
+### Multi-Platform Support
+- **Mobile App**: iOS and Android via React Native and Expo
+- **Web App**: Responsive Next.js application with SSR
+- **Telegram Bot**: Conversational interface for quick queries
+
+For detailed feature documentation, see:
+- [Analysis Agent Documentation](./docs/analysis/README.md)
+- [Checkpoint Features Documentation](./docs/checkpoint/README.md)
 
 ## Prerequisites
 

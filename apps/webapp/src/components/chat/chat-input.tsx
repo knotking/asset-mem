@@ -11,7 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { CameraCaptureDialog } from "./camera-capture-dialog";
-import { ANALYSIS_OPTIONAL_AGENTS, type AnalysisOptionalAgent } from "@/lib/types";
+import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS, type AnalysisOptionalAgent, type CheckpointOptionalAgent } from "@/lib/types";
 import type { Checkpoint } from "@/lib/types";
 import { CompactSettingsBar } from "./compact-settings-bar";
 import { ChatSettingsPopover } from "./chat-settings-popover";
@@ -37,6 +37,9 @@ type Props = {
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   onOptionalAgentsChange: (agents: AnalysisOptionalAgent[]) => void;
+  // Checkpoint agent selection
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  onCheckpointOptionalAgentsChange: (agents: CheckpointOptionalAgent[]) => void;
   // Checkpoint selection
   selectedCheckpoints?: Checkpoint[];
   onOpenCheckpointDrawer?: () => void;
@@ -65,6 +68,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     onPrimaryAgentChange,
     selectedOptionalAgents,
     onOptionalAgentsChange,
+    selectedCheckpointOptionalAgents,
+    onCheckpointOptionalAgentsChange,
     selectedCheckpoints = [],
     onOpenCheckpointDrawer,
     onRemoveCheckpoint,
@@ -123,6 +128,15 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
       : [...selectedOptionalAgents, agent];
     const canonicalSelection = ANALYSIS_OPTIONAL_AGENTS.filter((item) => nextSelection.includes(item));
     onOptionalAgentsChange(canonicalSelection);
+  };
+
+  const handleCheckpointOptionalAgentToggle = (agent: CheckpointOptionalAgent) => {
+    const isSelected = selectedCheckpointOptionalAgents.includes(agent);
+    const nextSelection = isSelected
+      ? selectedCheckpointOptionalAgents.filter((item) => item !== agent)
+      : [...selectedCheckpointOptionalAgents, agent];
+    const canonicalSelection = CHECKPOINT_OPTIONAL_AGENTS.filter((item) => nextSelection.includes(item));
+    onCheckpointOptionalAgentsChange(canonicalSelection);
   };
 
 
@@ -226,6 +240,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             onPrimaryAgentChange={onPrimaryAgentChange}
             selectedOptionalAgents={selectedOptionalAgents}
             onToggleOptionalAgent={handleOptionalAgentToggle}
+            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+            onToggleCheckpointOptionalAgent={handleCheckpointOptionalAgentToggle}
             locationData={locationData}
             onLocationDataChange={onLocationDataChange}
             propertyAddress={propertyAddress}
@@ -234,6 +250,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
               <CompactSettingsBar
                 primaryAgent={primaryAgent}
                 selectedOptionalAgents={selectedOptionalAgents}
+                selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
                 locationData={locationData}
                 propertyAddress={propertyAddress}
                 onOpenSettings={() => {

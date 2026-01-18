@@ -2,9 +2,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict
 
 AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
+CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 PrimaryAgent = Literal["analysis", "checkpoint"]
 
 DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
+DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
@@ -26,6 +28,14 @@ class DiagnosisInput(BaseModel):
         description=(
             "Optional list of analysis sub-agents to run after triage. "
             "Allowed values: coverage, diy, service, cost. Defaults to all when missing or empty."
+        ),
+    )
+    checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
+        default=None,
+        description=(
+            "Optional list of checkpoint analysis sub-agents to run after checkpoint retrieval. "
+            "Allowed values: coverage, diy, service, cost. When provided and non-empty, triggers comprehensive "
+            "checkpoint analysis with recommendations. When empty or None, returns simple checkpoint query results."
         ),
     )
     location_type: Optional[Literal["address", "location"]] = Field(
@@ -51,3 +61,11 @@ class DocsInput(BaseModel):
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).")
     property_address: Optional[str] = Field(default=None, description="The property address.")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")
+    checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
+        default=None,
+        description=(
+            "Optional list of checkpoint analysis sub-agents to run after checkpoint retrieval. "
+            "Allowed values: coverage, diy, service, cost. When provided and non-empty, triggers comprehensive "
+            "checkpoint analysis with recommendations."
+        ),
+    )

@@ -2,243 +2,263 @@
 
 ## Overview
 
-This directory contains comprehensive documentation for the Analysis Agent, a sophisticated AI-powered system that provides property care diagnostics, repair guidance, and service recommendations.
+The Analysis Agent is a comprehensive AI-powered orchestrator that provides property care solutions including repairs, maintenance, pest control, service recommendations, and product advice. It coordinates specialized sub-agents to deliver complete diagnostic and solution-finding capabilities.
 
-## Documentation Structure
+## Documentation Index
 
-### 1. [ANALYSIS_AGENT_OVERVIEW.md](./ANALYSIS_AGENT_OVERVIEW.md)
-**High-level introduction to the Analysis Agent**
+### Core Documentation
 
-- Purpose and capabilities
-- Scope of property care queries handled
-- Architecture overview
-- Key features and technology stack
-- Response format (dual Markdown/JSON)
-- Integration points with client applications
-- Performance characteristics
-- Security and privacy considerations
+- **[Analysis Agent Overview](./ANALYSIS_AGENT_OVERVIEW.md)** - Complete feature overview and architecture
+- **[Analysis Agent Sub-Agents](./ANALYSIS_AGENT_SUB_AGENTS.md)** - Detailed sub-agent documentation
+- **[Analysis Agent Workflow](./ANALYSIS_AGENT_WORKFLOW.md)** - Step-by-step workflow guide
+- **[Analysis Agent Testing](./ANALYSIS_AGENT_TESTING.md)** - Testing strategies and examples
+- **[Analysis Agent Deployment](./ANALYSIS_AGENT_DEPLOYMENT.md)** - Deployment procedures
+- **[Analysis Agent API Integration](./ANALYSIS_AGENT_API_INTEGRATION.md)** - API integration guide
 
-**Audience:** Product managers, stakeholders, new team members
+### Related Features
 
-### 2. [ANALYSIS_AGENT_WORKFLOW.md](./ANALYSIS_AGENT_WORKFLOW.md)
-**Detailed workflow and processing logic**
-
-- Complete workflow from input to response
-- Input schema and validation
-- Triage process (multimodal and text-only)
-- Clarification loop mechanism
-- Optional agent execution (Coverage, DIY, Service, Cost)
-- Response assembly and formatting
-- Error handling strategies
-- Workflow timing and optimization
-
-**Audience:** Developers, technical architects, QA engineers
-
-### 3. [ANALYSIS_AGENT_SUB_AGENTS.md](./ANALYSIS_AGENT_SUB_AGENTS.md)
-**Deep dive into each sub-agent**
-
-- Triage Agent: Problem identification and clarification
-- Coverage Agent: Warranty and insurance retrieval
-- DIY Agent: Self-repair guidance with videos and products
-- Service Agent: Local professional provider search
-- Shopping Agent: Product recommendations
-- Cost Agent: DIY vs Professional cost analysis
-- Tool descriptions and usage
-- Input/output schemas for each agent
-- Parallel execution strategies
-
-**Audience:** Developers implementing or modifying agents
-
-### 4. [ANALYSIS_AGENT_API_INTEGRATION.md](./ANALYSIS_AGENT_API_INTEGRATION.md)
-**API integration and external service details**
-
-- Proxy Service API endpoints
-- Request/response formats
-- Authentication with Firebase
-- File upload integration
-- External API integrations (SerpAPI, Yelp, YouTube, Google)
-- Vertex AI RAG integration
-- Client integration examples (Web, Telegram, Mobile)
-- Webhook integration for async processing
-- Rate limiting and monitoring
-- Security considerations
-
-**Audience:** Frontend developers, API consumers, integration engineers
-
-### 5. [ANALYSIS_AGENT_TESTING.md](./ANALYSIS_AGENT_TESTING.md)
-**Testing strategy and test cases**
-
-- Testing pyramid and strategy
-- Unit tests for each agent and tool
-- Integration tests for agent coordination
-- End-to-end tests for complete workflows
-- Performance and load testing
-- Test data and sample queries
-- Test execution and CI/CD integration
-- Coverage goals and validation checklist
-
-**Audience:** QA engineers, developers, DevOps engineers
-
-### 6. [ANALYSIS_AGENT_DEPLOYMENT.md](./ANALYSIS_AGENT_DEPLOYMENT.md)
-**Deployment and operational procedures**
-
-- Infrastructure architecture on Google Cloud Platform
-- Deployment prerequisites and setup
-- Step-by-step deployment process
-- Monitoring and observability setup
-- Troubleshooting common issues
-- Scaling strategies (horizontal and vertical)
-- Backup and disaster recovery
-- Cost optimization techniques
-- Security best practices
-- Maintenance procedures and update process
-
-**Audience:** DevOps engineers, SREs, system administrators
+- **[Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md)** - Similar analysis capabilities for checkpoint data
 
 ## Quick Start
 
-### For Product/Business Teams
-Start with [ANALYSIS_AGENT_OVERVIEW.md](./ANALYSIS_AGENT_OVERVIEW.md) to understand what the Analysis Agent does and its capabilities.
+### For Users
+
+1. **Diagnose Issues**: Upload photo/video or describe the problem
+2. **Get Solutions**: Receive DIY guides, service providers, and cost estimates
+3. **Select Options**: Choose which analysis aspects you want (coverage, DIY, service, cost)
 
 ### For Developers
-1. Read [ANALYSIS_AGENT_OVERVIEW.md](./ANALYSIS_AGENT_OVERVIEW.md) for context
-2. Study [ANALYSIS_AGENT_WORKFLOW.md](./ANALYSIS_AGENT_WORKFLOW.md) to understand the processing flow
-3. Review [ANALYSIS_AGENT_SUB_AGENTS.md](./ANALYSIS_AGENT_SUB_AGENTS.md) for implementation details
-4. Check [ANALYSIS_AGENT_API_INTEGRATION.md](./ANALYSIS_AGENT_API_INTEGRATION.md) for integration guidance
 
-### For QA Engineers
-1. Review [ANALYSIS_AGENT_OVERVIEW.md](./ANALYSIS_AGENT_OVERVIEW.md) for feature understanding
-2. Study [ANALYSIS_AGENT_WORKFLOW.md](./ANALYSIS_AGENT_WORKFLOW.md) for test scenarios
-3. Implement tests based on [ANALYSIS_AGENT_TESTING.md](./ANALYSIS_AGENT_TESTING.md)
+1. **Backend**: See `gcp/agents/homecare/property_agent/sub_agents/analysis_agent/`
+2. **API**: Use `/api/agent/sse` endpoint with `primary_agent: "analysis"`
+3. **Frontend**: Integrate with chat interface using analysis agent selection
 
-### For DevOps/SRE
-1. Understand the system via [ANALYSIS_AGENT_OVERVIEW.md](./ANALYSIS_AGENT_OVERVIEW.md)
-2. Follow deployment steps in [ANALYSIS_AGENT_DEPLOYMENT.md](./ANALYSIS_AGENT_DEPLOYMENT.md)
-3. Setup monitoring as described in deployment documentation
-4. Reference troubleshooting section for operational issues
-
-## Key Concepts
-
-### Analysis Agent Architecture
-
-The Analysis Agent follows a hierarchical orchestration pattern:
+## Architecture
 
 ```
-Root Property Agent
-└── Analysis Agent (Orchestrator)
-    ├── Triage Agent (Mandatory - Problem Identification)
-    ├── Coverage Agent (Optional - Warranty/Insurance)
-    ├── DIY Agent (Optional - Self-Repair Guidance)
-    ├── Service Agent (Optional - Professional Options)
-    ├── Shopping Agent (Optional - Product Recommendations)
-    └── Cost Agent (Optional - Cost Analysis)
+Analysis Agent (Orchestrator)
+├── Triage Agent (Problem Identification)
+│   └── analyse_multimodal_data (tool)
+│
+├── Coverage Agent (Warranty/Insurance)
+│   └── ask_user_docs_retrieval (tool)
+│
+├── DIY Agent (Self-Repair Guidance)
+│   ├── google_search_agent (tool)
+│   ├── youtube_search (tool)
+│   └── shopping_agent (tool)
+│
+├── Service Agent (Professional Options)
+│   ├── serpapi_search (tool)
+│   ├── yelpapi_search (tool)
+│   └── google_search_agent (tool)
+│
+└── Cost Agent (Cost Analysis)
+    ├── cost_estimation (tool)
+    └── cost_estimation_diy (tool)
 ```
 
-### Workflow Phases
+## Key Features
 
-1. **Input Reception**: Receive user query with optional media and context
-2. **Triage**: Identify problem through multimodal analysis or text triage
-3. **Clarification** (if needed): Ask questions until clear diagnosis obtained
-4. **Optional Agents**: Run selected agents (coverage, DIY, service, cost)
-5. **Response Assembly**: Combine results into dual-format response
+### Multimodal Analysis
+- Analyze images, videos, and documents
+- Extract problem details from visual content
+- Support multiple file formats
 
-### Dual Response Format
+### Text-Only Triage
+- Intelligent diagnosis from text descriptions
+- Clarification questions when needed
+- Iterative refinement through conversation
 
-Every response includes both:
-- **Markdown**: Human-readable text for Telegram and messaging platforms
-- **JSON**: Structured data for web and mobile app parsing
+### Comprehensive Coverage Check
+- Search warranty documents
+- Review insurance policies
+- Provide relevant coverage information
 
-### Key Features
+### DIY Guidance
+- Step-by-step repair instructions
+- Curated YouTube video tutorials
+- Product recommendations with pricing
 
-- **Multimodal Analysis**: Images, videos, documents via Gemini 2.5 Flash
-- **Text-Only Triage**: Intelligent diagnosis from text with clarification
-- **Coverage Check**: Searches user warranties and insurance policies
-- **DIY Guidance**: Steps, videos, and product recommendations
-- **Professional Services**: Local provider search with ratings and reviews
-- **Cost Analysis**: DIY vs Professional cost comparisons
-- **Flexible Configuration**: Select which optional agents to run
+### Professional Service Options
+- Local service provider listings
+- Multiple data sources (SerpAPI, Yelp)
+- Ratings, reviews, and contact information
+- Distance-based sorting
 
-## Related Documentation
+### Cost Analysis
+- DIY vs Professional cost comparisons
+- Detailed breakdowns
+- Savings calculations
+- Complexity assessments
 
-### In This Repository
+## Optional Agent Selection
 
-- **Property Agent**: `/gcp/agents/homecare/property_agent/README.md`
-- **Architecture**: `/docs/ARCHITECTURE_DIAGRAM.md`
-- **Tech Stack**: `/docs/TECH_STACK.md`
-- **Checkpoint Feature**: `/docs/checkpoint/`
-- **Location Services**: `/docs/LOCATION_BASED_SERVICE_AGENT_IMPLEMENTATION.md`
+Users can customize their analysis by selecting specific agents:
 
-### External Resources
+| Agent | Purpose | Output |
+|-------|---------|--------|
+| Coverage | Check warranty/insurance | Coverage information |
+| DIY | Self-repair guidance | Steps, videos, products |
+| Service | Find professionals | Local provider listings |
+| Cost | Cost comparison | DIY vs professional estimates |
 
-- **Vertex AI Agent Builder**: https://cloud.google.com/vertex-ai/docs/agent-builder
-- **Gemini API**: https://ai.google.dev/docs
-- **Firebase Authentication**: https://firebase.google.com/docs/auth
-- **Cloud Run**: https://cloud.google.com/run/docs
+**Default**: All agents run when not specified  
+**Execution Order**: Coverage → DIY → Service → Cost
 
-## Support and Contact
+## Response Format
 
-### For Questions or Issues
+### Dual Format Structure
 
-1. **Technical Issues**: Create an issue in the repository
-2. **Feature Requests**: Discuss with product team
-3. **Deployment Issues**: Contact DevOps team
-4. **API Integration**: Refer to API documentation or contact backend team
+All responses include both Markdown and JSON:
 
-### Contributing
+**Markdown**: Human-readable, suitable for messaging platforms  
+**JSON**: Structured data for programmatic consumption
 
-When updating this documentation:
+### Example Response
 
-1. Keep documents focused and well-organized
-2. Include code examples where helpful
-3. Update the README when adding new documents
-4. Maintain consistent formatting and structure
-5. Test all code examples before committing
+```json
+{
+  "analysis": {
+    "title": "Kitchen Faucet Leak Repair",
+    "triageResult": {
+      "diagnosis": "Leaking kitchen faucet with water damage under sink"
+    },
+    "coverageResult": { /* warranty/insurance info */ },
+    "diyResults": { /* steps, videos, products */ },
+    "serviceResults": { /* local plumbers */ },
+    "costEstimationResults": { /* cost comparison */ }
+  }
+}
+```
 
-## Version History
+## Use Cases
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2024-01-15 | Initial comprehensive documentation |
+### 1. Immediate Problem Diagnosis
+- Upload photo of issue
+- Get instant diagnosis
+- Receive comprehensive solutions
 
-## Glossary
+### 2. Repair Guidance
+- DIY instructions with videos
+- Product recommendations
+- Cost-effective solutions
 
-- **Analysis Agent**: Main orchestrator for property care diagnostics
-- **Triage**: Process of identifying and diagnosing the problem
-- **Clarification Loop**: Iterative questioning to obtain clear diagnosis
-- **Optional Agents**: Coverage, DIY, Service, Cost agents (run conditionally)
-- **Multimodal Analysis**: Analyzing images, videos, and documents
-- **RAG**: Retrieval-Augmented Generation for document search
-- **GCS URI**: Google Cloud Storage URI (e.g., gs://bucket/file.jpg)
-- **Dual Format**: Markdown + JSON response format
-- **Sub-Agent**: Specialized agent handling specific aspect of workflow
+### 3. Professional Service Finding
+- Local provider search
+- Ratings and reviews
+- Contact information
 
-## Future Enhancements
+### 4. Cost Planning
+- Compare repair options
+- Budget estimation
+- Savings calculation
 
-Planned improvements to the Analysis Agent:
+## Integration Points
 
-1. **Multi-language Support**: Expand beyond English
-2. **Voice Input**: Accept voice descriptions of problems
-3. **AR Integration**: Augmented reality for guided repairs
-4. **Predictive Maintenance**: Proactive issue detection
-5. **Cost Tracking**: Historical cost analysis and trends
-6. **Contractor Ratings**: User feedback and rating system
-7. **Smart Scheduling**: Automated appointment booking with service providers
-8. **Parts Ordering**: Direct integration with parts suppliers
-9. **Video Analysis**: Real-time video streaming for diagnosis
-10. **IoT Integration**: Connect with smart home devices for automated diagnostics
+### Chat Interface
+- Primary agent selection
+- Optional agent toggles
+- File attachment support
+- Real-time streaming responses
 
-## Feedback
+### Backend Services
+- Vertex AI Agent Engine
+- Vertex AI RAG (document retrieval)
+- External APIs (SerpAPI, Yelp, YouTube)
+- Google Maps API (geocoding)
 
-We welcome feedback on this documentation! Please:
+### Client Applications
+- Webapp (Next.js)
+- Mobile App (React Native)
+- Telegram Bot
 
-- Report errors or unclear sections via GitHub issues
-- Suggest improvements or additional topics
-- Share use cases that aren't well covered
-- Contribute examples and best practices
+## Performance Metrics
 
----
+- **Triage Time**: 2-5 seconds (text), 5-10 seconds (multimodal)
+- **Full Analysis**: 15-30 seconds
+- **Parallel Execution**: DIY and Service agents can run simultaneously
+- **Scalability**: Horizontal scaling via Cloud Run
 
-**Last Updated**: December 31, 2025
-**Maintained By**: HomeApp Development Team
-**Documentation Version**: 1.0.0
+## Best Practices
 
+### For Users
+1. Provide clear problem descriptions
+2. Include photos/videos when possible
+3. Select only needed optional agents
+4. Review all recommendations carefully
+
+### For Developers
+1. Handle partial results gracefully
+2. Implement proper error handling
+3. Cache results when appropriate
+4. Use streaming for better UX
+5. Respect rate limits
+
+## Error Handling
+
+### Common Scenarios
+
+**Clarification Needed**
+- Triage agent asks questions
+- Return only clarification, no recommendations
+- Wait for user response
+
+**Media Analysis Failed**
+- Return error message
+- Suggest text-only description
+- Offer retry option
+
+**No Service Providers Found**
+- Expand search radius
+- Use Google Search fallback
+- Provide DIY alternative
+
+**API Failures**
+- Graceful degradation
+- Partial results
+- Clear error messages
+
+## Testing
+
+### Test Scenarios
+1. Text-only queries
+2. Image/video uploads
+3. Clarification flow
+4. Optional agent combinations
+5. Error conditions
+6. Performance benchmarks
+
+See [Analysis Agent Testing](./ANALYSIS_AGENT_TESTING.md) for details.
+
+## Related Features
+
+### Checkpoint Analysis Agent
+
+The analysis agent's capabilities have been extended to checkpoint data:
+- Analyze property condition over time
+- Get recommendations for detected issues
+- Track maintenance trends
+- Compare checkpoint states
+
+See [Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md) for details.
+
+## Support
+
+- **Documentation**: `/docs/analysis/`
+- **Issues**: GitHub Issues
+- **Architecture**: [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)
+- **API Reference**: See individual sub-agent documentation
+
+## Changelog
+
+### January 2026
+- Extended analysis capabilities to checkpoint data
+- Added checkpoint analysis agent
+- Improved optional agent selection
+
+### December 2025
+- Initial release
+- Multimodal analysis support
+- Optional agent selection
+- Dual format responses
