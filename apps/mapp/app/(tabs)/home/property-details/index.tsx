@@ -571,6 +571,8 @@ export default function PropertyDetailsScreen() {
         setPrimaryAgent={setPrimaryAgent}
         selectedOptionalAgents={selectedOptionalAgents}
         setSelectedOptionalAgents={setSelectedOptionalAgents}
+        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+        toggleCheckpointOptionalAgent={toggleCheckpointOptionalAgent}
         isSending={isSending}
         message={message}
         setMessage={setMessage}
@@ -635,6 +637,8 @@ function PropertyDetailsScreenContent({
   setPrimaryAgent,
   selectedOptionalAgents,
   setSelectedOptionalAgents,
+  selectedCheckpointOptionalAgents,
+  toggleCheckpointOptionalAgent,
   isSending,
   message,
   setMessage,
