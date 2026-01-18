@@ -1,6 +1,6 @@
 from typing import List, Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field, field_validator
-from utils.optional_agents import normalize_analysis_optional_agents
+from utils.optional_agents import normalize_analysis_optional_agents, normalize_checkpoint_optional_agents
 
 class AgentRequest(BaseModel):
     user_id: str = Field(description="Unique identifier for the user")
@@ -12,6 +12,7 @@ class AgentRequest(BaseModel):
     property_address: str = Field(default="", description="Address of the property being analyzed")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval)")
     analysis_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in analysis")
+    checkpoint_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in checkpoint analysis")
     location_type: Optional[Literal["address", "location"]] = Field(default=None, description="Type of location data provided")
     location_coordinates: Optional[Dict[str, float]] = Field(default=None, description="Coordinates {'lat': float, 'lng': float}")
     location_radius: Optional[int] = Field(default=None, description="Search radius in miles (10-100)")
@@ -27,6 +28,11 @@ class AgentRequest(BaseModel):
     @classmethod
     def normalize_agents(cls, v):
         return normalize_analysis_optional_agents(v)
+
+    @field_validator('checkpoint_optional_agents', mode='before')
+    @classmethod
+    def normalize_checkpoint_agents(cls, v):
+        return normalize_checkpoint_optional_agents(v)
 
 class SessionRequest(BaseModel):
     user_id: str = Field(description="Unique identifier for the user")

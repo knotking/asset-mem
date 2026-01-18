@@ -151,6 +151,7 @@ async def stream_agent_answers(
     property_address = request.property_address
     property_id = request.property_id  # Option 1: property_id from request
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
+    checkpoint_optional_agents = request.checkpoint_optional_agents or []
     location_type = request.location_type
     location_coordinates = request.location_coordinates
     location_radius = request.location_radius
@@ -222,6 +223,11 @@ async def stream_agent_answers(
     if property_id:
         logger.info(f"Including property_id in agent payload: {property_id}")
         payload["property_id"] = property_id
+    
+    # Include checkpoint_optional_agents if provided
+    if checkpoint_optional_agents:
+        payload["checkpoint_optional_agents"] = checkpoint_optional_agents
+        logger.info(f"Including checkpoint_optional_agents in payload: {checkpoint_optional_agents}")
     
     # Location handling logic:
     # Always include property_address if available (for context)

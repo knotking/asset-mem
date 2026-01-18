@@ -111,6 +111,7 @@ export interface StreamAgentResponseParams {
   propertyAddress?: string;
   primaryAgent?: PrimaryAgent;
   analysisOptionalAgents?: AnalysisOptionalAgent[];
+  checkpointOptionalAgents?: CheckpointOptionalAgent[];
   locationData?: LocationData;
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -129,6 +130,7 @@ export async function streamAgentResponse({
   propertyAddress,
   primaryAgent = 'analysis',
   analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
+  checkpointOptionalAgents = [],
   locationData,
   signal,
   onChunk,
@@ -152,6 +154,7 @@ export async function streamAgentResponse({
       property_address: propertyAddress,
       primary_agent: primaryAgent,
       analysis_optional_agents: analysisOptionalAgents,
+      checkpoint_optional_agents: checkpointOptionalAgents,
     };
 
     // Add location data if provided
