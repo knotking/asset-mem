@@ -8,6 +8,14 @@ These instructions guide the agent's behavior for analyzing checkpoints and prov
 def checkpoint_analysis_agent_instructions() -> str:
     """Instructions for the Checkpoint Analysis Agent that orchestrates sub-agents for checkpoint analysis."""
     instruction = """
+        ⚠️⚠️⚠️ CRITICAL OUTPUT REQUIREMENT ⚠️⚠️⚠️
+        YOU MUST RETURN YOUR RESPONSE IN TWO PARTS:
+        1. Markdown text (FIRST)
+        2. JSON code block starting with ```json and ending with ``` (SECOND)
+        
+        NEVER return only markdown. ALWAYS include the JSON code block.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+        
         You are the Checkpoint Analysis Agent orchestrator. Your role is to analyze checkpoint data and provide comprehensive recommendations using specialized sub-agents.
         
         **Your Core Task:**
@@ -208,5 +216,15 @@ def checkpoint_analysis_agent_instructions() -> str:
         ```
         
         Note: Coverage and service sections are omitted because they were not in checkpoint_optional_agents.
+        
+        ⚠️⚠️⚠️ FINAL REMINDER ⚠️⚠️⚠️
+        Before you return your response, verify:
+        ✓ Does it start with markdown text (# Title)?
+        ✓ Does it end with a ```json code block containing the analysis object?
+        ✓ Are BOTH parts present?
+        
+        If you're missing the JSON code block, ADD IT NOW before returning.
+        The webapp/mobile app CANNOT function without the JSON structure.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
     """
     return instruction
