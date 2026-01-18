@@ -196,13 +196,58 @@ export default function LandingPage() {
                 fontSize: 18,
                 textAlign: 'center',
                 color: LANDING_COLORS.foreground60,
-                marginBottom: 48,
+                marginBottom: 32,
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
               Transform property maintenance with advanced AI diagnostics. Get instant insights,
               expert recommendations, and proactive guidance—powered by cutting-edge artificial intelligence.
             </Text>
+
+            {/* AI Agents Note */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                marginHorizontal: 20,
+                marginBottom: 32,
+                borderRadius: 12,
+                backgroundColor: 'rgba(34, 211, 238, 0.05)',
+                borderWidth: 1,
+                borderColor: 'rgba(34, 211, 238, 0.3)',
+                gap: 12,
+              }}>
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  marginTop: 2,
+                  flexShrink: 0,
+                }}>
+                <Icon as={Zap} size={20} style={{ color: LANDING_COLORS.primary }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: LANDING_COLORS.primary,
+                    marginBottom: 6,
+                  }}>
+                  Powered by Specialized AI Agents
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 20,
+                    color: LANDING_COLORS.foreground70,
+                  }}>
+                  Our multi-agent AI system uses specialized agents (Triage, Coverage, DIY, Service, Cost) that work together to analyze your property issues and deliver comprehensive, actionable solutions.
+                </Text>
+              </View>
+            </View>
 
             {/* CTA Buttons */}
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 48, paddingHorizontal: 20, width: '100%' }}>
