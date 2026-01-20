@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Plus, TrendingUp, List } from 'lucide-react';
 import { CheckpointList } from '@/components/checkpoints/checkpoint-list';
@@ -9,12 +10,15 @@ import { CheckpointDetailDialog } from '@/components/checkpoints/checkpoint-deta
 import { CheckpointComparisonDialog } from '@/components/checkpoints/checkpoint-comparison-dialog';
 import { MetricsDashboard } from '@/components/checkpoints/metrics-dashboard';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { useAuth } from '@/contexts/auth-context';
 import { Checkpoint } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type CheckpointTab = 'checkpoints' | 'insights';
 
 export default function PropertyCheckpointsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const { checkpoints, loading, setSelectedCheckpoint } = useCheckpoint();
   const [activeTab, setActiveTab] = useState<CheckpointTab>('checkpoints');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -22,6 +26,13 @@ export default function PropertyCheckpointsPage() {
   const [comparisonCheckpoints, setComparisonCheckpoints] = useState<
     [Checkpoint, Checkpoint] | null
   >(null);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
 
   const handleCheckpointCreated = () => {
     // Switch to checkpoints tab when a checkpoint is created

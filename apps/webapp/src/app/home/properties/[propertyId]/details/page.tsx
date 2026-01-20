@@ -13,7 +13,8 @@ import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles } from "lucide-react";
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
@@ -97,10 +98,18 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
 
 function PropertyDetailsContent() {
     const { property, documents, isLoading: isPropertyLoading } = useProperty();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const { toast } = useToast();
     const { onOpen: openUploadDialog } = useUploadDialog();
     const [docToDelete, setDocToDelete] = useState<{id: string, name: string} | null>(null);
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login");
+        }
+    }, [user, authLoading, router]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(property?.name || '');

@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { collection, onSnapshot, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -34,6 +35,7 @@ function PropertiesDashboardSkeleton() {
 
 function PropertiesDashboardContent() {
     const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const { toast } = useToast();
     const [properties, setProperties] = useState<Property[]>([]);
     const [isPropertiesLoading, setIsPropertiesLoading] = useState(true);
@@ -51,6 +53,13 @@ function PropertiesDashboardContent() {
                 property.cityStateZip?.toLowerCase().includes(normalizedTerm)
         );
     }, [properties, searchTerm]);
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login");
+        }
+    }, [user, authLoading, router]);
 
     useEffect(() => {
         if (!user) {

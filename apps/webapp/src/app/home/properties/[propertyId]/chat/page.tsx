@@ -13,7 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 // This page acts as an entry point to find the existing draft chat session
 // for the current property and then redirects to it.
 export default function NewChatRedirectPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
@@ -21,6 +21,13 @@ export default function NewChatRedirectPage() {
     const [creationError, setCreationError] = useState(false);
 
     const propertyId = params.propertyId as string;
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push("/login");
+        }
+    }, [user, authLoading, router]);
     
     const tryCreateAndRedirect = async () => {
         if (!user || !propertyId) {
