@@ -619,7 +619,7 @@ export default function LandingPage() {
               },
               {
                 title: 'Warranty Coverage',
-                desc: 'Ask what's covered, expiration dates, and claim procedures without reading pages of fine print.',
+                desc: 'Ask what\'s covered, expiration dates, and claim procedures without reading pages of fine print.',
                 icon: CheckCircle,
               },
               {
