@@ -229,46 +229,6 @@ export default function LandingPage() {
                 <Icon as={ArrowRight} size={20} style={{ color: LANDING_COLORS.background }} />
               </TouchableOpacity>
             </View>
-
-            {/* Stats */}
-            <View style={{ flexDirection: 'row', gap: 32, paddingBottom: 20 }}>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
-                    backgroundColor: LANDING_COLORS.primary20,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                  }}>
-                  <Icon as={CheckCircle} size={28} style={{ color: LANDING_COLORS.primary }} />
-                </View>
-                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground, marginBottom: 4 }}>10,000+</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground, textAlign: 'center' }}>
-                  Active Users
-                </Text>
-              </View>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
-                    backgroundColor: LANDING_COLORS.primary20,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                  }}>
-                  <Icon as={TrendingUp} size={28} style={{ color: LANDING_COLORS.primary }} />
-                </View>
-                <Text style={{ fontSize: 28, fontWeight: 'bold', color: LANDING_COLORS.foreground, marginBottom: 4 }}>98%</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: LANDING_COLORS.mutedForeground, textAlign: 'center' }}>
-                  Accuracy Rate
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
 
