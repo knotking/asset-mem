@@ -51,14 +51,14 @@ const features = [
     icon: ImageIcon,
   },
   {
-    title: 'Multimodal Analysis',
-    desc: 'Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.',
+    title: 'Chat with Your Documents',
+    desc: 'Ask questions about your warranties, manuals, inspection reports, and policies—get instant answers with citations.',
     icon: FileText,
   },
   {
-    title: 'Document Intelligence',
-    desc: 'Platform-wide searchable knowledge base that powers coverage analysis, diagnostics, and recommendations.',
-    icon: FileText,
+    title: 'Multimodal Analysis',
+    desc: 'Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.',
+    icon: ImageIcon,
   },
   {
     title: 'Service Marketplace',
@@ -487,6 +487,195 @@ export default function LandingPage() {
                       {agent.desc}
                     </Text>
                   </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Document Chat Showcase Section */}
+        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 36,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                INTELLIGENT DOCUMENT CHAT
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 40,
+              }}>
+              Talk to Your{'\n'}
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Documents</Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 20,
+                lineHeight: 24,
+                marginBottom: 32,
+              }}>
+              Upload your home inspection reports, warranties, manuals, and policies—then chat with them naturally
+            </Text>
+          </View>
+
+          {/* Chat Example */}
+          <View
+            style={{
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: LANDING_COLORS.border,
+              backgroundColor: 'rgba(20,20,28,0.6)',
+              padding: 20,
+              marginBottom: 32,
+            }}>
+            <View style={{ gap: 16 }}>
+              {/* User message */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+                <View
+                  style={{
+                    maxWidth: '85%',
+                    backgroundColor: LANDING_COLORS.primary,
+                    borderRadius: 16,
+                    padding: 12,
+                  }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
+                    What issues were found in my home inspection report?
+                  </Text>
+                </View>
+              </View>
+
+              {/* AI response */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
+                <View
+                  style={{
+                    maxWidth: '90%',
+                    backgroundColor: LANDING_COLORS.card,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: LANDING_COLORS.border50,
+                    padding: 12,
+                  }}>
+                  <Text style={{ fontSize: 13, lineHeight: 20, color: LANDING_COLORS.foreground, marginBottom: 12 }}>
+                    Based on your home inspection report, here are the key issues:
+                  </Text>
+                  <View style={{ gap: 8, marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
+                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
+                        <Text style={{ fontWeight: 'bold' }}>Roof:</Text> Missing shingles on north side, 5-7 years remaining life
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
+                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
+                        <Text style={{ fontWeight: 'bold' }}>HVAC:</Text> Air handler showing wear, service within 6 months
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
+                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
+                        <Text style={{ fontWeight: 'bold' }}>Plumbing:</Text> Minor leak under kitchen sink
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: LANDING_COLORS.border }}>
+                    <Text style={{ fontSize: 11, color: LANDING_COLORS.mutedForeground }}>
+                      📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Document Types */}
+          <View style={{ gap: 16 }}>
+            {[
+              {
+                title: 'Home Inspection Reports',
+                desc: 'Quickly find issues, recommendations, and cost estimates from lengthy inspection documents.',
+                icon: FileText,
+              },
+              {
+                title: 'Warranty Coverage',
+                desc: 'Ask what's covered, expiration dates, and claim procedures without reading pages of fine print.',
+                icon: CheckCircle,
+              },
+              {
+                title: 'Appliance Manuals',
+                desc: 'Get troubleshooting steps, maintenance schedules, and specifications instantly from your manuals.',
+                icon: FileText,
+              },
+              {
+                title: 'Insurance Policies',
+                desc: 'Understand your coverage, deductibles, and exclusions through simple conversational queries.',
+                icon: DollarSign,
+              },
+            ].map((item) => (
+              <View
+                key={item.title}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  padding: 16,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(20,20,28,0.4)',
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    backgroundColor: LANDING_COLORS.primary20,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                  }}>
+                  <Icon as={item.icon} size={20} style={{ color: LANDING_COLORS.primary }} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      color: LANDING_COLORS.foreground,
+                      marginBottom: 4,
+                      lineHeight: 22,
+                    }}>
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 19,
+                      color: LANDING_COLORS.mutedForeground,
+                    }}>
+                    {item.desc}
+                  </Text>
                 </View>
               </View>
             ))}

@@ -540,6 +540,11 @@ export default function LandingPageClient() {
                 icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
               },
               {
+                title: "Chat with Your Documents",
+                desc: "Ask questions about your warranties, manuals, inspection reports, and policies—get instant answers with citations.",
+                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
+              },
+              {
                 title: "Multimodal Analysis",
                 desc: "Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.",
                 icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
@@ -861,6 +866,209 @@ export default function LandingPageClient() {
                     Before / After
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Document Chat Feature Showcase */}
+      <section
+        id="docs-chat"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: "#0f0f14" }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left: Visual representation */}
+            <div className="order-2 lg:order-1">
+              <div
+                className="rounded-2xl border p-8 space-y-6"
+                style={{
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                {/* Chat Example */}
+                <div className="space-y-4">
+                  {/* User message */}
+                  <div className="flex justify-end">
+                    <div
+                      className="max-w-[80%] rounded-2xl px-4 py-3"
+                      style={{
+                        backgroundColor: LANDING_COLORS.primary,
+                        color: LANDING_COLORS.background,
+                      }}
+                    >
+                      <p className="text-sm font-medium">
+                        What issues were found in my home inspection report?
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* AI response */}
+                  <div className="flex justify-start">
+                    <div
+                      className="max-w-[85%] rounded-2xl px-4 py-3 border"
+                      style={{
+                        backgroundColor: LANDING_COLORS.card,
+                        borderColor: LANDING_COLORS.border50,
+                        color: LANDING_COLORS.foreground,
+                      }}
+                    >
+                      <p className="text-sm leading-relaxed mb-3">
+                        Based on your home inspection report, here are the key issues found:
+                      </p>
+                      <ul className="text-sm space-y-2 mb-3" style={{ color: LANDING_COLORS.foreground90 }}>
+                        <li className="flex items-start gap-2">
+                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
+                          <span><strong>Roof:</strong> Missing shingles on north side, estimated 5-7 years remaining life</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
+                          <span><strong>HVAC:</strong> Air handler showing signs of wear, recommend service within 6 months</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
+                          <span><strong>Plumbing:</strong> Minor leak detected under kitchen sink</span>
+                        </li>
+                      </ul>
+                      <div className="pt-2 border-t" style={{ borderColor: LANDING_COLORS.border }}>
+                        <p className="text-xs" style={{ color: LANDING_COLORS.mutedForeground }}>
+                          📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Follow-up question */}
+                  <div className="flex justify-end">
+                    <div
+                      className="max-w-[80%] rounded-2xl px-4 py-3"
+                      style={{
+                        backgroundColor: LANDING_COLORS.primary,
+                        color: LANDING_COLORS.background,
+                      }}
+                    >
+                      <p className="text-sm font-medium">
+                        What's the estimated cost to fix the roof?
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Description */}
+            <div className="space-y-8 order-1 lg:order-2">
+              <div>
+                <div
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm mb-6"
+                  style={{
+                    backgroundColor: LANDING_COLORS.primaryLight,
+                    borderColor: LANDING_COLORS.primaryBorder,
+                  }}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style={{ color: LANDING_COLORS.primary }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                    INTELLIGENT DOCUMENT CHAT
+                  </span>
+                </div>
+                <h2 className="text-4xl lg:text-5xl font-light tracking-tight mb-4" style={{ color: LANDING_COLORS.foreground }}>
+                  Talk to Your
+                  <br />
+                  <span
+                    className="font-bold"
+                    style={{
+                      background: `linear-gradient(to right, ${LANDING_COLORS.primary}, rgba(34,211,238,0.7))`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    Documents
+                  </span>
+                </h2>
+                <p className="text-lg font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  Upload your home inspection reports, warranties, manuals, and policies—then chat with them naturally. Get instant answers with precise citations.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Home Inspection Reports",
+                    desc: "Quickly find issues, recommendations, and cost estimates from lengthy inspection documents.",
+                    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                  },
+                  {
+                    title: "Warranty Coverage",
+                    desc: "Ask what's covered, expiration dates, and claim procedures without reading through pages of fine print.",
+                    icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+                  },
+                  {
+                    title: "Appliance Manuals",
+                    desc: "Get troubleshooting steps, maintenance schedules, and specifications instantly from your manuals.",
+                    icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+                  },
+                  {
+                    title: "Insurance Policies",
+                    desc: "Understand your coverage, deductibles, and exclusions through simple conversational queries.",
+                    icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={item.title}
+                    className="flex gap-4 p-4 rounded-lg border transition-all animate-stagger-in"
+                    style={{
+                      borderColor: LANDING_COLORS.border,
+                      backgroundColor: "rgba(20,20,28,0.4)",
+                      animationDelay: `${i * 0.1}s`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(34,211,238,0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                    }}
+                  >
+                    <div
+                      className="h-10 w-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary20}, ${LANDING_COLORS.primary10})`,
+                      }}
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm mb-1" style={{ color: LANDING_COLORS.foreground }}>
+                        {item.title}
+                      </h3>
+                      <p className="text-xs font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
