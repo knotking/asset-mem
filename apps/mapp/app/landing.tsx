@@ -76,7 +76,7 @@ const steps = [
   { step: 1, title: 'Upload & Connect', desc: 'Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.' },
   { step: 2, title: 'Platform Intelligence', desc: 'AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.' },
   { step: 3, title: 'Unified Insights', desc: 'Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.' },
-  { step: 4, title: 'Manage & Track', desc: 'Monitor property health, share with contractors, schedule services, and keep everything organized in one place.' },
+  { step: 4, title: 'Manage & Track', desc: 'Monitor property health, share with contractors, and keep everything organized in one place.' },
 ];
 
 export default function LandingPage() {
@@ -269,6 +269,238 @@ export default function LandingPage() {
                 </Text>
               </View>
             </View>
+          </View>
+        </View>
+
+        {/* Use Cases Section */}
+        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 36,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                REAL-WORLD APPLICATIONS
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 40,
+              }}>
+              See How HomeGeek{'\n'}
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Solves Real Problems</Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 20,
+                lineHeight: 24,
+                marginBottom: 16,
+              }}>
+              From emergency repairs to preventive maintenance, see how our platform helps homeowners every day
+            </Text>
+          </View>
+
+          <View style={{ gap: 24 }}>
+            {[
+              {
+                title: 'Emergency Leak Repair',
+                scenario: 'Water leak discovered under kitchen sink at 10 PM',
+                icon: Zap,
+                color: LANDING_COLORS.accent,
+                steps: [
+                  'Upload video → AI diagnoses loose P-trap',
+                  'Get DIY guide + parts list ($25-50)',
+                  'Find 3 emergency plumbers nearby',
+                  'Compare: DIY $35 vs Pro $280-420',
+                ],
+                result: 'Fixed in 30 min, saved $350',
+              },
+              {
+                title: 'Property Condition Tracking',
+                scenario: 'Monitor basement moisture over 6-month winter',
+                icon: TrendingUp,
+                color: LANDING_COLORS.primary,
+                steps: [
+                  'Create monthly checkpoints with photos',
+                  'AI detects score drop: 78 → 65',
+                  'Platform identifies moisture increase',
+                  'Get preventive recommendations',
+                ],
+                result: 'Caught early, prevented $5K+ damage',
+              },
+              {
+                title: 'Insurance Claim Documentation',
+                scenario: 'Storm damage to roof requires proof',
+                icon: FileText,
+                color: LANDING_COLORS.primary,
+                steps: [
+                  'Auto-compare before/after photos',
+                  'AI detects missing shingles, damage',
+                  'Generate professional report',
+                  'Export PDF for insurance adjuster',
+                ],
+                result: 'Claim approved in 3 days',
+              },
+              {
+                title: 'Home Inspection Follow-up',
+                scenario: '50-page report with 15 issues',
+                icon: FileText,
+                color: LANDING_COLORS.primary,
+                steps: [
+                  'Upload PDF → AI indexes issues',
+                  'Ask: "Critical issues?" → Get list',
+                  'Chat: "Cost to fix roof?" → Estimate',
+                  'Find roofers, compare quotes',
+                ],
+                result: 'Negotiated 20% discount',
+              },
+              {
+                title: 'HVAC System Diagnosis',
+                scenario: 'AC not cooling during heatwave',
+                icon: Settings,
+                color: LANDING_COLORS.accent,
+                steps: [
+                  'Upload photos of AC + thermostat',
+                  'AI diagnoses refrigerant leak',
+                  'Check warranty: 2 years remaining',
+                  'Get 5 authorized technicians',
+                ],
+                result: 'Warranty covered $800 repair',
+              },
+              {
+                title: 'Preventive Maintenance',
+                scenario: 'Proactive care to avoid repairs',
+                icon: CheckCircle,
+                color: LANDING_COLORS.primary,
+                steps: [
+                  'Monthly checkpoints track cabinets',
+                  'Platform shows -0.5 pts/month decline',
+                  'AI suggests refinishing in 3-6 months',
+                  'Share timeline, get quote',
+                ],
+                result: '$1.2K refinish vs $8K replacement',
+              },
+            ].map((useCase) => (
+              <View
+                key={useCase.title}
+                style={{
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: 'rgba(20,20,28,0.6)',
+                  padding: 20,
+                }}>
+                {/* Icon and Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: useCase.color,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}>
+                    <Icon as={useCase.icon} size={24} style={{ color: LANDING_COLORS.white }} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 'bold',
+                        color: LANDING_COLORS.foreground,
+                        marginBottom: 4,
+                        lineHeight: 24,
+                      }}>
+                      {useCase.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '500',
+                        color: LANDING_COLORS.mutedForeground,
+                        lineHeight: 18,
+                      }}>
+                      {useCase.scenario}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Steps */}
+                <View style={{ gap: 10, marginBottom: 16 }}>
+                  {useCase.steps.map((step, idx) => (
+                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                      <View
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          backgroundColor: LANDING_COLORS.primary20,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          flexShrink: 0,
+                          marginTop: 1,
+                        }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                          {idx + 1}
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: LANDING_COLORS.foreground90,
+                        }}>
+                        {step}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Result */}
+                <View
+                  style={{
+                    paddingTop: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: LANDING_COLORS.border,
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                  }}>
+                  <Icon as={CheckCircle} size={18} style={{ color: useCase.color, marginTop: 1 }} />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: useCase.color,
+                      lineHeight: 18,
+                    }}>
+                    {useCase.result}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 

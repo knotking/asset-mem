@@ -480,6 +480,221 @@ export default function LandingPageClient() {
         </div>
       </section>
 
+      {/* Use Cases Section */}
+      <section
+        id="use-cases"
+        className="py-32 relative overflow-hidden w-full"
+        style={{ backgroundColor: LANDING_COLORS.background }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="text-center mb-20 space-y-6">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                REAL-WORLD APPLICATIONS
+              </span>
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+              See How HomeGeek
+              <br />
+              <span
+                className="font-bold"
+                style={{
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Solves Real Problems
+              </span>
+            </h2>
+            <p className="text-xl max-w-3xl mx-auto font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+              From emergency repairs to preventive maintenance, see how our platform helps homeowners every day
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+            {[
+              {
+                title: "Emergency Leak Repair",
+                scenario: "Water leak discovered under kitchen sink at 10 PM",
+                icon: "M13 10V3L4 14h7v7l9-11h-7z",
+                color: LANDING_COLORS.accent,
+                steps: [
+                  "Upload video of leak → AI diagnoses loose P-trap connection",
+                  "Get DIY guide with YouTube tutorial + parts list ($25-50)",
+                  "Find 3 emergency plumbers nearby (open 24/7)",
+                  "Compare costs: DIY $35 vs Professional $280-420",
+                ],
+                result: "Fixed in 30 minutes with DIY guide, saved $350",
+              },
+              {
+                title: "Property Condition Tracking",
+                scenario: "Monitor basement moisture over 6-month winter period",
+                icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+                color: LANDING_COLORS.primary,
+                steps: [
+                  "Create monthly checkpoints with photos",
+                  "AI detects condition score drop: 78 → 65 (attention needed)",
+                  "Platform identifies increased moisture + wall staining",
+                  "Get preventive maintenance recommendations before major damage",
+                ],
+                result: "Caught water issue early, prevented $5,000+ damage",
+              },
+              {
+                title: "Insurance Claim Documentation",
+                scenario: "Storm damage to roof requires insurance claim proof",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                color: LANDING_COLORS.primary,
+                steps: [
+                  "Platform auto-compares before/after checkpoint photos",
+                  "AI detects: missing shingles, damaged flashing, water damage",
+                  "Generates professional comparison report with timestamps",
+                  "Export PDF with visual evidence for insurance adjuster",
+                ],
+                result: "Claim approved in 3 days with AI-verified documentation",
+              },
+              {
+                title: "Home Inspection Follow-up",
+                scenario: "50-page inspection report with 15 issues to address",
+                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
+                color: LANDING_COLORS.primary,
+                steps: [
+                  "Upload inspection PDF → AI indexes all issues",
+                  "Ask: 'What are the critical issues?' → Get prioritized list",
+                  "Chat: 'Cost to fix the roof?' → $4,500-$7,200 estimate",
+                  "Find local roofers, compare quotes, check warranty coverage",
+                ],
+                result: "Prioritized repairs, negotiated 20% discount with quotes",
+              },
+              {
+                title: "HVAC System Diagnosis",
+                scenario: "AC not cooling properly during summer heatwave",
+                icon: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+                color: LANDING_COLORS.accent,
+                steps: [
+                  "Upload photos of AC unit + thermostat",
+                  "AI diagnoses: likely refrigerant leak or compressor issue",
+                  "Check warranty docs: 2 years remaining on parts",
+                  "Get 5 authorized HVAC technicians + cost estimates",
+                ],
+                result: "Warranty covered $800 repair, found authorized service",
+              },
+              {
+                title: "Preventive Maintenance Planning",
+                scenario: "Proactive property care to avoid costly repairs",
+                icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
+                color: LANDING_COLORS.primary,
+                steps: [
+                  "Monthly checkpoints show kitchen cabinet condition declining",
+                  "Platform tracks deterioration rate: -0.5 points/month",
+                  "AI suggests: 'Consider refinishing in 3-6 months'",
+                  "Share timeline with contractor, get quote, plan budget",
+                ],
+                result: "Refinished cabinets for $1,200 vs $8,000 replacement",
+              },
+            ].map((useCase, i) => (
+              <div
+                key={useCase.title}
+                className="border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {/* Icon and Title */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div
+                    className="h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: `linear-gradient(to right bottom, ${useCase.color}, ${useCase.color}99)`,
+                    }}
+                  >
+                    <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={useCase.icon} />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                      {useCase.title}
+                    </h3>
+                    <p className="text-sm font-medium" style={{ color: LANDING_COLORS.mutedForeground }}>
+                      {useCase.scenario}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Steps */}
+                <div className="space-y-3 mb-6">
+                  {useCase.steps.map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div
+                        className="h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                        style={{
+                          backgroundColor: LANDING_COLORS.primary20,
+                        }}
+                      >
+                        <span className="text-xs font-bold" style={{ color: LANDING_COLORS.primary }}>
+                          {idx + 1}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed" style={{ color: LANDING_COLORS.foreground90 }}>
+                        {step}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Result */}
+                <div
+                  className="pt-4 border-t"
+                  style={{ borderColor: LANDING_COLORS.border }}
+                >
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="h-5 w-5 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: useCase.color }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm font-semibold" style={{ color: useCase.color }}>
+                      {useCase.result}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Top Things Section */}
       <section
         id="top-things"
@@ -1114,7 +1329,7 @@ export default function LandingPageClient() {
               { step: 1, title: "Upload & Connect", desc: "Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform." },
               { step: 2, title: "Platform Intelligence", desc: "AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly." },
               { step: 3, title: "Unified Insights", desc: "Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated." },
-              { step: 4, title: "Manage & Track", desc: "Monitor property health, share with contractors, schedule services, and keep everything organized in one place." },
+              { step: 4, title: "Manage & Track", desc: "Monitor property health, share with contractors, and keep everything organized in one place." },
             ].map((item, i) => (
               <div
                 key={item.step}
