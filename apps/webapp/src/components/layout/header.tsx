@@ -63,7 +63,12 @@ export function Header() {
                     <Bell className="h-4 w-4" />
                     <span className="sr-only">Notifications</span>
                 </Button>
-                <Button variant="ghost" size="icon" className='h-9 w-9'>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className='h-9 w-9'
+                    onClick={() => router.push('/home/settings')}
+                >
                     <Settings className="h-4 w-4" />
                     <span className="sr-only">Settings</span>
                 </Button>
@@ -82,7 +87,10 @@ export function Header() {
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/home/settings')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>

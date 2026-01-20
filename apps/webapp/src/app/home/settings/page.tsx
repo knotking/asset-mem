@@ -1,0 +1,68 @@
+'use client';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
+import { useAuth } from '@/contexts/auth-context';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Camera, User } from 'lucide-react';
+
+export default function SettingsPage() {
+  const { user } = useAuth();
+
+  const getUserInitials = () => {
+    if (!user?.email) return 'NA';
+    const parts = user.email.split('@')[0].split(/[._-]/);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return user.email.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+          <p className="text-muted-foreground">
+            Manage your account settings and preferences
+          </p>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-6">
+        {/* User Profile Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+            <CardDescription>
+              Your account information
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback className="text-lg">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-lg font-medium">
+                  {user?.displayName || 'Property Owner'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.email || 'owner@homegeek.ai'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Checkpoint Settings Section */}
+        <CheckpointSettings />
+      </div>
+    </div>
+  );
+}

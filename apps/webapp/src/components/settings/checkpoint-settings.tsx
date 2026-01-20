@@ -6,10 +6,11 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { usePreferences } from '@/contexts/preferences-context';
 import { Separator } from '@/components/ui/separator';
-import { Info } from 'lucide-react';
+import { Info, Camera } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function CheckpointSettings() {
-  const { preferences, updatePreferences } = usePreferences();
+  const { preferences, loading, updatePreferences } = usePreferences();
 
   const comparisonPrefs = preferences?.checkpointComparison || {
     enabled: true,
@@ -44,12 +45,34 @@ export function CheckpointSettings() {
     });
   };
 
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Camera className="h-5 w-5" />
+            Checkpoint Comparison
+          </CardTitle>
+          <CardDescription>
+            Automatically compare new checkpoints with previous ones from the same location to detect changes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-20 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Checkpoint Comparison Settings</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Camera className="h-5 w-5" />
+          Checkpoint Comparison
+        </CardTitle>
         <CardDescription>
-          Control how automatic checkpoint comparisons work
+          Automatically compare new checkpoints with previous ones from the same location to detect changes
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -58,7 +81,7 @@ export function CheckpointSettings() {
           <div className="space-y-0.5">
             <Label htmlFor="enabled">Enable Automatic Comparison</Label>
             <p className="text-sm text-muted-foreground">
-              Automatically compare new checkpoints with previous ones
+              Automatically detect changes when creating checkpoints
             </p>
           </div>
           <Switch
@@ -76,7 +99,7 @@ export function CheckpointSettings() {
             <div className="space-y-0.5">
               <Label>Maximum Age (Days)</Label>
               <p className="text-sm text-muted-foreground">
-                Only compare with checkpoints from the last N days
+                Only compare with checkpoints from the last {comparisonPrefs.maxAgeDays} days
               </p>
             </div>
             <span className="text-sm font-medium">{comparisonPrefs.maxAgeDays} days</span>
@@ -98,13 +121,13 @@ export function CheckpointSettings() {
 
         <Separator />
 
-        {/* Min Room Confidence */}
+        {/* Min Asset Confidence */}
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5">
-              <Label>Minimum Room Confidence</Label>
+              <Label>Minimum Asset Confidence</Label>
               <p className="text-sm text-muted-foreground">
-                Only auto-compare if room detection confidence is above this threshold
+                Only compare when asset detection confidence is at least {Math.round(comparisonPrefs.minAssetConfidence * 100)}%
               </p>
             </div>
             <span className="text-sm font-medium">
@@ -127,15 +150,10 @@ export function CheckpointSettings() {
         </div>
 
         {/* Info Box */}
-        <div className="flex gap-3 rounded-lg border bg-muted p-4">
+        <div className="flex gap-3 rounded-lg border bg-muted/50 p-4">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">How it works:</p>
-            <p className="mt-1">
-              When you create a new checkpoint, the system will automatically find and compare it
-              with the most recent checkpoint from the same location (if it meets your criteria).
-              This helps track changes over time without manual effort.
-            </p>
+            These settings apply to all future checkpoints. Changes won&apos;t affect existing comparisons.
           </div>
         </div>
       </CardContent>
