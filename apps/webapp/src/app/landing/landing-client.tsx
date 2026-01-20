@@ -1099,22 +1099,22 @@ export default function LandingPageClient() {
               }}
             >
               <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
-                SIMPLE FLOW
+                PLATFORM WORKFLOW
               </span>
             </div>
             <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              How It Works
+              How the Platform Works
             </h2>
             <p className="text-lg max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Four steps from your question to actionable recommendations
+              From data upload to actionable insights—everything connected in one unified platform
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {[
-              { step: 1, title: "Upload or Ask", desc: "Share photos, videos, documents, or just type your question in chat." },
-              { step: 2, title: "AI Analyzes", desc: "Multi-agent system: Triage, Coverage, DIY, Service, and Cost agents work together." },
-              { step: 3, title: "Get Recommendations", desc: "Diagnosis, DIY steps, local providers, warranty info, and cost comparison." },
-              { step: 4, title: "Take Action", desc: "Track changes in Checkpoints, share with contractors, or handle it yourself." },
+              { step: 1, title: "Upload & Connect", desc: "Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform." },
+              { step: 2, title: "Platform Intelligence", desc: "AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly." },
+              { step: 3, title: "Unified Insights", desc: "Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated." },
+              { step: 4, title: "Manage & Track", desc: "Monitor property health, share with contractors, schedule services, and keep everything organized in one place." },
             ].map((item, i) => (
               <div
                 key={item.step}

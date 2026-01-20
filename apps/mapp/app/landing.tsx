@@ -73,10 +73,10 @@ const features = [
 ];
 
 const steps = [
-  { step: 1, title: 'Upload or Ask', desc: 'Share photos, videos, documents, or just type your question in chat.' },
-  { step: 2, title: 'AI Analyzes', desc: 'Multi-agent system: Triage, Coverage, DIY, Service, and Cost agents work together.' },
-  { step: 3, title: 'Get Recommendations', desc: 'Diagnosis, DIY steps, local providers, warranty info, and cost comparison.' },
-  { step: 4, title: 'Take Action', desc: 'Track changes in Checkpoints, share with contractors, or handle it yourself.' },
+  { step: 1, title: 'Upload & Connect', desc: 'Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.' },
+  { step: 2, title: 'Platform Intelligence', desc: 'AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.' },
+  { step: 3, title: 'Unified Insights', desc: 'Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.' },
+  { step: 4, title: 'Manage & Track', desc: 'Monitor property health, share with contractors, schedule services, and keep everything organized in one place.' },
 ];
 
 export default function LandingPage() {
@@ -698,7 +698,7 @@ export default function LandingPage() {
                 borderColor: LANDING_COLORS.primaryBorder,
                 marginBottom: 36,
               }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>SIMPLE FLOW</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>PLATFORM WORKFLOW</Text>
             </View>
             <Text
               style={{
@@ -710,7 +710,7 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 40,
               }}>
-              How It Works
+              How the Platform Works
             </Text>
             <Text
               style={{
@@ -720,7 +720,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Four steps from your question to actionable recommendations
+              From data upload to actionable insights—everything connected in one unified platform
             </Text>
           </View>
 
