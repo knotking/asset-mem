@@ -42,32 +42,32 @@ const LANDING_COLORS = {
 const features = [
   {
     title: 'Instant Diagnostics',
-    desc: 'Get AI-powered analysis of property issues in seconds.',
+    desc: 'AI-powered analysis that integrates with your property history and documents for contextual insights.',
     icon: Zap,
   },
   {
     title: 'Property Checkpoints',
-    desc: 'Visual timeline, condition scores, before/after comparison, and health metrics.',
+    desc: 'Visual timeline with condition tracking that connects to diagnostics and service recommendations across the platform.',
     icon: ImageIcon,
   },
   {
     title: 'Multimodal Analysis',
-    desc: 'Photos, videos, and documents analyzed by Gemini-powered AI.',
+    desc: 'Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.',
     icon: FileText,
   },
   {
     title: 'Document Intelligence',
-    desc: 'Your warranties, manuals, and receipts become a searchable RAG knowledge base.',
+    desc: 'Platform-wide searchable knowledge base that powers coverage analysis, diagnostics, and recommendations.',
     icon: FileText,
   },
   {
-    title: 'DIY + Service Discovery',
-    desc: 'Step-by-step guidance, local providers, and product recommendations.',
+    title: 'Service Marketplace',
+    desc: 'Seamlessly discover and connect with local providers based on your property diagnostics and needs.',
     icon: Settings,
   },
   {
-    title: 'Cost Transparency',
-    desc: 'Compare DIY vs. professional costs and coverage.',
+    title: 'Integrated Cost Analysis',
+    desc: 'Platform intelligence that combines diagnostics, coverage, and market data for accurate cost estimates.',
     icon: DollarSign,
   },
 ];
@@ -187,8 +187,8 @@ export default function LandingPage() {
                 marginBottom: 16,
                 paddingHorizontal: 10,
               }}>
-              Intelligent Home Care &{'\n'}
-              <Text style={{ fontWeight: '500' }}>Property Diagnostics</Text>
+              Your Complete{'\n'}
+              <Text style={{ fontWeight: '500' }}>Home Care Platform</Text>
             </Text>
 
             <Text
@@ -200,8 +200,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
-              Transform property maintenance with advanced AI diagnostics. Get instant insights,
-              expert recommendations, and proactive guidance—powered by cutting-edge artificial intelligence.
+              A comprehensive platform that integrates AI diagnostics, property tracking, document intelligence, and service discovery—all working together seamlessly to simplify your home care journey.
             </Text>
 
             {/* CTA Buttons */}
@@ -290,7 +289,7 @@ export default function LandingPage() {
                 marginBottom: 36,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                PLATFORM FEATURES
+                INTEGRATED PLATFORM SERVICES
               </Text>
             </View>
             <Text
@@ -303,8 +302,8 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 44,
               }}>
-              The Top Things{'\n'}
-              <Text style={{ fontWeight: 'bold' }}>We Do for You</Text>
+              Everything You Need{'\n'}
+              <Text style={{ fontWeight: 'bold' }}>In One Platform</Text>
             </Text>
             <Text
               style={{
@@ -314,7 +313,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
+              A unified platform where AI diagnostics, property tracking, document management, and service discovery work together seamlessly
             </Text>
           </View>
 
@@ -398,8 +397,8 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 44,
               }}>
-              Specialized AI Agents{'\n'}
-              <Text style={{ fontWeight: 'bold' }}>Working Together</Text>
+              Platform Intelligence{'\n'}
+              <Text style={{ fontWeight: 'bold' }}>Powered by AI Agents</Text>
             </Text>
             <Text
               style={{
@@ -409,7 +408,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Our multi-agent AI system orchestrates specialized agents that collaborate to analyze your property issues from every angle
+              Our multi-agent AI system powers the entire platform, with specialized agents that share data and insights across all services
             </Text>
           </View>
 
@@ -441,8 +440,8 @@ export default function LandingPage() {
                 icon: DollarSign,
               },
               {
-                title: 'Orchestration',
-                desc: 'All agents work in harmony, sharing insights to provide you with a complete, unified solution for your property issue.',
+                title: 'Platform Orchestration',
+                desc: 'All agents share insights across the platform, connecting your diagnostics, documents, checkpoints, and services into one unified intelligence system.',
                 icon: Zap,
               },
             ].map((agent, i) => (
@@ -595,8 +594,8 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 44,
               }}>
-              Ready to Transform Your{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Property Management?</Text>
+              Experience the Complete{'\n'}
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Home Care Platform</Text>
             </Text>
             <Text
               style={{
@@ -607,7 +606,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              Join thousands of homeowners and property managers who trust HomeGeek AI
+              Join thousands of homeowners and property managers using our unified platform for all their home care needs
             </Text>
 
             <TouchableOpacity

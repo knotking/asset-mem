@@ -276,9 +276,9 @@ export default function LandingPageClient() {
                   className="text-3xl lg:text-4xl font-light leading-tight"
                   style={{ color: LANDING_COLORS.foreground90 }}
                 >
-                  Intelligent Home Care &
+                  Your Complete
                   <br />
-                  <span className="font-medium">Property Diagnostics</span>
+                  <span className="font-medium">Home Care Platform</span>
                 </h2>
               </div>
 
@@ -286,9 +286,9 @@ export default function LandingPageClient() {
                 className="text-xl leading-relaxed max-w-xl font-light"
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
-                Transform property maintenance with advanced AI diagnostics. Get
-                instant insights, expert recommendations, and proactive
-                guidance—powered by cutting-edge artificial intelligence.
+                A comprehensive platform that integrates AI diagnostics, property 
+                tracking, document intelligence, and service discovery—all working 
+                together seamlessly to simplify your home care journey.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -504,11 +504,11 @@ export default function LandingPageClient() {
               }}
             >
               <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
-                PLATFORM FEATURES
+                INTEGRATED PLATFORM SERVICES
               </span>
             </div>
             <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              The Top Things
+              Everything You Need
               <br />
               <span
                 className="font-bold"
@@ -519,11 +519,11 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                We Do for You
+                In One Platform
               </span>
             </h2>
             <p className="text-xl max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Powerful AI-driven tools designed to simplify property maintenance and maximize efficiency
+              A unified platform where AI diagnostics, property tracking, document management, and service discovery work together seamlessly
             </p>
           </div>
 
@@ -531,32 +531,32 @@ export default function LandingPageClient() {
             {[
               {
                 title: "Instant Diagnostics",
-                desc: "Get AI-powered analysis of property issues in seconds.",
+                desc: "AI-powered analysis that integrates with your property history and documents for contextual insights.",
                 icon: "M13 10V3L4 14h7v7l9-11h-7z",
               },
               {
                 title: "Property Checkpoints",
-                desc: "Visual timeline, condition scores, before/after comparison, and health metrics.",
+                desc: "Visual timeline with condition tracking that connects to diagnostics and service recommendations across the platform.",
                 icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
               },
               {
                 title: "Multimodal Analysis",
-                desc: "Photos, videos, and documents analyzed by Gemini-powered AI.",
+                desc: "Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.",
                 icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
               },
               {
                 title: "Document Intelligence",
-                desc: "Your warranties, manuals, and receipts become a searchable RAG knowledge base.",
+                desc: "Platform-wide searchable knowledge base that powers coverage analysis, diagnostics, and recommendations.",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
               },
               {
-                title: "DIY + Service Discovery",
-                desc: "Step-by-step guidance, local providers, and product recommendations.",
+                title: "Service Marketplace",
+                desc: "Seamlessly discover and connect with local providers based on your property diagnostics and needs.",
                 icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
               },
               {
-                title: "Cost Transparency",
-                desc: "Compare DIY vs. professional costs and coverage.",
+                title: "Integrated Cost Analysis",
+                desc: "Platform intelligence that combines diagnostics, coverage, and market data for accurate cost estimates.",
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
               },
             ].map((item, i) => (
@@ -643,7 +643,7 @@ export default function LandingPageClient() {
               </span>
             </div>
             <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              Specialized AI Agents
+              Platform Intelligence
               <br />
               <span
                 className="font-bold"
@@ -654,11 +654,11 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                Working Together
+                Powered by AI Agents
               </span>
             </h2>
             <p className="text-xl max-w-3xl mx-auto font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Our multi-agent AI system orchestrates specialized agents that collaborate to analyze your property issues from every angle, delivering comprehensive and actionable solutions tailored to your needs.
+              Our multi-agent AI system powers the entire platform, with specialized agents that share data and insights across all services to deliver comprehensive, connected solutions for your property.
             </p>
           </div>
 
@@ -690,8 +690,8 @@ export default function LandingPageClient() {
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
               },
               {
-                title: "Orchestration",
-                desc: "All agents work in harmony, sharing insights and coordinating their analyses to provide you with a complete, unified solution that addresses every aspect of your property issue.",
+                title: "Platform Orchestration",
+                desc: "All agents share insights across the platform, connecting your diagnostics, documents, checkpoints, and services into one unified intelligence system.",
                 icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
               },
             ].map((item, i) => (
@@ -960,7 +960,7 @@ export default function LandingPageClient() {
               className="text-5xl lg:text-7xl font-light tracking-tight leading-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              Ready to Transform Your
+              Experience the Complete
               <br />
               <span
                 className="font-bold"
@@ -971,15 +971,14 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                Property Management?
+                Home Care Platform
               </span>
             </h2>
             <p
               className="text-xl max-w-2xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Join thousands of homeowners and property managers who trust
-              HomeGeek AI
+              Join thousands of homeowners and property managers using our unified platform for all their home care needs
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center pt-6">
               {user ? (
@@ -1101,8 +1100,8 @@ export default function LandingPageClient() {
                 className="text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
-                Your AI-powered home care assistant for intelligent property
-                diagnostics and maintenance.
+                Your complete home care platform integrating AI diagnostics, 
+                property tracking, and service discovery in one unified solution.
               </p>
             </div>
 
