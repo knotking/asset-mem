@@ -103,11 +103,11 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
               ></span>
             </a>
             <a
-              href="#top-things"
-              onClick={(e) => onNavClick(e, '#top-things')}
+              href="#features"
+              onClick={(e) => onNavClick(e, '#features')}
               className="text-sm font-medium transition-all duration-300 relative group"
               style={{
-                color: activeSection === 'top-things' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70,
+                color: activeSection === 'features' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70,
                 transform: 'translateY(0)',
               }}
               onMouseEnter={(e) => {
@@ -115,16 +115,16 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = activeSection === 'top-things' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70;
+                e.currentTarget.style.color = activeSection === 'features' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70;
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              Top Things
+              Features
               <span
                 className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
                 style={{
                   backgroundColor: LANDING_COLORS.primary,
-                  width: activeSection === 'top-things' ? '100%' : '0%',
+                  width: activeSection === 'features' ? '100%' : '0%',
                 }}
               ></span>
               <span
@@ -154,7 +154,7 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                 className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
                 style={{
                   backgroundColor: LANDING_COLORS.primary,
-                  width: activeSection === 'top-things' ? '100%' : '0%',
+                  width: activeSection === 'ai-agents' ? '100%' : '0%',
                 }}
               ></span>
               <span

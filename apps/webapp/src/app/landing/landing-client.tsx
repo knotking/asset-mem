@@ -60,7 +60,7 @@ export default function LandingPageClient() {
 
       const sections = [
         { id: "use-cases", el: document.querySelector("#use-cases") },
-        { id: "top-things", el: document.querySelector("#top-things") },
+        { id: "features", el: document.querySelector("#features") },
         { id: "ai-agents", el: document.querySelector("#ai-agents") },
         { id: "timeline-feature", el: document.querySelector("#timeline-feature") },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
@@ -608,9 +608,9 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* Top Things Section */}
+      {/* Features Section */}
       <section
-        id="top-things"
+        id="features"
         className="py-32 relative overflow-hidden w-full transition-all duration-1000"
         style={{ backgroundColor: "#0f0f14" }}
       >
@@ -1454,7 +1454,7 @@ export default function LandingPageClient() {
               >
                 <li>
                   <Link
-                    href="#top-things"
+                    href="#features"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)
