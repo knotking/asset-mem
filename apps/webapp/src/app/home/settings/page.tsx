@@ -5,10 +5,13 @@ import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Camera, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
   const getUserInitials = () => {
     if (!user?.email) return 'NA';
@@ -21,9 +24,20 @@ export default function SettingsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Go back</span>
+            </Button>
+            <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+          </div>
           <p className="text-muted-foreground">
             Manage your account settings and preferences
           </p>
