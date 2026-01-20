@@ -3,7 +3,7 @@ from typing import List, Optional, Literal, Dict
 
 AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
-PrimaryAgent = Literal["analysis", "checkpoint"]
+PrimaryAgent = Literal["analysis", "checkpoint", "docs"]
 
 DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
@@ -19,7 +19,8 @@ class DiagnosisInput(BaseModel):
         default=None,
         description=(
             "Primary agent selection. When provided, this takes precedence in routing decisions. "
-            "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries. "
+            "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries, "
+            "'docs' routes to doculink_agent for user document queries. "
             "If not provided, routing falls back to legacy logic based on checkpoint_ids and diagnosis_uris."
         ),
     )

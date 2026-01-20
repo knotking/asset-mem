@@ -23,7 +23,10 @@ logger: logging.Logger = logging.getLogger("__name__")
 
 def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
     """
-    Fetches all FileId values from JSON files in the user's import_results folder in GCS.
+    Fetches FileId values from JSON files in the user's import_results folder in GCS.
+    
+    If context_doc_uris is provided and not empty, returns only file IDs matching those URIs.
+    If context_doc_uris is None or empty, returns ALL user file IDs (all-docs mode).
     """
     bucket_name = os.environ.get("GOOGLE_CLOUD_BUCKET")
     folder_prefix = f"{os.environ.get('USER_UPLOAD_FOLDER', 'uploads')}/{user_id}/import-results"
@@ -32,6 +35,8 @@ def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None
     blobs = bucket.list_blobs(prefix=folder_prefix)
     file_ids: list[str] = []
     
+    # Determine if we're in all-docs mode (no specific docs selected)
+    all_docs_mode = not context_doc_uris or len(context_doc_uris) == 0
 
     for blob in blobs:
         if blob.name.endswith('.json') or blob.name.endswith('.ndjson'):
@@ -40,8 +45,13 @@ def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None
             for line in content.splitlines():
                 try:
                     obj = json.loads(line)
-                    if "Filename" in obj and obj["Filename"] in context_doc_uris:
-                        file_ids.append(str(obj["FileId"]))
+                    if "FileId" in obj:
+                        # In all-docs mode, add all file IDs
+                        # In selected-docs mode, only add if filename matches
+                        if all_docs_mode:
+                            file_ids.append(str(obj["FileId"]))
+                        elif "Filename" in obj and obj["Filename"] in context_doc_uris:
+                            file_ids.append(str(obj["FileId"]))
                 except Exception as e:
                     logger.warning(f"Failed to parse line in {blob.name}: {e}")
 
@@ -50,10 +60,14 @@ def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None
 
 def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None) -> list[str]:
     """
-    Fetches the RAG IDs for the user from the environment variable.
+    Fetches the RAG IDs for the user.
+    
+    If context_doc_uris is provided, returns only matching file IDs.
+    If context_doc_uris is None/empty, returns all user file IDs.
     """
     file_ids = get_user_file_ids(user_id, context_doc_uris)
-    logger.warning(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS.")
+    mode = "all documents" if not context_doc_uris or len(context_doc_uris) == 0 else f"{len(context_doc_uris)} selected documents"
+    logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS ({mode} mode).")
     return file_ids
 
 def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):

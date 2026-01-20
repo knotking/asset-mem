@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/text';
 import {
   Stethoscope,
   Clock,
+  FileText,
   MapPin,
   Navigation,
   Settings,
@@ -52,14 +53,14 @@ export function CompactSettingsBar({
         onPress={onAgentPress || onOpenSettings}
         className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
         accessibilityRole="button"
-        accessibilityLabel={`Current agent: ${primaryAgent === 'analysis' ? 'Analysis' : 'Checkpoint'}`}>
+        accessibilityLabel={`Current agent: ${primaryAgent === 'analysis' ? 'Analysis' : primaryAgent === 'checkpoint' ? 'Checkpoint' : 'Docs'}`}>
         <Icon
-          as={primaryAgent === 'analysis' ? Stethoscope : Clock}
+          as={primaryAgent === 'analysis' ? Stethoscope : primaryAgent === 'checkpoint' ? Clock : FileText}
           size={14}
           className="text-foreground"
         />
         <Text className="text-xs font-medium text-foreground">
-          {primaryAgent === 'analysis' ? 'Analysis' : 'Checkpoint'}
+          {primaryAgent === 'analysis' ? 'Analysis' : primaryAgent === 'checkpoint' ? 'Checkpoint' : 'Docs'}
         </Text>
         {primaryAgent === 'analysis' && selectedOptionalAgents.length > 0 && (
           <View className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5">

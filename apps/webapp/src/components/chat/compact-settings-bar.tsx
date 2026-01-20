@@ -1,4 +1,4 @@
-import { Settings, Stethoscope, Clock, MapPin, Navigation } from "lucide-react";
+import { Settings, Stethoscope, Clock, FileText, MapPin, Navigation } from "lucide-react";
 import type { PrimaryAgent, LocationData, AnalysisOptionalAgent, CheckpointOptionalAgent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,9 @@ export function CompactSettingsBar({
     return `${locationData?.locationRadius || 5}mi`;
   };
 
-  const AgentIcon = primaryAgent === 'analysis' ? Stethoscope : Clock;
+  const AgentIcon = primaryAgent === 'analysis' ? Stethoscope : 
+                     primaryAgent === 'checkpoint' ? Clock : 
+                     FileText;
   const LocationIcon = locationData?.locationType === 'location' ? Navigation : MapPin;
 
   return (
@@ -50,7 +52,11 @@ export function CompactSettingsBar({
         onClick={onAgentPress || onOpenSettings}
         className="h-8 gap-1.5 px-3 text-xs font-medium">
         <AgentIcon className="h-3.5 w-3.5" />
-        <span>{primaryAgent === 'analysis' ? 'Analysis' : 'Checkpoint'}</span>
+        <span>
+          {primaryAgent === 'analysis' ? 'Analysis' : 
+           primaryAgent === 'checkpoint' ? 'Checkpoint' : 
+           'Docs'}
+        </span>
         {primaryAgent === 'analysis' && selectedOptionalAgents.length > 0 && (
           <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
             +{selectedOptionalAgents.length}

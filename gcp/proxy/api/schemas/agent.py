@@ -11,6 +11,7 @@ class AgentRequest(BaseModel):
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (enables checkpoint_agent routing)")
     property_address: str = Field(default="", description="Address of the property being analyzed")
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval)")
+    primary_agent: Optional[Literal["analysis", "checkpoint", "docs"]] = Field(default=None, description="Primary agent selection for explicit routing: 'analysis' for diagnostics, 'checkpoint' for checkpoint queries, 'docs' for document queries")
     analysis_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in analysis")
     checkpoint_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in checkpoint analysis")
     location_type: Optional[Literal["address", "location"]] = Field(default=None, description="Type of location data provided")

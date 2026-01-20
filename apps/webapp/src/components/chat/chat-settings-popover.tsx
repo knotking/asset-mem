@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Stethoscope,
   Clock,
+  FileText,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -176,7 +177,7 @@ export function ChatSettingsPopover({
             {/* Primary Agent Selection */}
             <div>
               <label className="text-sm font-semibold mb-3 block">Primary Agent</label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
                   variant={primaryAgent === 'analysis' ? 'default' : 'outline'}
@@ -192,6 +193,14 @@ export function ChatSettingsPopover({
                   onClick={() => onPrimaryAgentChange('checkpoint')}>
                   <Clock className="h-4 w-4" />
                   <span>Checkpoint</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={primaryAgent === 'docs' ? 'default' : 'outline'}
+                  className="flex-1 gap-2"
+                  onClick={() => onPrimaryAgentChange('docs')}>
+                  <FileText className="h-4 w-4" />
+                  <span>Docs</span>
                 </Button>
               </div>
             </div>

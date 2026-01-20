@@ -150,6 +150,7 @@ async def stream_agent_answers(
         logger.debug("No checkpoint_ids provided in request")
     property_address = request.property_address
     property_id = request.property_id  # Option 1: property_id from request
+    primary_agent = request.primary_agent  # Primary agent selection for explicit routing
     analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     checkpoint_optional_agents = request.checkpoint_optional_agents or []
     location_type = request.location_type
@@ -223,6 +224,11 @@ async def stream_agent_answers(
     if property_id:
         logger.info(f"Including property_id in agent payload: {property_id}")
         payload["property_id"] = property_id
+    
+    # Include primary_agent if provided (for explicit routing)
+    if primary_agent:
+        payload["primary_agent"] = primary_agent
+        logger.info(f"Including primary_agent in agent payload: {primary_agent}")
     
     # Include checkpoint_optional_agents if provided
     if checkpoint_optional_agents:

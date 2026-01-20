@@ -13,6 +13,7 @@ import {
   X,
   Stethoscope,
   Clock,
+  FileText,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -239,10 +240,10 @@ export function ChatSettingsModal({
                 {/* Primary Agent Selection */}
                 <View>
                   <Text className="mb-3 text-sm font-semibold text-foreground">Primary Agent</Text>
-                  <View className="flex-row gap-3">
+                  <View className="flex-row gap-2">
                     <Pressable
                       onPress={() => onPrimaryAgentChange('analysis')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
                         primaryAgent === 'analysis'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
@@ -255,7 +256,7 @@ export function ChatSettingsModal({
                         }
                       />
                       <Text
-                        className={`text-sm font-semibold ${
+                        className={`text-xs font-semibold ${
                           primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
                         }`}>
                         Analysis
@@ -263,7 +264,7 @@ export function ChatSettingsModal({
                     </Pressable>
                     <Pressable
                       onPress={() => onPrimaryAgentChange('checkpoint')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
                         primaryAgent === 'checkpoint'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
@@ -278,12 +279,37 @@ export function ChatSettingsModal({
                         }
                       />
                       <Text
-                        className={`text-sm font-semibold ${
+                        className={`text-xs font-semibold ${
                           primaryAgent === 'checkpoint'
                             ? 'text-primary-foreground'
                             : 'text-foreground'
                         }`}>
                         Checkpoint
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onPrimaryAgentChange('docs')}
+                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
+                        primaryAgent === 'docs'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={FileText}
+                        size={18}
+                        className={
+                          primaryAgent === 'docs'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-xs font-semibold ${
+                          primaryAgent === 'docs'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }`}>
+                        Docs
                       </Text>
                     </Pressable>
                   </View>

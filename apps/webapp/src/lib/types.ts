@@ -24,7 +24,7 @@ export const CHECKPOINT_OPTIONAL_AGENTS = [
 
 export type CheckpointOptionalAgent = (typeof CHECKPOINT_OPTIONAL_AGENTS)[number];
 
-export type PrimaryAgent = "analysis" | "checkpoint";
+export type PrimaryAgent = "analysis" | "checkpoint" | "docs";
 
 export type Message = {
   id: string;
