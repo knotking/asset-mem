@@ -5,7 +5,18 @@ import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
 import { Button } from '../components/ui/button';
 import { Icon } from '../components/ui/icon';
-import { Zap, CheckCircle, TrendingUp, ImageIcon, FileText, Settings, DollarSign, Clock, ArrowRight, Home } from 'lucide-react-native';
+import {
+  Zap,
+  CheckCircle,
+  TrendingUp,
+  ImageIcon,
+  FileText,
+  Settings,
+  DollarSign,
+  Clock,
+  ArrowRight,
+  Home,
+} from 'lucide-react-native';
 
 // Dark theme - landing page only (matching webapp)
 const LANDING_COLORS = {
@@ -73,10 +84,26 @@ const features = [
 ];
 
 const steps = [
-  { step: 1, title: 'Upload & Connect', desc: 'Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.' },
-  { step: 2, title: 'Platform Intelligence', desc: 'AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.' },
-  { step: 3, title: 'Unified Insights', desc: 'Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.' },
-  { step: 4, title: 'Manage & Track', desc: 'Monitor property health, share with contractors, and keep everything organized in one place.' },
+  {
+    step: 1,
+    title: 'Upload & Connect',
+    desc: 'Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.',
+  },
+  {
+    step: 2,
+    title: 'Platform Intelligence',
+    desc: 'AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.',
+  },
+  {
+    step: 3,
+    title: 'Unified Insights',
+    desc: 'Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.',
+  },
+  {
+    step: 4,
+    title: 'Manage & Track',
+    desc: 'Monitor property health, share with contractors, and keep everything organized in one place.',
+  },
 ];
 
 export default function LandingPage() {
@@ -94,7 +121,13 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: LANDING_COLORS.background }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: LANDING_COLORS.background,
+        }}>
         {/* Minimal loading state */}
       </View>
     );
@@ -113,10 +146,15 @@ export default function LandingPage() {
       style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
       contentContainerStyle={{ flexGrow: 1 }}
       showsVerticalScrollIndicator={false}>
-      
       <Animated.View style={{ opacity: fadeAnim }}>
         {/* Hero Section */}
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 60, paddingBottom: 40, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 60,
+            paddingBottom: 40,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center' }}>
             {/* Logo/Brand */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
@@ -200,11 +238,20 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
-              A comprehensive platform that integrates AI diagnostics, property tracking, document intelligence, and service discovery—all working together seamlessly to simplify your home care journey.
+              A comprehensive platform that integrates AI diagnostics, property tracking, document
+              intelligence, and service discovery—all working together seamlessly to simplify your
+              home care journey.
             </Text>
 
             {/* CTA Buttons */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 48, paddingHorizontal: 20, width: '100%' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 12,
+                marginBottom: 48,
+                paddingHorizontal: 20,
+                width: '100%',
+              }}>
               <TouchableOpacity
                 onPress={handleGetStarted}
                 style={{
@@ -233,7 +280,13 @@ export default function LandingPage() {
         </View>
 
         {/* Use Cases Section */}
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
@@ -263,7 +316,9 @@ export default function LandingPage() {
                 lineHeight: 40,
               }}>
               See How HomeGeek{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Solves Real Problems</Text>
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                Solves Real Problems
+              </Text>
             </Text>
             <Text
               style={{
@@ -274,7 +329,8 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 16,
               }}>
-              From emergency repairs to preventive maintenance, see how our platform helps homeowners every day
+              From emergency repairs to preventive maintenance, see how our platform helps
+              homeowners every day
             </Text>
           </View>
 
@@ -369,7 +425,13 @@ export default function LandingPage() {
                   padding: 20,
                 }}>
                 {/* Icon and Title */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    marginBottom: 16,
+                  }}>
                   <View
                     style={{
                       width: 48,
@@ -408,7 +470,9 @@ export default function LandingPage() {
                 {/* Steps */}
                 <View style={{ gap: 10, marginBottom: 16 }}>
                   {useCase.steps.map((step, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                    <View
+                      key={idx}
+                      style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                       <View
                         style={{
                           width: 22,
@@ -420,7 +484,12 @@ export default function LandingPage() {
                           flexShrink: 0,
                           marginTop: 1,
                         }}>
-                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            color: LANDING_COLORS.primary,
+                          }}>
                           {idx + 1}
                         </Text>
                       </View>
@@ -465,7 +534,13 @@ export default function LandingPage() {
         </View>
 
         {/* Features Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: '#0f0f14',
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
@@ -505,7 +580,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              A unified platform where AI diagnostics, property tracking, document management, and service discovery work together seamlessly
+              A unified platform where AI diagnostics, property tracking, document management, and
+              service discovery work together seamlessly
             </Text>
           </View>
 
@@ -560,7 +636,13 @@ export default function LandingPage() {
         </View>
 
         {/* AI Agents Section */}
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
@@ -600,7 +682,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Our multi-agent AI system powers the entire platform, with specialized agents that share data and insights across all services
+              Our multi-agent AI system powers the entire platform, with specialized agents that
+              share data and insights across all services
             </Text>
           </View>
 
@@ -685,8 +768,131 @@ export default function LandingPage() {
           </View>
         </View>
 
+        {/* Timeline Feature Details - Property Checkpoints */}
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
+          <View style={{ gap: 40 }}>
+            <View>
+              <Text
+                style={{
+                  fontSize: 32,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.foreground,
+                  marginBottom: 16,
+                  lineHeight: 40,
+                }}>
+                Property Checkpoints:{'\n'}
+                <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                  Your Visual Timeline
+                </Text>
+              </Text>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.mutedForeground,
+                  lineHeight: 26,
+                }}>
+                Photos, scores, before/after—and health metrics that help you stay ahead.
+              </Text>
+            </View>
+
+            <View style={{ gap: 20 }}>
+              {[
+                {
+                  title: 'Visual Timeline',
+                  desc: 'Capture photos/videos of property areas over time; track condition with before/after comparisons; AI-powered analysis; automatic room/area detection.',
+                  icon: ImageIcon,
+                },
+                {
+                  title: 'AI-Powered Analysis',
+                  desc: 'Condition scoring (0–100); damage detection and severity; detected items/features; issue categories (critical, major, moderate, minor); cost estimates.',
+                  icon: TrendingUp,
+                },
+                {
+                  title: 'Automatic Comparison',
+                  desc: 'Intelligent comparison with previous checkpoints; visual diff and similarity scoring; change detection; configurable comparison preferences.',
+                  icon: CheckCircle,
+                },
+                {
+                  title: 'Timeline (Before/After)',
+                  desc: 'Visual timeline showing property condition changes over time with before/after photo comparisons and condition tracking.',
+                  icon: Clock,
+                },
+                {
+                  title: 'Property Health Metrics',
+                  desc: 'Overall condition score and trend; issues summary by severity; deterioration rate; predictive maintenance insights.',
+                  icon: TrendingUp,
+                },
+                {
+                  title: 'Real-Time & Scalable',
+                  desc: 'Non-blocking creation; real-time UI updates; built to scale.',
+                  icon: Zap,
+                },
+              ].map((block, i) => (
+                <View
+                  key={block.title}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 16,
+                    padding: 16,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(20,20,28,0.4)',
+                    borderWidth: 1,
+                    borderColor: LANDING_COLORS.border,
+                  }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: LANDING_COLORS.primary20,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}>
+                    <Icon as={block.icon} size={24} style={{ color: LANDING_COLORS.primary }} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 'bold',
+                        color: LANDING_COLORS.foreground,
+                        marginBottom: 4,
+                        lineHeight: 24,
+                      }}>
+                      {block.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 20,
+                        color: LANDING_COLORS.mutedForeground,
+                      }}>
+                      {block.desc}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {/* Document Chat Showcase Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: '#0f0f14',
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
@@ -727,7 +933,8 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 32,
               }}>
-              Upload your home inspection reports, warranties, manuals, and policies—then chat with them naturally
+              Upload your home inspection reports, warranties, manuals, and policies—then chat with
+              them naturally
             </Text>
           </View>
 
@@ -751,7 +958,8 @@ export default function LandingPage() {
                     borderRadius: 16,
                     padding: 12,
                   }}>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
                     What issues were found in my home inspection report?
                   </Text>
                 </View>
@@ -768,30 +976,62 @@ export default function LandingPage() {
                     borderColor: LANDING_COLORS.border50,
                     padding: 12,
                   }}>
-                  <Text style={{ fontSize: 13, lineHeight: 20, color: LANDING_COLORS.foreground, marginBottom: 12 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 20,
+                      color: LANDING_COLORS.foreground,
+                      marginBottom: 12,
+                    }}>
                     Based on your home inspection report, here are the key issues:
                   </Text>
                   <View style={{ gap: 8, marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
-                        <Text style={{ fontWeight: 'bold' }}>Roof:</Text> Missing shingles on north side, 5-7 years remaining life
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: LANDING_COLORS.foreground90,
+                        }}>
+                        <Text style={{ fontWeight: 'bold' }}>Roof:</Text> Missing shingles on north
+                        side, 5-7 years remaining life
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
-                        <Text style={{ fontWeight: 'bold' }}>HVAC:</Text> Air handler showing wear, service within 6 months
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: LANDING_COLORS.foreground90,
+                        }}>
+                        <Text style={{ fontWeight: 'bold' }}>HVAC:</Text> Air handler showing wear,
+                        service within 6 months
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <Text style={{ color: LANDING_COLORS.accent, fontSize: 13 }}>•</Text>
-                      <Text style={{ flex: 1, fontSize: 13, lineHeight: 19, color: LANDING_COLORS.foreground90 }}>
-                        <Text style={{ fontWeight: 'bold' }}>Plumbing:</Text> Minor leak under kitchen sink
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: LANDING_COLORS.foreground90,
+                        }}>
+                        <Text style={{ fontWeight: 'bold' }}>Plumbing:</Text> Minor leak under
+                        kitchen sink
                       </Text>
                     </View>
                   </View>
-                  <View style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: LANDING_COLORS.border }}>
+                  <View
+                    style={{
+                      paddingTop: 8,
+                      borderTopWidth: 1,
+                      borderTopColor: LANDING_COLORS.border,
+                    }}>
                     <Text style={{ fontSize: 11, color: LANDING_COLORS.mutedForeground }}>
                       📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
                     </Text>
@@ -811,7 +1051,7 @@ export default function LandingPage() {
               },
               {
                 title: 'Warranty Coverage',
-                desc: 'Ask what\'s covered, expiration dates, and claim procedures without reading pages of fine print.',
+                desc: "Ask what's covered, expiration dates, and claim procedures without reading pages of fine print.",
                 icon: CheckCircle,
               },
               {
@@ -875,7 +1115,13 @@ export default function LandingPage() {
         </View>
 
         {/* How It Works Section */}
-        <View style={{ backgroundColor: LANDING_COLORS.background, paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
               style={{
@@ -890,7 +1136,9 @@ export default function LandingPage() {
                 borderColor: LANDING_COLORS.primaryBorder,
                 marginBottom: 36,
               }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>PLATFORM WORKFLOW</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                PLATFORM WORKFLOW
+              </Text>
             </View>
             <Text
               style={{
@@ -935,7 +1183,9 @@ export default function LandingPage() {
                     alignItems: 'center',
                     flexShrink: 0,
                   }}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: LANDING_COLORS.white }}>{item.step}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: LANDING_COLORS.white }}>
+                    {item.step}
+                  </Text>
                 </View>
                 <View style={{ flex: 1, paddingTop: 6 }}>
                   <Text
@@ -963,7 +1213,13 @@ export default function LandingPage() {
         </View>
 
         {/* Final CTA Section */}
-        <View style={{ backgroundColor: '#0f0f14', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 }}>
+        <View
+          style={{
+            backgroundColor: '#0f0f14',
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
           <View style={{ alignItems: 'center' }}>
             <Text
               style={{
@@ -976,7 +1232,9 @@ export default function LandingPage() {
                 lineHeight: 44,
               }}>
               Experience the Complete{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Home Care Platform</Text>
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                Home Care Platform
+              </Text>
             </Text>
             <Text
               style={{
@@ -987,7 +1245,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              Join thousands of homeowners and property managers using our unified platform for all their home care needs
+              Join thousands of homeowners and property managers using our unified platform for all
+              their home care needs
             </Text>
 
             <TouchableOpacity
