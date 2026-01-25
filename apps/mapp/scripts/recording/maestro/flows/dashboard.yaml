@@ -1,0 +1,8 @@
+appId: host.exp.Exponent
+---
+# Dashboard Flow - View Properties
+- assertVisible: "Properties"
+- waitForAnimationToEnd
+# Scroll through properties if available
+- scroll
+- waitForAnimationToEnd

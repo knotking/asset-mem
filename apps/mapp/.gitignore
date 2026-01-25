@@ -55,3 +55,4 @@ app-store-*.png
 
 expo-env.d.ts
 # @end expo-cli
+recordings/

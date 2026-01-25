@@ -1,0 +1,9 @@
+appId: host.exp.Exponent
+---
+# Check if user is already logged in
+# This flow checks for the post-login screen to determine if login is needed
+
+# Check if we're already on the Property AI Agent screen (logged in)
+- assertVisible:
+    optional: true
+    text: "Property AI Agent"

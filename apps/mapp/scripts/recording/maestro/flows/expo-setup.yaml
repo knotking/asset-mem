@@ -1,0 +1,39 @@
+appId: host.exp.Exponent
+---
+# Expo Go Setup Flow
+# This flow ensures the correct account (homegeekai) and project (@homegeekai/homegeekai-prod) are selected
+# Optimized for speed - all steps are optional since app is already launched
+
+# Quick check if app is already loaded (non-blocking, skip if not found)
+- assertVisible:
+    optional: true
+    text: ".*"
+
+# Try to find and select homegeekai account if account selector is visible
+- tapOn:
+    optional: true
+    text: ".*homegeekai.*"
+    index: 0
+
+# Try to find and open the homegeekai-prod project
+- tapOn:
+    optional: true
+    text: ".*homegeekai-prod.*"
+    index: 0
+
+# If project not found by text, try tapping on account/profile area to navigate
+- tapOn:
+    optional: true
+    point: "90%,10%"
+
+# Look for homegeekai account again after opening menu
+- tapOn:
+    optional: true
+    text: ".*homegeekai.*"
+    index: 0
+
+# Look for the project again
+- tapOn:
+    optional: true
+    text: ".*homegeekai-prod.*"
+    index: 0

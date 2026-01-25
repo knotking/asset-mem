@@ -1,0 +1,23 @@
+appId: host.exp.Exponent
+---
+# Login Flow
+# Note: Expo Go app should already be launched
+- waitForAnimationToEnd
+- assertVisible: "Welcome Back"
+# Tap on email input field
+- tapOn: "Enter your email"
+- waitForAnimationToEnd
+# Input email
+- inputText: ${EMAIL}
+- waitForAnimationToEnd
+# Tap on password input field
+- tapOn: "Enter your password"
+- waitForAnimationToEnd
+# Input password
+- inputText: ${PASSWORD}
+- waitForAnimationToEnd
+# Tap Sign In button
+- tapOn: "Sign In"
+- waitForAnimationToEnd
+# Wait for login to complete - check for Property AI Agent screen
+- assertVisible: "Property AI Agent"

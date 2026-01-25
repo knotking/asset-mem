@@ -1,0 +1,27 @@
+appId: host.exp.Exponent
+---
+# Chat Flow
+- assertVisible: "Properties"
+- waitForAnimationToEnd
+# Navigate to property details if not already there
+- tapOn:
+    point: "50%,30%"
+- waitForAnimationToEnd
+# Ensure we're on chat tab (default)
+- assertVisible:
+    text: ".*"
+    timeout: 5000
+# Find and tap the message input area
+- tapOn:
+    point: "50%,85%"
+- waitForAnimationToEnd
+# Type a message
+- inputText: "What maintenance does this property need?"
+- waitForAnimationToEnd
+# Tap send button
+- tapOn: "Send"
+- waitForAnimationToEnd
+# Wait for response
+- assertVisible:
+    text: ".*"
+    timeout: 30000

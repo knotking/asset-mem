@@ -1,0 +1,12 @@
+appId: host.exp.Exponent
+---
+# Property Details Flow
+- assertVisible: "Properties"
+- waitForAnimationToEnd
+# Tap on first property card
+- tapOn:
+    point: "50%,30%"
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*"
+    timeout: 5000

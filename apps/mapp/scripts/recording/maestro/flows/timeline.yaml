@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+---
+# Timeline Flow
+- assertVisible: "Properties"
+- waitForAnimationToEnd
+# Navigate to property details
+- tapOn:
+    point: "50%,30%"
+- waitForAnimationToEnd
+# Tap on Timeline tab
+- tapOn: "Timeline"
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*"
+    timeout: 5000
+# Scroll through checkpoints
+- scroll
+- waitForAnimationToEnd
