@@ -19,6 +19,10 @@ import {
   Info,
   Play,
   X,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react-native';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -180,7 +184,6 @@ function PropertyMetricsCard({
   onOpenIssues: () => void;
 }) {
   const { metrics, loading } = usePropertyCheckpointMetrics();
-  const [showHelp, setShowHelp] = React.useState(false);
 
   // Crossfade skeleton -> content to avoid a "pop" when metrics arrives.
   const contentOpacity = React.useRef(new Animated.Value(metrics ? 1 : 0)).current;
@@ -217,38 +220,6 @@ function PropertyMetricsCard({
   const trend = metrics.deterioration?.trend;
   const considered = metrics.window?.checkpoints_considered;
 
-  const latestDisplay =
-    typeof latest === 'number' && Number.isFinite(latest)
-      ? Math.max(0, Math.min(100, latest))
-      : null;
-  const latestLabel =
-    latestDisplay === null
-      ? '—'
-      : latestDisplay >= 80
-        ? 'Good'
-        : latestDisplay >= 60
-          ? 'Fair'
-          : latestDisplay >= 40
-            ? 'Needs attention'
-            : 'Poor';
-
-  const trendLabel =
-    trend === 'improving'
-      ? 'Improving'
-      : trend === 'stable'
-        ? 'Stable'
-        : trend === 'deteriorating'
-          ? 'Worsening'
-          : 'Unknown';
-  const rateAbs = typeof rate === 'number' && Number.isFinite(rate) ? Math.abs(rate) : null;
-  const rateDisplay =
-    rateAbs === null
-      ? typeof considered === 'number' && considered >= 2
-        ? 'Need 2+ scored checkpoints'
-        : '—'
-      : `${rateAbs.toFixed(1)} pts/day`;
-  const rateSecondary = rateAbs === null ? '' : `≈ ${(rateAbs * 7).toFixed(0)} pts/week`;
-
   return (
     <View className="mb-4">
       {/* Skeleton layer (under/over) */}
@@ -261,67 +232,198 @@ function PropertyMetricsCard({
       <Animated.View style={{ opacity: contentOpacity }}>
         <Card>
           <View className="p-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-foreground">Property Insights</Text>
-              <Pressable
-                onPress={() => setShowHelp((v) => !v)}
-                className="flex-row items-center gap-1 rounded-full bg-secondary px-2 py-1">
-                <Icon as={Info} size={14} className="text-muted-foreground" />
-                <Text className="text-xs text-muted-foreground">
-                  {showHelp ? 'Hide' : 'What is this?'}
-                </Text>
-              </Pressable>
+            {/* Header */}
+            <View className="mb-4 flex-row items-center gap-2">
+              <Icon as={Activity} size={20} className="text-foreground" />
+              <Text className="text-lg font-semibold text-foreground">Property Health Insights</Text>
             </View>
 
-            {typeof considered === 'number' && considered > 0 && (
-              <Text className="mt-1 text-xs text-muted-foreground">
-                Based on the last {considered} checkpoint{considered === 1 ? '' : 's'}.
-              </Text>
-            )}
+            {/* Two-column layout (stacked on mobile) */}
+            <View className="gap-6">
 
-            <View className="mt-3 flex-row justify-between">
+            {/* Overall Condition */}
+            <View>
+              <Text className="mb-3 text-sm font-semibold text-muted-foreground">Overall Condition</Text>
+              {(() => {
+                const latestScore = typeof latest === 'number' && Number.isFinite(latest)
+                  ? Math.max(0, Math.min(100, latest))
+                  : 0;
+                
+                const getTrendIcon = () => {
+                  switch (trend) {
+                    case 'improving':
+                      return <Icon as={TrendingUp} size={16} className="text-green-600" />;
+                    case 'deteriorating':
+                      return <Icon as={TrendingDown} size={16} className="text-red-600" />;
+                    case 'stable':
+                      return <Icon as={Minus} size={16} className="text-blue-600" />;
+                    default:
+                      return <Icon as={Activity} size={16} className="text-gray-600" />;
+                  }
+                };
+
+                const getTrendColor = () => {
+                  switch (trend) {
+                    case 'improving':
+                      return 'text-green-600';
+                    case 'deteriorating':
+                      return 'text-red-600';
+                    case 'stable':
+                      return 'text-blue-600';
+                    default:
+                      return 'text-gray-600';
+                  }
+                };
+
+                const getScoreColor = (score: number) => {
+                  if (score >= 80) return 'text-green-600';
+                  if (score >= 60) return 'text-yellow-600';
+                  if (score >= 40) return 'text-orange-600';
+                  return 'text-red-600';
+                };
+
+                const trendLabelDisplay =
+                  trend === 'improving'
+                    ? 'Improving'
+                    : trend === 'stable'
+                      ? 'Stable'
+                      : trend === 'deteriorating'
+                        ? 'Deteriorating'
+                        : 'Unknown';
+
+                const deteriorationRate = typeof rate === 'number' && Number.isFinite(rate) ? rate : 0;
+                const trendData = metrics.overall?.trend || [];
+
+                return (
+                  <>
+                    <View className="flex-row items-end gap-3">
+                      <Text className={`text-5xl font-bold ${getScoreColor(latestScore)}`}>
+                        {latestScore.toFixed(0)}
+                      </Text>
+                      <View className="mb-2">
+                        <View className="flex-row items-center gap-1 rounded-full border border-border bg-card px-2 py-1">
+                          {getTrendIcon()}
+                          <Text className={`text-xs ${getTrendColor()}`}>
+                            {trendLabelDisplay}
+                          </Text>
+                        </View>
+                        {deteriorationRate !== 0 && (
+                          <Text className="mt-1 text-xs text-muted-foreground">
+                            {Math.abs(deteriorationRate).toFixed(2)} pts/day
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Trend Chart (Mini) */}
+                    {trendData.length > 0 && (
+                      <View className="mt-4">
+                        <View className="flex-row h-16 items-end gap-1">
+                          {trendData.slice(-12).map((point: any, idx: number) => {
+                            const height = (point.score / 100) * 100;
+                            return (
+                              <View
+                                key={idx}
+                                className="flex-1 rounded-t bg-primary/20"
+                                style={{ height: `${height}%` }}
+                              />
+                            );
+                          })}
+                        </View>
+                        <Text className="mt-2 text-xs text-muted-foreground">
+                          Trend over last {trendData.length} checkpoint{trendData.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
+            </View>
+
+              {/* Issues Breakdown */}
               <View>
-                <Text className="text-xs text-muted-foreground">Overall condition</Text>
-                <Text className="text-xl font-semibold text-foreground">
-                  {latestDisplay === null ? '—' : `${Math.round(latestDisplay)}/100`}
-                </Text>
-                <Text className="text-xs text-muted-foreground">
-                  {latestDisplay === null ? 'No score yet' : latestLabel}
-                </Text>
-                {latestDisplay !== null && (
-                  <View className="mt-2 h-2 w-40 overflow-hidden rounded-full bg-muted">
-                    <View className="h-full bg-primary" style={{ width: `${latestDisplay}%` }} />
+                <Text className="mb-3 text-sm font-semibold text-muted-foreground">Issues by Severity</Text>
+                {issues ? (
+                  <View className="gap-3">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Icon as={AlertCircle} size={16} className="text-red-600" />
+                        <Text className="text-sm font-medium text-foreground">Critical</Text>
+                      </View>
+                      <View className="rounded-full bg-red-100 px-2 py-1 border border-red-200">
+                        <Text className="text-xs font-medium text-red-800">
+                          {issues.critical}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Icon as={AlertCircle} size={16} className="text-orange-600" />
+                        <Text className="text-sm font-medium text-foreground">Major</Text>
+                      </View>
+                      <View className="rounded-full bg-orange-100 px-2 py-1 border border-orange-200">
+                        <Text className="text-xs font-medium text-orange-800">
+                          {issues.major}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Icon as={AlertCircle} size={16} className="text-yellow-600" />
+                        <Text className="text-sm font-medium text-foreground">Moderate</Text>
+                      </View>
+                      <View className="rounded-full bg-yellow-100 px-2 py-1 border border-yellow-200">
+                        <Text className="text-xs font-medium text-yellow-800">
+                          {issues.moderate}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <Icon as={AlertCircle} size={16} className="text-blue-600" />
+                        <Text className="text-sm font-medium text-foreground">Minor</Text>
+                      </View>
+                      <View className="rounded-full bg-blue-100 px-2 py-1 border border-blue-200">
+                        <Text className="text-xs font-medium text-blue-800">
+                          {issues.minor}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Pressable onPress={onOpenIssues} className="mt-4 rounded-lg border border-border bg-muted p-3">
+                      <Text className="text-sm font-semibold text-foreground">
+                        Total Issues: {(issues.critical || 0) + (issues.major || 0) + (issues.moderate || 0) + (issues.minor || 0)}
+                      </Text>
+                      <Text className="mt-1 text-xs text-muted-foreground">
+                        Tap to see detailed breakdown
+                      </Text>
+                    </Pressable>
                   </View>
-                )}
-              </View>
-              <View>
-                <Text className="text-xs text-muted-foreground">Change rate</Text>
-                <Text className="text-sm font-medium text-foreground">
-                  {rateDisplay} {trendLabel !== 'Unknown' ? `(${trendLabel})` : ''}
-                </Text>
-                {!!rateSecondary && (
-                  <Text className="text-xs text-muted-foreground">{rateSecondary}</Text>
+                ) : (
+                  <Text className="text-sm text-muted-foreground">No issues data available</Text>
                 )}
               </View>
             </View>
 
-            {issues && (
-              <Pressable onPress={onOpenIssues} className="mt-3">
-                <Text className="text-xs text-muted-foreground">Issues found</Text>
-                <View className="mt-1 flex-row items-center justify-between">
-                  <Text className="text-sm text-foreground">
-                    Critical {issues.critical} · Major {issues.major} · Moderate {issues.moderate} ·
-                    Minor {issues.minor}
-                  </Text>
-                  <Icon as={ChevronRight} size={16} className="text-muted-foreground" />
-                </View>
+            {/* Metadata */}
+            {metrics.updatedAt && (
+              <View className="mt-4 border-t border-border pt-4">
                 <Text className="text-xs text-muted-foreground">
-                  Tap to see which issues were counted.
+                  Last updated: {format(
+                    metrics.updatedAt.toDate ? metrics.updatedAt.toDate() : new Date(metrics.updatedAt as any),
+                    'PPp'
+                  )}
+                  {typeof considered === 'number' && considered > 0 && (
+                    <> · Based on {considered} checkpoint{considered === 1 ? '' : 's'}</>
+                  )}
                 </Text>
-              </Pressable>
+              </View>
             )}
 
-            {showHelp && (
+            {false && (
               <View className="mt-3 rounded-lg border border-border bg-card p-3">
                 <Text className="text-sm font-semibold text-foreground">How to read this</Text>
                 <View className="mt-2 gap-1">
@@ -365,7 +467,7 @@ function CheckpointCard({
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
 
   return (
-    <Card className={`${isSelected ? 'border-primary bg-primary/5' : ''}p-2`}>
+    <Card className={`p-2 ${isSelected ? 'border-primary bg-primary/5' : ''}`}>
       <Pressable
         onPress={() => onPress(checkpoint)}
         onLongPress={() => onLongPress?.(checkpoint)}
@@ -400,11 +502,13 @@ function CheckpointCard({
         {/* Content */}
         <View className="flex-1 justify-between p-3">
           <View>
-            <View className="flex-row items-start justify-between">
-              <Text className="font-semibold text-foreground" numberOfLines={1}>
+            <View className="flex-row items-start justify-between gap-2">
+              <Text
+                className="min-w-0 flex-1 shrink font-semibold text-foreground"
+                numberOfLines={1}>
                 {checkpoint.name || 'Untitled Checkpoint'}
               </Text>
-              <View className="flex-row items-center gap-1">
+              <View className="shrink-0 flex-row flex-wrap items-center justify-end gap-1">
                 {/* Analysis Status Badge */}
                 {checkpoint.analysisStatus === 'processing' && (
                   <View className="flex-row items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5">
@@ -755,6 +859,7 @@ export function PropertyCheckpointsTab({
           onPress={() => {
             setActiveSubTab('checkpoints');
             setSelectedForActions([]);
+            setIsSelectionMode(false);
           }}
           className={`flex-1 py-3 ${activeSubTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
           <Text
@@ -817,6 +922,40 @@ export function PropertyCheckpointsTab({
                   disabled={selectedForActions.length === 0}>
                   <Icon as={X} size={14} className="text-destructive-foreground" />
                 </Button>
+              </View>
+            </View>
+          )}
+
+          {/* Hint banner when not in selection mode */}
+          {!isSelectionMode && selectedForActions.length === 0 && checkpoints.length >= 2 && (
+            <View className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <View className="flex-row items-start gap-2">
+                <Icon as={Info} size={16} className="text-primary mt-0.5" />
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between mb-1">
+                    <Text className="text-sm font-medium text-foreground">
+                      Compare & Analyze Checkpoints
+                    </Text>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onPress={() => setIsSelectionMode(true)}
+                      className="h-7">
+                      <Text className="text-xs text-foreground">Select</Text>
+                    </Button>
+                  </View>
+                  <Text className="text-xs text-muted-foreground mb-2">
+                    Select checkpoints to compare changes or analyze trends. You can also long-press any checkpoint.
+                  </Text>
+                  <View className="flex-row gap-2 mt-1">
+                    <View className="flex-row items-center gap-1">
+                      <Icon as={ArrowRightLeft} size={12} className="text-primary" />
+                      <Text className="text-xs text-muted-foreground">Compare 2 checkpoints</Text>
+                    </View>
+                    <Text className="text-xs text-muted-foreground">•</Text>
+                    <Text className="text-xs text-muted-foreground">Analyze multiple</Text>
+                  </View>
+                </View>
               </View>
             </View>
           )}
