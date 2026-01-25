@@ -178,6 +178,12 @@ export default function PropertyDetailsScreen() {
     setDefaultLocation();
   }, [selectedSessionId, primaryAgent, locationData]);
 
+  // Clear checkpoint resources when Docs agent is selected
+  React.useEffect(() => {
+    if (primaryAgent === 'docs') {
+      setSelectedCheckpoints([]);
+    }
+  }, [primaryAgent]);
 
   const handleTakePhoto = React.useCallback(async () => {
     try {
