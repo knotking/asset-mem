@@ -194,7 +194,9 @@ export function AgentStatus({ steps }: Props) {
   const thinkingText = 'Thinking...';
 
   return (
-    <View className="w-full rounded-xl border border-border bg-background p-4 shadow-sm">
+    <View
+      className="w-full rounded-xl border border-border bg-background p-4 shadow-sm"
+      style={{ minWidth: 180 }}>
       {/* Header */}
       <View className="mb-2 flex-row items-center gap-2">
         <SparkleAnimation />
