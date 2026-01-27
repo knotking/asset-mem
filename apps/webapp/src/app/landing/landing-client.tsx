@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
+import { YouTubeModal } from "@/components/landing/youtube-modal";
 import "./landing-animations.css";
 
 // Dark theme - landing page only
@@ -42,10 +43,19 @@ const LANDING_COLORS = {
 export default function LandingPageClient() {
   const { user, loading } = useAuth();
   const [activeSection, setActiveSection] = useState<string>("");
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
     // Only run on client side to avoid hydration issues
     if (typeof window === "undefined") return;
+
+    // Detect mobile vs desktop for video links
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
 
     // Next.js Link components automatically prefetch internal routes, so no manual prefetching needed
 
@@ -97,8 +107,9 @@ export default function LandingPageClient() {
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      // Clean up scroll listener
+      // Clean up scroll listener and resize listener
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", checkIsMobile);
     };
   }, []);
 
@@ -364,26 +375,30 @@ export default function LandingPageClient() {
                     </svg>
                   </Link>
                 )}
-                <a
-                  href="#how-it-works"
-                  className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all"
-                  style={{
-                    backgroundColor: "transparent",
-                    borderColor: LANDING_COLORS.border,
-                    color: LANDING_COLORS.foreground,
-                    padding: "1.75rem 2.5rem",
-                    height: "auto",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      LANDING_COLORS.muted30)
+                <YouTubeModal
+                  url={isMobile ? "https://youtu.be/tyWNz3TPXpg" : "https://youtu.be/wNfbd1QJcBQ"}
+                  trigger={
+                    <button
+                      className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all cursor-pointer"
+                      style={{
+                        backgroundColor: "transparent",
+                        borderColor: LANDING_COLORS.border,
+                        color: LANDING_COLORS.foreground,
+                        padding: "1.75rem 2.5rem",
+                        height: "auto",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor =
+                          LANDING_COLORS.muted30)
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      Watch Demo
+                    </button>
                   }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
-                >
-                  Watch Demo
-                </a>
+                />
               </div>
             </div>
 
