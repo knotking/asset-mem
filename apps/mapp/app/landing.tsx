@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Image, Animated, TouchableOpacity, Linking } from 'react-native';
+import { View, ScrollView, Image, Animated, TouchableOpacity, Linking, Text as RNText } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
@@ -224,9 +224,17 @@ export default function LandingPage() {
                 color: LANDING_COLORS.foreground90,
                 marginBottom: 16,
                 paddingHorizontal: 10,
+                lineHeight: 32,
               }}>
               Your Complete{'\n'}
-              <Text style={{ fontWeight: '500' }}>Home Care Platform</Text>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.foreground90,
+                }}>
+                Home Care Platform
+              </Text>
             </Text>
 
             <Text
