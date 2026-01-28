@@ -541,6 +541,27 @@ async function main() {
       );
     }
 
+    // Details (multiple wait cuts - initial navigation and signout)
+    const detailsIdx = results.findIndex((r) => r.name === "Details");
+    if (
+      detailsIdx >= 0 &&
+      results[detailsIdx].result?.waitCuts &&
+      Array.isArray(results[detailsIdx].result.waitCuts) &&
+      sceneData[detailsIdx]
+    ) {
+      const sceneStart = sceneData[detailsIdx].startTime;
+      const cuts = results[detailsIdx].result.waitCuts;
+      for (const cut of cuts) {
+        waitCutSegments.push({
+          startSec: sceneStart + cut.startOffsetMs / 1000,
+          endSec: sceneStart + cut.endOffsetMs / 1000,
+        });
+      }
+      console.log(
+        `\n📊 Collected ${cuts.length} wait cut segment(s) from Details scene`,
+      );
+    }
+
     // Save session after recording
     if (context) {
       await saveSession(context);
