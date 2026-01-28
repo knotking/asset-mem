@@ -46,7 +46,7 @@ const narrationTexts: Record<string, string> = {
   "Diagnosis Chat":
     "Experience the full power of our AI diagnosis system! Upload photos of issues, ask questions about home maintenance, and receive comprehensive analysis. The AI examines your property details, considers historical data, and provides intelligent recommendations including DIY solutions, professional service suggestions, and cost estimates. Watch as multiple specialized agents work together—from triage to diagnosis, service recommendations, and cost analysis—delivering complete solutions seamlessly.",
   Details:
-    "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records.",
+    "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records. Ready to transform how you manage your home? Get started at homegeek.ai. Thank you for watching!",
 };
 
 /**
