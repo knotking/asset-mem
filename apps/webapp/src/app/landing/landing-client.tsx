@@ -53,7 +53,7 @@ export default function LandingPageClient() {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768); // md breakpoint
     };
-    
+
     checkIsMobile();
     window.addEventListener("resize", checkIsMobile);
 
@@ -72,7 +72,10 @@ export default function LandingPageClient() {
         { id: "use-cases", el: document.querySelector("#use-cases") },
         { id: "features", el: document.querySelector("#features") },
         { id: "ai-agents", el: document.querySelector("#ai-agents") },
-        { id: "timeline-feature", el: document.querySelector("#timeline-feature") },
+        {
+          id: "timeline-feature",
+          el: document.querySelector("#timeline-feature"),
+        },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
       ];
 
@@ -114,7 +117,7 @@ export default function LandingPageClient() {
   }, []);
 
   const handleButtonClick = (
-    e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>
+    e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
   ) => {
     // Track analytics if available
     if (typeof window !== "undefined" && (window as any).gtag) {
@@ -127,7 +130,7 @@ export default function LandingPageClient() {
 
   const handleNavClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
-    targetId: string
+    targetId: string,
   ) => {
     e.preventDefault();
 
@@ -212,19 +215,22 @@ export default function LandingPageClient() {
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
+            background:
+              "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: "radial-gradient(circle at 30% 20%, rgba(34,211,238,0.12), transparent 50%)",
+            background:
+              "radial-gradient(circle at 30% 20%, rgba(34,211,238,0.12), transparent 50%)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: "radial-gradient(circle at 70% 80%, rgba(249,115,22,0.08), transparent 50%)",
+            background:
+              "radial-gradient(circle at 70% 80%, rgba(249,115,22,0.08), transparent 50%)",
           }}
         />
 
@@ -298,9 +304,10 @@ export default function LandingPageClient() {
                 className="text-xl leading-relaxed max-w-xl font-light"
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
-                A comprehensive platform that integrates AI diagnostics, property 
-                tracking, document intelligence, and service discovery—all working 
-                together seamlessly to simplify your home care journey.
+                A comprehensive platform that integrates AI diagnostics,
+                property tracking, document intelligence, and service
+                discovery—all working together seamlessly to simplify your home
+                care journey.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -376,7 +383,11 @@ export default function LandingPageClient() {
                   </Link>
                 )}
                 <YouTubeModal
-                  url={isMobile ? "https://youtu.be/tyWNz3TPXpg" : "https://youtu.be/wNfbd1QJcBQ"}
+                  url={
+                    isMobile
+                      ? "https://youtu.be/vn03juDFkss"
+                      : "https://youtu.be/3AM-hzbMOL4"
+                  }
                   trigger={
                     <button
                       className="inline-flex items-center justify-center text-base rounded-lg font-medium border-2 transition-all cursor-pointer"
@@ -422,7 +433,10 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="text-center mb-20 space-y-6">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
@@ -431,11 +445,17 @@ export default function LandingPageClient() {
                 borderColor: LANDING_COLORS.primaryBorder,
               }}
             >
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
                 REAL-WORLD APPLICATIONS
               </span>
             </div>
-            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2
+              className="text-5xl lg:text-6xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
               See How HomeGeek
               <br />
               <span
@@ -450,8 +470,12 @@ export default function LandingPageClient() {
                 Solves Real Problems
               </span>
             </h2>
-            <p className="text-xl max-w-3xl mx-auto font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
-              From emergency repairs to preventive maintenance, see how our platform helps homeowners every day
+            <p
+              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              From emergency repairs to preventive maintenance, see how our
+              platform helps homeowners every day
             </p>
           </div>
 
@@ -472,7 +496,8 @@ export default function LandingPageClient() {
               },
               {
                 title: "Property Condition Tracking",
-                scenario: "Monitor basement moisture over 6-month winter period",
+                scenario:
+                  "Monitor basement moisture over 6-month winter period",
                 icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
                 color: LANDING_COLORS.primary,
                 steps: [
@@ -494,7 +519,8 @@ export default function LandingPageClient() {
                   "Generates professional comparison report with timestamps",
                   "Export PDF with visual evidence for insurance adjuster",
                 ],
-                result: "Claim approved in 3 days with AI-verified documentation",
+                result:
+                  "Claim approved in 3 days with AI-verified documentation",
               },
               {
                 title: "Home Inspection Follow-up",
@@ -507,7 +533,8 @@ export default function LandingPageClient() {
                   "Chat: 'Cost to fix the roof?' → $4,500-$7,200 estimate",
                   "Find local roofers, compare quotes, check warranty coverage",
                 ],
-                result: "Prioritized repairs, negotiated 20% discount with quotes",
+                result:
+                  "Prioritized repairs, negotiated 20% discount with quotes",
               },
               {
                 title: "HVAC System Diagnosis",
@@ -520,7 +547,8 @@ export default function LandingPageClient() {
                   "Check warranty docs: 2 years remaining on parts",
                   "Get 5 authorized HVAC technicians + cost estimates",
                 ],
-                result: "Warranty covered $800 repair, found authorized service",
+                result:
+                  "Warranty covered $800 repair, found authorized service",
               },
               {
                 title: "Preventive Maintenance Planning",
@@ -562,15 +590,32 @@ export default function LandingPageClient() {
                       background: `linear-gradient(to right bottom, ${useCase.color}, ${useCase.color}99)`,
                     }}
                   >
-                    <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={useCase.icon} />
+                    <svg
+                      className="h-7 w-7"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: LANDING_COLORS.white }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={useCase.icon}
+                      />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                    <h3
+                      className="text-2xl font-bold mb-2"
+                      style={{ color: LANDING_COLORS.foreground }}
+                    >
                       {useCase.title}
                     </h3>
-                    <p className="text-sm font-medium" style={{ color: LANDING_COLORS.mutedForeground }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                    >
                       {useCase.scenario}
                     </p>
                   </div>
@@ -586,11 +631,17 @@ export default function LandingPageClient() {
                           backgroundColor: LANDING_COLORS.primary20,
                         }}
                       >
-                        <span className="text-xs font-bold" style={{ color: LANDING_COLORS.primary }}>
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: LANDING_COLORS.primary }}
+                        >
                           {idx + 1}
                         </span>
                       </div>
-                      <p className="text-sm leading-relaxed" style={{ color: LANDING_COLORS.foreground90 }}>
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: LANDING_COLORS.foreground90 }}
+                      >
                         {step}
                       </p>
                     </div>
@@ -610,9 +661,17 @@ export default function LandingPageClient() {
                       stroke="currentColor"
                       style={{ color: useCase.color }}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
-                    <p className="text-sm font-semibold" style={{ color: useCase.color }}>
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: useCase.color }}
+                    >
                       {useCase.result}
                     </p>
                   </div>
@@ -637,7 +696,10 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="text-center mb-20 space-y-6">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
@@ -646,11 +708,17 @@ export default function LandingPageClient() {
                 borderColor: LANDING_COLORS.primaryBorder,
               }}
             >
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
                 INTEGRATED PLATFORM SERVICES
               </span>
             </div>
-            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2
+              className="text-5xl lg:text-6xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
               Everything You Need
               <br />
               <span
@@ -665,8 +733,13 @@ export default function LandingPageClient() {
                 In One Platform
               </span>
             </h2>
-            <p className="text-xl max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              A unified platform where AI diagnostics, property tracking, document management, and service discovery work together seamlessly
+            <p
+              className="text-xl max-w-2xl mx-auto font-light"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              A unified platform where AI diagnostics, property tracking,
+              document management, and service discovery work together
+              seamlessly
             </p>
           </div>
 
@@ -732,14 +805,31 @@ export default function LandingPageClient() {
                     background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                   }}
                 >
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  <svg
+                    className="h-7 w-7"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style={{ color: LANDING_COLORS.white }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={item.icon}
+                    />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                <h3
+                  className="text-xl font-bold mb-2"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
                   {item.title}
                 </h3>
-                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                <p
+                  className="text-sm leading-relaxed font-light"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
                   {item.desc}
                 </p>
               </div>
@@ -762,7 +852,10 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="text-center mb-20 space-y-6">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
@@ -786,11 +879,17 @@ export default function LandingPageClient() {
               >
                 <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2Z" />
               </svg>
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
                 AI-POWERED INTELLIGENCE
               </span>
             </div>
-            <h2 className="text-5xl lg:text-6xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2
+              className="text-5xl lg:text-6xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
               Platform Intelligence
               <br />
               <span
@@ -805,8 +904,14 @@ export default function LandingPageClient() {
                 Powered by AI Agents
               </span>
             </h2>
-            <p className="text-xl max-w-3xl mx-auto font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
-              Our multi-agent AI system powers the entire platform, with specialized agents that share data and insights across all services to deliver comprehensive, connected solutions for your property.
+            <p
+              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Our multi-agent AI system powers the entire platform, with
+              specialized agents that share data and insights across all
+              services to deliver comprehensive, connected solutions for your
+              property.
             </p>
           </div>
 
@@ -867,14 +972,31 @@ export default function LandingPageClient() {
                     background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                   }}
                 >
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                  <svg
+                    className="h-7 w-7"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style={{ color: LANDING_COLORS.white }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={item.icon}
+                    />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold mb-3" style={{ color: LANDING_COLORS.foreground }}>
+                <h3
+                  className="text-xl font-bold mb-3"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
                   {item.title}
                 </h3>
-                <p className="text-sm leading-relaxed font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
+                <p
+                  className="text-sm leading-relaxed font-light"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
                   {item.desc}
                 </p>
               </div>
@@ -897,11 +1019,17 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="grid lg:grid-cols-2 gap-16 items-start">
             <div className="space-y-10">
               <div>
-                <h2 className="text-4xl lg:text-5xl font-light tracking-tight mb-4" style={{ color: LANDING_COLORS.foreground }}>
+                <h2
+                  className="text-4xl lg:text-5xl font-light tracking-tight mb-4"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
                   Property Checkpoints:
                   <br />
                   <span
@@ -916,8 +1044,12 @@ export default function LandingPageClient() {
                     Your Visual Timeline
                   </span>
                 </h2>
-                <p className="text-lg font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-                  Photos, scores, before/after—and health metrics that help you stay ahead.
+                <p
+                  className="text-lg font-light"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
+                  Photos, scores, before/after—and health metrics that help you
+                  stay ahead.
                 </p>
               </div>
               {[
@@ -968,15 +1100,32 @@ export default function LandingPageClient() {
                       background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary20}, ${LANDING_COLORS.primary10})`,
                     }}
                   >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={block.icon} />
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: LANDING_COLORS.primary }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={block.icon}
+                      />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-bold mb-1" style={{ color: LANDING_COLORS.foreground }}>
+                    <h3
+                      className="font-bold mb-1"
+                      style={{ color: LANDING_COLORS.foreground }}
+                    >
                       {block.title}
                     </h3>
-                    <p className="text-sm font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                    <p
+                      className="text-sm font-light leading-relaxed"
+                      style={{ color: LANDING_COLORS.mutedForeground }}
+                    >
                       {block.desc}
                     </p>
                   </div>
@@ -998,14 +1147,31 @@ export default function LandingPageClient() {
                       background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34,211,238,0.6))`,
                     }}
                   >
-                    <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.white }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className="h-8 w-8"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: LANDING_COLORS.white }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium" style={{ color: LANDING_COLORS.foreground }}>
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: LANDING_COLORS.foreground }}
+                  >
                     Timeline
                   </p>
-                  <p className="text-xs font-light mt-1" style={{ color: LANDING_COLORS.mutedForeground }}>
+                  <p
+                    className="text-xs font-light mt-1"
+                    style={{ color: LANDING_COLORS.mutedForeground }}
+                  >
                     Before / After
                   </p>
                 </div>
@@ -1029,7 +1195,10 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left: Visual representation */}
             <div className="order-2 lg:order-1">
@@ -1057,7 +1226,7 @@ export default function LandingPageClient() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* AI response */}
                   <div className="flex justify-start">
                     <div
@@ -1069,24 +1238,49 @@ export default function LandingPageClient() {
                       }}
                     >
                       <p className="text-sm leading-relaxed mb-3">
-                        Based on your home inspection report, here are the key issues found:
+                        Based on your home inspection report, here are the key
+                        issues found:
                       </p>
-                      <ul className="text-sm space-y-2 mb-3" style={{ color: LANDING_COLORS.foreground90 }}>
+                      <ul
+                        className="text-sm space-y-2 mb-3"
+                        style={{ color: LANDING_COLORS.foreground90 }}
+                      >
                         <li className="flex items-start gap-2">
-                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
-                          <span><strong>Roof:</strong> Missing shingles on north side, estimated 5-7 years remaining life</span>
+                          <span style={{ color: LANDING_COLORS.accent }}>
+                            •
+                          </span>
+                          <span>
+                            <strong>Roof:</strong> Missing shingles on north
+                            side, estimated 5-7 years remaining life
+                          </span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
-                          <span><strong>HVAC:</strong> Air handler showing signs of wear, recommend service within 6 months</span>
+                          <span style={{ color: LANDING_COLORS.accent }}>
+                            •
+                          </span>
+                          <span>
+                            <strong>HVAC:</strong> Air handler showing signs of
+                            wear, recommend service within 6 months
+                          </span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <span style={{ color: LANDING_COLORS.accent }}>•</span>
-                          <span><strong>Plumbing:</strong> Minor leak detected under kitchen sink</span>
+                          <span style={{ color: LANDING_COLORS.accent }}>
+                            •
+                          </span>
+                          <span>
+                            <strong>Plumbing:</strong> Minor leak detected under
+                            kitchen sink
+                          </span>
                         </li>
                       </ul>
-                      <div className="pt-2 border-t" style={{ borderColor: LANDING_COLORS.border }}>
-                        <p className="text-xs" style={{ color: LANDING_COLORS.mutedForeground }}>
+                      <div
+                        className="pt-2 border-t"
+                        style={{ borderColor: LANDING_COLORS.border }}
+                      >
+                        <p
+                          className="text-xs"
+                          style={{ color: LANDING_COLORS.mutedForeground }}
+                        >
                           📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
                         </p>
                       </div>
@@ -1128,13 +1322,24 @@ export default function LandingPageClient() {
                     stroke="currentColor"
                     style={{ color: LANDING_COLORS.primary }}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
                   </svg>
-                  <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+                  <span
+                    className="text-sm font-semibold tracking-wide"
+                    style={{ color: LANDING_COLORS.primary }}
+                  >
                     INTELLIGENT DOCUMENT CHAT
                   </span>
                 </div>
-                <h2 className="text-4xl lg:text-5xl font-light tracking-tight mb-4" style={{ color: LANDING_COLORS.foreground }}>
+                <h2
+                  className="text-4xl lg:text-5xl font-light tracking-tight mb-4"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
                   Talk to Your
                   <br />
                   <span
@@ -1149,8 +1354,13 @@ export default function LandingPageClient() {
                     Documents
                   </span>
                 </h2>
-                <p className="text-lg font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
-                  Upload your home inspection reports, warranties, manuals, and policies—then chat with them naturally. Get instant answers with precise citations.
+                <p
+                  className="text-lg font-light leading-relaxed"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
+                  Upload your home inspection reports, warranties, manuals, and
+                  policies—then chat with them naturally. Get instant answers
+                  with precise citations.
                 </p>
               </div>
 
@@ -1186,7 +1396,8 @@ export default function LandingPageClient() {
                       animationDelay: `${i * 0.1}s`,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "rgba(34,211,238,0.3)";
+                      e.currentTarget.style.borderColor =
+                        "rgba(34,211,238,0.3)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = LANDING_COLORS.border;
@@ -1198,15 +1409,32 @@ export default function LandingPageClient() {
                         background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary20}, ${LANDING_COLORS.primary10})`,
                       }}
                     >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: LANDING_COLORS.primary }}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        style={{ color: LANDING_COLORS.primary }}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d={item.icon}
+                        />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm mb-1" style={{ color: LANDING_COLORS.foreground }}>
+                      <h3
+                        className="font-bold text-sm mb-1"
+                        style={{ color: LANDING_COLORS.foreground }}
+                      >
                         {item.title}
                       </h3>
-                      <p className="text-xs font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                      <p
+                        className="text-xs font-light leading-relaxed"
+                        style={{ color: LANDING_COLORS.mutedForeground }}
+                      >
                         {item.desc}
                       </p>
                     </div>
@@ -1232,7 +1460,10 @@ export default function LandingPageClient() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="container relative mx-auto px-4" style={{ maxWidth: "1400px" }}>
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
           <div className="text-center mb-16 space-y-4">
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
@@ -1241,23 +1472,49 @@ export default function LandingPageClient() {
                 borderColor: LANDING_COLORS.primaryBorder,
               }}
             >
-              <span className="text-sm font-semibold tracking-wide" style={{ color: LANDING_COLORS.primary }}>
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
                 PLATFORM WORKFLOW
               </span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
+            <h2
+              className="text-4xl lg:text-5xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
               How the Platform Works
             </h2>
-            <p className="text-lg max-w-2xl mx-auto font-light" style={{ color: LANDING_COLORS.mutedForeground }}>
-              From data upload to actionable insights—everything connected in one unified platform
+            <p
+              className="text-lg max-w-2xl mx-auto font-light"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              From data upload to actionable insights—everything connected in
+              one unified platform
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {[
-              { step: 1, title: "Upload & Connect", desc: "Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform." },
-              { step: 2, title: "Platform Intelligence", desc: "AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly." },
-              { step: 3, title: "Unified Insights", desc: "Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated." },
-              { step: 4, title: "Manage & Track", desc: "Monitor property health, share with contractors, and keep everything organized in one place." },
+              {
+                step: 1,
+                title: "Upload & Connect",
+                desc: "Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.",
+              },
+              {
+                step: 2,
+                title: "Platform Intelligence",
+                desc: "AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.",
+              },
+              {
+                step: 3,
+                title: "Unified Insights",
+                desc: "Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.",
+              },
+              {
+                step: 4,
+                title: "Manage & Track",
+                desc: "Monitor property health, share with contractors, and keep everything organized in one place.",
+              },
             ].map((item, i) => (
               <div
                 key={item.step}
@@ -1273,14 +1530,23 @@ export default function LandingPageClient() {
                 >
                   {item.step}
                 </div>
-                <h3 className="font-bold text-lg mb-2" style={{ color: LANDING_COLORS.foreground }}>
+                <h3
+                  className="font-bold text-lg mb-2"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
                   {item.title}
                 </h3>
-                <p className="text-sm font-light leading-relaxed" style={{ color: LANDING_COLORS.mutedForeground }}>
+                <p
+                  className="text-sm font-light leading-relaxed"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
                   {item.desc}
                 </p>
                 {item.step < 4 && (
-                  <div className="hidden lg:block absolute top-8 -right-4 w-8 h-0.5" style={{ backgroundColor: LANDING_COLORS.primary20 }} />
+                  <div
+                    className="hidden lg:block absolute top-8 -right-4 w-8 h-0.5"
+                    style={{ backgroundColor: LANDING_COLORS.primary20 }}
+                  />
                 )}
               </div>
             ))}
@@ -1293,13 +1559,15 @@ export default function LandingPageClient() {
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
+            background:
+              "linear-gradient(to bottom right, #0a0a0f, #0f172a, #0a0a0f)",
           }}
         />
         <div
           className="absolute inset-0 w-full"
           style={{
-            background: "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.12), transparent 70%)",
+            background:
+              "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.12), transparent 70%)",
           }}
         />
         <div
@@ -1329,7 +1597,8 @@ export default function LandingPageClient() {
               className="text-xl max-w-2xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Join thousands of homeowners and property managers using our unified platform for all their home care needs
+              Join thousands of homeowners and property managers using our
+              unified platform for all their home care needs
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center pt-6">
               {user ? (
@@ -1451,8 +1720,9 @@ export default function LandingPageClient() {
                 className="text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
-                Your complete home care platform integrating AI diagnostics, 
-                property tracking, and service discovery in one unified solution.
+                Your complete home care platform integrating AI diagnostics,
+                property tracking, and service discovery in one unified
+                solution.
               </p>
             </div>
 
