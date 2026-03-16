@@ -11,11 +11,6 @@ on:
         description: "GCP Project ID (leave empty to use existing from GitHub env)"
         required: false
         type: string
-      create_project:
-        description: "Create a new GCP project"
-        required: false
-        default: false
-        type: boolean
       folder_id:
         description: "Folder ID (optional, for new projects)"
         required: false
@@ -57,7 +52,7 @@ jobs:
   create-gcp-project:
     name: Create GCP Project (Optional)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && inputs.create_project == true
+    if: github.event_name == 'workflow_dispatch'
     outputs:
       project_id: ${{ steps.create.outputs.project_id }}
     steps:
@@ -114,10 +109,10 @@ jobs:
           echo "Checking if project $PROJECT_ID already exists..."
           if gcloud projects describe $PROJECT_ID &>/dev/null; then
             echo "ℹ️  Project $PROJECT_ID already exists"
-            echo "   Skipping project creation"
+            echo "   Using existing project"
             echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
           else
-            echo "Creating new project: $PROJECT_ID"
+            echo "Creating new project if needed: $PROJECT_ID"
 
             # Build create command
             CREATE_CMD="gcloud projects create $PROJECT_ID"
@@ -132,11 +127,24 @@ jobs:
               CREATE_CMD="$CREATE_CMD --folder=${{ inputs.folder_id }}"
             fi
 
-            # Create project
+            # Try to create project; don't fail if ID already in use
+            set +e
             eval $CREATE_CMD
+            CREATE_EXIT_CODE=$?
+            set -e
 
-            echo "✓ Project created: $PROJECT_ID"
-            echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+            if [ $CREATE_EXIT_CODE -ne 0 ]; then
+              echo "⚠️  gcloud projects create failed (exit $CREATE_EXIT_CODE). Checking if project now exists..."
+            fi
+
+            # Final check: if we can describe it, treat as success; otherwise fail
+            if gcloud projects describe $PROJECT_ID &>/dev/null; then
+              echo "✓ Using project: $PROJECT_ID"
+              echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+            else
+              echo "::error::Project $PROJECT_ID does not exist and could not be created."
+              exit 1
+            fi
           fi
 
       - name: Link Billing Account
@@ -557,21 +565,27 @@ jobs:
           # Grant Firebase deployer permission to act as the compute service account
           COMPUTE_SA="firebase-app-hosting-compute@${PROJECT_ID}.iam.gserviceaccount.com"
 
-          # Check if the binding already exists
-          COMPUTE_SA_BINDING=$(gcloud iam service-accounts get-iam-policy $COMPUTE_SA \
-            --project=$PROJECT_ID \
-            --format=json 2>/dev/null | jq -e ".bindings[] | select(.role==\"roles/iam.serviceAccountUser\") | .members[] | select(. == \"serviceAccount:${FIREBASE_SA_EMAIL}\")" 2>/dev/null || echo "")
+          # Only attempt binding if the compute service account exists
+          if gcloud iam service-accounts describe "$COMPUTE_SA" --project="$PROJECT_ID" &>/dev/null; then
+            # Check if the binding already exists
+            COMPUTE_SA_BINDING=$(gcloud iam service-accounts get-iam-policy "$COMPUTE_SA" \
+              --project="$PROJECT_ID" \
+              --format=json 2>/dev/null | jq -e ".bindings[] | select(.role==\"roles/iam.serviceAccountUser\") | .members[] | select(. == \"serviceAccount:${FIREBASE_SA_EMAIL}\")" 2>/dev/null || echo "")
 
-          if [ -n "$COMPUTE_SA_BINDING" ]; then
-            echo "✓ Firebase deployer already has permission to act as compute service account"
+            if [ -n "$COMPUTE_SA_BINDING" ]; then
+              echo "✓ Firebase deployer already has permission to act as compute service account"
+            else
+              echo "Granting Firebase deployer permission to act as compute service account..."
+              gcloud iam service-accounts add-iam-policy-binding "$COMPUTE_SA" \
+                --project="$PROJECT_ID" \
+                --role="roles/iam.serviceAccountUser" \
+                --member="serviceAccount:${FIREBASE_SA_EMAIL}" \
+                --quiet
+              echo "✓ Service Account User permission granted"
+            fi
           else
-            echo "Granting Firebase deployer permission to act as compute service account..."
-            gcloud iam service-accounts add-iam-policy-binding $COMPUTE_SA \
-              --project=$PROJECT_ID \
-              --role="roles/iam.serviceAccountUser" \
-              --member="serviceAccount:${FIREBASE_SA_EMAIL}" \
-              --quiet
-            echo "✓ Service Account User permission granted"
+            echo "⚠️  Compute service account $COMPUTE_SA does not exist yet; skipping Service Account User binding."
+            echo "    You can grant this after Firebase App Hosting creates the compute service account."
           fi
 
           # Output values
