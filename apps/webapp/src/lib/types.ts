@@ -348,6 +348,8 @@ export type CheckpointComparisonPreferences = {
 
 export type UserPreferences = {
   checkpointComparison?: CheckpointComparisonPreferences;
+  /** Optional per-user monthly token cap (server-enforced; overrides TOKEN_QUOTA_PERIOD_MAX_TOKENS). */
+  monthlyTokenLimit?: number;
   updatedAt?: Timestamp;
 };
 

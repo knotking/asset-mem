@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+from pathlib import Path
+
+# Shared code lives in `gcp/common` (import as `common.*`).
+# - Local dev: main.py is gcp/proxy/api/main.py → gcp root is parent.parent.
+# - Docker: COPY common next to main.py → gcp root is the app dir.
+_here = Path(__file__).resolve().parent
+for root in (_here.parent.parent, _here):
+    if root and (root / "common").is_dir() and str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+        break
+
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

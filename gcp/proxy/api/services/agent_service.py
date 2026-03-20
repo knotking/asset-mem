@@ -21,6 +21,9 @@ async def stream_firebase_agent_answers(request: AgentRequest):
         async for event_part in stream_agent_answers(
             request=request
         ):
+            if isinstance(event_part, dict) and event_part.get("proxy_error"):
+                yield json.dumps(event_part["proxy_error"])
+                return
             if isinstance(event_part, dict) and "message" in event_part:
                 logger.info(f"streaming dict message: {event_part}")
                 yield event_part["message"]
@@ -58,6 +61,16 @@ async def handle_firebase_agent_query(request: AgentRequest) -> Dict[str, Any]:
             request=request,
             parse_response=False
         ):
+            if isinstance(event, dict) and event.get("proxy_error"):
+                pe = event["proxy_error"]
+                return {
+                    "status": "error",
+                    "code": pe.get("code"),
+                    "message": pe.get("message"),
+                    "used": pe.get("used"),
+                    "limit": pe.get("limit"),
+                    "period": pe.get("period"),
+                }
             # event_part can be a string (from text parts) or a dict (from transfer messages)
             parts = event.get("content", {}).get("parts", [])
             for part in parts:

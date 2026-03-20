@@ -12,6 +12,7 @@ from google.genai import types
 from firebase_admin import firestore
 from google.cloud.firestore_v1 import FieldFilter
 from prompt_builder import get_asset_category, build_comparison_prompt
+from common.token import accumulate_google_genai_generate_response
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,8 @@ def compare_checkpoints(
     image2_url: str,
     content_type1: str,
     content_type2: str,
-    location: Optional[str] = None
+    location: Optional[str] = None,
+    usage_sink: dict | None = None,
 ) -> Dict[str, Any]:
     """
     Compares two checkpoint images/videos using Gemini AI.
@@ -316,7 +318,9 @@ def compare_checkpoints(
                 "response_schema": response_schema
             }
         )
-        
+        if usage_sink is not None:
+            accumulate_google_genai_generate_response(usage_sink, response)
+
         import json
         result_json = json.loads(response.text)
         

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
+import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -81,6 +82,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AiUsageSettings userId={user?.uid} />
 
         {/* Checkpoint Settings Section */}
         <CheckpointSettings />

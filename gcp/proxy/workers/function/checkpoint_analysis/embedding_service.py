@@ -9,6 +9,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from google import genai
 from google.genai.types import EmbedContentConfig
+from common.token import accumulate_google_genai_embed_response
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,9 @@ def extract_checkpoint_text(checkpoint_data: Dict[str, Any]) -> str:
     return combined_text
 
 
-def generate_checkpoint_embedding(checkpoint_data: Dict[str, Any]) -> Optional[List[float]]:
+def generate_checkpoint_embedding(
+    checkpoint_data: Dict[str, Any], usage_sink: dict | None = None
+) -> Optional[List[float]]:
     """
     Generates a vector embedding from checkpoint analysis text using Gemini Embeddings API.
     
@@ -146,7 +149,9 @@ def generate_checkpoint_embedding(checkpoint_data: Dict[str, Any]) -> Optional[L
             contents=[text],
             config=EmbedContentConfig(output_dimensionality=EMBEDDING_DIMENSION)
         )
-        
+        if usage_sink is not None:
+            accumulate_google_genai_embed_response(usage_sink, result)
+
         # Extract embedding vector from result
         if result and result.embeddings and len(result.embeddings) > 0:
             embedding = result.embeddings[0].values

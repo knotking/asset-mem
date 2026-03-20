@@ -25,6 +25,7 @@ gcp/proxy/api/
 │   ├── document_service.py  # Document analysis (Gemini)
 │   ├── telegram_bot.py      # Telegram bot logic (aiogram)
 │   ├── vertex_service.py    # Vertex AI Reasoning Engine integration
+│   ├── token_usage_service.py # Per-user LLM token totals → Firestore
 │   ├── service_broker_service.py
 │   └── checkpoint_service.py # Checkpoint operations (Analysis Pub/Sub, Comparison)
 ├── schemas/             # Pydantic Data Models
@@ -59,6 +60,27 @@ uvicorn main:app --reload
 ### Environment Variables
 
 See `core/config.py` for the full list of required environment variables.
+
+### Local run (`uvicorn`)
+
+Imports such as `common.token` require the `gcp` directory on `PYTHONPATH`, or a copy of `gcp/common` next to this app as `gcp/proxy/api/common`. **`main.py` prepends `sys.path`** so that `gcp` is found when you run from `gcp/proxy/api` (parent chain `…/gcp/proxy/api` → `…/gcp`). If you use a flat layout (e.g. Docker with `common/` copied into `/app`), that is detected too.
+
+**Docker / Cloud Run:** CI copies `gcp/common` into `gcp/proxy/api/common` before build; the staged `common/` is gitignored here.
+
+### LLM token usage (Firestore)
+
+Each completed `stream_query` against the Reasoning Engine increments counters on `llm_token_usage/{userId}`. Token fields come from `usageMetadata` / `usage_metadata` on stream events when present.
+
+The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) uses the same collection via `gcp/common/token/`, incrementing `workerLlmCallCount` and token fields when `usage_metadata` is present.
+
+**Full schema** (root document, `periods/{YYYY-MM}` history, field tables): **[`gcp/common/token/README.md`](../../../common/token/README.md#firestore-schema)**.
+
+### Token quota (rate limit)
+
+- **`TOKEN_QUOTA_PERIOD_MAX_TOKENS`** (optional): positive integer = default monthly **total token** cap per user (UTC month). Unset or `0` = unlimited unless overridden in Firestore.
+- **Per-user override:** `users/{userId}/preferences/user` → **`monthlyTokenLimit`** (positive number). Takes precedence over the env default.
+
+Enforced in the proxy before `stream_query` / session creation (`gcp/common/token/quota.py`) and at the start of checkpoint analysis worker jobs. Over-limit API responses use `code: TOKEN_QUOTA_EXCEEDED`.
 
 ## Available Documentation
 

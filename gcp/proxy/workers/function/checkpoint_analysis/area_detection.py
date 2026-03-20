@@ -10,6 +10,7 @@ import logging
 from typing import List, Dict, Optional, Tuple
 from google import genai
 from google.genai import types
+from common.token import accumulate_google_genai_generate_response
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,9 @@ except Exception as e:
     logger.error(f"Failed to initialize Google Gen AI SDK: {e}")
     client = None
 
-def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
+def detect_room_area(
+    media_url: str, content_type: str, usage_sink: dict | None = None
+) -> Dict[str, any]:
     """
     Detects the room/area type from an image or video using Gemini Vision.
     
@@ -107,6 +110,8 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
             "response_schema": response_schema
         }
     )
+    if usage_sink is not None:
+        accumulate_google_genai_generate_response(usage_sink, response)
 
     result_json = json.loads(response.text)
     logger.info(f"Asset detection complete: {result_json.get('detectedAsset')} (confidence: {result_json.get('assetConfidence')})")
@@ -119,10 +124,15 @@ def detect_room_area(media_url: str, content_type: str) -> Dict[str, any]:
     }
 
 
-def compare_room_similarity(media1_url: str, media2_url: str, 
-                           content_type1: str, content_type2: str,
-                           room1: Optional[str] = None, 
-                           room2: Optional[str] = None) -> Dict[str, any]:
+def compare_room_similarity(
+    media1_url: str,
+    media2_url: str,
+    content_type1: str,
+    content_type2: str,
+    room1: Optional[str] = None,
+    room2: Optional[str] = None,
+    usage_sink: dict | None = None,
+) -> Dict[str, any]:
     """
     Compares two images or videos to determine if they show the same room/area.
     
@@ -201,6 +211,8 @@ def compare_room_similarity(media1_url: str, media2_url: str,
             "response_schema": response_schema
         }
     )
+    if usage_sink is not None:
+        accumulate_google_genai_generate_response(usage_sink, response)
 
     result_json = json.loads(response.text)
     logger.info(f"Similarity check: isSameArea={result_json.get('isSameArea')}, score={result_json.get('similarityScore')}")
@@ -212,8 +224,12 @@ def compare_room_similarity(media1_url: str, media2_url: str,
     }
 
 
-def find_matching_checkpoint(new_media_url: str, new_content_type: str,
-                             existing_checkpoints: List[Dict]) -> Optional[Dict]:
+def find_matching_checkpoint(
+    new_media_url: str,
+    new_content_type: str,
+    existing_checkpoints: List[Dict],
+    usage_sink: dict | None = None,
+) -> Optional[Dict]:
     """
     Finds an existing checkpoint that matches the new image/video's area.
     
@@ -236,7 +252,9 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
 
     # First, detect asset for new media
     try:
-        new_asset_detection = detect_room_area(new_media_url, new_content_type)
+        new_asset_detection = detect_room_area(
+            new_media_url, new_content_type, usage_sink=usage_sink
+        )
         new_asset = new_asset_detection["detectedAsset"]
         logger.info(f"New checkpoint detected as: {new_asset}")
     except Exception as e:
@@ -264,7 +282,8 @@ def find_matching_checkpoint(new_media_url: str, new_content_type: str,
                 content_type1=new_content_type,
                 content_type2=existing_media.get("contentType", "image/jpeg"),
                 room1=new_asset,
-                room2=existing_asset
+                room2=existing_asset,
+                usage_sink=usage_sink,
             )
 
             similarity_score = similarity_result["similarityScore"]

@@ -27,6 +27,12 @@ from common.observability.constants import (
 from common.observability.logging_helper import log_event, log_exception
 from common.observability.base import get_tracer
 from common.observability.metrics_helper import record_histogram
+from common.token import (
+    TokenQuotaExceeded,
+    check_token_quota_or_raise,
+    new_llm_usage_sink,
+    persist_firestore_token_totals,
+)
 from prompt_builder import get_asset_category
 
 from google.cloud import pubsub_v1
@@ -95,18 +101,51 @@ def pubsub_checkpoint_analysis(request, context):
             firebase_admin.initialize_app()
 
         db = firestore.client()
+        llm_usage = new_llm_usage_sink()
+        checkpoint_ref = (
+            db.collection("users")
+            .document(user_id)
+            .collection("properties")
+            .document(property_id)
+            .collection("checkpoints")
+            .document(checkpoint_id)
+        )
+
+        try:
+            check_token_quota_or_raise(db, user_id)
+        except TokenQuotaExceeded as e:
+            logger.warning(
+                "Checkpoint analysis skipped: token quota exceeded user=%s period=%s used=%s limit=%s",
+                user_id,
+                e.period_key,
+                e.used,
+                e.limit,
+            )
+            try:
+                checkpoint_ref.update(
+                    {
+                        "analysisStatus": "failed",
+                        "analysisQuotaExceeded": True,
+                        "analysisQuotaPeriod": e.period_key,
+                        "analysisQuotaUsed": e.used,
+                        "analysisQuotaLimit": e.limit,
+                    }
+                )
+            except Exception as upd_err:
+                logger.error(
+                    "Failed to mark checkpoint quota failure: %s", upd_err, exc_info=True
+                )
+            return
 
         try:
             # Analyze the checkpoint image/video using Gemini
             analysis_start_time = time.time()
-            analysis_result = analyze_checkpoint_image(image_url, content_type, location)
+            analysis_result = analyze_checkpoint_image(
+                image_url, content_type, location, usage_sink=llm_usage
+            )
             analysis_duration_ms = (time.time() - analysis_start_time) * 1000
 
             # Update Firestore with analysis results
-            checkpoint_ref = db.collection("users").document(user_id)\
-                .collection("properties").document(property_id)\
-                .collection("checkpoints").document(checkpoint_id)
-
             # Check if location already exists
             checkpoint_doc = checkpoint_ref.get()
             existing_location = None
@@ -201,7 +240,9 @@ def pubsub_checkpoint_analysis(request, context):
                     checkpoint_dict = updated_checkpoint_doc.to_dict()
                     
                     # Generate embedding from checkpoint analysis text
-                    embedding = generate_checkpoint_embedding(checkpoint_dict)
+                    embedding = generate_checkpoint_embedding(
+                        checkpoint_dict, usage_sink=llm_usage
+                    )
                     
                     if embedding:
                         # Update checkpoint with embedding
@@ -348,7 +389,8 @@ def pubsub_checkpoint_analysis(request, context):
                                 image2_url=new_media_url,
                                 content_type1=prev_media.get("contentType", "image/jpeg"),
                                 content_type2=new_media.get("contentType", "image/jpeg"),
-                                location=final_location
+                                location=final_location,
+                                usage_sink=llm_usage,
                             )
                             
                             comparison_duration_ms = (time.time() - comparison_start_time) * 1000
@@ -553,4 +595,11 @@ def pubsub_checkpoint_analysis(request, context):
                 logger.info(f"Updated checkpoint {checkpoint_id} status to failed")
             except Exception as update_error:
                 logger.error(f"Failed to update checkpoint status to failed: {update_error}", exc_info=True)
+
+        finally:
+            persist_firestore_token_totals(
+                user_id,
+                llm_usage,
+                worker_llm_call_increment=llm_usage.get("gemini_calls", 0),
+            )
 
