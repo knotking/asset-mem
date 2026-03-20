@@ -7,9 +7,15 @@ from typing import Optional, Dict, Any, List, Callable
 import json
 from google.cloud import pubsub_v1
 from google.cloud import firestore
+from google.cloud.firestore_v1 import FieldFilter
 
 from schemas.agent import AgentRequest
 from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
+from services.token_usage_service import (
+    accumulate_usage_from_stream_event,
+    persist_user_token_usage,
+)
+from common.token import TokenQuotaExceeded, check_token_quota_or_raise
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -88,7 +94,9 @@ def get_property_id_from_session_by_agent_id(user_id: str, agent_session_id: str
         db = firestore.Client()
         # Query Firestore sessions collection to find document with matching agentSessionId
         chats_ref = db.collection("users").document(user_id).collection("chats")
-        query = chats_ref.where("agentSessionId", "==", agent_session_id).limit(1)
+        query = chats_ref.where(
+            filter=FieldFilter("agentSessionId", "==", agent_session_id)
+        ).limit(1)
         docs = query.stream()
         
         for doc in docs:
@@ -124,6 +132,9 @@ def get_or_create_reasoning_engine_session(chat_id: str) -> Dict[str, Any]:
     return session
 
 def create_reasoning_engine_session(user_id: str) -> Dict[str, Any]:
+    if not reasoning_engine_resource:
+        raise RuntimeError("AI Agent service not ready.")
+    check_token_quota_or_raise(firestore.Client(), user_id)
     session = reasoning_engine_resource.create_session(user_id=user_id)
     return session
 
@@ -140,6 +151,24 @@ async def stream_agent_answers(
         return
     user_id = request.user_id
     session_id = request.session_id
+
+    if user_id:
+        try:
+            check_token_quota_or_raise(firestore.Client(), user_id)
+        except TokenQuotaExceeded as e:
+            err = {
+                "status": "error",
+                "code": "TOKEN_QUOTA_EXCEEDED",
+                "message": "Monthly AI token limit reached. Usage resets at the start of next month (UTC).",
+                "used": e.used,
+                "limit": e.limit,
+                "period": e.period_key,
+            }
+            if parse_response:
+                yield json.dumps(err)
+            else:
+                yield {"proxy_error": err}
+            return
     user_query = request.user_query
     context_doc_uris = request.context_doc_uris
     diagnosis_uris = request.diagnosis_uris
@@ -259,22 +288,43 @@ async def stream_agent_answers(
 
     message = json.dumps(payload)
     logger.info(f"Sending message to Reasoning Engine: {message}")
-    for event in reasoning_engine_resource.stream_query(
-        user_id=user_id, session_id=session_id, message=message
-    ):
-        if parse_response:
-        # You can yield the whole event, or just the text/agent_name/etc.
-            transfer_message = extract_event_data_with_transfer_target(event)
-            if transfer_message:
-                yield transfer_message
+    usage_running = {"prompt": 0, "candidates": 0, "total_only": 0}
+    stream_event_count = 0
+    logger.debug(
+        "Token usage: stream_query starting user_id=%s session_id=%s parse_response=%s",
+        user_id,
+        session_id,
+        parse_response,
+    )
+    try:
+        for event in reasoning_engine_resource.stream_query(
+            user_id=user_id, session_id=session_id, message=message
+        ):
+            accumulate_usage_from_stream_event(
+                usage_running, event, event_index=stream_event_count
+            )
+            stream_event_count += 1
+            if parse_response:
+                transfer_message = extract_event_data_with_transfer_target(event)
+                if transfer_message:
+                    yield transfer_message
+                else:
+                    parts = event.get("content", {}).get("parts", [])
+                    for part in parts:
+                        if isinstance(part, dict) and "text" in part and part["text"]:
+                            yield f"{prettify_name(event.get('author',''))}: {part['text']}"
             else:
-                # Extract and yield text parts
-                parts = event.get("content", {}).get("parts", [])
-                for part in parts:
-                    if isinstance(part, dict) and "text" in part and part["text"]:
-                        yield f"{prettify_name(event.get('author',''))}: {part['text']}"
-        else:
-            yield event
+                yield event
+    finally:
+        logger.debug(
+            "Token usage: stream_query finished user_id=%s session_id=%s stream_chunks=%s "
+            "aggregated=%s",
+            user_id,
+            session_id,
+            stream_event_count,
+            dict(usage_running),
+        )
+        persist_user_token_usage(user_id, usage_running)
 
         
 def extract_event_data_with_transfer_target(event_data: dict) -> str | None:

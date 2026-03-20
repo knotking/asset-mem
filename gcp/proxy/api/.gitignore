@@ -1,0 +1,2 @@
+# Staged copy of ../../common for Docker/Cloud Build (see CI workflow)
+/common

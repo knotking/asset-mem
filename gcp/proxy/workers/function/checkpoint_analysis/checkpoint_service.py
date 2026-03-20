@@ -11,6 +11,7 @@ from google import genai
 from google.genai import types
 from area_detection import detect_room_area
 from prompt_builder import get_asset_category, build_analysis_prompt
+from common.token import accumulate_google_genai_generate_response
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,12 @@ except Exception as e:
     logger.error(f"Failed to initialize Google Gen AI SDK: {e}")
     client = None
 
-def analyze_checkpoint_image(media_url: str, content_type: str, location: str = None) -> dict:
+def analyze_checkpoint_image(
+    media_url: str,
+    content_type: str,
+    location: str = None,
+    usage_sink: dict | None = None,
+) -> dict:
     """
     Analyzes a checkpoint image or video using Gemini AI, including asset detection.
     
@@ -63,7 +69,9 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
     
     if not location:
         try:
-            detected_asset_info = detect_room_area(media_url, content_type)
+            detected_asset_info = detect_room_area(
+                media_url, content_type, usage_sink=usage_sink
+            )
             location = detected_asset_info["detectedAsset"]  # Use detected asset for analysis prompt
             logger.info(f"Auto-detected asset: {location} (confidence: {detected_asset_info['assetConfidence']})")
         except Exception as e:
@@ -155,6 +163,8 @@ def analyze_checkpoint_image(media_url: str, content_type: str, location: str = 
             "response_schema": response_schema
         }
     )
+    if usage_sink is not None:
+        accumulate_google_genai_generate_response(usage_sink, response)
 
     result_json = json.loads(response.text)
     logger.info("Checkpoint analysis complete")

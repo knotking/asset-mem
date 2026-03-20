@@ -8,6 +8,23 @@ A FastAPI-based microservice that acts as a unified API gateway between client a
 - **[API Documentation](./docs/README.md)** - Feature-specific API endpoint documentation
 - **[Workers Documentation](./workers/README.md)** - Background worker functions documentation
 
+### Manual token-usage check
+
+With the API running locally and `httpx` installed (`gcp/proxy/api/requirements.txt`), you can drive `firebase-agent-stream` and verify Firestore `llm_token_usage/{userId}` updates:
+
+```bash
+cd gcp/proxy
+export FIREBASE_WEBHOOK_SECRET=...   # from .env / .env.staging
+export TEST_USER_ID=your-firebase-uid
+python scripts/test_token_usage_request.py
+```
+
+Optional: `PROXY_BASE_URL` (default `http://127.0.0.1:8080`), `TEST_USER_QUERY` (default `hello`), `TEST_SESSION_ID`. By default the script uses a **buffered POST** so it returns only after the **full** agent response body is received (so the server can finish streaming and run token persist). Use `python scripts/test_token_usage_request.py --stream-chunks` to print chunks as they arrive.
+
+**Token quota (global + per-user):** See **[API README → Token quota](./api/README.md#token-quota-rate-limit)**. Summary: default cap from env `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (e.g. via GitHub Actions variables); **per-user override** in Firestore `users/{userId}/preferences/user` → **`monthlyTokenLimit`** (wins over the env default).
+
+**Firestore layout** (`llm_token_usage` root doc + `periods/{YYYY-MM}`): **[`gcp/common/token/README.md`](../common/token/README.md#firestore-schema)**.
+
 ## Deployment to Cloud Run
 
 Follow these steps to deploy your FastAPI application to Cloud Run:
