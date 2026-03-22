@@ -81,6 +81,9 @@ module.exports = {
       documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
       checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'analyze-checkpoint'),
       checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'compare-checkpoints'),
+      tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'token-quota-status'),
+      /** Optional UI fallback if proxy /token-quota-status fails (align with TOKEN_QUOTA_PERIOD_MAX_TOKENS) */
+      tokenQuotaPeriodMaxTokens: process.env.TOKEN_QUOTA_PERIOD_MAX_TOKENS,
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {

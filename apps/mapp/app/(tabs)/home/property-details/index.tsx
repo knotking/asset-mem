@@ -5,7 +5,16 @@ import { ScrollView, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, FileText, Plus, File, X, Camera, Clock } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  MessageSquare,
+  FileText,
+  Plus,
+  File,
+  X,
+  Camera,
+  Clock,
+} from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -42,6 +51,7 @@ import { useSessionSelection } from '@/hooks/useSessionSelection';
 import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
+import { TokenUsageBar } from '@/components/TokenUsageBar';
 
 export default function PropertyDetailsScreen() {
   const {
@@ -97,7 +107,7 @@ export default function PropertyDetailsScreen() {
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
-  
+
   const [selectedCheckpointOptionalAgents, setSelectedCheckpointOptionalAgents] = React.useState<
     CheckpointOptionalAgent[]
   >([]);
@@ -164,9 +174,14 @@ export default function PropertyDetailsScreen() {
               locationRadius: 5, // Default 5 mile radius
             };
             setLocationData(defaultLocationData);
-            console.log('[PropertyDetails] Auto-set current location for analysis_agent:', defaultLocationData);
+            console.log(
+              '[PropertyDetails] Auto-set current location for analysis_agent:',
+              defaultLocationData
+            );
           } else {
-            console.log('[PropertyDetails] Location permission not granted, skipping auto-location');
+            console.log(
+              '[PropertyDetails] Location permission not granted, skipping auto-location'
+            );
           }
         } catch (error) {
           console.error('[PropertyDetails] Error getting default location:', error);
@@ -365,7 +380,7 @@ export default function PropertyDetailsScreen() {
             year: 'numeric',
             hour: 'numeric',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
           })}`;
           await updateDoc(sessionRef, {
             name: newName,
@@ -439,7 +454,10 @@ export default function PropertyDetailsScreen() {
           propertyAddress,
           primaryAgent,
           analysisOptionalAgents: selectedOptionalAgents,
-          checkpointOptionalAgents: selectedCheckpointOptionalAgents.length > 0 ? selectedCheckpointOptionalAgents : undefined,
+          checkpointOptionalAgents:
+            selectedCheckpointOptionalAgents.length > 0
+              ? selectedCheckpointOptionalAgents
+              : undefined,
           locationData,
           signal,
           onChunk: (chunk) => {
@@ -699,7 +717,7 @@ function PropertyDetailsScreenContent({
     setSelectedCheckpoints,
     primaryAgent,
   ]);
-  
+
   // Handle checkpoint selection when switching agents
   React.useEffect(() => {
     if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0) {
@@ -713,7 +731,13 @@ function PropertyDetailsScreenContent({
         setSelectedCheckpoints([]);
       }
     }
-  }, [primaryAgent, checkpoints, selectedCheckpoints.length, hasManuallyInteracted, setSelectedCheckpoints]);
+  }, [
+    primaryAgent,
+    checkpoints,
+    selectedCheckpoints.length,
+    hasManuallyInteracted,
+    setSelectedCheckpoints,
+  ]);
 
   if (!property) {
     return (
@@ -765,14 +789,15 @@ function PropertyDetailsScreenContent({
                       <Button onPress={() => router.back()} variant="ghost" size="icon">
                         <Icon as={ArrowLeft} size={24} className="text-foreground" />
                       </Button>
-                      <View className="mx-3 flex-1">
+                      <View className="mx-2 min-w-0 flex-1">
                         <Text
                           className="text-center text-xl font-bold text-foreground"
                           numberOfLines={1}>
                           {property.name}
                         </Text>
                       </View>
-                      <View className="flex-row items-center gap-2">
+                      <View className="shrink-0 flex-row items-center gap-1.5">
+                        <TokenUsageBar matchActionIconSize />
                         {activeTab === 'chat' && (
                           <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
                             <View className="relative">
@@ -882,7 +907,9 @@ function PropertyDetailsScreenContent({
                       <Icon
                         as={Clock}
                         size={20}
-                        className={activeTab === 'timeline' ? 'text-primary' : 'text-muted-foreground'}
+                        className={
+                          activeTab === 'timeline' ? 'text-primary' : 'text-muted-foreground'
+                        }
                       />
                     </Pressable>
                     <Pressable
@@ -891,7 +918,9 @@ function PropertyDetailsScreenContent({
                       <Icon
                         as={FileText}
                         size={20}
-                        className={activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'}
+                        className={
+                          activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
+                        }
                       />
                     </Pressable>
                   </View>

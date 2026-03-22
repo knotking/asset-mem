@@ -18,7 +18,12 @@
     "./contexts/property-documents-context": "./src/contexts/property-documents-context.tsx",
     "./contexts/upload-dialog-context": "./src/contexts/upload-dialog-context.tsx",
     "./contexts/checkpoint-context": "./src/contexts/checkpoint-context.tsx",
-    "./contexts/preferences-context": "./src/contexts/preferences-context.tsx"
+    "./contexts/preferences-context": "./src/contexts/preferences-context.tsx",
+    "./contexts/llm-token-usage-context": "./src/contexts/llm-token-usage-context.tsx",
+    "./lib/format-tokens": "./src/lib/format-tokens.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
   },
   "scripts": {
     "build": "tsc --build",
