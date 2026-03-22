@@ -103,15 +103,15 @@ export function AiUsageSettings() {
           AI usage
         </CardTitle>
         <CardDescription>
-          Monthly quotas use UTC calendar months. All-time totals are shown below. Limits are
-          enforced on the server.
+          Monthly quotas use calendar months. All-time totals are shown below. Limits are enforced on
+          the server.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             You are at or over your monthly token limit. AI features may be blocked until the next
-            UTC month or your limit is raised.
+            month or your limit is raised.
           </p>
         ) : effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit * 0.9 ? (
           <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
@@ -126,26 +126,26 @@ export function AiUsageSettings() {
         <TooltipProvider delayDuration={300}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              This month (UTC) — quota
+              This month — quota
             </div>
             <StatRow
               label="Billing period"
-              hint="Year-month in UTC. Counters reset when the server records the first usage in a new month."
+              hint="Year-month label. Counters reset when the server records the first usage in a new month."
               value={quotaPeriodKey ?? '—'}
             />
             <StatRow
               label="Tokens this month"
-              hint={`Total tokens counted toward your monthly quota for this UTC month. Exact: ${formatTokensFull(periodTotalTokens)}.`}
+              hint={`Total tokens counted toward your monthly quota for this month. Exact: ${formatTokensFull(periodTotalTokens)}.`}
               value={formatTokensCompact(periodTotalTokens)}
             />
             <StatRow
               label="Input tokens (month)"
-              hint={`Input tokens recorded this UTC month. Exact: ${formatTokensFull(periodInputTokens)}.`}
+              hint={`Input tokens recorded this month. Exact: ${formatTokensFull(periodInputTokens)}.`}
               value={formatTokensCompact(periodInputTokens)}
             />
             <StatRow
               label="Output tokens (month)"
-              hint={`Output tokens recorded this UTC month. Exact: ${formatTokensFull(periodOutputTokens)}.`}
+              hint={`Output tokens recorded this month. Exact: ${formatTokensFull(periodOutputTokens)}.`}
               value={formatTokensCompact(periodOutputTokens)}
             />
             <StatRow
