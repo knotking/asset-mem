@@ -92,25 +92,27 @@ jobs:
           set -euo pipefail
 
           # Cloud Functions deploys only the function source directory.
-          # We sync shared modules into the function directory at deploy time so
-          # imports like `common.observability` work in Cloud Build/runtime.
-          SRC_OBS_DIR="gcp/common/observability"
+          # Sync shared packages so `common.observability` and `common.token` imports work at runtime.
           DST_COMMON_DIR="${{ env.SOURCE_DIRECTORY }}/common"
-          DST_OBS_DIR="${DST_COMMON_DIR}/observability"
+          mkdir -p "${DST_COMMON_DIR}"
 
-          mkdir -p "${DST_OBS_DIR}"
-
-          # Ensure package root exists
           if [ ! -f "${DST_COMMON_DIR}/__init__.py" ]; then
             cat > "${DST_COMMON_DIR}/__init__.py" <<'EOF'
           # Shared modules synced into the Cloud Function source directory at deploy time.
           EOF
           fi
 
-          # Sync observability module (remove stale files, preserve current repo as source of truth)
+          SRC_OBS_DIR="gcp/common/observability"
+          DST_OBS_DIR="${DST_COMMON_DIR}/observability"
+          mkdir -p "${DST_OBS_DIR}"
           rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
-
           echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
+
+          SRC_TOKEN_DIR="gcp/common/token"
+          DST_TOKEN_DIR="${DST_COMMON_DIR}/token"
+          mkdir -p "${DST_TOKEN_DIR}"
+          rsync -a --delete "${SRC_TOKEN_DIR}/" "${DST_TOKEN_DIR}/"
+          echo "✓ Synced ${SRC_TOKEN_DIR} -> ${DST_TOKEN_DIR}"
 
       - name: Deploy Cloud Function
         id: deploy

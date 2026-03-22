@@ -1,0 +1,18 @@
+# Optional: build the proxy image with monorepo context without staging common under api/.
+# `gcloud run deploy` does not support --dockerfile on all SDK versions; CI uses
+# gcp/proxy/api/Dockerfile + staged common/ + .gcloudignore instead.
+# Local (from repo root): docker build -f gcp/Dockerfile.proxy gcp
+FROM python:3.13.5-slim
+
+WORKDIR /app
+
+COPY proxy/api/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY proxy/api/ .
+COPY common/ ./common/
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

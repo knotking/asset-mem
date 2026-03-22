@@ -1,0 +1,5 @@
+# gcloud run deploy --source uploads this directory; by default it respects .gitignore,
+# which excludes ./common (staged copy of gcp/common). Include that copy in the upload.
+#!include:.gitignore
+!/common
+!/common/**
