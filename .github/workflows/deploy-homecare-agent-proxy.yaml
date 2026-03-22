@@ -7,6 +7,7 @@ on:
       - mapp_checkpoint_proxy_deployment
     paths:
       - "gcp/proxy/api/**"
+      - "gcp/common/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -136,6 +137,10 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # Shared modules live in gcp/common; Docker build context is gcp/proxy/api only.
+      - name: Stage gcp/common for Docker build
+        run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: "google-github-actions/deploy-cloudrun@v2"
@@ -143,7 +148,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           project_id: ${{ vars.GCP_PROJECT_ID }}
-          source: gcp/proxy/api # Path to the source directory for the service
+          source: gcp/proxy/api
           flags: "--allow-unauthenticated --service-account=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
           gcloud_version: latest
           env_vars: |
@@ -158,6 +163,7 @@ jobs:
             GCS_BUCKET=${{ vars.GCS_BUCKET }}
             CHECKPOINT_ANALYSIS_TOPIC=${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}
             CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
+            TOKEN_QUOTA_PERIOD_MAX_TOKENS=${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
 
       - name: Set IAM policy for public access
         continue-on-error: true
