@@ -17,6 +17,12 @@ service cloud.firestore {
     match /llm_token_usage/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if false;
+
+      // Historical UTC month snapshots (archived on month rollover)
+      match /periods/{periodId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
     }
 
     // Rules for publicly shared chat sessions
