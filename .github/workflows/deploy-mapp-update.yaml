@@ -213,6 +213,8 @@ jobs:
           WEB_APP_URL: ${{ env.WEB_APP_URL }}
           APP_VERSION: ${{ env.APP_VERSION }}
           EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}
+          # app.config.js → extra.tokenQuotaPeriodMaxTokens (UI fallback if /token-quota-status fails); optional
+          TOKEN_QUOTA_PERIOD_MAX_TOKENS: ${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
 
       - name: Summary
         run: |

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { CheckpointComparisonSettings } from '@/components/settings/CheckpointComparisonSettings';
+import { AiUsageSettings } from '@/components/settings/AiUsageSettings';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -74,6 +75,11 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* AI usage (shared @homeapp/common + Firestore llm_token_usage) */}
+        <View className="mb-4">
+          <AiUsageSettings />
         </View>
 
         {/* Checkpoint Comparison Settings */}

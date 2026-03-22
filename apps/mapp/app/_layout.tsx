@@ -16,6 +16,7 @@ import { DocumentUploadProvider } from '@homeapp/common/contexts/document-upload
 import { PreferencesProvider } from '@homeapp/common/contexts/preferences-context';
 import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
+import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvider';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -31,13 +32,15 @@ export default function RootLayout() {
       <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
         <AuthProvider>
           <PreferencesProvider>
-            <SessionProvider createAgentSession={createAgentSession}>
-              <PropertiesListProvider>
-                <DocumentUploadProvider>
-                  <Routes />
-                </DocumentUploadProvider>
-              </PropertiesListProvider>
-            </SessionProvider>
+            <MappLlmTokenUsageProvider>
+              <SessionProvider createAgentSession={createAgentSession}>
+                <PropertiesListProvider>
+                  <DocumentUploadProvider>
+                    <Routes />
+                  </DocumentUploadProvider>
+                </PropertiesListProvider>
+              </SessionProvider>
+            </MappLlmTokenUsageProvider>
           </PreferencesProvider>
         </AuthProvider>
       </FirebaseProvider>

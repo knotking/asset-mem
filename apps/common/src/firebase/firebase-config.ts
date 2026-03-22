@@ -22,6 +22,8 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     messagingSenderId: "291418967332",
     appId: "1:291418967332:web:32ced0cdd668eb4018b7b1",
     measurementId: "G-M3VECYV1FM",
+    webClientId:
+      "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
   },
   staging: {
     apiKey: "AIzaSyD5LbNLSj8sudtwlJnpPkY0Qjtuv7T6rss",
@@ -31,6 +33,8 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     messagingSenderId: "291418967332",
     appId: "1:291418967332:web:32ced0cdd668eb4018b7b1",
     measurementId: "G-M3VECYV1FM",
+    webClientId:
+      "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
   },
   prod: {
     apiKey: "AIzaSyCDVN02byPassK2gasba6IH6_2dXkFUywI",

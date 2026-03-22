@@ -183,6 +183,8 @@ jobs:
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           APP_VERSION: ${{ env.APP_VERSION }}
           EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+          # app.config.js → extra.tokenQuotaPeriodMaxTokens (UI fallback if /token-quota-status fails); optional
+          TOKEN_QUOTA_PERIOD_MAX_TOKENS: ${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
 
       - name: Build for Android
         if: ${{ needs.validate.outputs.platform == 'android' || needs.validate.outputs.platform == 'all' }}
@@ -197,6 +199,8 @@ jobs:
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           APP_VERSION: ${{ env.APP_VERSION }}
           EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+          # app.config.js → extra.tokenQuotaPeriodMaxTokens (UI fallback if /token-quota-status fails); optional
+          TOKEN_QUOTA_PERIOD_MAX_TOKENS: ${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
 
       - name: Summary
         run: |

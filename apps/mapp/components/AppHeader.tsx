@@ -7,11 +7,7 @@ import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { User } from 'firebase/auth';
-
-const THEME_ICONS = {
-  light: SunIcon,
-  dark: MoonStarIcon,
-};
+import { TokenUsageBar } from '@/components/TokenUsageBar';
 
 function ThemeToggle() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -21,8 +17,8 @@ function ThemeToggle() {
       onPressIn={toggleColorScheme}
       size="icon"
       variant="ghost"
-      className="ios:size-9 rounded-full web:mx-4">
-      <Icon as={colorScheme === 'light' ? MoonStarIcon : SunIcon} className="size-5" />
+      className="h-8 w-8 min-w-8 rounded-full p-0 web:mx-2">
+      <Icon as={colorScheme === 'light' ? MoonStarIcon : SunIcon} className="size-4" />
     </Button>
   );
 }
@@ -47,18 +43,21 @@ export default function AppHeader() {
   const userInitials = getUserInitials(user);
 
   return (
-    <View className="flex-row items-center justify-between bg-card p-4 pt-12 shadow-sm">
-      <View className="flex-row items-center gap-2">
-        <Icon as={Home} size={24} className="text-foreground" />
-        <Text className="text-xl font-bold text-foreground">HomeGeek AI</Text>
+    <View className="flex-row items-center justify-between bg-card px-3 py-3 pt-12 shadow-sm">
+      <View className="min-w-0 flex-1 flex-row items-center gap-1.5 pr-2">
+        <Icon as={Home} size={22} className="shrink-0 text-foreground" />
+        <Text className="text-lg font-bold text-foreground" numberOfLines={1}>
+          HomeGeek AI
+        </Text>
       </View>
-      <View className="flex-row items-center gap-4">
+      <View className="shrink-0 flex-row items-center gap-px">
         <ThemeToggle />
-        <Button variant="ghost" size="icon">
-          <Icon as={Bell} size={24} className="text-muted-foreground" />
+        <TokenUsageBar />
+        <Button variant="ghost" size="icon" className="h-8 w-8 min-w-8 p-0">
+          <Icon as={Bell} size={20} className="text-muted-foreground" />
         </Button>
-        <View className="h-9 w-9 items-center justify-center rounded-full bg-secondary">
-          <Text className="text-sm font-semibold text-secondary-foreground">
+        <View className="ml-0.5 h-8 w-8 items-center justify-center rounded-full bg-secondary">
+          <Text className="text-xs font-semibold text-secondary-foreground">
             {loading ? '' : userInitials}
           </Text>
         </View>
