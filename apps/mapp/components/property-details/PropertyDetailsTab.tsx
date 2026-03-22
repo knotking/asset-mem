@@ -164,7 +164,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
         onAnalyze: async (doc, gsURI) => {
           // Run AI analysis and RAG upload in parallel
           const [analysisResult] = await Promise.allSettled([
-            extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType }),
+            extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType, userId: user.uid }),
             postFileToAgent(gsURI, user.uid),
           ]);
 

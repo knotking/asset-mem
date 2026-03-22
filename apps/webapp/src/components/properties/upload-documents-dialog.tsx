@@ -281,7 +281,7 @@ export function UploadDocumentsDialog({
 
         await Promise.all([
           postFileToAgent(gsURI, user.uid),
-          extractDocInfo({ docUrl: gsURI, contentType: file.type }).then(
+          extractDocInfo({ docUrl: gsURI, contentType: file.type, userId: user.uid }).then(
             async (result) => {
               const updateData: any = {
                 documentType: result.documentType,

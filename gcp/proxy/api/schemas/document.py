@@ -17,6 +17,10 @@ class KeyEntity(BaseModel):
 class ExtractDocInfoRequest(BaseModel):
     docUrl: str = Field(description="The GCS URL of the document to analyze")
     contentType: str = Field(description="MIME type of the document")
+    userId: str | None = Field(
+        default=None,
+        description="Firebase Auth UID — required for monthly token quota accounting on this call",
+    )
 
 class ExtractDocInfoResponse(BaseModel):
     documentType: DocumentType = Field(description="Classified type of the document")

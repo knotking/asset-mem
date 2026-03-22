@@ -342,6 +342,8 @@ export type DocumentType =
 export interface ExtractDocInfoInput {
   docUrl: string;
   contentType: string;
+  /** Firebase Auth UID — sent to proxy for LLM token accounting */
+  userId?: string;
 }
 
 export interface ExtractDocInfoOutput {
@@ -368,6 +370,19 @@ export async function extractDocInfo(input: ExtractDocInfoInput): Promise<Extrac
       },
       body: JSON.stringify(input),
     });
+
+    if (response.status === 429) {
+      let message = 'Monthly AI token limit reached.';
+      try {
+        const err = (await response.json()) as { detail?: { message?: string } };
+        if (err?.detail && typeof err.detail === 'object' && 'message' in err.detail) {
+          message = String((err.detail as { message?: string }).message ?? message);
+        }
+      } catch {
+        /* ignore */
+      }
+      throw new Error(message);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
