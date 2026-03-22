@@ -1581,6 +1581,9 @@ jobs:
           set_or_update_var "WEBAPP_GCP_PROJECT_ID" "${{ needs.resolve-inputs.outputs.gcp_project_id }}"
           set_or_update_var "FIREBASE_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.firebase_service_account_email }}"
 
+          # Monthly token cap for proxy + checkpoint worker (UTC calendar month). Only set if missing.
+          set_var_if_not_exists "TOKEN_QUOTA_PERIOD_MAX_TOKENS" "1000000"
+
           echo ""
           echo "✅ GitHub environment '${{ inputs.environment_name }}' configured"
           echo ""
@@ -1631,6 +1634,9 @@ jobs:
           EXPO_ACCOUNT=homegeekai
           WEBAPP_GCP_PROJECT_ID=${{ needs.resolve-inputs.outputs.gcp_project_id }}
           FIREBASE_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.firebase_service_account_email }}
+
+          # Token quota (if not set earlier, default 1M — see create-github-environment step)
+          TOKEN_QUOTA_PERIOD_MAX_TOKENS=1000000
           \`\`\`
 
           ## GitHub Repository Secrets (Manual Configuration Required)
@@ -1725,6 +1731,7 @@ jobs:
           | \`EXPO_ACCOUNT\` | \`homegeekai\` |
           | \`WEBAPP_GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |
           | \`FIREBASE_SERVICE_ACCOUNT_EMAIL\` | \`${{ needs.create-infrastructure.outputs.firebase_service_account_email }}\` |
+          | \`TOKEN_QUOTA_PERIOD_MAX_TOKENS\` | \`1000000\` (created only if the variable did not exist) |
 
           ### Secrets (Manual Configuration Required)
 
