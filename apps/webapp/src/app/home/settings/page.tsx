@@ -83,7 +83,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <AiUsageSettings userId={user?.uid} />
+        <AiUsageSettings />
 
         {/* Checkpoint Settings Section */}
         <CheckpointSettings />

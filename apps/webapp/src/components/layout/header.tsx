@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '../ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
+import { TokenUsageToolbar } from './token-usage-toolbar';
 
 export function Header() {
   const { user, auth, loading } = useAuth();
@@ -48,12 +49,12 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
-       <div className="flex items-center gap-2">
-            <Bot className="h-7 w-7 text-primary" />
-            <h1 className="text-xl font-bold text-foreground">HomeGeek AI</h1>
-       </div>
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-14 min-h-14 items-center justify-between gap-3 border-b bg-background px-3 sm:gap-4 sm:px-6">
+      <div className="flex min-w-0 shrink items-center gap-2">
+        <Bot className="h-7 w-7 shrink-0 text-primary" />
+        <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">HomeGeek AI</h1>
+      </div>
+      <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
          {loading ? (
             <Skeleton className='h-8 w-32' />
          ) : user ? (
@@ -63,6 +64,7 @@ export function Header() {
                     <Bell className="h-4 w-4" />
                     <span className="sr-only">Notifications</span>
                 </Button>
+                <TokenUsageToolbar />
                 <Button 
                     variant="ghost" 
                     size="icon" 

@@ -20,6 +20,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # Align with prod TOKEN_QUOTA_PERIOD_MAX_TOKENS on proxy + checkpoint worker
+  - variable: NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS
+    value: "1000000"
+    availability:
+      - BUILD
+      - RUNTIME
 
 runConfig:
   # Production can scale higher
