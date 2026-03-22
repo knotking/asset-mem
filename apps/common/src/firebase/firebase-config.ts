@@ -15,24 +15,22 @@ interface FirebaseConfigWithClient extends FirebaseOptions {
 
 const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
   dev: {
-    projectId: "homegeekdemo",
-    appId: "1:321433914812:web:d30bdb093dee72fb2d2fb9",
-    storageBucket: "homegeekdemo.firebasestorage.app",
-    apiKey: "AIzaSyC44gkEIt19KV51Y2cMlOJ9F9WepblX8sI",
-    authDomain: "homegeekdemo.firebaseapp.com",
-    messagingSenderId: "321433914812",
-    webClientId:
-      "321433914812-898vs8tgasfvko1c9o71cdk0tosph570.apps.googleusercontent.com",
+    apiKey: "AIzaSyD5LbNLSj8sudtwlJnpPkY0Qjtuv7T6rss",
+    authDomain: "homegeek-staging.firebaseapp.com",
+    projectId: "homegeek-staging",
+    storageBucket: "homegeek-staging.firebasestorage.app",
+    messagingSenderId: "291418967332",
+    appId: "1:291418967332:web:32ced0cdd668eb4018b7b1",
+    measurementId: "G-M3VECYV1FM",
   },
   staging: {
-    projectId: "homegeekdemo", // TODO: Update with staging project config
-    appId: "1:321433914812:web:d30bdb093dee72fb2d2fb9",
-    storageBucket: "homegeekdemo.firebasestorage.app",
-    apiKey: "AIzaSyC44gkEIt19KV51Y2cMlOJ9F9WepblX8sI",
-    authDomain: "homegeekdemo.firebaseapp.com",
-    messagingSenderId: "321433914812",
-    webClientId:
-      "321433914812-898vs8tgasfvko1c9o71cdk0tosph570.apps.googleusercontent.com",
+    apiKey: "AIzaSyD5LbNLSj8sudtwlJnpPkY0Qjtuv7T6rss",
+    authDomain: "homegeek-staging.firebaseapp.com",
+    projectId: "homegeek-staging",
+    storageBucket: "homegeek-staging.firebasestorage.app",
+    messagingSenderId: "291418967332",
+    appId: "1:291418967332:web:32ced0cdd668eb4018b7b1",
+    measurementId: "G-M3VECYV1FM",
   },
   prod: {
     apiKey: "AIzaSyCDVN02byPassK2gasba6IH6_2dXkFUywI",
