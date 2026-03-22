@@ -1,5 +1,5 @@
-# Use the official Python image as a base
-# Build context must include `common/` next to this Dockerfile (see README: CI copies gcp/common → ./common).
+# Local Docker only: run `cp -R ../../common ./common` from this directory first, or use
+# Cloud Run build from repo root: `docker build -f gcp/Dockerfile.proxy gcp` (see gcp/Dockerfile.proxy).
 FROM python:3.13.5-slim
 
 WORKDIR /app

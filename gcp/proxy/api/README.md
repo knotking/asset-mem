@@ -65,7 +65,7 @@ See `core/config.py` for the full list of required environment variables.
 
 Imports such as `common.token` require the `gcp` directory on `PYTHONPATH`, or a copy of `gcp/common` next to this app as `gcp/proxy/api/common`. **`main.py` prepends `sys.path`** so that `gcp` is found when you run from `gcp/proxy/api` (parent chain `…/gcp/proxy/api` → `…/gcp`). If you use a flat layout (e.g. Docker with `common/` copied into `/app`), that is detected too.
 
-**Docker / Cloud Run:** CI copies `gcp/common` into `gcp/proxy/api/common` before build; the staged `common/` is gitignored here.
+**Docker / Cloud Run:** GitHub Actions runs **`cp -R gcp/common gcp/proxy/api/common`**, then **`gcloud run deploy --source=gcp/proxy/api`** using **`Dockerfile`** in this directory. **`gcp/proxy/api/.gcloudignore`** forces the staged **`common/`** into the upload (it is listed in `.gitignore` so it is not committed). For a one-shot local build without staging, use **`docker build -f gcp/Dockerfile.proxy gcp`** from the repo root.
 
 ### LLM token usage (Firestore)
 
@@ -81,6 +81,8 @@ The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) use
 - **Per-user override:** `users/{userId}/preferences/user` → **`monthlyTokenLimit`** (positive number). Takes precedence over the env default.
 
 Enforced in the proxy before `stream_query` / session creation (`gcp/common/token/quota.py`) and at the start of checkpoint analysis worker jobs. Over-limit API responses use `code: TOKEN_QUOTA_EXCEEDED`.
+
+**Webapp UI:** `POST /token-quota-status` (also under `/{FIREBASE_WEBHOOK_SECRET}/token-quota-status` when the secret is set) with body `{ "user_id": "<uid>" }` returns `{ period, used, max_tokens, unlimited }` — `max_tokens` is the resolved monthly cap (`0` when unlimited). Same resolution as enforcement. The Next.js app uses this so the quota bar does not duplicate `TOKEN_QUOTA_PERIOD_MAX_TOKENS` in build env.
 
 ## Available Documentation
 

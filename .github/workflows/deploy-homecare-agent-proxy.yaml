@@ -137,7 +137,8 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # Shared modules live in gcp/common; Docker build context is gcp/proxy/api only.
+      # Stage gcp/common next to the app (gitignored). .gcloudignore forces ./common into the
+      # source upload; otherwise gcloud excludes it and the image misses `import common`.
       - name: Stage gcp/common for Docker build
         run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
 

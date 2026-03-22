@@ -63,6 +63,10 @@ Set these variables in your GitHub repository settings (Settings → Secrets and
    - **Automatic Staging Deployment**: Push your changes to the `main` branch (within `gcp/proxy/workers/function`).
    - **Manual Deployment (Staging/Prod)**: Go to the "Actions" tab in your GitHub repository, select "Deploy Checkpoint Analysis Function" workflow, click "Run workflow", and choose your desired `environment`.
 
+## Shared code (`gcp/common`)
+
+The deploy job **rsyncs** `gcp/common/observability` and `gcp/common/token` into `checkpoint_analysis/common/` before upload. The function imports both packages; omitting `token` causes `ModuleNotFoundError: No module named 'common.token'` at cold start.
+
 ## How It Works
 
 1. The API endpoint (`/analyze-checkpoint`) publishes a message to the `checkpoint-analysis-topic`.

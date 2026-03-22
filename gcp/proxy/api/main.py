@@ -29,7 +29,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.events import lifespan
-from routers import agent, documents, telegram, service_broker, checkpoint
+from routers import agent, documents, telegram, service_broker, checkpoint, token_quota
 from services.vertex_service import reasoning_engine_resource
 
 # Configure logging
@@ -59,6 +59,10 @@ async def health_check():
         status_msg += " (Reasoning Engine not initialized)"
     return {"status": status_msg}
 
+# Token quota UI: always at POST /token-quota-status (works when FIREBASE_WEBHOOK_SECRET is unset for local dev).
+app.include_router(token_quota.router)
+logger.info("Mounted token_quota at /token-quota-status")
+
 # Mount routers
 # Firebase / Agent endpoints
 if settings.FIREBASE_WEBHOOK_SECRET:
@@ -67,7 +71,10 @@ if settings.FIREBASE_WEBHOOK_SECRET:
     app.include_router(documents.router, prefix=prefix)
     app.include_router(service_broker.router, prefix=prefix)
     app.include_router(checkpoint.router, prefix=prefix)
-    logger.info(f"Mounted agent, documents, service_broker, and checkpoint routers at {prefix}")
+    app.include_router(token_quota.router, prefix=prefix)
+    logger.info(
+        f"Mounted agent, documents, service_broker, checkpoint, and token_quota routers at {prefix}"
+    )
 else:
     logger.warning("FIREBASE_WEBHOOK_SECRET not set, agent endpoints not mounted.")
 
