@@ -5,7 +5,7 @@ env:
   # Server-side environment variables (available in API routes and server components)
   # Base API URL - all endpoint URLs are constructed from this in code
   - variable: NEXT_PUBLIC_API_BASE_URL
-    value: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
+    value: https://homecare-agent-proxy-staging-291418967332.us-east1.run.app/92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
     availability:
       - BUILD
       - RUNTIME
