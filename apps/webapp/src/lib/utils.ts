@@ -149,4 +149,6 @@ export const apiUrls = {
   extractDocInfo: () => getApiUrl("/extract-doc-info"),
   analyzeCheckpoint: () => getApiUrl("/analyze-checkpoint"),
   compareCheckpoints: () => getApiUrl("/compare-checkpoints"),
+  /** Same monthly limit resolution as proxy enforcement; optional fallback in UI if request fails */
+  tokenQuotaStatus: () => getApiUrl("/token-quota-status"),
 };
