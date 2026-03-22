@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import logging
 from schemas.agent import AgentRequest
 from schemas.document import ExtractDocInfoRequest
 from services.agent_service import handle_firebase_file_upload
 from services.document_service import extract_doc_info
+from common.token import TokenQuotaExceeded
 
 router = APIRouter(tags=["Documents"])
 logger = logging.getLogger(__name__)
@@ -24,6 +25,17 @@ async def extract_document_info_endpoint(request_data: ExtractDocInfoRequest):
         result = extract_doc_info(request_data)
         logger.info(f"Analysis complete: {result.documentType.value}")
         return result.model_dump()
+    except TokenQuotaExceeded as e:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "TOKEN_QUOTA_EXCEEDED",
+                "message": "Monthly AI token limit reached. Usage resets at the start of next month.",
+                "used": e.used,
+                "limit": e.limit,
+                "period": e.period_key,
+            },
+        ) from e
     except Exception as e:
         logger.error(f"Error processing document analysis: {e}")
         return {"status": "error", "message": str(e)}

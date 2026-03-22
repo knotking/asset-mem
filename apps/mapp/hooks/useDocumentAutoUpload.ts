@@ -54,7 +54,7 @@ export function useDocumentAutoUpload({
           onAnalyze: async (doc, gsURI) => {
             // Run AI analysis and RAG upload in parallel
             const [analysisResult] = await Promise.allSettled([
-              extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType }),
+              extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType, userId }),
               postFileToAgent(gsURI, userId),
             ]);
 

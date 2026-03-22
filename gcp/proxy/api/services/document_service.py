@@ -15,6 +15,15 @@ from typing import Dict, Any
 from google import genai
 from google.genai import types
 
+from google.cloud import firestore
+
+from common.token import (
+    TokenQuotaExceeded,
+    accumulate_google_genai_generate_response,
+    check_token_quota_or_raise,
+    new_llm_usage_sink,
+    persist_firestore_token_totals,
+)
 from schemas.document import ExtractDocInfoRequest, ExtractDocInfoResponse, DocumentType, KeyEntity
 
 logger = logging.getLogger(__name__)
@@ -57,6 +66,9 @@ def extract_doc_info(request: ExtractDocInfoRequest) -> ExtractDocInfoResponse:
     try:
         if not client:
             raise Exception("Google Gen AI SDK not initialized")
+
+        if request.userId:
+            check_token_quota_or_raise(firestore.Client(), request.userId)
 
         logger.info(f"Starting document analysis for {request.docUrl}")
 
@@ -136,6 +148,15 @@ Document:"""
             }
         )
 
+        if request.userId:
+            sink = new_llm_usage_sink()
+            accumulate_google_genai_generate_response(sink, response)
+            persist_firestore_token_totals(
+                request.userId,
+                sink,
+                worker_llm_call_increment=sink.get("gemini_calls", 0),
+            )
+
         # Parse JSON response
         result_json = json.loads(response.text)
         logger.info(f"Analysis complete: {result_json.get('documentType')}")
@@ -151,6 +172,8 @@ Document:"""
             summary=result_json["summary"]
         )
 
+    except TokenQuotaExceeded:
+        raise
     except Exception as e:
         logger.error(f"Document analysis failed: {e}", exc_info=True)
         # Return fallback response instead of raising
