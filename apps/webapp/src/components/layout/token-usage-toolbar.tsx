@@ -106,7 +106,7 @@ export function TokenUsageToolbar() {
         <TooltipContent side="bottom" className="max-w-xs">
           <p className="text-xs">
             {formatTokensCompact(periodTotalTokens)} / {formatTokensCompact(effectiveMonthlyLimit)}{' '}
-            tokens this UTC month (Settings for exact figures)
+            tokens this month (Settings for exact figures)
           </p>
         </TooltipContent>
       </Tooltip>
