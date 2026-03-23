@@ -57,6 +57,11 @@ export function AiUsageSettings() {
     proxyDefaultLimit,
   } = useLlmTokenUsage();
 
+  const pctUsed =
+    effectiveMonthlyLimit != null && effectiveMonthlyLimit > 0
+      ? Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit))
+      : null;
+
   if (loading) {
     return (
       <Card>
@@ -115,14 +120,40 @@ export function AiUsageSettings() {
           </p>
         ) : effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit * 0.9 ? (
           <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-            You have used about{' '}
-            {Math.min(
-              100,
-              Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit),
-            )}
-            % of your monthly token allowance.
+            You have used about {pctUsed}% of your monthly token allowance.
           </p>
         ) : null}
+
+        {pctUsed != null ? (
+          <div className="flex flex-col items-center rounded-xl border border-border bg-muted/40 px-4 py-4">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Monthly quota used
+            </span>
+            <span
+              className={
+                pctUsed >= 100
+                  ? 'mt-1 text-4xl font-bold tabular-nums leading-none text-destructive'
+                  : pctUsed >= 90
+                    ? 'mt-1 text-4xl font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400'
+                    : 'mt-1 text-4xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400'
+              }
+            >
+              {pctUsed}%
+            </span>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              {formatTokensCompact(periodTotalTokens)} of {formatTokensCompact(effectiveMonthlyLimit)}{' '}
+              tokens this month
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3">
+            <p className="text-center text-sm text-muted-foreground">
+              No monthly token cap is set, so usage isn’t shown as a percentage. See limits below if
+              your org configures one via Firestore or the proxy.
+            </p>
+          </div>
+        )}
+
         <TooltipProvider delayDuration={300}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
