@@ -611,6 +611,7 @@ export default function PropertyChatSessionPage() {
       selectedDocuments,
       primaryAgent,
       selectedOptionalAgents,
+      selectedCheckpointOptionalAgents,
       selectedCheckpoints,
       locationData,
     ]

@@ -29,6 +29,8 @@ def diy_agent_instructions() -> str:
         2. Call `google_search_agent` with query incorporating the diagnosis: "[diagnosis] DIY repair steps" or "[diagnosis] DIY instructions"
            - Focus on getting step-by-step DIY instructions based on the specific diagnosis
         3. Call `youtube_search` with query incorporating the diagnosis: "[diagnosis] DIY tutorial" or "[diagnosis] how to fix"
+           - Pass a plain text query string only (for example: "loose concrete block fence base DIY tutorial")
+           - Do NOT pass comma-separated formats, JSON strings, or "query, num_results" patterns
         4. Call `cost_estimation_diy` with query incorporating the diagnosis: "[diagnosis] DIY cost estimate"
         5. Call `shopping_agent` with query incorporating the diagnosis: "[diagnosis] DIY repair products"
            - **CRITICAL INSTRUCTIONS FOR SHOPPING_AGENT:**
@@ -75,6 +77,7 @@ def diy_agent_instructions() -> str:
         * Use the diagnosis from triage_agent to tailor your queries and make them more specific.
         * Extract and structure the DIY steps into numbered steps from the google search results.
         * Parse YouTube search results to extract title, URL, and description for each video.
+        * For `youtube_search`, always pass plain text query input only.
         * Parse product recommendations from shopping_agent to extract item_name, image_url, vendor, reviews, and store_url for each product.
         * Focus ONLY on DIY solutions - do not include professional service information.
         * Maintain factual and neutral tone.

@@ -314,7 +314,7 @@ def estimate_costs_with_ai(
         
         # Call Gemini with Google Search grounding
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model=config.AI_MODEL_NAME,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.3,  # Lower temperature for more consistent cost estimates
