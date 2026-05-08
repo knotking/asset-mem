@@ -35,13 +35,8 @@ import {
   DocumentData,
   WithFieldValue,
   doc,
-  setDoc,
   getDoc,
-  where,
-  getDocs,
-  limit,
   updateDoc,
-  deleteDoc,
   onSnapshot,
 } from "firebase/firestore";
 import { ChatPageSkeleton } from "@/components/chat/chat-page-skeleton";
@@ -108,46 +103,6 @@ export default function PropertyChatSessionPage() {
       return;
     }
 
-    const fetchInitialMessages = async () => {
-      setIsMessagesLoading(true);
-      try {
-        const sessionDocRef = doc(db, "users", user.uid, "chats", sessionId);
-        const sessionDoc = await getDoc(sessionDocRef);
-
-        if (sessionDoc.exists() && sessionDoc.data().name === "draft") {
-          setIsNewSession(true);
-          setMessages([]);
-        } else {
-          setIsNewSession(false);
-          const messagesQuery = query(
-            collection(db, "users", user.uid, "chats", sessionId, "messages"),
-            orderBy("createdAt", "asc")
-          );
-          const querySnapshot = await getDocs(messagesQuery);
-          const fetchedMessages = querySnapshot.docs.map(
-            (doc) =>
-              ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: (doc.data().createdAt as Timestamp)?.toDate(),
-              }) as Message
-          );
-          setMessages(fetchedMessages);
-        }
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not load chat history.",
-        });
-      } finally {
-        setIsMessagesLoading(false);
-      }
-    };
-
-    fetchInitialMessages();
-
     const checkIsNewSession = async () => {
       const sessionDocRef = doc(db, "users", user.uid, "chats", sessionId);
       const sessionDoc = await getDoc(sessionDocRef);
@@ -158,6 +113,38 @@ export default function PropertyChatSessionPage() {
       }
     };
     checkIsNewSession();
+
+    setIsMessagesLoading(true);
+    const messagesQuery = query(
+      collection(db, "users", user.uid, "chats", sessionId, "messages"),
+      orderBy("createdAt", "asc")
+    );
+    const unsubscribe = onSnapshot(
+      messagesQuery,
+      (snapshot) => {
+        const fetchedMessages = snapshot.docs.map(
+          (docSnap) =>
+            ({
+              id: docSnap.id,
+              ...docSnap.data(),
+              createdAt: (docSnap.data().createdAt as Timestamp)?.toDate(),
+            }) as Message
+        );
+        setMessages(fetchedMessages);
+        setIsMessagesLoading(false);
+      },
+      (error) => {
+        console.error("Error subscribing to messages:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load chat history.",
+        });
+        setIsMessagesLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, [user, sessionId, toast]);
 
   // Auto-set current location when session is created
@@ -392,15 +379,14 @@ export default function PropertyChatSessionPage() {
         setIsNewSession(false);
       }
 
-      const userMessage: Message = {
-        id: `local-user-${Date.now()}`,
+      const userMessagePayload: WithFieldValue<DocumentData> = {
         role: "user",
         content,
       };
 
       if (fileAttachment && fileAttachment.downloadURL) {
         const snapshotRef = ref(storage, fileAttachment.storagePath);
-        userMessage.file = {
+        userMessagePayload.file = {
           name: fileAttachment.file.name,
           type: fileAttachment.file.type,
           url: fileAttachment.downloadURL,
@@ -409,22 +395,16 @@ export default function PropertyChatSessionPage() {
       }
 
       addMessageToFirestore(activeSessionId, {
-        role: "user",
-        content: userMessage.content,
-        ...(userMessage.file ? { file: userMessage.file } : {}),
+        ...userMessagePayload,
       });
 
-      setMessages((prev) => [...prev, userMessage]);
       setFileAttachment(null);
 
-      const assistantPlaceholderId = `local-assistant-${Date.now()}`;
-      const assistantMessage: Message = {
-        id: assistantPlaceholderId,
+      const assistantMessageDocId = await addMessageToFirestore(activeSessionId, {
         role: "assistant",
         content: "",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+        primaryAgent,
+      });
 
       try {
         abortControllerRef.current = new AbortController();
@@ -440,8 +420,8 @@ export default function PropertyChatSessionPage() {
         const contextDocURIs = selectedDocuments
           .map((d) => d.gsURI)
           .filter((uri): uri is string => !!uri);
-        const diagnosisURIs = userMessage.file?.gsURI
-          ? [userMessage.file.gsURI]
+        const diagnosisURIs = userMessagePayload.file?.gsURI
+          ? [userMessagePayload.file.gsURI]
           : [];
 
         const checkpointIds = selectedCheckpoints
@@ -479,15 +459,12 @@ export default function PropertyChatSessionPage() {
           }
         }
 
-        const response = await fetch(
-          apiUrls.agentSse(),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-            signal,
-          }
-        );
+        const response = await fetch(apiUrls.agentSse(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+          signal,
+        });
 
         if (!response.ok) {
           const errorBody = await response.text();
@@ -496,84 +473,13 @@ export default function PropertyChatSessionPage() {
         if (!response.body) throw new Error("The response body is empty.");
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let finalAssistantResponse = "";
-        let agentSteps: AgentStep[] = [];
-        const agentStatusRegex = /\*\*.*?Agent\*\* (\w+): (.+)/;
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
-          const rawChunk = decoder.decode(value, { stream: true });
+          const rawChunk = new TextDecoder().decode(value, { stream: true });
           if (rawChunk.startsWith("STREAM_ERROR:")) {
             throw new Error(rawChunk.substring("STREAM_ERROR:".length));
           }
-
-          const match = rawChunk.match(agentStatusRegex);
-          if (match) {
-            const status = match[1].toLowerCase() as
-              | "transferredto"
-              | "executing"
-              | "completed"
-              | "failed";
-            const name = match[2];
-
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id === assistantPlaceholderId) {
-                  const existingStepIndex =
-                    m.agentSteps?.findIndex((step) => step.name === name) ?? -1;
-                  let newAgentSteps: AgentStep[];
-
-                  if (existingStepIndex > -1) {
-                    newAgentSteps = m.agentSteps!.map((step, index) =>
-                      index === existingStepIndex ? { ...step, status } : step
-                    );
-                  } else {
-                    newAgentSteps = [...(m.agentSteps || []), { name, status }];
-                  }
-                  return { ...m, agentSteps: newAgentSteps };
-                }
-                return m;
-              })
-            );
-          } else {
-            finalAssistantResponse += rawChunk;
-          }
-        }
-
-        // Strip agent name prefix (e.g., "**Doculink Agent**: " or "**Analysis Agent**: ")
-        // This removes the prefix added by the backend streaming function
-        finalAssistantResponse = finalAssistantResponse.replace(/^\*\*[^*]+\*\*:\s*/, '');
-
-        // Debug: Log final response to help diagnose parsing issues
-        console.log('=== Final Assistant Response ===');
-        console.log('Length:', finalAssistantResponse.length);
-        console.log('Has ```json:', finalAssistantResponse.includes('```json'));
-        console.log('First 500 chars:', finalAssistantResponse.substring(0, 500));
-        console.log('Last 500 chars:', finalAssistantResponse.substring(Math.max(0, finalAssistantResponse.length - 500)));
-        console.log('================================');
-
-        if (!finalAssistantResponse.trim()) {
-          finalAssistantResponse =
-            "I'm sorry, I couldn't find a specific answer for that. Could you try rephrasing your question or providing more context?";
-        }
-
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantPlaceholderId
-              ? { ...m, content: finalAssistantResponse, agentSteps: undefined }
-              : m
-          )
-        );
-        const newAssistantMessage = {
-          role: "assistant" as const,
-          content: finalAssistantResponse,
-        };
-
-        if (finalAssistantResponse.trim()) {
-          addMessageToFirestore(activeSessionId, newAssistantMessage);
         }
       } catch (error: any) {
         if (error.name !== "AbortError") {
@@ -586,13 +492,22 @@ export default function PropertyChatSessionPage() {
             title: "Error",
             description: `Failed to get a response from the AI. ${errorMessage}`,
           });
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantPlaceholderId
-                ? { ...m, content: `Sorry, an error occurred: ${errorMessage}` }
-                : m
-            )
-          );
+          if (assistantMessageDocId && user) {
+            const assistantDocRef = doc(
+              db,
+              "users",
+              user.uid,
+              "chats",
+              activeSessionId,
+              "messages",
+              assistantMessageDocId
+            );
+            updateDoc(assistantDocRef, {
+              content: `Sorry, an error occurred: ${errorMessage}`,
+            }).catch((updateError) =>
+              console.error("Failed to update assistant error message:", updateError)
+            );
+          }
         }
       } finally {
         setIsLoading(false);

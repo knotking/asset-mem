@@ -115,6 +115,69 @@ def get_property_id_from_session_by_agent_id(user_id: str, agent_session_id: str
         return None
 
 
+def get_chat_id_from_session_by_agent_id(user_id: str, agent_session_id: str) -> Optional[str]:
+    """
+    Retrieves Firestore chat document ID by matching agentSessionId.
+    Session documents are stored at: users/{user_id}/chats/{chat_id}
+    """
+    try:
+        db = firestore.Client()
+        chats_ref = db.collection("users").document(user_id).collection("chats")
+        query = chats_ref.where(
+            filter=FieldFilter("agentSessionId", "==", agent_session_id)
+        ).limit(1)
+        docs = query.stream()
+        for doc in docs:
+            return doc.id
+        return None
+    except Exception as e:
+        logger.debug(f"Error retrieving chat_id from Firestore session (non-critical): {e}")
+        return None
+
+
+def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    """
+    Extract a single agent step update in the same shape used by mapp/webapp messages:
+    {"name": str, "status": "transferredto"|"executing"|"completed"|"failed"}
+    """
+    parts = event.get("content", {}).get("parts", [])
+    actions = event.get("actions", {})
+
+    transfer_target = actions.get("transfer_to_agent")
+    if transfer_target:
+        return {"name": str(transfer_target), "status": "transferredto"}
+
+    for part in parts:
+        if not isinstance(part, dict):
+            continue
+        function_call = part.get("function_call")
+        if isinstance(function_call, dict):
+            tool_name = function_call.get("name")
+            if tool_name and tool_name != "transfer_to_agent":
+                return {"name": str(tool_name), "status": "executing"}
+            if tool_name == "transfer_to_agent":
+                args = function_call.get("args", {})
+                target = args.get("agent_name") if isinstance(args, dict) else None
+                if target:
+                    return {"name": str(target), "status": "transferredto"}
+
+        function_response = part.get("function_response")
+        if isinstance(function_response, dict):
+            tool_name = function_response.get("name")
+            if tool_name and tool_name != "transfer_to_agent":
+                return {"name": str(tool_name), "status": "completed"}
+    return None
+
+
+def extract_text_from_event(event: Dict[str, Any]) -> str:
+    """Extract concatenated text parts from a single stream event."""
+    text_parts: List[str] = []
+    for part in event.get("content", {}).get("parts", []):
+        if isinstance(part, dict) and isinstance(part.get("text"), str) and part["text"]:
+            text_parts.append(part["text"])
+    return "".join(text_parts)
+
+
 # --- Reasoning Engine Session Management Functions ---
 def get_or_create_reasoning_engine_session(chat_id: str) -> Dict[str, Any]:
     if not reasoning_engine_resource:
@@ -285,16 +348,139 @@ async def stream_agent_answers(
     logger.info(f"Sending message to Reasoning Engine: {message}")
     usage_running = {"prompt": 0, "candidates": 0, "total_only": 0}
     stream_event_count = 0
+    stream_failed = False
+    db_client: Optional[firestore.Client] = None
+    chat_id: Optional[str] = None
+    assistant_message_ref = None
+    assistant_content_accumulated = ""
+    agent_steps_by_name: Dict[str, Dict[str, str]] = {}
     logger.debug(
         "Token usage: stream_query starting user_id=%s session_id=%s parse_response=%s",
         user_id,
         session_id,
         parse_response,
     )
+
+    if user_id and session_id:
+        try:
+            db_client = firestore.Client()
+            chat_id = get_chat_id_from_session_by_agent_id(user_id, session_id)
+            if chat_id:
+                messages_ref = (
+                    db_client.collection("users")
+                    .document(user_id)
+                    .collection("chats")
+                    .document(chat_id)
+                    .collection("messages")
+                )
+
+                # Order-by createdAt only (no role filter) avoids a composite index on
+                # (role, createdAt). Filter assistant + empty content in code.
+                recent_messages = (
+                    messages_ref.order_by("createdAt", direction=firestore.Query.DESCENDING)
+                    .limit(15)
+                    .stream()
+                )
+
+                selected_doc = None
+                for msg_doc in recent_messages:
+                    data = msg_doc.to_dict() or {}
+                    if data.get("role") != "assistant":
+                        continue
+                    if not data.get("content"):
+                        selected_doc = msg_doc
+                        break
+
+                if selected_doc:
+                    assistant_message_ref = selected_doc.reference
+                    existing_data = selected_doc.to_dict() or {}
+                    assistant_content_accumulated = str(existing_data.get("content") or "")
+                    for step in existing_data.get("agentSteps") or []:
+                        if isinstance(step, dict) and step.get("name") and step.get("status"):
+                            agent_steps_by_name[str(step["name"])] = {
+                                "name": str(step["name"]),
+                                "status": str(step["status"]),
+                            }
+                    assistant_message_ref.set(
+                        {
+                            "role": "assistant",
+                            "primaryAgent": primary_agent,
+                            "updatedAt": firestore.SERVER_TIMESTAMP,
+                        },
+                        merge=True,
+                    )
+                    logger.info(
+                        "Reusing assistant message doc for stream persistence user_id=%s chat_id=%s message_id=%s",
+                        user_id,
+                        chat_id,
+                        assistant_message_ref.id,
+                    )
+                else:
+                    assistant_message_ref = messages_ref.document()
+                    assistant_message_ref.set(
+                        {
+                            "role": "assistant",
+                            "content": "",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                            "primaryAgent": primary_agent,
+                            "agentSteps": [],
+                        }
+                    )
+                    logger.info(
+                        "Created assistant message doc for stream persistence user_id=%s chat_id=%s message_id=%s",
+                        user_id,
+                        chat_id,
+                        assistant_message_ref.id,
+                    )
+            else:
+                logger.warning(
+                    "No chat_id found for agent session; skipping chat message persistence user_id=%s session_id=%s",
+                    user_id,
+                    session_id,
+                )
+        except Exception as e:
+            logger.warning("Failed to initialize Firestore stream persistence: %s", e)
+            db_client = None
+
+    def persist_chat_message_state() -> None:
+        if not assistant_message_ref:
+            return
+        try:
+            steps_list = list(agent_steps_by_name.values())
+            assistant_message_ref.set(
+                {
+                    "role": "assistant",
+                    "content": assistant_content_accumulated,
+                    "agentSteps": steps_list,
+                    "primaryAgent": primary_agent,
+                    "updatedAt": firestore.SERVER_TIMESTAMP,
+                },
+                merge=True,
+            )
+            logger.debug(
+                "Persisted chat assistant message state user_id=%s chat_id=%s message_id=%s content_len=%s steps=%s",
+                user_id,
+                chat_id,
+                assistant_message_ref.id if assistant_message_ref else None,
+                len(assistant_content_accumulated),
+                len(steps_list),
+            )
+        except Exception as e:
+            logger.warning("Failed to persist chat assistant message state: %s", e)
     try:
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
         ):
+            event_text = extract_text_from_event(event)
+            if event_text:
+                assistant_content_accumulated += event_text
+
+            step_update = extract_agent_step_from_event(event)
+            if step_update:
+                agent_steps_by_name[step_update["name"]] = step_update
+
+            if event_text or step_update:
+                persist_chat_message_state()
             accumulate_usage_from_stream_event(
                 usage_running, event, event_index=stream_event_count
             )
@@ -310,6 +496,9 @@ async def stream_agent_answers(
                             yield f"{prettify_name(event.get('author',''))}: {part['text']}"
             else:
                 yield event
+    except Exception as e:
+        stream_failed = True
+        raise
     finally:
         logger.debug(
             "Token usage: stream_query finished user_id=%s session_id=%s stream_chunks=%s "
@@ -319,6 +508,12 @@ async def stream_agent_answers(
             stream_event_count,
             dict(usage_running),
         )
+        if stream_failed:
+            agent_steps_by_name["agent_stream"] = {
+                "name": "agent_stream",
+                "status": "failed",
+            }
+        persist_chat_message_state()
         persist_user_token_usage(user_id, usage_running)
 
         
