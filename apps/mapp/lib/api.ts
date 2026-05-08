@@ -2,11 +2,9 @@ import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
 import type {
   AgentStep,
-  AnalysisOptionalAgent,
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
-import { ANALYSIS_OPTIONAL_AGENTS } from '@homeapp/common/types';
 
 // Get environment-specific URLs from EAS build configuration
 const extra = Constants.expoConfig?.extra || {};
@@ -110,8 +108,7 @@ export interface StreamAgentResponseParams {
   checkpointIds?: string[]; // Checkpoint IDs for checkpoint context
   propertyAddress?: string;
   primaryAgent?: PrimaryAgent;
-  analysisOptionalAgents?: AnalysisOptionalAgent[];
-  checkpointOptionalAgents?: CheckpointOptionalAgent[];
+  checkpointOptionalAgents?: string[];
   locationData?: LocationData;
   signal?: AbortSignal;
   onChunk?: (content: string) => void;
@@ -128,8 +125,7 @@ export async function streamAgentResponse({
   diagnosisURIs = [],
   checkpointIds = [],
   propertyAddress,
-  primaryAgent = 'analysis',
-  analysisOptionalAgents = [...ANALYSIS_OPTIONAL_AGENTS],
+  primaryAgent,
   checkpointOptionalAgents = [],
   locationData,
   signal,
@@ -152,10 +148,13 @@ export async function streamAgentResponse({
       diagnosis_uris: diagnosisURIs,
       checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Only include if checkpoints selected
       property_address: propertyAddress,
-      primary_agent: primaryAgent,
-      analysis_optional_agents: analysisOptionalAgents,
       checkpoint_optional_agents: checkpointOptionalAgents,
     };
+
+    // Backend no longer accepts analysis as an explicit primary agent.
+    if (primaryAgent === 'docs' || primaryAgent === 'checkpoint') {
+      requestBody.primary_agent = primaryAgent;
+    }
 
     // Add location data if provided
     if (locationData) {

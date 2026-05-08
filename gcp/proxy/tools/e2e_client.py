@@ -45,7 +45,6 @@ class E2EClient:
             "context_doc_uris": [],
             "diagnosis_uris": [],
             "property_address": "",
-            "analysis_optional_agents": []
         }
 
         if self.debug:

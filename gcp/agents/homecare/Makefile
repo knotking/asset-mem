@@ -1,4 +1,4 @@
-.PHONY: help install setup clean run test deploy test-agent test-eval lint format
+.PHONY: help install setup clean run test deploy test-eval lint format
 
 # Default target
 .DEFAULT_GOAL := help
@@ -76,10 +76,6 @@ test: ## Run all tests
 test-eval: ## Run evaluation tests
 	$(call print_header,Running Evaluation Tests)
 	$(PYTEST) eval/ -v
-
-test-agent: ## Run agent-specific tests
-	$(call print_header,Running Agent Tests)
-	$(PYTEST) eval/test_eval.py::test_eval_analysis_agent -v
 
 test-full: ## Run full conversation tests
 	$(call print_header,Running Full Conversation Tests)
