@@ -46,7 +46,7 @@ This document covers deployment procedures, infrastructure setup, monitoring, tr
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
 │ Vertex AI    │ │   External   │ │   Cloud      │
 │ RAG Engine   │ │   APIs       │ │   Storage    │
-│              │ │ (Yelp, Serp, │ │              │
+│              │ │ (SerpAPI, Serp, │ │              │
 │ - User Docs  │ │  YouTube,    │ │ - Media      │
 │ - Knowledge  │ │  Google)     │ │ - Documents  │
 │   Base       │ │              │ │              │
@@ -146,7 +146,7 @@ GOOGLE_CLOUD_REGION=us-central1
 
 # API Keys (loaded from Secret Manager)
 SERPAPI_KEY=${SERPAPI_KEY}
-YELP_API_KEY=${YELP_API_KEY}
+=${}
 YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
 GOOGLE_SEARCH_API_KEY=${GOOGLE_SEARCH_API_KEY}
 GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
@@ -218,7 +218,7 @@ gcloud run deploy proxy-service \
   --concurrency=80 \
   --timeout=300 \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_REGION=$REGION" \
-  --set-secrets="SERPAPI_KEY=serpapi-key:latest,YELP_API_KEY=yelp-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest"
+  --set-secrets="SERPAPI_KEY=serpapi-key:latest,=yelp-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest"
 ```
 
 #### 3. Deploy Agent Workers
@@ -237,7 +237,7 @@ gcloud run deploy agent-workers \
   --concurrency=10 \
   --timeout=600 \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=$LOCATION" \
-  --set-secrets="SERPAPI_KEY=serpapi-key:latest,YELP_API_KEY=yelp-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest"
+  --set-secrets="SERPAPI_KEY=serpapi-key:latest,=yelp-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest"
 ```
 
 #### 4. Configure Pub/Sub for Async Processing

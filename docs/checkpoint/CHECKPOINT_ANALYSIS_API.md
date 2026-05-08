@@ -247,7 +247,7 @@ Your home warranty covers plumbing repairs under the Premium Plan...
             "address": "456 Oak St, San Francisco, CA"
           }
         ],
-        "yelpAPIResults": [
+        "googleSearchResults": [
           {
             "name": "Quick Fix Plumbing",
             "rating": 4.6,
@@ -351,7 +351,7 @@ Your home warranty covers plumbing repairs under the Premium Plan...
 | Field | Type | Description |
 |-------|------|-------------|
 | `localPros.serpAPIResults` | object[] | Google search results |
-| `localPros.yelpAPIResults` | object[] | Yelp search results |
+| `localPros.googleSearchResults` | object[] | SerpAPI search results |
 | `localPros.googleSearchResults` | object[] | Fallback search results |
 
 ### costEstimationResults

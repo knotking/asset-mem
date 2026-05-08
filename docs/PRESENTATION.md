@@ -2,7 +2,6 @@
 
 > **AI-Powered Home Care & Property Diagnostics Platform**
 
-
 ---
 
 ## Table of Contents
@@ -260,7 +259,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Business information and contact
 - Star ratings and review counts
 - Google Maps integration
-- Yelp reviews
+- SerpAPI reviews
 
 **AI-Powered Cost Estimates** ⭐ NEW
 - Real-time pricing using Gemini with Google Search grounding
@@ -355,7 +354,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### External Integrations
 
 - **SerpAPI** - Local business search
-- **Yelp API** - Service provider listings
+- **SerpAPI** - Service provider listings
 - **YouTube API** - Video tutorials
 - **Google Maps** - Location services
 - **Google Search** - General information retrieval
@@ -641,7 +640,7 @@ AGENT  AGENT   AGENT                   │              │
 4. Service Agent provides local plumber listings
 5. Cost Agent calibrates AI estimate with real provider pricing:
    - Extracts pricing from 3 SerpAPI results
-   - Parses Yelp price levels ($$)
+   - Parses SerpAPI price levels ($$)
    - Combines: AI estimate + provider data
    - Weighted calibration: 70% AI + 30% provider data
 6. Validates cost ranges and confidence score (0.85)
@@ -860,7 +859,7 @@ terraform apply
 - [x] **AI-Powered Cost Estimation** (COMPLETED) ⭐ NEW
   - Gemini with Google Search grounding for real-time pricing
   - Location-aware cost adjustments based on regional markets
-  - Service provider calibration using SerpAPI and Yelp data
+  - Service provider calibration using SerpAPI and SerpAPI data
   - Intelligent complexity analysis and safety assessments
   - Hardcoded library fallback for reliability
   - Feature flags for controlled rollout

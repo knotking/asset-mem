@@ -185,7 +185,7 @@ Terraform manages the infrastructure these deployments use.
 - `TELEGRAM_WEBHOOK_SECRET-{env}`
 - `FIREBASE_WEBHOOK_SECRET-{env}`
 - `SERP_API_KEY-{env}`
-- `YELP_API_KEY-{env}`
+- `-{env}`
 
 **Note:** Secret structure is created, but values must be added separately.
 

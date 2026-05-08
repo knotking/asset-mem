@@ -171,13 +171,13 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 - `USER_UPLOAD_RAG_CORPUS`
 - `KNOWLEDGE_BASE_RAG_CORPUS`
 - `USER_UPLOAD_TOPIC`
-- `YELP_URL`
+- ``
 - `WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT_EMAIL`
 
 **Required Secrets**:
 - `SERP_API_KEY`
-- `YELP_API_KEY`
+- ``
 
 ### 5. Proxy API Deployment
 
@@ -328,7 +328,7 @@ Set these in GitHub repository → Settings → Secrets and variables → Action
 - `TELEGRAM_WEBHOOK_SECRET` - Telegram webhook secret
 - `FIREBASE_WEBHOOK_SECRET` - Firebase webhook secret
 - `SERP_API_KEY` - SerpAPI key for search
-- `YELP_API_KEY` - Yelp API key
+- `` - SerpAPI key
 
 **Getting Secrets**:
 
@@ -369,7 +369,7 @@ Set these in GitHub repository → Settings → Secrets and variables → Action
 - `CHECKPOINT_METRICS_TOPIC` - Pub/Sub topic for metrics
 
 **External APIs**:
-- `YELP_URL` - Yelp API endpoint
+- `` - SerpAPI endpoint
 - `EXPO_PROJECT_ID` - Expo project ID
 
 ### Environment Configuration

@@ -153,7 +153,7 @@ Expected: Agent uses "near me" as fallback
 
 **Expected Agent Behavior**:
 1. Uses coordinates with radius for SerpAPI: "plumber near 37.7749,-122.4194 within 50 miles"
-2. Uses coordinates with radius for Yelp: "plumber 37.7749,-122.4194 within 50 miles"
+2. Uses coordinates with radius for SerpAPI: "plumber 37.7749,-122.4194 within 50 miles"
 3. Filters results to within 50-mile radius
 4. Sorts results by distance (closest first)
 
@@ -170,7 +170,7 @@ Expected: Agent uses "near me" as fallback
 
 **Expected Agent Behavior**:
 1. Uses address for SerpAPI: "plumber near 123 Main St, San Francisco, CA"
-2. Uses address for Yelp: "plumber 123 Main St, San Francisco, CA"
+2. Uses address for SerpAPI: "plumber 123 Main St, San Francisco, CA"
 3. Results based on address proximity (less precise)
 
 #### 3.3 No Location (Priority 3)

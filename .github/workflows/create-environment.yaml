@@ -1593,7 +1593,7 @@ jobs:
           echo "   - SERP_API_KEY"
           echo "   - TELEGRAM_BOT_TOKEN"
           echo "   - TELEGRAM_WEBHOOK_SECRET"
-          echo "   - YELP_API_KEY"
+          echo "   - "
 
       - name: Create environment config file
         run: |
@@ -1648,7 +1648,7 @@ jobs:
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`
-          - \`YELP_API_KEY\`
+          - \`\`
 
           ## Deploy Applications
 
@@ -1741,7 +1741,7 @@ jobs:
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`
-          - \`YELP_API_KEY\`
+          - \`\`
 
           ### Deploy Applications Now!
 

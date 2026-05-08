@@ -231,8 +231,6 @@ This deploys the `main.py` FastAPI application to Cloud Run.
     - `USER_UPLOAD_RESULT_SUBSCRIPTION`: The name of your user upload result Pub/Sub subscription (e.g., `user-upload-result-subscription`).
     - `GCS_BUCKET`: The name of your GCS bucket for user uploads (e.g., `homegeek-user-data`).
     - `SERP_API_KEY`: Your SerpAPI key.
-    - `YELP_API_KEY`: Your Yelp API key.
-    - `YELP_URL`: Your Yelp API endpoint URL.
 
 3.  **Navigate to the `api` directory:**
 
@@ -258,9 +256,7 @@ This deploys the `main.py` FastAPI application to Cloud Run.
         --set-env-vars="USER_UPLOAD_TOPIC=user-upload-topic" \
         --set-env-vars="USER_UPLOAD_RESULT_SUBSCRIPTION=user-upload-result-subscription" \
         --set-env-vars="GCS_BUCKET=homegeek-user-data" \
-        --set-env-vars="SERP_API_KEY=your-serp-api-key" \
-        --set-env-vars="YELP_API_KEY=your-yelp-api-key" \
-        --set-env-vars="YELP_URL=your-yelp-url"
+        --set-env-vars="SERP_API_KEY=your-serp-api-key"
     ```
 
     _Replace placeholders with your actual values._ After deployment, Cloud Run will provide a **Service URL**.

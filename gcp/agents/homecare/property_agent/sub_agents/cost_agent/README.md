@@ -13,7 +13,7 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
 - **Market Trends**: Incorporates current material costs and seasonal variations
 
 ### 📊 Service Provider Calibration
-- **Real Market Data**: Extracts pricing from local service providers (SerpAPI, Yelp)
+- **Real Market Data**: Extracts pricing from local service providers (SerpAPI, Google Search results)
 - **Automatic Calibration**: Adjusts AI estimates using actual provider pricing
 - **Confidence Scoring**: Weights estimates based on data quality and availability
 
@@ -42,7 +42,7 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
                     │    │
                     │    ├─── service_pricing_extractor.py
                     │    │    ├─── Parse SerpAPI results
-                    │    │    ├─── Parse Yelp results
+                    │    │    ├─── Parse Google Search results
                     │    │    └─── Combine pricing data
                     │    │
                     │    ├─── Calibrate with provider data
@@ -96,14 +96,14 @@ Extracts and processes pricing from real service provider results.
 
 **Key Functions:**
 - `extract_pricing_from_serp_results()`: Parse SerpAPI pricing
-- `extract_pricing_from_yelp_results()`: Parse Yelp pricing and price levels
+- `extract_pricing_from_google_results()`: Parse provider pricing signals and price levels
 - `combine_service_provider_pricing()`: Merge multiple sources
 - `calibrate_ai_estimate_with_provider_data()`: Adjust AI estimates
 - `extract_and_combine_all_pricing()`: One-stop extraction
 
 **Pricing Extraction:**
 - Regex patterns for various price formats ($XX-YY, $XX to $YY, from $XX)
-- Yelp price level mapping ($, $$, $$$, $$$$)
+- Provider pricing extraction from listing metadata
 - Confidence scoring based on data coverage
 
 ### 4. `prompts.py` - Prompt Templates
@@ -177,7 +177,7 @@ query = '''
   "serviceResults": {
     "localPros": {
       "serpAPIResults": [...],
-      "yelpAPIResults": [...]
+      "googleSearchResults": [...]
     }
   }
 }

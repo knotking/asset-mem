@@ -119,7 +119,7 @@ property_agent (root orchestrator)
 │   ├── triage_agent         # analyse_multimodal_data (in analysis_agent module)
 │   ├── coverage_agent       # ask_user_docs_retreival (separate module)
 │   ├── diy_agent            # google_search_agent, youtube_search, shopping_agent (separate modules)
-│   ├── service_agent        # serpapi_search, yelpapi_search, cost_estimation (separate module)
+│   ├── service_agent        # serpapi_search, google_search_agent, cost_estimation (separate module)
 │   ├── shopping_agent      # product_recommendations (separate reusable module)
 │   └── cost_agent           # cost_estimation, cost_estimation_diy (separate module)
 └── doculink_agent           # Context and knowledge retrieval workflow
@@ -204,5 +204,5 @@ result = root_agent.run(inputs)
 ```
 
 Notes:
-- Ensure environment variables for external tools are set where applicable: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY`, `YELP_API_KEY`, `YELP_URL`.
+- Ensure environment variables for external tools are set where applicable: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY`.
 - The orchestrator does not modify sub-agent outputs; consumers should parse the returned JSON per the delegated path.

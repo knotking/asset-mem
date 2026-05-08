@@ -137,7 +137,7 @@ After the workflow completes, configure these secrets manually in **Settings →
 - `SERP_API_KEY`: API key for SERP (search) services
 - `TELEGRAM_BOT_TOKEN`: Telegram bot authentication token
 - `TELEGRAM_WEBHOOK_SECRET`: Secret for Telegram webhook verification
-- `YELP_API_KEY`: API key for Yelp integration
+- ``: API key for SerpAPI integration
 
 ### Region Selection
 
@@ -476,7 +476,7 @@ After running the `create-environment.yaml` workflow successfully, you will have
 - ✅ Firebase App Hosting backend (if successful)
 
 ### Manual Configuration Needed
-- ⚠️ Application secrets (Firebase webhook, Telegram, Yelp, etc.)
+- ⚠️ Application secrets (Firebase webhook, Telegram, SerpAPI, etc.)
 - ⚠️ Firebase App Hosting backend (if automated creation failed)
 - ⚠️ Firebase Storage (if automated initialization failed)
 

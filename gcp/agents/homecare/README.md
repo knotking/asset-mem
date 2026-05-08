@@ -48,7 +48,7 @@ Comprehensive multimodal analysis system with multiple specialized sub-agents or
 - **Triage Agent**: Multimodal data analysis using Gemini 2.5 Flash (or text-only triage when no media provided)
 - **Coverage Agent**: Retrieves warranty and insurance information from user documents
 - **DIY Agent**: Combines Google Search, YouTube videos, and product recommendations via Shopping Agent
-- **Service Agent**: Finds local service providers via SerpAPI and Yelp, provides cost estimates
+- **Service Agent**: Finds local service providers via SerpAPI and SerpAPI, provides cost estimates
 - **Shopping Agent**: Reusable product recommendations agent (used by DIY agent and can be used elsewhere)
 - **Cost Agent**: Provides structured DIY vs Service cost estimates
 
@@ -74,7 +74,7 @@ Document retrieval and knowledge base access:
 
 ### Service Provider Discovery
 - **Local Search**: Finds service providers near user location
-- **Multiple Platforms**: Searches SerpAPI and Yelp for comprehensive coverage
+- **Multiple Platforms**: Searches SerpAPI and SerpAPI for comprehensive coverage
 - **Detailed Information**: Contact info, locations, specialties, reviews, ratings
 - **Authorization Status**: Identifies authorized vs. non-authorized service centers
 
@@ -89,8 +89,6 @@ Document retrieval and knowledge base access:
 - **Category-Based**: Shopping agent adapts based on category (DIY, Professional, etc.) provided by calling agents
 - **Comprehensive Product Lists**: Essential items needed to fix specific problems
 - **Shopping Guidance**: Tips for comparing prices and return policies
-
-
 
 ## Agent Details
 
@@ -131,7 +129,7 @@ The system accepts various input types:
   },
   "serviceProviderResults": {
     "serpAPIResults": [...],
-    "yelpAPIResults": [...]
+    "googleSearchResults": [...]
   },
   "productRecommendationsResults": {
     "recommendedProducts": {
@@ -155,7 +153,6 @@ The system accepts various input types:
 ## Agent Architecture
 
 ![RAG](RAG_workflow.png)
-
 
 ### Key Features
 
@@ -341,7 +338,6 @@ make deploy
     ```
     Select the property_agent from the dropdown
 
-
 ### Example Interactions
 
 **Example 1: Vehicle Scratch Repair**
@@ -354,7 +350,6 @@ Agent Response:
 - **Service Providers**: Local auto body shops, paint specialists with ratings and contact info
 - **Products**: Touch-up paint kits, sandpaper, primer from Amazon, Home Depot, Lowe's
 
-
 **Example 2: Home Plumbing Issue**
 
 User uploads video of leaky faucet with query: "My kitchen faucet is leaking, what should I do?"
@@ -365,7 +360,6 @@ Agent Response:
 - **Service Providers**: Local plumbers, hardware store services with reviews
 - **Products**: Replacement cartridges, O-rings, tools from multiple retailers
 
-
 **Example 3: Appliance Manual Query**
 
 User uploads washing machine manual with query: "What does error code E3 mean?"
@@ -375,7 +369,6 @@ Agent Response:
 - **Research**: E3 error code meaning, troubleshooting steps, common solutions
 - **Service Providers**: Appliance repair services, manufacturer service centers
 - **Products**: Replacement parts, cleaning supplies if needed
-
 
 ## Evaluating the Agent
 
@@ -526,14 +519,12 @@ You can customize system instruction for the agent and add more tools to suit yo
 ### Customize Vertex RAG Engine
 You can read more about [official Vertex RAG Engine documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-quickstart) for more details on customizing corpora and data.
 
-
 ### Plug-in other retrieval sources
 You can also integrate your preferred retrieval sources to enhance the agent's
 capabilities. For instance, you can seamlessly replace or augment the existing
 `VertexAiRagRetrieval` tool with a tool that utilizes Vertex AI Search or any
 other retrieval mechanism. This flexibility allows you to tailor the agent to
 your specific data sources and retrieval requirements.
-
 
 ## Disclaimer
 

@@ -279,7 +279,7 @@ def test_service_agent_with_address():
     # Should have results from at least one source
     total_results = (
         len(result["serviceResults"]["localPros"]["serpAPIResults"]) +
-        len(result["serviceResults"]["localPros"]["yelpAPIResults"])
+        len(result["serviceResults"]["localPros"]["googleSearchResults"])
     )
     assert total_results > 0
 ```
@@ -288,7 +288,7 @@ def test_service_agent_with_address():
 
 ```python
 @mock.patch('service_agent.serpapi_search', return_value=[])
-@mock.patch('service_agent.yelpapi_search', return_value=[])
+@mock.patch('service_agent.serpapi_search', return_value=[])
 def test_service_agent_fallback(mock_yelp, mock_serp):
     """Test service agent fallback to Google Search"""
     input_data = {
@@ -431,13 +431,13 @@ def test_serpapi_integration():
         assert "address" in result[0] or "phone" in result[0]
 ```
 
-#### Test: Yelp API Integration
+#### Test: SerpAPI Integration
 
 ```python
 @pytest.mark.integration
 def test_yelp_integration():
-    """Test real Yelp API integration"""
-    result = yelpapi_search(
+    """Test real SerpAPI integration"""
+    result = serpapi_search(
         query="electrician",
         location="San Francisco, CA",
         radius=80467  # 50 miles
@@ -739,7 +739,7 @@ jobs:
         env:
           GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
-          YELP_API_KEY: ${{ secrets.YELP_API_KEY }}
+          : ${{ secrets. }}
       
       - name: Upload coverage
         uses: codecov/codecov-action@v2
@@ -824,7 +824,7 @@ jobs:
 
 | ID | Description | Severity | Status |
 |----|-------------|----------|--------|
-| BUG-001 | Yelp API timeout on rare searches | Low | Open |
+| BUG-001 | SerpAPI timeout on rare searches | Low | Open |
 | BUG-002 | YouTube quota exceeded handling | Medium | Fixed |
 | BUG-003 | RAG retrieval slow for large docs | Low | Open |
 

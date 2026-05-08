@@ -25,13 +25,11 @@ prs.slide_height = Inches(7.5)
 W = prs.slide_width
 H = prs.slide_height
 
-
 def set_slide_bg(slide, color=DARK_BG):
     bg = slide.background
     fill = bg.fill
     fill.solid()
     fill.fore_color.rgb = color
-
 
 def add_shape_bg(slide, left, top, width, height, color):
     shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
@@ -39,7 +37,6 @@ def add_shape_bg(slide, left, top, width, height, color):
     shape.fill.fore_color.rgb = color
     shape.line.fill.background()
     return shape
-
 
 def add_text_box(slide, left, top, width, height, text, font_size=18,
                  color=WHITE, bold=False, alignment=PP_ALIGN.LEFT, font_name="Calibri"):
@@ -54,7 +51,6 @@ def add_text_box(slide, left, top, width, height, text, font_size=18,
     p.font.name = font_name
     p.alignment = alignment
     return txBox
-
 
 def add_bullet_list(slide, left, top, width, height, items, font_size=16,
                     color=LIGHT_GRAY, bullet_color=ACCENT_BLUE):
@@ -74,7 +70,6 @@ def add_bullet_list(slide, left, top, width, height, items, font_size=16,
         p.level = 0
     return txBox
 
-
 def add_section_header(slide, title, subtitle=None):
     set_slide_bg(slide)
     # Accent line
@@ -84,7 +79,6 @@ def add_section_header(slide, title, subtitle=None):
     if subtitle:
         add_text_box(slide, Inches(0.8), Inches(4.3), Inches(11), Inches(1),
                      subtitle, font_size=20, color=MED_GRAY)
-
 
 def add_content_slide(slide, title, bullets_left, bullets_right=None):
     set_slide_bg(slide)
@@ -100,7 +94,6 @@ def add_content_slide(slide, title, bullets_left, bullets_right=None):
         add_bullet_list(slide, Inches(6.8), Inches(1.5), Inches(5.5), Inches(5.5), bullets_right)
     else:
         add_bullet_list(slide, Inches(0.8), Inches(1.5), Inches(11), Inches(5.5), bullets_left)
-
 
 # ─── SLIDE 1: Title ───
 slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank
@@ -227,7 +220,7 @@ add_content_slide(slide, "Key Features: DIY, Service Providers & Document RAG",
         "Shopping Agent — reusable across contexts (DIY, Professional, etc.)",
     ],
     [
-        "Service Discovery — SerpAPI + Yelp, authorized centers, ratings, contact info",
+        "Service Discovery — SerpAPI + SerpAPI, authorized centers, ratings, contact info",
         "Document Upload — PDFs, images, videos → auto-indexed to RAG corpus",
         "Document Q&A — ask natural language questions, get answers with citations",
         "Knowledge Base — general RAG corpus for reference materials",
@@ -254,7 +247,7 @@ agents_left = [
     ("Triage Agent", "Gemini 2.5 Flash analysis", LIGHT_BLUE),
     ("Coverage Agent", "Warranty/insurance lookup", LIGHT_BLUE),
     ("DIY Agent", "Guides + YouTube + Shopping", LIGHT_BLUE),
-    ("Service Agent", "SerpAPI + Yelp providers", LIGHT_BLUE),
+    ("Service Agent", "SerpAPI + SerpAPI providers", LIGHT_BLUE),
     ("Cost Agent", "AI cost estimation", LIGHT_BLUE),
     ("Shopping Agent", "Product recommendations", LIGHT_BLUE),
 ]
@@ -313,7 +306,7 @@ add_content_slide(slide, "Technology Stack",
         "AI / ML — Vertex AI Reasoning Engine · RAG Engine · Gemini 2.5 Flash · ADK",
         "CLOUD — Cloud Run · Cloud Functions Gen2 · Cloud Storage · Pub/Sub",
         "DATA — Firebase Auth · Firestore · Cloud Storage · Terraform · Docker",
-        "INTEGRATIONS — SerpAPI · Yelp API · YouTube API · Google Maps · Google Search",
+        "INTEGRATIONS — SerpAPI · SerpAPI · YouTube API · Google Maps · Google Search",
     ])
 
 # ─── SLIDE 10: Applications ───

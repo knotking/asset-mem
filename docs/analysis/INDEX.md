@@ -68,7 +68,7 @@ This directory contains **122KB** of comprehensive documentation covering all as
 
 ### External Integrations
 - ✅ SerpAPI: Local business search
-- ✅ Yelp API: Service provider listings
+- ✅ SerpAPI: Service provider listings
 - ✅ YouTube API: Video tutorials
 - ✅ Google Search API: General search
 - ✅ Google Maps API: Geocoding
@@ -184,7 +184,7 @@ This directory contains **122KB** of comprehensive documentation covering all as
 - [Firebase Authentication](https://firebase.google.com/docs/auth)
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)
 - [SerpAPI Documentation](https://serpapi.com/docs)
-- [Yelp Fusion API](https://www.yelp.com/developers/documentation/v3)
+- [SerpAPI Fusion API](https://www.yelp.com/developers/documentation/v3)
 - [YouTube Data API](https://developers.google.com/youtube/v3)
 
 ## Documentation Standards

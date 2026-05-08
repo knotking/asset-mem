@@ -160,7 +160,7 @@ Specialized agents for different analysis aspects:
 - Vertex AI Agent Engine
 - Firestore Vector Search
 - Cloud Functions workers
-- External APIs (Yelp, SerpAPI, YouTube)
+- External APIs (SerpAPI, SerpAPI, YouTube)
 
 ## Best Practices
 

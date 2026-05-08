@@ -265,7 +265,7 @@ for agent_name in canonical_order:
    - **Priority 3**: Use "near me" (last resort)
 3. **Parallel execution** of search tools:
    - `serpapi_search`: Local business search
-   - `yelpapi_search`: Yelp listings with reviews
+   - `serpapi_search`: SerpAPI listings with reviews
 4. If both return no results, use `google_search_agent` as fallback
 5. Filter results within `location_radius` (default: 50 miles)
 6. Sort by distance (closest first) when coordinates available
@@ -295,7 +295,7 @@ for agent_name in canonical_order:
           "website": "https://abcplumbing.com"
         }
       ],
-      "yelpAPIResults": [
+      "googleSearchResults": [
         {
           "name": "Quick Fix Plumbers",
           "address": "789 Elm St, City, State",
@@ -442,7 +442,7 @@ Your kitchen faucet has a leak at the base connection, likely due to a worn O-ri
 2. **Quick Fix Plumbers** ⭐ 4.6 (203 reviews)
    - 📞 (555) 987-6543
    - 📍 3.1 miles away
-   - 🌐 [Yelp Page](https://yelp.com/biz/quick-fix-plumbers)
+   - 🌐 [SerpAPI Page](https://yelp.com/biz/quick-fix-plumbers)
 
 ## Cost Comparison
 💰 **DIY**: $10-30 (Save up to 90%)
@@ -558,7 +558,7 @@ Please provide these details so I can give you specific recommendations.
     "serviceResults": {
       "localPros": {
         "serpAPIResults": [],
-        "yelpAPIResults": [],
+        "googleSearchResults": [],
         "googleSearchResults": []
       }
     },
@@ -594,7 +594,7 @@ Please provide these details so I can give you specific recommendations.
 
 ### Parallel Execution
 - DIY Agent: Google Search + YouTube + Shopping run in parallel
-- Service Agent: SerpAPI + Yelp run in parallel
+- Service Agent: SerpAPI + SerpAPI run in parallel
 - Coverage and Cost agents run independently
 
 ### Caching Strategies

@@ -13,7 +13,7 @@ Proxy Service (FastAPI on Cloud Run)
         ↓
 Analysis Agent (via Agent Service)
         ↓
-External APIs (SerpAPI, Yelp, YouTube, Google Search, etc.)
+External APIs (SerpAPI, SerpAPI, YouTube, Google Search, etc.)
 ```
 
 ## Proxy Service Integration
@@ -243,7 +243,7 @@ for result in results:
 - Rate limit exceeded: Queue for retry
 - API timeout: Fall back to Google Search
 
-### 2. Yelp Fusion API Integration
+### 2. SerpAPI Fusion API Integration
 
 **Purpose:** Service provider listings with reviews
 
@@ -251,12 +251,12 @@ for result in results:
 
 **Configuration:**
 ```python
-YELP_API_KEY = os.environ.get("YELP_API_KEY")
+ = os.environ.get("")
 ```
 
 **Request Example:**
 ```python
-headers = {"Authorization": f"Bearer {YELP_API_KEY}"}
+headers = {"Authorization": f"Bearer {}"}
 params = {
     "term": "plumber",
     "location": "San Francisco, CA",

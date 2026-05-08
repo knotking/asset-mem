@@ -39,9 +39,9 @@ Six specialized prompt templates:
 ### 3. Service Provider Pricing Integration
 **File**: `service_pricing_extractor.py` (358 lines)
 
-- **Multi-Source Extraction**: Parses pricing from SerpAPI and Yelp results
+- **Multi-Source Extraction**: Parses pricing from SerpAPI and Google Search results
 - **Pattern Recognition**: Multiple regex patterns for various price formats
-- **Yelp Price Levels**: Maps $, $$, $$$, $$$$ to cost ranges
+- **Provider Price Signals**: Maps $, $$, $$$, $$$$ to cost ranges
 - **Data Combination**: Merges pricing from multiple sources with confidence scoring
 - **AI Calibration**: Adjusts AI estimates using real local market data
 
@@ -170,7 +170,7 @@ Complete documentation including:
 
 ### ✅ Service Provider Calibration
 - Extracts pricing from SerpAPI results
-- Parses Yelp price levels and descriptions
+- Parses provider price signals and descriptions
 - Combines multiple sources
 - Weights AI estimate with real market data
 - Increases confidence when calibrated

@@ -21,9 +21,9 @@ Before using this action, ensure you have:
 6.  **Pub/Sub Topics**: Ensure the `user-upload-topic` exists in both your staging and production projects, with appropriate environment suffixes.
 7.  **GitHub Secrets**: The following secrets must be configured in your GitHub repository:
     - `STAGING_SERP_API_KEY`: SerpAPI key for the staging environment.
-    - `STAGING_YELP_API_KEY`: Yelp API key for the staging environment.
+    - `STAGING_`: SerpAPI key for the staging environment.
     - `PROD_SERP_API_KEY`: SerpAPI key for the production environment.
-    - `PROD_YELP_API_KEY`: Yelp API key for the production environment.
+    - `PROD_`: SerpAPI key for the production environment.
 
 ## Environment Variables
 
@@ -39,8 +39,8 @@ The following environment variables are set for the deployment script, dynamical
 - `KNOWLEDGE_BASE_RAG_CORPUS`: The full path to the Vertex AI RAG Corpus for the knowledge base.
 - `USER_UPLOAD_TOPIC`: The Pub/Sub topic for user uploads.
 - `SERP_API_KEY`: (From GitHub Secret) SerpAPI key.
-- `YELP_API_KEY`: (From GitHub Secret) Yelp API key.
-- `YELP_URL`: The Yelp API URL.
+- ``: (From GitHub Secret) SerpAPI key.
+- ``: The SerpAPI URL.
 
 ## Usage
 

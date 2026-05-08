@@ -134,7 +134,7 @@ def checkpoint_analysis_agent_instructions() -> str:
             "serviceResults": {
               "localPros": {
                 "serpAPIResults": [{"name": "Business", "contact_info": "phone", "location": "address", "rating": "4.5"}],
-                "yelpAPIResults": [{"name": "Business", "contact_info": "phone", "location": "address", "rating": "4.5"}],
+                "googleSearchResults": [{"name": "Business", "contact_info": "phone", "location": "address", "rating": "4.5"}],
                 "googleSearchResults": []
               }
             },

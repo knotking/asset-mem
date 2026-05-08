@@ -83,8 +83,7 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     };
 
     const primaryLink = normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined;
-    const isYelp = !!primaryLink && primaryLink.includes('yelp.com');
-    const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
+    const primaryLinkLabel = 'Website';
 
     const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
     const isDirectionsLinkValid = typeof provider.directions === 'string' && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
@@ -339,6 +338,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
     };
 
     const allProvidersRaw = [
+        // Keep legacy Yelp fallback for older stored responses.
         ...getProvidersArray(service?.localPros?.yelpAPIResults),
         ...getProvidersArray(service?.localPros?.serpAPIResults),
         ...getProvidersArray(service?.localPros?.googleSearchResults),
@@ -387,7 +387,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             serviceKeys: service ? Object.keys(service) : [],
             localProsExists: !!service?.localPros,
             localProsKeys: service?.localPros ? Object.keys(service.localPros) : [],
-            yelpAPIResults: service?.localPros?.yelpAPIResults ? (Array.isArray(service.localPros.yelpAPIResults) ? service.localPros.yelpAPIResults.length : typeof service.localPros.yelpAPIResults) : 'missing',
             serpAPIResults: service?.localPros?.serpAPIResults ? (Array.isArray(service.localPros.serpAPIResults) ? service.localPros.serpAPIResults.length : typeof service.localPros.serpAPIResults) : 'missing',
             firstProvider: allProvidersRaw.length > 0 ? allProvidersRaw[0] : null,
             fullServiceData: service
@@ -1545,7 +1544,6 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                         hasCostEstimates: !!serviceData.costEstimates,
                         hasLocalPros: !!serviceData.localPros,
                         localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
-                        yelpCount: Array.isArray(serviceData.localPros?.yelpAPIResults) ? serviceData.localPros.yelpAPIResults.length : 'not array',
                         serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
                     } : null
                 });

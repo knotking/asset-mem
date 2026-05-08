@@ -199,7 +199,7 @@ Complete testing guide covering:
        │ Coordinates + Radius
        ▼
 ┌─────────────────┐
-│ SerpAPI / Yelp  │
+│ SerpAPI / SerpAPI  │
 │ (with radius)   │
 └─────────────────┘
 ```

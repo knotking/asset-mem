@@ -25,7 +25,6 @@ Configure these under: **Settings → Secrets and variables → Actions → Secr
 | `TELEGRAM_WEBHOOK_SECRET` | Secret for Telegram webhook validation | Homecare Agent Proxy |
 | `FIREBASE_WEBHOOK_SECRET` | Secret for Firebase webhook validation | Homecare Agent Proxy |
 | `SERP_API_KEY` | SerpAPI key for search functionality | Homecare Agent Engine |
-| `YELP_API_KEY` | Yelp API key for business search | Homecare Agent Engine |
 
 ## GitHub Variables (Repository Level)
 
@@ -36,7 +35,6 @@ These variables are shared across all environments:
 | Variable Name | Value | Description |
 |--------------|-------|-------------|
 | `PYTHON_VERSION` | `3.12` | Python version for deployments |
-| `YELP_URL` | `https://api.yelp.com/v3/businesses/search` | Yelp API endpoint |
 
 ## Environment-Specific Variables
 
@@ -123,7 +121,7 @@ steps:
 
 - [ ] Create `staging` and `prod` environments in GitHub
 - [ ] Add all secrets to GitHub repository (repository level)
-- [ ] Add repository-level variables (PYTHON_VERSION, YELP_URL)
+- [ ] Add repository-level variables (PYTHON_VERSION)
 - [ ] Add environment-specific variables to both staging and prod environments (including GCP_REGION, WORKLOAD_IDENTITY_PROVIDER, etc.)
 - [ ] Update production placeholder values (marked with `new`)
 - [ ] Update workflow files to reference variables without STAGING/PROD prefixes
