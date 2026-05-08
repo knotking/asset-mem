@@ -52,13 +52,13 @@ const LANDING_COLORS = {
 
 const features = [
   {
-    title: 'Instant Diagnostics',
-    desc: 'AI-powered analysis that integrates with your property history and documents for contextual insights.',
+    title: 'Checkpoint Timeline',
+    desc: 'Capture recurring walkthroughs, compare before/after states, and maintain a visual history for every area.',
     icon: Zap,
   },
   {
     title: 'Property Checkpoints',
-    desc: 'Visual timeline with condition tracking that connects to diagnostics and service recommendations across the platform.',
+    desc: 'Condition scoring and trend tracking that help you prioritize repairs and preventive tasks.',
     icon: ImageIcon,
   },
   {
@@ -67,18 +67,18 @@ const features = [
     icon: FileText,
   },
   {
-    title: 'Multimodal Analysis',
-    desc: 'Unified AI analysis of photos, videos, and documents that enriches your entire platform experience.',
+    title: 'Photo and Video Comparisons',
+    desc: 'Review changes across checkpoints with visual diffs, similarity scoring, and contextual notes.',
     icon: ImageIcon,
   },
   {
     title: 'Service Marketplace',
-    desc: 'Seamlessly discover and connect with local providers based on your property diagnostics and needs.',
+    desc: 'Discover and connect with local providers based on checkpoint findings and maintenance priorities.',
     icon: Settings,
   },
   {
-    title: 'Integrated Cost Analysis',
-    desc: 'Platform intelligence that combines diagnostics, coverage, and market data for accurate cost estimates.',
+    title: 'Maintenance Planning',
+    desc: 'Turn checkpoint trends into repair priorities, budget forecasts, and scheduling plans.',
     icon: DollarSign,
   },
 ];
@@ -92,7 +92,7 @@ const steps = [
   {
     step: 2,
     title: 'Platform Intelligence',
-    desc: 'AI agents analyze across all your data—documents, checkpoints, and diagnostics work together seamlessly.',
+    desc: 'Platform intelligence analyzes checkpoint history and documents to highlight maintenance priorities.',
   },
   {
     step: 3,
@@ -246,8 +246,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
-              A comprehensive platform that integrates AI diagnostics, property tracking, document
-              intelligence, and service discovery—all working together seamlessly to simplify your
+              A comprehensive platform centered on property checkpoints, condition timelines,
+              document intelligence, and service planning, all working together to simplify your
               home care journey.
             </Text>
 
@@ -337,25 +337,25 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 16,
               }}>
-              From emergency repairs to preventive maintenance, see how our platform helps
-              homeowners every day
+              From routine walkthroughs to seasonal planning, see how checkpoint-driven workflows
+              help homeowners stay ahead
             </Text>
           </View>
 
           <View style={{ gap: 24 }}>
             {[
               {
-                title: 'Emergency Leak Repair',
-                scenario: 'Water leak discovered under kitchen sink at 10 PM',
+                title: 'Seasonal Property Walkthrough',
+                scenario: 'Capture spring and fall walkthroughs for each area',
                 icon: Zap,
                 color: LANDING_COLORS.accent,
                 steps: [
-                  'Upload video → AI diagnoses loose P-trap',
-                  'Get DIY guide + parts list ($25-50)',
-                  'Find 3 emergency plumbers nearby',
-                  'Compare: DIY $35 vs Pro $280-420',
+                  'Create checkpoints for roof, exterior, basement, and HVAC',
+                  'Track condition shifts by area across each season',
+                  'Highlight recurring moisture and weather-related wear',
+                  'Build a clear maintenance backlog before issues escalate',
                 ],
-                result: 'Fixed in 30 min, saved $350',
+                result: 'Built a proactive plan that prevented in-season surprises',
               },
               {
                 title: 'Property Condition Tracking',
@@ -397,17 +397,17 @@ export default function LandingPage() {
                 result: 'Negotiated 20% discount',
               },
               {
-                title: 'HVAC System Diagnosis',
-                scenario: 'AC not cooling during heatwave',
+                title: 'Renovation Progress Tracking',
+                scenario: 'Track kitchen and bath updates across contractor visits',
                 icon: Settings,
                 color: LANDING_COLORS.accent,
                 steps: [
-                  'Upload photos of AC + thermostat',
-                  'AI diagnoses refrigerant leak',
-                  'Check warranty: 2 years remaining',
-                  'Get 5 authorized technicians',
+                  'Capture before/after checkpoints for each milestone',
+                  'Compare workmanship and finish quality over time',
+                  'Attach invoices, warranties, and notes to each checkpoint',
+                  'Share one visual timeline with your contractor and family',
                 ],
-                result: 'Warranty covered $800 repair',
+                result: 'Kept everyone aligned with one source of truth',
               },
               {
                 title: 'Preventive Maintenance',
@@ -588,8 +588,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              A unified platform where AI diagnostics, property tracking, document management, and
-              service discovery work together seamlessly
+              A unified platform where checkpoints, timeline insights, document management, and
+              service planning work together seamlessly
             </Text>
           </View>
 
@@ -666,7 +666,7 @@ export default function LandingPage() {
                 marginBottom: 36,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                AI-POWERED INTELLIGENCE
+                CHECKPOINT-POWERED INTELLIGENCE
               </Text>
             </View>
             <Text
@@ -690,42 +690,43 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Our multi-agent AI system powers the entire platform, with specialized agents that
-              share data and insights across all services
+              Our multi-agent system is anchored on checkpoint intelligence: retrieve relevant
+              property history first, then orchestrate coverage, DIY, service, and cost planning
+              from the same checkpoint context
             </Text>
           </View>
 
           <View style={{ gap: 20 }}>
             {[
               {
-                title: 'Triage Agent',
-                desc: 'Analyzes your issue to understand the problem, severity, and urgency. Identifies affected areas and determines the best course of action.',
+                title: 'Checkpoint Agent',
+                desc: 'Retrieves relevant checkpoints using semantic vector search, then orchestrates coverage, DIY, service, and cost planning from the same checkpoint context.',
                 icon: FileText,
               },
               {
                 title: 'Coverage Agent',
-                desc: 'Searches your warranties, insurance policies, and service contracts to determine if your issue is covered.',
+                desc: 'Checks warranties, insurance policies, and service contracts using checkpoint context and supporting documents.',
                 icon: CheckCircle,
               },
               {
                 title: 'DIY Agent',
-                desc: 'Provides step-by-step instructions for fixing issues yourself. Includes tools, materials, safety precautions, and time estimates.',
+                desc: 'Provides step-by-step repair guidance aligned to checkpoint findings, required tools, safety notes, and effort estimates.',
                 icon: Settings,
               },
               {
                 title: 'Service Agent',
-                desc: 'Finds qualified local service providers for your issue using location-based search with ratings and reviews.',
+                desc: 'Finds local providers based on checkpoint location and condition details, with relevance for the required work.',
                 icon: TrendingUp,
               },
               {
                 title: 'Cost Agent',
-                desc: 'Provides transparent cost estimates comparing DIY vs. professional service options with material costs and labor estimates.',
+                desc: 'Estimates costs from checkpoint evidence, comparing DIY and professional options with clearer budget planning.',
                 icon: DollarSign,
               },
               {
                 title: 'Platform Orchestration',
-                desc: 'All agents share insights across the platform, connecting your diagnostics, documents, checkpoints, and services into one unified intelligence system.',
-                icon: Zap,
+                desc: 'Checkpoint retrieval and checkpoint analysis coordinate downstream agents so recommendations stay grounded in timeline data.',
+                icon: ImageIcon,
               },
             ].map((agent, i) => (
               <View
@@ -829,7 +830,7 @@ export default function LandingPage() {
                 },
                 {
                   title: 'Timeline (Before/After)',
-                  desc: 'Visual timeline showing property condition changes over time with before/after photo comparisons and condition tracking.',
+                  desc: 'Visual timeline showing checkpoint changes over time with before/after comparisons and condition context.',
                   icon: Clock,
                 },
                 {
