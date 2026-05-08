@@ -29,7 +29,6 @@ from aiogram import F
 from fastapi import FastAPI, Request
 import telegramify_markdown
 from schemas.agent import AgentRequest
-from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
 
 # Import Vertex AI client logic
 from services.vertex_service import (
@@ -709,7 +708,6 @@ async def handle_attachment(message: aio_types.Message):
                     session_id=None, # Session ID will be handled by vertex_client
                     context_doc_uris=None,
                     property_address=None,
-                    analysis_optional_agents=list(ANALYSIS_OPTIONAL_AGENT_ORDER),
                 )
             async for answer_part in stream_agent_answers(agent_request):
                 # Extract markdown from dual-format response if available, otherwise convert JSON to markdown
@@ -740,7 +738,6 @@ async def handle_text_message(message: aio_types.Message):
         context_doc_uris=None,
         diagnosis_uris=None,
         property_address=None,
-        analysis_optional_agents=list(ANALYSIS_OPTIONAL_AGENT_ORDER),
     )
     async for answer_part in stream_agent_answers(agent_request):
         # Extract markdown from dual-format response if available, otherwise convert JSON to markdown

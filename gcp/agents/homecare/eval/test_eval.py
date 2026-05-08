@@ -27,18 +27,6 @@ async def test_eval_full_conversation():
 
 
 @pytest.mark.asyncio
-async def test_eval_analysis_agent():
-    """Test the analysis agent's comprehensive analysis capabilities."""
-    await AgentEvaluator.evaluate(
-        agent_module="property_agent.sub_agents.analysis_agent",
-        eval_dataset_file_path_or_dir=str(
-            pathlib.Path(__file__).parent / "data/conversation.test.json"
-        ),
-        num_runs=1,
-    )
-
-
-@pytest.mark.asyncio
 async def test_eval_cost_estimation():
     """Test the cost estimation agent's ability to provide accurate cost estimates."""
     await AgentEvaluator.evaluate(

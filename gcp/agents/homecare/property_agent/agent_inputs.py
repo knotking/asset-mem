@@ -1,11 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict
 
-AnalysisOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
-PrimaryAgent = Literal["analysis", "checkpoint", "docs"]
+PrimaryAgent = Literal["checkpoint", "docs"]
 
-DEFAULT_ANALYSIS_OPTIONAL_AGENTS: List[AnalysisOptionalAgent] = ["coverage", "diy", "service", "cost"]
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
 class DiagnosisInput(BaseModel):
@@ -19,16 +17,9 @@ class DiagnosisInput(BaseModel):
         default=None,
         description=(
             "Primary agent selection. When provided, this takes precedence in routing decisions. "
-            "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries, "
+            "Allowed values: 'checkpoint' routes to doculink_agent for checkpoint queries, "
             "'docs' routes to doculink_agent for user document queries. "
             "If not provided, routing falls back to legacy logic based on checkpoint_ids and diagnosis_uris."
-        ),
-    )
-    analysis_optional_agents: Optional[List[AnalysisOptionalAgent]] = Field(
-        default=None,
-        description=(
-            "Optional list of analysis sub-agents to run after triage. "
-            "Allowed values: coverage, diy, service, cost. Defaults to all when missing or empty."
         ),
     )
     checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(

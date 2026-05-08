@@ -10,7 +10,6 @@ from google.cloud import firestore
 from google.cloud.firestore_v1 import FieldFilter
 
 from schemas.agent import AgentRequest
-from utils.optional_agents import ANALYSIS_OPTIONAL_AGENT_ORDER
 from services.token_usage_service import (
     accumulate_usage_from_stream_event,
     persist_user_token_usage,
@@ -180,7 +179,6 @@ async def stream_agent_answers(
     property_address = request.property_address
     property_id = request.property_id  # Option 1: property_id from request
     primary_agent = request.primary_agent  # Primary agent selection for explicit routing
-    analysis_optional_agents = request.analysis_optional_agents or ANALYSIS_OPTIONAL_AGENT_ORDER
     checkpoint_optional_agents = request.checkpoint_optional_agents or []
     location_type = request.location_type
     location_coordinates = request.location_coordinates
@@ -282,9 +280,6 @@ async def stream_agent_answers(
     if location_radius is not None:
         payload["location_radius"] = location_radius
         logger.info(f"Including location_radius in payload: {location_radius} miles")
-
-    if analysis_optional_agents:
-        payload["analysis_optional_agents"] = analysis_optional_agents
 
     message = json.dumps(payload)
     logger.info(f"Sending message to Reasoning Engine: {message}")

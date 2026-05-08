@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from .prompts import root_agent_instructions,doculink_agent_system_instruction
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
-from .sub_agents.analysis_agent import analysis_agent
 from .sub_agents.checkpoint_agent import checkpoint_agent
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -53,7 +52,6 @@ root_agent = Agent(
     instruction=root_agent_instructions(),
     input_schema=DiagnosisInput,
     sub_agents=[
-        analysis_agent,
         doculink_agent
     ]
 )

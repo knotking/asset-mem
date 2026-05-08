@@ -448,6 +448,11 @@ export default function PropertyChatSessionPage() {
           .map((cp) => cp.id)
           .filter((id): id is string => !!id);
 
+        const normalizedPrimaryAgent =
+          primaryAgent === "docs" || primaryAgent === "checkpoint"
+            ? primaryAgent
+            : undefined;
+
         const requestBody: Record<string, any> = {
           user_id: user.uid,
           session_id: agentSessionId,
@@ -456,8 +461,7 @@ export default function PropertyChatSessionPage() {
           diagnosis_uris: diagnosisURIs,
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
-          primary_agent: primaryAgent,
-          analysis_optional_agents: selectedOptionalAgents,
+          primary_agent: normalizedPrimaryAgent,
           checkpoint_optional_agents: selectedCheckpointOptionalAgents.length > 0 ? selectedCheckpointOptionalAgents : undefined,
           checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
         };
