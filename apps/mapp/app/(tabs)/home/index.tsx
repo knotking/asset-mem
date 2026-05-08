@@ -79,8 +79,8 @@ export default function Screen() {
         <View className="mt-4 px-4">
           <Text className="text-lg font-semibold text-foreground">Property AI Agent</Text>
           <Text className="mb-4 text-muted-foreground">
-            Upload property documents and chat with AI to get insights or diagnostics of your
-            properties and assets
+            Build visual property checkpoints, compare condition over time, and chat with your
+            documents to plan maintenance with confidence
           </Text>
         </View>
         {/* Search Bar */}
