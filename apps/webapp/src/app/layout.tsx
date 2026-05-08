@@ -7,7 +7,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'HomeGeek AI',
+  title: 'AssetMem AI',
   description: 'An intelligent AI agent to care of your home',
   // Next.js App Router automatically handles icon files in the app directory
   // icon.svg, icon.png, apple-icon.png, and favicon.ico are automatically served

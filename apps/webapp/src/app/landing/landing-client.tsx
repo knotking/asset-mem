@@ -276,7 +276,7 @@ export default function LandingPageClient() {
                   className="text-6xl lg:text-8xl font-light tracking-tight leading-none"
                   style={{ color: LANDING_COLORS.foreground }}
                 >
-                  HomeGeek
+                  AssetMem
                   <br />
                   <span
                     className="font-bold"
@@ -456,7 +456,7 @@ export default function LandingPageClient() {
               className="text-5xl lg:text-6xl font-light tracking-tight"
               style={{ color: LANDING_COLORS.foreground }}
             >
-              See How HomeGeek
+              See How AssetMem
               <br />
               <span
                 className="font-bold"
@@ -1714,7 +1714,7 @@ export default function LandingPageClient() {
                 className="text-xl font-light tracking-tight"
                 style={{ color: LANDING_COLORS.foreground }}
               >
-                HomeGeek <span className="font-bold">AI</span>
+                AssetMem <span className="font-bold">AI</span>
               </Link>
               <p
                 className="text-sm"
@@ -1884,7 +1884,7 @@ export default function LandingPageClient() {
               color: LANDING_COLORS.mutedForeground,
             }}
           >
-            © {new Date().getFullYear()} HomeGeek AI. All rights reserved.
+            © {new Date().getFullYear()} AssetMem AI. All rights reserved.
           </div>
         </div>
       </footer>

@@ -52,7 +52,7 @@ export function Header() {
     <header className="sticky top-0 z-30 flex h-14 min-h-14 items-center justify-between gap-3 border-b bg-background px-3 sm:gap-4 sm:px-6">
       <div className="flex min-w-0 shrink items-center gap-2">
         <Bot className="h-7 w-7 shrink-0 text-primary" />
-        <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">HomeGeek AI</h1>
+        <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">AssetMem AI</h1>
       </div>
       <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
          {loading ? (

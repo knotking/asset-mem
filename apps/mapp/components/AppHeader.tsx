@@ -47,7 +47,7 @@ export default function AppHeader() {
       <View className="min-w-0 flex-1 flex-row items-center gap-1.5 pr-2">
         <Icon as={Home} size={22} className="shrink-0 text-foreground" />
         <Text className="text-lg font-bold text-foreground" numberOfLines={1}>
-          HomeGeek AI
+          AssetMem AI
         </Text>
       </View>
       <View className="shrink-0 flex-row items-center gap-px">

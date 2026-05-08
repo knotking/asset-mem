@@ -37,7 +37,7 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
               </svg>
             </div>
             <span className="text-2xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
-              HomeGeek <span className="font-bold">AI</span>
+              AssetMem <span className="font-bold">AI</span>
             </span>
           </Link>
 

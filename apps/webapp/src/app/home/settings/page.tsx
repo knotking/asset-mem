@@ -76,7 +76,7 @@ export default function SettingsPage() {
                   {user?.displayName || 'Property Owner'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {user?.email || 'owner@homegeek.ai'}
+                  {user?.email || 'owner@assetmem.ai'}
                 </p>
               </div>
             </div>

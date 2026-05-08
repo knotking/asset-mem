@@ -171,7 +171,7 @@ export default function LandingPage() {
                 <Icon as={Home} size={20} style={{ color: LANDING_COLORS.white }} />
               </View>
               <Text style={{ fontSize: 24, fontWeight: '300', color: LANDING_COLORS.foreground }}>
-                HomeGeek <Text style={{ fontWeight: 'bold' }}>AI</Text>
+                AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
               </Text>
             </View>
 
@@ -206,7 +206,7 @@ export default function LandingPage() {
                 lineHeight: 56,
                 paddingHorizontal: 10,
               }}>
-              HomeGeek{'\n'}
+              AssetMem{'\n'}
               <Text
                 style={{
                   fontWeight: 'bold',
@@ -323,7 +323,7 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 40,
               }}>
-              See How HomeGeek{'\n'}
+              See How AssetMem{'\n'}
               <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
                 Solves Real Problems
               </Text>
@@ -1307,7 +1307,7 @@ export default function LandingPage() {
                 <Icon as={Home} size={16} style={{ color: LANDING_COLORS.white }} />
               </View>
               <Text style={{ fontSize: 18, fontWeight: '300', color: LANDING_COLORS.foreground }}>
-                HomeGeek <Text style={{ fontWeight: 'bold' }}>AI</Text>
+                AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
               </Text>
             </View>
             <Text
@@ -1316,7 +1316,7 @@ export default function LandingPage() {
                 textAlign: 'center',
                 color: LANDING_COLORS.mutedForeground,
               }}>
-              © {new Date().getFullYear()} HomeGeek AI. All rights reserved.
+              © {new Date().getFullYear()} AssetMem AI. All rights reserved.
             </Text>
           </View>
         </View>
