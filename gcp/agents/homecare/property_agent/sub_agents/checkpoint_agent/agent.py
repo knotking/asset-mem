@@ -5,9 +5,8 @@ Retrieves checkpoint information using Firestore Vector Search for semantic quer
 Can optionally trigger comprehensive analysis with coverage, DIY, service, and cost recommendations.
 """
 
-import os
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
@@ -58,7 +57,7 @@ def ask_checkpoints_retrieval(
             return []
         
         if not property_id:
-            logger.error(f"Missing property_id - checkpoint retrieval REQUIRES property_id. Cannot proceed without it.")
+            logger.error("Missing property_id - checkpoint retrieval REQUIRES property_id. Cannot proceed without it.")
             return []
         
         logger.info(f"Using user_id={user_id}, property_id={property_id} for checkpoint retrieval")
@@ -104,7 +103,7 @@ def ask_checkpoints_retrieval(
                 user_id=user_id,
                 property_id=property_id,
                 query_text=user_query,
-                limit=10,
+                limit=5,
                 location=location
             )
             

@@ -45,7 +45,7 @@ def before_tool_callback(tool_context: ToolContext, **kwargs):
 
 coverage_parallel_agent = Agent(
     name="checkpoint_coverage_parallel_agent",
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     description="Runs coverage analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint coverage branch.
@@ -67,7 +67,7 @@ If "coverage" is present:
 
 diy_parallel_agent = Agent(
     name="checkpoint_diy_parallel_agent",
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     description="Runs DIY analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint DIY branch.
@@ -89,7 +89,7 @@ If "diy" is present:
 
 service_parallel_agent = Agent(
     name="checkpoint_service_parallel_agent",
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     description="Runs service analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint service branch.
@@ -111,7 +111,7 @@ If "service" is present:
 
 cost_parallel_agent = Agent(
     name="checkpoint_cost_parallel_agent",
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     description="Runs cost analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint cost branch.
@@ -228,7 +228,6 @@ serviceResults (object):
 {
   "localPros": {
     "serpAPIResults": <array>,
-    "yelpAPIResults": <array>,
     "googleSearchResults": <array>
   }
 }
@@ -277,19 +276,8 @@ checkpoint_analysis_workflow = SequentialAgent(
     sub_agents=[parallel_optional_agents, synthesis_agent],
 )
 
-checkpoint_analysis_agent = Agent(
-    name="checkpoint_analysis_agent",
-    model="gemini-2.5-flash",
-    description="Checkpoint analysis tool entrypoint that delegates to the parallel workflow.",
-    instruction="""
-You are the checkpoint analysis tool entrypoint.
-
-You must delegate to sub-agent `checkpoint_analysis_workflow` and return that response exactly.
-Do not add preamble or post-processing.
-""",
-    input_schema=CheckpointAnalysisInput,
-    sub_agents=[checkpoint_analysis_workflow],
-    disallow_transfer_to_parent=True,
-)
+# Use the workflow directly as the exported entrypoint to remove one extra
+# LLM delegation hop from the checkpoint-analysis path.
+checkpoint_analysis_agent = checkpoint_analysis_workflow
 
 __all__ = ["checkpoint_analysis_agent", "CheckpointAnalysisInput"]
