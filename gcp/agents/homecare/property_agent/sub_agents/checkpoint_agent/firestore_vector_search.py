@@ -86,7 +86,7 @@ def search_checkpoints_by_vector(
     user_id: str,
     property_id: str,
     query_text: str,
-    limit: int = 10,
+    limit: int = 5,
     location: Optional[str] = None,
     distance_measure: str = "COSINE"
 ) -> List[Dict[str, Any]]:
