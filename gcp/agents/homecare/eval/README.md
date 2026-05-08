@@ -166,7 +166,7 @@ uv run pytest eval/test_eval.py -v
 ### Environment Setup
 - Google Cloud Project configured
 - Vertex AI RAG Engine access
-- External API keys (SerpAPI, Yelp, retailer APIs)
+- External API keys (SerpAPI, SerpAPI, retailer APIs)
 - Test GCS bucket with sample images/videos
 
 ### Sample Data

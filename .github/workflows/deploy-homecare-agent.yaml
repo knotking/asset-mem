@@ -93,10 +93,6 @@ jobs:
             missing_vars+=("USER_UPLOAD_TOPIC")
           fi
 
-          if [ -z "${{ vars.YELP_URL }}" ]; then
-            missing_vars+=("YELP_URL")
-          fi
-
           if [ -z "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}" ]; then
             missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
           fi
@@ -120,10 +116,6 @@ jobs:
 
           if [ -z "${{ secrets.SERP_API_KEY }}" ]; then
             missing_secrets+=("SERP_API_KEY")
-          fi
-
-          if [ -z "${{ secrets.YELP_API_KEY }}" ]; then
-            missing_secrets+=("YELP_API_KEY")
           fi
 
           if [ ${#missing_secrets[@]} -ne 0 ]; then
@@ -163,17 +155,13 @@ jobs:
           echo "USER_UPLOAD_RAG_CORPUS=${{ vars.USER_UPLOAD_RAG_CORPUS }}" >> $GITHUB_ENV
           echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ vars.KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
-          echo "YELP_URL=${{ vars.YELP_URL }}" >> $GITHUB_ENV
           echo "SERP_API_KEY=${{ secrets.SERP_API_KEY }}" >> $GITHUB_ENV
-          echo "YELP_API_KEY=${{ secrets.YELP_API_KEY }}" >> $GITHUB_ENV
 
       - name: Verify secrets are set
         run: |
           echo "SERP_API_KEY starts with: ${SERP_API_KEY:0:3}..."
-          echo "YELP_API_KEY starts with: ${YELP_API_KEY:0:3}..."
         env:
           SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
-          YELP_API_KEY: ${{ secrets.YELP_API_KEY }}
 
       - name: Google Auth
         id: auth

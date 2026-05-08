@@ -14,7 +14,7 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 - `analysis_agent` — multimodal triage (Gemini 2.5 Flash) over images/videos/docs
 - `coverage_agent` — warranty/insurance lookup over user docs
 - `diy_agent` — Google Search + YouTube + Shopping (delegates to `shopping_agent`)
-- `service_agent` — local providers via SerpAPI / Yelp
+- `service_agent` — local providers via SerpAPI
 - `shopping_agent` — reusable product recommender, called by other agents with a `category`
 - `cost_agent` — DIY vs service cost estimates
 - `user_docs_agent` — RAG over user-uploaded docs
@@ -34,7 +34,7 @@ Edit `.env` and set:
 - `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`)
 - `RAG_CORPUS=projects/<num>/locations/us-central1/ragCorpora/<id>` — required for the user_docs / knowledge_base agents
 - `AGENT_ENGINE_ID=...` — auto-filled after first `make deploy`
-- API keys used by sub-agents (SerpAPI, Yelp, YouTube, etc. — see `.env.example`)
+- API keys used by sub-agents (SerpAPI, YouTube, etc. — see `.env.example`)
 
 You also need ADC: `gcloud auth application-default login`.
 

@@ -91,7 +91,7 @@ export type StructuredResponseData = {
     serviceResults?: {
       providers?: any;
       localPros?: {
-        yelpAPIResults?: any;
+        googleSearchResults?: any;
         serpAPIResults?: any;
       };
       localProviders?: any;
@@ -162,7 +162,7 @@ When the assistant returns structured data (JSON format), the component renders 
      - Business name and authorization badges
      - Star ratings and review counts
      - Contact information (phone, address)
-     - Yelp integration for reviews
+     - SerpAPI/Google Search integration for reviews
      - Google Maps directions
      - Specialties and additional info
 
@@ -413,7 +413,7 @@ The `ChatMessage` component includes sophisticated content parsing logic:
 
 2. **Structured Data Keys**:
    - Supports both nested (`analysis.triageResult`) and flat (`triageResult`) structures
-   - Handles various provider array locations (providers, localPros, yelpAPIResults, etc.)
+   - Handles various provider array locations (providers, localPros, googleSearchResults, etc.)
 
 3. **Provider Normalization**:
    - Maps multiple field name variations (name/business_name/businessName/title/company)
@@ -524,7 +524,7 @@ Assistant messages can include structured data for rich UI rendering:
     },
     "serviceResults": {
       "localPros": {
-        "yelpAPIResults": [
+        "googleSearchResults": [
           {
             "name": "ABC Plumbing",
             "ratings": "4.8/5",
@@ -569,6 +569,6 @@ The component automatically detects this format and renders the structured UI.
 - The UI is designed to be similar to the webapp implementation but optimized for mobile
 - Image dimensions are stored in Firestore for instant aspect ratio calculations
 - YouTube videos are embedded inline using the video ID extracted from URLs
-- Service provider data supports multiple API sources (Yelp, SERP, custom providers)
+- Service provider data supports multiple API sources (SerpAPI/Google Search, SERP, custom providers)
 - The component gracefully handles missing or incomplete structured data sections
 - Both nested (`analysis.*`) and flat (top-level) structured data formats are supported

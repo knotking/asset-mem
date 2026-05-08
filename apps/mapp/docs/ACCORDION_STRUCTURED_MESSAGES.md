@@ -94,7 +94,7 @@ export type StructuredResponseData = {
       costEstimates?: string;
       localPros?: {
         serpAPIResults?: ServiceProvider[];
-        yelpAPIResults?: ServiceProvider[];
+        googleSearchResults?: ServiceProvider[];
       };
     };
     costEstimationResults?: {
@@ -136,7 +136,7 @@ export type StructuredResponseData = {
   };
   serviceProviderResults?: {
     serpAPIResults?: ServiceProvider[];
-    yelpAPIResults?: ServiceProvider[];
+    googleSearchResults?: ServiceProvider[];
   };
 };
 ```
@@ -201,7 +201,7 @@ Displays parsed JSON data in accordion sections with intelligent content detecti
 4. **Service Recommendations** ([ChatMessage.tsx:695-718](apps/mapp/components/ChatMessage.tsx#L695-L718))
    - Icon: Users (Indigo color)
    - Lists local service providers from multiple sources:
-     - `localPros.yelpAPIResults`
+     - `localPros.googleSearchResults`
      - `localPros.serpAPIResults`
      - `providers`, `localProviders`, `local_pros`, `results`, `nearbyProviders`
    - Normalizes provider data from various field name variations
@@ -234,13 +234,13 @@ Displays individual service providers with comprehensive information:
 - **Location**: Map icon + address (max 1 line)
 - **Specialties**: Services offered
 - **Action Buttons**:
-  - Primary link (Website or "View on Yelp")
+  - Primary link (Website or "View on SerpAPI/Google Search")
   - Directions (opens native maps app)
 
 **Features:**
 - URL normalization with protocol detection
 - Link validation before displaying buttons
-- Special handling for Yelp URLs
+- Special handling for SerpAPI/Google Search URLs
 - Touch-friendly button layout
 - Proper text truncation for long content
 - Icon-based visual hierarchy
@@ -406,7 +406,7 @@ Here's my analysis of your water heater issue...
     },
     "serviceResults": {
       "localPros": {
-        "yelpAPIResults": [
+        "googleSearchResults": [
           {
             "name": "ABC Plumbing",
             "contact_info": "(555) 123-4567",
@@ -661,7 +661,7 @@ The `getProvidersArray` function searches for provider arrays in:
 8. **Service Providers**: Multiple providers from different sources
 9. **Cost Estimates**: DIY vs Service comparison
 10. **Authorization Badge**: Provider with `authorized: "True"`
-11. **Links**: Tap website, Yelp, and directions buttons
+11. **Links**: Tap website, SerpAPI/Google Search, and directions buttons
 12. **Accordion**: Expand/collapse each section
 13. **Long Content**: Test text truncation in provider cards
 14. **Long Press**: Test copy and share actions
@@ -676,7 +676,7 @@ Create a test message in Firestore:
 ```json
 {
   "role": "assistant",
-  "content": "```markdown\\nHere's my complete analysis...\\n```\\n\\n```json\\n{\\n  \\\"analysis\\\": {\\n    \\\"title\\\": \\\"Water Heater Repair Analysis\\\",\\n    \\\"triageResult\\\": {\\n      \\\"diagnosis\\\": \\\"Your water heater has a **faulty heating element**. This is a common issue...\\\"\\n    },\\n    \\\"coverageResult\\\": {\\n      \\\"warrantyInfo\\\": \\\"Your appliance warranty covers parts for up to 5 years...\\\",\\n      \\\"insuranceInfo\\\": \\\"Standard homeowner's insurance typically covers sudden failures...\\\"\\n    },\\n    \\\"diyResults\\\": {\\n      \\\"diySteps\\\": {\\n        \\\"summary\\\": \\\"This repair requires **moderate skill**...\\\",\\n        \\\"steps\\\": [\\n          { \\\"stepNumber\\\": 1, \\\"description\\\": \\\"Turn off power at breaker\\\" },\\n          { \\\"stepNumber\\\": 2, \\\"description\\\": \\\"Shut off water supply\\\" }\\n        ]\\n      },\\n      \\\"youtubeSearch\\\": {\\n        \\\"videos\\\": [{\\n          \\\"title\\\": \\\"How to Replace Water Heater Element\\\",\\n          \\\"url\\\": \\\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\\\",\\n          \\\"description\\\": \\\"Step-by-step tutorial\\\"\\n        }]\\n      },\\n      \\\"recommendedProducts\\\": {\\n        \\\"products\\\": [{\\n          \\\"product_name\\\": \\\"Water Heater Element\\\",\\n          \\\"vendor\\\": \\\"Home Depot\\\",\\n          \\\"price\\\": \\\"$24.99\\\",\\n          \\\"rating\\\": \\\"4.5\\\",\\n          \\\"reviews\\\": \\\"1234\\\",\\n          \\\"url\\\": \\\"https://homedepot.com/...\\\",\\n          \\\"image_url\\\": \\\"https://picsum.photos/200\\\"\\n        }]\\n      }\\n    },\\n    \\\"serviceResults\\\": {\\n      \\\"localPros\\\": {\\n        \\\"yelpAPIResults\\\": [{\\n          \\\"name\\\": \\\"Quick Fix Plumbing\\\",\\n          \\\"contact_info\\\": \\\"(555) 123-4567\\\",\\n          \\\"location\\\": \\\"123 Main St, San Francisco, CA\\\",\\n          \\\"reviews\\\": \\\"125\\\",\\n          \\\"ratings\\\": \\\"4.8/5\\\",\\n          \\\"directions\\\": \\\"https://maps.google.com/?q=123+Main+St\\\",\\n          \\\"website\\\": \\\"https://quickfixplumbing.com\\\",\\n          \\\"authorized\\\": \\\"True\\\",\\n          \\\"additional_information\\\": \\\"24/7 emergency service\\\",\\n          \\\"specialties\\\": \\\"Water heaters, pipe repair\\\",\\n          \\\"link\\\": \\\"https://yelp.com/biz/quick-fix\\\"\\n        }]\\n      }\\n    },\\n    \\\"costEstimationResults\\\": {\\n      \\\"costEstimates\\\": {\\n        \\\"repair_type\\\": \\\"Heating element replacement\\\",\\n        \\\"DIY\\\": {\\n          \\\"cost_range\\\": \\\"$25-$50\\\",\\n          \\\"savings\\\": \\\"Save $150-$250\\\",\\n          \\\"complexity\\\": \\\"Moderate\\\",\\n          \\\"includes\\\": [\\\"Element\\\", \\\"Gasket\\\", \\\"Tools\\\"]\\n        },\\n        \\\"Service\\\": {\\n          \\\"cost_range\\\": \\\"$175-$300\\\",\\n          \\\"benefits\\\": \\\"Professional warranty\\\",\\n          \\\"complexity\\\": \\\"Simple\\\",\\n          \\\"includes\\\": [\\\"Labor\\\", \\\"Parts\\\", \\\"Warranty\\\"]\\n        },\\n        \\\"comparison\\\": {\\n          \\\"diy_savings\\\": \\\"60-70% savings\\\",\\n          \\\"professional_benefits\\\": \\\"Warranty and expertise\\\",\\n          \\\"considerations\\\": \\\"DIY takes 2-3 hours\\\"\\n        }\\n      }\\n    }\\n  }\\n}\\n```",
+  "content": "```markdown\\nHere's my complete analysis...\\n```\\n\\n```json\\n{\\n  \\\"analysis\\\": {\\n    \\\"title\\\": \\\"Water Heater Repair Analysis\\\",\\n    \\\"triageResult\\\": {\\n      \\\"diagnosis\\\": \\\"Your water heater has a **faulty heating element**. This is a common issue...\\\"\\n    },\\n    \\\"coverageResult\\\": {\\n      \\\"warrantyInfo\\\": \\\"Your appliance warranty covers parts for up to 5 years...\\\",\\n      \\\"insuranceInfo\\\": \\\"Standard homeowner's insurance typically covers sudden failures...\\\"\\n    },\\n    \\\"diyResults\\\": {\\n      \\\"diySteps\\\": {\\n        \\\"summary\\\": \\\"This repair requires **moderate skill**...\\\",\\n        \\\"steps\\\": [\\n          { \\\"stepNumber\\\": 1, \\\"description\\\": \\\"Turn off power at breaker\\\" },\\n          { \\\"stepNumber\\\": 2, \\\"description\\\": \\\"Shut off water supply\\\" }\\n        ]\\n      },\\n      \\\"youtubeSearch\\\": {\\n        \\\"videos\\\": [{\\n          \\\"title\\\": \\\"How to Replace Water Heater Element\\\",\\n          \\\"url\\\": \\\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\\\",\\n          \\\"description\\\": \\\"Step-by-step tutorial\\\"\\n        }]\\n      },\\n      \\\"recommendedProducts\\\": {\\n        \\\"products\\\": [{\\n          \\\"product_name\\\": \\\"Water Heater Element\\\",\\n          \\\"vendor\\\": \\\"Home Depot\\\",\\n          \\\"price\\\": \\\"$24.99\\\",\\n          \\\"rating\\\": \\\"4.5\\\",\\n          \\\"reviews\\\": \\\"1234\\\",\\n          \\\"url\\\": \\\"https://homedepot.com/...\\\",\\n          \\\"image_url\\\": \\\"https://picsum.photos/200\\\"\\n        }]\\n      }\\n    },\\n    \\\"serviceResults\\\": {\\n      \\\"localPros\\\": {\\n        \\\"googleSearchResults\\\": [{\\n          \\\"name\\\": \\\"Quick Fix Plumbing\\\",\\n          \\\"contact_info\\\": \\\"(555) 123-4567\\\",\\n          \\\"location\\\": \\\"123 Main St, San Francisco, CA\\\",\\n          \\\"reviews\\\": \\\"125\\\",\\n          \\\"ratings\\\": \\\"4.8/5\\\",\\n          \\\"directions\\\": \\\"https://maps.google.com/?q=123+Main+St\\\",\\n          \\\"website\\\": \\\"https://quickfixplumbing.com\\\",\\n          \\\"authorized\\\": \\\"True\\\",\\n          \\\"additional_information\\\": \\\"24/7 emergency service\\\",\\n          \\\"specialties\\\": \\\"Water heaters, pipe repair\\\",\\n          \\\"link\\\": \\\"https://yelp.com/biz/quick-fix\\\"\\n        }]\\n      }\\n    },\\n    \\\"costEstimationResults\\\": {\\n      \\\"costEstimates\\\": {\\n        \\\"repair_type\\\": \\\"Heating element replacement\\\",\\n        \\\"DIY\\\": {\\n          \\\"cost_range\\\": \\\"$25-$50\\\",\\n          \\\"savings\\\": \\\"Save $150-$250\\\",\\n          \\\"complexity\\\": \\\"Moderate\\\",\\n          \\\"includes\\\": [\\\"Element\\\", \\\"Gasket\\\", \\\"Tools\\\"]\\n        },\\n        \\\"Service\\\": {\\n          \\\"cost_range\\\": \\\"$175-$300\\\",\\n          \\\"benefits\\\": \\\"Professional warranty\\\",\\n          \\\"complexity\\\": \\\"Simple\\\",\\n          \\\"includes\\\": [\\\"Labor\\\", \\\"Parts\\\", \\\"Warranty\\\"]\\n        },\\n        \\\"comparison\\\": {\\n          \\\"diy_savings\\\": \\\"60-70% savings\\\",\\n          \\\"professional_benefits\\\": \\\"Warranty and expertise\\\",\\n          \\\"considerations\\\": \\\"DIY takes 2-3 hours\\\"\\n        }\\n      }\\n    }\\n  }\\n}\\n```",
   "createdAt": "2025-01-15T10:30:00Z"
 }
 ```

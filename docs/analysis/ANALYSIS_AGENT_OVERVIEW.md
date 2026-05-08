@@ -71,7 +71,7 @@ Root Property Agent (main orchestrator)
     │   └── cost_estimation_diy (tool)
     ├── Service Agent (professional options)
     │   ├── serpapi_search (tool)
-    │   ├── yelpapi_search (tool)
+    │   ├── serpapi_search (tool)
     │   ├── google_search_agent (tool)
     │   └── cost_estimation (tool)
     ├── Shopping Agent (product recommendations)
@@ -106,7 +106,7 @@ Root Property Agent (main orchestrator)
 
 ### 5. Professional Service Options
 - Local service provider listings (within configurable radius)
-- Multiple data sources (SerpAPI, Yelp, Google Search)
+- Multiple data sources (SerpAPI, SerpAPI, Google Search)
 - Provider ratings, reviews, and contact information
 - Distance-based sorting when coordinates available
 - Professional service cost estimates
@@ -131,7 +131,7 @@ Root Property Agent (main orchestrator)
 
 ### External APIs
 - **SerpAPI**: Local business search
-- **Yelp API**: Service provider listings with reviews
+- **SerpAPI**: Service provider listings with reviews
 - **YouTube API**: Video tutorial search
 - **Google Search API**: General information retrieval
 - **Google Maps API**: Location-based services and geocoding

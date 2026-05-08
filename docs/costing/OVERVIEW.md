@@ -69,7 +69,7 @@ flowchart TD
 ┌────────────────┐ ┌─────────────┐ ┌──────────────┐
 │ • Location     │ │ • SerpAPI   │ │ • 9 repair   │
 │   extraction   │ │   parsing   │ │   categories │
-│ • Complexity   │ │ • Yelp      │ │ • Keyword    │
+│ • Complexity   │ │ • SerpAPI      │ │ • Keyword    │
 │   analysis     │ │   parsing   │ │   matching   │
 │ • Prompt       │ │ • Price     │ │ • Static     │
 │   building     │ │   extraction│ │   ranges     │
@@ -172,14 +172,14 @@ return hardcoded_estimate()
 
 **Responsibilities**:
 - Parse SerpAPI results for pricing
-- Parse Yelp results and price levels
+- Parse SerpAPI results and price levels
 - Combine pricing from multiple sources
 - Calculate confidence based on data coverage
 - Calibrate AI estimates with real market data
 
 **Key Functions**:
 - `extract_pricing_from_serp_results()` - Parse SerpAPI
-- `extract_pricing_from_yelp_results()` - Parse Yelp
+- `extract_pricing_from_yelp_results()` - Parse SerpAPI
 - `combine_service_provider_pricing()` - Merge sources
 - `calibrate_ai_estimate_with_provider_data()` - Adjust AI
 - `extract_and_combine_all_pricing()` - One-stop extraction
@@ -193,7 +193,7 @@ From $XX         # Starting price
 $XX              # Single price (±30%)
 ```
 
-**Yelp Price Level Mapping**:
+**SerpAPI Price Level Mapping**:
 - `$` → $50-150
 - `$$` → $150-300
 - `$$$` → $300-600
@@ -340,7 +340,7 @@ Format: Structured text parseable to JSON
        ↓
 3. Extract SerpAPI pricing
    ↓
-4. Extract Yelp pricing
+4. Extract SerpAPI pricing
    ↓
 5. Combine pricing from both sources
    ↓
@@ -476,7 +476,7 @@ Same plumbing repair:
 - `property_address`: Full address for location-aware pricing
 - `serviceResults`: Provider data for calibration
   - `localPros.serpAPIResults`: SerpAPI results
-  - `localPros.yelpAPIResults`: Yelp results
+  - `localPros.googleSearchResults`: SerpAPI results
 
 ### Output
 
@@ -501,7 +501,7 @@ Same plumbing repair:
 
 **Optional**:
 - SerpAPI results (for calibration)
-- Yelp API results (for calibration)
+- SerpAPI results (for calibration)
 
 ## Monitoring & Observability
 

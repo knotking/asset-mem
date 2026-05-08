@@ -82,8 +82,6 @@ def main():
         "KNOWLEDGE_BASE_RAG_CORPUS",
         "USER_UPLOAD_TOPIC",
         "SERP_API_KEY",
-        "YELP_API_KEY",
-        "YELP_URL"
     ]
     display_name = f"HomecareAgent-{environment}"
     extra_packages = ["./property_agent"]

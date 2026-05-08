@@ -306,11 +306,11 @@ components:
                   items:
                     $ref: '#/components/schemas/ServiceProvider'
                   description: Service providers from SerpAPI search.
-                yelpAPIResults:
+                googleSearchResults:
                   type: array
                   items:
                     $ref: '#/components/schemas/ServiceProvider'
-                  description: Service providers from Yelp search.
+                  description: Service providers from Google Search results.
                 googleSearchResults:
                   type: array
                   items:
@@ -326,7 +326,7 @@ components:
                 rating: "4.6"
                 phone: "+1-555-123-4567"
                 location: "123 Main St, Springfield"
-            yelpAPIResults:
+            googleSearchResults:
               - name: "Main St Plumbers"
                 rating: "4.3"
                 phone: "+1-555-987-6543"
@@ -769,7 +769,7 @@ components:
                       type: array
                       items:
                         $ref: '#/components/schemas/ServiceProvider'
-                    yelpAPIResults:
+                    googleSearchResults:
                       type: array
                       items:
                         $ref: '#/components/schemas/ServiceProvider'
@@ -875,11 +875,11 @@ components:
           items:
             type: object
             description: Provider record as returned by SerpAPI integration.
-        yelpAPIResults:
+        googleSearchResults:
           type: array
           items:
             type: object
-            description: Provider record as returned by Yelp integration.
+            description: Provider record as returned by service search integrations.
 
     ProductRecommendationsResults:
       type: object
@@ -959,7 +959,7 @@ components:
                 - name: "Springfield Plumbing Co"
                   rating: "4.6"
                   phone: "+1-555-123-4567"
-              yelpAPIResults:
+              googleSearchResults:
                 - name: "Main St Plumbers"
                   rating: "4.3"
                   phone: "+1-555-987-6543"
@@ -1041,7 +1041,7 @@ components:
                     "phone": "+1-555-123-4567"
                   }
                 ],
-                "yelpAPIResults": [
+                "googleSearchResults": [
                   {
                     "name": "Main St Plumbers",
                     "rating": "4.3",

@@ -61,8 +61,8 @@ The GCP directory contains a comprehensive AI-powered property care system built
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │ Vertex AI    │  │ External APIs │  │ Google Cloud │  │ Pub/Sub      │
 │ RAG Corpus   │  │ - SerpAPI     │  │ Storage      │  │ Topics       │
-│ - Knowledge  │  │ - Yelp        │  │ - User Docs  │  │ - Uploads    │
-│   Base       │  │ - YouTube     │  │ - Results    │  │ - Results    │
+│ - Knowledge  │  │ - YouTube     │  │ - User Docs  │  │ - Uploads    │
+│   Base       │  │ - Google Search│ │ - Results    │  │ - Results    │
 │ - User Docs  │  │ - Google Maps │  │              │  │              │
 └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
                           │
@@ -153,7 +153,6 @@ class DiagnosisInput(BaseModel):
    - Finds local service providers
    - Tools:
      - `serpapi_search`: Local business search
-     - `yelpapi_search`: Yelp business listings
      - `google_search_agent`: General search
      - `cost_estimation`: Professional service cost estimates
    - Output: Service provider listings with contact info, ratings, reviews
@@ -217,7 +216,6 @@ class DiagnosisInput(BaseModel):
 
 **External API Integrations:**
 - **SerpAPI**: Local business search
-- **Yelp API**: Service provider listings
 - **YouTube API**: Video tutorial search
 - **Google Search**: General information retrieval
 - **Google Maps**: Location-based services
@@ -573,7 +571,6 @@ Infrastructure as Code using Terraform for managing GCP resources.
 
 ### External APIs
 - **SerpAPI** - Local business search
-- **Yelp API** - Service provider listings
 - **YouTube API** - Video search
 - **Google Maps API** - Location services
 
@@ -610,8 +607,6 @@ Infrastructure as Code using Terraform for managing GCP resources.
 
 **External APIs:**
 - `SERP_API_KEY` - SerpAPI key
-- `YELP_API_KEY` - Yelp API key
-- `YELP_URL` - Yelp API endpoint
 
 ## Deployment Architecture
 

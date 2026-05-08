@@ -334,8 +334,7 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
     () => normalizeUrl(linkStr) || normalizeUrl(websiteStr) || undefined,
     [linkStr, websiteStr]
   );
-  const isYelp = useMemo(() => !!primaryLink && primaryLink.includes('yelp.com'), [primaryLink]);
-  const primaryLinkLabel = isYelp ? 'View on Yelp' : 'Website';
+  const primaryLinkLabel = 'Website';
 
   const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
   const isDirectionsLinkValid =
@@ -498,6 +497,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
   // Memoize allProviders array processing
   const allProviders = useMemo(() => {
     const allProvidersRaw = [
+      // Keep legacy Yelp fallback for older stored responses.
       ...getProvidersArray(service?.localPros?.yelpAPIResults),
       ...getProvidersArray(service?.localPros?.serpAPIResults),
       ...getProvidersArray(service?.providers),

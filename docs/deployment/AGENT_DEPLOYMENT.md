@@ -7,7 +7,7 @@ This guide covers deploying the Vertex AI Reasoning Engine (AI Agent) for proper
 The AI Agent is a sophisticated reasoning engine built on Google's Vertex AI platform that provides:
 - Property management assistance
 - Document analysis and RAG (Retrieval-Augmented Generation)
-- Service recommendations (Yelp, YouTube)
+- Service recommendations (SerpAPI, YouTube)
 - Location-based services
 - Checkpoint analysis
 - Multi-modal interactions
@@ -36,7 +36,7 @@ The AI Agent is a sophisticated reasoning engine built on Google's Vertex AI pla
 │  │   RAG       │ │  External   │ │  Location   │     │
 │  │   Search    │ │  APIs       │ │  Services   │     │
 │  │             │ │             │ │             │     │
-│  │ - Knowledge │ │ - Yelp      │ │ - Geocoding │     │
+│  │ - Knowledge │ │ - SerpAPI   │ │ - Geocoding │     │
 │  │ - User Docs │ │ - YouTube   │ │ - Maps      │     │
 │  └─────────────┘ └─────────────┘ └─────────────┘     │
 └─────────────────────────────────────────────────────────┘
@@ -148,8 +148,6 @@ USER_UPLOAD_TOPIC=user-upload-topic
 
 # External APIs
 SERP_API_KEY=your-serp-api-key
-YELP_API_KEY=your-yelp-api-key
-YELP_URL=https://api.yelp.com/v3
 
 # Agent Configuration
 STAGING_BUCKET=your-staging-bucket
@@ -216,13 +214,11 @@ dependencies = [
 - `USER_UPLOAD_RAG_CORPUS`
 - `KNOWLEDGE_BASE_RAG_CORPUS`
 - `USER_UPLOAD_TOPIC`
-- `YELP_URL`
 - `WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT_EMAIL`
 
 **Required GitHub Secrets**:
 - `SERP_API_KEY`
-- `YELP_API_KEY`
 
 ### Method 2: Local Deployment Script
 
@@ -548,7 +544,6 @@ cd gcp/agents/homecare
 ```bash
 # Verify API keys are set
 echo $SERP_API_KEY
-echo $YELP_API_KEY
 
 # Update secrets in Secret Manager
 gcloud secrets versions add serp-api-key --data-file=-

@@ -362,7 +362,6 @@ Common secrets needed:
 - `TELEGRAM_WEBHOOK_SECRET`
 - `FIREBASE_WEBHOOK_SECRET`
 - `SERP_API_KEY`
-- `YELP_API_KEY`
 
 ### Idempotency
 

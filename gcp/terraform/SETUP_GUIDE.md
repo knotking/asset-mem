@@ -183,7 +183,7 @@ echo -n "your-telegram-bot-token" | gcloud secrets versions add TELEGRAM_BOT_TOK
 echo -n "your-webhook-secret" | gcloud secrets versions add TELEGRAM_WEBHOOK_SECRET-$ENV --data-file=- --project=$PROJECT_ID
 echo -n "your-firebase-secret" | gcloud secrets versions add FIREBASE_WEBHOOK_SECRET-$ENV --data-file=- --project=$PROJECT_ID
 echo -n "your-serp-api-key" | gcloud secrets versions add SERP_API_KEY-$ENV --data-file=- --project=$PROJECT_ID
-echo -n "your-yelp-api-key" | gcloud secrets versions add YELP_API_KEY-$ENV --data-file=- --project=$PROJECT_ID
+echo -n "your-yelp-api-key" | gcloud secrets versions add -$ENV --data-file=- --project=$PROJECT_ID
 ```
 
 ## Importing Existing Resources

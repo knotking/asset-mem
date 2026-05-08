@@ -181,7 +181,7 @@
 
 ### APIs Used
 - **SerpAPI**: Service provider pricing extraction
-- **Yelp API**: Service provider pricing extraction
+- **SerpAPI**: Service provider pricing extraction
 - **Google Search**: Via Gemini grounding
 
 ## Support

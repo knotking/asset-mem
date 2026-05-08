@@ -23,7 +23,7 @@ The Cost Estimation System provides intelligent, AI-powered cost estimates for h
 - Current 2026 pricing data from web sources
 
 ### 📊 Service Provider Calibration
-- Extracts pricing from local service providers (SerpAPI, Yelp)
+- Extracts pricing from local service providers (SerpAPI, SerpAPI)
 - Calibrates AI estimates with real market data
 - Confidence scoring based on data quality
 
@@ -153,7 +153,7 @@ query = {
     "serviceResults": {
         "localPros": {
             "serpAPIResults": [...],
-            "yelpAPIResults": [...]
+            "googleSearchResults": [...]
         }
     }
 }

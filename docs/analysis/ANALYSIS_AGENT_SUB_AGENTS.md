@@ -394,19 +394,19 @@ Searches for local businesses using SerpAPI.
 5. Calculate distance if coordinates provided
 6. Return structured listings
 
-#### `yelpapi_search(query: str, location: str)`
-Searches Yelp for local service providers.
+#### `serpapi_search(query: str, location: str)`
+Searches SerpAPI for local service providers.
 
 **Parameters:**
 - `query`: Service type
 - `location`: Address or coordinates
 
 **Process:**
-1. Construct Yelp Fusion API search
+1. Construct SerpAPI Fusion API search
 2. Execute API call
 3. Parse business results
 4. Extract detailed information
-5. Include Yelp ratings and review counts
+5. Include SerpAPI ratings and review counts
 6. Return structured listings
 
 #### `google_search_agent(query: str)`
@@ -435,7 +435,7 @@ Estimates professional service costs.
 ### Parallel Execution
 ```
 serpapi_search ─┐
-yelpapi_search ─┼─→ Consolidate Results → Filter/Sort → Top 10
+serpapi_search ─┼─→ Consolidate Results → Filter/Sort → Top 10
                 │
 google_search ──┘ (fallback if others fail)
 ```
@@ -499,7 +499,7 @@ class DiagnosisInput(BaseModel):
           "website": "https://..."
         }
       ],
-      "yelpAPIResults": [
+      "googleSearchResults": [
         {
           "name": "Business name",
           "address": "Full address",
@@ -532,7 +532,7 @@ class DiagnosisInput(BaseModel):
 
 **Result Limit:**
 - Top 10 providers returned
-- Balanced between SerpAPI and Yelp sources
+- Balanced between SerpAPI and SerpAPI sources
 - Duplicates removed (same business from multiple sources)
 
 ### Service Provider Types
@@ -813,7 +813,7 @@ cost_agent(query=f"{user_query} - Diagnosis: {diagnosis}")
 
 ### Rate Limiting
 - YouTube API: 10,000 queries/day
-- Yelp API: 5,000 queries/day
+- SerpAPI: 5,000 queries/day
 - SerpAPI: Based on subscription tier
 - Google Search: Based on API quota
 

@@ -50,7 +50,7 @@ Analysis Agent (Orchestrator)
 │
 ├── Service Agent (Professional Options)
 │   ├── serpapi_search (tool)
-│   ├── yelpapi_search (tool)
+│   ├── serpapi_search (tool)
 │   └── google_search_agent (tool)
 │
 └── Cost Agent (Cost Analysis)
@@ -82,7 +82,7 @@ Analysis Agent (Orchestrator)
 
 ### Professional Service Options
 - Local service provider listings
-- Multiple data sources (SerpAPI, Yelp)
+- Multiple data sources (SerpAPI, SerpAPI)
 - Ratings, reviews, and contact information
 - Distance-based sorting
 
@@ -165,7 +165,7 @@ All responses include both Markdown and JSON:
 ### Backend Services
 - Vertex AI Agent Engine
 - Vertex AI RAG (document retrieval)
-- External APIs (SerpAPI, Yelp, YouTube)
+- External APIs (SerpAPI, SerpAPI, YouTube)
 - Google Maps API (geocoding)
 
 ### Client Applications
