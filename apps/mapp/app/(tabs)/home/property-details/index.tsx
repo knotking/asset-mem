@@ -101,7 +101,7 @@ export default function PropertyDetailsScreen() {
   const [isCreateCheckpointModalVisible, setIsCreateCheckpointModalVisible] = React.useState(false);
 
   // Primary agent state
-  const [primaryAgent, setPrimaryAgent] = React.useState<PrimaryAgent>('analysis');
+  const [primaryAgent, setPrimaryAgent] = React.useState<PrimaryAgent>('checkpoint');
 
   // Agent selection state
   const [selectedOptionalAgents, setSelectedOptionalAgents] = React.useState<
