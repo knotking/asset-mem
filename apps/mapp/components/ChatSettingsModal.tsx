@@ -11,7 +11,6 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
   X,
-  Stethoscope,
   Clock,
   FileText,
   ShieldCheck,
@@ -241,27 +240,6 @@ export function ChatSettingsModal({
                 <View>
                   <Text className="mb-3 text-sm font-semibold text-foreground">Primary Agent</Text>
                   <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={() => onPrimaryAgentChange('analysis')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
-                        primaryAgent === 'analysis'
-                          ? 'border-primary bg-primary'
-                          : 'border-border bg-secondary'
-                      }`}>
-                      <Icon
-                        as={Stethoscope}
-                        size={18}
-                        className={
-                          primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
-                        }
-                      />
-                      <Text
-                        className={`text-xs font-semibold ${
-                          primaryAgent === 'analysis' ? 'text-primary-foreground' : 'text-foreground'
-                        }`}>
-                        Analysis
-                      </Text>
-                    </Pressable>
                     <Pressable
                       onPress={() => onPrimaryAgentChange('checkpoint')}
                       className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${

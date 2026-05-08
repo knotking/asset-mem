@@ -7,7 +7,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  Stethoscope,
   Clock,
   FileText,
   ShieldCheck,
@@ -177,15 +176,7 @@ export function ChatSettingsPopover({
             {/* Primary Agent Selection */}
             <div>
               <label className="text-sm font-semibold mb-3 block">Primary Agent</label>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant={primaryAgent === 'analysis' ? 'default' : 'outline'}
-                  className="flex-1 gap-2"
-                  onClick={() => onPrimaryAgentChange('analysis')}>
-                  <Stethoscope className="h-4 w-4" />
-                  <span>Analysis</span>
-                </Button>
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={primaryAgent === 'checkpoint' ? 'default' : 'outline'}

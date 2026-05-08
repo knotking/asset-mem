@@ -81,7 +81,7 @@ export default function PropertyChatSessionPage() {
   const { checkpoints } = useCheckpoint();
 
   const [isNewSession, setIsNewSession] = useState(false);
-  const [primaryAgent, setPrimaryAgent] = useState<PrimaryAgent>('analysis');
+  const [primaryAgent, setPrimaryAgent] = useState<PrimaryAgent>('checkpoint');
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<
     AnalysisOptionalAgent[]
   >(() => [...ANALYSIS_OPTIONAL_AGENTS]);
