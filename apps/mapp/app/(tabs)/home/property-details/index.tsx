@@ -520,6 +520,7 @@ export default function PropertyDetailsScreen() {
       selectedCheckpoints,
       properties,
       selectedOptionalAgents,
+      selectedCheckpointOptionalAgents,
       primaryAgent,
       locationData,
       setFileAttachment,

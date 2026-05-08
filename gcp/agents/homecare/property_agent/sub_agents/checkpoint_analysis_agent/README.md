@@ -46,7 +46,7 @@ Allowed values: `["coverage", "diy", "service", "cost"]`
 - **service**: Find local professionals for the issues
 - **cost**: Generate DIY vs professional cost estimates
 
-Agents are executed in canonical order: coverage → diy → service → cost
+Optional branches are executed in parallel and then synthesized into a single final response.
 
 ## Workflow
 
@@ -56,9 +56,9 @@ Agents are executed in canonical order: coverage → diy → service → cost
    - Synthesize into clear problem statement
 
 2. **Agent Orchestration**
-   - Call each agent in checkpoint_optional_agents (in order)
-   - Pass synthesized problem statement for context
-   - Collect results from each agent
+   - Run optional agent branches in parallel (coverage, diy, service, cost)
+   - Each branch no-ops unless its agent key is present in `checkpoint_optional_agents`
+   - Collect branch outputs and synthesize one final response
 
 3. **Response Assembly**
    - Combine all results into structured format
