@@ -27,7 +27,6 @@ const statusLabels: { [key in AgentStep['status']]: string } = {
 
 export function AgentStatus({ steps }: Props) {
   if (!steps || steps.length === 0) return null;
-  const transferredStep = steps.find(step => step.status === 'transferredto');
   const otherSteps = steps.filter(step => step.status !== 'transferredto');
 
   return (

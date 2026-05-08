@@ -366,6 +366,8 @@ jobs:
             "roles/monitoring.metricWriter"
             "roles/monitoring.editor"
             "roles/cloudtrace.agent"
+            # Firestore (Datastore API) — agent proxy Cloud Run uses this SA at runtime for chats, sessions, token quota
+            "roles/datastore.user"
           )
 
           echo "Checking IAM role bindings for GitHub workflow service account..."
@@ -397,6 +399,31 @@ jobs:
             done
             echo "✓ IAM roles granted"
           fi
+
+          # Refresh policy after GitHub workflow SA bindings (needed for idempotent checks below).
+          CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
+
+          # Cloud Run default runtime SA (when using Compute Engine default). Proxy also uses
+          # vars.GCP_SERVICE_ACCOUNT_EMAIL in deploy-homecare-agent-proxy — grant both patterns.
+          echo ""
+          echo "Ensuring Firestore (Datastore API) access for common Cloud Run runtime service accounts..."
+          PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+          DEFAULT_COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+          DATASTORE_ROLE="roles/datastore.user"
+          for RUNTIME_SA in "$DEFAULT_COMPUTE_SA"; do
+            MEMBER="serviceAccount:${RUNTIME_SA}"
+            if echo "$CURRENT_POLICY" | jq -e --arg role "$DATASTORE_ROLE" --arg member "$MEMBER" \
+              '.bindings[] | select(.role==$role) | .members[] | select(. == $member)' >/dev/null 2>&1; then
+              echo "✓ ${DATASTORE_ROLE} already granted to ${RUNTIME_SA}"
+            else
+              gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+                --member="$MEMBER" \
+                --role="$DATASTORE_ROLE" \
+                --condition=None \
+                --quiet
+              echo "✓ Granted ${DATASTORE_ROLE} to ${RUNTIME_SA}"
+            fi
+          done
 
           echo ""
           echo "Checking Firebase App Hosting deployer service account..."

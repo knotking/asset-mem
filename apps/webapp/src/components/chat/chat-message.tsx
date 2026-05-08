@@ -10,7 +10,6 @@ import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
-import { AgentStatus } from "./agent-status";
 import { useToast } from "@/hooks/use-toast";
 import { markdownToWhatsapp, htmlToWhatsapp } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -1174,7 +1173,16 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
   }, [toast]);
 
   const isAgentStatusMessage = !!message.agentSteps && message.agentSteps.length > 0;
-  const showLoadingIndicator = isLoading && !isUser && !message.content && !isAgentStatusMessage;
+  const trimmedAssistantContent =
+    typeof message.content === 'string' ? message.content.trim() : '';
+  const hasAssistantResponse = !isUser && trimmedAssistantContent.length > 0;
+  /** Only show "Thinking..." while a step is actively executing — not when steps are all terminal but body text is still empty. */
+  const hasExecutingAgentStep =
+    message.agentSteps?.some((s) => s.status === 'executing') ?? false;
+  const showThinkingStrip =
+    !isUser && !hasAssistantResponse && hasExecutingAgentStep;
+  const showLoadingIndicator =
+    isLoading && !isUser && !message.content && !isAgentStatusMessage;
   const fileData = message.file;
 
   const handleCopyClick = () => {
@@ -1589,22 +1597,32 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               { "self-end": isUser },
               {
                 "rounded-lg": isUser,
-                "bg-muted border": !isUser && !isAgentStatusMessage && !showLoadingIndicator && !structuredData,
-                "bg-transparent border-0 shadow-none": isAgentStatusMessage || showLoadingIndicator || structuredData
+                "bg-muted border":
+                  !isUser && !showThinkingStrip && !showLoadingIndicator && !structuredData,
+                "bg-transparent border-0 shadow-none":
+                  showThinkingStrip || showLoadingIndicator || structuredData
               },
               (isUser && message.content) && "bg-secondary text-secondary-foreground",
               fileData && message.content ? "gap-2" : "",
               isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !message.content)) ? "p-2" : structuredData ? "" : "px-4 py-2.5"
             )}
           >
-            {!isUser && message.content && !showLoadingIndicator && !isAgentStatusMessage && !structuredData && (
+            {!isUser &&
+              hasAssistantResponse &&
+              !showLoadingIndicator &&
+              !structuredData && (
                 <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyClick}>
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">Copy message</span>
                 </Button>
             )}
-            {isAgentStatusMessage ? (
-              <AgentStatus steps={message.agentSteps!} />
+            {showThinkingStrip ? (
+              <div className="flex items-center gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm">
+                <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary" />
+                <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
+                  Thinking...
+                </span>
+              </div>
             ) : showLoadingIndicator ? (
                <div className="flex items-center justify-start p-2">
                 <svg width="45" height="24" viewBox="0 0 45 24" fill="currentColor" className="text-muted-foreground">
@@ -1627,7 +1645,6 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
             ) : (
                 <>
                 {renderFilePreview()}
-                
                 {message.content && (
                   <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                     {isUser ? (
