@@ -27,7 +27,7 @@ function SharedChatHeader({ sessionName }: { sessionName: string | null }) {
             <div className="flex items-center gap-2 min-w-0">
                 <Bot className="h-7 w-7 text-primary shrink-0" />
                 <div className="flex flex-col min-w-0">
-                    <h1 className="text-lg font-semibold text-foreground">HomeGeek AI</h1>
+                    <h1 className="text-lg font-semibold text-foreground">AssetMem AI</h1>
                     {sessionName ? (
                         <h2 className="text-sm text-muted-foreground truncate" title={sessionName}>{sessionName}</h2>
                     ) : (

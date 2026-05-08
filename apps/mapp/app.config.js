@@ -12,7 +12,7 @@ const proxyToken = process.env.PROXY_TOKEN;
 
 module.exports = {
   expo: {
-    name: 'HomeGeekAI',
+    name: 'AssetMem AI',
     slug: process.env.APP_SLUG || 'homegeekai-staging',
     version: process.env.APP_VERSION || '0.0.1',
     orientation: 'portrait',

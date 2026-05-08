@@ -71,7 +71,7 @@ export default function SettingsScreen() {
                 {user?.displayName || 'Property Owner'}
               </Text>
               <Text className="text-sm text-muted-foreground">
-                {user?.email || 'owner@homegeek.ai'}
+                {user?.email || 'owner@assetmem.ai'}
               </Text>
             </View>
           </View>
