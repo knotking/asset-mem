@@ -12,15 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import vertexai
-from vertexai import agent_engines
-from vertexai.preview.reasoning_engines import AdkApp
-from property_agent.agent import root_agent
 import logging
 import os
-from dotenv import set_key
-from dotenv import load_dotenv
+import pathlib
 import sys
+import tomllib
+
+import vertexai
+from dotenv import load_dotenv, set_key
+from vertexai import agent_engines
+from vertexai.preview.reasoning_engines import AdkApp
+
+from property_agent.agent import root_agent
+
+# Distributions present in pyproject.toml that should NOT be sent to the
+# Agent Engine runtime: stale package, or local CLI/eval helpers only.
+_AGENT_ENGINE_EXCLUDED_DISTS = frozenset({"adk", "tabulate", "tool", "tools", "tqdm"})
+
+
+def _requirement_distribution_name(requirement: str) -> str:
+    """Extract the distribution name from a PEP 508 requirement string."""
+    name = requirement
+    for sep in ("[", "=", ">", "<", "!", "~", ";", " "):
+        name = name.split(sep, 1)[0]
+    return name.strip()
+
+
+def _load_agent_engine_requirements() -> list[str]:
+    """Return ``project.dependencies`` from pyproject.toml minus local-only deps.
+
+    Keeping the deploy-time list in sync with the local environment used to be a
+    manual chore; this reads the same pins ``uv`` resolves against so the two
+    can no longer drift.
+    """
+    pyproject_path = pathlib.Path(__file__).resolve().parent.parent / "pyproject.toml"
+    with pyproject_path.open("rb") as fh:
+        pyproject = tomllib.load(fh)
+    dependencies = pyproject.get("project", {}).get("dependencies", [])
+    return [
+        req
+        for req in dependencies
+        if _requirement_distribution_name(req) not in _AGENT_ENGINE_EXCLUDED_DISTS
+    ]
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -58,23 +91,9 @@ def main():
     environment = sys.argv[2] if len(sys.argv) > 2 else "staging"
     logger.info(f"Action: {action}, Environment: {environment}")
 
-    # Common configuration - production dependencies (excluding dev-only and transitive dependencies)
-    common_requirements = [
-        "google-adk==1.7.0",
-        "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
-        "google-auth==2.45.0",
-        "google-cloud-firestore==2.22.0",
-        "google-cloud-pubsub==2.31.1",
-        "google-genai==1.56.0",
-        "google-search-results==2.4.2",
-        "langchain==0.3.26",
-        "langchain-community==0.3.27",
-        "llama-index==0.12.0",
-        "pydantic-settings==2.8.1",
-        "python-dotenv==1.0.0",
-        "requests==2.32.4",
-        "youtube-search==2.1.2",
-    ]
+    # Production dependencies are sourced from pyproject.toml so deploy-time
+    # pins always match what's resolved into uv.lock locally.
+    common_requirements = _load_agent_engine_requirements()
     common_env_vars = [
         "GOOGLE_CLOUD_BUCKET",
         "USER_UPLOAD_FOLDER",
