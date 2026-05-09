@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from .prompts import user_docs_agent_instruction
 import logging
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
     
 
 load_dotenv()
@@ -99,7 +100,7 @@ def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[st
     )
 
 user_docs_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='ask_user_docs_agent',
     instruction=user_docs_agent_instruction(),
     input_schema=DocsInput,

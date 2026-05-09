@@ -15,31 +15,31 @@ flowchart TD
     Extract --> Diagnosis[Diagnosis]
     Extract --> Location[Property Address]
     Extract --> ServiceData[Service Provider Data]
-    
+
     Extract --> Decision{AI Enabled?}
-    
+
     Decision -->|Yes| AIPath[AI Estimation Path]
     Decision -->|No| Fallback[Hardcoded Library]
-    
+
     AIPath --> AIEstimator[AI Cost Estimator]
     AIEstimator --> Gemini[Gemini 2.5 Flash]
     Gemini --> SearchGrounding[Google Search Grounding]
     SearchGrounding --> RealTimeData[Real-Time Market Data]
-    
+
     AIEstimator --> Calibration{Service Data Available?}
     Calibration -->|Yes| ServicePricing[Service Pricing Extractor]
     Calibration -->|No| Validation[Validate Estimate]
     ServicePricing --> Calibrate[Calibrate with Provider Data]
     Calibrate --> Validation
-    
+
     Validation --> ConfidenceCheck{Confidence >= Threshold?}
     ConfidenceCheck -->|Yes| Response[Structured Response]
     ConfidenceCheck -->|No| Fallback
-    
+
     Fallback --> KeywordMatch[Keyword Matching]
     KeywordMatch --> HardcodedLib[9 Repair Categories]
     HardcodedLib --> Response
-    
+
     Response --> User
 ```
 
@@ -99,6 +99,7 @@ flowchart TD
 **Role**: Main orchestrator that coordinates all cost estimation logic.
 
 **Responsibilities**:
+
 - Extract context from input (diagnosis, location, service data)
 - Route to AI estimation or fallback based on configuration
 - Manage confidence thresholds and validation
@@ -106,6 +107,7 @@ flowchart TD
 - Return structured cost estimates
 
 **Key Functions**:
+
 - `cost_estimation(query)` - Main entry point
 - `cost_estimation_diy(query)` - DIY-only estimates
 - `_estimate_with_ai()` - AI estimation coordinator
@@ -114,6 +116,7 @@ flowchart TD
 - `_extract_service_results_from_query()` - Parse provider data
 
 **Decision Logic**:
+
 ```python
 if AI_ENABLED and diagnosis_valid:
     ai_estimate, confidence = estimate_with_ai()
@@ -128,6 +131,7 @@ return hardcoded_estimate()
 **Role**: AI-powered cost estimation using Gemini with Google Search grounding.
 
 **Responsibilities**:
+
 - Extract location information from addresses
 - Analyze repair complexity and categorize repair type
 - Build structured prompts for AI
@@ -137,6 +141,7 @@ return hardcoded_estimate()
 - Calculate confidence scores
 
 **Key Functions**:
+
 - `estimate_costs_with_ai()` - Main AI estimation
 - `_extract_location_info()` - Parse city/state
 - `_extract_repair_details()` - Categorize and analyze
@@ -145,12 +150,14 @@ return hardcoded_estimate()
 - `validate_cost_ranges()` - Ensure realistic estimates
 
 **AI Model Configuration**:
-- Model: `gemini-3.1-flash-lite-preview`
+
+- Model: `gemini-3.1-flash-lite`
 - Temperature: 0.3 (consistent estimates)
 - Max tokens: 2048
 - Tools: Google Search grounding enabled
 
 **Repair Categories Detected**:
+
 - Plumbing (leaks, drains, faucets)
 - Electrical (outlets, switches, wiring)
 - HVAC (AC, furnace, heating)
@@ -161,6 +168,7 @@ return hardcoded_estimate()
 - Automotive (dents, scratches)
 
 **Complexity Factors**:
+
 - Difficult access
 - Permits required
 - Safety concerns
@@ -171,6 +179,7 @@ return hardcoded_estimate()
 **Role**: Extract and process pricing from service provider results.
 
 **Responsibilities**:
+
 - Parse SerpAPI results for pricing
 - Parse SerpAPI results and price levels
 - Combine pricing from multiple sources
@@ -178,6 +187,7 @@ return hardcoded_estimate()
 - Calibrate AI estimates with real market data
 
 **Key Functions**:
+
 - `extract_pricing_from_serp_results()` - Parse SerpAPI
 - `extract_pricing_from_yelp_results()` - Parse SerpAPI
 - `combine_service_provider_pricing()` - Merge sources
@@ -185,6 +195,7 @@ return hardcoded_estimate()
 - `extract_and_combine_all_pricing()` - One-stop extraction
 
 **Price Extraction Patterns**:
+
 ```regex
 $XX-$YY          # Range with dashes
 $XX to $YY       # Range with "to"
@@ -194,12 +205,14 @@ $XX              # Single price (±30%)
 ```
 
 **SerpAPI Price Level Mapping**:
+
 - `$` → $50-150
 - `$$` → $150-300
 - `$$$` → $300-600
 - `$$$$` → $600-1500
 
 **Calibration Formula**:
+
 ```
 calibrated_cost = (ai_cost × 0.7) + (provider_cost × 0.3)
 ```
@@ -209,6 +222,7 @@ calibrated_cost = (ai_cost × 0.7) + (provider_cost × 0.3)
 **Role**: Centralized configuration and feature flags.
 
 **Feature Flags**:
+
 ```python
 USE_AI_COST_ESTIMATION = True  # Enable AI
 USE_SERVICE_PROVIDER_CALIBRATION = True  # Enable calibration
@@ -216,18 +230,21 @@ ENABLE_COST_CACHING = False  # Enable caching (future)
 ```
 
 **Thresholds**:
+
 ```python
 MIN_AI_CONFIDENCE_THRESHOLD = 0.6  # AI confidence minimum
 MIN_PROVIDER_DATA_CONFIDENCE = 0.5  # Calibration minimum
 ```
 
 **Timeouts**:
+
 ```python
 AI_ESTIMATION_TIMEOUT = 30  # seconds
 PROVIDER_PRICING_TIMEOUT = 10  # seconds
 ```
 
 **Regional Cost Multipliers**:
+
 ```python
 {
     "San Francisco": 1.4,
@@ -240,6 +257,7 @@ PROVIDER_PRICING_TIMEOUT = 10  # seconds
 ```
 
 **Validation Rules**:
+
 ```python
 MIN_VALID_COST = 5.0  # Minimum cost
 MAX_VALID_COST = 50000.0  # Maximum cost
@@ -251,6 +269,7 @@ MAX_DIY_TO_PRO_RATIO = 1.5  # DIY shouldn't exceed 1.5x pro
 **Role**: Structured prompts for different estimation scenarios.
 
 **Available Templates**:
+
 1. `get_location_pricing_prompt()` - Regional labor rates
 2. `get_material_cost_prompt()` - Current material costs
 3. `get_complexity_analysis_prompt()` - Repair difficulty
@@ -259,6 +278,7 @@ MAX_DIY_TO_PRO_RATIO = 1.5  # DIY shouldn't exceed 1.5x pro
 6. `get_cost_validation_prompt()` - Estimate validation
 
 **Prompt Structure**:
+
 ```
 Context: Diagnosis, location, repair type, severity
 Task: Provide structured cost estimates
@@ -276,6 +296,7 @@ Format: Structured text parseable to JSON
 **Role**: Reliable fallback with proven cost estimates.
 
 **Coverage**: 9 common repair categories
+
 1. Automotive paint scratch repair
 2. Minor automotive dent repair
 3. Clear clogged sink or tub drain
@@ -287,6 +308,7 @@ Format: Structured text parseable to JSON
 9. Major appliance diagnostic and repair
 
 **Matching Logic**:
+
 - Keyword-based matching against diagnosis
 - First match wins
 - Generic fallback if no match
@@ -365,6 +387,7 @@ Format: Structured text parseable to JSON
 ### Location-Aware Pricing
 
 **How it works**:
+
 1. Extract city and state from property address
 2. Look up regional cost multiplier
 3. Pass location to AI for context
@@ -372,6 +395,7 @@ Format: Structured text parseable to JSON
 5. Apply regional multiplier if needed
 
 **Example**:
+
 ```
 Same plumbing repair:
 - San Francisco: $220-550 (1.4x multiplier)
@@ -382,6 +406,7 @@ Same plumbing repair:
 ### Complexity Analysis
 
 **Factors Analyzed**:
+
 - **Repair Type**: Plumbing, electrical, HVAC, etc.
 - **Severity**: Low, moderate, high
 - **Access Difficulty**: Easy, moderate, difficult
@@ -390,6 +415,7 @@ Same plumbing repair:
 - **Skill Level**: Beginner, intermediate, advanced, professional-only
 
 **Impact on Estimates**:
+
 - High complexity → Higher pro costs, stronger pro recommendation
 - Low complexity → Lower costs, DIY feasibility emphasized
 - Safety concerns → Professional-only recommendation
@@ -397,6 +423,7 @@ Same plumbing repair:
 ### Real-Time Market Data
 
 **Data Sources**:
+
 - **Google Search Grounding**: Current 2026 pricing from web
 - **Material Costs**: Lumber, copper, appliances, etc.
 - **Labor Rates**: Regional hourly rates by trade
@@ -404,6 +431,7 @@ Same plumbing repair:
 - **Market Trends**: Supply chain, demand levels
 
 **Update Frequency**:
+
 - AI queries fresh data on each request
 - No stale cached pricing
 - Reflects current market conditions
@@ -411,6 +439,7 @@ Same plumbing repair:
 ### Confidence Scoring
 
 **Factors Affecting Confidence**:
+
 - **Base**: 0.7 (AI estimate quality)
 - **Location provided**: +0.1
 - **Service data available**: +0.1
@@ -418,6 +447,7 @@ Same plumbing repair:
 - **Calibration applied**: +0.1
 
 **Confidence Ranges**:
+
 - **0.9-1.0**: Excellent (location + calibration)
 - **0.7-0.9**: Good (AI with location or calibration)
 - **0.6-0.7**: Acceptable (AI only, no location)
@@ -428,27 +458,32 @@ Same plumbing repair:
 ### Latency
 
 **AI Estimation**:
+
 - Target: <5 seconds
 - Typical: 2-4 seconds
 - Includes: Gemini call + search grounding
 
 **Fallback**:
+
 - Target: <100ms
 - Typical: 10-50ms
 - Includes: Keyword matching + response building
 
 **Calibration Overhead**:
+
 - Additional: 100-500ms
 - Includes: Parsing provider data + calibration
 
 ### Accuracy
 
 **AI Estimates**:
+
 - Target: ±20% of actual quotes
 - Varies by: Location data quality, repair complexity
 - Improved by: Calibration with provider data
 
 **Fallback Estimates**:
+
 - Proven ranges for common repairs
 - Generic but reliable
 - May not reflect regional variations
@@ -456,11 +491,13 @@ Same plumbing repair:
 ### Reliability
 
 **AI Path**:
+
 - Success rate: Target >80%
 - Fallback on: Timeout, low confidence, validation failure
 - Graceful degradation
 
 **Fallback Path**:
+
 - Success rate: 100%
 - Always available
 - Proven reliable
@@ -470,9 +507,11 @@ Same plumbing repair:
 ### Input
 
 **Required**:
+
 - `diagnosis`: Repair description (string, >=10 chars)
 
 **Optional**:
+
 - `property_address`: Full address for location-aware pricing
 - `serviceResults`: Provider data for calibration
   - `localPros.serpAPIResults`: SerpAPI results
@@ -481,6 +520,7 @@ Same plumbing repair:
 ### Output
 
 **Structured JSON**:
+
 ```json
 {
   "costEstimates": {
@@ -496,10 +536,12 @@ Same plumbing repair:
 ### External Dependencies
 
 **Required**:
+
 - Gemini API (genai.Client)
 - Google Search grounding
 
 **Optional**:
+
 - SerpAPI results (for calibration)
 - SerpAPI results (for calibration)
 

@@ -153,7 +153,7 @@ async def compare_documents():
             enable_url_context=True
         )
         print(response.text)
-        
+
         # Check which URLs were successfully retrieved
         if response.url_context_metadata:
             print(f"Successful URLs: {response.url_context_metadata.successful_urls}")
@@ -186,14 +186,14 @@ from gemini_url_context import GenerateContentConfig
 async def with_config():
     async with GeminiURLContextClient(GeminiURLContextConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-3.1-flash-lite-preview",
+            model="gemini-3.1-flash-lite",
             enable_url_context=True,
             enable_google_search=False,
             temperature=0.7,
             max_output_tokens=2048,
             response_mime_type="application/json"
         )
-        
+
         response = await client.generate_content_with_config(
             contents="Analyze the content at https://example.com/article",
             config=config
@@ -212,13 +212,13 @@ async def check_url_status():
             contents="Summarize https://example.com/page1 and https://example.com/page2",
             enable_url_context=True
         )
-        
+
         if response.url_context_metadata:
             print(f"Total URLs processed: {len(response.url_context_metadata.url_metadata)}")
             print(f"Successful: {len(response.url_context_metadata.successful_urls)}")
             print(f"Failed: {len(response.url_context_metadata.failed_urls)}")
             print(f"Unsafe (failed safety check): {len(response.url_context_metadata.unsafe_urls)}")
-            
+
             # Check individual URL status
             for meta in response.url_context_metadata.url_metadata:
                 print(f"{meta.retrieved_url}: {meta.url_retrieval_status}")
@@ -235,7 +235,7 @@ async def track_tokens():
             contents="Analyze https://example.com/long-document.pdf",
             enable_url_context=True
         )
-        
+
         # Token usage includes content retrieved from URLs
         if response.usage_metadata:
             print(f"Prompt tokens: {response.prompt_token_count}")
@@ -252,26 +252,28 @@ asyncio.run(track_tokens())
 
 Configuration container for Gemini URL Context.
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `project_id` | str | GCP project ID (required for Vertex AI) |
-| `location` | str | GCP location (default: 'us-central1') |
-| `api_key` | str | Gemini API key (required if not using Vertex AI) |
-| `use_vertex_ai` | bool | Whether to use Vertex AI (default: True if project_id is set) |
-| `timeout` | float | Request timeout in seconds (default: 60.0) |
+| Attribute       | Type  | Description                                                   |
+| --------------- | ----- | ------------------------------------------------------------- |
+| `project_id`    | str   | GCP project ID (required for Vertex AI)                       |
+| `location`      | str   | GCP location (default: 'us-central1')                         |
+| `api_key`       | str   | Gemini API key (required if not using Vertex AI)              |
+| `use_vertex_ai` | bool  | Whether to use Vertex AI (default: True if project_id is set) |
+| `timeout`       | float | Request timeout in seconds (default: 60.0)                    |
 
 ### GeminiURLContextClient Methods
 
 #### Core Methods
+
 - `generate_content(contents, model?, enable_url_context?, enable_google_search?, temperature?, max_output_tokens?, response_mime_type?, response_schema?) -> GenerateContentResponse`
 - `generate_content_with_config(contents, config) -> GenerateContentResponse`
 
 ### Request Models
 
 #### GenerateContentConfig
+
 ```python
 GenerateContentConfig(
-    model: str = "gemini-3.1-flash-lite-preview",        # Model to use
+    model: str = "gemini-3.1-flash-lite",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -286,6 +288,7 @@ GenerateContentConfig(
 ### Response Models
 
 #### GenerateContentResponse
+
 ```python
 response.text                          # Generated text content
 response.url_context_metadata          # URLContextMetadata or None
@@ -303,6 +306,7 @@ response.tool_use_prompt_token_count    # int - includes URL content tokens
 ```
 
 #### URLContextMetadata
+
 ```python
 url_context_metadata.url_metadata      # List[URLMetadata] - all URL metadata
 url_context_metadata.successful_urls   # List[str] - successfully retrieved URLs
@@ -312,6 +316,7 @@ url_context_metadata.has_successful_urls  # bool - has any successful URLs
 ```
 
 #### URLMetadata
+
 ```python
 url_metadata.retrieved_url             # str - The URL
 url_metadata.url_retrieval_status      # URLRetrievalStatus - Status enum
@@ -320,6 +325,7 @@ url_metadata.url_retrieval_status      # URLRetrievalStatus - Status enum
 ### Enums
 
 #### URLRetrievalStatus
+
 ```python
 class URLRetrievalStatus(str, Enum):
     SUCCESS = "URL_RETRIEVAL_STATUS_SUCCESS"
@@ -330,7 +336,7 @@ class URLRetrievalStatus(str, Enum):
 
 ## Supported Models
 
-Examples in this package use `gemini-3.1-flash-lite-preview`.
+Examples in this package use `gemini-3.1-flash-lite`.
 
 See the [official documentation](https://ai.google.dev/gemini-api/docs/url-context) for the complete list.
 
@@ -362,6 +368,7 @@ export GEMINI_USE_VERTEX_AI="false"
 ### Required IAM Roles
 
 For Vertex AI:
+
 - `roles/aiplatform.user` - For using Vertex AI Gemini API
 
 ## Error Handling
@@ -391,21 +398,25 @@ asyncio.run(safe_query())
 ## Limitations
 
 ### URL Limits
+
 - Maximum 20 URLs per request
 - Maximum 34MB content size per URL
 
 ### Supported Content Types
+
 - Text (HTML, JSON, plain text, XML, CSS, JavaScript, CSV, RTF)
 - Images (PNG, JPEG, BMP, WebP)
 - PDFs
 
 ### Unsupported Content Types
+
 - Paywalled content
 - YouTube videos (use [video understanding](https://ai.google.dev/gemini-api/docs/video) instead)
 - Google Workspace files (Docs, Sheets, etc.)
 - Video and audio files
 
 ### Pricing
+
 - Content retrieved from URLs counts as input tokens
 - Rate limits and pricing depend on the model used
 - See [pricing page](https://ai.google.dev/pricing) for details
@@ -464,25 +475,30 @@ if response.tool_use_prompt_token_count:
 ### Common Issues
 
 **Error: "Project ID required for Vertex AI"**
+
 - Ensure `GEMINI_PROJECT_ID` is set
 - Or set `GEMINI_USE_VERTEX_AI=false` and provide `GEMINI_API_KEY`
 
 **Error: "API key required when not using Vertex AI"**
+
 - Set `GEMINI_API_KEY` environment variable
 - Or use Vertex AI by setting `GEMINI_PROJECT_ID`
 
 **URLs not being retrieved**
+
 - Check that URLs are accessible (no login required, not behind paywall)
 - Verify URLs are complete (include https://)
 - Check `url_context_metadata` for retrieval status
 - Ensure model supports URL context tool
 
 **High token usage**
+
 - URL content counts as input tokens
 - Monitor `tool_use_prompt_token_count` to see URL content token usage
 - Consider using fewer URLs or shorter documents
 
 **Unsafe URL error**
+
 - URLs must pass content moderation checks
 - Check `url_context_metadata.unsafe_urls` for URLs that failed safety checks
 
@@ -529,7 +545,7 @@ async def synthesize_multiple_sources():
             "https://example.com/article3"
         ]
         contents = f"Create a comprehensive summary combining information from {' '.join(urls)}"
-        
+
         response = await client.generate_content(
             contents=contents,
             enable_url_context=True
@@ -550,4 +566,3 @@ asyncio.run(synthesize_multiple_sources())
 ## License
 
 Internal use only.
-

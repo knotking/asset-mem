@@ -7,17 +7,20 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
 ## Key Features
 
 ### 🤖 AI-Powered Estimation
+
 - **Google Search Grounding**: Leverages real-time web data for current 2026 pricing
 - **Location-Aware Pricing**: Adjusts costs based on regional labor rates and cost-of-living
 - **Complexity Analysis**: AI-driven assessment of repair difficulty and safety factors
 - **Market Trends**: Incorporates current material costs and seasonal variations
 
 ### 📊 Service Provider Calibration
+
 - **Real Market Data**: Extracts pricing from local service providers (SerpAPI, Google Search results)
 - **Automatic Calibration**: Adjusts AI estimates using actual provider pricing
 - **Confidence Scoring**: Weights estimates based on data quality and availability
 
 ### 🛡️ Reliable Fallback System
+
 - **Hardcoded Library**: Maintains proven cost estimates for 9 common repair categories
 - **Graceful Degradation**: Automatically falls back when AI confidence is low
 - **Validation Rules**: Ensures all estimates meet sanity checks and realistic ranges
@@ -61,9 +64,11 @@ The Cost Agent provides intelligent, location-aware cost estimates for home repa
 ## Components
 
 ### 1. `agent.py` - Main Orchestrator
+
 The primary agent that coordinates AI estimation and fallback logic.
 
 **Key Functions:**
+
 - `cost_estimation(query)`: Main cost estimation with AI-first approach
 - `cost_estimation_diy(query)`: DIY-only cost estimates
 - `_estimate_with_ai()`: AI estimation with calibration
@@ -71,13 +76,16 @@ The primary agent that coordinates AI estimation and fallback logic.
 - `_build_cost_response()`: Response formatting
 
 **Tools:**
+
 - `cost_estimation`: Full DIY vs Professional comparison
 - `cost_estimation_diy`: DIY-only estimates
 
 ### 2. `ai_cost_estimator.py` - AI Estimation Engine
+
 Handles AI-powered cost estimation using Gemini with Google Search grounding.
 
 **Key Functions:**
+
 - `estimate_costs_with_ai()`: Main AI estimation function
 - `_extract_location_info()`: Parse city/state from address
 - `_extract_repair_details()`: Categorize and analyze repair
@@ -86,15 +94,18 @@ Handles AI-powered cost estimation using Gemini with Google Search grounding.
 - `validate_cost_ranges()`: Ensure estimates are realistic
 
 **Features:**
+
 - Location extraction and regional cost adjustments
 - Repair type categorization (plumbing, electrical, HVAC, etc.)
 - Complexity factor identification (permits, safety, access)
 - Confidence scoring based on data quality
 
 ### 3. `service_pricing_extractor.py` - Market Data Integration
+
 Extracts and processes pricing from real service provider results.
 
 **Key Functions:**
+
 - `extract_pricing_from_serp_results()`: Parse SerpAPI pricing
 - `extract_pricing_from_google_results()`: Parse provider pricing signals and price levels
 - `combine_service_provider_pricing()`: Merge multiple sources
@@ -102,14 +113,17 @@ Extracts and processes pricing from real service provider results.
 - `extract_and_combine_all_pricing()`: One-stop extraction
 
 **Pricing Extraction:**
+
 - Regex patterns for various price formats ($XX-YY, $XX to $YY, from $XX)
 - Provider pricing extraction from listing metadata
 - Confidence scoring based on data coverage
 
 ### 4. `prompts.py` - Prompt Templates
+
 Structured prompts for different cost estimation scenarios.
 
 **Available Prompts:**
+
 - `get_location_pricing_prompt()`: Regional labor rates
 - `get_material_cost_prompt()`: Current material costs
 - `get_complexity_analysis_prompt()`: Repair difficulty assessment
@@ -118,23 +132,28 @@ Structured prompts for different cost estimation scenarios.
 - `get_cost_validation_prompt()`: Estimate validation
 
 ### 5. `config.py` - Configuration & Feature Flags
+
 Centralized configuration for the cost estimation system.
 
 **Feature Flags:**
+
 - `USE_AI_COST_ESTIMATION`: Enable/disable AI (default: true)
 - `USE_SERVICE_PROVIDER_CALIBRATION`: Enable calibration (default: true)
 - `ENABLE_COST_CACHING`: Enable caching (default: false)
 
 **Thresholds:**
+
 - `MIN_AI_CONFIDENCE_THRESHOLD`: Minimum confidence for AI (default: 0.6)
 - `MIN_PROVIDER_DATA_CONFIDENCE`: Minimum for calibration (default: 0.5)
 
 **Model Configuration:**
-- `AI_MODEL_NAME`: Gemini model (default: gemini-3.1-flash-lite-preview)
+
+- `AI_MODEL_NAME`: Gemini model (default: gemini-3.1-flash-lite)
 - `AI_TEMPERATURE`: Temperature setting (default: 0.3)
 - `AI_MAX_OUTPUT_TOKENS`: Max output (default: 2048)
 
 **Regional Multipliers:**
+
 - San Francisco: 1.4x
 - New York: 1.35x
 - Los Angeles: 1.25x
@@ -257,7 +276,7 @@ PROVIDER_PRICING_TIMEOUT=10
 PROVIDER_DATA_WEIGHT=0.3  # 0.0-1.0
 
 # Model Settings
-COST_ESTIMATION_MODEL=gemini-3.1-flash-lite-preview
+COST_ESTIMATION_MODEL=gemini-3.1-flash-lite
 AI_TEMPERATURE=0.3
 AI_MAX_OUTPUT_TOKENS=2048
 
@@ -289,6 +308,7 @@ config.MIN_AI_CONFIDENCE_THRESHOLD = 0.8
 ### When AI Estimation is Used
 
 ✅ **AI is used when:**
+
 - Feature flag `USE_AI_COST_ESTIMATION` is true
 - Diagnosis is provided and >= 10 characters
 - AI call succeeds
@@ -298,6 +318,7 @@ config.MIN_AI_CONFIDENCE_THRESHOLD = 0.8
 ### When Fallback is Used
 
 ⚠️ **Fallback to hardcoded library when:**
+
 - AI estimation disabled by config
 - Diagnosis missing or too short
 - AI call fails or times out
@@ -308,6 +329,7 @@ config.MIN_AI_CONFIDENCE_THRESHOLD = 0.8
 ### Calibration Conditions
 
 🎯 **Calibration happens when:**
+
 - `USE_SERVICE_PROVIDER_CALIBRATION` is true
 - Service provider results are available
 - Provider data confidence >= `MIN_PROVIDER_DATA_CONFIDENCE` (default: 0.5)
@@ -378,6 +400,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 ### Issue: AI always falls back to hardcoded library
 
 **Possible Causes:**
+
 - Feature flag disabled: Check `USE_AI_COST_ESTIMATION`
 - Confidence threshold too high: Lower `MIN_AI_CONFIDENCE_THRESHOLD`
 - Diagnosis too short: Ensure diagnosis >= 10 characters
@@ -386,6 +409,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 ### Issue: Estimates seem inaccurate for location
 
 **Solutions:**
+
 - Verify property_address is being passed correctly
 - Check regional multipliers in `config.py`
 - Enable service provider calibration
@@ -394,6 +418,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 ### Issue: High latency
 
 **Solutions:**
+
 - Reduce `AI_MAX_OUTPUT_TOKENS`
 - Enable caching: `ENABLE_COST_CACHING=true`
 - Adjust `AI_ESTIMATION_TIMEOUT`
@@ -402,6 +427,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 ### Issue: Calibration not working
 
 **Check:**
+
 - `USE_SERVICE_PROVIDER_CALIBRATION` is true
 - Service results are being passed in query
 - Provider data contains pricing information
@@ -410,6 +436,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 ## Best Practices
 
 ### 1. Always Provide Location When Available
+
 ```python
 # Good
 query = {"diagnosis": "...", "property_address": "123 Main St, City, ST"}
@@ -419,6 +446,7 @@ query = {"diagnosis": "..."}  # Uses national averages
 ```
 
 ### 2. Pass Service Results for Calibration
+
 ```python
 # Best - includes service provider data
 query = {
@@ -429,17 +457,20 @@ query = {
 ```
 
 ### 3. Monitor Fallback Usage
+
 ```python
 # Enable fallback logging
 config.LOG_FALLBACK_USAGE = True
 ```
 
 ### 4. Validate Estimates in Production
+
 - Collect actual quotes from users
 - Compare AI estimates to real costs
 - Adjust confidence thresholds based on accuracy
 
 ### 5. Use Appropriate Timeouts
+
 - Short timeout for simple repairs (10-15s)
 - Longer timeout for complex estimates (30s)
 - Always have fallback ready
@@ -447,6 +478,7 @@ config.LOG_FALLBACK_USAGE = True
 ## Future Enhancements
 
 ### Planned Features
+
 - [ ] Cost estimate caching for common repairs
 - [ ] Historical cost tracking and trend analysis
 - [ ] User feedback loop for estimate accuracy
@@ -456,6 +488,7 @@ config.LOG_FALLBACK_USAGE = True
 - [ ] Multi-language support for international markets
 
 ### Potential Improvements
+
 - Machine learning model for confidence scoring
 - A/B testing framework for AI vs hardcoded
 - Real-time cost index tracking
@@ -475,6 +508,7 @@ When modifying the cost agent:
 ## Support
 
 For issues or questions:
+
 - Check logs for fallback reasons
 - Review configuration settings
 - Verify API credentials

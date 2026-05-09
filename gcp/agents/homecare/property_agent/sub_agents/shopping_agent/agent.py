@@ -4,6 +4,7 @@ from google.adk.agents import Agent
 from dotenv import load_dotenv
 from .prompts import shopping_agent_instructions
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
 
 
 shopping_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='shopping_agent',
     description="Provides product recommendations for DIY repairs, professional services, and general repair needs.",
     instruction=shopping_agent_instructions(),

@@ -11,6 +11,7 @@ from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
 from .service_pricing_extractor import extract_and_combine_all_pricing, calibrate_ai_estimate_with_provider_data
 from ...agent_inputs import CheckpointOptionalAgent
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -476,7 +477,7 @@ def cost_estimation_diy(query: str) -> str:
 
 
 cost_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='cost_agent',
     description='Provides AI-powered, location-aware DIY vs Service cost estimations and DIY-only estimates.',
     instruction=(

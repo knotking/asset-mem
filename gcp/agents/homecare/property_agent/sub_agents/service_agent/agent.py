@@ -7,6 +7,7 @@ from langchain_community.utilities import SerpAPIWrapper
 from dotenv import load_dotenv
 from .prompts import service_agent_instructions
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ load_dotenv()
 # Google search agent for service searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -26,7 +27,7 @@ serpapi_search = SerpAPIWrapper(
 )
 
 service_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='service_agent',
     description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),

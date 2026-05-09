@@ -4,6 +4,7 @@ from google.adk.tools import google_search
 from dotenv import load_dotenv
 from .prompts import diy_agent_instructions
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 from ..cost_agent.agent import cost_estimation_diy
 from ..shopping_agent.agent import shopping_agent
 from youtube_search import YoutubeSearch
@@ -16,7 +17,7 @@ load_dotenv()
 # Google search agent for DIY searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -54,7 +55,7 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
 
 
 diy_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='diy_agent',
     description="Provides DIY repair recommendations, tutorials, and product suggestions.",
     instruction=diy_agent_instructions(),

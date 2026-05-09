@@ -29,7 +29,7 @@ class CostEstimationConfig:
     PROVIDER_DATA_WEIGHT: float = float(os.getenv("PROVIDER_DATA_WEIGHT", "0.3"))  # 0.0-1.0
     
     # Model Configuration
-    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-3.1-flash-lite-preview")
+    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-3.1-flash-lite")
     AI_TEMPERATURE: float = float(os.getenv("AI_TEMPERATURE", "0.3"))
     AI_MAX_OUTPUT_TOKENS: int = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2048"))
     

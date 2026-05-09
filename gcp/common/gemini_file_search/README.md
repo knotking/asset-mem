@@ -130,7 +130,7 @@ async def upload_file_example():
     async with GeminiFileSearchClient(GeminiFileSearchConfig.from_env()) as client:
         # Create a store
         store = await client.create_store(display_name="Document Store")
-        
+
         # Upload a file
         document = await client.upload_file(
             file="document.pdf",
@@ -138,7 +138,7 @@ async def upload_file_example():
             display_name="My Document",
             wait_for_completion=True  # Wait for indexing to complete
         )
-        
+
         print(f"Uploaded document: {document.name}")
         print(f"Document state: {document.state}")
 
@@ -157,16 +157,16 @@ async def rag_example():
             file_search_store_name=store.name,
             wait_for_completion=True
         )
-        
+
         # Generate content with File Search
         response = await client.generate_content(
             contents="What are the key points in the document?",
             file_search_store_names=[store.name],
-            model="gemini-3.1-flash-lite-preview"
+            model="gemini-3.1-flash-lite"
         )
-        
+
         print(f"Response: {response.text}")
-        
+
         # Access citations
         if response.has_citations:
             print("\nCitations:")
@@ -187,7 +187,7 @@ async def structured_output_example():
             file_search_store_name=store.name,
             wait_for_completion=True
         )
-        
+
         # Define response schema
         response_schema = {
             "type": "object",
@@ -199,14 +199,14 @@ async def structured_output_example():
                 }
             }
         }
-        
+
         response = await client.generate_content(
             contents="Extract key information from the document",
             file_search_store_names=[store.name],
             response_mime_type="application/json",
             response_schema=response_schema
         )
-        
+
         import json
         data = json.loads(response.text)
         print(f"Summary: {data['summary']}")
@@ -225,12 +225,12 @@ async def manage_stores_example():
         print(f"Found {len(stores)} stores")
         for store in stores:
             print(f"  - {store.display_name}: {store.name}")
-        
+
         # Get a specific store
         if stores:
             store = await client.get_store(stores[0].name)
             print(f"\nStore details: {store.display_name}")
-        
+
         # Delete a store (if needed)
         # await client.delete_store(store.name)
 
@@ -243,32 +243,36 @@ asyncio.run(manage_stores_example())
 
 Configuration container for Gemini File Search.
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `project_id` | str | GCP project ID (required for Vertex AI) |
-| `location` | str | GCP location (default: 'us-central1') |
-| `api_key` | str | Gemini API key (required if not using Vertex AI) |
-| `use_vertex_ai` | bool | Whether to use Vertex AI (default: True if project_id is set) |
-| `timeout` | float | Request timeout in seconds (default: 60.0) |
+| Attribute       | Type  | Description                                                   |
+| --------------- | ----- | ------------------------------------------------------------- |
+| `project_id`    | str   | GCP project ID (required for Vertex AI)                       |
+| `location`      | str   | GCP location (default: 'us-central1')                         |
+| `api_key`       | str   | Gemini API key (required if not using Vertex AI)              |
+| `use_vertex_ai` | bool  | Whether to use Vertex AI (default: True if project_id is set) |
+| `timeout`       | float | Request timeout in seconds (default: 60.0)                    |
 
 ### GeminiFileSearchClient Methods
 
 #### Store Management
+
 - `create_store(display_name?) -> FileSearchStore`
 - `list_stores() -> List[FileSearchStore]`
 - `get_store(store_name) -> FileSearchStore`
 - `delete_store(store_name) -> None`
 
 #### File Operations
+
 - `upload_file(file, file_search_store_name, display_name?, mime_type?, wait_for_completion?, poll_interval?) -> FileSearchDocument`
 - `_wait_for_operation(operation_name, poll_interval?, max_wait_time?) -> Operation`
 
 #### Content Generation
+
 - `generate_content(contents, file_search_store_names, model?, temperature?, max_output_tokens?, response_mime_type?, response_schema?) -> GenerateContentResponse`
 
 ### Models
 
 #### FileSearchStore
+
 ```python
 FileSearchStore(
     name: str,                    # Full resource name
@@ -278,6 +282,7 @@ FileSearchStore(
 ```
 
 #### FileSearchDocument
+
 ```python
 FileSearchDocument(
     name: str,                     # Full resource name
@@ -289,6 +294,7 @@ FileSearchDocument(
 ```
 
 #### GenerateContentResponse
+
 ```python
 response.text                    # Generated text
 response.grounding_metadata      # GroundingMetadata or None
@@ -299,6 +305,7 @@ response.has_citations           # bool - convenience property
 ```
 
 #### Citation
+
 ```python
 Citation(
     start_index: Optional[int],    # Start index in response
@@ -311,7 +318,7 @@ Citation(
 
 ## Supported Models
 
-Examples in this package use `gemini-3.1-flash-lite-preview`.
+Examples in this package use `gemini-3.1-flash-lite`.
 
 ## Supported File Types
 
@@ -369,6 +376,7 @@ export GEMINI_USE_VERTEX_AI="false"
 ### Required IAM Roles (Vertex AI)
 
 The service account needs these roles:
+
 - `roles/aiplatform.user` - For using Vertex AI Gemini API
 - `roles/storage.objectViewer` - If accessing files from Cloud Storage (optional)
 
@@ -416,27 +424,33 @@ pytest tests/test_client.py
 ### Common Issues
 
 **Error: "Project ID required for Vertex AI"**
+
 - Ensure `GEMINI_PROJECT_ID` is set
 - Or set `GEMINI_USE_VERTEX_AI=false` and provide `GEMINI_API_KEY`
 
 **Error: "API key required when not using Vertex AI"**
+
 - Set `GEMINI_API_KEY` environment variable
 - Or use Vertex AI by setting `GEMINI_PROJECT_ID`
 
 **Error: "Permission denied"**
+
 - Verify service account has `roles/aiplatform.user` role (for Vertex AI)
 - Check that `GOOGLE_APPLICATION_CREDENTIALS` is set correctly
 
 **Error: "File not found"**
+
 - Verify the file path is correct
 - Check file permissions
 
 **Upload operation times out**
+
 - Increase `poll_interval` or `max_wait_time`
 - Check file size (max 100 MB per document)
 - Verify network connectivity
 
 **No citations in response**
+
 - Ensure files are fully indexed (wait for `wait_for_completion=True`)
 - Check that the query is relevant to the uploaded documents
 - Verify File Search tool is properly configured
@@ -500,4 +514,3 @@ Internal use only.
 
 - [Gemini API File Search Documentation](https://ai.google.dev/gemini-api/docs/file-search)
 - [Google Gen AI SDK](https://github.com/google/generative-ai-python)
-

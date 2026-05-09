@@ -120,14 +120,14 @@ async def find_restaurants():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         # Los Angeles coordinates
         user_location = LatLng(latitude=34.050481, longitude=-118.248526)
-        
+
         response = await client.generate_content(
             contents="What are the best Italian restaurants within a 15-minute walk from here?",
             user_location=user_location,
             enable_maps_grounding=True
         )
         print(f"Response: {response.text}")
-        
+
         # Access Maps citations
         for citation in response.maps_citations:
             print(f"- {citation.title}: {citation.uri}")
@@ -142,13 +142,13 @@ async def local_recommendations():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         # User's location
         location = LatLng(latitude=37.7749, longitude=-122.4194)  # San Francisco
-        
+
         response = await client.generate_content(
             contents="Find coffee shops near me that are open now",
             user_location=location
         )
         print(response.text)
-        
+
         if response.has_maps_grounding:
             print(f"\nFound {len(response.maps_citations)} places")
 
@@ -161,14 +161,14 @@ asyncio.run(local_recommendations())
 async def with_widget():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         location = LatLng(latitude=40.7589, longitude=-73.9851)  # Times Square
-        
+
         response = await client.generate_content(
             contents="Show me museums near Times Square",
             user_location=location,
             enable_widget=True  # Enable widget context token
         )
         print(response.text)
-        
+
         # Use widget context token to render interactive map
         if response.has_widget_token:
             print(f"\nWidget Token: {response.google_maps_widget_context_token}")
@@ -186,11 +186,11 @@ async def explore_metadata():
             contents="What are the top-rated parks in Central Park area?",
             user_location=LatLng(latitude=40.7829, longitude=-73.9654)
         )
-        
+
         if response.grounding_metadata:
             print("Grounding Metadata:")
             print(f"Retrieval queries: {response.grounding_metadata.retrieval_queries}")
-            
+
             for chunk in response.grounding_metadata.grounding_chunks or []:
                 if chunk.maps:
                     print(f"\nPlace: {chunk.maps.title}")
@@ -210,14 +210,14 @@ from gemini_maps_grounding import GenerateContentConfig, LatLng
 async def with_config():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-3.1-flash-lite-preview",
+            model="gemini-3.1-flash-lite",
             enable_maps_grounding=True,
             enable_widget=True,
             user_location=LatLng(latitude=34.0522, longitude=-118.2437),
             temperature=0.7,
             max_output_tokens=2048
         )
-        
+
         response = await client.generate_content_with_config(
             contents="Find the best hiking trails near me",
             config=config
@@ -251,26 +251,28 @@ asyncio.run(general_query())
 
 Configuration container for Gemini Maps Grounding.
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `project_id` | str | GCP project ID (required for Vertex AI) |
-| `location` | str | GCP location (default: 'us-central1') |
-| `api_key` | str | Gemini API key (required if not using Vertex AI) |
-| `use_vertex_ai` | bool | Whether to use Vertex AI (default: True if project_id is set) |
-| `timeout` | float | Request timeout in seconds (default: 60.0) |
+| Attribute       | Type  | Description                                                   |
+| --------------- | ----- | ------------------------------------------------------------- |
+| `project_id`    | str   | GCP project ID (required for Vertex AI)                       |
+| `location`      | str   | GCP location (default: 'us-central1')                         |
+| `api_key`       | str   | Gemini API key (required if not using Vertex AI)              |
+| `use_vertex_ai` | bool  | Whether to use Vertex AI (default: True if project_id is set) |
+| `timeout`       | float | Request timeout in seconds (default: 60.0)                    |
 
 ### GeminiMapsGroundingClient Methods
 
 #### Core Methods
+
 - `generate_content(contents, model?, enable_maps_grounding?, enable_widget?, user_location?, temperature?, max_output_tokens?, response_mime_type?, response_schema?) -> GenerateContentResponse`
 - `generate_content_with_config(contents, config) -> GenerateContentResponse`
 
 ### Request Models
 
 #### GenerateContentConfig
+
 ```python
 GenerateContentConfig(
-    model: str = "gemini-3.1-flash-lite-preview",        # Model to use
+    model: str = "gemini-3.1-flash-lite",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -284,6 +286,7 @@ GenerateContentConfig(
 ```
 
 #### LatLng
+
 ```python
 LatLng(
     latitude: float,   # Latitude (-90 to 90)
@@ -294,6 +297,7 @@ LatLng(
 ### Response Models
 
 #### GenerateContentResponse
+
 ```python
 response.text                              # Generated text content
 response.grounding_metadata                 # GroundingMetadata or None
@@ -312,6 +316,7 @@ response.total_token_count                 # int - total tokens
 ```
 
 #### GroundingMetadata
+
 ```python
 grounding_metadata.grounding_chunks        # List[GroundingChunk] - grounding chunks
 grounding_metadata.retrieval_queries       # List[str] - retrieval queries
@@ -320,6 +325,7 @@ grounding_metadata.has_maps_citations      # bool - has Maps citations
 ```
 
 #### MapsChunk
+
 ```python
 maps_chunk.title                           # str - Place title
 maps_chunk.uri                             # str - Google Maps URI
@@ -329,7 +335,7 @@ maps_chunk.review_id                       # str - Review ID (if from review)
 
 ## Supported Models
 
-Examples in this package use `gemini-3.1-flash-lite-preview`.
+Examples in this package use `gemini-3.1-flash-lite`.
 
 See the [official documentation](https://ai.google.dev/gemini-api/docs/maps-grounding) for the complete list.
 
@@ -361,6 +367,7 @@ export GEMINI_USE_VERTEX_AI="false"
 ### Required IAM Roles
 
 For Vertex AI:
+
 - `roles/aiplatform.user` - For using Vertex AI Gemini API
 
 ## Error Handling
@@ -399,18 +406,23 @@ For detailed pricing information, see the [Gemini API pricing page](https://ai.g
 ## Limitations
 
 ### Geographical Scope
+
 - Globally available
 
 ### Model Support
+
 - Only specific Gemini models support Maps Grounding (see Supported Models above)
 - **Not available** with Gemini 3 or Gemini 2.0 Flash Lite
 
 ### Multimodal Support
+
 - Currently supports text input/output only
 - Does not support multimodal inputs/outputs beyond text and contextual map widgets
 
 ### Prohibited Territories
+
 Maps Grounding cannot be distributed or marketed in:
+
 - China
 - Crimea
 - Cuba
@@ -422,6 +434,7 @@ Maps Grounding cannot be distributed or marketed in:
 - Vietnam
 
 ### Prohibited Activities
+
 - Cannot be used for high-risk activities including emergency response services
 
 ## Best Practices
@@ -503,23 +516,28 @@ See the [official documentation](https://ai.google.dev/gemini-api/docs/maps-grou
 ### Common Issues
 
 **Error: "Project ID required for Vertex AI"**
+
 - Ensure `GEMINI_PROJECT_ID` is set
 - Or set `GEMINI_USE_VERTEX_AI=false` and provide `GEMINI_API_KEY`
 
 **Error: "API key required when not using Vertex AI"**
+
 - Set `GEMINI_API_KEY` environment variable
 - Or use Vertex AI by setting `GEMINI_PROJECT_ID`
 
 **No Maps citations in response**
+
 - Ensure query has geographical context
 - Check that model supports Maps Grounding
 - Verify Maps Grounding is enabled (`enable_maps_grounding=True`)
 
 **Widget token not returned**
+
 - Ensure `enable_widget=True` is set
 - Widget tokens are only returned when widget is enabled
 
 **High latency**
+
 - Monitor response times
 - Consider caching frequently requested locations
 - Optimize query specificity
@@ -532,14 +550,14 @@ See the [official documentation](https://ai.google.dev/gemini-api/docs/maps-grou
 async def restaurant_recommendations():
     async with GeminiMapsGroundingClient(GeminiMapsGroundingConfig.from_env()) as client:
         location = LatLng(latitude=34.050481, longitude=-118.248526)  # Los Angeles
-        
+
         response = await client.generate_content(
             contents="What are the best Italian restaurants within a 15-minute walk from here?",
             user_location=location,
             enable_widget=True
         )
         print(response.text)
-        
+
         print("\nSources:")
         for citation in response.maps_citations:
             print(f"- [{citation.title}]({citation.uri})")
@@ -557,7 +575,7 @@ async def plan_trip():
             user_location=LatLng(latitude=37.7749, longitude=-122.4194)
         )
         print(response.text)
-        
+
         # Extract place IDs for further processing
         place_ids = [citation.place_id for citation in response.maps_citations if citation.place_id]
         print(f"\nFound {len(place_ids)} places")
@@ -575,9 +593,9 @@ async def find_businesses():
             user_location=LatLng(latitude=40.7589, longitude=-73.9851),
             enable_maps_grounding=True
         )
-        
+
         print(response.text)
-        
+
         # Access detailed citation information
         if response.grounding_metadata:
             for chunk in response.grounding_metadata.grounding_chunks or []:
@@ -600,4 +618,3 @@ asyncio.run(find_businesses())
 ## License
 
 Internal use only.
-

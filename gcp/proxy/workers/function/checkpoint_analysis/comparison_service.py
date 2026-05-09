@@ -244,7 +244,7 @@ def compare_checkpoints(
     
     logger.info(f"Comparing checkpoints: {image1_url} vs {image2_url}")
     
-    model = "gemini-3.1-flash-lite-preview"
+    model = "gemini-3.1-flash-lite"
     
     image1_part = types.Part.from_uri(file_uri=image1_url, mime_type=content_type1)
     image2_part = types.Part.from_uri(file_uri=image2_url, mime_type=content_type2)

@@ -7,6 +7,7 @@ from vertexai.preview import rag
 from dotenv import load_dotenv
 from .prompts import knowledge_base_instructions
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ ask_knowledge_base_retrieval = VertexAiRagRetrieval(
 )
 
 knowledge_base_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='ask_knowledge_base_agent',
     instruction=knowledge_base_instructions(),
     input_schema=DocsInput,

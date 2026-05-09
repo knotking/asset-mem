@@ -398,7 +398,7 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │   │   │   │ RAG Engine   │  │ Gemini       │  │ Agent Builder        │  │    │  │
 │   │   │   │              │  │ Models       │  │ (ADK)                │  │    │  │
 │   │   │   │ • Embeddings │  │              │  │                      │  │    │  │
-│   │   │   │ • Retrieval  │  │ • gemini-pro │  │ • Multi-agent        │  │    │  │
+│   │   │   │ • Retrieval  │  │ • flash-lite │  │ • Multi-agent        │  │    │  │
 │   │   │   │ • Ranking    │  │ • vision     │  │   orchestration      │  │    │  │
 │   │   │   └──────────────┘  └──────────────┘  └──────────────────────┘  │    │  │
 │   │   │                                                                  │    │  │

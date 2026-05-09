@@ -102,7 +102,7 @@ class GeminiGoogleSearchClient:
     async def generate_content(
         self,
         contents: str,
-        model: str = "gemini-3.1-flash-lite-preview",
+        model: str = "gemini-3.1-flash-lite",
         enable_google_search: bool = True,
         enable_url_context: bool = False,
         temperature: Optional[float] = None,
@@ -296,7 +296,7 @@ class GeminiGoogleSearchClient:
             
         Example:
             config = GenerateContentConfig(
-                model="gemini-3.1-flash-lite-preview",
+                model="gemini-3.1-flash-lite",
                 enable_google_search=True,
                 enable_url_context=False,
                 temperature=0.7
