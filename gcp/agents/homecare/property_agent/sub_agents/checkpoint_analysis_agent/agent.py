@@ -69,7 +69,7 @@ def before_tool_callback(_tool: BaseTool, _args: Dict[str, Any], tool_context: T
 
 coverage_parallel_agent = Agent(
     name="checkpoint_coverage_parallel_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Runs coverage analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint coverage branch.
@@ -92,7 +92,7 @@ If "coverage" is present:
 
 diy_parallel_agent = Agent(
     name="checkpoint_diy_parallel_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Runs DIY analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint DIY branch.
@@ -115,7 +115,7 @@ If "diy" is present:
 
 service_parallel_agent = Agent(
     name="checkpoint_service_parallel_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Runs service analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint service branch.
@@ -138,7 +138,7 @@ If "service" is present:
 
 cost_parallel_agent = Agent(
     name="checkpoint_cost_parallel_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Runs cost analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint cost branch.
@@ -172,7 +172,7 @@ parallel_optional_agents = ParallelAgent(
 
 synthesis_agent = Agent(
     name="checkpoint_analysis_synthesis_agent",
-    model="gemini-2.5-flash",
+    model="gemini-3.1-flash-lite-preview",
     description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
     instruction="""
 You are the final checkpoint analysis synthesizer.
@@ -299,7 +299,7 @@ Final validation before returning:
 )
 
 checkpoint_analysis_workflow = SequentialAgent(
-    name="checkpoint_analysis_workflow",
+    name="checkpoint_analysis_agent",
     description="Runs optional checkpoint agents in parallel then synthesizes one stable response.",
     sub_agents=[parallel_optional_agents, synthesis_agent],
 )

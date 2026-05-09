@@ -145,7 +145,7 @@ return hardcoded_estimate()
 - `validate_cost_ranges()` - Ensure realistic estimates
 
 **AI Model Configuration**:
-- Model: `gemini-2.0-flash-exp`
+- Model: `gemini-3.1-flash-lite-preview`
 - Temperature: 0.3 (consistent estimates)
 - Max tokens: 2048
 - Tools: Google Search grounding enabled

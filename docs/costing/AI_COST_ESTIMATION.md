@@ -17,7 +17,7 @@ This document provides a detailed technical explanation of how AI-powered cost e
 
 **Model Configuration**:
 ```python
-model = 'gemini-2.0-flash-exp'
+model = 'gemini-3.1-flash-lite-preview'
 temperature = 0.3  # Lower for consistent cost estimates
 top_p = 0.8
 top_k = 40

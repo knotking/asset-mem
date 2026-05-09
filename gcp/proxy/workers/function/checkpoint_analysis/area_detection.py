@@ -100,7 +100,7 @@ def detect_room_area(
 
     logger.info("Sending image to Gemini for room/area detection...")
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.1-flash-lite-preview",
         contents=contents,
         config={
             "temperature": 0.3,  # Lower temperature for more consistent room detection
@@ -201,7 +201,7 @@ def compare_room_similarity(
 
     logger.info("Comparing media files for room similarity...")
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.1-flash-lite-preview",
         contents=contents,
         config={
             "temperature": 0.2,  # Lower temperature for more consistent comparisons

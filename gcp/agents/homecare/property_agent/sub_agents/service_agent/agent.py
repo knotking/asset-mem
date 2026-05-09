@@ -15,7 +15,7 @@ load_dotenv()
 # Google search agent for service searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -26,7 +26,7 @@ serpapi_search = SerpAPIWrapper(
 )
 
 service_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='service_agent',
     description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),

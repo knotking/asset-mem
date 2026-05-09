@@ -156,7 +156,7 @@ FIREBASE_PROJECT_ID=your-firebase-project
 FIREBASE_ADMIN_SDK_PATH=/secrets/firebase-admin-sdk.json
 
 # Agent Configuration
-AGENT_MODEL=gemini-2.5-flash
+AGENT_MODEL=gemini-3.1-flash-lite-preview
 AGENT_TEMPERATURE=0.7
 AGENT_MAX_TOKENS=8192
 
