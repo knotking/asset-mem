@@ -7,17 +7,16 @@ license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "adk==0.0.5",
-    "google-adk==1.7.0",
-    "google-cloud-aiplatform[adk,agent-engines]==1.104.0",
-    "google-auth==2.45.0",
+    "google-adk==1.33.0",
+    "google-cloud-aiplatform[adk,agent-engines]==1.151.0",
+    "google-auth==2.52.0",
     "google-cloud-firestore==2.22.0",  # For Firestore vector search in checkpoint_agent
     "google-cloud-pubsub==2.31.1",
-    "google-genai==1.56.0",  # For query embedding generation in checkpoint_agent
+    "google-genai==1.72.0",  # For query embedding generation in checkpoint_agent
     "google-search-results==2.4.2",
     "langchain==0.3.26",
     "langchain-community==0.3.27",
-    "llama-index==0.12.0",
+    "llama-index==0.14.21",
     "pydantic-settings==2.8.1",
     "python-dotenv==1.0.0",
     "requests==2.32.4",
