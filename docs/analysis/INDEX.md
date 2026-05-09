@@ -229,7 +229,7 @@ This directory contains **122KB** of comprehensive documentation covering all as
 | Created Date | December 31, 2025 |
 | Last Updated | December 31, 2025 |
 | Analysis Agent Version | 1.0.0 |
-| Gemini Model | gemini-2.5-flash |
+| Gemini Model | gemini-3.1-flash-lite-preview |
 | Python Version | 3.11+ |
 | GCP Region | us-central1 |
 

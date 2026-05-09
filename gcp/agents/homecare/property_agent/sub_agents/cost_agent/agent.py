@@ -5,12 +5,35 @@ from typing import Any, Dict, List, Optional
 
 from google.adk.agents import Agent
 from google import genai
+from pydantic import BaseModel, Field
 
 from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
 from .service_pricing_extractor import extract_and_combine_all_pricing, calibrate_ai_estimate_with_provider_data
+from ...agent_inputs import CheckpointOptionalAgent
 
 logger = logging.getLogger(__name__)
+
+
+class CostAgentInput(BaseModel):
+    """Structured input when the cost agent is exposed through AgentTool."""
+
+    user_query: str = Field(description="The original user query or repair question.")
+    checkpoint_results: Optional[str] = Field(
+        default=None,
+        description="Checkpoint retrieval summary containing detected issues and context."
+    )
+    checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
+        default=None,
+        description="Optional checkpoint analysis agents requested by the caller."
+    )
+    context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs.")
+    property_address: Optional[str] = Field(default=None, description="Property address for location-aware pricing.")
+    property_id: Optional[str] = Field(default=None, description="Property ID for reference.")
+    service_results: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional local service provider results for pricing calibration."
+    )
 
 
 def _extract_diagnosis_from_query(query: str) -> Optional[str]:
@@ -453,7 +476,7 @@ def cost_estimation_diy(query: str) -> str:
 
 
 cost_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='cost_agent',
     description='Provides AI-powered, location-aware DIY vs Service cost estimations and DIY-only estimates.',
     instruction=(
@@ -465,8 +488,8 @@ cost_agent = Agent(
         '3. Hardcoded cost library as fallback for reliability\n'
         '\n'
         'When calling tools:\n'
-        '- Ground every cost estimate in the triage diagnosis provided in the input payload\n'
-        '- Extract diagnosis, property_address, and serviceResults from the input when available\n'
+        '- Ground every cost estimate in the triage diagnosis, checkpoint_results, or user_query provided in the input payload\n'
+        '- Extract diagnosis, checkpoint_results, property_address, and service_results from the input when available\n'
         '- The tools will automatically use AI estimation when enabled and fall back to hardcoded values if needed\n'
         '- Always return structured JSON exactly as produced by the tools\n'
         '\n'
@@ -478,6 +501,7 @@ cost_agent = Agent(
         '\n'
         'Always provide comprehensive cost breakdowns with DIY and professional service options.'
     ),
+    input_schema=CostAgentInput,
     tools=[
         cost_estimation,
         cost_estimation_diy,

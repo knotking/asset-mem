@@ -130,7 +130,7 @@ Centralized configuration for the cost estimation system.
 - `MIN_PROVIDER_DATA_CONFIDENCE`: Minimum for calibration (default: 0.5)
 
 **Model Configuration:**
-- `AI_MODEL_NAME`: Gemini model (default: gemini-2.0-flash-exp)
+- `AI_MODEL_NAME`: Gemini model (default: gemini-3.1-flash-lite-preview)
 - `AI_TEMPERATURE`: Temperature setting (default: 0.3)
 - `AI_MAX_OUTPUT_TOKENS`: Max output (default: 2048)
 
@@ -257,7 +257,7 @@ PROVIDER_PRICING_TIMEOUT=10
 PROVIDER_DATA_WEIGHT=0.3  # 0.0-1.0
 
 # Model Settings
-COST_ESTIMATION_MODEL=gemini-2.0-flash-exp
+COST_ESTIMATION_MODEL=gemini-3.1-flash-lite-preview
 AI_TEMPERATURE=0.3
 AI_MAX_OUTPUT_TOKENS=2048
 

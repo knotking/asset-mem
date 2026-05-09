@@ -13,6 +13,7 @@ from google.adk.tools.agent_tool import AgentTool
 from dotenv import load_dotenv
 from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
+from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
 from ...agent_inputs import DocsInput
 
 load_dotenv()
@@ -188,26 +189,16 @@ def ask_checkpoints_retrieval(
 
 
 checkpoint_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='checkpoint_agent',
     instruction=checkpoint_agent_instruction(),
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
-        ask_checkpoints_retrieval
-        # Note: checkpoint_analysis_agent will be added dynamically after initialization
-        # to avoid circular import issues
+        ask_checkpoints_retrieval,
+        AgentTool(checkpoint_analysis_agent),
     ],
     disallow_transfer_to_parent=True,
     output_key='checkpoint_result'
 )
-
-# Add checkpoint_analysis_agent as a tool after checkpoint_agent is created
-# This avoids circular import issues
-try:
-    from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
-    checkpoint_agent.tools.append(AgentTool(checkpoint_analysis_agent))
-except ImportError:
-    # checkpoint_analysis_agent not available yet, will be added later
-    logger.warning("checkpoint_analysis_agent not available during initialization")
 
 __all__ = ["checkpoint_agent"]

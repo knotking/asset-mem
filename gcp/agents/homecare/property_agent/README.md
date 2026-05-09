@@ -20,7 +20,7 @@ The Property Agent handles a wide range of property-related queries:
 
 ## Architecture
 - Root agent defined in `agent.py` constructs two agents:
-  - `doculink_agent` with tools: `user_docs_agent`, `knowledge_base_agent`
+  - `doculink_agent` with tools: `ask_user_docs_agent`, `ask_knowledge_base_agent`
   - `root_agent` named `property_agent` with sub‑agents: `analysis_agent`, `doculink_agent`
 
 Key files:
@@ -171,7 +171,7 @@ DocuLink input (`DocsInput`):
 ## Output Shapes
 
 - From `analysis_agent`: nested `analysis` object that includes triage (from media or text) plus whichever optional sections were requested (coverage, DIY, service, cost). See `sub_agents/analysis_agent/README.md`.
-- From `doculink_agent` (if invoked in custom flows): the direct output of either `user_docs_agent` or `knowledge_base_agent` (unmodified), or a best‑effort answer clearly prefaced when retrieval yields nothing.
+- From `doculink_agent` (if invoked in custom flows): the direct output of either `ask_user_docs_agent` or `ask_knowledge_base_agent` (unmodified), or a best‑effort answer clearly prefaced when retrieval yields nothing.
 
 ## Sub-Agent Summaries
 
@@ -182,7 +182,7 @@ DocuLink input (`DocsInput`):
   - **service_agent**: Finds local service providers and provides cost estimates
   - **shopping_agent**: Reusable agent for product recommendations (used by DIY agent)
   - **cost_agent**: Provides DIY vs Service cost estimates
-- **doculink_agent**: If `context_doc_uris` are provided, uses `user_docs_agent`; otherwise uses `knowledge_base_agent`. Returns results as-is without rewriting.
+- **doculink_agent**: If `context_doc_uris` are provided, uses `ask_user_docs_agent`; otherwise uses `ask_knowledge_base_agent`. Returns results as-is without rewriting.
 
 ## Usage
 

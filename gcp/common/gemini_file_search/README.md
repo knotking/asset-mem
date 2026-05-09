@@ -162,7 +162,7 @@ async def rag_example():
         response = await client.generate_content(
             contents="What are the key points in the document?",
             file_search_store_names=[store.name],
-            model="gemini-2.5-flash"
+            model="gemini-3.1-flash-lite-preview"
         )
         
         print(f"Response: {response.text}")
@@ -311,12 +311,7 @@ Citation(
 
 ## Supported Models
 
-The following models support File Search:
-
-- `gemini-3-pro-preview`
-- `gemini-2.5-pro`
-- `gemini-2.5-flash` and its preview versions
-- `gemini-2.5-flash-lite` and its preview versions
+Examples in this package use `gemini-3.1-flash-lite-preview`.
 
 ## Supported File Types
 

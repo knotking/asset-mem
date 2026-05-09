@@ -417,7 +417,7 @@ client = genai.Client(
 
 def ai_handler(request: YourRequest) -> YourResponse:
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-3.1-flash-lite-preview",
         contents=[request.prompt],
         config={"temperature": 0.7}
     )

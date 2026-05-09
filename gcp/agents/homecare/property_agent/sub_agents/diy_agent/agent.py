@@ -16,7 +16,7 @@ load_dotenv()
 # Google search agent for DIY searches
 google_search_agent = Agent(
     name="google_search_agent",
-    model="gemini-2.5-flash-lite",
+    model="gemini-3.1-flash-lite-preview",
     description="Agent to answer questions using Google Search.",
     instruction="I can answer your questions by searching the internet. Just ask me anything!",
     tools=[google_search],
@@ -54,7 +54,7 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
 
 
 diy_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='diy_agent',
     description="Provides DIY repair recommendations, tutorials, and product suggestions.",
     instruction=diy_agent_instructions(),

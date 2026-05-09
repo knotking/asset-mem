@@ -28,7 +28,7 @@ def before_tool_callback( tool: BaseTool, args: Dict[str, Any], tool_context: To
         logger.warning(f"property_id not found in args: {args}")
 
 doculink_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='doculink_agent',
     description=("Agent that manages and executes document retrieval-related tasks."),
     instruction=doculink_agent_system_instruction(),
@@ -46,7 +46,7 @@ doculink_agent = Agent(
 # through DocsInput schema when root agent delegates to doculink_agent
 
 root_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='property_agent',
     description=("Agent that manages and executes homecare-related tasks."),
     instruction=root_agent_instructions(),

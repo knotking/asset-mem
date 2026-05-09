@@ -6,6 +6,7 @@ from google.adk.tools.retrieval.vertex_ai_rag_retrieval import VertexAiRagRetrie
 from vertexai.preview import rag
 from dotenv import load_dotenv
 from .prompts import knowledge_base_instructions
+from ...agent_inputs import DocsInput
 
 load_dotenv()
 
@@ -27,9 +28,10 @@ ask_knowledge_base_retrieval = VertexAiRagRetrieval(
 )
 
 knowledge_base_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-3.1-flash-lite-preview',
     name='ask_knowledge_base_agent',
     instruction=knowledge_base_instructions(),
+    input_schema=DocsInput,
     tools=[
         ask_knowledge_base_retrieval,
     ],
