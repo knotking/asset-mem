@@ -41,9 +41,10 @@ class CheckpointAnalysisInput(BaseModel):
 
 
 def normalize_default_api_tool_names(
-    _callback_context: CallbackContext, llm_response: LlmResponse
+    callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
     """Gemini can prefix function calls with default_api; ADK stores plain names."""
+    del callback_context  # ADK passes this as a keyword arg; we don't use it.
     if not llm_response.content or not llm_response.content.parts:
         return None
 
@@ -61,8 +62,9 @@ def normalize_default_api_tool_names(
     return llm_response if normalized else None
 
 
-def before_tool_callback(_tool: BaseTool, _args: Dict[str, Any], tool_context: ToolContext, **kwargs):
+def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, **kwargs):
     """Ensure user_id is set in tool context state."""
+    del tool, args, kwargs  # ADK passes these as keyword args; we don't use them.
     if hasattr(tool_context, '_invocation_context') and hasattr(tool_context._invocation_context, 'session'):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
