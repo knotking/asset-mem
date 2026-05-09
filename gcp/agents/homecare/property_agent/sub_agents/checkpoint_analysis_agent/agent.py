@@ -6,8 +6,11 @@ recommendations based on checkpoint data analysis.
 """
 
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from google.adk.agents import Agent, ParallelAgent, SequentialAgent
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.models.llm_response import LlmResponse
+from google.adk.tools import BaseTool
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext
 from pydantic import BaseModel, Field
@@ -37,7 +40,28 @@ class CheckpointAnalysisInput(BaseModel):
     location_radius: Optional[int] = Field(default=None, description="Search radius for local services")
 
 
-def before_tool_callback(tool_context: ToolContext, **kwargs):
+def normalize_default_api_tool_names(
+    _callback_context: CallbackContext, llm_response: LlmResponse
+) -> Optional[LlmResponse]:
+    """Gemini can prefix function calls with default_api; ADK stores plain names."""
+    if not llm_response.content or not llm_response.content.parts:
+        return None
+
+    normalized = False
+    for part in llm_response.content.parts:
+        function_call = getattr(part, "function_call", None)
+        if (
+            function_call
+            and isinstance(function_call.name, str)
+            and function_call.name.startswith("default_api.")
+        ):
+            function_call.name = function_call.name.split(".", 1)[1]
+            normalized = True
+
+    return llm_response if normalized else None
+
+
+def before_tool_callback(_tool: BaseTool, _args: Dict[str, Any], tool_context: ToolContext, **kwargs):
     """Ensure user_id is set in tool context state."""
     if hasattr(tool_context, '_invocation_context') and hasattr(tool_context._invocation_context, 'session'):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
@@ -62,6 +86,7 @@ If "coverage" is present:
     input_schema=CheckpointAnalysisInput,
     output_key="checkpoint_parallel_coverage_result",
     disallow_transfer_to_parent=True,
+    after_model_callback=normalize_default_api_tool_names,
     before_tool_callback=before_tool_callback,
 )
 
@@ -84,6 +109,7 @@ If "diy" is present:
     input_schema=CheckpointAnalysisInput,
     output_key="checkpoint_parallel_diy_result",
     disallow_transfer_to_parent=True,
+    after_model_callback=normalize_default_api_tool_names,
     before_tool_callback=before_tool_callback,
 )
 
@@ -106,6 +132,7 @@ If "service" is present:
     input_schema=CheckpointAnalysisInput,
     output_key="checkpoint_parallel_service_result",
     disallow_transfer_to_parent=True,
+    after_model_callback=normalize_default_api_tool_names,
     before_tool_callback=before_tool_callback,
 )
 
@@ -128,6 +155,7 @@ If "cost" is present:
     input_schema=CheckpointAnalysisInput,
     output_key="checkpoint_parallel_cost_result",
     disallow_transfer_to_parent=True,
+    after_model_callback=normalize_default_api_tool_names,
     before_tool_callback=before_tool_callback,
 )
 

@@ -12,6 +12,8 @@ from typing import Any, Dict, Optional, Tuple
 from google import genai
 from google.genai import types
 
+from .config import config
+
 logger = logging.getLogger(__name__)
 
 
