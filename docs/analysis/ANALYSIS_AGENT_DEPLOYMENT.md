@@ -55,26 +55,28 @@ This document covers deployment procedures, infrastructure setup, monitoring, tr
 
 ### Resource Requirements
 
-| Component | CPU | Memory | Instances | Scaling |
-|-----------|-----|--------|-----------|---------|
-| Proxy Service | 2 vCPU | 4 GB | 2-10 | Auto |
-| Agent Workers | 4 vCPU | 8 GB | 1-5 | Auto |
-| Redis Cache | 1 vCPU | 2 GB | 1 | Manual |
+| Component     | CPU    | Memory | Instances | Scaling |
+| ------------- | ------ | ------ | --------- | ------- |
+| Proxy Service | 2 vCPU | 4 GB   | 2-10      | Auto    |
+| Agent Workers | 4 vCPU | 8 GB   | 1-5       | Auto    |
+| Redis Cache   | 1 vCPU | 2 GB   | 1         | Manual  |
 
 ## Deployment Process
 
 ### Prerequisites
 
 1. **Google Cloud Project Setup**
+
    ```bash
    export PROJECT_ID="your-project-id"
    export REGION="us-central1"
    export LOCATION="us-central1"
-   
+
    gcloud config set project $PROJECT_ID
    ```
 
 2. **Enable Required APIs**
+
    ```bash
    gcloud services enable \
      run.googleapis.com \
@@ -87,32 +89,34 @@ This document covers deployment procedures, infrastructure setup, monitoring, tr
    ```
 
 3. **Create Service Accounts**
+
    ```bash
    # Proxy service account
    gcloud iam service-accounts create proxy-service \
      --display-name="Proxy Service Account"
-   
+
    # Agent service account
    gcloud iam service-accounts create agent-service \
      --display-name="Agent Service Account"
    ```
 
 4. **Grant IAM Permissions**
+
    ```bash
    # Proxy service permissions
    gcloud projects add-iam-policy-binding $PROJECT_ID \
      --member="serviceAccount:proxy-service@$PROJECT_ID.iam.gserviceaccount.com" \
      --role="roles/storage.objectViewer"
-   
+
    gcloud projects add-iam-policy-binding $PROJECT_ID \
      --member="serviceAccount:proxy-service@$PROJECT_ID.iam.gserviceaccount.com" \
      --role="roles/firestore.user"
-   
+
    # Agent service permissions
    gcloud projects add-iam-policy-binding $PROJECT_ID \
      --member="serviceAccount:agent-service@$PROJECT_ID.iam.gserviceaccount.com" \
      --role="roles/aiplatform.user"
-   
+
    gcloud projects add-iam-policy-binding $PROJECT_ID \
      --member="serviceAccount:agent-service@$PROJECT_ID.iam.gserviceaccount.com" \
      --role="roles/storage.objectAdmin"
@@ -156,7 +160,7 @@ FIREBASE_PROJECT_ID=your-firebase-project
 FIREBASE_ADMIN_SDK_PATH=/secrets/firebase-admin-sdk.json
 
 # Agent Configuration
-AGENT_MODEL=gemini-3.1-flash-lite-preview
+AGENT_MODEL=gemini-3.1-flash-lite
 AGENT_TEMPERATURE=0.7
 AGENT_MAX_TOKENS=8192
 
@@ -181,6 +185,7 @@ ENABLE_TRACING=true
 #### 1. Build and Push Docker Images
 
 **Proxy Service:**
+
 ```bash
 cd gcp/proxy
 
@@ -192,6 +197,7 @@ docker push gcr.io/$PROJECT_ID/proxy-service:latest
 ```
 
 **Agent Workers:**
+
 ```bash
 cd gcp/agents/homecare
 
@@ -414,29 +420,29 @@ def record_agent_execution(agent_name: str, duration_ms: int, success: bool):
     series = monitoring_v3.TimeSeries()
     series.metric.type = "custom.googleapis.com/agent/execution_time"
     series.resource.type = "cloud_run_revision"
-    
+
     point = monitoring_v3.Point()
     point.value.double_value = duration_ms
     point.interval.end_time.seconds = int(time.time())
-    
+
     series.points = [point]
     series.metric.labels["agent_name"] = agent_name
     series.metric.labels["success"] = str(success)
-    
+
     client.create_time_series(name=project_name, time_series=[series])
 ```
 
 #### Key Metrics to Monitor
 
-| Metric | Type | Alert Threshold |
-|--------|------|-----------------|
-| Request Rate | Counter | > 1000/min |
-| Response Time (p95) | Distribution | > 30s |
-| Error Rate | Counter | > 5% |
-| Agent Execution Time | Distribution | > 60s |
-| API Call Failures | Counter | > 10% |
-| Cache Hit Rate | Gauge | < 60% |
-| Storage Usage | Gauge | > 80% |
+| Metric               | Type         | Alert Threshold |
+| -------------------- | ------------ | --------------- |
+| Request Rate         | Counter      | > 1000/min      |
+| Response Time (p95)  | Distribution | > 30s           |
+| Error Rate           | Counter      | > 5%            |
+| Agent Execution Time | Distribution | > 60s           |
+| API Call Failures    | Counter      | > 10%           |
+| Cache Hit Rate       | Gauge        | < 60%           |
+| Storage Usage        | Gauge        | > 80%           |
 
 #### Alerting Policies
 
@@ -478,7 +484,7 @@ class StructuredLogger:
     def __init__(self, service_name: str):
         self.service_name = service_name
         self.logger = logging.getLogger(service_name)
-    
+
     def log(self, level: str, message: str, **kwargs):
         log_entry = {
             "service": self.service_name,
@@ -486,7 +492,7 @@ class StructuredLogger:
             "severity": level,
             **kwargs
         }
-        
+
         if level == "ERROR":
             self.logger.error(json.dumps(log_entry))
         elif level == "WARNING":
@@ -541,10 +547,10 @@ def analyze_query(query: str):
     with tracer.start_as_current_span("analyze_query"):
         with tracer.start_as_current_span("triage"):
             triage_result = triage_agent.run(query)
-        
+
         with tracer.start_as_current_span("diy"):
             diy_result = diy_agent.run(query)
-        
+
         return combine_results(triage_result, diy_result)
 ```
 
@@ -555,10 +561,12 @@ def analyze_query(query: str):
 #### Issue: High Response Times
 
 **Symptoms:**
+
 - P95 latency > 30 seconds
 - User complaints about slow responses
 
 **Diagnosis:**
+
 ```bash
 # Check agent execution times
 gcloud logging read "jsonPayload.duration_ms>30000" --limit=50
@@ -568,6 +576,7 @@ gcloud logging read "jsonPayload.api_name=serpapi AND jsonPayload.api_duration_m
 ```
 
 **Solutions:**
+
 1. Increase Cloud Run concurrency
 2. Scale up agent workers
 3. Implement caching for repeated queries
@@ -576,16 +585,19 @@ gcloud logging read "jsonPayload.api_name=serpapi AND jsonPayload.api_duration_m
 #### Issue: API Rate Limits Exceeded
 
 **Symptoms:**
+
 - Errors: "Rate limit exceeded"
 - Failed API calls in logs
 
 **Diagnosis:**
+
 ```bash
 # Check API error rates
 gcloud logging read "jsonPayload.error_code=RATE_LIMIT" --limit=100
 ```
 
 **Solutions:**
+
 1. Implement request queuing
 2. Increase API quota/tier
 3. Implement exponential backoff
@@ -594,10 +606,12 @@ gcloud logging read "jsonPayload.error_code=RATE_LIMIT" --limit=100
 #### Issue: RAG Retrieval Failures
 
 **Symptoms:**
+
 - Coverage agent returns no results
 - Errors: "RAG corpus not found"
 
 **Diagnosis:**
+
 ```bash
 # Check RAG corpus status
 gcloud ai indexes list --region=$LOCATION
@@ -607,6 +621,7 @@ python scripts/check_user_corpus.py --user-id=USER_ID
 ```
 
 **Solutions:**
+
 1. Verify corpus exists for user
 2. Re-index documents
 3. Check IAM permissions
@@ -615,10 +630,12 @@ python scripts/check_user_corpus.py --user-id=USER_ID
 #### Issue: Memory Exhaustion
 
 **Symptoms:**
+
 - Cloud Run instances restarting
 - OOM (Out of Memory) errors
 
 **Diagnosis:**
+
 ```bash
 # Check memory usage
 gcloud monitoring time-series list \
@@ -626,6 +643,7 @@ gcloud monitoring time-series list \
 ```
 
 **Solutions:**
+
 1. Increase memory allocation
 2. Reduce concurrency
 3. Implement streaming for large responses
@@ -650,6 +668,7 @@ gcloud logging read "resource.type=cloud_run_revision AND jsonPayload.level=DEBU
 ### Horizontal Scaling
 
 **Auto-scaling Configuration:**
+
 ```bash
 gcloud run services update proxy-service \
   --min-instances=2 \
@@ -659,6 +678,7 @@ gcloud run services update proxy-service \
 ```
 
 **Scaling Triggers:**
+
 - CPU utilization > 70%
 - Request count > 80 per instance
 - Memory utilization > 80%
@@ -666,6 +686,7 @@ gcloud run services update proxy-service \
 ### Vertical Scaling
 
 **Increase Resources:**
+
 ```bash
 gcloud run services update proxy-service \
   --memory=8Gi \
@@ -675,6 +696,7 @@ gcloud run services update proxy-service \
 ### Caching Strategy
 
 **Redis Cache Implementation:**
+
 ```python
 import redis
 import json
@@ -726,6 +748,7 @@ python scripts/export_rag_corpus.py \
 **Recovery Point Objective (RPO):** 24 hours
 
 **Recovery Steps:**
+
 1. Restore Firestore from latest backup
 2. Restore RAG corpus from latest backup
 3. Redeploy Cloud Run services
@@ -736,15 +759,15 @@ python scripts/export_rag_corpus.py \
 
 ### Cost Breakdown
 
-| Service | Monthly Cost (Est.) |
-|---------|---------------------|
-| Cloud Run (Proxy) | $200-500 |
-| Cloud Run (Workers) | $300-800 |
-| Vertex AI (RAG) | $100-300 |
-| Cloud Storage | $50-150 |
-| External APIs | $200-1000 |
-| Networking | $50-100 |
-| **Total** | **$900-2850** |
+| Service             | Monthly Cost (Est.) |
+| ------------------- | ------------------- |
+| Cloud Run (Proxy)   | $200-500            |
+| Cloud Run (Workers) | $300-800            |
+| Vertex AI (RAG)     | $100-300            |
+| Cloud Storage       | $50-150             |
+| External APIs       | $200-1000           |
+| Networking          | $50-100             |
+| **Total**           | **$900-2850**       |
 
 ### Optimization Strategies
 
@@ -770,26 +793,31 @@ python scripts/export_rag_corpus.py \
 ## Security Best Practices
 
 ### Authentication
+
 - Use Firebase Authentication for all requests
 - Validate tokens on every request
 - Implement token refresh logic
 
 ### Authorization
+
 - Enforce user-level access control
 - Isolate user data (RAG corpus, storage)
 - Use service accounts with minimal permissions
 
 ### Data Protection
+
 - Encrypt data at rest (Cloud Storage, Firestore)
 - Encrypt data in transit (HTTPS, TLS)
 - Implement data retention policies
 
 ### API Security
+
 - Store API keys in Secret Manager
 - Rotate keys regularly
 - Monitor for unauthorized access
 
 ### Network Security
+
 - Use Cloud Armor for DDoS protection
 - Implement rate limiting
 - Restrict service-to-service communication
@@ -799,16 +827,19 @@ python scripts/export_rag_corpus.py \
 ### Regular Tasks
 
 **Daily:**
+
 - Monitor error rates
 - Check API quota usage
 - Review slow queries
 
 **Weekly:**
+
 - Review cost reports
 - Analyze usage patterns
 - Update documentation
 
 **Monthly:**
+
 - Rotate API keys
 - Review and update dependencies
 - Performance testing
@@ -817,27 +848,29 @@ python scripts/export_rag_corpus.py \
 ### Update Procedure
 
 1. **Test in Staging**
+
    ```bash
    # Deploy to staging
    gcloud run deploy proxy-service-staging \
      --image=gcr.io/$PROJECT_ID/proxy-service:v1.1.0
-   
+
    # Run tests
    pytest tests/e2e/ --env=staging
    ```
 
 2. **Gradual Rollout**
+
    ```bash
    # Deploy with traffic split
    gcloud run services update-traffic proxy-service \
      --to-revisions=LATEST=10,PREVIOUS=90
-   
+
    # Monitor metrics for 1 hour
-   
+
    # Increase traffic gradually
    gcloud run services update-traffic proxy-service \
      --to-revisions=LATEST=50,PREVIOUS=50
-   
+
    # Full rollout
    gcloud run services update-traffic proxy-service \
      --to-revisions=LATEST=100
@@ -848,4 +881,3 @@ python scripts/export_rag_corpus.py \
    gcloud run services update-traffic proxy-service \
      --to-revisions=PREVIOUS=100
    ```
-

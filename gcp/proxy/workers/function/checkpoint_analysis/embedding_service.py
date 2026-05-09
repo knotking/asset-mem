@@ -21,7 +21,7 @@ try:
     client = genai.Client(
         vertexai=True,
         project=PROJECT_ID,
-        location=LOCATION
+        location='global'
     )
     logger.info(f"Google Gen AI SDK initialized for embeddings (project: {PROJECT_ID}, location: {LOCATION})")
 except Exception as e:

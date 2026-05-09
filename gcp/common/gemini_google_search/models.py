@@ -98,7 +98,7 @@ class GroundingMetadata(BaseModel):
 class GenerateContentConfig(BaseModel):
     """Configuration for generateContent with Google Search Grounding."""
     model: str = Field(
-        default="gemini-3.1-flash-lite-preview",
+        default="gemini-3.1-flash-lite",
         description="Model to use (must support Google Search Grounding)"
     )
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Temperature")

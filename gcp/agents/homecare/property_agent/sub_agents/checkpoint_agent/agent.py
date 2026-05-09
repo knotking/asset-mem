@@ -15,6 +15,7 @@ from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
 from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 load_dotenv()
 
@@ -189,7 +190,7 @@ def ask_checkpoints_retrieval(
 
 
 checkpoint_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='checkpoint_agent',
     instruction=checkpoint_agent_instruction(),
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)

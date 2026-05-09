@@ -9,6 +9,7 @@ This document provides a detailed technical explanation of how AI-powered cost e
 ### Gemini 2.0 Flash Experimental
 
 **Model Selection Rationale**:
+
 - **Speed**: Fast response times (2-4 seconds typical)
 - **Cost-Effective**: Lower cost per token than larger models
 - **Search Grounding**: Built-in Google Search integration
@@ -16,8 +17,9 @@ This document provides a detailed technical explanation of how AI-powered cost e
 - **Current Data**: Access to real-time web information
 
 **Model Configuration**:
+
 ```python
-model = 'gemini-3.1-flash-lite-preview'
+model = 'gemini-3.1-flash-lite'
 temperature = 0.3  # Lower for consistent cost estimates
 top_p = 0.8
 top_k = 40
@@ -26,6 +28,7 @@ tools = [GoogleSearch()]  # Enable search grounding
 ```
 
 **Why Low Temperature (0.3)?**
+
 - Cost estimates need consistency
 - Reduce creative variations
 - More predictable ranges
@@ -41,7 +44,7 @@ sequenceDiagram
     participant Gemini
     participant GoogleSearch
     participant Web
-    
+
     System->>Gemini: Cost estimation prompt
     Gemini->>GoogleSearch: Search for pricing data
     GoogleSearch->>Web: Query: "plumber cost San Francisco 2026"
@@ -54,6 +57,7 @@ sequenceDiagram
 ### Search Queries Generated
 
 The AI automatically generates search queries like:
+
 - "average cost [repair_type] [location] 2026"
 - "plumber hourly rate [city] [state]"
 - "[material] cost [location] 2026"
@@ -145,7 +149,7 @@ Please provide cost estimates in the following format:
    - When professional service is recommended
    - Next steps for the homeowner
 
-**Important:** 
+**Important:**
 - Use current 2026 pricing
 - Consider regional cost variations in San Francisco, CA
 - Be specific about materials and labor
@@ -160,27 +164,35 @@ Return your response in a structured format that can be parsed into JSON.
 See `prompts.py` for specialized templates:
 
 1. **Location Pricing Prompt**
+
 ```python
 get_location_pricing_prompt(trade="plumber", location="San Francisco, CA")
 ```
+
 Queries: Regional labor rates, cost-of-living adjustments, typical service fees
 
 2. **Material Cost Prompt**
+
 ```python
 get_material_cost_prompt(materials="PEX pipe, fittings", repair_type="plumbing leak")
 ```
+
 Queries: Current material costs, where to buy, seasonal variations
 
 3. **Complexity Analysis Prompt**
+
 ```python
 get_complexity_analysis_prompt(diagnosis="Electrical panel upgrade")
 ```
+
 Analyzes: Access difficulty, skill level, time, safety, permits, DIY feasibility
 
 4. **Market Trends Prompt**
+
 ```python
 get_market_trends_prompt(repair_type="HVAC repair", location="Seattle, WA")
 ```
+
 Queries: Current market rates, seasonal variations, labor availability
 
 ## Response Parsing
@@ -216,16 +228,16 @@ def _parse_ai_response_to_json(ai_response, diagnosis, repair_details):
     # 1. Extract cost ranges using regex
     diy_match = re.search(r'DIY.*?[\$](\d+)[^\d]*[\$](\d+)', ai_response)
     pro_match = re.search(r'Professional.*?[\$](\d+)[^\d]*[\$](\d+)', ai_response)
-    
+
     # 2. Extract sections by headers
     sections = re.split(r'\n\s*\d+\.\s*\*\*', ai_response)
     diy_section = find_section_with_keyword(sections, 'DIY')
     pro_section = find_section_with_keyword(sections, 'Professional')
-    
+
     # 3. Extract lists (includes, benefits, etc.)
     diy_includes = extract_bullet_list(diy_section, 'includes')
     service_includes = extract_bullet_list(pro_section, 'includes')
-    
+
     # 4. Build structured JSON
     return {
         "costEstimates": {
@@ -248,6 +260,7 @@ def _parse_ai_response_to_json(ai_response, diagnosis, repair_details):
 ### Regex Patterns
 
 **Cost Range Extraction**:
+
 ```regex
 # Pattern 1: $XX-$YY
 \$\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*[-–—]\s*\$?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)
@@ -260,6 +273,7 @@ def _parse_ai_response_to_json(ai_response, diagnosis, repair_details):
 ```
 
 **List Extraction**:
+
 ```regex
 # Bullet points
 [-•]\s*([^\n]+)
@@ -271,6 +285,7 @@ def _parse_ai_response_to_json(ai_response, diagnosis, repair_details):
 ### Fallback Parsing
 
 If regex fails:
+
 1. Use default ranges based on repair type
 2. Generate generic includes lists
 3. Create standard recommendations
@@ -283,16 +298,16 @@ If regex fails:
 ```python
 def _extract_location_info(property_address):
     # Input: "123 Market St, San Francisco, CA 94103"
-    
+
     parts = property_address.split(',')
     # ['123 Market St', ' San Francisco', ' CA 94103']
-    
+
     city = parts[-2].strip()  # "San Francisco"
     state_part = parts[-1].strip()  # "CA 94103"
     state = re.match(r'^([A-Z]{2})', state_part).group(1)  # "CA"
-    
+
     location_string = f"{city}, {state}"  # "San Francisco, CA"
-    
+
     return city, state, location_string
 ```
 
@@ -315,6 +330,7 @@ def apply_regional_adjustment(base_cost, location):
 ### Location Context in Prompts
 
 The location is passed to AI in multiple ways:
+
 1. **Explicit mention**: "in San Francisco, CA"
 2. **Search queries**: AI generates location-specific searches
 3. **Context**: "Consider regional cost variations in [location]"
@@ -326,7 +342,7 @@ The location is passed to AI in multiple ways:
 ```python
 def _extract_repair_details(diagnosis):
     diagnosis_lower = diagnosis.lower()
-    
+
     # Identify repair category
     if any(word in diagnosis_lower for word in ["plumb", "leak", "pipe"]):
         repair_type = "Plumbing"
@@ -335,7 +351,7 @@ def _extract_repair_details(diagnosis):
     elif any(word in diagnosis_lower for word in ["hvac", "ac"]):
         repair_type = "HVAC"
     # ... more categories
-    
+
     return {
         "repair_type": repair_type,
         "severity": assess_severity(diagnosis),
@@ -358,12 +374,14 @@ def assess_severity(diagnosis):
 ### Complexity Factors
 
 Detected automatically from diagnosis:
+
 - **Difficult access**: "hard to reach", "confined space", "crawl space"
 - **Permits required**: "permit", "code", "inspection"
 - **Safety concerns**: "safety", "hazard", "dangerous", "electrical"
 - **Structural work**: "structural", "foundation", "load-bearing"
 
 Impact on estimates:
+
 - Increases professional cost ranges
 - Strengthens professional recommendations
 - Adjusts complexity descriptions
@@ -376,19 +394,19 @@ Impact on estimates:
 ```python
 def calculate_confidence(ai_estimate, location, service_data):
     confidence = 0.7  # Base confidence for AI estimate
-    
+
     # Boost for location
     if location:
         confidence += 0.1
-    
+
     # Boost for service provider data
     if service_data and service_data.has_pricing:
         confidence += 0.1
-    
+
     # Boost for successful cost extraction
     if has_valid_cost_ranges(ai_estimate):
         confidence += 0.1
-    
+
     return min(confidence, 1.0)  # Cap at 1.0
 ```
 
@@ -419,25 +437,25 @@ else:
 def validate_cost_ranges(cost_estimate):
     diy_range = parse_range(cost_estimate['DIY']['cost_range'])
     service_range = parse_range(cost_estimate['Service']['cost_range'])
-    
+
     # Check format
     if not valid_format(diy_range) or not valid_format(service_range):
         return False
-    
+
     # Check range validity
     if diy_range.low >= diy_range.high:
         return False
     if service_range.low >= service_range.high:
         return False
-    
+
     # Check reasonable bounds
     if any(cost < 5 or cost > 50000 for cost in all_costs):
         return False
-    
+
     # Check DIY vs Pro ratio
     if diy_range.high > service_range.high * 1.5:
         return False  # DIY shouldn't be much more expensive
-    
+
     return True
 ```
 
@@ -453,6 +471,7 @@ def validate_cost_ranges(cost_estimate):
 ### Validation Failure Handling
 
 If validation fails:
+
 1. Log validation error with details
 2. Decrement confidence score
 3. If confidence < threshold, trigger fallback
@@ -508,6 +527,7 @@ client = genai.Client(timeout=AI_ESTIMATION_TIMEOUT)
 **Target**: <5 seconds for AI estimation
 
 **Optimization Strategies**:
+
 1. **Low temperature**: Faster generation
 2. **Token limit**: 2048 max (sufficient for estimates)
 3. **Parallel processing**: Service data extraction concurrent
@@ -516,6 +536,7 @@ client = genai.Client(timeout=AI_ESTIMATION_TIMEOUT)
 ### Caching (Future)
 
 Planned caching strategy:
+
 ```python
 cache_key = hash(diagnosis + location + repair_type)
 if cache_key in cache and not_expired(cache[cache_key]):

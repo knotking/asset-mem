@@ -138,7 +138,7 @@ async def get_citations():
             contents="What are the latest developments in quantum computing?",
             enable_google_search=True
         )
-        
+
         print(response.text)
         print(f"\nFound {response.citation_count} citations:")
         for i, citation in enumerate(response.web_citations, 1):
@@ -156,11 +156,11 @@ async def inline_citations():
             contents="What are the latest AI breakthroughs in 2024?",
             enable_google_search=True
         )
-        
+
         # Get text with inline citations as markdown links
         text_with_citations = response.add_citations_to_text(format_markdown=True)
         print(text_with_citations)
-        
+
         # Or as plain text
         text_plain = response.add_citations_to_text(format_markdown=False)
         print(text_plain)
@@ -192,14 +192,14 @@ from gemini_google_search import GenerateContentConfig
 async def with_config():
     async with GeminiGoogleSearchClient(GeminiGoogleSearchConfig.from_env()) as client:
         config = GenerateContentConfig(
-            model="gemini-3.1-flash-lite-preview",
+            model="gemini-3.1-flash-lite",
             enable_google_search=True,
             enable_url_context=False,
             temperature=0.7,
             max_output_tokens=2048,
             response_mime_type="application/json"
         )
-        
+
         response = await client.generate_content_with_config(
             contents="What are the top 5 programming languages in 2024?",
             config=config
@@ -218,11 +218,11 @@ async def grounding_metadata():
             contents="What happened in the tech industry this week?",
             enable_google_search=True
         )
-        
+
         if response.grounding_metadata:
             print(f"Search queries: {response.grounding_metadata.web_search_queries}")
             print(f"Number of citations: {response.grounding_metadata.citation_count}")
-            
+
             # Access grounding supports (links text segments to sources)
             if response.grounding_metadata.grounding_supports:
                 for support in response.grounding_metadata.grounding_supports:
@@ -241,7 +241,7 @@ async def track_tokens():
             contents="What are the latest news about AI?",
             enable_google_search=True
         )
-        
+
         if response.usage_metadata:
             print(f"Prompt tokens: {response.prompt_token_count}")
             print(f"Response tokens: {response.candidates_token_count}")
@@ -256,26 +256,28 @@ asyncio.run(track_tokens())
 
 Configuration container for Gemini Google Search Grounding.
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `project_id` | str | GCP project ID (required for Vertex AI) |
-| `location` | str | GCP location (default: 'us-central1') |
-| `api_key` | str | Gemini API key (required if not using Vertex AI) |
-| `use_vertex_ai` | bool | Whether to use Vertex AI (default: True if project_id is set) |
-| `timeout` | float | Request timeout in seconds (default: 60.0) |
+| Attribute       | Type  | Description                                                   |
+| --------------- | ----- | ------------------------------------------------------------- |
+| `project_id`    | str   | GCP project ID (required for Vertex AI)                       |
+| `location`      | str   | GCP location (default: 'us-central1')                         |
+| `api_key`       | str   | Gemini API key (required if not using Vertex AI)              |
+| `use_vertex_ai` | bool  | Whether to use Vertex AI (default: True if project_id is set) |
+| `timeout`       | float | Request timeout in seconds (default: 60.0)                    |
 
 ### GeminiGoogleSearchClient Methods
 
 #### Core Methods
+
 - `generate_content(contents, model?, enable_google_search?, enable_url_context?, temperature?, max_output_tokens?, response_mime_type?, response_schema?) -> GenerateContentResponse`
 - `generate_content_with_config(contents, config) -> GenerateContentResponse`
 
 ### Request Models
 
 #### GenerateContentConfig
+
 ```python
 GenerateContentConfig(
-    model: str = "gemini-3.1-flash-lite-preview",        # Model to use
+    model: str = "gemini-3.1-flash-lite",        # Model to use
     temperature: float = None,              # Temperature (0.0-2.0)
     top_p: float = None,                    # Top-p sampling (0.0-1.0)
     top_k: int = None,                      # Top-k sampling
@@ -290,6 +292,7 @@ GenerateContentConfig(
 ### Response Models
 
 #### GenerateContentResponse
+
 ```python
 response.text                          # Generated text content
 response.grounding_metadata            # GroundingMetadata or None
@@ -311,6 +314,7 @@ response.add_citations_to_text(format_markdown=True)  # Add inline citations
 ```
 
 #### GroundingMetadata
+
 ```python
 grounding_metadata.web_search_queries      # List[str] - search queries used
 grounding_metadata.search_entry_point       # Dict - HTML/CSS for search widget
@@ -322,12 +326,14 @@ grounding_metadata.citation_count           # int - number of citations
 ```
 
 #### WebChunk
+
 ```python
 web_chunk.uri      # str - Web source URI
 web_chunk.title    # str - Web source title
 ```
 
 #### GroundingSupport
+
 ```python
 grounding_support.segment                  # Dict - text segment with start/end indices
 grounding_support.grounding_chunk_indices  # List[int] - indices into grounding_chunks
@@ -338,7 +344,7 @@ grounding_support.text                     # str - text of segment
 
 ## Supported Models
 
-Examples in this package use `gemini-3.1-flash-lite-preview`.
+Examples in this package use `gemini-3.1-flash-lite`.
 
 Use the `google_search` tool shown in the examples for current Gemini models.
 
@@ -372,6 +378,7 @@ export GEMINI_USE_VERTEX_AI="false"
 ### Required IAM Roles
 
 For Vertex AI:
+
 - `roles/aiplatform.user` - For using Vertex AI Gemini API
 
 ## Error Handling
@@ -407,14 +414,17 @@ For detailed pricing information, see the [Gemini API pricing page](https://ai.g
 ## Limitations
 
 ### Search Query Limits
+
 - The model automatically decides how many search queries to execute
 - Each search query is billable
 - Rate limits depend on the model used
 
 ### Supported Languages
+
 - Google Search Grounding works with all available languages supported by Gemini
 
 ### Content Moderation
+
 - Search results are subject to content moderation
 - Some sources may be filtered based on safety settings
 
@@ -475,24 +485,29 @@ else:
 ### Common Issues
 
 **Error: "Project ID required for Vertex AI"**
+
 - Ensure `GEMINI_PROJECT_ID` is set
 - Or set `GEMINI_USE_VERTEX_AI=false` and provide `GEMINI_API_KEY`
 
 **Error: "API key required when not using Vertex AI"**
+
 - Set `GEMINI_API_KEY` environment variable
 - Or use Vertex AI by setting `GEMINI_PROJECT_ID`
 
 **No citations in response**
+
 - The model may answer from its own knowledge if it's confident
 - Check `response.has_google_search_grounding` to verify grounding was used
 - Some queries may not require web search
 
 **High costs**
+
 - Each search query is billable
 - Monitor `response.search_queries` to see how many searches were performed
 - Consider if the query truly needs real-time information
 
 **Model doesn't use search**
+
 - The model decides when to search based on the prompt
 - For questions about recent events or current information, search is more likely
 - General knowledge questions may not trigger search
@@ -524,7 +539,7 @@ async def current_info():
             contents="What are the latest stock prices for major tech companies?",
             enable_google_search=True
         )
-        
+
         # Display with citations
         text_with_citations = response.add_citations_to_text(format_markdown=True)
         print(text_with_citations)
@@ -541,7 +556,7 @@ async def research_with_citations():
             contents="What are the latest breakthroughs in quantum computing in 2024?",
             enable_google_search=True
         )
-        
+
         print(response.text)
         print("\n" + "="*50)
         print("Sources:")
@@ -561,4 +576,3 @@ asyncio.run(research_with_citations())
 ## License
 
 Internal use only.
-

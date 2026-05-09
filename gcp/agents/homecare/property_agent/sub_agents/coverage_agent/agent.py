@@ -3,11 +3,12 @@ from dotenv import load_dotenv
 from .prompts import coverage_agent_instructions
 from ..user_docs_agent.agent import ask_user_docs_retreival
 from ...agent_inputs import DocsInput
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 load_dotenv()
 
 coverage_agent = Agent(
-    model='gemini-3.1-flash-lite-preview',
+    model=GLOBAL_GEMINI_MODEL,
     name='coverage_agent',
     description="Retrieves warranty and insurance coverage information from user documents.",
     instruction=coverage_agent_instructions(),

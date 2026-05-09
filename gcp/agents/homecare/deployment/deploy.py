@@ -60,14 +60,15 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 load_dotenv()
 GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
-GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
+GOOGLE_CLOUD_LOCATION = 'global' # Google Cloud Location is always global for Agent Engine
+DEPLOY_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION") # Deploy Location is the location where the Agent Engine is deployed
 STAGING_BUCKET = os.getenv("STAGING_BUCKET")
 AGENT_ENGINE_ID = os.getenv("AGENT_ENGINE_ID")
 # Define the path to the .env file relative to this script
 ENV_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 vertexai.init(
     project=GOOGLE_CLOUD_PROJECT,
-    location=GOOGLE_CLOUD_LOCATION,
+    location=DEPLOY_LOCATION,
     staging_bucket=STAGING_BUCKET,
 )
 

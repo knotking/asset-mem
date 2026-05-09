@@ -20,6 +20,7 @@ from ..diy_agent.agent import diy_agent
 from ..service_agent.agent import service_agent
 from ..cost_agent.agent import cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 load_dotenv()
 
@@ -71,7 +72,7 @@ def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: Too
 
 coverage_parallel_agent = Agent(
     name="checkpoint_coverage_parallel_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Runs coverage analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint coverage branch.
@@ -94,7 +95,7 @@ If "coverage" is present:
 
 diy_parallel_agent = Agent(
     name="checkpoint_diy_parallel_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Runs DIY analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint DIY branch.
@@ -117,7 +118,7 @@ If "diy" is present:
 
 service_parallel_agent = Agent(
     name="checkpoint_service_parallel_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Runs service analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint service branch.
@@ -140,7 +141,7 @@ If "service" is present:
 
 cost_parallel_agent = Agent(
     name="checkpoint_cost_parallel_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Runs cost analysis branch for checkpoint recommendations.",
     instruction="""
 You are the checkpoint cost branch.
@@ -174,7 +175,7 @@ parallel_optional_agents = ParallelAgent(
 
 synthesis_agent = Agent(
     name="checkpoint_analysis_synthesis_agent",
-    model="gemini-3.1-flash-lite-preview",
+    model=GLOBAL_GEMINI_MODEL,
     description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
     instruction="""
 You are the final checkpoint analysis synthesizer.

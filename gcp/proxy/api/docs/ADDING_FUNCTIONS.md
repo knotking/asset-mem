@@ -36,6 +36,7 @@ class YourResponse(BaseModel):
 ```
 
 **Best Practices:**
+
 - Use Pydantic `BaseModel` for automatic validation
 - Add docstrings to explain each field
 - Use `Optional` for fields that may not be present
@@ -67,28 +68,28 @@ logger = logging.getLogger(__name__)
 def your_handler_function(request: YourRequest) -> YourResponse:
     """
     Main handler function for your endpoint.
-    
+
     Args:
         request: YourRequest containing input data
-        
+
     Returns:
         YourResponse with processed results
-        
+
     Raises:
         Exception: If processing fails
     """
     try:
         logger.info(f"Processing request: {request.required_field}")
-        
+
         # Your business logic here
         result = process_data(request)
-        
+
         return YourResponse(
             status="success",
             message="Operation completed",
             data=result
         )
-        
+
     except Exception as e:
         logger.error(f"Error processing request: {e}", exc_info=True)
         return YourResponse(
@@ -104,6 +105,7 @@ def process_data(request: YourRequest) -> Dict[str, Any]:
 ```
 
 **File Structure:**
+
 - Module docstring at the top
 - Import statements
 - Logger initialization
@@ -127,9 +129,9 @@ from models import YourRequest
 async def your_endpoint(request: Request):
     """
     Your endpoint description.
-    
+
     This endpoint does X, Y, and Z.
-    
+
     Request body:
     {
         "required_field": "value",
@@ -141,12 +143,12 @@ async def your_endpoint(request: Request):
         data = await request.json()
         request_obj = YourRequest(**data)
         logger.info(f"Processing: {request_obj.model_dump_json()}")
-        
+
         result = your_handler_function(request_obj)
-        
+
         logger.info(f"Completed: {result.status}")
         return result.model_dump()
-        
+
     except ValueError as e:
         logger.error(f"Validation error: {e}")
         return {"status": "error", "message": str(e)}
@@ -158,11 +160,13 @@ async def your_endpoint(request: Request):
 **Endpoint Patterns:**
 
 1. **Firebase Webhook Endpoints** (protected by `FIREBASE_WEBHOOK_SECRET`):
+
    ```python
    @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/your-endpoint")
    ```
 
 2. **Telegram Webhook Endpoints** (protected by `TELEGRAM_WEBHOOK_SECRET`):
+
    ```python
    @app.post(f"/{TELEGRAM_WEBHOOK_SECRET}")
    ```
@@ -173,6 +177,7 @@ async def your_endpoint(request: Request):
    ```
 
 **HTTP Methods:**
+
 - `@app.get()` - For retrieving data
 - `@app.post()` - For creating/processing data
 - `@app.put()` - For updating data
@@ -192,24 +197,25 @@ This document describes the [your endpoint name] endpoint in the GCP proxy API.
 Brief description of what this endpoint does and why it exists.
 
 ## Architecture
-
 ```
+
 ┌─────────────────┐
-│  Client         │
+│ Client │
 └────────┬────────┘
-         │ POST /your-endpoint
-         │ { request data }
-         ↓
+│ POST /your-endpoint
+│ { request data }
+↓
 ┌─────────────────────────────────┐
-│  GCP Proxy API (FastAPI)       │
-│  └─ your_endpoint()             │
+│ GCP Proxy API (FastAPI) │
+│ └─ your_endpoint() │
 └────────┬────────────────────────┘
-         │
-         ↓
+│
+↓
 ┌─────────────────────────────────┐
-│  your_api.py                    │
-│  └─ your_handler_function()     │
+│ your_api.py │
+│ └─ your_handler_function() │
 └─────────────────────────────────┘
+
 ```
 
 ## Files
@@ -231,8 +237,10 @@ FastAPI endpoint registration:
 
 ### URL
 ```
+
 POST /{FIREBASE_WEBHOOK_SECRET}/your-endpoint
-```
+
+````
 
 ### Request Body
 ```json
@@ -240,9 +248,10 @@ POST /{FIREBASE_WEBHOOK_SECRET}/your-endpoint
   "required_field": "value",
   "optional_field": "optional_value"
 }
-```
+````
 
 ### Response Body
+
 ```json
 {
   "status": "success",
@@ -254,6 +263,7 @@ POST /{FIREBASE_WEBHOOK_SECRET}/your-endpoint
 ```
 
 ### Error Response
+
 ```json
 {
   "status": "error",
@@ -266,6 +276,7 @@ POST /{FIREBASE_WEBHOOK_SECRET}/your-endpoint
 ### Environment Variables
 
 Required:
+
 ```bash
 FIREBASE_WEBHOOK_SECRET=your-secret
 GCP_PROJECT_ID=your-project-id  # If using GCP services
@@ -274,6 +285,7 @@ GCP_PROJECT_ID=your-project-id  # If using GCP services
 ## Usage Examples
 
 ### cURL Example
+
 ```bash
 curl -X POST "https://your-api-url/{SECRET}/your-endpoint" \
   -H "Content-Type: application/json" \
@@ -283,6 +295,7 @@ curl -X POST "https://your-api-url/{SECRET}/your-endpoint" \
 ```
 
 ### Python Example
+
 ```python
 import requests
 
@@ -296,6 +309,7 @@ print(response.json())
 ## Error Handling
 
 The endpoint handles errors gracefully:
+
 - Validation errors return 200 with `{"status": "error"}`
 - Processing errors are logged and returned
 - Always returns valid JSON
@@ -303,6 +317,7 @@ The endpoint handles errors gracefully:
 ## Testing
 
 ### Manual Testing
+
 ```bash
 # Test with valid data
 curl -X POST "http://localhost:8080/{SECRET}/your-endpoint" \
@@ -311,6 +326,7 @@ curl -X POST "http://localhost:8080/{SECRET}/your-endpoint" \
 ```
 
 ### Integration Testing
+
 Add tests to `tests/` directory if needed.
 
 ## Security
@@ -323,6 +339,7 @@ Add tests to `tests/` directory if needed.
 ## Deployment
 
 Deployed as part of the GCP proxy service:
+
 ```bash
 cd gcp/proxy/api
 gcloud run deploy homecare-agent-proxy --source .
@@ -332,7 +349,8 @@ gcloud run deploy homecare-agent-proxy --source .
 
 - [GCP Proxy README](../../README.md)
 - [Document Analysis API](./DOCUMENT_ANALYSIS_API.md)
-```
+
+````
 
 ### Step 5: Handle Async Operations (If Needed)
 
@@ -344,22 +362,23 @@ async def your_async_handler(request: YourRequest) -> YourResponse:
     """Async handler for long-running operations"""
     result = await some_async_operation(request)
     return YourResponse(status="success", message="Done", data=result)
-```
+````
 
 **Option 2: Background Processing**
+
 ```python
 # In main.py
 @app.post(f"/{FIREBASE_WEBHOOK_SECRET}/your-endpoint")
 async def your_endpoint(request: Request):
     """Returns immediately, processes in background"""
     data = await request.json()
-    
+
     # Schedule async processing
     asyncio.run_coroutine_threadsafe(
         your_async_handler(data),
         main_loop
     )
-    
+
     return {"status": "ok", "message": "Processing started"}
 ```
 
@@ -381,7 +400,7 @@ async def your_streaming_endpoint(request: Request):
     """Streaming endpoint"""
     data = await request.json()
     request_obj = YourRequest(**data)
-    
+
     return StreamingResponse(
         stream_your_data(request_obj),
         media_type="text/event-stream"
@@ -391,6 +410,7 @@ async def your_streaming_endpoint(request: Request):
 ## Common Patterns
 
 ### Pattern 1: Simple Request/Response
+
 ```python
 # Handler
 def simple_handler(request: YourRequest) -> YourResponse:
@@ -406,6 +426,7 @@ async def simple_endpoint(request: Request):
 ```
 
 ### Pattern 2: Using Vertex AI/Gemini
+
 ```python
 from google import genai
 
@@ -417,7 +438,7 @@ client = genai.Client(
 
 def ai_handler(request: YourRequest) -> YourResponse:
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
+        model="gemini-3.1-flash-lite",
         contents=[request.prompt],
         config={"temperature": 0.7}
     )
@@ -425,6 +446,7 @@ def ai_handler(request: YourRequest) -> YourResponse:
 ```
 
 ### Pattern 3: Using Firebase/Firestore
+
 ```python
 import firebase_admin
 from firebase_admin import firestore
@@ -438,6 +460,7 @@ def firestore_handler(request: YourRequest) -> YourResponse:
 ```
 
 ### Pattern 4: Using Pub/Sub
+
 ```python
 from google.cloud import pubsub_v1
 
@@ -501,15 +524,19 @@ Reference these existing implementations:
 ## Troubleshooting
 
 ### Issue: "Module not found"
+
 **Solution:** Ensure your module is in `gcp/proxy/api/` and imported correctly in `main.py`
 
 ### Issue: "Validation error"
+
 **Solution:** Check your Pydantic models match the request structure
 
 ### Issue: "Endpoint not found"
+
 **Solution:** Verify the endpoint path matches the registered route in `main.py`
 
 ### Issue: "Environment variable not set"
+
 **Solution:** Add required env vars to Cloud Run deployment or `.env` file
 
 ## Next Steps
@@ -517,17 +544,20 @@ Reference these existing implementations:
 After adding your function:
 
 1. **Test locally:**
+
    ```bash
    cd gcp/proxy/api
    uvicorn main:app --host=0.0.0.0 --port=8080 --reload
    ```
 
 2. **Update requirements.txt** if you added new dependencies:
+
    ```bash
    pip freeze > requirements.txt
    ```
 
 3. **Deploy to Cloud Run:**
+
    ```bash
    gcloud run deploy homecare-agent-proxy --source .
    ```
@@ -541,4 +571,3 @@ After adding your function:
 - [Service Broker API](./SERVICE_BROKER_API.md)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Pydantic Documentation](https://docs.pydantic.dev/)
-

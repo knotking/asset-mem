@@ -23,7 +23,7 @@ try:
     client = genai.Client(
         vertexai=True,
         project=PROJECT_ID,
-        location=LOCATION
+        location='global'
     )
     logger.info(f"Google Gen AI SDK initialized for project {PROJECT_ID} in {LOCATION}")
 except Exception as e:
@@ -153,7 +153,7 @@ def analyze_checkpoint_image(
 
     logger.info(f"Sending checkpoint {media_type} to Gemini for analysis...")
     response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
+        model="gemini-3.1-flash-lite",
         contents=contents,
         config={
             "temperature": 0.4,
