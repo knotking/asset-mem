@@ -34,7 +34,8 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
-import { extractDocInfo } from "@/ai/flows/extract-doc-info";
+import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
+import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
 import { postFileToAgent } from "@/app/actions";
 import { useParams, useRouter } from "next/navigation";
 import type { Property } from "@/lib/types";
@@ -281,57 +282,62 @@ export function UploadDocumentsDialog({
 
         await Promise.all([
           postFileToAgent(gsURI, user.uid),
-          extractDocInfo({ docUrl: gsURI, contentType: file.type, userId: user.uid }).then(
-            async (result) => {
-              const updateData: any = {
-                documentType: result.documentType,
-                keyEntities: result.keyEntities,
-                summary: result.summary,
-                status: "complete",
-                propertyAddress: result.propertyAddress,
-              };
+          (async () => {
+            const queued = await queueExtractDocInfo({
+              docId,
+              docUrl: gsURI,
+              contentType: file.type,
+              userId: user.uid,
+            });
+            if (queued.status !== "accepted") {
+              throw new Error(queued.message || "Document analysis was not accepted");
+            }
+            const docSnap = await waitForUserDocAnalysis(db, user.uid, docId);
+            if (docSnap.status === "failed") {
+              throw new Error(
+                typeof docSnap.summary === "string"
+                  ? docSnap.summary
+                  : "Document analysis failed"
+              );
+            }
+            const result = docSnap as {
+              propertyAddress?: string;
+              documentType?: string;
+            };
+            if (
+              currentPropertyId &&
+              result.propertyAddress &&
+              result.propertyAddress !== "N/A"
+            ) {
+              const propRef = doc(
+                db,
+                "users",
+                user.uid,
+                "properties",
+                currentPropertyId
+              );
+              const propSnap = await getDoc(propRef);
 
-              if (
-                currentPropertyId &&
-                result.propertyAddress &&
-                result.propertyAddress !== "N/A"
-              ) {
-                const propRef = doc(
-                  db,
-                  "users",
-                  user.uid,
-                  "properties",
-                  currentPropertyId
-                );
-                const propSnap = await getDoc(propRef);
-
-                if (isNewPropertyFlow) {
-                  // For a new property, just update the address directly.
-                  await updateDoc(propRef, {
-                    name: result.propertyAddress, // Set name to address for new properties
-                    address: result.propertyAddress,
-                  });
-                } else if (propSnap.exists()) {
-                  // For an existing property, confirm before updating if the address is different.
-                  const propData = propSnap.data() as Property;
-                  if (propData.address !== result.propertyAddress) {
-                    const shouldUpdate = await confirmAddressUpdate(
-                      result.propertyAddress
-                    );
-                    if (shouldUpdate) {
-                      await updateDoc(propRef, {
-                        address: result.propertyAddress,
-                      });
-                    }
+              if (isNewPropertyFlow) {
+                await updateDoc(propRef, {
+                  name: result.propertyAddress,
+                  address: result.propertyAddress,
+                });
+              } else if (propSnap.exists()) {
+                const propData = propSnap.data() as Property;
+                if (propData.address !== result.propertyAddress) {
+                  const shouldUpdate = await confirmAddressUpdate(
+                    result.propertyAddress
+                  );
+                  if (shouldUpdate) {
+                    await updateDoc(propRef, {
+                      address: result.propertyAddress,
+                    });
                   }
                 }
               }
-              return updateDoc(
-                doc(db, "users", user.uid, "docs", docId),
-                updateData
-              );
             }
-          ),
+          })(),
         ]);
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);

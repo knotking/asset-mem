@@ -20,7 +20,7 @@ description: Inspect, test, or debug the LLM token-quota system that gates Reaso
 
 ## Where it gets called
 - Proxy `services/agent_service.py` — before Reasoning Engine `stream_query` and session creation.
-- Proxy `services/document_service.py` — before `extract-doc-info` Gemini calls **when the JSON body includes `userId`**.
+- Document analysis worker `gcp/proxy/workers/function/document_analysis/` — at the start of each job (same pattern as checkpoint worker).
 - Worker `gcp/proxy/workers/function/checkpoint_analysis/` — at the start of each job.
 
 After each LLM call, `usage_metadata` from the response increments the counters on the root doc and the current period subdoc. The checkpoint worker also increments `workerLlmCallCount`.
@@ -81,7 +81,7 @@ The root doc tracks lifetime totals; deleting it clears history.
 The proxy returns an error body with `code: TOKEN_QUOTA_EXCEEDED`. Clients should map that to a friendly "monthly limit reached" message — both mapp and webapp already do.
 
 ## Common gotchas
-- **Quota not enforced for `extract-doc-info`** — the request body must include `userId`. If clients omit it, the call is anonymous and bypasses the check.
+- **Document analysis quota** — `POST …/extract-doc-info` requires `userId` in the JSON body; the worker calls `check_token_quota_or_raise` before Gemini. Over limit: the worker sets the Firestore doc to `status: failed` with `docAnalysisQuotaExceeded` (no HTTP 429 on the queue call).
 - **Worker writes don't show up** — the worker uses `gcp/common/token/` too, but it needs Firestore credentials (Cloud Functions service account, or ADC locally).
 - **Counters didn't increment after a stream call** — the script returned before the body finished, OR `usage_metadata` was missing from stream events (older Vertex SDK version). Run with `--stream-chunks` and check the logs.
 - **`monthlyTokenLimit` ignored** — make sure it's a positive number, not a string. Zero is treated as "no override".

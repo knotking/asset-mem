@@ -15,11 +15,13 @@ class KeyEntity(BaseModel):
     value: str = Field(description="Value of the entity")
 
 class ExtractDocInfoRequest(BaseModel):
-    docUrl: str = Field(description="The GCS URL of the document to analyze")
+    """Queue document extraction; the worker updates `users/{userId}/docs/{docId}` in Firestore."""
+
+    docId: str = Field(description="Firestore document id under users/{userId}/docs")
+    docUrl: str = Field(description="The GCS URL of the document to analyze (gs://...)")
     contentType: str = Field(description="MIME type of the document")
-    userId: str | None = Field(
-        default=None,
-        description="Firebase Auth UID — required for monthly token quota accounting on this call",
+    userId: str = Field(
+        description="Firebase Auth UID — required for quota accounting and Firestore path",
     )
 
 class ExtractDocInfoResponse(BaseModel):

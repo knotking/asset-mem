@@ -89,7 +89,7 @@ python scripts/test_token_usage_request.py --stream-chunks
 
 ### Request flow for AI features
 1. **Client** (`apps/mapp` or `apps/webapp`) authenticates via Firebase Auth, then calls the proxy. Mobile sends through `apps/mapp/lib/api.ts`; the web app talks to Firebase directly + uses `apps/webapp/src/lib/api-checkpoint.ts`. The proxy URLs are environment-injected (`apps/mapp/app.config.js` `extra.*`, webapp `apphosting*.yaml`).
-2. **Proxy API** (`gcp/proxy/api`, FastAPI on Cloud Run) routes are mounted under `/{FIREBASE_WEBHOOK_SECRET}` so the secret acts as a path prefix bearer. `main.py` only mounts agent/document/checkpoint/service-broker/token-quota routers when `FIREBASE_WEBHOOK_SECRET` is set; `POST /token-quota-status` is also exposed unprefixed for local dev. Routers (`routers/`) → services (`services/`) → either Vertex AI Reasoning Engine (`vertex_service.py`) or Gemini direct (`document_service.py`, `checkpoint_service.py`) or Pub/Sub.
+2. **Proxy API** (`gcp/proxy/api`, FastAPI on Cloud Run) routes are mounted under `/{FIREBASE_WEBHOOK_SECRET}` so the secret acts as a path prefix bearer. `main.py` only mounts agent/document/checkpoint/service-broker/token-quota routers when `FIREBASE_WEBHOOK_SECRET` is set; `POST /token-quota-status` is also exposed unprefixed for local dev. Routers (`routers/`) → services (`services/`) → either Vertex AI Reasoning Engine (`vertex_service.py`) or Gemini direct (`checkpoint_service.py` for comparisons) or Pub/Sub (`document_service.py` queues doc extraction; worker runs Gemini).
 3. **Vertex AI Agent Engine** runs `gcp/agents/homecare/property_agent`, an ADK multi-agent: a root orchestrator delegates to sub-agents under `property_agent/sub_agents/` (analysis, checkpoint, checkpoint_analysis, cost, coverage, diy, knowledge_base, service, shopping, user_docs). The root chooses Diagnostics vs DocuLink based on whether `diagnosis_uris` are present.
 4. **Async workers** (`gcp/proxy/workers/function/`) are Pub/Sub-triggered Cloud Functions:
    - `user_docs` — imports user uploads into the Vertex AI RAG corpus
@@ -99,7 +99,7 @@ python scripts/test_token_usage_request.py --stream-chunks
 5. **Firebase** (Auth, Firestore, Storage) is the system of record. Both clients listen to Firestore for live updates (sessions, messages, checkpoint analysis results, token usage). Storage rules / Firestore rules / indexes live in `apps/webapp/`.
 
 ### Token quota system (cross-cutting)
-Every Reasoning Engine `stream_query`, every Gemini `generate_content`/`embed_content` call in the checkpoint worker, and every `extract-doc-info` request increments counters in Firestore `llm_token_usage/{userId}` (root doc + `periods/{YYYY-MM}` subcollection). Schema is in `gcp/common/token/README.md`.
+Every Reasoning Engine `stream_query`, every Gemini `generate_content`/`embed_content` call in the checkpoint worker, and every document-analysis worker job (queued via `extract-doc-info`) increments counters in Firestore `llm_token_usage/{userId}` (root doc + `periods/{YYYY-MM}` subcollection). Schema is in `gcp/common/token/README.md`.
 
 Quota resolution order, enforced by `gcp/common/token/quota.py`:
 1. Per-user override: `users/{userId}/preferences/user.monthlyTokenLimit` (positive number wins)

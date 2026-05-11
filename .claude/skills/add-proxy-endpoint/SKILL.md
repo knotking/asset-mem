@@ -64,7 +64,7 @@ Update the log line to include the new router.
 The only routes that should be mounted **outside** the secret block are user-facing endpoints that clients hit without the webhook secret (currently just `POST /token-quota-status` and `GET /health`). New routes default to **inside** the secret block.
 
 ### 5. Token quota — call it before any LLM/Vertex work
-If your endpoint calls Reasoning Engine, Gemini `generate_content`, or `embed_content`, **enforce quota first** when a `userId` is present. Pattern (see how `services/document_service.py` and the checkpoint worker do it):
+If your endpoint calls Reasoning Engine, Gemini `generate_content`, or `embed_content`, **enforce quota first** when a `userId` is present. Pattern (see how the checkpoint worker and `gcp/proxy/workers/function/document_analysis/main.py` do it):
 ```python
 from common.token import quota
 quota.check_or_raise(user_id=request_data.userId)

@@ -201,7 +201,7 @@
     },
     "/mock_secret/extract-doc-info": {
       "post": {
-        "summary": "Extract Document Info Endpoint",
+        "summary": "Queue document extraction",
         "operationId": "extract_document_info_endpoint_mock_secret_extract_doc_info_post",
         "requestBody": {
           "content": {
@@ -214,8 +214,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
+          "202": {
+            "description": "Analysis queued",
             "content": {
               "application/json": {
                 "schema": {}
@@ -541,6 +541,10 @@
       },
       "ExtractDocInfoRequest": {
         "properties": {
+          "docId": {
+            "type": "string",
+            "title": "Doc Id"
+          },
           "docUrl": {
             "type": "string",
             "title": "Docurl"
@@ -548,12 +552,18 @@
           "contentType": {
             "type": "string",
             "title": "Contenttype"
+          },
+          "userId": {
+            "type": "string",
+            "title": "User Id"
           }
         },
         "type": "object",
         "required": [
+          "docId",
           "docUrl",
-          "contentType"
+          "contentType",
+          "userId"
         ],
         "title": "ExtractDocInfoRequest"
       },

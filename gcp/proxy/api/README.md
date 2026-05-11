@@ -22,7 +22,7 @@ gcp/proxy/api/
 │   └── checkpoint.py
 ├── services/            # Business Logic Layer
 │   ├── agent_service.py     # Firebase agent logic
-│   ├── document_service.py  # Document analysis (Gemini)
+│   ├── document_service.py  # Document analysis queue (Pub/Sub)
 │   ├── telegram_bot.py      # Telegram bot logic (aiogram)
 │   ├── vertex_service.py    # Vertex AI Reasoning Engine integration
 │   ├── token_usage_service.py # Per-user LLM token totals → Firestore
@@ -73,7 +73,7 @@ Each completed `stream_query` against the Reasoning Engine increments counters o
 
 The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) uses the same collection via `gcp/common/token/`, incrementing `workerLlmCallCount` and token fields when `usage_metadata` is present.
 
-`POST …/extract-doc-info` records the same way when the JSON body includes **`userId`** (Firebase Auth UID): tokens from `generate_content`’s `usage_metadata`, and one increment to `workerLlmCallCount` per call. Quota is checked before the Gemini call when `userId` is present.
+`POST …/extract-doc-info` only enqueues Pub/Sub; the **document analysis worker** records tokens from `generate_content`’s `usage_metadata` and increments `workerLlmCallCount` per completed job. Quota is checked in the worker before the Gemini call.
 
 **Full schema** (root document, `periods/{YYYY-MM}` history, field tables): **[`gcp/common/token/README.md`](../../../common/token/README.md#firestore-schema)**.
 
@@ -82,7 +82,7 @@ The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) use
 - **`TOKEN_QUOTA_PERIOD_MAX_TOKENS`** (optional): positive integer = default monthly **total token** cap per user (UTC month). Unset or `0` = unlimited unless overridden in Firestore.
 - **Per-user override:** `users/{userId}/preferences/user` → **`monthlyTokenLimit`** (positive number). Takes precedence over the env default.
 
-Enforced in the proxy before `stream_query` / session creation (`gcp/common/token/quota.py`), before **`extract-doc-info`** when `userId` is sent, and at the start of checkpoint analysis worker jobs. Over-limit API responses use `code: TOKEN_QUOTA_EXCEEDED`.
+Enforced in the proxy before `stream_query` / session creation (`gcp/common/token/quota.py`), and at the start of checkpoint analysis and document-analysis worker jobs. Over-limit **HTTP** responses use `code: TOKEN_QUOTA_EXCEEDED` (Reasoning Engine / streaming paths); document extraction over quota is reflected on the Firestore user doc (`status: failed`, `docAnalysisQuotaExceeded`).
 
 **Webapp UI:** `POST /token-quota-status` (also under `/{FIREBASE_WEBHOOK_SECRET}/token-quota-status` when the secret is set) with body `{ "user_id": "<uid>" }` returns `{ period, used, max_tokens, unlimited }` — `max_tokens` is the resolved monthly cap (`0` when unlimited). Same resolution as enforcement. The Next.js app uses this so the quota bar does not duplicate `TOKEN_QUOTA_PERIOD_MAX_TOKENS` in build env.
 

@@ -17,6 +17,8 @@ export type UploadingDocument = {
   propertyAddress?: string;
   keyEntities?: Array<{ name: string; value: string }>;
   summary?: string;
+  /** Firestore `users/{uid}/docs/{id}` when analysis is async */
+  firestoreDocId?: string;
 };
 
 export type DocumentPickerAsset = {
@@ -33,11 +35,17 @@ interface DocumentUploadContextType {
     options: {
       userId: string;
       storage: any;
-      onAnalyze?: (doc: UploadingDocument, gsURI: string) => Promise<{
+      onAnalyze?: (
+        doc: UploadingDocument,
+        gsURI: string,
+        meta: { downloadURL: string; storagePath: string }
+      ) => Promise<{
         documentType?: string;
         propertyAddress?: string;
         keyEntities?: Array<{ name: string; value: string }>;
         summary?: string;
+        /** When analysis writes to Firestore asynchronously, clients set this for onComplete. */
+        firestoreDocId?: string;
       }>;
       onComplete?: (doc: UploadingDocument) => void;
     }
@@ -65,11 +73,16 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
       options: {
         userId: string;
         storage: any;
-        onAnalyze?: (doc: UploadingDocument, gsURI: string) => Promise<{
+        onAnalyze?: (
+          doc: UploadingDocument,
+          gsURI: string,
+          meta: { downloadURL: string; storagePath: string }
+        ) => Promise<{
           documentType?: string;
           propertyAddress?: string;
           keyEntities?: Array<{ name: string; value: string }>;
           summary?: string;
+          firestoreDocId?: string;
         }>;
         onComplete?: (doc: UploadingDocument) => void;
       }
@@ -162,7 +175,10 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
 
                   if (onAnalyze) {
                     try {
-                      analysisResult = await onAnalyze(doc, gsURI);
+                      analysisResult = await onAnalyze(doc, gsURI, {
+                        downloadURL,
+                        storagePath: storageRef.fullPath,
+                      });
                     } catch (error) {
                       console.warn('Analysis failed (non-blocking):', error);
                       analysisResult.summary = 'Analysis failed';

@@ -79,6 +79,10 @@ jobs:
             missing_vars+=("CHECKPOINT_METRICS_TOPIC")
           fi
 
+          if [ -z "${{ vars.DOCUMENT_ANALYSIS_TOPIC }}" ]; then
+            missing_vars+=("DOCUMENT_ANALYSIS_TOPIC")
+          fi
+
           if [ ${#missing_vars[@]} -ne 0 ]; then
             echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
             echo "Please set the following variables in your GitHub repository settings:"
@@ -164,6 +168,7 @@ jobs:
             GCS_BUCKET=${{ vars.GCS_BUCKET }}
             CHECKPOINT_ANALYSIS_TOPIC=${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}
             CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
+            DOCUMENT_ANALYSIS_TOPIC=${{ vars.DOCUMENT_ANALYSIS_TOPIC }}
             TOKEN_QUOTA_PERIOD_MAX_TOKENS=${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
 
       # Firestore: Cloud Run uses vars.GCP_SERVICE_ACCOUNT_EMAIL at runtime. That SA needs

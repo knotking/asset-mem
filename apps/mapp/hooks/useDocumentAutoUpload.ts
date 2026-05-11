@@ -3,7 +3,8 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'fir
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
-import { extractDocInfo, postFileToAgent } from '@/lib/api';
+import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
+import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 
 interface UseDocumentAutoUploadParams {
   files: string | undefined;
@@ -51,42 +52,64 @@ export function useDocumentAutoUpload({
         await uploadDocuments(parsedFiles, {
           userId,
           storage,
-          onAnalyze: async (doc, gsURI) => {
-            // Run AI analysis and RAG upload in parallel
-            const [analysisResult] = await Promise.allSettled([
-              extractDocInfo({ docUrl: gsURI, contentType: doc.mimeType, userId }),
+          onAnalyze: async (doc, gsURI, meta) => {
+            const docRef = await addDoc(collection(db, 'users', userId, 'docs'), {
+              userId,
+              propertyId,
+              name: doc.name,
+              url: meta.downloadURL,
+              storagePath: meta.storagePath,
+              createdAt: serverTimestamp(),
+              gsURI,
+              contentType: doc.mimeType,
+              status: 'analyzing',
+              summary: 'Processing...',
+            });
+
+            const [queueResult, ragResult] = await Promise.allSettled([
+              queueExtractDocInfo({
+                docId: docRef.id,
+                docUrl: gsURI,
+                contentType: doc.mimeType,
+                userId,
+              }),
               postFileToAgent(gsURI, userId),
             ]);
 
-            if (analysisResult.status === 'fulfilled') {
-              return analysisResult.value;
-            } else {
-              console.warn('Analysis failed (non-blocking):', analysisResult.reason);
-              return { summary: 'Analysis failed' };
+            if (ragResult.status === 'rejected') {
+              console.warn('RAG upload failed (non-blocking):', ragResult.reason);
             }
+
+            if (queueResult.status === 'rejected') {
+              console.warn('Queue document analysis failed:', queueResult.reason);
+              throw queueResult.reason;
+            }
+
+            const data = await waitForUserDocAnalysis(db, userId, docRef.id);
+            if (data.status === 'failed') {
+              throw new Error(
+                typeof data.summary === 'string' ? data.summary : 'Document analysis failed'
+              );
+            }
+
+            return {
+              documentType: typeof data.documentType === 'string' ? data.documentType : 'OTHER',
+              propertyAddress:
+                typeof data.propertyAddress === 'string' ? data.propertyAddress : 'N/A',
+              keyEntities: Array.isArray(data.keyEntities) ? data.keyEntities : [],
+              summary: typeof data.summary === 'string' ? data.summary : 'No summary available',
+              firestoreDocId: docRef.id,
+            };
           },
           onComplete: async (completedDoc) => {
             try {
-              // Save to Firestore
-              await addDoc(collection(db, 'users', userId, 'docs'), {
-                userId: userId,
-                propertyId: propertyId,
-                name: completedDoc.name,
-                url: completedDoc.downloadURL,
-                storagePath: completedDoc.storagePath,
-                createdAt: serverTimestamp(),
-                gsURI: completedDoc.gsURI,
-                contentType: completedDoc.mimeType,
-                status: 'complete',
-                documentType: completedDoc.documentType || 'OTHER',
-                propertyAddress: completedDoc.propertyAddress || 'N/A',
-                keyEntities: completedDoc.keyEntities || [],
-                summary: completedDoc.summary || 'No summary available',
-              });
+              if (!completedDoc.firestoreDocId) {
+                removeUploadingDoc(completedDoc.id);
+                return;
+              }
 
-              console.log('Document saved to Firestore:', completedDoc.name);
+              console.log('Document analysis finished:', completedDoc.name);
 
-              // If document has a valid address, auto-update property address
               if (
                 completedDoc.propertyAddress &&
                 completedDoc.propertyAddress !== 'N/A' &&
@@ -97,7 +120,6 @@ export function useDocumentAutoUpload({
                 const propertyData = propertyDoc.data();
                 const currentAddress = propertyData?.address;
 
-                // Auto-update if current address is "Processing..."
                 if (currentAddress === 'Processing...') {
                   await updateDoc(propertyRef, {
                     address: completedDoc.propertyAddress,
@@ -107,10 +129,9 @@ export function useDocumentAutoUpload({
                 }
               }
 
-              // Remove from uploading list immediately
               removeUploadingDoc(completedDoc.id);
             } catch (error) {
-              console.error('Error saving document to Firestore:', error);
+              console.error('Error after document upload:', error);
             }
           },
         });
