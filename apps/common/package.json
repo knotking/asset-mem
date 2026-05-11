@@ -13,6 +13,7 @@
     "./contexts/firebase-context": "./src/contexts/firebase-context.tsx",
     "./contexts/auth-context": "./src/contexts/auth-context.tsx",
     "./contexts/session-context": "./src/contexts/session-context.tsx",
+    "./contexts/messages-context": "./src/contexts/messages-context.tsx",
     "./contexts/property-context": "./src/contexts/property-context.tsx",
     "./contexts/properties-list-context": "./src/contexts/properties-list-context.tsx",
     "./contexts/property-documents-context": "./src/contexts/property-documents-context.tsx",
