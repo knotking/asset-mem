@@ -1172,17 +1172,18 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
     }
   }, [toast]);
 
-  const isAgentStatusMessage = !!message.agentSteps && message.agentSteps.length > 0;
   const trimmedAssistantContent =
     typeof message.content === 'string' ? message.content.trim() : '';
   const hasAssistantResponse = !isUser && trimmedAssistantContent.length > 0;
-  /** Only show "Thinking..." while a step is actively executing — not when steps are all terminal but body text is still empty. */
-  const hasExecutingAgentStep =
-    message.agentSteps?.some((s) => s.status === 'executing') ?? false;
-  const showThinkingStrip =
-    !isUser && !hasAssistantResponse && hasExecutingAgentStep;
+  /** Show "Thinking..." during tool execution or agent handoff (before body text exists). */
+  const hasInFlightAgentStep =
+    message.agentSteps?.some(
+      (s) => s.status === 'executing' || s.status === 'transferredto'
+    ) ?? false;
+  const showThinkingStrip = !isUser && !hasAssistantResponse && hasInFlightAgentStep;
+  /** Dots when the list marks this bubble as the in-flight reply; agentSteps must not hide this (e.g. only completed steps while waiting for text). */
   const showLoadingIndicator =
-    isLoading && !isUser && !message.content && !isAgentStatusMessage;
+    isLoading && !isUser && !hasAssistantResponse && !showThinkingStrip;
   const fileData = message.file;
 
   const handleCopyClick = () => {
@@ -1604,7 +1605,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               },
               (isUser && message.content) && "bg-secondary text-secondary-foreground",
               fileData && message.content ? "gap-2" : "",
-              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !message.content)) ? "p-2" : structuredData ? "" : "px-4 py-2.5"
+              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !hasAssistantResponse)) ? "p-2" : structuredData ? "" : "px-4 py-2.5"
             )}
           >
             {!isUser &&

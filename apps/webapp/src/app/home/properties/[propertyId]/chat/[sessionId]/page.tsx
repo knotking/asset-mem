@@ -394,9 +394,13 @@ export default function PropertyChatSessionPage() {
         };
       }
 
-      addMessageToFirestore(activeSessionId, {
+      const userMessageDocId = await addMessageToFirestore(activeSessionId, {
         ...userMessagePayload,
       });
+      if (!userMessageDocId) {
+        setIsLoading(false);
+        return;
+      }
 
       setFileAttachment(null);
 

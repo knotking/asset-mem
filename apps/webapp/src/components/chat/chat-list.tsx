@@ -14,6 +14,14 @@ type Props = {
   context?: 'property' | 'document' | null;
 };
 
+function assistantHasNoVisibleTextYet(message: Message): boolean {
+  if (message.role !== 'assistant') return false;
+  const c = message.content;
+  if (c == null) return true;
+  if (typeof c !== 'string') return true;
+  return c.trim().length === 0;
+}
+
 export function ChatList({ messages, isMessagesLoading, context }: Props) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -32,10 +40,11 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
   const renderedMessages = useMemo(() => {
     return messages.map((message, index) => {
         // A message is considered loading if it's the last one, from the assistant, and has no content yet.
-        const isLoading = index === messages.length - 1 && 
-                            message.role === 'assistant' && 
-                            message.content === '';
-        
+        const isLoading =
+          index === messages.length - 1 &&
+          message.role === 'assistant' &&
+          assistantHasNoVisibleTextYet(message);
+
         // Also check for the local-only placeholder ID
         const isPlaceholder = message.id.startsWith('local-');
 
@@ -43,7 +52,7 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
             <ChatMessage 
                 key={message.id} 
                 message={message}
-                isLoading={isLoading || (isPlaceholder && message.content === '')}
+                isLoading={isLoading || (isPlaceholder && assistantHasNoVisibleTextYet(message))}
                 context={context}
             />
         )
