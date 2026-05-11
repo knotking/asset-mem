@@ -29,7 +29,6 @@ import * as Location from 'expo-location';
 import PushDrawer from '@/components/PushDrawer';
 import type {
   Document,
-  AgentStep,
   Session,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
@@ -121,9 +120,6 @@ export default function PropertyDetailsScreen() {
   const [locationData, setLocationData] = React.useState<LocationData | undefined>(undefined);
 
   // Refs
-  const updateMessageLocallyRef = React.useRef<
-    ((messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void) | null
-  >(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Custom hooks
@@ -432,9 +428,6 @@ export default function PropertyDetailsScreen() {
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
 
-        let assistantContent = '';
-        let agentSteps: AgentStep[] = [];
-
         abortControllerRef.current = new AbortController();
         const { signal } = abortControllerRef.current;
 
@@ -453,35 +446,12 @@ export default function PropertyDetailsScreen() {
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress,
           primaryAgent,
-          analysisOptionalAgents: selectedOptionalAgents,
           checkpointOptionalAgents:
             selectedCheckpointOptionalAgents.length > 0
               ? selectedCheckpointOptionalAgents
               : undefined,
           locationData,
           signal,
-          onChunk: (chunk) => {
-            assistantContent += chunk;
-          },
-          onAgentStep: (step) => {
-            const existingStepIndex = agentSteps.findIndex((s) => s.name === step.name);
-            if (existingStepIndex > -1) {
-              agentSteps[existingStepIndex] = step;
-            } else {
-              agentSteps.push(step);
-            }
-            if (updateMessageLocallyRef.current) {
-              updateMessageLocallyRef.current(assistantMessageRef.id, {
-                agentSteps: [...agentSteps],
-              });
-            }
-          },
-          onComplete: (finalResponse) => {
-            updateDoc(assistantMessageRef, {
-              content: finalResponse,
-              primaryAgent,
-            }).catch((err) => console.error('Error completing message:', err));
-          },
           onError: (error) => {
             updateDoc(assistantMessageRef, {
               content: `Error: ${error.message}`,
@@ -519,7 +489,6 @@ export default function PropertyDetailsScreen() {
       selectedDocuments,
       selectedCheckpoints,
       properties,
-      selectedOptionalAgents,
       selectedCheckpointOptionalAgents,
       primaryAgent,
       locationData,
@@ -623,7 +592,6 @@ export default function PropertyDetailsScreen() {
         handleSelectFiles={handleSelectFiles}
         locationData={locationData}
         setLocationData={setLocationData}
-        updateMessageLocallyRef={updateMessageLocallyRef}
         router={router}
         user={user}
         db={db}
@@ -940,7 +908,7 @@ function PropertyDetailsScreenContent({
                                     {selectedDocuments.length}
                                   </Text>
                                 </View>
-                                {selectedDocuments.map((doc) => (
+                                {selectedDocuments.map((doc: Document) => (
                                   <Pressable
                                     key={doc.id}
                                     onPress={() => toggleDocumentSelection(doc)}
@@ -966,7 +934,7 @@ function PropertyDetailsScreenContent({
                                     {selectedCheckpoints.length}
                                   </Text>
                                 </View>
-                                {selectedCheckpoints.map((checkpoint) => (
+                                {selectedCheckpoints.map((checkpoint: Checkpoint) => (
                                   <Pressable
                                     key={checkpoint.id}
                                     onPress={() => toggleCheckpointSelection(checkpoint)}
@@ -1000,9 +968,6 @@ function PropertyDetailsScreenContent({
                     <MessagesProvider sessionId={selectedSessionId}>
                       <PropertyChatTab
                         sessionId={selectedSessionId}
-                        onMessagesReady={(updateFn) => {
-                          updateMessageLocallyRef.current = updateFn;
-                        }}
                         userId={user?.uid || ''}
                         fileAttachment={fileAttachment}
                         onAttachmentPress={() => {}}

@@ -1,5 +1,5 @@
 import 'react-native-gifted-chat';
-import type { AgentStep } from '@homeapp/common/types';
+import type { AgentStep, PrimaryAgent } from '@homeapp/common/types';
 
 declare module 'react-native-gifted-chat' {
   export interface IMessage {
@@ -15,6 +15,7 @@ declare module 'react-native-gifted-chat' {
       };
       agentSteps?: AgentStep[];
       originalContent?: string;
+      primaryAgent?: PrimaryAgent;
     };
   }
 }

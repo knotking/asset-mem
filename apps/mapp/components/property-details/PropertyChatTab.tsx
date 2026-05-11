@@ -19,9 +19,6 @@ import type {
 
 interface PropertyChatTabProps {
   sessionId: string | null;
-  onMessagesReady?: (
-    updateFn: (messageId: string, updates: Partial<import('@homeapp/common/types').Message>) => void
-  ) => void;
   userId: string;
   fileAttachment: FileAttachment | null;
   onAttachmentPress: () => void;
@@ -48,7 +45,6 @@ interface PropertyChatTabProps {
 
 export function PropertyChatTab({
   sessionId,
-  onMessagesReady,
   userId,
   fileAttachment,
   onAttachmentPress,
@@ -77,7 +73,6 @@ export function PropertyChatTab({
     isLoading,
     isLoadingEarlier,
     hasMoreMessages,
-    updateMessageLocally,
     loadEarlierMessages,
   } = useMessages();
 
@@ -95,12 +90,6 @@ export function PropertyChatTab({
 
     return () => unsubscribe();
   }, []);
-
-  React.useEffect(() => {
-    if (onMessagesReady) {
-      onMessagesReady(updateMessageLocally);
-    }
-  }, [updateMessageLocally, onMessagesReady]);
 
   // Transform messages to GiftedChat format
   const giftedMessages = React.useMemo(
