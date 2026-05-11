@@ -16,6 +16,7 @@ There is also `.github/workflows/README.md` and `.github/GITHUB_VARIABLES_SETUP.
 | Vertex AI Agent Engine (homecare ADK agent) | `deploy-homecare-agent.yaml` | `uv run python deployment/deploy.py create/update` from `gcp/agents/homecare/`. Updates `AGENT_ENGINE_ID` env var on the proxy. |
 | FastAPI proxy → Cloud Run | `deploy-homecare-agent-proxy.yaml` | Stages `gcp/common` into `gcp/proxy/api/common`, then `gcloud run deploy --source=gcp/proxy/api`. Image is built from `gcp/proxy/api/Dockerfile`. |
 | Checkpoint analysis Cloud Function | `deploy-checkpoint-analysis.yaml` | Deploys `gcp/proxy/workers/function/checkpoint_analysis/` (Pub/Sub trigger). |
+| Document analysis Cloud Function | `deploy-document-analysis.yaml` | Deploys `gcp/proxy/workers/function/document_analysis/` (Pub/Sub trigger for async doc extraction). |
 | Checkpoint metrics Cloud Function | `deploy-checkpoint-metrics.yaml` | Deploys `gcp/proxy/workers/function/checkpoint_metrics/`. |
 | User docs RAG Cloud Function | `deploy-pubsub-user-docs.yaml` | Deploys `gcp/proxy/workers/function/user_docs/` (uploads → RAG corpus). |
 | Webapp → Firebase App Hosting | `deploy-webapp-apphosting.yaml` | Builds and ships `apps/webapp` via App Hosting (`apphosting.yaml` / `apphosting.staging.yaml` / `apphosting.prod.yaml`). |

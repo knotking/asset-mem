@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException
 import logging
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
+
 from schemas.agent import AgentRequest
 from schemas.document import ExtractDocInfoRequest
 from services.agent_service import handle_firebase_file_upload
-from services.document_service import extract_doc_info
-from common.token import TokenQuotaExceeded
+from services.document_service import publish_document_analysis
 
 router = APIRouter(tags=["Documents"])
 logger = logging.getLogger(__name__)
+
 
 @router.post("/rag-file-upload", summary="Upload RAG File", description="Upload a file for RAG (Retrieval-Augmented Generation) processing.")
 async def firebase_webhook_file_upload(request_data: AgentRequest):
@@ -18,24 +21,32 @@ async def firebase_webhook_file_upload(request_data: AgentRequest):
         logger.error(f"Error processing Firebase webhook: {e}")
         return {"status": "error", "message": str(e)}
 
-@router.post("/extract-doc-info", summary="Extract Document Info", description="Extract information from a document URL.")
+
+@router.post(
+    "/extract-doc-info",
+    summary="Queue document extraction",
+    description=(
+        "Publishes document analysis to Pub/Sub. The worker updates the Firestore doc "
+        "(`users/{userId}/docs/{docId}`) when complete. Clients should listen on that document."
+    ),
+)
 async def extract_document_info_endpoint(request_data: ExtractDocInfoRequest):
-    logger.info(f"Analyzing document: {request_data.docUrl}")
+    logger.info(
+        "Queue document analysis: docId=%s userId=%s",
+        request_data.docId,
+        request_data.userId,
+    )
     try:
-        result = extract_doc_info(request_data)
-        logger.info(f"Analysis complete: {result.documentType.value}")
-        return result.model_dump()
-    except TokenQuotaExceeded as e:
-        raise HTTPException(
-            status_code=429,
-            detail={
-                "code": "TOKEN_QUOTA_EXCEEDED",
-                "message": "Monthly AI token limit reached. Usage resets at the start of next month.",
-                "used": e.used,
-                "limit": e.limit,
-                "period": e.period_key,
+        message_id = publish_document_analysis(request_data)
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "message": "Document analysis queued for processing",
+                "docId": request_data.docId,
+                "messageId": message_id,
             },
-        ) from e
+        )
     except Exception as e:
-        logger.error(f"Error processing document analysis: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error("Error publishing document analysis: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e)) from e

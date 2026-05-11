@@ -338,62 +338,48 @@ export type DocumentType =
   | 'MORTGAGE_STATEMENT'
   | 'OTHER';
 
-export interface ExtractDocInfoInput {
+export interface QueueExtractDocInfoInput {
+  docId: string;
   docUrl: string;
   contentType: string;
-  /** Firebase Auth UID — sent to proxy for LLM token accounting */
-  userId?: string;
+  userId: string;
 }
 
-export interface ExtractDocInfoOutput {
-  documentType: DocumentType;
-  propertyAddress: string;
-  keyEntities: Array<{ name: string; value: string }>;
-  summary: string;
+export interface QueueExtractDocInfoResult {
+  status: string;
+  message?: string;
+  docId: string;
+  messageId?: string;
 }
 
-/**
- * Extract document information using AI analysis
- */
-export async function extractDocInfo(input: ExtractDocInfoInput): Promise<ExtractDocInfoOutput> {
-  try {
-    const url = DOCUMENT_ANALYSIS_URL;
-    if (!url) {
-      throw new Error('DOCUMENT_ANALYSIS_URL not set.');
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (response.status === 429) {
-      let message = 'Monthly AI token limit reached.';
-      try {
-        const err = (await response.json()) as { detail?: { message?: string } };
-        if (err?.detail && typeof err.detail === 'object' && 'message' in err.detail) {
-          message = String((err.detail as { message?: string }).message ?? message);
-        }
-      } catch {
-        /* ignore */
-      }
-      throw new Error(message);
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Failed to analyze document, status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error analyzing document:', error);
-    throw error;
+/** Queue async document extraction (worker updates Firestore). */
+export async function queueExtractDocInfo(
+  input: QueueExtractDocInfoInput
+): Promise<QueueExtractDocInfoResult> {
+  if (!input.docId?.trim()) {
+    throw new Error(
+      'queueExtractDocInfo requires docId (Firestore path users/{uid}/docs/{docId}). Rebuild the app (expo start -c) after upgrading the document flow.'
+    );
   }
+  const url = DOCUMENT_ANALYSIS_URL;
+  if (!url) {
+    throw new Error('DOCUMENT_ANALYSIS_URL not set.');
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`);
+  }
+
+  return (await response.json()) as QueueExtractDocInfoResult;
 }
 
 /**

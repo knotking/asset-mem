@@ -1,74 +1,51 @@
-
 'use server';
 
 /**
- * @fileOverview An AI agent that extracts key information from a property document.
- * 
- * - extractDocInfo - A function that handles the document extraction process.
- * - ExtractDocInfoInput - The input type for the extractDocInfo function.
- * - ExtractDocInfoOutput - The return type for the extractDocInfo function.
- * 
- * This implementation uses the backend API (similar to mapp) instead of Vercel AI SDK.
+ * Queue document extraction on the proxy (Pub/Sub → worker → Firestore).
+ * Clients should listen on `users/{userId}/docs/{docId}` for completion.
  */
 
-export interface ExtractDocInfoInput {
+export interface QueueExtractDocInfoInput {
+  docId: string;
   docUrl: string;
   contentType: string;
-  /** Firebase Auth UID — sent to proxy for LLM token accounting */
-  userId?: string;
+  userId: string;
 }
 
-export interface ExtractDocInfoOutput {
-  documentType: 'DEED' | 'INSURANCE_POLICY' | 'UTILITY_BILL' | 'INSPECTION_REPORT' | 'MORTGAGE_STATEMENT' | 'OTHER';
-  propertyAddress: string;
-  keyEntities: Array<{ name: string; value: string }>;
-  summary: string;
+export interface QueueExtractDocInfoResult {
+  status: string;
+  message?: string;
+  docId: string;
+  messageId?: string;
 }
 
-/**
- * Extract document information using AI analysis via backend API
- * This matches the mapp implementation pattern
- */
-export async function extractDocInfo(input: ExtractDocInfoInput): Promise<ExtractDocInfoOutput> {
-  try {
-    // Import apiUrls dynamically to avoid circular dependencies
-    const { apiUrls } = await import('@/lib/utils');
-    const url = apiUrls.extractDocInfo();
-    
-    if (!url) {
-      throw new Error('Extract doc info API URL not configured');
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (response.status === 429) {
-      let message = 'Monthly AI token limit reached.';
-      try {
-        const err = (await response.json()) as { detail?: { message?: string } };
-        if (err?.detail && typeof err.detail === 'object' && 'message' in err.detail) {
-          message = String((err.detail as { message?: string }).message ?? message);
-        }
-      } catch {
-        /* ignore */
-      }
-      throw new Error(message);
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Failed to analyze document, status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error analyzing document:', error);
-    throw error;
+export async function queueExtractDocInfo(
+  input: QueueExtractDocInfoInput
+): Promise<QueueExtractDocInfoResult> {
+  if (!input.docId?.trim()) {
+    throw new Error(
+      'queueExtractDocInfo requires docId (Firestore users/{uid}/docs/{docId}).'
+    );
   }
+  const { apiUrls } = await import('@/lib/utils');
+  const url = apiUrls.extractDocInfo();
+
+  if (!url) {
+    throw new Error('Extract doc info API URL not configured');
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`);
+  }
+
+  return (await response.json()) as QueueExtractDocInfoResult;
 }

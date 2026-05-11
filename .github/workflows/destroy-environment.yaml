@@ -148,6 +148,13 @@ jobs:
             --project=${{ inputs.gcp_project_id }} \
             --quiet || echo "⚠️ pubsub_checkpoint_metrics function may not exist"
 
+          echo "Deleting pubsub_document_analysis function..."
+          gcloud functions delete pubsub-document-analysis-${{ inputs.environment_name }} \
+            --gen2 \
+            --region=$REGION \
+            --project=${{ inputs.gcp_project_id }} \
+            --quiet || echo "⚠️ pubsub_document_analysis function may not exist"
+
           echo "✓ Cloud Functions deleted"
 
   destroy-infrastructure:
@@ -188,6 +195,8 @@ jobs:
           gcloud pubsub topics delete "checkpoint-analysis-topic-${ENV}" \
             --project=$PROJECT_ID --quiet || true
           gcloud pubsub topics delete "checkpoint-metrics-topic-${ENV}" \
+            --project=$PROJECT_ID --quiet || true
+          gcloud pubsub topics delete "document-analysis-topic-${ENV}" \
             --project=$PROJECT_ID --quiet || true
 
           echo "✓ Pub/Sub resources deleted"
@@ -663,11 +672,11 @@ jobs:
 
           The following resources were deleted:
           - Cloud Run service: \`homecare-agent-proxy-${{ inputs.environment_name }}\`
-          - Cloud Functions: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`, \`pubsub-checkpoint-analysis-${{ inputs.environment_name }}\`
+          - Cloud Functions: \`pubsub_to_user_docs-${{ inputs.environment_name }}\`, \`pubsub-checkpoint-analysis-${{ inputs.environment_name }}\`, \`pubsub-checkpoint-metrics-${{ inputs.environment_name }}\`, \`pubsub-document-analysis-${{ inputs.environment_name }}\`
           - Firebase App Hosting backend: \`${{ inputs.environment_name }}\`
           - Storage buckets: \`homegeek-user-data-${{ inputs.environment_name }}\`, \`homegeek-catalog-${{ inputs.environment_name }}\`, \`homegeek-agent-${{ inputs.environment_name }}\`, Firebase Storage
           - Artifact Registry: \`cloud-run-source-deploy\` (${{ inputs.region }})
-          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`, \`checkpoint-analysis-topic-${{ inputs.environment_name }}\`, \`checkpoint-metrics-topic-${{ inputs.environment_name }}\`
+          - Pub/Sub topics: \`user-upload-topic-${{ inputs.environment_name }}\`, \`user-upload-result-topic-${{ inputs.environment_name }}\`, \`checkpoint-analysis-topic-${{ inputs.environment_name }}\`, \`checkpoint-metrics-topic-${{ inputs.environment_name }}\`, \`document-analysis-topic-${{ inputs.environment_name }}\`
           - Firestore database
           - RAG corpora: \`user-upload-rag-corpus-${{ inputs.environment_name }}\`, \`knowledge-base-rag-corpus-${{ inputs.environment_name }}\`
           - IAM role bindings: 26 roles removed from service accounts before deletion
