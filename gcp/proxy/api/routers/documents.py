@@ -3,8 +3,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from google.cloud import firestore
 
+from common.plan_limits import PlanLimitExceeded, check_and_record_monthly_document_creations
 from core.auth_deps import RATE_BUCKET_AGENT, RATE_BUCKET_DOCUMENTS, authenticated_user
+from utils.plan_limit_http import plan_limit_exceeded_response
 from core.firebase_auth import apply_uid_to_agent_request, apply_uid_to_camel_user_id
 from schemas.agent import AgentRequest
 from schemas.document import ExtractDocInfoRequest
@@ -23,6 +26,13 @@ async def firebase_webhook_file_upload(
     apply_uid_to_agent_request(request_data, uid)
     logger.info(f"Firebase webhook file upload data: {request_data.model_dump_json()}")
     try:
+        uris = request_data.context_doc_uris or []
+        if uris:
+            db = firestore.Client()
+            try:
+                check_and_record_monthly_document_creations(db, uid, len(uris))
+            except PlanLimitExceeded as e:
+                return plan_limit_exceeded_response(e)
         return handle_firebase_file_upload(request_data)
     except Exception as e:
         logger.exception("Error processing Firebase webhook (rag upload): %s", e)
@@ -48,6 +58,12 @@ async def extract_document_info_endpoint(
         request_data.userId,
     )
     try:
+        db = firestore.Client()
+        try:
+            check_and_record_monthly_document_creations(db, request_data.userId, 1)
+        except PlanLimitExceeded as e:
+            return plan_limit_exceeded_response(e)
+
         message_id = publish_document_analysis(request_data)
         return JSONResponse(
             status_code=202,

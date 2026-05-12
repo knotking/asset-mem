@@ -29,7 +29,7 @@
           "Token quota"
         ],
         "summary": "Token quota status",
-        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS.",
+        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then STRIPE_B2C_PRICE_TOKEN_CAPS_JSON free tier.",
         "operationId": "token_quota_status_token_quota_status_post",
         "requestBody": {
           "content": {
@@ -401,7 +401,7 @@
           "Token quota"
         ],
         "summary": "Token quota status",
-        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS.",
+        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then STRIPE_B2C_PRICE_TOKEN_CAPS_JSON free tier.",
         "operationId": "token_quota_status_mock_secret_token_quota_status_post",
         "requestBody": {
           "content": {

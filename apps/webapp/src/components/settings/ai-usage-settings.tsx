@@ -55,6 +55,11 @@ export function AiUsageSettings() {
     monthlyLimit,
     effectiveMonthlyLimit,
     proxyDefaultLimit,
+    periodDocumentCreations,
+    periodCheckpointCreations,
+    documentsLimit,
+    checkpointsLimit,
+    limitsLoading,
   } = useLlmTokenUsage();
 
   const pctUsed =
@@ -62,7 +67,7 @@ export function AiUsageSettings() {
       ? Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit))
       : null;
 
-  if (loading) {
+  if (loading || limitsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -146,10 +151,15 @@ export function AiUsageSettings() {
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3">
-            <p className="text-center text-sm text-muted-foreground">
-              No monthly token cap is set, so usage isn’t shown as a percentage. See limits below if
-              your org configures one via Firestore or the proxy.
+          <div className="flex flex-col items-center rounded-xl border border-border bg-muted/40 px-4 py-4">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Tokens this month
+            </span>
+            <span className="mt-1 text-4xl font-bold tabular-nums leading-none">
+              {formatTokensCompact(periodTotalTokens)}
+            </span>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Usage total; see Plan &amp; billing for your monthly allowance.
             </p>
           </div>
         )}
@@ -180,13 +190,57 @@ export function AiUsageSettings() {
               value={formatTokensCompact(periodOutputTokens)}
             />
             <StatRow
+              label="Documents this month"
+              hint="Queued document extractions and RAG file imports (each file counts once)."
+              value={nf.format(periodDocumentCreations)}
+            />
+            <StatRow
+              label="Document limit"
+              hint={
+                documentsLimit
+                  ? documentsLimit.unlimited
+                    ? 'No monthly document cap on your plan.'
+                    : `Enforced when queuing analysis or RAG import. ${documentsLimit.used} of ${documentsLimit.limit} used.`
+                  : 'Could not load from proxy; see Plan & billing for subscription caps.'
+              }
+              value={
+                documentsLimit
+                  ? documentsLimit.unlimited
+                    ? 'Unlimited'
+                    : `${nf.format(documentsLimit.used)} / ${nf.format(documentsLimit.limit)}`
+                  : '—'
+              }
+            />
+            <StatRow
+              label="Checkpoint AI this month"
+              hint="Checkpoint analyses queued through the proxy."
+              value={nf.format(periodCheckpointCreations)}
+            />
+            <StatRow
+              label="Checkpoint limit"
+              hint={
+                checkpointsLimit
+                  ? checkpointsLimit.unlimited
+                    ? 'No monthly checkpoint AI cap on your plan.'
+                    : `Enforced when starting checkpoint analysis. ${checkpointsLimit.used} of ${checkpointsLimit.limit} used.`
+                  : 'Could not load from proxy; see Plan & billing for subscription caps.'
+              }
+              value={
+                checkpointsLimit
+                  ? checkpointsLimit.unlimited
+                    ? 'Unlimited'
+                    : `${nf.format(checkpointsLimit.used)} / ${nf.format(checkpointsLimit.limit)}`
+                  : '—'
+              }
+            />
+            <StatRow
               label="Your monthly limit"
               hint={
                 monthlyLimit != null
                   ? `From Firestore preferences (monthlyTokenLimit).${effectiveMonthlyLimit != null ? ` Exact: ${formatTokensFull(effectiveMonthlyLimit)}.` : ''}`
                   : effectiveMonthlyLimit != null
-                    ? `Default from the proxy (TOKEN_QUOTA_PERIOD_MAX_TOKENS), fetched via POST /token-quota-status when possible; NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS is only a UI fallback if the proxy is unreachable.${proxyDefaultLimit === 'pending' ? ' (Showing build fallback until the proxy responds.)' : ''} Exact: ${formatTokensFull(effectiveMonthlyLimit)}.`
-                    : 'Unlimited: no preference or proxy default cap (TOKEN_QUOTA_PERIOD_MAX_TOKENS unset or 0).'
+                    ? `Resolved from the proxy via POST /token-quota-status (includes free tier from STRIPE_B2C_PRICE_TOKEN_CAPS_JSON).${proxyDefaultLimit === 'pending' ? ' Waiting for proxy response.' : ''} Exact: ${formatTokensFull(effectiveMonthlyLimit)}.`
+                    : 'Unlimited: no preference or no cap from proxy (free plan missing or zero in STRIPE_B2C_PRICE_TOKEN_CAPS_JSON).'
               }
               value={
                 effectiveMonthlyLimit != null

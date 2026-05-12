@@ -620,6 +620,70 @@ gcloud run deploy homecare-agent-proxy --source .
 
 ---
 
+## Stripe B2C billing (local development)
+
+**Full setup (Dashboard, staging/prod env, checklists):** [docs/billing/B2C_STRIPE_CONFIGURATION.md](../billing/B2C_STRIPE_CONFIGURATION.md).
+
+Use this section to exercise **Checkout**, **Customer Portal**, and **webhooks** against a locally running proxy. Firestore writes use **Application Default Credentials** (e.g. `gcloud auth application-default login`) or `GOOGLE_APPLICATION_CREDENTIALS`.
+
+### Environment variables
+
+Set these in the shell or put a **`.env` file in `gcp/proxy/api`** (same directory you run `uvicorn` from; [`core/config.py`](../../gcp/proxy/api/core/config.py) calls `load_dotenv()`).
+
+| Variable | Required for billing | Description |
+| -------- | -------------------- | ----------- |
+| `STRIPE_SECRET_KEY` | Yes | Stripe **secret** key (`sk_test_…` or `sk_live_…`). |
+| `STRIPE_WEBHOOK_SIGNING_SECRET` | Yes | Webhook **signing secret** (`whsec_…`) from the Stripe Dashboard or from `stripe listen` (see below). |
+| `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` | Yes | JSON map: reserved **`free`** key + Stripe **Price ids**. Extended: `{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5},"price_abc":{...}}`. Legacy integer values = token cap only. `0` = unlimited for that field. Unknown Price ids are rejected at Checkout. |
+| `BILLING_PUBLIC_APP_BASE_URL` | Yes | Public web origin **without** trailing slash used for Checkout success/cancel and Portal `return_url` (e.g. `http://localhost:9002` for the Next.js webapp). |
+| `GCP_PROJECT_ID` | Yes (Firestore) | Same as other proxy features using Firestore. |
+
+GitHub Actions / Cloud Run: see [`deploy-homecare-agent-proxy.yaml`](../../.github/workflows/deploy-homecare-agent-proxy.yaml) for `STRIPE_*` and `BILLING_PUBLIC_APP_BASE_URL` wiring.
+
+### Run the proxy
+
+From the repo (see also [Development Guide](./DEVELOPMENT.md)):
+
+```bash
+cd gcp/proxy/api
+uvicorn main:app --host=0.0.0.0 --port=8080 --reload
+```
+
+Do not commit real Stripe keys; keep `.env` out of git (see `.gitignore`).
+
+### Forward Stripe webhooks to localhost
+
+In a **second** terminal (with [Stripe CLI](https://stripe.com/docs/stripe-cli) installed and logged in):
+
+```bash
+stripe listen --forward-to localhost:8080/stripe/webhook
+```
+
+The CLI prints a **Signing secret** (`whsec_…`). Set `STRIPE_WEBHOOK_SIGNING_SECRET` to that value (restart `uvicorn` if you change env).
+
+The proxy exposes **`POST /stripe/webhook`** on the **host root** (no `FIREBASE_WEBHOOK_SECRET` path prefix), because Stripe Dashboard must target a fixed URL.
+
+### B2C API routes (Firebase Bearer token)
+
+These are also mounted under `/{FIREBASE_WEBHOOK_SECRET}/…` when the secret is set, so the same `NEXT_PUBLIC_API_BASE_URL` pattern as other proxy calls works.
+
+| Method | Path | Auth |
+| ------ | ---- | ---- |
+| `POST` | `/billing/b2c/checkout-session` | `Authorization: Bearer <Firebase ID token>`; JSON body `{ "tier": "plus" }` or `{ "tier": "pro" }`. |
+| `POST` | `/billing/b2c/portal-session` | Same header; JSON body `{ "returnPath": "/home/settings" }` (path only). |
+
+Successful Checkout returns `{ "url": "https://checkout.stripe.com/..." }` — redirect the browser there. After payment, webhooks update Firestore `users/{uid}/billing/summary` (server writes only; clients may **read** per [`apps/webapp/firestore.rules`](../../apps/webapp/firestore.rules)).
+
+### Optional: trigger test events
+
+```bash
+stripe trigger checkout.session.completed
+```
+
+Test fixtures may not include your `metadata.firebaseUid`; use the **webapp Settings → Plan & billing** flow or the Stripe Dashboard to create sessions that match your app’s Checkout metadata for full end-to-end verification.
+
+---
+
 ## Related Documentation
 
 - [API Overview](./API_OVERVIEW.md)

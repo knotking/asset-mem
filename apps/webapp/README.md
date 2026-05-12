@@ -41,7 +41,7 @@ The HomeApp web application allows property managers and homeowners to access th
 3.  **Open in Browser**:
     Navigate to `http://localhost:9002` (or the port shown in terminal).
 
-Copy `.env.example` to `.env` and set values. For **Settings → AI usage**, optional **`NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS`** should match the proxy/worker **`TOKEN_QUOTA_PERIOD_MAX_TOKENS`** so the UI shows the default monthly cap when `monthlyTokenLimit` is not set in Firestore (enforcement remains server-side).
+Copy `.env.example` to `.env` and set values. For **Settings → AI usage**, limits come from the proxy **`POST /token-quota-status`** (free tier from `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` → `free` on the proxy).
 
 ## Project Structure
 

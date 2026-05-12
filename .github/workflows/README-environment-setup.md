@@ -121,7 +121,7 @@ The workflow automatically creates these environment variables in your GitHub en
 - `REASONING_ENGINE_ID`: Agent reasoning engine identifier (default: `new`)
 - `USER_UPLOAD_RAG_CORPUS`: RAG corpus resource name for user uploads
 - `KNOWLEDGE_BASE_RAG_CORPUS`: RAG corpus resource name for knowledge base
-- `TOKEN_QUOTA_PERIOD_MAX_TOKENS`: Monthly per-user total token cap (UTC month) for the proxy and checkpoint worker; default **`1000000`** when the variable is **missing** (the workflow uses `set_var_if_not_exists` so an existing value is never overwritten)
+- `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`: Plan limits for proxy and workers; default includes **`free`** tier (1M tokens / 2 docs / 5 checkpoints) when the variable is **missing** (`set_var_if_not_exists`)
 
 #### Application Configuration
 - `AGENT_STAGING_BUCKET`: GCS bucket for agent staging

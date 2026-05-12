@@ -797,7 +797,7 @@ async def stream_agent_answers(
             err = {
                 "status": "error",
                 "code": "TOKEN_QUOTA_EXCEEDED",
-                "message": "Monthly AI token limit reached. Usage resets at the start of next month (UTC).",
+                "message": "Monthly AI token limit reached. Usage resets at the start of next month.",
                 "used": e.used,
                 "limit": e.limit,
                 "period": e.period_key,

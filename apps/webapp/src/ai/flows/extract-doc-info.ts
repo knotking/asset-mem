@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * Queue document extraction on the proxy (Pub/Sub → worker → Firestore).
@@ -21,29 +21,43 @@ export interface QueueExtractDocInfoResult {
 
 export async function queueExtractDocInfo(
   input: QueueExtractDocInfoInput,
-  idToken: string
+  idToken: string,
 ): Promise<QueueExtractDocInfoResult> {
   if (!input.docId?.trim()) {
     throw new Error(
-      'queueExtractDocInfo requires docId (Firestore users/{uid}/docs/{docId}).'
+      "queueExtractDocInfo requires docId (Firestore users/{uid}/docs/{docId}).",
     );
   }
-  const { apiUrls } = await import('@/lib/utils');
+  const { apiUrls } = await import("@/lib/utils");
   const url = apiUrls.extractDocInfo();
 
   if (!url) {
-    throw new Error('Extract doc info API URL not configured');
+    throw new Error("Extract doc info API URL not configured");
   }
 
-  const { proxyFetchWithAuth } = await import('@/lib/correlation-id');
+  const { proxyFetchWithAuth } = await import("@/lib/correlation-id");
   const response = await proxyFetchWithAuth(url, async () => idToken, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(input),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`);
+    const { parseAgentErrorCode } = await import("@/lib/logger");
+    const code = parseAgentErrorCode(errorBody);
+    if (code === "DOCUMENT_QUOTA_EXCEEDED") {
+      throw new Error(
+        "Monthly document limit reached. Upgrade your plan or wait until next month.",
+      );
+    }
+    if (code === "TOKEN_QUOTA_EXCEEDED") {
+      throw new Error(
+        "Monthly AI token limit reached. Upgrade your plan or wait until next month.",
+      );
+    }
+    throw new Error(
+      `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`,
+    );
   }
 
   return (await response.json()) as QueueExtractDocInfoResult;

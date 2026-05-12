@@ -6,6 +6,18 @@
         "Authorization": "Bearer ${env:GCLOUD_ACCESS_TOKEN}",
         "x-goog-user-project": "${env:GCP_PROJECT_ID}"
       }
+    },
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "mcp",
+        "--dir",
+        "${workspaceFolder}/apps/webapp",
+        "--only",
+        "firestore"
+      ]
     }
   }
 }

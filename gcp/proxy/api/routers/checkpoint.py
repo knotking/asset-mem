@@ -1,10 +1,13 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from google.cloud import firestore
 import logging
 import time
 
+from common.plan_limits import PlanLimitExceeded, check_and_record_monthly_checkpoint_creations
 from core.auth_deps import RATE_BUCKET_CHECKPOINT, authenticated_user
+from utils.plan_limit_http import plan_limit_exceeded_response
 from core.firebase_auth import apply_uid_to_camel_user_id
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
@@ -45,6 +48,12 @@ async def analyze_checkpoint_endpoint(
                 status_code=400,
                 detail="checkpointId, userId, and propertyId are required for async processing"
             )
+
+        db = firestore.Client()
+        try:
+            check_and_record_monthly_checkpoint_creations(db, request_data.userId, 1)
+        except PlanLimitExceeded as e:
+            return plan_limit_exceeded_response(e)
 
         # Publish to Pub/Sub topic for async processing
         message_id = publish_checkpoint_analysis(request_data)

@@ -6,6 +6,7 @@ from typing import Annotated
 from google.cloud import firestore
 from fastapi import APIRouter, Depends
 
+from common.plan_limits import get_plan_limits_status
 from common.token import get_token_quota_status
 from core.auth_deps import RATE_BUCKET_QUOTA, authenticated_user
 from core.firebase_auth import apply_uid_to_agent_request
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
     "/token-quota-status",
     summary="Token quota status",
     description=(
-        "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. "
-        "Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS."
+        "Returns resolved monthly max tokens (0 = unlimited), document/checkpoint creation "
+        "limits and usage for the current UTC month. Same billing resolution as enforcement."
     ),
 )
 async def token_quota_status(
@@ -31,10 +32,13 @@ async def token_quota_status(
     db = firestore.Client()
     used, cap, period_key = get_token_quota_status(db, request_data.user_id)
     unlimited = cap <= 0
+    plan_limits = get_plan_limits_status(db, request_data.user_id)
     return {
         "status": "success",
         "period": period_key,
         "used": used,
         "max_tokens": cap,
         "unlimited": unlimited,
+        "documents": plan_limits["documents"],
+        "checkpoints": plan_limits["checkpoints"],
     }

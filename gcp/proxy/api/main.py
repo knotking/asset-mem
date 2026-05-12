@@ -34,7 +34,7 @@ from core.firebase_auth_middleware import FirebaseAuthLoggingMiddleware
 from core.correlation_middleware import CorrelationIdMiddleware
 from core.config import settings
 from core.events import lifespan
-from routers import agent, documents, telegram, service_broker, checkpoint, token_quota
+from routers import agent, documents, telegram, service_broker, checkpoint, token_quota, billing, stripe_webhook
 from services.vertex_service import reasoning_engine_resource
 
 # Configure logging (auth uid on every line via ContextVar + Filter)
@@ -86,13 +86,18 @@ def _mount_user_routers(prefix: str = "") -> None:
     app.include_router(documents.router, prefix=prefix)
     app.include_router(checkpoint.router, prefix=prefix)
     app.include_router(token_quota.router, prefix=prefix)
+    app.include_router(billing.router, prefix=prefix)
     label = prefix or "/"
     logger.info(
-        "Mounted agent, documents, checkpoint, token_quota at %s (Firebase auth%s)",
+        "Mounted agent, documents, checkpoint, token_quota, billing at %s (Firebase auth%s)",
         label,
         " disabled" if settings.DISABLE_FIREBASE_AUTH else "",
     )
 
+
+# Stripe (B2C): webhook must stay on a fixed path for Stripe Dashboard (no Firebase secret prefix).
+app.include_router(stripe_webhook.router)
+logger.info("Mounted stripe_webhook at /stripe/webhook")
 
 _mount_user_routers()
 

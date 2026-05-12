@@ -9,6 +9,15 @@ from rag_service import RagService
 from utils import parse_pubsub_message
 from exceptions import WorkerError
 
+try:
+    import firebase_admin
+    from firebase_admin import firestore as admin_firestore
+except ImportError:
+    firebase_admin = None  # type: ignore
+    admin_firestore = None  # type: ignore
+
+from common.plan_limits import PlanLimitExceeded, check_monthly_document_creations_allowed
+
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 from common.observability.logging_context import install_auth_uid_logging_if_needed
@@ -48,9 +57,28 @@ def pubsub_to_user_docs(request, context):
         result_msg = ""
 
         try:
+            if admin_firestore is not None:
+                try:
+                    firebase_admin.get_app()
+                except ValueError:
+                    firebase_admin.initialize_app()
+                db = admin_firestore.client()
+                check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
             rag_service = RagService()
             result_msg = rag_service.import_files(gcs_urls, user_id)
             success = True
+        except PlanLimitExceeded as e:
+            logger.warning(
+                "user_docs skipped: document creation limit user=%s period=%s used=%s limit=%s",
+                user_id,
+                e.period_key,
+                e.used,
+                e.limit,
+            )
+            result_msg = (
+                f"Monthly document limit reached ({e.used} of {e.limit} this UTC month)."
+            )
+            success = False
         except WorkerError as e:
             logger.warning("user_docs WorkerError: %s", e)
             result_msg = str(e)

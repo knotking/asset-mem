@@ -18,13 +18,14 @@ import { formatTokensCompact } from '@/lib/format-tokens';
 export function TokenUsageToolbar() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { loading, error, periodTotalTokens, effectiveMonthlyLimit } = useLlmTokenUsage();
+  const { loading, limitsLoading, error, periodTotalTokens, effectiveMonthlyLimit } =
+    useLlmTokenUsage();
 
   if (!user || authLoading) {
     return null;
   }
 
-  if (loading) {
+  if (loading || limitsLoading) {
     return (
       <div className="w-20 shrink-0 sm:w-24" aria-hidden>
         <Skeleton className="h-7 w-full" />
@@ -38,7 +39,7 @@ export function TokenUsageToolbar() {
 
   const goSettings = () => router.push('/home/settings');
 
-  if (effectiveMonthlyLimit == null) {
+  if (effectiveMonthlyLimit == null || effectiveMonthlyLimit <= 0) {
     return (
       <TooltipProvider delayDuration={300}>
         <Tooltip>
@@ -51,13 +52,15 @@ export function TokenUsageToolbar() {
               onClick={goSettings}
             >
               <Activity className="h-4 w-4 shrink-0" />
-              <span className="max-w-[8rem] truncate text-xs">No monthly cap (UI)</span>
+              <span className="max-w-[8rem] truncate text-xs tabular-nums">
+                {formatTokensCompact(periodTotalTokens)}
+              </span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             <p className="text-xs">
-              No limit is configured in this app build for the quota bar. The server may still
-              enforce TOKEN_QUOTA_PERIOD_MAX_TOKENS. Open Settings for full usage.
+              {formatTokensCompact(periodTotalTokens)} tokens used this month. Open Settings for
+              plan limits.
             </p>
           </TooltipContent>
         </Tooltip>

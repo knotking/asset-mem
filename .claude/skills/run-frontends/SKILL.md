@@ -47,7 +47,7 @@ npm run genkit:dev    # genkit start -- tsx src/ai/dev.ts
 npm run genkit:watch
 ```
 
-Env vars are read from `.env.local` (Next.js convention). Firebase project config comes from `apps/common/src/firebase/firebase-config.ts` which is hardcoded per environment and selected via the env variable. Quota UI uses `POST /token-quota-status` on the proxy — there's an optional `NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS` fallback, but the proxy is the source of truth.
+Env vars are read from `.env.local` (Next.js convention). Firebase project config comes from `apps/common/src/firebase/firebase-config.ts` which is hardcoded per environment and selected via the env variable. Quota UI uses `POST /token-quota-status` on the proxy (limits from `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` including `free`).
 
 ## Mapp (apps/mapp)
 

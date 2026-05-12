@@ -96,7 +96,7 @@ Configure in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.p
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | **Recommended** | GA4 ID `G-XXXXXXXX` — **add to yaml before PH**; if omitted, analytics is disabled |
 | `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Already in yaml — proxy base URL |
 | `NEXT_PUBLIC_ENV` | **Yes** | `prod` |
-| `NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS` | **Yes** | Align with proxy quota |
+| `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (proxy) | **Yes** | Include `free` + Stripe Price ids; webapp reads limits via `/token-quota-status` |
 
 **Deploy steps:**
 

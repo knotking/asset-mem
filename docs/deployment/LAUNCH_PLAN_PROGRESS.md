@@ -211,7 +211,7 @@ Set in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.prod.ya
 |----------|------------------|------------------------------|---------|
 | `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Cloud Run proxy origin (no path secret) | API calls; Phase 4 may switch to API Gateway host |
 | `NEXT_PUBLIC_ENV` | **Yes** | `prod` | Environment flag |
-| `NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS` | **Yes** | `1000000` | AI usage UI fallback |
+| `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (proxy GH var) | **Yes** | includes `free` | Token/doc/checkpoint limits |
 | `NEXT_PUBLIC_SITE_URL` | **Yes** | `https://homegeek.ai` | OG canonical URLs, metadata |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | `support@homegeek.ai` | Contact section, legal pages |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | **Recommended** | *Not in yaml — add before PH* | GA4; omit = analytics off |

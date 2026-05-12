@@ -169,7 +169,10 @@ jobs:
             CHECKPOINT_ANALYSIS_TOPIC=${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}
             CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
             DOCUMENT_ANALYSIS_TOPIC=${{ vars.DOCUMENT_ANALYSIS_TOPIC }}
-            TOKEN_QUOTA_PERIOD_MAX_TOKENS=${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SIGNING_SECRET=${{ secrets.STRIPE_WEBHOOK_SIGNING_SECRET }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+            BILLING_PUBLIC_APP_BASE_URL=${{ vars.BILLING_PUBLIC_APP_BASE_URL }}
 
       # Firestore: Cloud Run uses vars.GCP_SERVICE_ACCOUNT_EMAIL at runtime. That SA needs
       # roles/datastore.user on the project. The workflow identity usually cannot call setIamPolicy;

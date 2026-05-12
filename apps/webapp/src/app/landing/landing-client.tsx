@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
+import { LandingPricingSection } from "./landing-pricing-section";
 import { YouTubeModal } from "@/components/landing/youtube-modal";
 import { trackLandingCta } from "@/lib/analytics";
 import { getSupportEmail } from "@/lib/site";
@@ -79,6 +80,7 @@ export default function LandingPageClient() {
           el: document.querySelector("#timeline-feature"),
         },
         { id: "how-it-works", el: document.querySelector("#how-it-works") },
+        { id: "pricing", el: document.querySelector("#pricing") },
       ];
 
       for (const { id, el } of sections) {
@@ -1513,6 +1515,8 @@ export default function LandingPageClient() {
           </div>
         </div>
       </section>
+
+      <LandingPricingSection colors={LANDING_COLORS} />
 
       {/* CTA Section - dark base and radial highlight */}
       <section className="py-32 relative overflow-hidden w-full">

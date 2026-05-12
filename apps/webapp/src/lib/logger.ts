@@ -51,6 +51,8 @@ export function truncateId(id: string | undefined | null, len = 8): string | und
 export function parseAgentErrorCode(body: string): string | undefined {
   if (!body) return undefined;
   if (body.includes('TOKEN_QUOTA_EXCEEDED')) return 'TOKEN_QUOTA_EXCEEDED';
+  if (body.includes('DOCUMENT_QUOTA_EXCEEDED')) return 'DOCUMENT_QUOTA_EXCEEDED';
+  if (body.includes('CHECKPOINT_QUOTA_EXCEEDED')) return 'CHECKPOINT_QUOTA_EXCEEDED';
   try {
     const parsed = JSON.parse(body) as { code?: string; detail?: { code?: string } };
     return parsed.code ?? parsed.detail?.code;

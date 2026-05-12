@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { AuthDivider } from '@/components/auth/auth-divider';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
+import {
+  completeAuthThenStripeCheckout,
+  isBillingCheckoutTier,
+  postAuthRedirectPath,
+} from '@/lib/pending-checkout';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,14 +24,20 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const checkoutTier = searchParams.get('checkout');
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await login(email, password);
-      router.push('/home');
+      const cred = await login(email, password);
+      if (isBillingCheckoutTier(checkoutTier)) {
+        await completeAuthThenStripeCheckout(cred.user, checkoutTier);
+        return;
+      }
+      router.push(postAuthRedirectPath());
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error
@@ -53,7 +64,11 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <GoogleSignInButton mode="login" disabled={formDisabled} />
+          <GoogleSignInButton
+            mode="login"
+            disabled={formDisabled}
+            checkoutTier={checkoutTier}
+          />
           <AuthDivider />
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
@@ -94,7 +109,14 @@ export default function LoginPage() {
           </p>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
+            <Link
+              href={
+                checkoutTier
+                  ? `/signup?checkout=${encodeURIComponent(checkoutTier)}`
+                  : '/signup'
+              }
+              className="underline"
+            >
               Sign up
             </Link>
           </div>
