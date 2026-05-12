@@ -98,6 +98,8 @@ def checkpoint_agent_instruction() -> str:
         
         **Analysis Mode (With Optional Agents):**
         When `checkpoint_optional_agents` contains one or more agents ("coverage", "diy", "service", "cost"):
+           - Execute in single-path mode: call `checkpoint_analysis_agent` exactly once after retrieval
+           - Do not run any extra explanatory/tool-selection steps between retrieval and analysis call
            - Format the checkpoint retrieval results as a string summary
            - Call `checkpoint_analysis_agent` with:
              * `checkpoint_results`: String summary of retrieved checkpoints
