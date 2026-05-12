@@ -51,6 +51,17 @@ export type Message = {
   agentSteps?: AgentStep[];
 };
 
+/** DIY-only cost slice from the agent library (under analysis.diyResults). */
+export type DiyCostEstimatesSummary = {
+  repair_type?: string;
+  DIY?: {
+    cost_range?: string;
+    includes?: string[];
+    savings?: string;
+    complexity?: string;
+  };
+};
+
 export type StructuredResponseData = {
   analysis?: {
     title?: string;
@@ -85,6 +96,9 @@ export type StructuredResponseData = {
       insuranceInfo?: string;
     };
     diyResults?: {
+      hireProfessionalRecommended?: boolean;
+      hire_professional_recommended?: boolean;
+      diyCostEstimates?: DiyCostEstimatesSummary;
       diySteps?: {
         summary?: string;
         steps?: Array<{ stepNumber: number; description: string }>;

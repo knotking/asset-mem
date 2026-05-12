@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   User,
@@ -29,12 +29,14 @@ import {
   Sparkles,
   Info,
   Lightbulb,
+  AlertTriangle,
 } from 'lucide-react-native';
 import type {
   Message,
   StructuredResponseData,
   ServiceProvider,
   Product,
+  DiyCostEstimatesSummary,
 } from '@homeapp/common/types';
 import {
   Accordion,
@@ -68,6 +70,31 @@ const hasValue = (val: any): boolean => {
   }
   return true;
 };
+
+function getDiyHireProfessionalRecommended(diy: unknown): boolean {
+  if (!diy || typeof diy !== 'object') return false;
+  const o = diy as Record<string, unknown>;
+  return o.hireProfessionalRecommended === true || o.hire_professional_recommended === true;
+}
+
+function getDiyCostEstimatesBlock(diy: unknown): DiyCostEstimatesSummary | null {
+  if (!diy || typeof diy !== 'object') return null;
+  const raw = (diy as Record<string, unknown>).diyCostEstimates;
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as DiyCostEstimatesSummary;
+}
+
+function diyCostBlockHasContent(ce: DiyCostEstimatesSummary): boolean {
+  if (ce.repair_type && String(ce.repair_type).trim()) return true;
+  const d = ce.DIY;
+  if (!d || typeof d !== 'object') return false;
+  return !!(
+    (d.cost_range && String(d.cost_range).trim()) ||
+    (Array.isArray(d.includes) && d.includes.length > 0) ||
+    (d.savings && String(d.savings).trim()) ||
+    (d.complexity && String(d.complexity).trim())
+  );
+}
 
 const normalizeProvider = (p: any): ServiceProvider | null => {
   if (!p || typeof p !== 'object') return null;
@@ -540,17 +567,25 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
     [needsClarification, coverage]
   );
 
+  const diyCostBlock = useMemo(() => getDiyCostEstimatesBlock(diy), [diy]);
+  const hasDiyCostInDiy = useMemo(
+    () => !!(diyCostBlock && diyCostBlockHasContent(diyCostBlock)),
+    [diyCostBlock]
+  );
+
   const hasDIY = useMemo(
     () =>
       !needsClarification &&
       !!(
         diy &&
-        (diy.diySteps?.summary ||
+        (getDiyHireProfessionalRecommended(diy) ||
+          hasDiyCostInDiy ||
+          diy.diySteps?.summary ||
           (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
           (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
           (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0))
       ),
-    [needsClarification, diy]
+    [needsClarification, diy, hasDiyCostInDiy]
   );
 
   const hasService = useMemo(
@@ -852,6 +887,60 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
+              {getDiyHireProfessionalRecommended(diy) && (
+                <Alert icon={AlertTriangle} variant="destructive" className="mb-3">
+                  <AlertTitle>Professional help recommended</AlertTitle>
+                  <AlertDescription>
+                    This repair may involve gas, electrical, structural, or other hazards. Consider
+                    hiring a licensed professional before attempting DIY work.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {diyCostBlock && diyCostBlockHasContent(diyCostBlock) && (
+                <View className="mb-3 rounded-md border border-amber-800/30 bg-amber-950/20 p-3">
+                  <View className="mb-2 flex-row items-center gap-2">
+                    <Icon as={DollarSign} size={16} className="text-amber-600" />
+                    <Text className="text-sm font-semibold text-foreground">Estimated DIY cost</Text>
+                  </View>
+                  <Text className="mb-2 text-xs text-muted-foreground">
+                    Indicative range from our repair library—not a quote. Verify with local pricing.
+                  </Text>
+                  {diyCostBlock.repair_type ? (
+                    <Text className="mb-1 text-xs text-muted-foreground">
+                      <Text className="font-medium text-foreground">Repair type: </Text>
+                      {String(diyCostBlock.repair_type)}
+                    </Text>
+                  ) : null}
+                  {diyCostBlock.DIY?.cost_range ? (
+                    <Text className="mb-1 text-sm text-foreground">
+                      <Text className="font-medium">Typical range: </Text>
+                      {String(diyCostBlock.DIY.cost_range)}
+                    </Text>
+                  ) : null}
+                  {Array.isArray(diyCostBlock.DIY?.includes) && diyCostBlock.DIY.includes.length > 0 ? (
+                    <View className="mb-2">
+                      <Text className="mb-1 text-sm font-medium text-foreground">Includes</Text>
+                      {diyCostBlock.DIY.includes.map((it: string, i: number) => (
+                        <Text key={i} className="pl-2 text-sm text-foreground">
+                          • {it}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                  {diyCostBlock.DIY?.savings ? (
+                    <Text className="mb-1 text-sm text-foreground">
+                      <Text className="font-medium">Savings: </Text>
+                      {String(diyCostBlock.DIY.savings)}
+                    </Text>
+                  ) : null}
+                  {diyCostBlock.DIY?.complexity ? (
+                    <Text className="text-sm text-foreground">
+                      <Text className="font-medium">Complexity: </Text>
+                      {String(diyCostBlock.DIY.complexity)}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
               {diy?.diySteps?.summary && (
                 <View className="mb-3">
                   <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>

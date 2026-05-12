@@ -221,6 +221,12 @@ CRITICAL SCHEMA CONTRACT FOR WEBAPP/MAPP:
 - NEVER set analysis.coverageResult to a string.
 - NEVER set analysis.costEstimationResults to a string.
 
+DIY branch merge rule (checkpoint_parallel_diy_result):
+- The DIY tool may return JSON shaped as { "hire_professional_recommended": <boolean>, "diyResults": { ... } }.
+- Always set analysis.diyResults to the INNER "diyResults" object only (must contain diySteps, youtubeSearch, recommendedProducts as today).
+- You may copy hire_professional_recommended into analysis.diyResults as optional boolean "hireProfessionalRecommended" for clients; omit if false.
+- Preserve diyCostEstimates inside analysis.diyResults when present (optional object).
+
 Required checkpointSummary shape (always present, object):
 {
   "checkpointsAnalyzed": <number>,
