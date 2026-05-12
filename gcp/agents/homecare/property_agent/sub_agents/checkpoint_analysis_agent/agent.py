@@ -5,13 +5,13 @@ Orchestrates coverage, DIY, service, and cost agents to provide comprehensive
 recommendations based on checkpoint data analysis.
 """
 
+import json
 import logging
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, List, Dict, Any
-from google.adk.agents import Agent, ParallelAgent, SequentialAgent
-from google.adk.agents.callback_context import CallbackContext
-from google.adk.models.llm_response import LlmResponse
-from google.adk.tools import BaseTool
-from google.adk.tools.agent_tool import AgentTool
+from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import ToolContext
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -41,141 +41,147 @@ class CheckpointAnalysisInput(BaseModel):
     location_radius: Optional[int] = Field(default=None, description="Search radius for local services")
 
 
-def normalize_default_api_tool_names(
-    callback_context: CallbackContext, llm_response: LlmResponse
-) -> Optional[LlmResponse]:
-    """Gemini can prefix function calls with default_api; ADK stores plain names."""
-    del callback_context  # ADK passes this as a keyword arg; we don't use it.
-    if not llm_response.content or not llm_response.content.parts:
-        return None
-
-    normalized = False
-    for part in llm_response.content.parts:
-        function_call = getattr(part, "function_call", None)
-        if (
-            function_call
-            and isinstance(function_call.name, str)
-            and function_call.name.startswith("default_api.")
-        ):
-            function_call.name = function_call.name.split(".", 1)[1]
-            normalized = True
-
-    return llm_response if normalized else None
+def _normalize_agent_result(result: Any) -> str:
+    if result is None:
+        return "SKIPPED"
+    if isinstance(result, str):
+        return result
+    try:
+        return json.dumps(result, ensure_ascii=False)
+    except Exception:
+        return str(result)
 
 
-def before_tool_callback(tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, **kwargs):
-    """Ensure user_id is set in tool context state."""
-    del tool, args, kwargs  # ADK passes these as keyword args; we don't use them.
-    if hasattr(tool_context, '_invocation_context') and hasattr(tool_context._invocation_context, 'session'):
+def _run_single_optional_agent(
+    agent_name: str,
+    checkpoint_results: str,
+    user_query: str,
+    context_doc_uris: Optional[List[str]],
+    property_address: Optional[str],
+    property_id: Optional[str],
+    location_coordinates: Optional[Dict[str, float]],
+    location_radius: Optional[int],
+) -> str:
+    payload: Dict[str, Any] = {
+        "user_query": f"{user_query}\n\nCheckpoint context:\n{checkpoint_results}",
+        "checkpoint_results": checkpoint_results,
+        "context_doc_uris": context_doc_uris,
+        "property_address": property_address,
+        "property_id": property_id,
+        "location_coordinates": location_coordinates,
+        "location_radius": location_radius,
+    }
+    if agent_name == "coverage":
+        return _normalize_agent_result(_invoke_optional_agent(coverage_agent, payload))
+    if agent_name == "diy":
+        return _normalize_agent_result(_invoke_optional_agent(diy_agent, payload))
+    if agent_name == "service":
+        return _normalize_agent_result(_invoke_optional_agent(service_agent, payload))
+    if agent_name == "cost":
+        return _normalize_agent_result(_invoke_optional_agent(cost_agent, payload))
+    return "SKIPPED"
+
+
+def _invoke_optional_agent(agent: Agent, payload: Dict[str, Any]) -> Any:
+    """Compatibility helper across ADK interfaces."""
+    if hasattr(agent, "run"):
+        return agent.run(payload)  # type: ignore[attr-defined]
+    if hasattr(agent, "invoke"):
+        return agent.invoke(payload)  # type: ignore[attr-defined]
+    raise AttributeError(f"Agent {getattr(agent, 'name', '<unknown>')} has no run/invoke method")
+
+
+def run_checkpoint_optional_agents_parallel(
+    checkpoint_results: str,
+    user_query: str,
+    checkpoint_optional_agents: List[CheckpointOptionalAgent],
+    context_doc_uris: Optional[List[str]] = None,
+    property_address: Optional[str] = None,
+    property_id: Optional[str] = None,
+    location_coordinates: Optional[Dict[str, float]] = None,
+    location_radius: Optional[int] = None,
+    tool_context: ToolContext = None,
+) -> str:
+    """Run requested optional agents in parallel without extra branch-level LLM wrappers."""
+    total_start = time.monotonic()
+    if tool_context and hasattr(tool_context, "_invocation_context") and hasattr(tool_context._invocation_context, "session"):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
+    requested = set(checkpoint_optional_agents or [])
+    results: Dict[str, str] = {
+        "checkpoint_parallel_coverage_result": "SKIPPED",
+        "checkpoint_parallel_diy_result": "SKIPPED",
+        "checkpoint_parallel_service_result": "SKIPPED",
+        "checkpoint_parallel_cost_result": "SKIPPED",
+    }
+    branch_map = {
+        "coverage": "checkpoint_parallel_coverage_result",
+        "diy": "checkpoint_parallel_diy_result",
+        "service": "checkpoint_parallel_service_result",
+        "cost": "checkpoint_parallel_cost_result",
+    }
 
-coverage_parallel_agent = Agent(
-    name="checkpoint_coverage_parallel_agent",
-    model=GLOBAL_GEMINI_MODEL,
-    description="Runs coverage analysis branch for checkpoint recommendations.",
-    instruction="""
-You are the checkpoint coverage branch.
+    futures = {}
+    branch_starts: Dict[str, float] = {}
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for name in requested:
+            if name not in branch_map:
+                continue
+            branch_starts[name] = time.monotonic()
+            futures[pool.submit(
+                _run_single_optional_agent,
+                name,
+                checkpoint_results,
+                user_query,
+                context_doc_uris,
+                property_address,
+                property_id,
+                location_coordinates,
+                location_radius,
+            )] = name
 
-If "coverage" is NOT present in checkpoint_optional_agents, return exactly: SKIPPED.
+        for fut in as_completed(futures):
+            name = futures[fut]
+            key = branch_map[name]
+            try:
+                results[key] = fut.result()
+            except Exception:
+                logger.exception("checkpoint optional branch failed: %s", name)
+                results[key] = "SKIPPED"
+            finally:
+                started = branch_starts.get(name)
+                if started is not None:
+                    logger.info(
+                        "checkpoint optional branch timing: branch=%s duration_ms=%d",
+                        name,
+                        int((time.monotonic() - started) * 1000),
+                    )
 
-If "coverage" is present:
-- Call coverage_agent exactly once.
-- Use checkpoint_results to construct the issue context.
-- Pass through context_doc_uris and property_address when available.
-- Return only the coverage_agent result text.
-""",
-    tools=[AgentTool(coverage_agent)],
-    input_schema=CheckpointAnalysisInput,
-    output_key="checkpoint_parallel_coverage_result",
-    disallow_transfer_to_parent=True,
-    after_model_callback=normalize_default_api_tool_names,
-    before_tool_callback=before_tool_callback,
-)
+    logger.info(
+        "checkpoint optional runner timing: requested=%s total_duration_ms=%d",
+        sorted(requested),
+        int((time.monotonic() - total_start) * 1000),
+    )
+    return json.dumps(results, ensure_ascii=False)
 
-diy_parallel_agent = Agent(
-    name="checkpoint_diy_parallel_agent",
-    model=GLOBAL_GEMINI_MODEL,
-    description="Runs DIY analysis branch for checkpoint recommendations.",
-    instruction="""
-You are the checkpoint DIY branch.
 
-If "diy" is NOT present in checkpoint_optional_agents, return exactly: SKIPPED.
-
-If "diy" is present:
-- Call diy_agent exactly once.
-- Use checkpoint_results to construct the issue context.
-- Pass through context_doc_uris and property_address when available.
-- Return only the diy_agent result text.
-""",
-    tools=[AgentTool(diy_agent)],
-    input_schema=CheckpointAnalysisInput,
-    output_key="checkpoint_parallel_diy_result",
-    disallow_transfer_to_parent=True,
-    after_model_callback=normalize_default_api_tool_names,
-    before_tool_callback=before_tool_callback,
-)
-
-service_parallel_agent = Agent(
-    name="checkpoint_service_parallel_agent",
-    model=GLOBAL_GEMINI_MODEL,
-    description="Runs service analysis branch for checkpoint recommendations.",
-    instruction="""
-You are the checkpoint service branch.
-
-If "service" is NOT present in checkpoint_optional_agents, return exactly: SKIPPED.
-
-If "service" is present:
-- Call service_agent exactly once.
-- Use checkpoint_results to construct the issue context.
-- Pass through property_address, location_coordinates, and location_radius when available.
-- Return only the service_agent result text.
-""",
-    tools=[AgentTool(service_agent)],
-    input_schema=CheckpointAnalysisInput,
-    output_key="checkpoint_parallel_service_result",
-    disallow_transfer_to_parent=True,
-    after_model_callback=normalize_default_api_tool_names,
-    before_tool_callback=before_tool_callback,
-)
-
-cost_parallel_agent = Agent(
-    name="checkpoint_cost_parallel_agent",
-    model=GLOBAL_GEMINI_MODEL,
-    description="Runs cost analysis branch for checkpoint recommendations.",
-    instruction="""
-You are the checkpoint cost branch.
-
-If "cost" is NOT present in checkpoint_optional_agents, return exactly: SKIPPED.
-
-If "cost" is present:
-- Call cost_agent exactly once.
-- Use checkpoint_results to construct the issue context.
-- Pass through context_doc_uris and property_address when available.
-- Return only the cost_agent result text.
-""",
-    tools=[AgentTool(cost_agent)],
-    input_schema=CheckpointAnalysisInput,
-    output_key="checkpoint_parallel_cost_result",
-    disallow_transfer_to_parent=True,
-    after_model_callback=normalize_default_api_tool_names,
-    before_tool_callback=before_tool_callback,
-)
-
-parallel_optional_agents = ParallelAgent(
+parallel_optional_runner_agent = Agent(
     name="checkpoint_optional_agents_parallel_runner",
-    description="Runs checkpoint optional agent branches in parallel.",
-    sub_agents=[
-        coverage_parallel_agent,
-        diy_parallel_agent,
-        service_parallel_agent,
-        cost_parallel_agent,
-    ],
+    model=GLOBAL_GEMINI_MODEL,
+    description="Runs requested optional checkpoint branches in parallel using Python orchestration.",
+    instruction="""
+Call run_checkpoint_optional_agents_parallel exactly once with the full input payload.
+Return only the tool output without additional narration.
+""",
+    tools=[run_checkpoint_optional_agents_parallel],
+    input_schema=CheckpointAnalysisInput,
+    output_key="checkpoint_parallel_results",
+    disallow_transfer_to_parent=True,
 )
 
 synthesis_agent = Agent(
     name="checkpoint_analysis_synthesis_agent",
-    model=GLOBAL_GEMINI_MODEL,
+    model=os.getenv("CHECKPOINT_SYNTHESIS_MODEL", GLOBAL_GEMINI_MODEL.model),
     description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
     instruction="""
 You are the final checkpoint analysis synthesizer.
@@ -184,19 +190,19 @@ Inputs:
 - checkpoint_results
 - user_query
 - checkpoint_optional_agents
-- checkpoint_parallel_coverage_result
-- checkpoint_parallel_diy_result
-- checkpoint_parallel_service_result
-- checkpoint_parallel_cost_result
+- checkpoint_parallel_results (JSON string with keys:
+  checkpoint_parallel_coverage_result, checkpoint_parallel_diy_result,
+  checkpoint_parallel_service_result, checkpoint_parallel_cost_result)
 
 Your task:
 1) Summarize checkpoint findings from checkpoint_results.
-2) Build final output in strict dual format:
+2) Parse checkpoint_parallel_results JSON once; treat missing/invalid values as SKIPPED.
+3) Build strict dual format output:
    - Markdown first (start with # Title)
    - Then a ```json code block with an "analysis" object
-3) Include sections only for requested optional agents.
-4) Ignore branch values that are SKIPPED.
-5) Never mention internal branch/tool execution details.
+4) Include sections only for requested optional agents.
+5) Ignore branch values that are SKIPPED.
+6) Never mention internal branch/tool execution details.
 
 The JSON must include:
 - analysis.title
@@ -310,7 +316,7 @@ Final validation before returning:
 checkpoint_analysis_workflow = SequentialAgent(
     name="checkpoint_analysis_agent",
     description="Runs optional checkpoint agents in parallel then synthesizes one stable response.",
-    sub_agents=[parallel_optional_agents, synthesis_agent],
+    sub_agents=[parallel_optional_runner_agent, synthesis_agent],
 )
 
 # Use the workflow directly as the exported entrypoint to remove one extra
