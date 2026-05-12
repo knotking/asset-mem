@@ -17,10 +17,9 @@ import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Optional, Tuple
 
-from google import genai
 from google.genai import types
 
-from ...model_config import GLOBAL_GEMINI_MODEL
+from ...model_config import LEGACY_API_GEMINI
 from ..cost_agent.agent import cost_estimation_diy_from_library
 from ..shopping_agent.agent import product_recommendations
 
@@ -62,11 +61,11 @@ def _cache_ttl_seconds() -> float:
 
 
 def _synthesis_model() -> str:
-    return os.getenv("DIY_SYNTHESIS_MODEL", GLOBAL_GEMINI_MODEL.model).strip() or GLOBAL_GEMINI_MODEL.model
+    return LEGACY_API_GEMINI.model
 
 
 def _web_search_model() -> str:
-    return os.getenv("DIY_WEB_SEARCH_MODEL", GLOBAL_GEMINI_MODEL.model).strip() or GLOBAL_GEMINI_MODEL.model
+    return LEGACY_API_GEMINI.model
 
 
 def _cache_key(user_query: str, property_address: Optional[str]) -> str:
@@ -102,7 +101,7 @@ def _strip_code_fences(text: str) -> str:
 
 def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
     """One Gemini call with Google Search grounding for DIY steps context."""
-    client = genai.Client()
+    client = LEGACY_API_GEMINI.api_client
     addr = property_address.strip() if property_address else "not provided"
     prompt = (
         f"Issue / diagnosis:\n{diagnosis}\n\n"
@@ -123,8 +122,12 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
             ),
         )
         return (response.text or "").strip()
-    except Exception:
-        logger.exception("DIY grounded web search failed")
+    except Exception as exc:
+        logger.exception(
+            "DIY grounded web search failed (%s: %s)",
+            type(exc).__name__,
+            exc,
+        )
         return ""
 
 
@@ -153,7 +156,7 @@ def _synthesize_diy_json(
     cost_json: str,
 ) -> str:
     """Single Gemini call: merge inputs into the nested DIY JSON schema (no tools)."""
-    client = genai.Client()
+    client = LEGACY_API_GEMINI.api_client
     payload = {
         "diagnosis": diagnosis[:4000],
         "web_research_summary": web_summary[:6000],
@@ -235,8 +238,12 @@ Rules:
             except Exception:
                 dr["diyCostEstimates"] = {}
         return json.dumps(parsed, ensure_ascii=False)
-    except Exception:
-        logger.exception("DIY synthesis failed; using deterministic fallback")
+    except Exception as exc:
+        logger.exception(
+            "DIY synthesis failed; using deterministic fallback (%s: %s)",
+            type(exc).__name__,
+            exc,
+        )
         return _fallback_json(diagnosis, web_summary, youtube_videos, products_json, cost_json)
 
 
@@ -365,8 +372,13 @@ def run_diy_pipeline(
             ph0 = time.monotonic()
             try:
                 result = fut.result()
-            except Exception:
-                logger.exception("DIY orchestrator phase=%s failed", name)
+            except Exception as exc:
+                logger.exception(
+                    "DIY orchestrator phase=%s failed (%s: %s)",
+                    name,
+                    type(exc).__name__,
+                    exc,
+                )
                 continue
             logger.info(
                 "DIY orchestrator phase=%s duration_ms=%d",

@@ -4,14 +4,13 @@ import re
 from typing import Any, Dict, List, Optional
 
 from google.adk.agents import Agent
-from google import genai
 from pydantic import BaseModel, Field
 
 from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
 from .service_pricing_extractor import extract_and_combine_all_pricing, calibrate_ai_estimate_with_provider_data
 from ...agent_inputs import CheckpointOptionalAgent
-from ...model_config import GLOBAL_GEMINI_MODEL
+from ...model_config import LEGACY_API_GEMINI, GLOBAL_GEMINI_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -266,8 +265,8 @@ def _estimate_with_ai(
         return None, 0.0, "invalid_input"
     
     try:
-        # Initialize Gemini client
-        client = genai.Client()
+        # Direct genai API uses gemini-2.5-flash (see LEGACY_API_GEMINI), not the ADK default.
+        client = LEGACY_API_GEMINI.api_client
         
         # Extract service provider pricing data if available
         provider_pricing = None
@@ -379,101 +378,112 @@ def _build_cost_response(
     return response
 
 
-def cost_estimation(query: str) -> str:
+def _default_diy_block() -> Dict[str, Any]:
+    return {
+        "cost_range": "$50-300",
+        "includes": [
+            "Material/product costs vary by repair type",
+            "Basic tools may be required",
+            "Time investment needed",
+        ],
+        "savings": "60-80% on labor costs",
+        "complexity": "Simple repairs may be cost-effective",
+    }
+
+
+def _diy_only_error_response(query: str) -> Dict[str, Any]:
+    return {
+        "diyCostEstimates": {
+            "repair_type": query,
+            "DIY": _default_diy_block(),
+        }
+    }
+
+
+def _build_diy_only_response(full_estimate: Dict[str, Any], query: str) -> Dict[str, Any]:
+    """Slice a full costEstimates payload into diyCostEstimates JSON shape."""
+    ce = full_estimate.get("costEstimates", {}) if isinstance(full_estimate, dict) else {}
+    if not isinstance(ce, dict):
+        ce = {}
+    diy = ce.get("DIY")
+    repair_type = ce.get("repair_type") or query
+    use_diy = isinstance(diy, dict) and bool(diy)
+    return {
+        "diyCostEstimates": {
+            "repair_type": repair_type,
+            "DIY": diy if use_diy else _default_diy_block(),
+        }
+    }
+
+
+def _compute_full_cost_estimate(query: str) -> Dict[str, Any]:
     """
-    Provides cost estimates grounded in the triage diagnosis.
-    
-    Uses AI-powered estimation with Google Search grounding when enabled,
-    falls back to hardcoded cost library when AI fails or confidence is low.
-    
-    Args:
-        query: Query string containing diagnosis and optional context
-        
-    Returns:
-        JSON string with cost estimates
+    Single internal path for full DIY + Service estimates (AI or library fallback).
+
+    Used by cost_estimation and cost_estimation_diy so a DIY-only tool call does not
+    repeat grounded model work.
     """
-    # Extract context from query
     diagnosis = _extract_diagnosis_from_query(query)
     property_address = _extract_property_address_from_query(query)
     service_results = _extract_service_results_from_query(query)
-    
+
     if not diagnosis:
         diagnosis = query
-    
-    logger.info(f"Cost estimation request - diagnosis: {diagnosis[:100]}, location: {property_address or 'not provided'}")
-    
-    # Try AI estimation first if enabled
+
+    logger.info(
+        f"Cost estimation request - diagnosis: {diagnosis[:100]}, location: {property_address or 'not provided'}"
+    )
+
     if config.should_use_ai_estimation():
         ai_estimate, confidence, source = _estimate_with_ai(
             diagnosis=diagnosis,
             property_address=property_address,
-            service_results=service_results
+            service_results=service_results,
         )
-        
+
         if ai_estimate and confidence >= config.MIN_AI_CONFIDENCE_THRESHOLD:
             logger.info(f"Using AI cost estimate (source: {source}, confidence: {confidence:.2f})")
             if config.LOG_AI_RESPONSES:
                 logger.debug(f"AI estimate: {json.dumps(ai_estimate)}")
-            return json.dumps(ai_estimate)
-        else:
-            # Log fallback reason
-            fallback_reason = f"AI estimation failed or low confidence (source: {source}, confidence: {confidence:.2f})"
-            if config.LOG_FALLBACK_USAGE:
-                logger.warning(fallback_reason)
-                fallback_log = config.get_fallback_reason_log(fallback_reason, diagnosis)
-                logger.info(f"Fallback event: {json.dumps(fallback_log)}")
-    
-    # Fallback to hardcoded cost library
+            return ai_estimate
+
+        fallback_reason = (
+            f"AI estimation failed or low confidence (source: {source}, confidence: {confidence:.2f})"
+        )
+        if config.LOG_FALLBACK_USAGE:
+            logger.warning(fallback_reason)
+            fallback_log = config.get_fallback_reason_log(fallback_reason, diagnosis)
+            logger.info(f"Fallback event: {json.dumps(fallback_log)}")
+
     logger.info("Using hardcoded cost library (fallback)")
     context_source = diagnosis or query
     matched = _match_cost_category(context_source)
-    response_data = _build_cost_response(matched, diagnosis, fallback_query=query)
-    
-    return json.dumps(response_data)
+    return _build_cost_response(matched, diagnosis, fallback_query=query)
+
+
+def cost_estimation(query: str) -> str:
+    """
+    Provides cost estimates grounded in the triage diagnosis.
+
+    Uses AI-powered estimation with Google Search grounding when enabled,
+    falls back to hardcoded cost library when AI fails or confidence is low.
+
+    Args:
+        query: Query string containing diagnosis and optional context
+
+    Returns:
+        JSON string with cost estimates
+    """
+    return json.dumps(_compute_full_cost_estimate(query))
 
 
 def cost_estimation_diy(query: str) -> str:
     """Provides DIY-only cost estimate for the given repair query."""
     try:
-        full = cost_estimation(query)
-        parsed = json.loads(full)
-        ce = parsed.get("costEstimates", {}) if isinstance(parsed, dict) else {}
-        diy = ce.get("DIY") if isinstance(ce, dict) else None
-        repair_type = ce.get("repair_type") if isinstance(ce, dict) else query
-        result = {
-            "diyCostEstimates": {
-                "repair_type": repair_type,
-                "DIY": diy
-                or {
-                    "cost_range": "$50-300",
-                    "includes": [
-                        "Material/product costs vary by repair type",
-                        "Basic tools may be required",
-                        "Time investment needed",
-                    ],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective",
-                },
-            }
-        }
-        return json.dumps(result)
+        full = _compute_full_cost_estimate(query)
+        return json.dumps(_build_diy_only_response(full, query))
     except Exception:
-        fallback = {
-            "diyCostEstimates": {
-                "repair_type": query,
-                "DIY": {
-                    "cost_range": "$50-300",
-                    "includes": [
-                        "Material/product costs vary by repair type",
-                        "Basic tools may be required",
-                        "Time investment needed",
-                    ],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective",
-                },
-            }
-        }
-        return json.dumps(fallback)
+        return json.dumps(_diy_only_error_response(query))
 
 
 def cost_estimation_diy_from_library(query: str) -> str:
@@ -485,45 +495,10 @@ def cost_estimation_diy_from_library(query: str) -> str:
         context_source = diagnosis or query
         matched = _match_cost_category(context_source)
         response_data = _build_cost_response(matched, diagnosis, fallback_query=query)
-        ce = response_data.get("costEstimates", {}) if isinstance(response_data, dict) else {}
-        diy = ce.get("DIY") if isinstance(ce, dict) else None
-        repair_type = ce.get("repair_type", query) if isinstance(ce, dict) else query
-        result = {
-            "diyCostEstimates": {
-                "repair_type": repair_type,
-                "DIY": diy
-                or {
-                    "cost_range": "$50-300",
-                    "includes": [
-                        "Material/product costs vary by repair type",
-                        "Basic tools may be required",
-                        "Time investment needed",
-                    ],
-                    "savings": "60-80% on labor costs",
-                    "complexity": "Simple repairs may be cost-effective",
-                },
-            }
-        }
-        return json.dumps(result)
+        return json.dumps(_build_diy_only_response(response_data, query))
     except Exception:
         logger.exception("cost_estimation_diy_from_library failed for query=%s", query[:200])
-        return json.dumps(
-            {
-                "diyCostEstimates": {
-                    "repair_type": query,
-                    "DIY": {
-                        "cost_range": "$50-300",
-                        "includes": [
-                            "Material/product costs vary by repair type",
-                            "Basic tools may be required",
-                            "Time investment needed",
-                        ],
-                        "savings": "60-80% on labor costs",
-                        "complexity": "Simple repairs may be cost-effective",
-                    },
-                }
-            }
-        )
+        return json.dumps(_diy_only_error_response(query))
 
 
 cost_agent = Agent(
@@ -542,6 +517,8 @@ cost_agent = Agent(
         '- Ground every cost estimate in the triage diagnosis, checkpoint_results, or user_query provided in the input payload\n'
         '- Extract diagnosis, checkpoint_results, property_address, and service_results from the input when available\n'
         '- The tools will automatically use AI estimation when enabled and fall back to hardcoded values if needed\n'
+        '- Call cost_estimation once per request for DIY vs professional breakdown; do not also call cost_estimation_diy in the same turn (DIY is already included)\n'
+        '- Use cost_estimation_diy only when the user explicitly wants DIY-only output shape (no professional line items in the tool JSON); never call both tools for the same diagnosis in one turn\n'
         '- Always return structured JSON exactly as produced by the tools\n'
         '\n'
         'The cost estimates consider:\n'

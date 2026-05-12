@@ -5,14 +5,13 @@ This module provides dynamic, location-aware cost estimation that replaces
 hardcoded values with real-time market data and AI-driven complexity analysis.
 """
 
-import json
 import logging
 import re
 from typing import Any, Dict, Optional, Tuple
 from google import genai
 from google.genai import types
 
-from .config import config
+from ...model_config import LEGACY_API_GEMINI
 
 logger = logging.getLogger(__name__)
 
@@ -312,11 +311,11 @@ def estimate_costs_with_ai(
         
         # Initialize client if not provided
         if client is None:
-            client = genai.Client()
-        
+            client = LEGACY_API_GEMINI.api_client
+
         # Call Gemini with Google Search grounding
         response = client.models.generate_content(
-            model=config.AI_MODEL_NAME,
+            model=LEGACY_API_GEMINI.model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.3,  # Lower temperature for more consistent cost estimates
