@@ -1,208 +1,88 @@
 # Property Agent
 
-The Property Agent is the orchestrator for comprehensive property care support within the Homecare AI system. It routes user requests to the right specialized capability: either retrieving answers from documents/knowledge bases or performing multimodal diagnostics when users provide media for analysis.
+The **property agent** (`root_agent` in `agent.py`, ADK name `property_agent`) is the Home Care orchestrator. It delegates almost all work to **DocuLink** (`doculink_agent`), which performs checkpoint retrieval, user-document RAG, or general knowledge-base lookup. Optional **checkpoint analysis** (coverage, DIY, service, cost) runs inside the checkpoint path when `checkpoint_optional_agents` is set.
 
-## Scope
+There is **no separate `analysis_agent` sub-agent under the root** in the current tree; multimodal “analysis” style flows are represented elsewhere (e.g. eval datasets may still reference legacy `tool_name` values). The canonical routing text lives in `prompts.py` (`root_agent_instructions`, `doculink_agent_system_instruction`).
 
-The Property Agent handles a wide range of property-related queries:
-- **Repairs and Maintenance**: Plumbing, electrical, HVAC, appliances, vehicle issues, structural problems
-- **Pest Control**: Insect infestations, rodent problems, wildlife issues, pest prevention and treatment
-- **Service Recommendations**: Finding and recommending local service providers, contractors, professionals
-- **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
-- **General Property Care**: Home improvement, maintenance tips, property management, preventive care
+## Architecture (current)
 
-## What it does
-- Routes queries based on inputs using strict rules
-  - If `diagnosis_uris` are present → delegate to the Analysis Agent
-  - Otherwise → delegate to the DocuLink Agent for retrieval from user docs or the general knowledge base
-- Returns the sub‑agent's response verbatim without modification
-- Handles simple, non-property-care small‑talk directly
+```
+property_agent (root)
+└── doculink_agent
+    ├── AgentTool(user_docs_agent)
+    ├── AgentTool(knowledge_base_agent)
+    └── AgentTool(checkpoint_agent)
+            ├── ask_checkpoints_retrieval
+            └── AgentTool(checkpoint_analysis_agent)   # when optional analysis requested
+                    └── SequentialAgent:
+                          ParallelAgent (coverage | diy | service | cost parallel branches)
+                          → checkpoint_analysis_synthesis_agent
+```
 
-## Architecture
-- Root agent defined in `agent.py` constructs two agents:
-  - `doculink_agent` with tools: `ask_user_docs_agent`, `ask_knowledge_base_agent`
-  - `root_agent` named `property_agent` with sub‑agents: `analysis_agent`, `doculink_agent`
+- **DIY branch (`diy_agent`)**: Python orchestrator tool `run_diy_pipeline` (parallel fetch + single synthesis); see `sub_agents/diy_agent/orchestrator.py`.
+- **Service branch (`service_agent`)**: `serpapi_search` (Langchain) + **`google_search`** tool directly (no nested search sub-agent).
+- **Cost / coverage**: unchanged modules under `sub_agents/`.
 
-Key files:
-- `agent.py` – builds `property_agent` and sub‑agents
-- `agent_inputs.py` – input schemas
-- `prompts.py` – system instructions and routing logic
-- `sub_agents/` – implementations for analysis, user docs, and knowledge base
+## Routing (root)
+
+See `prompts.py` → `root_agent_instructions()`:
+
+- **`primary_agent`** (highest priority): `"checkpoint"` or `"docs"` → always delegate to `doculink_agent` with the right downstream behavior.
+- **Legacy**: non-empty `checkpoint_ids` → `doculink_agent` (checkpoint path).
+- **Otherwise**: property-related queries → `doculink_agent`; casual / non-property → short direct reply, no tools.
+
+## DocuLink tool selection
+
+See `doculink_agent_system_instruction()` in `prompts.py`: priority among `checkpoint_agent`, `ask_user_docs_agent`, and `ask_knowledge_base_agent` based on `primary_agent`, `checkpoint_ids`, query intent, and `context_doc_uris`.
 
 ## Inputs
-Schemas (from `agent_inputs.py`):
 
-```startLine:endLine:gcp/agents/homecare/property_agent/agent_inputs.py
-1:14
-```
+- Root: `DiagnosisInput` in `agent_inputs.py` (`user_query`, optional `context_doc_uris`, `diagnosis_uris`, `checkpoint_ids`, `property_address`, `property_id`, `primary_agent`, `checkpoint_optional_agents`, location fields, …).
+- DocuLink / checkpoint tools: `DocsInput` (overlapping fields for delegation).
 
-Routing logic (from `prompts.py`):
+## Key files
 
-```startLine:endLine:gcp/agents/homecare/property_agent/prompts.py
-10:36
-```
-
-DocuLink tool selection (from `prompts.py`):
-
-```startLine:endLine:gcp/agents/homecare/property_agent/prompts.py
-52:65
-```
+| Path | Role |
+|------|------|
+| `agent.py` | `doculink_agent`, `root_agent` |
+| `prompts.py` | Root + DocuLink system instructions |
+| `agent_inputs.py` | Pydantic schemas |
+| `sub_agents/checkpoint_agent/` | Retrieval + optional `checkpoint_analysis_agent` |
+| `sub_agents/checkpoint_analysis_agent/` | Parallel optional agents + synthesis |
+| `sub_agents/diy_agent/` | DIY orchestrator + thin `diy_agent` |
+| `sub_agents/service_agent/` | Local pros + `google_search` |
+| `sub_agents/cost_agent/`, `coverage_agent/`, `shopping_agent/`, … | As named |
 
 ## Quick start
-From `gcp/agents/homecare` (inherits the same toolchain and Makefile):
+
+From `gcp/agents/homecare`:
 
 ```bash
-# Setup once
 make setup
-
-# Run locally via ADK
-make run
+make run          # adk run property_agent
 # or
-adk run property_agent
-
-# Web UI (choose property_agent)
-adk web
-
-# Run evals
-make test-eval
+adk web           # pick property_agent
 ```
 
-Requirements: Python 3.9+, UV, Google Cloud auth if using Vertex RAG/Search or deployed evaluations. See the parent `gcp/agents/homecare/README.md` for environment setup, RAG corpus config, and deployment.
-
-## How delegation works (at a glance)
-- If `diagnosis_uris` provided: `analysis_agent` performs multimodal analysis (images/videos/docs)
-- If `diagnosis_uris` absent: `analysis_agent` performs text‑only triage from `user_query` (and `property_address` if present), then continues with the optional agents listed in `analysis_optional_agents` (defaults to coverage, DIY, service, and cost)
-- The root returns the sub‑agent response as‑is
-
-## Programmatic use
-Import and invoke with the ADK runtime:
-
-```python
-from gcp.agents.homecare.property_agent.agent import root_agent
-
-# The ADK typically handles session/user context; this shows the input shape
-response = root_agent.invoke({
-    "user_query": "My washing machine shows error E3, what does it mean?",
-    "context_doc_uris": ["gs://my-bucket/manuals/washer.pdf"],
-    "property_address": "123 Main St, Springfield, USA"
-})
-print(response)
-```
-
-Note: Tool calls may require environment variables and GCP auth (ADC). See parent README for `.env` and permission setup.
-
-## Sub‑agents
-- `sub_agents/analysis_agent/` – multimodal or text‑only diagnostics followed by the optional agents selected via `analysis_optional_agents` (default coverage, DIY, service, cost)
-- `sub_agents/user_docs_agent/` – retrieval over user‑uploaded docs (used by coverage and other flows)
-- `sub_agents/knowledge_base_agent/` – retrieval over general knowledge base (used when needed)
+Environment: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY` where tools need them. See `gcp/agents/homecare/README.md` for UV, auth, and deployment.
 
 ## Conventions
-- Gemini 2.5 Flash as the default model
-- Responses from retrieval/analysis must not be altered by the root agent
-- Never ask users to upload or provide URIs; route strictly based on presence of `diagnosis_uris`
 
-# Property Agent
+- Default model: see `model_config.py` (`GLOBAL_GEMINI_MODEL`).
+- Prefer returning tool/sub-agent outputs **verbatim** unless DocuLink’s instruction explicitly allows a prefaced best-effort fallback when retrieval is empty.
+- Do not ask users to upload URIs from the root; routing uses fields already on the input payload.
 
-## Overview
-
-`property_agent` is the main orchestrator for the Home Care AI system. It routes user requests to the correct capability based on available inputs, coordinating multimodal analysis, document retrieval, DIY guidance, and professional services.
-
-- Handles home care and vehicle-related diagnostics and information needs
-- Delegates to specialized sub-agents based on input presence (notably `diagnosis_uris`)
-- Returns a single structured JSON response from the delegated sub-agent
-
-## Architecture
-
-```
-property_agent (root orchestrator)
-├── analysis_agent           # Multimodal diagnostics workflow orchestrator
-│   ├── triage_agent         # analyse_multimodal_data (in analysis_agent module)
-│   ├── coverage_agent       # ask_user_docs_retreival (separate module)
-│   ├── diy_agent            # google_search_agent, youtube_search, shopping_agent (separate modules)
-│   ├── service_agent        # serpapi_search, google_search_agent, cost_estimation (separate module)
-│   ├── shopping_agent      # product_recommendations (separate reusable module)
-│   └── cost_agent           # cost_estimation, cost_estimation_diy (separate module)
-└── doculink_agent           # Context and knowledge retrieval workflow
-    ├── user_docs_agent      # user-specific docs and stores
-    └── knowledge_base_agent # general knowledge base
-```
-
-Key files:
-- `agent.py`: defines `property_agent` and its sub-agents
-- `prompts.py`: system instructions for routing and doculink behavior
-- `agent_inputs.py`: Pydantic input models for root and sub-agents
-- `sub_agents/analysis_agent`: complete analysis workflow and README
-- `sub_agents/user_docs_agent`: user document retrieval logic
-- `sub_agents/knowledge_base_agent`: general knowledge retrieval logic
-
-## Routing Logic (root)
-
-The root agent inspects inputs and chooses the correct sub-agent:
-
-- If `diagnosis_uris` exist and are non-empty: delegate to `analysis_agent`
-- If `diagnosis_uris` are absent/empty: delegate to `analysis_agent` for text‑only triage, then coverage, DIY, service
-- If the query is casual/non-property-care, respond directly without delegation
-
-See `root_agent_instructions()` in `prompts.py` for the precise decision tree.
-
-## Input Schemas
-
-Root input (`DiagnosisInput` from `agent_inputs.py`):
-
-```json
-{
-  "user_query": "string",
-  "context_doc_uris": ["string"],
-  "diagnosis_uris": ["string"],
-  "property_address": "string"
-}
-```
-
-DocuLink input (`DocsInput`):
-
-```json
-{
-  "user_query": "string",
-  "context_doc_uris": ["string"],
-  "property_address": "string"
-}
-```
-
-## Output Shapes
-
-- From `analysis_agent`: nested `analysis` object that includes triage (from media or text) plus whichever optional sections were requested (coverage, DIY, service, cost). See `sub_agents/analysis_agent/README.md`.
-- From `doculink_agent` (if invoked in custom flows): the direct output of either `ask_user_docs_agent` or `ask_knowledge_base_agent` (unmodified), or a best‑effort answer clearly prefaced when retrieval yields nothing.
-
-## Sub-Agent Summaries
-
-- **analysis_agent**: Orchestrator that runs multimodal triage first; if valid diagnosis, proceeds with coverage retrieval, DIY (steps, videos, products), and service (costs, local pros). Has a built-in triage guard to short-circuit on invalid inputs. Coordinates the following sub-agents:
-  - **triage_agent**: Analyzes multimodal data or performs text-only triage
-  - **coverage_agent**: Retrieves warranty/insurance from user documents
-  - **diy_agent**: Provides DIY repair steps, YouTube tutorials, and product recommendations via shopping_agent
-  - **service_agent**: Finds local service providers and provides cost estimates
-  - **shopping_agent**: Reusable agent for product recommendations (used by DIY agent)
-  - **cost_agent**: Provides DIY vs Service cost estimates
-- **doculink_agent**: If `context_doc_uris` are provided, uses `ask_user_docs_agent`; otherwise uses `ask_knowledge_base_agent`. Returns results as-is without rewriting.
-
-## Usage
-
-Programmatic use (pseudo):
+## Programmatic sketch
 
 ```python
-from gcp.agents.homecare.property_agent.agent import root_agent
-from gcp.agents.homecare.property_agent.agent_inputs import DiagnosisInput
+from property_agent.agent import root_agent
 
-inputs = DiagnosisInput(
-    user_query="Washer making grinding noise",
-    diagnosis_uris=["gs://bucket/washer_video.mp4"],
-    context_doc_uris=["gs://bucket/warranty.pdf"],
-    property_address="123 Main St, Springfield, IL"
-)
-
-# Invoke within your agent runtime/session
-result = root_agent.run(inputs)
+# ADK supplies session/context; shape is illustrative
+response = root_agent.invoke({
+    "user_query": "What changed in my kitchen checkpoints?",
+    "property_id": "...",
+    "checkpoint_optional_agents": ["diy", "service"],
+})
 ```
 
-Notes:
-- Ensure environment variables for external tools are set where applicable: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY`.
-- The orchestrator does not modify sub-agent outputs; consumers should parse the returned JSON per the delegated path.
+Consumers parse JSON/markdown from the delegated path (especially checkpoint analysis dual format: markdown first, then a fenced JSON block whose root has an `analysis` object).

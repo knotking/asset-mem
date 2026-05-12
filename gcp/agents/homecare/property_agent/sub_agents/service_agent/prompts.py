@@ -28,7 +28,7 @@ def service_agent_instructions() -> str:
         
         **Available Tools:**
         *   `serpapi_search`: Searches for local service providers.
-        *   `google_search_agent`: Searches the internet for service-related information.
+        *   `google_search`: Searches the internet for service-related information (grounded web).
         
         **MANDATORY Sequence of Operations - Always Call ALL REQUIRED TOOLS:**
         1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
@@ -42,7 +42,7 @@ def service_agent_instructions() -> str:
            - **PRIORITY 3 - No Location (Last Resort)**: If no location data available, use: "[diagnosis] repair service near me"
            - ALWAYS apply `location_radius` (default: 5 miles) when coordinates are available
            - Filter results to only include providers within the specified radius
-        3. Optionally call `google_search_agent` when you need extra context to disambiguate provider categories
+        3. Optionally call `google_search` when you need extra context to disambiguate provider categories
         4. Return results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**
@@ -52,7 +52,7 @@ def service_agent_instructions() -> str:
           "serviceResults": {
             "localPros": {
               "serpAPIResults": "[local professional/service provider listings from serpapi_search]",
-              "googleSearchResults": "[optional supporting provider/category links from google_search_agent]"
+              "googleSearchResults": "[optional supporting provider/category links from google_search]"
             }
           }
         }
