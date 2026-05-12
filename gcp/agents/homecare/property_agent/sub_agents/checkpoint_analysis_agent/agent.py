@@ -5,14 +5,15 @@ Orchestrates coverage, DIY, service, and cost agents to provide comprehensive
 recommendations based on checkpoint data analysis.
 """
 
+import asyncio
 import json
 import logging
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import ToolContext
+from google.adk.tools.agent_tool import AgentTool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from ..coverage_agent.agent import coverage_agent
@@ -52,46 +53,52 @@ def _normalize_agent_result(result: Any) -> str:
         return str(result)
 
 
-def _run_single_optional_agent(
-    agent_name: str,
-    checkpoint_results: str,
-    user_query: str,
-    context_doc_uris: Optional[List[str]],
-    property_address: Optional[str],
-    property_id: Optional[str],
-    location_coordinates: Optional[Dict[str, float]],
-    location_radius: Optional[int],
+_BRANCH_AGENTS: Dict[str, Tuple[Agent, str]] = {
+    "coverage": (coverage_agent, "checkpoint_parallel_coverage_result"),
+    "diy": (diy_agent, "checkpoint_parallel_diy_result"),
+    "service": (service_agent, "checkpoint_parallel_service_result"),
+    "cost": (cost_agent, "checkpoint_parallel_cost_result"),
+}
+
+
+async def _invoke_optional_agent_async(
+    agent: Agent, payload: Dict[str, Any], tool_context: ToolContext
+) -> Any:
+    """Drive a sub-agent through AgentTool on the caller's event loop.
+
+    AgentTool wires the child Runner up to live async objects on
+    tool_context._invocation_context (credential_service, plugin_manager,
+    ForwardingArtifactService). Those are pinned to the parent event loop,
+    so we MUST stay on the same loop instead of dispatching to threads +
+    asyncio.run() — that would attach those objects to a fresh loop and
+    fail with cross-loop RuntimeErrors mid-stream.
+    """
+    agent_tool = AgentTool(agent)
+    return await agent_tool.run_async(args=payload, tool_context=tool_context)
+
+
+async def _run_single_optional_agent_async(
+    name: str,
+    payload: Dict[str, Any],
+    tool_context: ToolContext,
 ) -> str:
-    payload: Dict[str, Any] = {
-        "user_query": f"{user_query}\n\nCheckpoint context:\n{checkpoint_results}",
-        "checkpoint_results": checkpoint_results,
-        "context_doc_uris": context_doc_uris,
-        "property_address": property_address,
-        "property_id": property_id,
-        "location_coordinates": location_coordinates,
-        "location_radius": location_radius,
-    }
-    if agent_name == "coverage":
-        return _normalize_agent_result(_invoke_optional_agent(coverage_agent, payload))
-    if agent_name == "diy":
-        return _normalize_agent_result(_invoke_optional_agent(diy_agent, payload))
-    if agent_name == "service":
-        return _normalize_agent_result(_invoke_optional_agent(service_agent, payload))
-    if agent_name == "cost":
-        return _normalize_agent_result(_invoke_optional_agent(cost_agent, payload))
-    return "SKIPPED"
+    branch_start = time.monotonic()
+    try:
+        agent, _ = _BRANCH_AGENTS[name]
+        result = await _invoke_optional_agent_async(agent, payload, tool_context)
+        return _normalize_agent_result(result)
+    except Exception:
+        logger.exception("checkpoint optional branch failed: %s", name)
+        return "SKIPPED"
+    finally:
+        logger.info(
+            "checkpoint optional branch timing: branch=%s duration_ms=%d",
+            name,
+            int((time.monotonic() - branch_start) * 1000),
+        )
 
 
-def _invoke_optional_agent(agent: Agent, payload: Dict[str, Any]) -> Any:
-    """Compatibility helper across ADK interfaces."""
-    if hasattr(agent, "run"):
-        return agent.run(payload)  # type: ignore[attr-defined]
-    if hasattr(agent, "invoke"):
-        return agent.invoke(payload)  # type: ignore[attr-defined]
-    raise AttributeError(f"Agent {getattr(agent, 'name', '<unknown>')} has no run/invoke method")
-
-
-def run_checkpoint_optional_agents_parallel(
+async def run_checkpoint_optional_agents_parallel(
     checkpoint_results: str,
     user_query: str,
     checkpoint_optional_agents: List[CheckpointOptionalAgent],
@@ -102,64 +109,52 @@ def run_checkpoint_optional_agents_parallel(
     location_radius: Optional[int] = None,
     tool_context: ToolContext = None,
 ) -> str:
-    """Run requested optional agents in parallel without extra branch-level LLM wrappers."""
+    """Run requested optional agents concurrently on the active event loop."""
     total_start = time.monotonic()
     if tool_context and hasattr(tool_context, "_invocation_context") and hasattr(tool_context._invocation_context, "session"):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
-    requested = set(checkpoint_optional_agents or [])
     results: Dict[str, str] = {
         "checkpoint_parallel_coverage_result": "SKIPPED",
         "checkpoint_parallel_diy_result": "SKIPPED",
         "checkpoint_parallel_service_result": "SKIPPED",
         "checkpoint_parallel_cost_result": "SKIPPED",
     }
-    branch_map = {
-        "coverage": "checkpoint_parallel_coverage_result",
-        "diy": "checkpoint_parallel_diy_result",
-        "service": "checkpoint_parallel_service_result",
-        "cost": "checkpoint_parallel_cost_result",
+
+    requested = [n for n in (checkpoint_optional_agents or []) if n in _BRANCH_AGENTS]
+    if not requested:
+        return json.dumps(results, ensure_ascii=False)
+
+    if tool_context is None:
+        logger.error(
+            "run_checkpoint_optional_agents_parallel missing tool_context; skipping optional branches"
+        )
+        return json.dumps(results, ensure_ascii=False)
+
+    payload: Dict[str, Any] = {
+        "user_query": f"{user_query}\n\nCheckpoint context:\n{checkpoint_results}",
+        "checkpoint_results": checkpoint_results,
+        "context_doc_uris": context_doc_uris,
+        "property_address": property_address,
+        "property_id": property_id,
+        "location_coordinates": location_coordinates,
+        "location_radius": location_radius,
     }
 
-    futures = {}
-    branch_starts: Dict[str, float] = {}
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for name in requested:
-            if name not in branch_map:
-                continue
-            branch_starts[name] = time.monotonic()
-            futures[pool.submit(
-                _run_single_optional_agent,
-                name,
-                checkpoint_results,
-                user_query,
-                context_doc_uris,
-                property_address,
-                property_id,
-                location_coordinates,
-                location_radius,
-            )] = name
-
-        for fut in as_completed(futures):
-            name = futures[fut]
-            key = branch_map[name]
-            try:
-                results[key] = fut.result()
-            except Exception:
-                logger.exception("checkpoint optional branch failed: %s", name)
-                results[key] = "SKIPPED"
-            finally:
-                started = branch_starts.get(name)
-                if started is not None:
-                    logger.info(
-                        "checkpoint optional branch timing: branch=%s duration_ms=%d",
-                        name,
-                        int((time.monotonic() - started) * 1000),
-                    )
+    branch_results = await asyncio.gather(
+        *(
+            _run_single_optional_agent_async(name, payload, tool_context)
+            for name in requested
+        ),
+        return_exceptions=False,
+    )
+    for name, value in zip(requested, branch_results):
+        _, key = _BRANCH_AGENTS[name]
+        results[key] = value
 
     logger.info(
         "checkpoint optional runner timing: requested=%s total_duration_ms=%d",
-        sorted(requested),
+        sorted(set(requested)),
         int((time.monotonic() - total_start) * 1000),
     )
     return json.dumps(results, ensure_ascii=False)
@@ -181,7 +176,7 @@ Return only the tool output without additional narration.
 
 synthesis_agent = Agent(
     name="checkpoint_analysis_synthesis_agent",
-    model=os.getenv("CHECKPOINT_SYNTHESIS_MODEL", GLOBAL_GEMINI_MODEL.model),
+    model=GLOBAL_GEMINI_MODEL,
     description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
     instruction="""
 You are the final checkpoint analysis synthesizer.
