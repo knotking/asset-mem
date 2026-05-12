@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -461,29 +462,36 @@ def _compute_full_cost_estimate(query: str) -> Dict[str, Any]:
     return _build_cost_response(matched, diagnosis, fallback_query=query)
 
 
-def cost_estimation(query: str) -> str:
+def _cost_estimation_sync(query: str) -> str:
+    """Sync body for cost_estimation (runs in a worker thread when invoked as a tool)."""
+    return json.dumps(_compute_full_cost_estimate(query))
+
+
+async def cost_estimation(query: str) -> str:
     """
     Provides cost estimates grounded in the triage diagnosis.
 
     Uses AI-powered estimation with Google Search grounding when enabled,
     falls back to hardcoded cost library when AI fails or confidence is low.
 
-    Args:
-        query: Query string containing diagnosis and optional context
-
-    Returns:
-        JSON string with cost estimates
+    Async so long-running Gemini + Search work does not block sibling optional agents
+    on the same asyncio event loop.
     """
-    return json.dumps(_compute_full_cost_estimate(query))
+    return await asyncio.to_thread(_cost_estimation_sync, query)
 
 
-def cost_estimation_diy(query: str) -> str:
-    """Provides DIY-only cost estimate for the given repair query."""
+def _cost_estimation_diy_sync(query: str) -> str:
+    """Sync body for cost_estimation_diy."""
     try:
         full = _compute_full_cost_estimate(query)
         return json.dumps(_build_diy_only_response(full, query))
     except Exception:
         return json.dumps(_diy_only_error_response(query))
+
+
+async def cost_estimation_diy(query: str) -> str:
+    """DIY-only cost estimate for the given repair query (worker thread; see cost_estimation)."""
+    return await asyncio.to_thread(_cost_estimation_diy_sync, query)
 
 
 def cost_estimation_diy_from_library(query: str) -> str:

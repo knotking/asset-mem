@@ -7,6 +7,7 @@ Caching is optional via DIY_ORCHESTRATOR_CACHE_TTL_SECONDS (default 300; set 0 t
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -310,7 +311,7 @@ def _fallback_json(
     return json.dumps(out, ensure_ascii=False)
 
 
-def run_diy_pipeline(
+def run_diy_pipeline_sync(
     user_query: str,
     property_address: Optional[str] = None,
     context_doc_uris: Optional[list[str]] = None,
@@ -413,3 +414,12 @@ def run_diy_pipeline(
             _prune_cache_unlocked()
 
     return merged
+
+
+async def run_diy_pipeline(
+    user_query: str,
+    property_address: Optional[str] = None,
+    context_doc_uris: Optional[list[str]] = None,
+) -> str:
+    """Async ADK tool entrypoint; heavy sync pipeline runs in a worker thread."""
+    return await asyncio.to_thread(run_diy_pipeline_sync, user_query, property_address, context_doc_uris)
