@@ -54,10 +54,10 @@ From `gcp/agents/homecare`:
 make setup            # uv sync + .env from .env.example
 make run              # adk run property_agent
 make test-eval        # uv run pytest eval/
-make test-agent       # single test: eval/test_eval.py::test_eval_analysis_agent
+make test-full        # eval/test_eval.py::test_eval_full_conversation
+make test-cost        # eval/test_eval.py::test_eval_cost_estimation
 make test-products    # eval/test_eval.py::test_eval_product_recommendations
 make test-service     # eval/test_eval.py::test_eval_service_provider
-make test-full        # eval/test_eval.py::test_eval_full_conversation
 make deploy           # uv run python deployment/deploy.py create
 make update           # uv run python deployment/deploy.py update
 make grant-permissions
@@ -66,7 +66,7 @@ make format           # uv run ruff format .
 make check            # ruff + mypy property_agent --ignore-missing-imports
 ```
 
-Run a single pytest manually: `cd gcp/agents/homecare && uv run pytest eval/test_eval.py::test_name -v`
+Run a single pytest manually: `cd gcp/agents/homecare && uv run pytest eval/test_eval.py::test_name -v` — unit tests for agent wiring live under `tests/` (e.g. `tests/test_diy_agent.py`, `tests/test_service_agent.py`).
 
 ### Proxy API (FastAPI)
 ```bash
@@ -90,7 +90,7 @@ python scripts/test_token_usage_request.py --stream-chunks
 ### Request flow for AI features
 1. **Client** (`apps/mapp` or `apps/webapp`) authenticates via Firebase Auth, then calls the proxy. Mobile sends through `apps/mapp/lib/api.ts`; the web app talks to Firebase directly + uses `apps/webapp/src/lib/api-checkpoint.ts`. The proxy URLs are environment-injected (`apps/mapp/app.config.js` `extra.*`, webapp `apphosting*.yaml`).
 2. **Proxy API** (`gcp/proxy/api`, FastAPI on Cloud Run) routes are mounted under `/{FIREBASE_WEBHOOK_SECRET}` so the secret acts as a path prefix bearer. `main.py` only mounts agent/document/checkpoint/service-broker/token-quota routers when `FIREBASE_WEBHOOK_SECRET` is set; `POST /token-quota-status` is also exposed unprefixed for local dev. Routers (`routers/`) → services (`services/`) → either Vertex AI Reasoning Engine (`vertex_service.py`) or Gemini direct (`checkpoint_service.py` for comparisons) or Pub/Sub (`document_service.py` queues doc extraction; worker runs Gemini).
-3. **Vertex AI Agent Engine** runs `gcp/agents/homecare/property_agent`, an ADK multi-agent: a root orchestrator delegates to sub-agents under `property_agent/sub_agents/` (analysis, checkpoint, checkpoint_analysis, cost, coverage, diy, knowledge_base, service, shopping, user_docs). The root chooses Diagnostics vs DocuLink based on whether `diagnosis_uris` are present.
+3. **Vertex AI Agent Engine** runs `gcp/agents/homecare/property_agent`, an ADK app whose **root** (`property_agent`) delegates to **`doculink_agent`**, which selects among tools/sub-agents under `property_agent/sub_agents/` (e.g. `user_docs_agent`, `knowledge_base_agent`, `checkpoint_agent`, and—when requested—`checkpoint_analysis_agent` with coverage, diy, service, cost, shopping, etc.). Routing is driven by `prompts.py` (`primary_agent`, `checkpoint_ids`, and legacy rules), not a separate top-level `analysis_agent` package in the current repo layout.
 4. **Async workers** (`gcp/proxy/workers/function/`) are Pub/Sub-triggered Cloud Functions:
    - `user_docs` — imports user uploads into the Vertex AI RAG corpus
    - `checkpoint_analysis` — analyzes checkpoint media via Gemini, writes Firestore
