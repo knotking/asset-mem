@@ -9,7 +9,9 @@ Shared **Firestore accounting** for LLM tokens (proxy Reasoning Engine + worker 
 | `constants.py` | Firestore collection / subcollection names |
 | `genai.py` | Aggregate tokens from `google-genai` responses |
 | `persist.py` | Transactional updates + period rollover + period archive |
-| `quota.py` | Limits from env / preferences, pre-call checks |
+| `quota.py` | Token limits from Stripe B2C billing doc / preferences / env, pre-call checks |
+| `../plan_limits.py` | Monthly document & checkpoint **creation** limits (same billing resolution) |
+| `../billing_plans.py` | Parse `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (tokens + doc/checkpoint caps) |
 
 ---
 
@@ -20,6 +22,10 @@ All paths are under the default database. **Writes** use the Admin / server SDK 
 ### Structure (overview)
 
 ```text
+users/{userId}/billing/summary              # B2C Stripe mirror (proxy webhooks only; client read)
+  └── subscriptionStatus, priceId, monthlyTokenLimit, monthlyDocumentLimit,
+      monthlyCheckpointLimit, stripeCustomerId, …
+
 llm_token_usage/{userId}                    # one document per user
   ├── (fields: lifetime totals, current month, metadata)
   └── periods/{YYYY-MM}                     # optional: closed UTC months (history)
@@ -45,6 +51,10 @@ llm_token_usage/{userId}                    # one document per user
 | `periodTotalTokens` | number | **Current UTC month only** — total tokens; **used for quota** vs `monthlyTokenLimit` / env when `quotaPeriodKey` matches the current month. |
 | `periodAgentStreamCount` | number | **Current UTC month only** — proxy streams. |
 | `periodWorkerLlmCallCount` | number | **Current UTC month only** — worker LLM calls. |
+| `periodDocumentCreations` | number | **Current UTC month** — document analysis + RAG import slots consumed. |
+| `periodCheckpointCreations` | number | **Current UTC month** — checkpoint AI analyses queued. |
+| `documentCreations` | number | **Lifetime** document creation counter. |
+| `checkpointCreations` | number | **Lifetime** checkpoint creation counter. |
 
 On **UTC month rollover**, the `period*` fields on this document are **reset** for the new month (starting from the first write in that month). **Lifetime** fields keep increasing.
 
@@ -74,7 +84,7 @@ Created on rollover when the previous month had a valid `quotaPeriodKey` and the
 ## Quota resolution (monthly UTC)
 
 1. **`users/{userId}/preferences/user`** → **`monthlyTokenLimit`** (positive number) if set — **highest precedence**.
-2. Else **`TOKEN_QUOTA_PERIOD_MAX_TOKENS`** (environment). Unset or **`0`** ⇒ unlimited.
+2. Else **`STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`** → **`free`** plan `monthlyTokenLimit`. Unset or **`0`** ⇒ unlimited.
 3. Enforcement: proxy before Reasoning Engine calls; checkpoint worker at job start. Clients may see `TOKEN_QUOTA_EXCEEDED`.
 
 ---

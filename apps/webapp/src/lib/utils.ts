@@ -164,4 +164,8 @@ export const apiUrls = {
   compareCheckpoints: () => getApiUrl("/compare-checkpoints"),
   /** Same monthly limit resolution as proxy enforcement; optional fallback in UI if request fails */
   tokenQuotaStatus: () => getApiUrl("/token-quota-status"),
+  /** B2C Stripe Checkout (Bearer Firebase ID token) */
+  billingB2cCheckout: () => getApiUrl("/billing/b2c/checkout-session"),
+  /** B2C Stripe Customer Portal */
+  billingB2cPortal: () => getApiUrl("/billing/b2c/portal-session"),
 };

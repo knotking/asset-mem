@@ -21,7 +21,7 @@ python scripts/test_token_usage_request.py
 
 Optional: `PROXY_BASE_URL` (default `http://127.0.0.1:8080`), `TEST_USER_QUERY` (default `hello`), `TEST_SESSION_ID`. By default the script uses a **buffered POST** so it returns only after the **full** agent response body is received (so the server can finish streaming and run token persist). Use `python scripts/test_token_usage_request.py --stream-chunks` to print chunks as they arrive.
 
-**Token quota (global + per-user):** See **[API README → Token quota](./api/README.md#token-quota-rate-limit)**. Summary: default cap from env `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (e.g. via GitHub Actions variables); **per-user override** in Firestore `users/{userId}/preferences/user` → **`monthlyTokenLimit`** (wins over the env default).
+**Token quota (plans + per-user):** See **[API README → Token quota](./api/README.md#token-quota-rate-limit)**. Summary: free tier and paid plans from `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (reserved `free` key); **per-user override** in Firestore `users/{userId}/preferences/user` → **`monthlyTokenLimit`**.
 
 **Firestore layout** (`llm_token_usage` root doc + `periods/{YYYY-MM}`): **[`gcp/common/token/README.md`](../common/token/README.md#firestore-schema)**.
 

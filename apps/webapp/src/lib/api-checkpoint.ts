@@ -5,7 +5,7 @@
 import { apiUrls } from "./utils";
 import { proxyFetchWithAuth } from "./correlation-id";
 import { getFirebaseIdTokenForProxy } from "./proxy-auth";
-import { createLogger, truncateId } from "./logger";
+import { createLogger, parseAgentErrorCode, truncateId } from "./logger";
 
 const log = createLogger("checkpoint");
 
@@ -27,18 +27,36 @@ export async function analyzeCheckpoint(input: AnalyzeCheckpointInput) {
     propertyId: truncateId(input.propertyId),
   });
 
-  const response = await proxyFetchWithAuth(apiUrls.analyzeCheckpoint(), getFirebaseIdTokenForProxy, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const response = await proxyFetchWithAuth(
+    apiUrls.analyzeCheckpoint(),
+    getFirebaseIdTokenForProxy,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 
   if (!response.ok) {
-    log.error("analysis.failed", { status: response.status });
+    const body = await response.text();
+    const code = parseAgentErrorCode(body);
+    log.error("analysis.failed", { status: response.status, code });
+    if (code === "CHECKPOINT_QUOTA_EXCEEDED") {
+      throw new Error(
+        "Monthly checkpoint limit reached. Upgrade your plan or wait until next month.",
+      );
+    }
+    if (code === "TOKEN_QUOTA_EXCEEDED") {
+      throw new Error(
+        "Monthly AI token limit reached. Upgrade your plan or wait until next month.",
+      );
+    }
     throw new Error(`Failed to trigger analysis: ${response.statusText}`);
   }
 
   const result = await response.json();
-  log.info("analysis.accepted", { checkpointId: truncateId(input.checkpointId) });
+  log.info("analysis.accepted", {
+    checkpointId: truncateId(input.checkpointId),
+  });
   return result;
 }
 
@@ -56,10 +74,14 @@ export interface CompareCheckpointsInput {
 export async function compareCheckpoints(input: CompareCheckpointsInput) {
   log.info("comparison.request");
 
-  const response = await proxyFetchWithAuth(apiUrls.compareCheckpoints(), getFirebaseIdTokenForProxy, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const response = await proxyFetchWithAuth(
+    apiUrls.compareCheckpoints(),
+    getFirebaseIdTokenForProxy,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
 
   if (!response.ok) {
     log.error("comparison.failed", { status: response.status });

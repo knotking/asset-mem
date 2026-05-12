@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getPublicDefaultMonthlyTokenLimit } from '@/lib/token-quota-public';
 import { apiUrls } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { createLogger } from '@/lib/logger';
@@ -28,6 +27,12 @@ function formatUpdatedAt(value: unknown): string | null {
   return null;
 }
 
+export type PlanLimitSlice = {
+  used: number;
+  limit: number;
+  unlimited: boolean;
+};
+
 export type LlmTokenUsageSnapshot = {
   loading: boolean;
   error: string | null;
@@ -41,16 +46,28 @@ export type LlmTokenUsageSnapshot = {
   periodTotalTokens: number;
   periodInputTokens: number;
   periodOutputTokens: number;
+  periodDocumentCreations: number;
+  periodCheckpointCreations: number;
   monthlyLimit: number | null;
-  /** Resolved cap for UI: prefs, then proxy default, then build-time fallback */
+  /** Resolved cap for UI: Firestore prefs, else proxy /token-quota-status */
   effectiveMonthlyLimit: number | null;
   /** pending = still fetching proxy; null = unlimited from proxy; number = cap from proxy */
   proxyDefaultLimit: 'pending' | number | null;
+  /** True until prefs and proxy quota (when no Firestore override) have settled. */
+  limitsLoading: boolean;
+  documentsLimit: PlanLimitSlice | null;
+  checkpointsLimit: PlanLimitSlice | null;
 };
 
 const empty: Omit<
   LlmTokenUsageSnapshot,
-  'loading' | 'error' | 'monthlyLimit' | 'effectiveMonthlyLimit' | 'proxyDefaultLimit'
+  | 'loading'
+  | 'error'
+  | 'monthlyLimit'
+  | 'effectiveMonthlyLimit'
+  | 'proxyDefaultLimit'
+  | 'documentsLimit'
+  | 'checkpointsLimit'
 > = {
   inputTokens: 0,
   outputTokens: 0,
@@ -62,6 +79,8 @@ const empty: Omit<
   periodTotalTokens: 0,
   periodInputTokens: 0,
   periodOutputTokens: 0,
+  periodDocumentCreations: 0,
+  periodCheckpointCreations: 0,
 };
 
 function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsageSnapshot {
@@ -71,8 +90,8 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
   const [monthlyLimit, setMonthlyLimit] = useState<number | null>(null);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [proxyDefaultLimit, setProxyDefaultLimit] = useState<'pending' | number | null>('pending');
-
-  const envDefault = useMemo(() => getPublicDefaultMonthlyTokenLimit(), []);
+  const [documentsLimit, setDocumentsLimit] = useState<PlanLimitSlice | null>(null);
+  const [checkpointsLimit, setCheckpointsLimit] = useState<PlanLimitSlice | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -82,6 +101,8 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
       setMonthlyLimit(null);
       setPrefsLoaded(false);
       setProxyDefaultLimit('pending');
+      setDocumentsLimit(null);
+      setCheckpointsLimit(null);
       return;
     }
 
@@ -111,6 +132,10 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
           periodInputTokens: typeof d.periodInputTokens === 'number' ? d.periodInputTokens : 0,
           periodOutputTokens:
             typeof d.periodOutputTokens === 'number' ? d.periodOutputTokens : 0,
+          periodDocumentCreations:
+            typeof d.periodDocumentCreations === 'number' ? d.periodDocumentCreations : 0,
+          periodCheckpointCreations:
+            typeof d.periodCheckpointCreations === 'number' ? d.periodCheckpointCreations : 0,
         });
       },
       (err) => {
@@ -150,12 +175,14 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
   }, [userId]);
 
   useEffect(() => {
-    if (!userId || !prefsLoaded || monthlyLimit != null) {
+    if (!userId || !prefsLoaded) {
       return;
     }
 
     let cancelled = false;
-    setProxyDefaultLimit('pending');
+    if (monthlyLimit == null) {
+      setProxyDefaultLimit('pending');
+    }
 
     (async () => {
       try {
@@ -172,18 +199,51 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const data = (await res.json()) as { max_tokens?: unknown };
-        const raw = data.max_tokens;
-        const cap =
-          typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+        const data = (await res.json()) as {
+          max_tokens?: unknown;
+          documents?: { used?: number; limit?: number; unlimited?: boolean };
+          checkpoints?: { used?: number; limit?: number; unlimited?: boolean };
+        };
         if (cancelled) return;
-        setProxyDefaultLimit(cap > 0 ? cap : null);
+
+        if (monthlyLimit == null) {
+          const raw = data.max_tokens;
+          const cap =
+            typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+          setProxyDefaultLimit(cap > 0 ? cap : null);
+        }
+
+        const doc = data.documents;
+        if (doc && typeof doc.used === 'number' && typeof doc.limit === 'number') {
+          setDocumentsLimit({
+            used: doc.used,
+            limit: doc.limit,
+            unlimited: Boolean(doc.unlimited),
+          });
+        } else {
+          setDocumentsLimit(null);
+        }
+
+        const cp = data.checkpoints;
+        if (cp && typeof cp.used === 'number' && typeof cp.limit === 'number') {
+          setCheckpointsLimit({
+            used: cp.used,
+            limit: cp.limit,
+            unlimited: Boolean(cp.unlimited),
+          });
+        } else {
+          setCheckpointsLimit(null);
+        }
       } catch (err) {
         if (!cancelled) {
           quotaLog.warn('tokenQuotaStatus.fetch.failed', {
             cause: err instanceof Error ? err.message : String(err),
           });
-          setProxyDefaultLimit('pending');
+          if (monthlyLimit == null) {
+            setProxyDefaultLimit(null);
+          }
+          setDocumentsLimit(null);
+          setCheckpointsLimit(null);
         }
       }
     })();
@@ -203,8 +263,12 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
       }
       return null;
     }
-    return envDefault;
-  }, [monthlyLimit, proxyDefaultLimit, envDefault]);
+    return null;
+  }, [monthlyLimit, proxyDefaultLimit]);
+
+  const limitsLoading =
+    Boolean(userId) &&
+    (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === 'pending'));
 
   return {
     loading,
@@ -213,6 +277,9 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     monthlyLimit,
     effectiveMonthlyLimit,
     proxyDefaultLimit,
+    limitsLoading,
+    documentsLimit,
+    checkpointsLimit,
   };
 }
 

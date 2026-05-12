@@ -21,7 +21,7 @@
 | Reasoning Engine not initialized | Redeploy agent (`deploy-homecare-agent.yaml`); confirm `AGENT_ENGINE_ID` on proxy |
 | Invalid/missing env on proxy | GitHub env vars: `GCP_PROJECT_ID`, `AGENT_ENGINE_ID`, Firebase secret, CORS origins |
 | Auth cutover | Clients must send `Authorization: Bearer`; check 401 rate |
-| Token quota storm | Not full outage — see token quota alert; tune `TOKEN_QUOTA_PERIOD_MAX_TOKENS` |
+| Token quota storm | Not full outage — see token quota alert; tune `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (`free` / Price ids) |
 | Cold start / quota | Increase Cloud Run min instances; check GCP quotas |
 
 ## Mitigation

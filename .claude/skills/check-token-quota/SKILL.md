@@ -10,13 +10,14 @@ description: Inspect, test, or debug the LLM token-quota system that gates Reaso
 - **Library:** `gcp/common/token/` (imported as `common.token` from both proxy and workers). `quota.py` enforces, the surrounding helpers persist counters.
 - **Firestore root doc:** `llm_token_usage/{userId}` with a `periods/{YYYY-MM}` subcollection. Schema details are in `gcp/common/token/README.md`.
 - **Per-user override:** `users/{userId}/preferences/user.monthlyTokenLimit` (positive number wins).
-- **Global default env:** `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (set in proxy + worker env). `0` or unset = unlimited unless overridden per-user.
+- **Plan limits env:** `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` with reserved `free` key (proxy + workers). `0` token cap = unlimited for that dimension.
 - **Status endpoint:** `POST /token-quota-status` (also exposed under `/{FIREBASE_WEBHOOK_SECRET}/token-quota-status`).
 
 ## Resolution order (enforced by `quota.py`)
-1. `users/{userId}/preferences/user.monthlyTokenLimit` if it exists and is > 0.
-2. Otherwise the env value `TOKEN_QUOTA_PERIOD_MAX_TOKENS`.
-3. If both are unset/0, the user is unlimited.
+1. B2C Stripe `users/{userId}/billing/summary` when `subscriptionStatus` is `active` or `trialing`.
+2. `users/{userId}/preferences/user.monthlyTokenLimit` if it exists and is > 0.
+3. `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` → `free` plan `monthlyTokenLimit`.
+4. If unset/0, unlimited.
 
 ## Where it gets called
 - Proxy `services/agent_service.py` — before Reasoning Engine `stream_query` and session creation.
@@ -56,7 +57,7 @@ curl -X POST http://127.0.0.1:8080/token-quota-status \
 # → { "period": "2026-04", "used": 12345, "max_tokens": 1000000, "unlimited": false }
 ```
 
-`max_tokens: 0` means unlimited. The webapp **AI usage** card and the mapp **TokenUsageBar** call this so the UI doesn't have to bake `TOKEN_QUOTA_PERIOD_MAX_TOKENS` into client builds. Don't duplicate the env into `NEXT_PUBLIC_*`/`extra.*` unless you want a fallback for when the proxy is unreachable.
+`max_tokens: 0` means unlimited. The webapp **AI usage** card and the mapp **TokenUsageBar** call this endpoint; limits come from the proxy (including the `free` tier in JSON).
 
 ## Setting / clearing a per-user override
 
@@ -64,7 +65,7 @@ In Firestore (or a quick admin script):
 ```
 users/<uid>/preferences/user
   monthlyTokenLimit: 500000        # set
-  monthlyTokenLimit: deleteField   # remove → falls back to env default
+  monthlyTokenLimit: deleteField   # remove → falls back to Stripe/free tier defaults
 ```
 The next request the user makes will use the new value (no cache).
 

@@ -260,7 +260,11 @@ export async function streamAgentResponse({
         onComplete(finalResponse, agentSteps);
       }
 
-      log.info('stream.complete', { ...streamMeta, durationMs: Date.now() - startedAt, mode: 'buffered' });
+      log.info('stream.complete', {
+        ...streamMeta,
+        durationMs: Date.now() - startedAt,
+        mode: 'buffered',
+      });
       return;
     }
 
@@ -327,7 +331,7 @@ export async function streamAgentResponse({
       // Strip agent name prefix (e.g., "**Doculink Agent**: " or "**Analysis Agent**: ")
       // This removes the prefix added by the backend streaming function
       const strippedResponse = finalAssistantResponse.replace(/^\*\*[^*]+\*\*:\s*/, '');
-      
+
       // Check if response is empty and provide helpful error message
       const finalResponse =
         strippedResponse.trim() ||
@@ -408,7 +412,9 @@ export async function queueExtractDocInfo(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`);
+    throw new Error(
+      `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`
+    );
   }
 
   return (await response.json()) as QueueExtractDocInfoResult;
@@ -486,6 +492,17 @@ export async function analyzeCheckpoint(
 
     if (!response.ok) {
       const errorBody = await response.text();
+      const code = parseAgentErrorCode(errorBody);
+      if (code === 'CHECKPOINT_QUOTA_EXCEEDED') {
+        throw new Error(
+          'Monthly checkpoint limit reached. Upgrade your plan or wait until next month.'
+        );
+      }
+      if (code === 'TOKEN_QUOTA_EXCEEDED') {
+        throw new Error(
+          'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
+        );
+      }
       throw new Error(
         `Failed to analyze checkpoint, status: ${response.status}, body: ${errorBody}`
       );
@@ -495,7 +512,11 @@ export async function analyzeCheckpoint(
     log.info('checkpoint.analysis.accepted', { checkpointId: truncateId(input.checkpointId) });
     return data;
   } catch (error) {
-    log.error('checkpoint.analysis.failed', { checkpointId: truncateId(input.checkpointId) }, error);
+    log.error(
+      'checkpoint.analysis.failed',
+      { checkpointId: truncateId(input.checkpointId) },
+      error
+    );
     throw error;
   }
 }
@@ -627,7 +648,7 @@ export async function analyzeMultipleCheckpoints(
  * Extracts the title from a checkpoint agent response.
  * Checkpoint agents return responses in dual format: Markdown + JSON code block.
  * The JSON contains an analysis.title field that should be used to rename the session.
- * 
+ *
  * @param content The agent response content
  * @returns The title string if found, null otherwise
  */
@@ -644,10 +665,7 @@ export function extractCheckpointTitle(content: string): string | null {
 
     // Check for checkpoint-specific fields to confirm this is a checkpoint response
     const analysis = parsed.analysis || parsed;
-    const hasCheckpointData = !!(
-      analysis.checkpointSummary ||
-      analysis.checkpointDetails
-    );
+    const hasCheckpointData = !!(analysis.checkpointSummary || analysis.checkpointDetails);
 
     if (!hasCheckpointData) return null;
 

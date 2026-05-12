@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  completeAuthThenStripeCheckout,
+  isBillingCheckoutTier,
+  postAuthRedirectPath,
+} from '@/lib/pending-checkout';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -11,9 +16,15 @@ import { trackSignUp } from '@/lib/analytics';
 type GoogleSignInButtonProps = {
   mode: 'login' | 'signup';
   disabled?: boolean;
+  /** From ?checkout=plus|pro — resume Stripe Checkout after auth. */
+  checkoutTier?: string | null;
 };
 
-export function GoogleSignInButton({ mode, disabled }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  mode,
+  disabled,
+  checkoutTier = null,
+}: GoogleSignInButtonProps) {
   const { signInWithGoogle } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -22,11 +33,15 @@ export function GoogleSignInButton({ mode, disabled }: GoogleSignInButtonProps) 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithGoogle();
+      const cred = await signInWithGoogle();
       if (mode === 'signup') {
         trackSignUp('google');
       }
-      router.push('/home');
+      if (isBillingCheckoutTier(checkoutTier)) {
+        await completeAuthThenStripeCheckout(cred.user, checkoutTier);
+        return;
+      }
+      router.push(postAuthRedirectPath());
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error

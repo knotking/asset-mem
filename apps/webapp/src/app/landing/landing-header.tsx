@@ -222,6 +222,36 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
                 style={{ backgroundColor: LANDING_COLORS.primary }}
               ></span>
             </a>
+            <a
+              href="#pricing"
+              onClick={(e) => onNavClick(e, '#pricing')}
+              className="text-sm font-medium transition-all duration-300 relative group"
+              style={{
+                color: activeSection === 'pricing' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70,
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = LANDING_COLORS.primary;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = activeSection === 'pricing' ? LANDING_COLORS.primary : LANDING_COLORS.foreground70;
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              Pricing
+              <span
+                className="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+                style={{
+                  backgroundColor: LANDING_COLORS.primary,
+                  width: activeSection === 'pricing' ? '100%' : '0%',
+                }}
+              ></span>
+              <span
+                className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                style={{ backgroundColor: LANDING_COLORS.primary }}
+              ></span>
+            </a>
           </nav>
 
           <div className="flex items-center gap-4" style={{ minWidth: '120px', justifyContent: 'flex-end' }}>

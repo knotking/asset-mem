@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,11 @@ import { trackSignUp } from '@/lib/analytics';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { AuthDivider } from '@/components/auth/auth-divider';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
+import {
+  completeAuthThenStripeCheckout,
+  isBillingCheckoutTier,
+  postAuthRedirectPath,
+} from '@/lib/pending-checkout';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -20,15 +25,21 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const checkoutTier = searchParams.get('checkout');
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signUp(email, password);
+      const cred = await signUp(email, password);
       trackSignUp('email');
-      router.push('/home');
+      if (isBillingCheckoutTier(checkoutTier)) {
+        await completeAuthThenStripeCheckout(cred.user, checkoutTier);
+        return;
+      }
+      router.push(postAuthRedirectPath());
     } catch (error: unknown) {
       const code =
         error && typeof error === 'object' && 'code' in error
@@ -55,7 +66,11 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <GoogleSignInButton mode="signup" disabled={formDisabled} />
+          <GoogleSignInButton
+            mode="signup"
+            disabled={formDisabled}
+            checkoutTier={checkoutTier}
+          />
           <AuthDivider />
           <form onSubmit={handleSignUp} className="grid gap-4">
             <div className="grid gap-2">
@@ -98,7 +113,14 @@ export default function SignupPage() {
           </p>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
-            <Link href="/login" className="underline">
+            <Link
+              href={
+                checkoutTier
+                  ? `/login?checkout=${encodeURIComponent(checkoutTier)}`
+                  : '/login'
+              }
+              className="underline"
+            >
               Sign in
             </Link>
           </div>

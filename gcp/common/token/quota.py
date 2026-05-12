@@ -2,22 +2,22 @@
 Per-user token quota (calendar month, UTC) enforced before LLM / Reasoning Engine calls.
 
 Limit resolution:
-  1. users/{userId}/preferences/user.monthlyTokenLimit (positive int) if set
-  2. else TOKEN_QUOTA_PERIOD_MAX_TOKENS env (positive int)
-  3. else unlimited (0)
-
-Usage for the current period is read from llm_token_usage.periodTotalTokens when
-quotaPeriodKey matches the current YYYY-MM; otherwise treated as 0.
+  1. B2C Stripe: users/{userId}/billing/summary when subscriptionStatus is active/trialing
+     and monthlyTokenLimit is a positive int (set by proxy webhooks from Stripe Price id map)
+  2. users/{userId}/preferences/user.monthlyTokenLimit (positive int) if set
+  3. else STRIPE_B2C_PRICE_TOKEN_CAPS_JSON → ``free`` plan monthlyTokenLimit
+  4. else unlimited (0)
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Optional
 
 from google.cloud import firestore
+
+from common.billing_plans import free_tier_plan
 
 from .constants import TOKEN_USAGE_COLLECTION
 
@@ -41,15 +41,38 @@ def current_quota_period_key(now: Optional[datetime] = None) -> str:
     return f"{dt.year:04d}-{dt.month:02d}"
 
 
-def _env_period_max_tokens() -> int:
-    raw = os.environ.get("TOKEN_QUOTA_PERIOD_MAX_TOKENS", "").strip()
-    if not raw:
+def _free_tier_token_limit() -> int:
+    plan = free_tier_plan()
+    if plan is None:
         return 0
+    cap = plan.monthly_token_limit
+    return cap if cap > 0 else 0
+
+
+def _b2c_billing_monthly_limit(db: firestore.Client, user_id: str) -> Optional[int]:
+    """Stripe-backed individual cap from Firestore (written by proxy webhooks only)."""
     try:
-        return max(0, int(raw))
-    except ValueError:
-        logger.warning("Invalid TOKEN_QUOTA_PERIOD_MAX_TOKENS=%r; treating as 0", raw)
-        return 0
+        snap = (
+            db.collection("users")
+            .document(user_id)
+            .collection("billing")
+            .document("summary")
+            .get()
+        )
+        if not snap.exists:
+            return None
+        data = snap.to_dict() or {}
+        status = str(data.get("subscriptionStatus") or "").lower()
+        if status not in ("active", "trialing"):
+            return None
+        raw = data.get("monthlyTokenLimit")
+        if raw is None:
+            return None
+        n = int(raw)
+        return n if n > 0 else None
+    except Exception as e:
+        logger.debug("Could not read billing summary for %s: %s", user_id, e)
+        return None
 
 
 def _preferences_monthly_limit(db: firestore.Client, user_id: str) -> Optional[int]:
@@ -75,10 +98,13 @@ def _preferences_monthly_limit(db: firestore.Client, user_id: str) -> Optional[i
 
 def resolve_token_quota_limit(db: firestore.Client, user_id: str) -> int:
     """0 means unlimited."""
+    stripe_cap = _b2c_billing_monthly_limit(db, user_id)
+    if stripe_cap is not None:
+        return stripe_cap
     override = _preferences_monthly_limit(db, user_id)
     if override is not None:
         return override
-    return _env_period_max_tokens()
+    return _free_tier_token_limit()
 
 
 def effective_period_token_usage(

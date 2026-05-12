@@ -30,12 +30,6 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  - variable: NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS
-    value: "1000000"
-    availability:
-      - BUILD
-      - RUNTIME
-
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.

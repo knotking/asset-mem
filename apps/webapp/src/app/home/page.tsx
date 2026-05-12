@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { collection, onSnapshot, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -41,7 +41,9 @@ function PropertiesDashboardSkeleton() {
 function PropertiesDashboardContent() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
+    const [billingSuccessNotice, setBillingSuccessNotice] = useState(false);
     const [properties, setProperties] = useState<Property[]>([]);
     const [isPropertiesLoading, setIsPropertiesLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +67,14 @@ function PropertiesDashboardContent() {
             router.push("/login");
         }
     }, [user, authLoading, router]);
+
+    useEffect(() => {
+        if (searchParams.get('billing') !== 'success') {
+            return;
+        }
+        setBillingSuccessNotice(true);
+        router.replace('/home');
+    }, [searchParams, router]);
 
     useEffect(() => {
         if (!user) {
@@ -130,6 +140,24 @@ function PropertiesDashboardContent() {
                 <h1 className="text-2xl font-bold text-foreground">Property AI Agent</h1>
                 <p className="text-muted-foreground">Upload property documents and chat with AI to get insights or diagnostics of your properties and assets</p>
             </header>
+
+            {billingSuccessNotice && (
+              <div
+                className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-800 dark:text-green-200"
+                role="status"
+              >
+                Subscription updated. Your plan limits may take a moment to apply after Stripe
+                confirms payment. Manage your plan in{' '}
+                <button
+                  type="button"
+                  className="font-medium underline underline-offset-2 hover:no-underline"
+                  onClick={() => router.push('/home/settings')}
+                >
+                  Settings
+                </button>
+                .
+              </div>
+            )}
 
             <ProductHuntWelcomeBanner />
             <HomeOnboardingChecklist properties={properties} />

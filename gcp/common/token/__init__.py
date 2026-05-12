@@ -1,5 +1,5 @@
 """
-LLM token usage (Firestore) and per-user monthly (UTC) quotas.
+LLM token usage (Firestore) and per-user monthly quotas.
 
 Import from this package only, e.g. ``from common.token import persist_firestore_token_totals``.
 """

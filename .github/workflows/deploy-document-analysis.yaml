@@ -130,4 +130,4 @@ jobs:
           environment_variables: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_LOCATION=${{ vars.GCP_REGION }}
-            TOKEN_QUOTA_PERIOD_MAX_TOKENS=${{ vars.TOKEN_QUOTA_PERIOD_MAX_TOKENS }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}

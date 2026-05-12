@@ -51,7 +51,7 @@ From `gcp/proxy/api/core/config.py`:
 - `DISABLE_FIREBASE_AUTH=true` — local/tests only; trust body `user_id`
 - `TELEGRAM_WEBHOOK_SECRET` — only if you're testing the bot
 - `USER_UPLOAD_TOPIC`, `USER_UPLOAD_RESULT_SUBSCRIPTION`, `GCS_BUCKET` — for upload + RAG flow
-- `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (optional) — global monthly cap
+- `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (required for limits) — include `"free"` key + Stripe Price ids
 - `PROXY_CORS_ORIGINS` (optional) — comma-separated browser origins; unset uses defaults in `core/cors.py` (`https://asset-mem.com`, `https://homegeek.ai`, App Hosting URLs, `http://localhost:9002`)
 - `PROXY_RATE_LIMIT_ENABLED` (default `true`) — per-UID limits; set `false` for unconstrained local testing
 - `PROXY_RATE_LIMIT_AGENT_PER_WINDOW` (default `30` per 60s), `PROXY_RATE_LIMIT_CHECKPOINT_PER_WINDOW` (`20`), etc.

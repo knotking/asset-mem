@@ -105,9 +105,9 @@ Every Reasoning Engine `stream_query`, every Gemini `generate_content`/`embed_co
 
 Quota resolution order, enforced by `gcp/common/token/quota.py`:
 1. Per-user override: `users/{userId}/preferences/user.monthlyTokenLimit` (positive number wins)
-2. Env default: `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (unset/`0` ⇒ unlimited)
+2. `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` → `free` plan (unset/`0` token cap ⇒ unlimited)
 
-Over-limit responses use `code: TOKEN_QUOTA_EXCEEDED`. The webapp queries `POST /token-quota-status` to render the AI usage bar — do not duplicate `TOKEN_QUOTA_PERIOD_MAX_TOKENS` into webapp build env.
+Over-limit responses use `code: TOKEN_QUOTA_EXCEEDED`. The webapp queries `POST /token-quota-status` to render the AI usage bar (limits from proxy JSON including `free`).
 
 ### Shared frontend package (`apps/common`)
 `@homeapp/common` is the seam between mapp and webapp. It exports per-context entry points (see `apps/common/package.json` `exports`) and uses **conditional exports** for Firebase: `./firebase` resolves to `firebase-native.ts` for React Native and `firebase-web.ts` elsewhere. After editing anything under `apps/common/src`, run `npm run build` in that package and the consumers will pick it up via the workspace symlink. Firebase project config is hardcoded per environment (`dev`/`staging`/`prod`) in `apps/common/src/firebase/firebase-config.ts` and selected via `Constants.expoConfig.extra.appEnv`.
