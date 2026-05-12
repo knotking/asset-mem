@@ -1,10 +1,10 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData, Product } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary } from "@/lib/types";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
@@ -15,6 +15,7 @@ import { markdownToWhatsapp, htmlToWhatsapp } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Helper function to safely extract string from warranty/insurance info
 const extractTextFromCoverageInfo = (info: any): string => {
@@ -52,6 +53,31 @@ const extractTextFromCoverageInfo = (info: any): string => {
     // Fallback to string conversion
     return String(info);
 };
+
+function getDiyHireProfessionalRecommended(diy: unknown): boolean {
+    if (!diy || typeof diy !== "object") return false;
+    const o = diy as Record<string, unknown>;
+    return o.hireProfessionalRecommended === true || o.hire_professional_recommended === true;
+}
+
+function getDiyCostEstimatesBlock(diy: unknown): DiyCostEstimatesSummary | null {
+    if (!diy || typeof diy !== "object") return null;
+    const raw = (diy as Record<string, unknown>).diyCostEstimates;
+    if (!raw || typeof raw !== "object") return null;
+    return raw as DiyCostEstimatesSummary;
+}
+
+function diyCostBlockHasContent(ce: DiyCostEstimatesSummary): boolean {
+    if (ce.repair_type && String(ce.repair_type).trim()) return true;
+    const d = ce.DIY;
+    if (!d || typeof d !== "object") return false;
+    return !!(
+        (d.cost_range && String(d.cost_range).trim()) ||
+        (Array.isArray(d.includes) && d.includes.length > 0) ||
+        (d.savings && String(d.savings).trim()) ||
+        (d.complexity && String(d.complexity).trim())
+    );
+}
 
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
@@ -365,8 +391,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         (checkpointSummary.locations && checkpointSummary.locations.length > 0)
     ));
     const hasCoverage = !needsClarification && !!(coverage && (coverage.warrantyInfo || coverage.insuranceInfo));
+    const diyCostBlock = getDiyCostEstimatesBlock(diy);
+    const hasDiyCostInDiy = !!(diyCostBlock && diyCostBlockHasContent(diyCostBlock));
     const hasDIY = !needsClarification && !!(diy && (
-        diy.diySteps?.summary || 
+        getDiyHireProfessionalRecommended(diy) ||
+        hasDiyCostInDiy ||
+        diy.diySteps?.summary ||
         (diy.diySteps?.steps && diy.diySteps.steps.length > 0) ||
         (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
@@ -717,6 +747,59 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
+                        {getDiyHireProfessionalRecommended(diy) && (
+                            <Alert variant="destructive" className="not-prose">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Professional help recommended</AlertTitle>
+                                <AlertDescription>
+                                    This repair may involve gas, electrical, structural, or other hazards. Consider hiring a licensed professional before attempting DIY work.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {diyCostBlock && diyCostBlockHasContent(diyCostBlock) && (
+                            <div className="not-prose space-y-2 rounded-md border border-amber-200/90 bg-amber-50/80 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+                                <h4 className="text-sm font-semibold text-amber-950 dark:text-amber-100 flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4" />
+                                    Estimated DIY cost
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                    Indicative range from our repair library—not a quote. Verify with local pricing.
+                                </p>
+                                {diyCostBlock.repair_type && (
+                                    <p className="text-xs text-muted-foreground">
+                                        <span className="font-medium text-foreground">Repair type:</span>{" "}
+                                        {String(diyCostBlock.repair_type)}
+                                    </p>
+                                )}
+                                {diyCostBlock.DIY?.cost_range && (
+                                    <p className="text-sm">
+                                        <span className="font-medium">Typical range:</span>{" "}
+                                        {String(diyCostBlock.DIY.cost_range)}
+                                    </p>
+                                )}
+                                {Array.isArray(diyCostBlock.DIY?.includes) && diyCostBlock.DIY!.includes!.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-medium">Includes</p>
+                                        <ul className="list-disc pl-5 text-sm space-y-1">
+                                            {diyCostBlock.DIY!.includes!.map((it: string, i: number) => (
+                                                <li key={i}>{it}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {diyCostBlock.DIY?.savings && (
+                                    <p className="text-sm">
+                                        <span className="font-medium">Savings:</span> {String(diyCostBlock.DIY.savings)}
+                                    </p>
+                                )}
+                                {diyCostBlock.DIY?.complexity && (
+                                    <p className="text-sm">
+                                        <span className="font-medium">Complexity:</span>{" "}
+                                        {String(diyCostBlock.DIY.complexity)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {diy?.diySteps?.summary && (
                             <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Summary</h4>
@@ -725,8 +808,6 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                                 </ReactMarkdown>
                             </div>
                         )}
-                        {/* DIY cost estimates removed */}
-                        
                         {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
                             <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400">Step-by-Step Instructions</h4>

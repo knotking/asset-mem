@@ -107,6 +107,17 @@ export type Product = {
   price?: string | null;
 };
 
+/** DIY-only cost slice from the agent library (nested under analysis.diyResults). */
+export type DiyCostEstimatesSummary = {
+  repair_type?: string;
+  DIY?: {
+    cost_range?: string;
+    includes?: string[];
+    savings?: string;
+    complexity?: string;
+  };
+};
+
 export type StructuredResponseData = {
   // Top-level fields (for backward compatibility and flat structures)
   title?: string;
@@ -135,6 +146,11 @@ export type StructuredResponseData = {
     insuranceInfo?: string;
   };
   diyResults?: {
+    /** When true, UI should surface a stronger “hire a pro” warning. */
+    hireProfessionalRecommended?: boolean;
+    /** Some payloads use snake_case before synthesis normalizes. */
+    hire_professional_recommended?: boolean;
+    diyCostEstimates?: DiyCostEstimatesSummary;
     diySteps?: {
       summary?: string;
       steps?: Array<{ stepNumber: number; description: string }>;
@@ -191,6 +207,9 @@ export type StructuredResponseData = {
       insuranceInfo?: string;
     };
     diyResults?: {
+      hireProfessionalRecommended?: boolean;
+      hire_professional_recommended?: boolean;
+      diyCostEstimates?: DiyCostEstimatesSummary;
       diySteps?: {
         summary?: string;
         steps?: Array<{ stepNumber: number; description: string }>;

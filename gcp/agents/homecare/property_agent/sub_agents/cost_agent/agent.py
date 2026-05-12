@@ -476,6 +476,56 @@ def cost_estimation_diy(query: str) -> str:
         return json.dumps(fallback)
 
 
+def cost_estimation_diy_from_library(query: str) -> str:
+    """DIY-only cost estimate using the hardcoded library only (no AI / Google Search)."""
+    try:
+        diagnosis = _extract_diagnosis_from_query(query)
+        if not diagnosis:
+            diagnosis = query
+        context_source = diagnosis or query
+        matched = _match_cost_category(context_source)
+        response_data = _build_cost_response(matched, diagnosis, fallback_query=query)
+        ce = response_data.get("costEstimates", {}) if isinstance(response_data, dict) else {}
+        diy = ce.get("DIY") if isinstance(ce, dict) else None
+        repair_type = ce.get("repair_type", query) if isinstance(ce, dict) else query
+        result = {
+            "diyCostEstimates": {
+                "repair_type": repair_type,
+                "DIY": diy
+                or {
+                    "cost_range": "$50-300",
+                    "includes": [
+                        "Material/product costs vary by repair type",
+                        "Basic tools may be required",
+                        "Time investment needed",
+                    ],
+                    "savings": "60-80% on labor costs",
+                    "complexity": "Simple repairs may be cost-effective",
+                },
+            }
+        }
+        return json.dumps(result)
+    except Exception:
+        logger.exception("cost_estimation_diy_from_library failed for query=%s", query[:200])
+        return json.dumps(
+            {
+                "diyCostEstimates": {
+                    "repair_type": query,
+                    "DIY": {
+                        "cost_range": "$50-300",
+                        "includes": [
+                            "Material/product costs vary by repair type",
+                            "Basic tools may be required",
+                            "Time investment needed",
+                        ],
+                        "savings": "60-80% on labor costs",
+                        "complexity": "Simple repairs may be cost-effective",
+                    },
+                }
+            }
+        )
+
+
 cost_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
     name='cost_agent',
