@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import json
 
 import pytest
@@ -26,6 +28,7 @@ def test_diy_agent_single_tool_no_nested_agent_tools() -> None:
     assert len(tools) == 1
     assert not any(isinstance(t, AgentTool) for t in tools)
     assert tools[0] is run_diy_pipeline
+    assert inspect.iscoroutinefunction(run_diy_pipeline)
 
 
 def test_infer_hire_professional_heuristics() -> None:
@@ -66,7 +69,7 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
             }
         ),
     )
-    out = run_diy_pipeline(user_query="clogged drain", property_address=None)
+    out = asyncio.run(run_diy_pipeline(user_query="clogged drain", property_address=None))
     body = json.loads(out)
     assert "diyResults" in body
     assert body["diyResults"]["diySteps"]["summary"] == "ok"
@@ -106,6 +109,6 @@ def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPa
     )
 
     q = "identical cache key query"
-    assert run_diy_pipeline(q) == fixed
-    assert run_diy_pipeline(q) == fixed
+    assert asyncio.run(run_diy_pipeline(q)) == fixed
+    assert asyncio.run(run_diy_pipeline(q)) == fixed
     assert calls["n"] == 1

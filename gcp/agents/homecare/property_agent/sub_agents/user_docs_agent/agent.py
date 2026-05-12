@@ -1,9 +1,7 @@
+import asyncio
 import os
-import random
 import json
 from typing import Optional, List
-from pydantic import Field
-
 
 from google.cloud.storage.client import Client
 
@@ -71,21 +69,27 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
     logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS ({mode} mode).")
     return file_ids
 
-def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[str]] = None, tool_context: ToolContext = None):
-
-    
-    user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
-    
+def _ask_user_docs_retreival_sync(
+    user_query: str,
+    context_doc_uris: Optional[List[str]],
+    user_id: str,
+):
+    """GCS + Vertex RAG retrieval (blocking); runs in a worker thread from ask_user_docs_retreival."""
     rag_file_ids = get_rag_file_ids(user_id, context_doc_uris)
-    
+
     rag_resources = []
     if rag_file_ids:
-        rag_resources.append(rag.RagResource(rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"), rag_file_ids=rag_file_ids))
-    
+        rag_resources.append(
+            rag.RagResource(
+                rag_corpus=os.environ.get("USER_UPLOAD_RAG_CORPUS"),
+                rag_file_ids=rag_file_ids,
+            )
+        )
+
     if not rag_resources:
         logger.warning(f"No RAG resources (file IDs or context URIs) found for user {user_id}.")
         return "No matching result found."
-    
+
     response = rag.retrieval_query(
         text=user_query,
         rag_resources=rag_resources,
@@ -94,9 +98,23 @@ def ask_user_docs_retreival( user_query: str, context_doc_uris: Optional[List[st
     )
 
     return (
-        f'No matching result found.'
+        "No matching result found."
         if not response.contexts.contexts
         else [context.text for context in response.contexts.contexts]
+    )
+
+
+async def ask_user_docs_retreival(
+    user_query: str,
+    context_doc_uris: Optional[List[str]] = None,
+    tool_context: ToolContext = None,
+):
+    user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
+    return await asyncio.to_thread(
+        _ask_user_docs_retreival_sync,
+        user_query,
+        context_doc_uris,
+        user_id,
     )
 
 user_docs_agent = Agent(
