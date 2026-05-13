@@ -21,7 +21,8 @@
     "./contexts/checkpoint-context": "./src/contexts/checkpoint-context.tsx",
     "./contexts/preferences-context": "./src/contexts/preferences-context.tsx",
     "./contexts/llm-token-usage-context": "./src/contexts/llm-token-usage-context.tsx",
-    "./lib/format-tokens": "./src/lib/format-tokens.ts"
+    "./lib/format-tokens": "./src/lib/format-tokens.ts",
+    "./lib/service-providers": "./src/lib/service-providers.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
