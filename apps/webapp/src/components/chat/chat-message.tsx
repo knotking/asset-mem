@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary } from "@/lib/types";
+import { flattenServiceProviderRawList } from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
 import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle } from "lucide-react";
@@ -341,26 +342,8 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
     // Get all providers (before filtering) to check if service section should show
     // Handle both array format and potential string/object formats
-    const getProvidersArray = (providers: any): ServiceProvider[] => {
-        if (!providers) return [];
-        if (Array.isArray(providers)) return providers as ServiceProvider[];
-        if (typeof providers === 'string') {
-            try {
-                const parsed = JSON.parse(providers);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch {
-                return [];
-            }
-        }
-        if (typeof providers === 'object') {
-            // Common container keys
-            const keys = ['providers','results','items','pros','list'];
-            for (const k of keys) {
-                if (Array.isArray((providers as any)[k])) return (providers as any)[k];
-            }
-        }
-        return [];
-    };
+    const getProvidersArray = (providers: any): ServiceProvider[] =>
+        flattenServiceProviderRawList(providers) as ServiceProvider[];
 
     const allProvidersRaw = [
         // Keep legacy Yelp fallback for older stored responses.
@@ -448,13 +431,19 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         return <span>{String(v)}</span>;
     };
 
-    const renderRecursiveDetails = (title: string, value: any, keyPath: string): React.ReactNode => {
+    const renderRecursiveDetails = (
+        title: string,
+        value: any,
+        keyPath: string,
+        /** Set when this AccordionItem is a direct child of a mapped Accordion list (React list keys). */
+        listKey?: React.Key,
+    ): React.ReactNode => {
         if (value === null || value === undefined) return null;
         // Known tables (array of objects) → simple table
         if (Array.isArray(value) && value.length > 0 && value.every(v => v && typeof v === 'object' && !Array.isArray(v))) {
             const headers = Array.from(new Set(value.flatMap((row: any) => Object.keys(row))));
             return (
-                <AccordionItem value={`${keyPath}-table`} className="border rounded-lg">
+                <AccordionItem key={listKey} value={`${keyPath}-table`} className="border rounded-lg">
                     <AccordionTrigger className="text-sm px-3 hover:no-underline">
                         <div className="flex items-center gap-2"><span className="font-semibold">{title}</span></div>
                     </AccordionTrigger>
@@ -487,7 +476,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         // Array of primitives → list
         if (Array.isArray(value) && value.every(isPrimitive)) {
             return (
-                <AccordionItem value={`${keyPath}-list`} className="border rounded-lg">
+                <AccordionItem key={listKey} value={`${keyPath}-list`} className="border rounded-lg">
                     <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
                     <AccordionContent className="pt-0 pb-3 px-3">
                         <ul className="list-disc pl-5 text-sm space-y-1">
@@ -502,7 +491,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         if (typeof value === 'object' && !Array.isArray(value)) {
             const entries = Object.entries(value as Record<string, any>);
             return (
-                <AccordionItem value={`${keyPath}-obj`} className="border rounded-lg">
+                <AccordionItem key={listKey} value={`${keyPath}-obj`} className="border rounded-lg">
                     <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
                     <AccordionContent className="pt-0 pb-3 px-3">
                         <Accordion type="multiple" className="space-y-2">
@@ -526,7 +515,7 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
 
         // Primitive → simple row
         return (
-            <AccordionItem value={`${keyPath}-val`} className="border rounded-lg">
+            <AccordionItem key={listKey} value={`${keyPath}-val`} className="border rounded-lg">
                 <AccordionTrigger className="text-sm px-3 hover:no-underline"><span className="font-semibold">{title}</span></AccordionTrigger>
                 <AccordionContent className="pt-0 pb-3 px-3 text-sm">{renderPrimitive(value)}</AccordionContent>
             </AccordionItem>
@@ -664,11 +653,12 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 pt-0">
                         <Accordion type="multiple" className="space-y-2">
-                            {analysis.checkpointDetails.map((checkpoint: any, idx: number) => 
+                            {analysis.checkpointDetails.map((checkpoint: any, idx: number) =>
                                 renderRecursiveDetails(
                                     checkpoint.name || `Checkpoint ${idx + 1}`,
                                     checkpoint,
-                                    `checkpoint-detail-${idx}`
+                                    `checkpoint-detail-${idx}`,
+                                    `checkpoint-detail-${idx}`,
                                 )
                             )}
                         </Accordion>

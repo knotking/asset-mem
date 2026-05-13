@@ -38,6 +38,7 @@ import type {
   Product,
   DiyCostEstimatesSummary,
 } from '@homeapp/common/types';
+import { flattenServiceProviderRawList } from '@homeapp/common/lib/service-providers';
 import {
   Accordion,
   AccordionItem,
@@ -149,25 +150,8 @@ const providerHasValidData = (provider: any): boolean => {
   return !!(nameCandidate && String(nameCandidate).trim() !== '');
 };
 
-const getProvidersArray = (providers: any): ServiceProvider[] => {
-  if (!providers) return [];
-  if (Array.isArray(providers)) return providers as ServiceProvider[];
-  if (typeof providers === 'string') {
-    try {
-      const parsed = JSON.parse(providers);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  if (typeof providers === 'object') {
-    const keys = ['providers', 'results', 'items', 'pros', 'list'];
-    for (const k of keys) {
-      if (Array.isArray((providers as any)[k])) return (providers as any)[k];
-    }
-  }
-  return [];
-};
+const getProvidersArray = (providers: any): ServiceProvider[] =>
+  flattenServiceProviderRawList(providers) as ServiceProvider[];
 
 const getYouTubeVideoId = (url: string): string | null => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -526,6 +510,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
       // Keep legacy Yelp fallback for older stored responses.
       ...getProvidersArray(service?.localPros?.yelpAPIResults),
       ...getProvidersArray(service?.localPros?.serpAPIResults),
+      ...getProvidersArray(service?.localPros?.googleSearchResults),
       ...getProvidersArray(service?.providers),
       ...getProvidersArray(service?.localProviders),
       ...getProvidersArray(service?.local_pros),
