@@ -324,6 +324,28 @@ make test-eval
 make deploy
 ```
 
+### Unit tests (`tests/`)
+
+`make test` runs pytest over this directory (by default that includes both `tests/` and `eval/`). To run **only** fast unit tests under `tests/`:
+
+```bash
+uv run pytest tests/ -v
+```
+
+**Opt-in live search integration**: real YouTube via **YouTube Data API v3** (needs `YOUTUBE_API_KEY`) and real SerpAPI shopping. Shared gates and print helpers live in `tests/diy_live_helpers.py`. The same checks appear in **`tests/test_diy_external_integration.py`** (raw `youtube_search` / `product_recommendations`) and **`tests/test_diy_agent.py`** (`_youtube_for_diagnosis` / `_products_for_diagnosis` as used by the DIY orchestrator). All are **skipped** unless you enable them (so `make test` stays safe for CI):
+
+1. Set `RUN_EXTERNAL_DIY_SEARCH_TESTS=1`.
+2. For YouTube tests, set `YOUTUBE_API_KEY` (enable the YouTube Data API v3 on the key in Google Cloud Console).
+3. For product tests, set `SERP_API_KEY` (same as production; `.env` is loaded when `diy_live_helpers` imports).
+
+```bash
+RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py tests/test_diy_agent.py -v -s -m integration_external
+```
+
+Use ``-s`` so YouTube and product rows are printed to the terminal when tests pass (without ``-s``, pytest still shows that output if a test fails).
+
+Pytest marker: `integration_external` (see `pyproject.toml`). Details and skip reasons are also in the test file’s module docstring.
+
 ### Using ADK Directly
 
 1.  Run agent in CLI:

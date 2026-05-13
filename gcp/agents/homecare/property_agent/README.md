@@ -64,7 +64,7 @@ make run          # adk run property_agent
 adk web           # pick property_agent
 ```
 
-Environment: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY` where tools need them. See `gcp/agents/homecare/README.md` for UV, auth, and deployment.
+Environment: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `SERP_API_KEY` where tools need them. For DIY YouTube search from Vertex (avoids InnerTube 403s), set `YOUTUBE_API_KEY` (YouTube Data API v3). See `gcp/agents/homecare/README.md` for UV, auth, and deployment.
 
 ## Conventions
 
