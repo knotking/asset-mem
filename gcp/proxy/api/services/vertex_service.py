@@ -68,6 +68,20 @@ _DISPLAY_NAME_MAP = {
     "checkpoint_optional_agents_parallel_runner": "Running analysis in parallel",
 }
 
+_CHECKPOINT_ROLLUP_TOOLS = {
+    "checkpoint_agent",
+    "checkpoint_analysis_agent",
+}
+
+_CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
+    "coverage": "coverage_agent",
+    "diy": "diy_agent",
+    "service": "service_agent",
+    "cost": "cost_agent",
+}
+
+_CHECKPOINT_OPTIONAL_AGENT_NAMES = set(_CHECKPOINT_OPTIONAL_AGENT_BY_KEY.values())
+
 def _display_name_for(name: str) -> str:
     """Resolve a friendly label for an agent/tool name.
 
@@ -424,11 +438,74 @@ def _preview_for_response(tool_name: str, response_payload: Any) -> Optional[str
     return None
 
 
-def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def _step_update(
+    name: str,
+    status: str,
+    preview: Optional[str] = None,
+) -> Dict[str, Any]:
+    step: Dict[str, Any] = {
+        "name": name,
+        "status": status,
+        "displayName": _display_name_for(name),
+    }
+    if preview:
+        step["preview"] = preview
+    return step
+
+
+def _extract_checkpoint_optional_agent_names(args: Any) -> List[str]:
+    if not isinstance(args, dict):
+        return []
+    requested = args.get("checkpoint_optional_agents") or []
+    if not isinstance(requested, list):
+        return []
+    agent_names: List[str] = []
+    for key in requested:
+        if not isinstance(key, str):
+            continue
+        agent_name = _CHECKPOINT_OPTIONAL_AGENT_BY_KEY.get(key)
+        if agent_name:
+            agent_names.append(agent_name)
+    return agent_names
+
+
+def _checkpoint_optional_completed_steps(response_payload: Any) -> List[Dict[str, Any]]:
+    data: Optional[Dict[str, Any]] = None
+    if isinstance(response_payload, dict):
+        data = _coerce_result_to_dict(response_payload.get("result"))
+        if not data:
+            data = _coerce_result_to_dict(response_payload)
+    else:
+        data = _coerce_result_to_dict(response_payload)
+    if not data:
+        return []
+
+    root = _unwrap_analysis(data)
+    if not isinstance(root, dict):
+        return []
+
+    section_by_agent = {
+        "coverage_agent": "coverageResult",
+        "diy_agent": "diyResults",
+        "service_agent": "serviceResults",
+        "cost_agent": "costEstimationResults",
+    }
+    updates: List[Dict[str, Any]] = []
+    for agent_name, section_key in section_by_agent.items():
+        if section_key not in root:
+            continue
+        preview = _preview_for_response(agent_name, response_payload)
+        updates.append(_step_update(agent_name, "completed", preview=preview))
+    return updates
+
+
+def extract_agent_step_updates_from_event(event: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    Extract a single agent step update in the same shape used by mapp/webapp messages:
-    {"name": str, "status": "transferredto"|"executing"|"completed"|"failed",
-     "displayName": str, "preview": str | None}
+    Extract agent step updates in the same shape used by mapp/webapp messages.
+
+    A single checkpoint rollup event can synthesize multiple specialist rows
+    (coverage/diy/service/cost) because those sub-agents run behind AgentTool
+    and do not emit their own events to the parent Reasoning Engine stream.
     """
     parts = event.get("content", {}).get("parts", [])
     actions = event.get("actions", {})
@@ -436,11 +513,7 @@ def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, A
     transfer_target = actions.get("transfer_to_agent")
     if transfer_target:
         target = str(transfer_target)
-        return {
-            "name": target,
-            "status": "transferredto",
-            "displayName": _display_name_for(target),
-        }
+        return [_step_update(target, "transferredto")]
 
     for part in parts:
         if not isinstance(part, dict):
@@ -449,39 +522,41 @@ def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, A
         if isinstance(function_call, dict):
             tool_name = function_call.get("name")
             if tool_name and tool_name != "transfer_to_agent":
-                return {
-                    "name": str(tool_name),
-                    "status": "executing",
-                    "displayName": _display_name_for(str(tool_name)),
-                }
+                tool_name_str = str(tool_name)
+                updates = [_step_update(tool_name_str, "executing")]
+                if tool_name_str in _CHECKPOINT_ROLLUP_TOOLS:
+                    optional_agent_names = _extract_checkpoint_optional_agent_names(
+                        function_call.get("args")
+                    )
+                    updates.extend(
+                        _step_update(agent_name, "executing")
+                        for agent_name in optional_agent_names
+                    )
+                return updates
             if tool_name == "transfer_to_agent":
                 args = function_call.get("args", {})
                 target = args.get("agent_name") if isinstance(args, dict) else None
                 if target:
                     target_str = str(target)
-                    return {
-                        "name": target_str,
-                        "status": "transferredto",
-                        "displayName": _display_name_for(target_str),
-                    }
+                    return [_step_update(target_str, "transferredto")]
 
         function_response = part.get("function_response")
         if isinstance(function_response, dict):
             tool_name = function_response.get("name")
             if tool_name and tool_name != "transfer_to_agent":
                 tool_name_str = str(tool_name)
-                step: Dict[str, Any] = {
-                    "name": tool_name_str,
-                    "status": "completed",
-                    "displayName": _display_name_for(tool_name_str),
-                }
                 preview = _preview_for_response(
                     tool_name_str, function_response.get("response")
                 )
-                if preview:
-                    step["preview"] = preview
-                return step
-    return None
+                updates = [_step_update(tool_name_str, "completed", preview=preview)]
+                if tool_name_str in _CHECKPOINT_ROLLUP_TOOLS:
+                    updates.extend(
+                        _checkpoint_optional_completed_steps(
+                            function_response.get("response")
+                        )
+                    )
+                return updates
+    return []
 
 
 def extract_text_from_event(event: Dict[str, Any]) -> str:
@@ -816,6 +891,23 @@ async def stream_agent_answers(
             merged["displayName"] = previous["displayName"]
         agent_steps_by_name[name] = merged
 
+    def _complete_pending_checkpoint_specialists() -> None:
+        """When a checkpoint rollup tool completes, close out any synthetic
+        specialist rows that were created from checkpoint_optional_agents but
+        did not have their own section in the final analysis payload."""
+        for agent_name in _CHECKPOINT_OPTIONAL_AGENT_NAMES:
+            step = agent_steps_by_name.get(agent_name)
+            if not step or step.get("status") != "executing":
+                continue
+            _merge_step_update(
+                {
+                    "name": agent_name,
+                    "status": "completed",
+                    "displayName": step.get("displayName")
+                    or _display_name_for(agent_name),
+                }
+            )
+
     try:
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
@@ -824,11 +916,38 @@ async def stream_agent_answers(
             if event_text:
                 assistant_content_accumulated += event_text
 
-            step_update = extract_agent_step_from_event(event)
-            if step_update:
-                _merge_step_update(step_update)
+            step_updates = extract_agent_step_updates_from_event(event)
+            if step_updates:
+                for step_update in step_updates:
+                    _merge_step_update(step_update)
+                if any(
+                    step_update.get("name") in _CHECKPOINT_ROLLUP_TOOLS
+                    and step_update.get("status") == "completed"
+                    for step_update in step_updates
+                ):
+                    _complete_pending_checkpoint_specialists()
+                logger.info(
+                    "agentSteps update event=%s author=%s updates=%s",
+                    stream_event_count,
+                    event.get("author"),
+                    [
+                        {
+                            "name": step_update.get("name"),
+                            "status": step_update.get("status"),
+                            "preview": step_update.get("preview"),
+                        }
+                        for step_update in step_updates
+                    ],
+                )
+            elif event_text:
+                logger.info(
+                    "agent text event=%s author=%s chars=%s",
+                    stream_event_count,
+                    event.get("author"),
+                    len(event_text),
+                )
 
-            if event_text or step_update:
+            if event_text or step_updates:
                 persist_chat_message_state()
             accumulate_usage_from_stream_event(
                 usage_running, event, event_index=stream_event_count
@@ -883,7 +1002,7 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         responded_tools = []
         transfer_target_agent = None
 
-        logger.info(f"Extracting from event data: {event_data}")
+        logger.debug("Extracting from event data: %s", event_data)
 
         content_parts = event_data.get('content', {}).get('parts', [])
 
@@ -891,12 +1010,12 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         if content_parts:
             first_part = content_parts[0]
             if 'text' in first_part:
-                logger.info("Content contains direct text; returning None for tool/transfer extraction.")
+                logger.debug("Content contains direct text; returning None for tool/transfer extraction.")
                 return None
             elif 'function_response' in first_part:
                 response_result = first_part['function_response'].get('response', {}).get('result')
                 if response_result is None:
-                    logger.info("Function response result is None; returning None for this event.")
+                    logger.debug("Function response result is None; returning None for this event.")
                     return None
         # --- END NEW LOGIC ---
 
