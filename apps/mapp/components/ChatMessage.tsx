@@ -172,6 +172,44 @@ const normalizeUrl = (u?: string): string | undefined => {
   }
 };
 
+const PRODUCT_LINK_PLACEHOLDERS = new Set([
+  'n/a',
+  'na',
+  'none',
+  'null',
+  'not available',
+  '-',
+  'tbd',
+]);
+
+function isProductLinkPlaceholder(raw: string): boolean {
+  return PRODUCT_LINK_PLACEHOLDERS.has(raw.trim().toLowerCase());
+}
+
+/** Real http(s) product page only — ignores DIY placeholders like "N/A". */
+function resolveProductPageUrl(
+  storeUrl?: string | null,
+  legacyUrl?: string | null
+): string | undefined {
+  for (const candidate of [storeUrl, legacyUrl]) {
+    if (typeof candidate !== 'string') continue;
+    const trimmed = candidate.trim();
+    if (!trimmed || isProductLinkPlaceholder(trimmed)) continue;
+    const normalized = normalizeUrl(trimmed);
+    if (!normalized) continue;
+    try {
+      const u = new URL(normalized);
+      // "N/A" becomes https://n/A (host "n", path "/A") — treat as absent
+      if (u.hostname === 'n' && /^\/a\/?$/i.test(u.pathname)) continue;
+      if (isProductLinkPlaceholder(u.hostname)) continue;
+    } catch {
+      continue;
+    }
+    return normalized;
+  }
+  return undefined;
+}
+
 const hasStructuredDataKeys = (parsed: any): boolean => {
   if (!parsed || typeof parsed !== 'object') return false;
   // Check for nested structure (analysis.*)
@@ -234,17 +272,24 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
+  const itemName =
+    product.item_name || product.product_name || product.description || 'Product';
+  const productPageUrl = useMemo(
+    () => resolveProductPageUrl(product.store_url, product.url),
+    [product.store_url, product.url]
+  );
+
   const handleViewProduct = useCallback(() => {
-    if (product.url) {
-      Linking.openURL(product.url);
+    if (productPageUrl) {
+      Linking.openURL(productPageUrl);
     }
-  }, [product.url]);
+  }, [productPageUrl]);
 
   return (
     <View className="mb-3 w-full rounded-lg border border-border bg-background p-3">
       <View className="mb-2">
         <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
-          {product.product_name || product.description || 'Product'}
+          {itemName}
         </Text>
         {product.vendor && (
           <Text className="mt-1 text-xs text-muted-foreground">{product.vendor}</Text>
@@ -306,7 +351,7 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
         )}
       </View>
 
-      {product.url && (
+      {productPageUrl && (
         <Button onPress={handleViewProduct} variant="outline" className="w-full">
           <Text>View Product</Text>
         </Button>

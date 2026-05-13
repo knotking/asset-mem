@@ -94,6 +94,8 @@ export type ServiceProvider = {
 };
 
 export type Product = {
+  /** DIY agent and shopping payloads use this as the primary label */
+  item_name?: string | null;
   // legacy fields (kept for backward compatibility)
   product_name?: string;
   item_price?: string | null;
@@ -102,6 +104,8 @@ export type Product = {
   reviews?: string | null;
   // new structured fields
   vendor?: string | null;
+  /** Canonical product page when present (shopping agent) */
+  store_url?: string | null;
   url?: string | null;
   description?: string | null;
   price?: string | null;
