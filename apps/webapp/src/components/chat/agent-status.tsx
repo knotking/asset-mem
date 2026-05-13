@@ -9,7 +9,7 @@ import {
   prettifyAgentName,
   pickActiveAgentStep,
   formatAgentStepDuration,
-} from '@homeapp/common/lib/agent-display';
+} from '@/lib/agent-display';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 
 type Props = {
