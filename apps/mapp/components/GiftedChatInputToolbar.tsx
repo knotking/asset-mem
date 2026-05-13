@@ -23,8 +23,6 @@ import {
   Images,
   Video,
   FileText,
-  Stethoscope,
-  Clock,
 } from 'lucide-react-native';
 import type {
   FileAttachment,
@@ -33,7 +31,6 @@ import type {
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
-import { suggestPrimaryAgent } from '@/lib/query-suggestions';
 import { CompactSettingsBar } from './CompactSettingsBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 
@@ -92,8 +89,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   const [showMenu, setShowMenu] = React.useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = React.useState(false);
   const [settingsModalTab, setSettingsModalTab] = React.useState<'agent' | 'location'>('agent');
-  const [suggestedAgent, setSuggestedAgent] = React.useState<PrimaryAgent | null>(null);
-  const [currentText, setCurrentText] = React.useState<string>('');
   const slideAnim = React.useRef(new Animated.Value(500)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -156,26 +151,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     setTimeout(action, 100);
   }, []);
 
-  // Query-based agent suggestion with debouncing
-  React.useEffect(() => {
-    if (!currentText.trim()) {
-      setSuggestedAgent(null);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      const suggestion = suggestPrimaryAgent(currentText, primaryAgent);
-      setSuggestedAgent(suggestion);
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [currentText, primaryAgent]);
-
-  // Clear suggestion when agent changes manually
-  React.useEffect(() => {
-    setSuggestedAgent(null);
-  }, [primaryAgent]);
-
   const handleOpenSettings = React.useCallback(() => {
     setSettingsModalTab('agent');
     setSettingsModalVisible(true);
@@ -220,11 +195,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
               textAlignVertical: 'center',
             }}
             textInputProps={{
+              ...composerProps.textInputProps,
               maxLength: MAX_MESSAGE_LENGTH,
-              onChangeText: (text: string) => {
-                setCurrentText(text);
-                composerProps.onTextChanged?.(text);
-              },
             }}
             textInputAutoFocus={false}
             placeholder="Type a message..."
@@ -263,10 +235,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           // Create message with text (empty string if no text)
           const messageText = sendProps.text || '';
           sendProps.onSend([{ text: messageText }], true);
-
-          // Clear suggestion and text state after sending
-          setCurrentText('');
-          setSuggestedAgent(null);
 
           // Delay keyboard dismissal to ensure send completes first
           requestAnimationFrame(() => {
@@ -319,44 +287,6 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
   return (
     <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
-      {/* Agent Suggestion Banner */}
-      {suggestedAgent && suggestedAgent !== primaryAgent && (
-        <View className="mb-2 flex-row items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
-          <View className="flex-row items-center gap-2 flex-1">
-            <Icon
-              as={suggestedAgent === 'checkpoint' ? Clock : Stethoscope}
-              size={14}
-              className="text-primary"
-            />
-            <Text className="flex-1 text-xs text-foreground">
-              Your query suggests using the{' '}
-              <Text className="font-semibold">
-                {suggestedAgent === 'checkpoint' ? 'Checkpoint' : 'Analysis'} Agent
-              </Text>
-            </Text>
-          </View>
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={() => {
-                setSuggestedAgent(null);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              className="px-2 py-1">
-              <Text className="text-xs text-muted-foreground">Dismiss</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                onPrimaryAgentChange(suggestedAgent);
-                setSuggestedAgent(null);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
-              className="rounded-md bg-primary px-3 py-1">
-              <Text className="text-xs font-semibold text-primary-foreground">Switch</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-      
       {/* File Attachment Preview */}
       {fileAttachment && (
         <View className="mb-3">
