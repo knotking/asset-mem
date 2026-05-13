@@ -1,13 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Animated } from 'react-native';
 import { Icon } from '@/components/ui/icon';
-import { Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import type { AgentStep } from '@homeapp/common/types';
-import {
-  prettifyAgentName,
-  pickActiveAgentStep,
-  formatAgentStepDuration,
-} from '@homeapp/common/lib/agent-display';
+import { prettifyAgentName, pickActiveAgentStep } from '@homeapp/common/lib/agent-display';
 import { Text } from '@/components/ui/text';
 
 type Props = {
@@ -41,141 +37,76 @@ function SparkleAnimation() {
   );
 }
 
+/** One line with a soft shimmer (avoids multi-line breaks from per-chunk layout). */
 function AnimatedThinkingText({ text }: { text: string }) {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(shimmerAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      })
-    ).start();
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
   }, [shimmerAnim]);
 
-  const opacity1 = shimmerAnim.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [0.5, 1, 0.5, 0.3, 0.5],
+  const opacity = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.55, 1],
   });
 
-  const opacity2 = shimmerAnim.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [0.3, 0.5, 1, 0.5, 0.3],
-  });
+  const display = text?.trim() || ' ';
 
-  const opacity3 = shimmerAnim.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [0.5, 0.3, 0.5, 1, 0.5],
-  });
-
-  const safeText = text || ' ';
-  const third = Math.max(1, Math.ceil(safeText.length / 3));
   return (
-    <View className="flex-row flex-shrink min-w-0">
-      <Animated.Text style={{ opacity: opacity1 }} className="font-medium text-primary">
-        {safeText.slice(0, third)}
-      </Animated.Text>
-      <Animated.Text style={{ opacity: opacity2 }} className="font-medium text-primary">
-        {safeText.slice(third, third * 2)}
-      </Animated.Text>
-      <Animated.Text style={{ opacity: opacity3 }} className="font-medium text-primary">
-        {safeText.slice(third * 2)}
-      </Animated.Text>
-    </View>
+    <Animated.Text
+      numberOfLines={1}
+      ellipsizeMode="tail"
+      style={{ minWidth: 0, flexShrink: 1, opacity }}
+      className="text-sm font-medium text-primary">
+      {display}
+    </Animated.Text>
   );
-}
-
-function StepStatusIcon({ status }: { status: AgentStep['status'] }) {
-  if (status === 'completed') {
-    return <Icon as={CheckCircle} size={14} className="text-success" />;
-  }
-  if (status === 'failed') {
-    return <Icon as={AlertCircle} size={14} className="text-destructive" />;
-  }
-  if (status === 'transferredto') {
-    return <Icon as={Sparkles} size={14} className="text-primary" />;
-  }
-  return <Icon as={Loader2} size={14} className="text-primary" />;
 }
 
 function stepLabel(step: AgentStep): string {
   return step.displayName ?? prettifyAgentName(step.name);
 }
 
-/** Re-render once a second while an active step is running so durations tick. */
-function useTick(active: boolean): void {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    const id = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [active]);
-}
-
 export function AgentStatus({ steps }: Props) {
   const activeStep = pickActiveAgentStep(steps);
-  useTick(!!activeStep);
 
   if (!steps || steps.length === 0) return null;
 
-  const listSteps = steps.filter((step) => step.status !== 'transferredto');
   const headerText = activeStep ? stepLabel(activeStep) : 'Thinking...';
   const headerPreview = activeStep?.preview;
 
   return (
-    <View
-      className="w-full rounded-xl border border-border bg-background p-4 shadow-sm"
-      style={{ minWidth: 180 }}>
-      <View className="flex-row items-start gap-2">
-        <View className="mt-0.5">
-          <SparkleAnimation />
-        </View>
-        <View className="flex-1 min-w-0">
-          <AnimatedThinkingText text={headerText} />
-          {headerPreview ? (
-            <Text className="text-xs text-muted-foreground" numberOfLines={2}>
-              {headerPreview}
-            </Text>
-          ) : null}
-        </View>
+    <View className="self-start max-w-full flex-row items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 shadow-sm">
+      <View className="shrink-0">
+        <SparkleAnimation />
       </View>
-
-      {listSteps.length > 0 ? (
-        <View className="mt-3 gap-2">
-          {listSteps.map((step) => {
-            const duration = formatAgentStepDuration(step);
-            return (
-              <View key={step.name} className="flex-row items-start justify-between gap-2">
-                <View className="flex-row items-start gap-2 flex-1 min-w-0">
-                  <View className="mt-0.5">
-                    <StepStatusIcon status={step.status} />
-                  </View>
-                  <View className="flex-1 min-w-0">
-                    <Text className="text-sm text-foreground" numberOfLines={1}>
-                      {stepLabel(step)}
-                    </Text>
-                    {step.preview ? (
-                      <Text className="text-xs text-muted-foreground" numberOfLines={2}>
-                        {step.preview}
-                      </Text>
-                    ) : step.detail ? (
-                      <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                        {step.detail}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-                {duration ? (
-                  <Text className="text-xs text-muted-foreground tabular-nums">
-                    {duration}
-                  </Text>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
+      <View className="min-w-0 flex-shrink flex-row items-center gap-1">
+        <AnimatedThinkingText text={headerText} />
+        {headerPreview ? (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            className="min-w-0 flex-shrink text-xs text-muted-foreground">
+            {' · '}
+            {headerPreview}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
