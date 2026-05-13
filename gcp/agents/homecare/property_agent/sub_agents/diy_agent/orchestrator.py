@@ -142,6 +142,32 @@ def _products_for_diagnosis(diagnosis: str) -> str:
     return product_recommendations(q, "DIY")
 
 
+def _product_recommendations_log_summary(products_json: str) -> str:
+    """Compact summary for INFO logs (counts only; no item text)."""
+    if not (products_json or "").strip():
+        return "products=0 empty_json"
+    try:
+        blob = json.loads(products_json)
+    except json.JSONDecodeError:
+        return "products=0 json_decode_error"
+    if not isinstance(blob, dict):
+        return "products=0 not_object"
+    rp = blob.get("recommendedProducts")
+    if not isinstance(rp, dict):
+        return "products=0 no_recommendedProducts"
+    if rp.get("message"):
+        return "products=0 unavailable"
+    if rp.get("error"):
+        return "products=0 upstream_error"
+    diy = rp.get("DIY")
+    if not isinstance(diy, dict):
+        return "products=0 no_diy_block"
+    raw_list = diy.get("products")
+    if not isinstance(raw_list, list):
+        return "products=0 bad_products_list"
+    return f"products={len(raw_list)}"
+
+
 def _cost_query(diagnosis: str, property_address: str) -> str:
     parts = [f"{diagnosis.strip()[:2000]} DIY cost estimate"]
     if property_address.strip():
@@ -362,15 +388,21 @@ def run_diy_pipeline_sync(
     cost_raw = ""
 
     future_map: Dict[Future[Any], str] = {}
+    submit_at: Dict[Future[Any], float] = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
-        future_map[pool.submit(_diy_web_search_grounded, diagnosis, addr)] = "web"
-        future_map[pool.submit(_youtube_for_diagnosis, diagnosis)] = "youtube"
-        future_map[pool.submit(_products_for_diagnosis, diagnosis)] = "products"
-        future_map[pool.submit(cost_estimation_diy_from_library, cost_q)] = "cost"
+        def submit_phase(phase: str, fn, *args: Any) -> None:
+            fut = pool.submit(fn, *args)
+            future_map[fut] = phase
+            submit_at[fut] = time.monotonic()
+
+        submit_phase("web", _diy_web_search_grounded, diagnosis, addr)
+        submit_phase("youtube", _youtube_for_diagnosis, diagnosis)
+        submit_phase("products", _products_for_diagnosis, diagnosis)
+        submit_phase("cost", cost_estimation_diy_from_library, cost_q)
 
         for fut in as_completed(future_map):
             name = future_map[fut]
-            ph0 = time.monotonic()
+            t_submit = submit_at[fut]
             try:
                 result = fut.result()
             except Exception as exc:
@@ -381,11 +413,27 @@ def run_diy_pipeline_sync(
                     exc,
                 )
                 continue
-            logger.info(
-                "DIY orchestrator phase=%s duration_ms=%d",
-                name,
-                int((time.monotonic() - ph0) * 1000),
-            )
+            dur_ms = int((time.monotonic() - t_submit) * 1000)
+            if name == "youtube":
+                vcount = len(result) if isinstance(result, list) else 0
+                logger.info(
+                    "DIY orchestrator phase=youtube duration_ms=%d videos=%d",
+                    dur_ms,
+                    vcount,
+                )
+            elif name == "products":
+                pj = result if isinstance(result, str) else ""
+                logger.info(
+                    "DIY orchestrator phase=products duration_ms=%d %s",
+                    dur_ms,
+                    _product_recommendations_log_summary(pj),
+                )
+            else:
+                logger.info(
+                    "DIY orchestrator phase=%s duration_ms=%d",
+                    name,
+                    dur_ms,
+                )
             if name == "web" and isinstance(result, str):
                 web_text = result
             elif name == "youtube" and isinstance(result, list):

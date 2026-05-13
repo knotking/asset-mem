@@ -95,7 +95,7 @@ def main():
     # Production dependencies are sourced from pyproject.toml so deploy-time
     # pins always match what's resolved into uv.lock locally.
     common_requirements = _load_agent_engine_requirements()
-    common_env_vars = [
+    required_env_vars = [
         "GOOGLE_CLOUD_BUCKET",
         "USER_UPLOAD_FOLDER",
         "USER_UPLOAD_RAG_CORPUS",
@@ -103,11 +103,15 @@ def main():
         "USER_UPLOAD_TOPIC",
         "SERP_API_KEY",
     ]
+    optional_env_vars = ["YOUTUBE_API_KEY"]
+    common_env_vars = required_env_vars + [
+        name for name in optional_env_vars if os.getenv(name)
+    ]
     display_name = f"HomecareAgent-{environment}"
     extra_packages = ["./property_agent"]
 
     # Validate environment variables
-    missing_env_vars = [var for var in common_env_vars if not os.getenv(var)]
+    missing_env_vars = [var for var in required_env_vars if not os.getenv(var)]
     if missing_env_vars:
         logger.error(f"Missing required environment variables: {missing_env_vars}")
         raise ValueError(f"Missing required environment variables: {missing_env_vars}")

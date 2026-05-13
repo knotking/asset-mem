@@ -41,7 +41,7 @@ install: ## Install UV and dependencies
 		curl -LsSf https://astral.sh/uv/install.sh | sh; \
 	fi
 	$(call print_info,Syncing dependencies with UV...)
-	uv sync
+	uv sync --extra dev
 	$(call print_success,Dependencies installed successfully)
 
 setup: install ## Setup the project (install dependencies and create .env)

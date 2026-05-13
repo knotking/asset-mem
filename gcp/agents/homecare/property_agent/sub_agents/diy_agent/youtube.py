@@ -3,38 +3,154 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict, List
 
-from youtube_search import YoutubeSearch
+import requests
+from youtubesearchpython import VideosSearch
 
 logger = logging.getLogger(__name__)
+
+_YOUTUBE_DATA_API_SEARCH = "https://www.googleapis.com/youtube/v3/search"
+_REQUEST_TIMEOUT_S = 15
+
+
+def _snippet_to_text(snippet: object) -> str:
+    if not snippet:
+        return ""
+    if isinstance(snippet, str):
+        return snippet
+    if isinstance(snippet, list):
+        parts: List[str] = []
+        for seg in snippet:
+            if isinstance(seg, dict) and "text" in seg:
+                parts.append(str(seg.get("text", "")))
+            elif isinstance(seg, str):
+                parts.append(seg)
+        return "".join(parts)
+    return ""
+
+
+def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List[Dict[str, Any]]:
+    """Official YouTube Data API v3 search (reliable from GCP; requires API key + quota)."""
+    try:
+        resp = requests.get(
+            _YOUTUBE_DATA_API_SEARCH,
+            params={
+                "part": "snippet",
+                "type": "video",
+                "maxResults": max_results,
+                "q": query,
+                "key": api_key,
+            },
+            timeout=_REQUEST_TIMEOUT_S,
+        )
+    except requests.RequestException:
+        logger.exception("YouTube Data API request failed for query: %s", query)
+        return []
+
+    if not resp.ok:
+        logger.warning(
+            "YouTube Data API HTTP %s for query=%r body=%s",
+            resp.status_code,
+            query,
+            (resp.text or "")[:500],
+        )
+        return []
+
+    try:
+        body = resp.json()
+    except ValueError:
+        logger.warning("YouTube Data API returned non-JSON for query=%r", query)
+        return []
+
+    if isinstance(body, dict) and body.get("error"):
+        logger.warning("YouTube Data API error payload for query=%r: %s", query, body.get("error"))
+        return []
+
+    items = body.get("items") if isinstance(body, dict) else None
+    if not isinstance(items, list):
+        return []
+
+    normalized: List[Dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        vid = item.get("id")
+        if not isinstance(vid, dict) or vid.get("kind") != "youtube#video":
+            continue
+        video_id = vid.get("videoId")
+        if not isinstance(video_id, str) or not video_id.strip():
+            continue
+        snip = item.get("snippet")
+        if not isinstance(snip, dict):
+            snip = {}
+        title = (snip.get("title") or "") or ""
+        description = (snip.get("description") or "") or ""
+        channel_title = (snip.get("channelTitle") or "") or ""
+        if not description and channel_title:
+            description = channel_title
+        normalized.append(
+            {
+                "title": title,
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "description": description,
+                "duration": "",
+            }
+        )
+    return normalized
+
+
+def _youtube_search_innertube(query: str, max_results: int) -> List[Dict[str, Any]]:
+    """Legacy path via yt-search-python / InnerTube (often 403 from cloud IPs)."""
+    try:
+        payload = VideosSearch(query, limit=max_results).result()
+    except Exception:
+        logger.exception("YouTube InnerTube search failed for query: %s", query)
+        return []
+
+    raw_list = payload.get("result") if isinstance(payload, dict) else None
+    if not isinstance(raw_list, list):
+        return []
+
+    normalized_results: List[Dict[str, Any]] = []
+    for item in raw_list:
+        if not isinstance(item, dict) or item.get("type") != "video":
+            continue
+        title = item.get("title", "") or ""
+        url = item.get("link", "") or ""
+        description = _snippet_to_text(item.get("descriptionSnippet"))
+        channel = item.get("channel")
+        if not description and isinstance(channel, dict):
+            description = channel.get("name", "") or ""
+        normalized_results.append(
+            {
+                "title": title,
+                "url": url,
+                "description": description,
+                "duration": item.get("duration", "") or "",
+            }
+        )
+    return normalized_results
 
 
 def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """
     Searches YouTube videos using plain text query input.
-    Avoids the fragile comma-delimited parsing behavior of LangChain's YouTubeSearchTool.
+
+    When ``YOUTUBE_API_KEY`` is set, uses YouTube Data API v3 (recommended for
+    Vertex / server environments). Otherwise falls back to InnerTube via
+    ``yt-search-python``, which is often blocked with HTTP 403 from datacenter IPs.
     """
     if not query or not query.strip():
         return []
 
     safe_max_results = max(1, min(int(max_results), 10))
+    q = query.strip()
 
-    try:
-        results = YoutubeSearch(query.strip(), max_results=safe_max_results).to_dict()
-    except Exception:
-        logger.exception("YouTube search failed for query: %s", query)
-        return []
+    api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip()
+    if api_key:
+        return _youtube_search_data_api(q, safe_max_results, api_key)
 
-    normalized_results: List[Dict[str, Any]] = []
-    for item in results:
-        url_suffix = item.get("url_suffix", "") or ""
-        normalized_results.append(
-            {
-                "title": item.get("title", ""),
-                "url": f"https://www.youtube.com{url_suffix}" if url_suffix else "",
-                "description": item.get("long_desc", "") or item.get("channel", ""),
-                "duration": item.get("duration", ""),
-            }
-        )
-    return normalized_results
+    logger.debug("YOUTUBE_API_KEY unset; using InnerTube fallback for YouTube search")
+    return _youtube_search_innertube(q, safe_max_results)

@@ -156,6 +156,9 @@ jobs:
           echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ vars.KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
           echo "SERP_API_KEY=${{ secrets.SERP_API_KEY }}" >> $GITHUB_ENV
+          if [ -n "${{ secrets.YOUTUBE_API_KEY }}" ]; then
+            echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> $GITHUB_ENV
+          fi
 
       - name: Verify secrets are set
         run: |
