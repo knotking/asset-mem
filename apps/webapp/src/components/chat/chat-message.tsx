@@ -212,12 +212,56 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     </Card>
 )};
 
+const PRODUCT_LINK_PLACEHOLDERS = new Set([
+    'n/a',
+    'na',
+    'none',
+    'null',
+    'not available',
+    '-',
+    'tbd',
+]);
+
+function isProductLinkPlaceholder(raw: string): boolean {
+    return PRODUCT_LINK_PLACEHOLDERS.has(raw.trim().toLowerCase());
+}
+
+/** Real http(s) product page only — ignores DIY placeholders like "N/A". */
+function resolveProductPageUrl(
+    storeUrl?: string | null,
+    legacyUrl?: string | null
+): string | undefined {
+    const tryNormalize = (trimmed: string): string | undefined => {
+        const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+        try {
+            return new URL(withProto).toString();
+        } catch {
+            return undefined;
+        }
+    };
+    for (const candidate of [storeUrl, legacyUrl]) {
+        if (typeof candidate !== 'string') continue;
+        const trimmed = candidate.trim();
+        if (!trimmed || isProductLinkPlaceholder(trimmed)) continue;
+        const normalized = tryNormalize(trimmed);
+        if (!normalized) continue;
+        try {
+            const u = new URL(normalized);
+            if (u.hostname === 'n' && /^\/a\/?$/i.test(u.pathname)) continue;
+            if (isProductLinkPlaceholder(u.hostname)) continue;
+        } catch {
+            continue;
+        }
+        return normalized;
+    }
+    return undefined;
+}
+
 const ProductCard = ({ product }: { product: Product }) => {
     // Use new fields first, fallback to legacy fields
     const itemName = product.item_name || product.product_name || product.description || 'Product';
     const imageSrc = product.image_url || null;
-    // store_url is the primary field, url is legacy fallback
-    const productUrl = product.store_url || product.url || null;
+    const productUrl = resolveProductPageUrl(product.store_url, product.url);
     
     return (
         <Card className="flex flex-col h-full w-full">
@@ -265,14 +309,14 @@ const ProductCard = ({ product }: { product: Product }) => {
             </div>
         </CardContent>
         <CardFooter className="flex gap-2 mt-auto pt-4">
-            {productUrl && (
+            {productUrl ? (
                 <Button variant="outline" size="sm" asChild>
                     <a href={productUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View Product
                     </a>
                 </Button>
-            )}
+            ) : null}
         </CardFooter>
     </Card>
     );
