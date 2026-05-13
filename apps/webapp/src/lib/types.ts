@@ -2,8 +2,19 @@ import "regenerator-runtime/runtime";
 import type { Timestamp } from "firebase/firestore";
 
 export type AgentStep = {
+  /** Raw tool/agent name as emitted by ADK (kept as the unique key). */
   name: string;
   status: "transferredto" | "executing" | "completed" | "failed";
+  /** Human-friendly label, e.g. "Finding local pros". */
+  displayName?: string;
+  /** One-line summary of what the step actually produced. */
+  preview?: string;
+  /** Optional secondary line. */
+  detail?: string;
+  /** Epoch ms when the step first appeared. */
+  startedAt?: number;
+  /** Epoch ms when the step transitioned to completed/failed. */
+  completedAt?: number;
 };
 
 export const ANALYSIS_OPTIONAL_AGENTS = [

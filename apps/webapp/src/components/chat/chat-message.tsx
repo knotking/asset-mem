@@ -9,6 +9,10 @@ import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, F
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback } from "react";
+import {
+  prettifyAgentName,
+  pickActiveAgentStep,
+} from "@homeapp/common/lib/agent-display";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -1296,6 +1300,11 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
       (s) => s.status === 'executing' || s.status === 'transferredto'
     ) ?? false;
   const showThinkingStrip = !isUser && !hasAssistantResponse && hasInFlightAgentStep;
+  const activeStep = showThinkingStrip ? pickActiveAgentStep(message.agentSteps) : null;
+  const thinkingHeader = activeStep
+    ? activeStep.displayName ?? prettifyAgentName(activeStep.name)
+    : 'Thinking...';
+  const thinkingPreview = activeStep?.preview;
   /** Dots when the list marks this bubble as the in-flight reply; agentSteps must not hide this (e.g. only completed steps while waiting for text). */
   const showLoadingIndicator =
     isLoading && !isUser && !hasAssistantResponse && !showThinkingStrip;
@@ -1733,11 +1742,18 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                 </Button>
             )}
             {showThinkingStrip ? (
-              <div className="flex items-center gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm">
-                <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary" />
-                <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
-                  Thinking...
-                </span>
+              <div className="flex items-start gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm">
+                <Sparkles className="h-4 w-4 mt-0.5 shrink-0 animate-pulse text-primary" />
+                <div className="flex flex-col min-w-0">
+                  <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
+                    {thinkingHeader}
+                  </span>
+                  {thinkingPreview && (
+                    <span className="text-xs text-muted-foreground">
+                      {thinkingPreview}
+                    </span>
+                  )}
+                </div>
               </div>
             ) : showLoadingIndicator ? (
                <div className="flex items-center justify-start p-2">

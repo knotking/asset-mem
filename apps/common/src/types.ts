@@ -12,8 +12,19 @@ export const PROPERTY_TYPES = [
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export type AgentStep = {
+  /** Raw tool/agent name as emitted by ADK (kept as the unique key). */
   name: string;
   status: "transferredto" | "executing" | "completed" | "failed";
+  /** Human-friendly label, e.g. "Finding local pros". */
+  displayName?: string;
+  /** One-line summary of what the step actually produced, e.g. "Found 8 plumbers in 5-mile radius". */
+  preview?: string;
+  /** Optional secondary line, e.g. "Yelp + SerpAPI". */
+  detail?: string;
+  /** Epoch ms when the step first appeared. */
+  startedAt?: number;
+  /** Epoch ms when the step transitioned to completed/failed. */
+  completedAt?: number;
 };
 
 export const ANALYSIS_OPTIONAL_AGENTS = [

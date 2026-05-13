@@ -1,5 +1,8 @@
 import os
 import logging
+import random
+import re
+import time
 import vertexai
 from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
@@ -19,21 +22,68 @@ from common.token import TokenQuotaExceeded, check_token_quota_or_raise
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Agents that act as routers/orchestrators rather than producing user-visible
+# content directly. We pick a random label from _COORDINATING_VARIANTS each time
+# one of these surfaces, so back-to-back hand-offs don't read as identical
+# "Coordinating … Coordinating" rows. The merge logic in stream_agent_answers
+# keeps the chosen variant stable across status transitions for a given step.
+_COORDINATING_AGENTS = {
+    "property_agent",
+    "doculink_agent",
+}
+
+_COORDINATING_VARIANTS = [
+    "Coordinating",
+    "Orchestrating",
+    "Lining up the experts",
+    "Planning the work",
+    "Mapping the work",
+    "Strategizing",
+    "Game-planning",
+    "Picking the right specialist",
+    "Sizing things up",
+    "Warming up",
+]
+
 _DISPLAY_NAME_MAP = {
-    "property_agent": "Property Agent",
-    "doculink_agent": "Doculink Agent",
-    "diagnostic_agent": "Diagnostic Agent",
+    "diagnostic_agent": "Diagnosing",
     "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
     "ask_user_docs_agent": "Scanning your documents",
-    "transfer_to_agent": "Transfer to Agent",
+    "transfer_to_agent": "Handing off",
     "ask_knowledge_base_retrieval": "Accessing HomeGeekAI catalog",
     "ask_user_docs_retrieval": "Accessing your documents",
-    "analyse_multimodal_data": "Analyzing Multimodal Data",
-    "research_agent": "Researching Solutions",
-    "service_provider_agent": "Service Provider Agent",
-    "product_recommendations_agent": "Product Recommendations Agent",
-    "cost_estimation_agent": "Cost Estimation Agent"
+    "analyse_multimodal_data": "Analyzing media",
+    "research_agent": "Researching solutions",
+    "service_provider_agent": "Finding local pros",
+    "service_agent": "Finding local pros",
+    "product_recommendations_agent": "Finding recommended products",
+    "shopping_agent": "Finding recommended products",
+    "cost_estimation_agent": "Estimating costs",
+    "cost_agent": "Estimating costs",
+    "coverage_agent": "Checking warranty & insurance",
+    "diy_agent": "Compiling DIY steps",
+    "checkpoint_agent": "Reviewing checkpoints",
+    "checkpoint_analysis_agent": "Analyzing checkpoints",
+    "checkpoint_analysis_synthesis_agent": "Putting it all together",
+    "checkpoint_optional_agents_parallel_runner": "Running analysis in parallel",
 }
+
+def _display_name_for(name: str) -> str:
+    """Resolve a friendly label for an agent/tool name.
+
+    Orchestrator agents (see _COORDINATING_AGENTS) draw from a small pool of
+    synonyms so repeated hand-offs don't show the same word back-to-back. The
+    stream_agent_answers merge helper locks the variant in once per step so the
+    chosen word stays stable across status transitions.
+    """
+    if not name:
+        return ""
+    if name in _COORDINATING_AGENTS:
+        return random.choice(_COORDINATING_VARIANTS)
+    mapped = _DISPLAY_NAME_MAP.get(name)
+    if mapped:
+        return mapped
+    return " ".join(part.capitalize() for part in name.split("_") if part)
 
 # --- Environment Variables ---
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -135,17 +185,262 @@ def get_chat_id_from_session_by_agent_id(user_id: str, agent_session_id: str) ->
         return None
 
 
-def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, str]]:
+_JSON_FENCE_RE = re.compile(
+    r"```(?:json)?\s*(\{.*?\})\s*```",
+    flags=re.DOTALL | re.IGNORECASE,
+)
+
+
+def _coerce_result_to_dict(result: Any) -> Optional[Dict[str, Any]]:
+    """Best-effort decode of a function_response.result payload to a dict.
+
+    Sub-agents in this repo return data in three shapes that we need to
+    tolerate:
+      1. A plain dict (e.g. when ADK returned a structured result).
+      2. A JSON string.
+      3. A Markdown-wrapped string with one or more ```json fences
+         (e.g. checkpoint_analysis_agent emits dual-format output).
+    """
+    if isinstance(result, dict):
+        return result
+    if not isinstance(result, str):
+        return None
+    s = result.strip()
+    if not s:
+        return None
+
+    # 1. Try parsing the whole string as JSON.
+    try:
+        decoded = json.loads(s)
+        if isinstance(decoded, dict):
+            return decoded
+    except Exception:
+        pass
+
+    # 2. Look for a fenced ```json { ... } ``` block anywhere in the string.
+    match = _JSON_FENCE_RE.search(s)
+    if match:
+        try:
+            decoded = json.loads(match.group(1))
+            if isinstance(decoded, dict):
+                return decoded
+        except Exception:
+            pass
+
+    # 3. Last resort: take the first balanced { ... } substring.
+    first = s.find("{")
+    last = s.rfind("}")
+    if 0 <= first < last:
+        try:
+            decoded = json.loads(s[first : last + 1])
+            if isinstance(decoded, dict):
+                return decoded
+        except Exception:
+            pass
+
+    return None
+
+
+def _unwrap_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Many of our sub-agents nest payloads under an "analysis" key; this
+    helper returns that inner object when present so the per-section formatters
+    don't have to special-case it."""
+    if isinstance(data, dict):
+        inner = data.get("analysis")
+        if isinstance(inner, dict):
+            return inner
+    return data
+
+
+def _truncate(text: str, max_len: int = 80) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1].rstrip() + "…"
+
+
+def _coverage_preview(data: Dict[str, Any]) -> Optional[str]:
+    root = _unwrap_analysis(data)
+    coverage = (root.get("coverageResult") if isinstance(root, dict) else None) or root
+    if not isinstance(coverage, dict):
+        return None
+    has_warranty = bool((coverage.get("warrantyInfo") or "").strip()) if isinstance(coverage.get("warrantyInfo"), str) else bool(coverage.get("warrantyInfo"))
+    has_insurance = bool((coverage.get("insuranceInfo") or "").strip()) if isinstance(coverage.get("insuranceInfo"), str) else bool(coverage.get("insuranceInfo"))
+    if has_warranty and has_insurance:
+        return "Found warranty + insurance terms"
+    if has_warranty:
+        return "Found warranty terms"
+    if has_insurance:
+        return "Found insurance terms"
+    return None
+
+
+def _diy_preview(data: Dict[str, Any]) -> Optional[str]:
+    # DIY agent may return {"hire_professional_recommended": ..., "diyResults": {...}}
+    root = _unwrap_analysis(data)
+    diy = (root.get("diyResults") if isinstance(root, dict) else None) or root
+    if not isinstance(diy, dict):
+        return None
+    steps = (((diy.get("diySteps") or {}).get("steps")) or [])
+    videos = (((diy.get("youtubeSearch") or {}).get("videos")) or [])
+    products = (((diy.get("recommendedProducts") or {}).get("products")) or [])
+    parts: List[str] = []
+    if isinstance(steps, list) and len(steps) > 0:
+        parts.append(f"{len(steps)} DIY step{'s' if len(steps) != 1 else ''}")
+    if isinstance(videos, list) and len(videos) > 0:
+        parts.append(f"{len(videos)} tutorial{'s' if len(videos) != 1 else ''}")
+    if isinstance(products, list) and len(products) > 0:
+        parts.append(f"{len(products)} product{'s' if len(products) != 1 else ''}")
+    if data.get("hire_professional_recommended") or diy.get("hireProfessionalRecommended"):
+        parts.append("pro recommended")
+    return _truncate(" · ".join(parts)) if parts else None
+
+
+def _service_preview(data: Dict[str, Any]) -> Optional[str]:
+    root = _unwrap_analysis(data)
+    service = (root.get("serviceResults") if isinstance(root, dict) else None) or root
+    local_pros = (service.get("localPros") if isinstance(service, dict) else None) or {}
+    total = 0
+    # serpAPIResults / yelpAPIResults are real provider lists.
+    # googleSearchResults are usually generic web links — count them only as a fallback.
+    for key in ("serpAPIResults", "yelpAPIResults"):
+        bucket = local_pros.get(key) if isinstance(local_pros, dict) else None
+        if isinstance(bucket, list):
+            total += len(bucket)
+    if total == 0 and isinstance(local_pros, dict):
+        bucket = local_pros.get("googleSearchResults")
+        if isinstance(bucket, list):
+            total += len(bucket)
+    if total == 0 and isinstance(service, dict):
+        for fallback in ("providers", "localProviders", "nearbyProviders", "results"):
+            bucket = service.get(fallback)
+            if isinstance(bucket, list):
+                total += len(bucket)
+    if total <= 0:
+        return None
+    return f"Found {total} local pro{'s' if total != 1 else ''}"
+
+
+def _cost_preview(data: Dict[str, Any]) -> Optional[str]:
+    root = _unwrap_analysis(data)
+    cost = (root.get("costEstimationResults") if isinstance(root, dict) else None) or root
+    if isinstance(cost, dict):
+        estimates = cost.get("costEstimates") or cost
+    else:
+        estimates = None
+    if not isinstance(estimates, dict):
+        return None
+    diy_range = ((estimates.get("DIY") or {}).get("cost_range"))
+    pro_range = ((estimates.get("Service") or {}).get("cost_range"))
+    pieces: List[str] = []
+    if isinstance(diy_range, str) and diy_range.strip():
+        pieces.append(f"DIY {diy_range.strip()}")
+    if isinstance(pro_range, str) and pro_range.strip():
+        pieces.append(f"Pro {pro_range.strip()}")
+    if not pieces:
+        return None
+    return _truncate(" · ".join(pieces))
+
+
+def _checkpoint_preview(data: Dict[str, Any]) -> Optional[str]:
+    root = _unwrap_analysis(data)
+    if not isinstance(root, dict):
+        return None
+    # Primary signal: a numeric checkpointsAnalyzed under checkpointSummary.
+    summary = root.get("checkpointSummary")
+    if isinstance(summary, dict):
+        count = summary.get("checkpointsAnalyzed")
+        if isinstance(count, (int, float)) and count:
+            return f"Reviewed {int(count)} checkpoint{'s' if int(count) != 1 else ''}"
+    checkpoints = root.get("checkpoints") or root.get("checkpointDetails")
+    if isinstance(checkpoints, list) and checkpoints:
+        return f"Reviewed {len(checkpoints)} checkpoint{'s' if len(checkpoints) != 1 else ''}"
+    # Fallback: if checkpoint_agent rolled up coverage / service into its result,
+    # surface that instead so the row isn't blank.
+    for fallback in (_service_preview, _coverage_preview):
+        try:
+            preview = fallback(data)
+        except Exception:
+            preview = None
+        if preview:
+            return preview
+    return None
+
+
+def _docs_preview(data: Dict[str, Any]) -> Optional[str]:
+    # user_docs / knowledge_base outputs vary; surface a coarse signal.
+    root = _unwrap_analysis(data)
+    if isinstance(root, dict):
+        for key in ("documents", "results", "matches", "snippets", "passages"):
+            bucket = root.get(key)
+            if isinstance(bucket, list) and bucket:
+                return f"Pulled {len(bucket)} reference{'s' if len(bucket) != 1 else ''}"
+        text = root.get("text")
+        if isinstance(text, str) and text.strip():
+            return _truncate(text.replace("\n", " "), max_len=80)
+    return None
+
+
+_PREVIEW_FORMATTERS: Dict[str, Callable[[Dict[str, Any]], Optional[str]]] = {
+    "coverage_agent": _coverage_preview,
+    "diy_agent": _diy_preview,
+    "service_agent": _service_preview,
+    "service_provider_agent": _service_preview,
+    "cost_agent": _cost_preview,
+    "cost_estimation_agent": _cost_preview,
+    "checkpoint_agent": _checkpoint_preview,
+    "checkpoint_analysis_agent": _checkpoint_preview,
+    "ask_user_docs_agent": _docs_preview,
+    "ask_user_docs_retrieval": _docs_preview,
+    "ask_knowledge_base_agent": _docs_preview,
+    "ask_knowledge_base_retrieval": _docs_preview,
+}
+
+
+def _preview_for_response(tool_name: str, response_payload: Any) -> Optional[str]:
+    """Format a one-line preview from a sub-agent's function_response result."""
+    formatter = _PREVIEW_FORMATTERS.get(tool_name)
+    if not formatter:
+        return None
+    # function_response.response is typically a dict; result lives at "result".
+    candidates: List[Any] = []
+    if isinstance(response_payload, dict):
+        if "result" in response_payload:
+            candidates.append(response_payload.get("result"))
+        candidates.append(response_payload)
+    else:
+        candidates.append(response_payload)
+    for candidate in candidates:
+        data = _coerce_result_to_dict(candidate)
+        if not data:
+            continue
+        try:
+            preview = formatter(data)
+        except Exception:
+            logger.debug("Preview formatter %s raised; skipping preview", tool_name, exc_info=True)
+            preview = None
+        if preview:
+            return _truncate(preview)
+    return None
+
+
+def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Extract a single agent step update in the same shape used by mapp/webapp messages:
-    {"name": str, "status": "transferredto"|"executing"|"completed"|"failed"}
+    {"name": str, "status": "transferredto"|"executing"|"completed"|"failed",
+     "displayName": str, "preview": str | None}
     """
     parts = event.get("content", {}).get("parts", [])
     actions = event.get("actions", {})
 
     transfer_target = actions.get("transfer_to_agent")
     if transfer_target:
-        return {"name": str(transfer_target), "status": "transferredto"}
+        target = str(transfer_target)
+        return {
+            "name": target,
+            "status": "transferredto",
+            "displayName": _display_name_for(target),
+        }
 
     for part in parts:
         if not isinstance(part, dict):
@@ -154,18 +449,38 @@ def extract_agent_step_from_event(event: Dict[str, Any]) -> Optional[Dict[str, s
         if isinstance(function_call, dict):
             tool_name = function_call.get("name")
             if tool_name and tool_name != "transfer_to_agent":
-                return {"name": str(tool_name), "status": "executing"}
+                return {
+                    "name": str(tool_name),
+                    "status": "executing",
+                    "displayName": _display_name_for(str(tool_name)),
+                }
             if tool_name == "transfer_to_agent":
                 args = function_call.get("args", {})
                 target = args.get("agent_name") if isinstance(args, dict) else None
                 if target:
-                    return {"name": str(target), "status": "transferredto"}
+                    target_str = str(target)
+                    return {
+                        "name": target_str,
+                        "status": "transferredto",
+                        "displayName": _display_name_for(target_str),
+                    }
 
         function_response = part.get("function_response")
         if isinstance(function_response, dict):
             tool_name = function_response.get("name")
             if tool_name and tool_name != "transfer_to_agent":
-                return {"name": str(tool_name), "status": "completed"}
+                tool_name_str = str(tool_name)
+                step: Dict[str, Any] = {
+                    "name": tool_name_str,
+                    "status": "completed",
+                    "displayName": _display_name_for(tool_name_str),
+                }
+                preview = _preview_for_response(
+                    tool_name_str, function_response.get("response")
+                )
+                if preview:
+                    step["preview"] = preview
+                return step
     return None
 
 
@@ -397,10 +712,20 @@ async def stream_agent_answers(
                     assistant_content_accumulated = str(existing_data.get("content") or "")
                     for step in existing_data.get("agentSteps") or []:
                         if isinstance(step, dict) and step.get("name") and step.get("status"):
-                            agent_steps_by_name[str(step["name"])] = {
+                            preserved: Dict[str, Any] = {
                                 "name": str(step["name"]),
                                 "status": str(step["status"]),
                             }
+                            for optional_key in (
+                                "displayName",
+                                "preview",
+                                "detail",
+                                "startedAt",
+                                "completedAt",
+                            ):
+                                if step.get(optional_key) is not None:
+                                    preserved[optional_key] = step[optional_key]
+                            agent_steps_by_name[str(step["name"])] = preserved
                     assistant_message_ref.set(
                         {
                             "role": "assistant",
@@ -467,6 +792,30 @@ async def stream_agent_answers(
             )
         except Exception as e:
             logger.warning("Failed to persist chat assistant message state: %s", e)
+    def _merge_step_update(update: Dict[str, Any]) -> None:
+        """Merge an extracted step into agent_steps_by_name, preserving prior
+        fields (startedAt, preview from an earlier event, etc.)."""
+        name = update.get("name")
+        if not name:
+            return
+        now_ms = int(time.time() * 1000)
+        previous = agent_steps_by_name.get(name, {})
+        merged: Dict[str, Any] = {**previous, **update}
+        # First time we see this step → stamp startedAt.
+        if "startedAt" not in merged:
+            merged["startedAt"] = now_ms
+        # Completion / failure → stamp completedAt (only once).
+        if merged.get("status") in ("completed", "failed") and not merged.get("completedAt"):
+            merged["completedAt"] = now_ms
+        # Don't overwrite a non-empty preview with None on subsequent events.
+        if not merged.get("preview") and previous.get("preview"):
+            merged["preview"] = previous["preview"]
+        # Lock in the first displayName we showed so randomized orchestrator
+        # labels (and any future updates) don't shuffle across status changes.
+        if previous.get("displayName"):
+            merged["displayName"] = previous["displayName"]
+        agent_steps_by_name[name] = merged
+
     try:
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
@@ -477,7 +826,7 @@ async def stream_agent_answers(
 
             step_update = extract_agent_step_from_event(event)
             if step_update:
-                agent_steps_by_name[step_update["name"]] = step_update
+                _merge_step_update(step_update)
 
             if event_text or step_update:
                 persist_chat_message_state()
@@ -509,10 +858,13 @@ async def stream_agent_answers(
             dict(usage_running),
         )
         if stream_failed:
-            agent_steps_by_name["agent_stream"] = {
-                "name": "agent_stream",
-                "status": "failed",
-            }
+            _merge_step_update(
+                {
+                    "name": "agent_stream",
+                    "status": "failed",
+                    "displayName": "Streaming response",
+                }
+            )
         persist_chat_message_state()
         persist_user_token_usage(user_id, usage_running)
 
