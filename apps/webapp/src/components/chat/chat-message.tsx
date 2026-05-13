@@ -12,7 +12,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   prettifyAgentName,
   pickActiveAgentStep,
-} from "@homeapp/common/lib/agent-display";
+} from "@/lib/agent-display";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
