@@ -20,14 +20,10 @@ const COORDINATING_AGENTS = new Set<string>([
 const COORDINATING_VARIANTS = [
   "Coordinating",
   "Orchestrating",
-  "Lining up the experts",
   "Planning the work",
   "Mapping the work",
   "Strategizing",
-  "Game-planning",
-  "Picking the right specialist",
   "Sizing things up",
-  "Warming up",
 ];
 
 function hashIndex(input: string, modulo: number): number {
@@ -99,7 +95,7 @@ export function prettifyAgentName(name: string | undefined | null): string {
 
 /** Pick the most relevant in-flight step to display in a status ticker. */
 export function pickActiveAgentStep(
-  steps: AgentStep[] | undefined | null
+  steps: AgentStep[] | undefined | null,
 ): AgentStep | null {
   if (!steps || steps.length === 0) return null;
   // Walk backwards so we surface the most recent activity.
