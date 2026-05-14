@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from google.adk.agents import Agent
 from dotenv import load_dotenv
 from .prompts import shopping_agent_instructions
@@ -12,11 +13,17 @@ load_dotenv()
 
 def product_recommendations(query: str, category: str = "DIY") -> str:
     """Provides product recommendations for repairs. Can be used for DIY or professional service products."""
+    t0 = time.monotonic()
+
+    def _elapsed_ms() -> int:
+        return int((time.monotonic() - t0) * 1000)
+
     serpapi_api_key = os.environ.get("SERP_API_KEY")
 
     if not serpapi_api_key:
         logger.info(
-            "product_recommendations: SERP_API_KEY unset; returning unavailable payload (category=%s query_len=%d)",
+            "product_recommendations: skip duration_ms=%d category=%s reason=no_api_key query_len=%d",
+            _elapsed_ms(),
             category,
             len(query or ""),
         )
@@ -31,7 +38,7 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
         else:
             search_query = f"{query} {category} repair products tools"
 
-        logger.info("product_recommendations: SerpAPI search_query=%r", search_query)
+        logger.debug("product_recommendations: SerpAPI search_query=%r", search_query)
 
         product_search = serpapi.GoogleSearch({
             "q": search_query,
@@ -43,17 +50,24 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
         })
         
         search_results = product_search.get_dict()
-        if isinstance(search_results, dict) and search_results.get("error"):
+        serp_err = isinstance(search_results, dict) and bool(
+            search_results.get("error")
+        )
+        if serp_err:
             logger.info(
-                "product_recommendations: SerpAPI error in response category=%s search_query=%r error=%s",
+                "product_recommendations: SerpAPI error duration_ms=%d category=%s error=%s",
+                _elapsed_ms(),
                 category,
-                search_query,
                 search_results.get("error"),
+            )
+            logger.debug(
+                "product_recommendations: SerpAPI error search_query=%r",
+                search_query,
             )
         products = search_results.get("shopping_results") or []
         if not isinstance(products, list):
-            logger.info(
-                "product_recommendations: shopping_results not a list (type=%s); treating as empty",
+            logger.debug(
+                "product_recommendations: shopping_results not a list (type=%s)",
                 type(products).__name__,
             )
             products = []
@@ -95,15 +109,17 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
                 if isinstance(search_results, dict)
                 else []
             )
-            logger.info(
-                "product_recommendations: zero products after processing "
-                "(category=%s search_query=%r raw_shopping_count=%d response_keys=%s)",
-                category,
+            logger.debug(
+                "product_recommendations: zero_products search_query=%r response_keys=%s",
                 search_query,
-                len(products),
                 top_keys,
             )
 
+        outcome = (
+            "serp_api_error"
+            if serp_err
+            else ("zero_products" if not processed_items else "ok")
+        )
         response_data = {
             "recommendedProducts": {
                 category: {
@@ -112,9 +128,24 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
                 }
             }
         }
+        logger.info(
+            "product_recommendations: done duration_ms=%d category=%s outcome=%s "
+            "products=%d raw_shopping_count=%d query_len=%d",
+            _elapsed_ms(),
+            category,
+            outcome,
+            len(processed_items),
+            len(products) if isinstance(products, list) else 0,
+            len(query or ""),
+        )
         return json.dumps(response_data)
     except Exception as e:
         logger.error(f"Error searching for product recommendations: {e}")
+        logger.info(
+            "product_recommendations: exception duration_ms=%d category=%s",
+            _elapsed_ms(),
+            category,
+        )
         return json.dumps({"recommendedProducts": {"error": f"Error retrieving product recommendations: {str(e)}"}})
 
 
