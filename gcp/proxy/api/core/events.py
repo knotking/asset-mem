@@ -17,7 +17,7 @@ async def on_event_user_upload_result(message: str):
         # Original logic in main.py appeared to stop here or was incomplete.
         # Placeholder for further processing if needed.
     except Exception as e:
-        logger.error(f"Failed to parse user upload result event: {e}")
+        logger.exception("Failed to parse user upload result event: %s", e)
 
 def start_pubsub_listener(loop: asyncio.AbstractEventLoop):
     def sync_callback(message):
@@ -35,7 +35,7 @@ def start_pubsub_listener(loop: asyncio.AbstractEventLoop):
                 sync_callback
             )
         except Exception as e:
-            logger.error(f"Error in PubSub listener: {e}")
+            logger.exception("Error in PubSub listener: %s", e)
     else:
         logger.warning("PubSub configuration missing, skipping listener.")
 

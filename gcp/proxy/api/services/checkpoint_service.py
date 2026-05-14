@@ -6,9 +6,10 @@ Handles checkpoint related operations:
 2. Comparing two checkpoints using Gemini AI.
 """
 
-import os
 import json
 import logging
+import os
+import time
 from typing import Optional
 from google.cloud import pubsub_v1
 from google import genai
@@ -37,7 +38,7 @@ def _initialize_genai_client():
             genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
             logger.info(f"Google Gen AI SDK initialized for checkpoint comparison in {LOCATION}")
         except Exception as e:
-            logger.error(f"Failed to initialize Google Gen AI SDK: {e}")
+            logger.exception("Failed to initialize Google Gen AI SDK: %s", e)
             genai_client = None
 
 def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
@@ -67,12 +68,24 @@ def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)
         message_id = future.result()
-        
-        logger.info(f"Published checkpoint analysis to {CHECKPOINT_ANALYSIS_TOPIC}: {message_id}")
+
+        logger.info(
+            "Published checkpoint analysis topic=%s message_id=%s checkpointId=%s propertyId=%s",
+            CHECKPOINT_ANALYSIS_TOPIC,
+            message_id,
+            request.checkpointId,
+            request.propertyId,
+        )
+        logger.debug(
+            "Published checkpoint analysis imageUrl_len=%s content_type=%s location_set=%s",
+            len(request.imageUrl or ""),
+            request.contentType,
+            bool((request.location or "").strip()),
+        )
         return message_id
-        
+
     except Exception as e:
-        logger.error(f"Failed to publish checkpoint analysis to Pub/Sub: {e}")
+        logger.exception("Failed to publish checkpoint analysis to Pub/Sub: %s", e)
         raise
 
 def compare_checkpoints(
@@ -88,6 +101,14 @@ def compare_checkpoints(
     _initialize_genai_client()
     if not genai_client:
         raise Exception("Google Gen AI SDK not initialized")
+
+    t0 = time.monotonic()
+    logger.debug(
+        "compare_checkpoints start image1_len=%d image2_len=%d location_set=%s",
+        len(image1_url or ""),
+        len(image2_url or ""),
+        bool((location or "").strip()),
+    )
 
     image1_part = types.Part.from_uri(file_uri=image1_url, mime_type=content_type1)
     image2_part = types.Part.from_uri(file_uri=image2_url, mime_type=content_type2)
@@ -163,8 +184,16 @@ def compare_checkpoints(
         json_response = json.loads(response.text)
         
         # Validate and parse into Pydantic model
-        return CheckpointComparisonResponse(**json_response)
+        result = CheckpointComparisonResponse(**json_response)
+        logger.info(
+            "compare_checkpoints gemini_ok duration_ms=%d similarity=%.4f regions=%d semantic_changes=%d",
+            int((time.monotonic() - t0) * 1000),
+            result.similarityScore,
+            len(result.regions),
+            len(result.semanticChanges),
+        )
+        return result
 
     except Exception as e:
-        logger.error(f"Error comparing checkpoints: {e}", exc_info=True)
-        raise e
+        logger.exception("Error comparing checkpoints in service: %s", e)
+        raise

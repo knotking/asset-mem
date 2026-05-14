@@ -692,7 +692,7 @@ async def handle_attachment(message: aio_types.Message):
             gcs_url = await upload_file_to_gcs(file_url, GCS_BUCKET, destination_blob_name)
             uploaded_gcs_urls.append(gcs_url)
         except Exception as e:
-            logger.error(f"Failed to upload attachment {file_name}: {e}")
+            logger.exception("Failed to upload attachment %s: %s", file_name, e)
             await message.reply(safe_markdown_format(f"Failed to upload your document {file_name}: {e}"))
 
     if uploaded_gcs_urls:
@@ -716,7 +716,7 @@ async def handle_attachment(message: aio_types.Message):
                 for part in split_message(formatted_answer):
                     await message.answer(part, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as e:
-            logger.error(f"Failed to get an answer: {e}")
+            logger.exception("Failed to get an answer (Telegram document flow): %s", e)
             await message.reply(safe_markdown_format(f"Oops!! Please try later: {str(e)}"))
     else:
         await message.reply(safe_markdown_format("No attachments were uploaded."))

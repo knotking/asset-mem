@@ -889,6 +889,14 @@ async def run_diy_pipeline(
     checkpoint_retrieval_search_query: Optional[str] = None,
 ) -> str:
     """Async ADK tool entrypoint; heavy sync pipeline runs in a worker thread."""
+    logger.debug(
+        "DIY run_diy_pipeline async entry user_query_len=%d address_set=%s "
+        "checkpoint_retrieval_seed=%s context_doc_uris=%d",
+        len((user_query or "").strip()),
+        bool((property_address or "").strip()),
+        checkpoint_retrieval_search_query is not None,
+        len(context_doc_uris or []),
+    )
     return await asyncio.to_thread(
         run_diy_pipeline_sync,
         user_query,

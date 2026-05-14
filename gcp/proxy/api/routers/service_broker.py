@@ -19,5 +19,5 @@ async def service_broker_agent_webhook(request: Request):
         
         return {"status": "ok", "message": "Payload received"}
     except Exception as e:
-        logger.error(f"Error processing service broker agent webhook: {e}")
+        logger.exception("Error processing service broker agent webhook: %s", e)
         return {"status": "error", "message": str(e)}

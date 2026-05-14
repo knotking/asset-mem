@@ -1,0 +1,137 @@
+"""Bind Firebase Auth UID to stdlib logging for every log line (Cloud Run / Functions).
+
+Uses a ContextVar + logging.Filter so existing logger.info(...) calls gain a
+``firebase_uid`` field on the LogRecord without touching each call site.
+"""
+
+from __future__ import annotations
+
+import contextvars
+import json
+import logging
+from contextlib import contextmanager
+from typing import Any, Iterator, Optional
+
+_firebase_uid: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "firebase_uid", default=None
+)
+
+# LIFO stack of tokens from contextvar.set(), for nested bind/unbind (e.g. workers).
+_token_stack: contextvars.ContextVar[list[contextvars.Token[Optional[str]]]] = (
+    contextvars.ContextVar("firebase_uid_token_stack", default=[])
+)
+
+
+def get_firebase_uid() -> Optional[str]:
+    return _firebase_uid.get()
+
+
+def bind_firebase_uid(uid: Optional[str]) -> None:
+    """Push a uid onto the logging context (nested-safe)."""
+    if uid is not None and not isinstance(uid, str):
+        uid = str(uid)
+    stack = list(_token_stack.get())
+    stack.append(_firebase_uid.set(uid))
+    _token_stack.set(stack)
+
+
+def unbind_firebase_uid() -> None:
+    """Pop the most recent bind_firebase_uid."""
+    stack = list(_token_stack.get())
+    if not stack:
+        return
+    tok = stack.pop()
+    _token_stack.set(stack)
+    _firebase_uid.reset(tok)
+
+
+@contextmanager
+def firebase_uid_scope(uid: Optional[str]) -> Iterator[None]:
+    """Bind Firebase UID for the duration of the block (nested-safe)."""
+    bind_firebase_uid(uid)
+    try:
+        yield
+    finally:
+        unbind_firebase_uid()
+
+
+def extract_uid_from_json_dict(data: Any) -> Optional[str]:
+    """Resolve Firebase UID from common JSON request shapes (proxy bodies)."""
+    if not isinstance(data, dict):
+        return None
+    uid = data.get("user_id") or data.get("userId")
+    if isinstance(uid, str) and uid.strip():
+        return uid.strip()
+    for nest_key in ("user", "context", "metadata", "payload"):
+        sub = data.get(nest_key)
+        if isinstance(sub, dict):
+            uid = sub.get("user_id") or sub.get("userId")
+            if isinstance(uid, str) and uid.strip():
+                return uid.strip()
+    return None
+
+
+class FirebaseUidLogFilter(logging.Filter):
+    """Sets record.firebase_uid for formatters."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        uid = get_firebase_uid()
+        record.firebase_uid = uid if uid else "-"
+        return True
+
+
+_FILTER_SINGLETON = FirebaseUidLogFilter()
+_INSTALLED = False
+
+_DEFAULT_FORMAT = (
+    "%(asctime)s [firebase_uid=%(firebase_uid)s] %(name)s %(levelname)s %(message)s"
+)
+
+
+def install_firebase_uid_logging(
+    *,
+    level: int = logging.INFO,
+    datefmt: Optional[str] = None,
+) -> None:
+    """Attach FirebaseUidLogFilter and formatter to the root logger (idempotent)."""
+    global _INSTALLED
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    if not root.handlers:
+        handler = logging.StreamHandler()
+        handler.setLevel(level)
+        handler.setFormatter(logging.Formatter(_DEFAULT_FORMAT, datefmt=datefmt))
+        handler.addFilter(_FILTER_SINGLETON)
+        root.addHandler(handler)
+    else:
+        for h in root.handlers:
+            if _FILTER_SINGLETON not in h.filters:
+                h.addFilter(_FILTER_SINGLETON)
+            if isinstance(h, logging.StreamHandler):
+                fmt_obj = h.formatter
+                fmt_str = ""
+                if isinstance(fmt_obj, logging.Formatter):
+                    fmt_str = getattr(fmt_obj, "_fmt", "") or ""
+                if not fmt_str or "firebase_uid" not in fmt_str:
+                    h.setFormatter(logging.Formatter(_DEFAULT_FORMAT, datefmt=datefmt))
+
+    _INSTALLED = True
+
+
+def install_firebase_uid_logging_if_needed(
+    *, level: int = logging.INFO, datefmt: Optional[str] = None
+) -> None:
+    """Call from workers after their basicConfig so root handlers already exist."""
+    if not _INSTALLED:
+        install_firebase_uid_logging(level=level, datefmt=datefmt)
+
+
+def parse_json_uid_from_body(raw: bytes) -> Optional[str]:
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        return None
+    return extract_uid_from_json_dict(data)

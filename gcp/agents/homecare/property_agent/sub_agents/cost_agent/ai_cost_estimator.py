@@ -419,7 +419,7 @@ def validate_cost_ranges(cost_estimate: Dict[str, Any]) -> bool:
         return True
         
     except Exception as e:
-        logger.error(f"Cost validation failed: {str(e)}")
+        logger.exception("Cost validation failed: %s", e)
         return False
 
 

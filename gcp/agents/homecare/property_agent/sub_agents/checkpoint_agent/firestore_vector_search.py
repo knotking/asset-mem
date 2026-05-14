@@ -24,7 +24,7 @@ try:
     )
     logger.info(f"Google Gen AI SDK initialized for query embeddings (project: {PROJECT_ID}, location: {LOCATION})")
 except Exception as e:
-    logger.error(f"Failed to initialize Google Gen AI SDK for query embeddings: {e}")
+    logger.exception("Failed to initialize Google Gen AI SDK for query embeddings: %s", e)
     embedding_client = None
 
 # Embedding model configuration

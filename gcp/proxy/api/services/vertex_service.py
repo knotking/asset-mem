@@ -45,6 +45,20 @@ _COORDINATING_VARIANTS = [
     "Warming up",
 ]
 
+def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
+    uq = payload.get("user_query") or ""
+    prev = uq[:120] + ("…" if len(uq) > 120 else "")
+    return (
+        f"user_query_len={len(uq)} user_query_preview={prev!r} "
+        f"context_doc_uris={len(payload.get('context_doc_uris') or [])} "
+        f"diagnosis_uris={len(payload.get('diagnosis_uris') or [])} "
+        f"checkpoint_ids={len(payload.get('checkpoint_ids') or [])} "
+        f"has_property_id={bool(payload.get('property_id'))} "
+        f"primary_agent={payload.get('primary_agent')!r} "
+        f"location_type={payload.get('location_type')!r}"
+    )
+
+
 _DISPLAY_NAME_MAP = {
     "diagnostic_agent": "Diagnosing",
     "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
@@ -134,7 +148,7 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str
         future = publisher.publish(topic_path, data)
         return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
     except Exception as e:
-        logger.error(f"Failed to publish data to Pub/Sub: {e}")
+        logger.exception("Failed to publish data to Pub/Sub (rag-file-upload): %s", e)
         return {"error": str(e)}  
 
 # --- Property ID Retrieval from Firestore Session ---
@@ -658,7 +672,11 @@ async def stream_agent_answers(
             else:
                 logger.debug("Geocoding not configured, skipping address geocoding")
         except Exception as e:
-            logger.warning(f"Error during geocoding: {e}. Continuing with address only.")
+            logger.warning(
+                "Error during geocoding (continuing with address only): %s",
+                e,
+                exc_info=True,
+            )
     
     # Set default radius if not specified
     if location_radius is None and (location_coordinates or location_type):
@@ -735,7 +753,13 @@ async def stream_agent_answers(
         logger.info(f"Including location_radius in payload: {location_radius} miles")
 
     message = json.dumps(payload)
-    logger.info(f"Sending message to Reasoning Engine: {message}")
+    logger.info(
+        "Reasoning Engine stream_query start session_id=%s message_bytes=%s %s",
+        session_id,
+        len(message.encode("utf-8")),
+        _reasoning_payload_summary(payload),
+    )
+    logger.debug("Reasoning Engine stream_query message_json=%s", message)
     usage_running = {"prompt": 0, "candidates": 0, "total_only": 0}
     stream_event_count = 0
     stream_failed = False
@@ -749,6 +773,12 @@ async def stream_agent_answers(
         user_id,
         session_id,
         parse_response,
+    )
+    logger.info(
+        "stream_query context chat_persist=%s primary_agent=%r optional_agents=%d",
+        bool(user_id and session_id),
+        primary_agent,
+        len(checkpoint_optional_agents),
     )
 
     if user_id and session_id:
@@ -839,7 +869,7 @@ async def stream_agent_answers(
                     session_id,
                 )
         except Exception as e:
-            logger.warning("Failed to initialize Firestore stream persistence: %s", e)
+            logger.warning("Failed to initialize Firestore stream persistence: %s", e, exc_info=True)
             db_client = None
 
     def persist_chat_message_state() -> None:
@@ -866,7 +896,7 @@ async def stream_agent_answers(
                 len(steps_list),
             )
         except Exception as e:
-            logger.warning("Failed to persist chat assistant message state: %s", e)
+            logger.warning("Failed to persist chat assistant message state: %s", e, exc_info=True)
     def _merge_step_update(update: Dict[str, Any]) -> None:
         """Merge an extracted step into agent_steps_by_name, preserving prior
         fields (startedAt, preview from an earlier event, etc.)."""
@@ -964,8 +994,13 @@ async def stream_agent_answers(
                             yield f"{prettify_name(event.get('author',''))}: {part['text']}"
             else:
                 yield event
-    except Exception as e:
+    except Exception:
         stream_failed = True
+        logger.exception(
+            "stream_query failed session_id=%s events_before_error=%s",
+            session_id,
+            stream_event_count,
+        )
         raise
     finally:
         logger.debug(
@@ -976,6 +1011,13 @@ async def stream_agent_answers(
             stream_event_count,
             dict(usage_running),
         )
+        if not stream_failed and stream_event_count:
+            logger.info(
+                "stream_query completed session_id=%s stream_chunks=%s token_usage=%s",
+                session_id,
+                stream_event_count,
+                dict(usage_running),
+            )
         if stream_failed:
             _merge_step_update(
                 {
@@ -1063,7 +1105,7 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         return " ".join(result_parts) + "  \n\n"
 
     except (IndexError, KeyError) as e:
-        logger.error(f"Error parsing event: {e}")
+        logger.exception("Error parsing stream event for transfer/tool extraction: %s", e)
         return None
 
 def format_name(name: str, bold: bool = True) -> str:

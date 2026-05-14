@@ -27,13 +27,16 @@ for root in (_here.parent.parent, _here):
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from common.observability.logging_context import install_firebase_uid_logging
 from core.config import settings
+from core.firebase_uid_middleware import FirebaseUidLoggingMiddleware
 from core.events import lifespan
 from routers import agent, documents, telegram, service_broker, checkpoint, token_quota
 from services.vertex_service import reasoning_engine_resource
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging (Firebase UID on every line via ContextVar + Filter)
+install_firebase_uid_logging(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
 
 # --- FastAPI App ---
@@ -51,6 +54,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+app.add_middleware(FirebaseUidLoggingMiddleware)
 
 @app.get("/health", summary="Health Check", description="Check the health status of the API and Reasoning Engine connection.")
 async def health_check():
