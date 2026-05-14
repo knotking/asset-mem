@@ -288,6 +288,8 @@ jobs:
             "firebasestorage.googleapis.com"
             "identitytoolkit.googleapis.com"
             "logging.googleapis.com"
+            # YouTube Data API v3 (DIY agent search; API key still created in Console → Credentials)
+            "youtube.googleapis.com"
             # Optional for OpenTelemetry exports (needed if enabling OTel traces/metrics export)
             "cloudtrace.googleapis.com"
             "monitoring.googleapis.com"
@@ -1637,7 +1639,7 @@ jobs:
           echo "   - SERP_API_KEY"
           echo "   - TELEGRAM_BOT_TOKEN"
           echo "   - TELEGRAM_WEBHOOK_SECRET"
-          echo "   - "
+          echo "   - YOUTUBE_API_KEY (YouTube Data API v3; create key in GCP Console after API is enabled)"
 
       - name: Create environment config file
         run: |
@@ -1693,7 +1695,7 @@ jobs:
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`
-          - \`\`
+          - \`YOUTUBE_API_KEY\` (YouTube Data API v3 — create an API key in APIs & Services → Credentials)
 
           ## Deploy Applications
 
@@ -1787,7 +1789,7 @@ jobs:
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`
-          - \`\`
+          - \`YOUTUBE_API_KEY\` (YouTube Data API v3)
 
           ### Deploy Applications Now!
 
