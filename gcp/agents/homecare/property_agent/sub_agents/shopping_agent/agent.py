@@ -84,7 +84,7 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
             return processed
         
         processed_items = process_products(products)
-        logger.info(
+        logger.debug(
             "product_recommendations: SerpAPI processed_items=%s",
             json.dumps(processed_items, ensure_ascii=False),
         )

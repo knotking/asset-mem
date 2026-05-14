@@ -18,10 +18,12 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from ..coverage_agent.agent import coverage_agent
 from ..diy_agent.agent import diy_agent
+from ..diy_agent.orchestrator import run_diy_pipeline
 from ..service_agent.agent import service_agent
 from ..cost_agent.agent import cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
 from ...model_config import GLOBAL_GEMINI_MODEL
+from ..checkpoint_dual_format_guard import synthesis_after_model_callback
 
 load_dotenv()
 
@@ -39,7 +41,7 @@ def _strip_checkpoint_title_noise(text: str) -> str:
     s = re.sub(r'Checkpoint\s+"[^"]*"(?:\s*\([^)]*\))?\s*:\s*', " ", s, flags=re.I)
     s = re.sub(r"Checkpoint\s+Name\s*:\s*[^,\n]+", " ", s, flags=re.I)
     # Stray suffix if a prior pipeline merged DIY search text into checkpoint prose
-    s = re.sub(r"\bDIY\s+tutorial\s+how\s+to\s+fix\s*$", "", s, flags=re.I)
+    s = re.sub(r"\bDIY\s+tutorial\s+how\s+to\s+fix\b", " ", s, flags=re.I)
     s = re.sub(r"•+", " ", s)
     s = re.sub(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", " ", s, flags=re.I)
     s = re.sub(
@@ -75,6 +77,24 @@ def optional_branch_search_user_query(checkpoint_results: str, *, max_chars: int
     return out
 
 
+def resolve_branch_search_user_query(
+    search_query: Optional[str],
+    checkpoint_results: str,
+    *,
+    max_chars: int = 400,
+) -> str:
+    """Use caller-provided search_query when set; otherwise compact checkpoint_results."""
+    raw = (search_query or "").strip()
+    if raw:
+        out = re.sub(r"\s+", " ", raw).strip()
+    else:
+        out = optional_branch_search_user_query(checkpoint_results, max_chars=max_chars)
+    if len(out) > max_chars:
+        cut = out[: max_chars + 1]
+        out = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_chars].strip()
+    return out
+
+
 class CheckpointAnalysisInput(BaseModel):
     """Input schema for checkpoint analysis agent."""
     checkpoint_results: str = Field(description="The checkpoint retrieval results containing checkpoint data and analysis")
@@ -82,9 +102,8 @@ class CheckpointAnalysisInput(BaseModel):
     search_query: Optional[str] = Field(
         default=None,
         description=(
-            "Short plain-text search phrase derived from checkpoint findings (location, asset, issues only). "
-            "No checkpoint titles, dates, or times. Used by optional parallel agents for YouTube and shopping search APIs. "
-            "Omit to fall back to a server-side compact query from checkpoint_results."
+            "Short search phrase for YouTube / shopping (from checkpoint retrieval: location + issues). "
+            "Optional; when omitted, a compact phrase is derived from checkpoint_results."
         ),
     )
     checkpoint_optional_agents: List[CheckpointOptionalAgent] = Field(
@@ -116,6 +135,26 @@ _BRANCH_AGENTS: Dict[str, Tuple[Agent, str]] = {
 }
 
 
+async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
+    """Call the DIY orchestrator directly so parallel state is JSON (videos/products), not LLM prose."""
+    branch_q = (payload.get("user_query") or "").strip()
+    ck = (payload.get("checkpoint_results") or "").strip()
+    if ck and branch_q:
+        diagnosis = f"{branch_q}\n\nCheckpoint context:\n{ck[:6000]}"
+    elif ck:
+        diagnosis = ck[:8000]
+    else:
+        diagnosis = branch_q or "Property maintenance"
+    addr = (payload.get("property_address") or "").strip() or None
+    uris = payload.get("context_doc_uris")
+    return await run_diy_pipeline(
+        diagnosis,
+        property_address=addr,
+        context_doc_uris=uris,
+        checkpoint_retrieval_search_query=payload["checkpoint_retrieval_search_query"],
+    )
+
+
 async def _invoke_optional_agent_async(
     agent: Agent, payload: Dict[str, Any], tool_context: ToolContext
 ) -> Any:
@@ -127,8 +166,12 @@ async def _invoke_optional_agent_async(
     so we MUST stay on the same loop instead of dispatching to threads +
     asyncio.run() — that would attach those objects to a fresh loop and
     fail with cross-loop RuntimeErrors mid-stream.
+
+    skip_summarization=True: default AgentTool summarization drops structured
+    payloads (e.g. DIY JSON with youtubeSearch / recommendedProducts); the
+    synthesis step needs the raw branch tool output.
     """
-    agent_tool = AgentTool(agent)
+    agent_tool = AgentTool(agent, skip_summarization=True)
     return await agent_tool.run_async(args=payload, tool_context=tool_context)
 
 
@@ -139,8 +182,11 @@ async def _run_single_optional_agent_async(
 ) -> str:
     branch_start = time.monotonic()
     try:
-        agent, _ = _BRANCH_AGENTS[name]
-        result = await _invoke_optional_agent_async(agent, payload, tool_context)
+        if name == "diy":
+            result = await _run_checkpoint_diy_pipeline(payload)
+        else:
+            agent, _ = _BRANCH_AGENTS[name]
+            result = await _invoke_optional_agent_async(agent, payload, tool_context)
         return _normalize_agent_result(result)
     except Exception:
         logger.exception("checkpoint optional branch failed: %s", name)
@@ -151,6 +197,16 @@ async def _run_single_optional_agent_async(
             name,
             int((time.monotonic() - branch_start) * 1000),
         )
+
+
+def _serialize_and_store_parallel_results(
+    tool_context: Optional[ToolContext], results: Dict[str, str]
+) -> str:
+    """Canonical JSON for optional branches; always persist to session when context exists."""
+    out = json.dumps(results, ensure_ascii=False)
+    if tool_context is not None:
+        tool_context.state["checkpoint_parallel_results"] = out
+    return out
 
 
 async def run_checkpoint_optional_agents_parallel(
@@ -179,7 +235,7 @@ async def run_checkpoint_optional_agents_parallel(
 
     requested = [n for n in (checkpoint_optional_agents or []) if n in _BRANCH_AGENTS]
     if not requested:
-        return json.dumps(results, ensure_ascii=False)
+        return _serialize_and_store_parallel_results(tool_context, results)
 
     if tool_context is None:
         logger.error(
@@ -187,26 +243,24 @@ async def run_checkpoint_optional_agents_parallel(
         )
         return json.dumps(results, ensure_ascii=False)
 
-    llm_sq = (search_query or "").strip()
-    if llm_sq:
-        branch_user_query = llm_sq[:400]
+    branch_user_query = resolve_branch_search_user_query(
+        search_query, checkpoint_results, max_chars=400
+    )
+    if not (search_query or "").strip() and len(branch_user_query) + 40 < len(
+        checkpoint_results or ""
+    ):
         logger.info(
-            "checkpoint optional branches: using input search_query len=%d",
+            "checkpoint optional branches: derived from checkpoint_results only query_len=%d checkpoint_results_len=%d",
             len(branch_user_query),
+            len(checkpoint_results or ""),
         )
-    else:
-        branch_user_query = optional_branch_search_user_query(checkpoint_results)
-        if len(branch_user_query) + 40 < len(checkpoint_results or ""):
-            logger.info(
-                "checkpoint optional branches: derived search_user_query_len=%d checkpoint_results_len=%d",
-                len(branch_user_query),
-                len(checkpoint_results or ""),
-            )
 
     payload: Dict[str, Any] = {
-        # Passed to coverage/diy/service/cost as DocsInput.user_query; DIY uses it for YouTube/SerpAPI seeds.
+        # Passed to coverage/diy/service/cost as DocsInput.user_query; DIY YouTube/shopping ignore this
+        # when ``checkpoint_retrieval_search_query`` is set (they use only the retrieval seed).
         "user_query": branch_user_query,
         "checkpoint_results": checkpoint_results,
+        "checkpoint_retrieval_search_query": (search_query or "").strip(),
         "context_doc_uris": context_doc_uris,
         "property_address": property_address,
         "property_id": property_id,
@@ -230,7 +284,7 @@ async def run_checkpoint_optional_agents_parallel(
         sorted(set(requested)),
         int((time.monotonic() - total_start) * 1000),
     )
-    return json.dumps(results, ensure_ascii=False)
+    return _serialize_and_store_parallel_results(tool_context, results)
 
 
 parallel_optional_runner_agent = Agent(
@@ -243,7 +297,6 @@ Return only the tool output without additional narration.
 """,
     tools=[run_checkpoint_optional_agents_parallel],
     input_schema=CheckpointAnalysisInput,
-    output_key="checkpoint_parallel_results",
     disallow_transfer_to_parent=True,
 )
 
@@ -387,6 +440,7 @@ Final validation before returning:
 5) JSON is valid and parseable.
 """,
     input_schema=CheckpointAnalysisInput,
+    after_model_callback=synthesis_after_model_callback,
 )
 
 checkpoint_analysis_workflow = SequentialAgent(

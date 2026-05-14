@@ -201,7 +201,7 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
             q,
         )
         out = _youtube_search_data_api(q, safe_max_results, api_key)
-        logger.info(
+        logger.debug(
             "youtube_search: data_api done videos=%d full_results=%s",
             len(out),
             json.dumps(out, ensure_ascii=False),
@@ -214,7 +214,7 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         q,
     )
     out = _youtube_search_innertube(q, safe_max_results)
-    logger.info(
+    logger.debug(
         "youtube_search: innertube done videos=%d full_results=%s",
         len(out),
         json.dumps(out, ensure_ascii=False),
