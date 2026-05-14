@@ -334,6 +334,66 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(body["diyResults"]["recommendedProducts"]["products"]) == 1
 
 
+def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_products(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Checkpoint branch passes retrieval ``search_query``; APIs must not use compacted diagnosis."""
+    monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "0")
+    seen: dict[str, tuple] = {}
+
+    def cap_yt(q: str, max_results: int = 5) -> list:
+        seen["yt"] = (q, max_results)
+        return []
+
+    def cap_pr(q: str, category: str = "DIY") -> str:
+        seen["pr"] = (q, category)
+        return '{"recommendedProducts":{"DIY":{"products":[]}}}'
+
+    monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", lambda d, a: "")
+    monkeypatch.setattr(diy_orch, "youtube_search", cap_yt)
+    monkeypatch.setattr(diy_orch, "product_recommendations", cap_pr)
+
+    def boom_yt(_d: str) -> list:
+        raise AssertionError("legacy _youtube_for_diagnosis must not run when retrieval seed is set")
+
+    def boom_pr(_d: str) -> str:
+        raise AssertionError("legacy _products_for_diagnosis must not run when retrieval seed is set")
+
+    monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", boom_yt)
+    monkeypatch.setattr(diy_orch, "_products_for_diagnosis", boom_pr)
+    monkeypatch.setattr(
+        diy_orch,
+        "cost_estimation_diy_from_library",
+        lambda q: '{"diyCostEstimates":{"repair_type":"t","DIY":{"cost_range":"$1-2"}}}',
+    )
+    monkeypatch.setattr(
+        diy_orch,
+        "_synthesize_diy_json",
+        lambda diagnosis, web_summary, youtube_videos, products_json, cost_json: json.dumps(
+            {
+                "hire_professional_recommended": False,
+                "diyResults": {
+                    "diySteps": {"summary": "x", "steps": []},
+                    "youtubeSearch": {"videos": youtube_videos or []},
+                    "recommendedProducts": {"products": []},
+                    "diyCostEstimates": {},
+                },
+            },
+            ensure_ascii=False,
+        ),
+    )
+    retrieval = "Garage paint chips only"
+    long_diag = retrieval + "\n\nCheckpoint context:\n" + ("NOISE " * 500)
+    asyncio.run(
+        run_diy_pipeline(
+            long_diag,
+            checkpoint_retrieval_search_query=retrieval,
+        )
+    )
+    assert seen["yt"] == (retrieval, 5)
+    assert seen["pr"] == (retrieval, "DIY")
+
+
 def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "600")
     calls = {"n": 0}

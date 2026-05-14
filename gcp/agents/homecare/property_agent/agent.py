@@ -1,14 +1,12 @@
-import os
-from google.adk.agents import Agent, SequentialAgent, ParallelAgent
+from google.adk.agents import Agent
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext
 from dotenv import load_dotenv
-from .prompts import root_agent_instructions,doculink_agent_system_instruction
+from .prompts import root_agent_instructions, doculink_agent_system_instruction
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
-from .sub_agents.checkpoint_agent import checkpoint_agent
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
+from typing import Any, Dict
 from .agent_inputs import DiagnosisInput, DocsInput
 from google.adk.tools import BaseTool
 from .model_config import GLOBAL_GEMINI_MODEL
@@ -28,6 +26,11 @@ def before_tool_callback( tool: BaseTool, args: Dict[str, Any], tool_context: To
     else:
         logger.warning(f"property_id not found in args: {args}")
 
+# ADK Web / session traces attribute a tool's *function response* event to the
+# **invoking** agent (here: doculink_agent). The tool name on that row is still
+# ``checkpoint_agent`` — that pairing (author=doculink, response=checkpoint_agent)
+# is expected, not a mis-route.
+
 doculink_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
     name='doculink_agent',
@@ -37,7 +40,14 @@ doculink_agent = Agent(
     tools=[
         AgentTool(user_docs_agent),
         AgentTool(knowledge_base_agent),
-        AgentTool(checkpoint_agent),
+        # Stock AgentTool returns only the last text parts; checkpoint analysis is often carried
+        # in function_response payloads, and trailing empty model turns yield ''. Use the same
+        # resilient wrapper as inside checkpoint_agent, plus checkpoint_result state fallback.
+        _LastNonEmptyTextAgentTool(
+            checkpoint_agent,
+            state_fallback_key="checkpoint_result",
+            parallel_state_key="checkpoint_parallel_results",
+        ),
     ],
     disallow_transfer_to_parent=True,
     before_tool_callback=before_tool_callback

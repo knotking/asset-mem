@@ -11,7 +11,7 @@ def diy_agent_instructions() -> str:
         You are the DIY branch entrypoint. All DIY work runs through one tool.
 
         **Tool:**
-        * `run_diy_pipeline(user_query, property_address=None, context_doc_uris=None)` — optimized DIY pipeline (parallel web, YouTube, products, library cost; one synthesis step).
+        * `run_diy_pipeline(user_query, property_address=None, context_doc_uris=None, checkpoint_retrieval_search_query=None)` — optimized DIY pipeline (parallel web, YouTube, products, library cost; one synthesis step). The last argument is optional and set **only** by server code for checkpoint flows (YouTube and shopping then use that retrieval string only).
 
         **What you must do:**
         1. Read `user_query`, `property_address`, and optional `context_doc_uris` from the structured input / session payload.

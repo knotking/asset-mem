@@ -17,6 +17,10 @@ your terminal even when tests pass::
 
     RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py -v -s
 
+Override the YouTube integration test query (default remains the faucet example)::
+
+    DIY_YOUTUBE_TEST_QUERY='your query' RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py::test_youtube_search_real_fetch -v -s
+
 The product test also needs ``SERP_API_KEY`` (e.g. in ``.env``). Live YouTube
 tests need ``YOUTUBE_API_KEY`` (YouTube Data API v3). Shared helpers in
 ``tests/diy_live_helpers.py`` call ``load_dotenv()`` on import.
@@ -25,6 +29,7 @@ tests need ``YOUTUBE_API_KEY`` (YouTube Data API v3). Shared helpers in
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -45,7 +50,10 @@ def test_youtube_search_real_fetch() -> None:
     """Hits YouTube Data API v3 (requires ``YOUTUBE_API_KEY``)."""
     from property_agent.sub_agents.diy_agent.youtube import youtube_search
 
-    results = youtube_search("replace faucet washer DIY tutorial", max_results=3)
+    query = os.environ.get("DIY_YOUTUBE_TEST_QUERY", "").strip() or (
+        "Garage Significant paint chipping and scratching on the door surface near the handle. Extensive paint chipping on the door surface and edges. Multiple scratches on the door."
+    )
+    results = youtube_search(query, max_results=3)
     assert isinstance(results, list)
     print_youtube_results(results)
     assert len(results) >= 1, "expected at least one normalized video result"

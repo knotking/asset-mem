@@ -69,9 +69,18 @@ def _web_search_model() -> str:
     return LEGACY_API_GEMINI.model
 
 
-def _cache_key(user_query: str, property_address: Optional[str]) -> str:
+def _cache_key(
+    user_query: str,
+    property_address: Optional[str],
+    *,
+    checkpoint_retrieval_search_query: Optional[str] = None,
+) -> str:
     payload = json.dumps(
-        {"q": user_query.strip(), "a": (property_address or "").strip()},
+        {
+            "q": user_query.strip(),
+            "a": (property_address or "").strip(),
+            "r": checkpoint_retrieval_search_query,
+        },
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -90,6 +99,103 @@ def _prune_cache_unlocked() -> None:
 def _infer_hire_professional(diagnosis: str) -> bool:
     low = diagnosis.lower()
     return any(k in low for k in _HIRE_PRO_KEYWORDS)
+
+
+# Constrains Gemini synthesis output so responses stay parseable (avoids truncated
+# JSON / unterminated strings when free-form JSON runs long).
+_DIY_SYNTHESIS_RESPONSE_JSON_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "hire_professional_recommended": {"type": "boolean"},
+        "diyResults": {
+            "type": "object",
+            "properties": {
+                "diySteps": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string", "maxLength": 4000},
+                        "steps": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "stepNumber": {"type": "integer"},
+                                    "description": {
+                                        "type": "string",
+                                        "maxLength": 800,
+                                    },
+                                },
+                                "required": ["stepNumber", "description"],
+                            },
+                        },
+                    },
+                    "required": ["summary", "steps"],
+                },
+                "youtubeSearch": {
+                    "type": "object",
+                    "properties": {
+                        "videos": {
+                            "type": "array",
+                            "maxItems": 15,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string", "maxLength": 400},
+                                    "url": {"type": "string", "maxLength": 600},
+                                    "description": {
+                                        "type": "string",
+                                        "maxLength": 600,
+                                    },
+                                },
+                                "required": ["title", "url", "description"],
+                            },
+                        }
+                    },
+                    "required": ["videos"],
+                },
+                "recommendedProducts": {
+                    "type": "object",
+                    "properties": {
+                        "products": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "item_name": {"type": "string", "maxLength": 400},
+                                    "image_url": {"type": "string", "maxLength": 2000},
+                                    "vendor": {"type": "string", "maxLength": 200},
+                                    "reviews": {"type": "string", "maxLength": 80},
+                                    "store_url": {"type": "string", "maxLength": 2000},
+                                },
+                                "required": [
+                                    "item_name",
+                                    "image_url",
+                                    "vendor",
+                                    "reviews",
+                                    "store_url",
+                                ],
+                            },
+                        }
+                    },
+                    "required": ["products"],
+                },
+                "diyCostEstimates": {
+                    "type": "object",
+                    "additionalProperties": True,
+                },
+            },
+            "required": [
+                "diySteps",
+                "youtubeSearch",
+                "recommendedProducts",
+                "diyCostEstimates",
+            ],
+        },
+    },
+    "required": ["hire_professional_recommended", "diyResults"],
+}
 
 
 def _diy_search_seed_max_chars() -> int:
@@ -298,12 +404,22 @@ def _youtube_for_diagnosis(diagnosis: str) -> list[Dict[str, Any]]:
     return youtube_search(q, max_results=5)
 
 
+def _youtube_for_checkpoint_retrieval_seed(seed: str) -> list[Dict[str, Any]]:
+    """YouTube Data API uses only the server-built checkpoint retrieval phrase (no extra suffix)."""
+    return youtube_search((seed or "").strip(), max_results=5)
+
+
 def _products_for_diagnosis(diagnosis: str) -> str:
     loc, sum_, iss, _one = _parse_checkpoint_fields(diagnosis)
     seed = _shopping_search_seed(loc, sum_, iss)
     if not seed.strip():
         seed = _compact_diy_search_seed(diagnosis)
     return product_recommendations(seed, "DIY")
+
+
+def _products_for_checkpoint_retrieval_seed(seed: str) -> str:
+    """SerpAPI shopping uses only the server-built checkpoint retrieval phrase as the user stem."""
+    return product_recommendations((seed or "").strip(), "DIY")
 
 
 def _product_recommendations_log_summary(products_json: str) -> str:
@@ -456,9 +572,9 @@ Return ONE JSON object only (no markdown fences) with this shape:
 }
 Rules:
 - Set hire_professional_recommended true if the work involves gas, main electrical, structural, asbestos, sewage, HVAC sealed refrigerant, or similar hazards implied by the diagnosis or web summary.
-- diySteps.steps must be numbered from 1; derive steps from web_research_summary when possible.
+- diySteps.steps must be numbered from 1; derive steps from web_research_summary when possible. Use at most 8 steps; keep each description under 700 characters (complete sentences; no trailing commas).
 - youtubeSearch.videos: copy ONLY from the youtube_videos array in INPUT_JSON (same title/url/description per item, in order). If youtube_videos is empty or missing, set videos to [] exactly. Never use search-results pages, youtu.be without a real id from inputs, or any URL not present in youtube_videos.
-- recommendedProducts.products: copy ONLY real shopping rows from product_recommendations_raw_json (recommendedProducts.DIY.products when present). If that list is empty, missing, or the payload is an error/unavailable message, set products to [] exactly. Never fabricate items, "N/A" URLs, generic "Hardware store" rows, or placeholder prices.
+- recommendedProducts.products: copy ONLY real shopping rows from product_recommendations_raw_json (recommendedProducts.DIY.products when present). If that list is empty, missing, or the payload is an error/unavailable message, set products to [] exactly. Never fabricate items, "N/A" URLs, generic "Hardware store" rows, or placeholder prices. Use string type for reviews (e.g. "1200" not bare numbers).
 - diyCostEstimates must match the JSON object in diy_cost_raw_json (same diyCostEstimates subtree); if parse fails use {}.
 - Do not invent store_url, image_url, url, or price fields not present in the inputs.
 """
@@ -467,50 +583,69 @@ Rules:
         f"{schema_hint}\n\n"
         f"INPUT_JSON:\n{json.dumps(payload, ensure_ascii=False)}"
     )
-    try:
-        response = client.models.generate_content(
-            model=_synthesis_model(),
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.2,
-                top_p=0.85,
-                max_output_tokens=int(os.getenv("DIY_SYNTHESIS_MAX_OUTPUT_TOKENS", "8192")),
-                response_mime_type="application/json",
-            ),
-        )
-        raw = (response.text or "").strip()
-        cleaned = _strip_code_fences(raw)
-        parsed = json.loads(cleaned)
-        if not isinstance(parsed, dict):
-            raise ValueError("synthesis root must be object")
-        if "diyResults" not in parsed:
-            raise ValueError("missing diyResults")
-        model_hire = parsed.get("hire_professional_recommended")
-        inferred = _infer_hire_professional(diagnosis)
-        if isinstance(model_hire, bool):
-            parsed["hire_professional_recommended"] = model_hire or inferred
-        else:
-            parsed["hire_professional_recommended"] = inferred
-        dr = parsed.get("diyResults")
-        if isinstance(dr, dict) and "diyCostEstimates" not in dr:
-            try:
-                ce = json.loads(cost_json)
-                if isinstance(ce, dict) and "diyCostEstimates" in ce:
-                    dr["diyCostEstimates"] = ce["diyCostEstimates"]
-                else:
+    last_exc: Optional[Exception] = None
+    for use_response_schema in (True, False):
+        try:
+            cfg_kwargs: Dict[str, Any] = {
+                "temperature": 0.2,
+                "top_p": 0.85,
+                "max_output_tokens": int(
+                    os.getenv("DIY_SYNTHESIS_MAX_OUTPUT_TOKENS", "8192")
+                ),
+                "response_mime_type": "application/json",
+            }
+            if use_response_schema:
+                cfg_kwargs["response_json_schema"] = (
+                    _DIY_SYNTHESIS_RESPONSE_JSON_SCHEMA
+                )
+            response = client.models.generate_content(
+                model=_synthesis_model(),
+                contents=prompt,
+                config=types.GenerateContentConfig(**cfg_kwargs),
+            )
+            raw = (response.text or "").strip()
+            cleaned = _strip_code_fences(raw)
+            parsed = json.loads(cleaned)
+            if not isinstance(parsed, dict):
+                raise ValueError("synthesis root must be object")
+            if "diyResults" not in parsed:
+                raise ValueError("missing diyResults")
+            model_hire = parsed.get("hire_professional_recommended")
+            inferred = _infer_hire_professional(diagnosis)
+            if isinstance(model_hire, bool):
+                parsed["hire_professional_recommended"] = model_hire or inferred
+            else:
+                parsed["hire_professional_recommended"] = inferred
+            dr = parsed.get("diyResults")
+            if isinstance(dr, dict) and "diyCostEstimates" not in dr:
+                try:
+                    ce = json.loads(cost_json)
+                    if isinstance(ce, dict) and "diyCostEstimates" in ce:
+                        dr["diyCostEstimates"] = ce["diyCostEstimates"]
+                    else:
+                        dr["diyCostEstimates"] = {}
+                except Exception:
                     dr["diyCostEstimates"] = {}
-            except Exception:
-                dr["diyCostEstimates"] = {}
-        if isinstance(dr, dict):
-            _apply_prefetched_diy_artifacts(dr, youtube_videos, products_json)
-        return json.dumps(parsed, ensure_ascii=False)
-    except Exception as exc:
-        logger.exception(
-            "DIY synthesis failed; using deterministic fallback (%s: %s)",
-            type(exc).__name__,
-            exc,
-        )
-        return _fallback_json(diagnosis, web_summary, youtube_videos, products_json, cost_json)
+            if isinstance(dr, dict):
+                _apply_prefetched_diy_artifacts(dr, youtube_videos, products_json)
+            return json.dumps(parsed, ensure_ascii=False)
+        except Exception as exc:
+            last_exc = exc
+            if use_response_schema:
+                logger.warning(
+                    "DIY synthesis with response_json_schema failed (%s: %s); "
+                    "retrying without response schema",
+                    type(exc).__name__,
+                    exc,
+                )
+            continue
+
+    logger.exception(
+        "DIY synthesis failed after retries; using deterministic fallback (%s: %s)",
+        type(last_exc).__name__ if last_exc else "Unknown",
+        last_exc,
+    )
+    return _fallback_json(diagnosis, web_summary, youtube_videos, products_json, cost_json)
 
 
 def _fallback_json(
@@ -560,6 +695,7 @@ def run_diy_pipeline_sync(
     user_query: str,
     property_address: Optional[str] = None,
     context_doc_uris: Optional[list[str]] = None,
+    checkpoint_retrieval_search_query: Optional[str] = None,
 ) -> str:
     """
     Runs the optimized DIY pipeline: parallel grounded web search, YouTube, shopping,
@@ -569,6 +705,10 @@ def run_diy_pipeline_sync(
         user_query: Diagnosis or issue text (checkpoint branch usually embeds checkpoint context here).
         property_address: Optional property address for location context in search prompts.
         context_doc_uris: Reserved for future RAG; ignored for now.
+        checkpoint_retrieval_search_query: When not ``None``, YouTube and shopping APIs use **only**
+            this string (after strip). Checkpoint optional-branch code always passes the retrieval
+            tool's ``search_query`` (may be empty). When ``None`` (default), YouTube/products derive
+            from ``user_query`` via compaction helpers.
 
     Returns:
         JSON string suitable for clients (includes hire_professional_recommended and diyResults).
@@ -590,7 +730,11 @@ def run_diy_pipeline_sync(
 
     addr = (property_address or "").strip()
     ttl = _cache_ttl_seconds()
-    ck = _cache_key(diagnosis, addr)
+    ck = _cache_key(
+        diagnosis,
+        addr,
+        checkpoint_retrieval_search_query=checkpoint_retrieval_search_query,
+    )
     if ttl > 0:
         with _CACHE_LOCK:
             hit = _DIY_CACHE.get(ck)
@@ -615,8 +759,17 @@ def run_diy_pipeline_sync(
             submit_at[fut] = time.monotonic()
 
         submit_phase("web", _diy_web_search_grounded, diagnosis, addr)
-        submit_phase("youtube", _youtube_for_diagnosis, diagnosis)
-        submit_phase("products", _products_for_diagnosis, diagnosis)
+        if checkpoint_retrieval_search_query is not None:
+            api_seed = checkpoint_retrieval_search_query.strip()
+            logger.info(
+                "DIY orchestrator: YouTube+shopping use checkpoint retrieval search_query only len=%d",
+                len(api_seed),
+            )
+            submit_phase("youtube", _youtube_for_checkpoint_retrieval_seed, api_seed)
+            submit_phase("products", _products_for_checkpoint_retrieval_seed, api_seed)
+        else:
+            submit_phase("youtube", _youtube_for_diagnosis, diagnosis)
+            submit_phase("products", _products_for_diagnosis, diagnosis)
         submit_phase("cost", cost_estimation_diy_from_library, cost_q)
 
         for fut in as_completed(future_map):
@@ -640,7 +793,7 @@ def run_diy_pipeline_sync(
                     if isinstance(result, list)
                     else repr(result)
                 )
-                logger.info(
+                logger.debug(
                     "DIY orchestrator phase=youtube duration_ms=%d videos=%d full_results=%s",
                     dur_ms,
                     vcount,
@@ -694,6 +847,13 @@ async def run_diy_pipeline(
     user_query: str,
     property_address: Optional[str] = None,
     context_doc_uris: Optional[list[str]] = None,
+    checkpoint_retrieval_search_query: Optional[str] = None,
 ) -> str:
     """Async ADK tool entrypoint; heavy sync pipeline runs in a worker thread."""
-    return await asyncio.to_thread(run_diy_pipeline_sync, user_query, property_address, context_doc_uris)
+    return await asyncio.to_thread(
+        run_diy_pipeline_sync,
+        user_query,
+        property_address,
+        context_doc_uris,
+        checkpoint_retrieval_search_query,
+    )
