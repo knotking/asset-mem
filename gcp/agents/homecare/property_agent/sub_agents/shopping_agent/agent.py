@@ -93,7 +93,11 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
                     }
                     processed.append(product_data)
                 except (KeyError, TypeError) as e:
-                    logger.warning(f"Error processing product: {e}")
+                    logger.warning(
+                        "Error processing product (skipped one item): %s: %s",
+                        type(e).__name__,
+                        e,
+                    )
                     continue
             return processed
         
@@ -140,7 +144,7 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
         )
         return json.dumps(response_data)
     except Exception as e:
-        logger.error(f"Error searching for product recommendations: {e}")
+        logger.exception("Error searching for product recommendations: %s", e)
         logger.info(
             "product_recommendations: exception duration_ms=%d category=%s",
             _elapsed_ms(),

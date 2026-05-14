@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import logging
+import time
+
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
@@ -21,7 +23,13 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
     
     Requires: checkpointId, userId, propertyId for Firestore update.
     """
-    logger.info("Checkpoint analysis endpoint received a request.")
+    logger.info("Checkpoint analyze-checkpoint enqueue checkpointId=%s", request_data.checkpointId)
+    logger.debug(
+        "Checkpoint analyze-checkpoint request content_type=%s imageUrl_len=%s location_set=%s",
+        request_data.contentType,
+        len(request_data.imageUrl or ""),
+        bool((request_data.location or "").strip()),
+    )
     try:
         # Validate required fields for Firestore update
         if not request_data.checkpointId or not request_data.userId or not request_data.propertyId:
@@ -30,12 +38,14 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
                 detail="checkpointId, userId, and propertyId are required for async processing"
             )
 
-        logger.info(f"Publishing checkpoint analysis request: checkpointId={request_data.checkpointId}")
-
         # Publish to Pub/Sub topic for async processing
         message_id = publish_checkpoint_analysis(request_data)
 
-        logger.info(f"Checkpoint analysis published to Pub/Sub: {message_id}")
+        logger.info(
+            "Checkpoint analysis published message_id=%s checkpointId=%s",
+            message_id,
+            request_data.checkpointId,
+        )
 
         return {
             "status": "accepted",
@@ -46,10 +56,10 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
     except HTTPException:
         raise
     except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Checkpoint analyze client validation: %s", e)
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error publishing checkpoint analysis: {e}")
+        logger.exception("Error publishing checkpoint analysis: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/compare-checkpoints")
@@ -59,6 +69,7 @@ async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
     Returns structured comparison data including similarity score, semantic changes, and specific regions of interest.
     """
     try:
+        t0 = time.monotonic()
         result = compare_checkpoints(
             image1_url=request_data.image1Url,
             image2_url=request_data.image2Url,
@@ -66,8 +77,20 @@ async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
             content_type2=request_data.contentType2,
             location=request_data.location
         )
-        logger.info("Comparison complete")
+        logger.info(
+            "compare-checkpoints done duration_ms=%d similarity=%.4f regions=%d semantic_changes=%d",
+            int((time.monotonic() - t0) * 1000),
+            result.similarityScore,
+            len(result.regions),
+            len(result.semanticChanges),
+        )
+        logger.debug(
+            "compare-checkpoints image1_len=%d image2_len=%d location_set=%s",
+            len(request_data.image1Url or ""),
+            len(request_data.image2Url or ""),
+            bool((request_data.location or "").strip()),
+        )
         return result.model_dump()
     except Exception as e:
-        logger.error(f"Error comparing checkpoints: {e}")
+        logger.exception("Error comparing checkpoints: %s", e)
         raise HTTPException(status_code=500, detail=str(e))

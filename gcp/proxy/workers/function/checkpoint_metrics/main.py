@@ -12,6 +12,12 @@ from utils import parse_pubsub_message
 from metrics_aggregator import aggregate_property_metrics
 
 logging.basicConfig(level=logging.INFO)
+from common.observability.logging_context import (
+    firebase_uid_scope,
+    install_firebase_uid_logging_if_needed,
+)
+
+install_firebase_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +35,11 @@ def _publish_result(payload: Dict[str, Any]) -> None:
         topic_path = publisher.topic_path(GCP_PROJECT_ID, CHECKPOINT_METRICS_RESULT_TOPIC)
         publisher.publish(topic_path, json.dumps(payload).encode("utf-8")).result()
     except Exception as e:
-        logger.warning(f"Failed to publish checkpoint metrics result: {e}")
+        logger.warning(
+            "Failed to publish checkpoint metrics result: %s",
+            e,
+            exc_info=True,
+        )
 
 
 def pubsub_checkpoint_metrics_aggregate(request, context):
@@ -54,44 +64,51 @@ def pubsub_checkpoint_metrics_aggregate(request, context):
         logger.warning(f"Missing userId/propertyId in payload: {payload}")
         return
 
-    # Initialize Firebase Admin if not already initialized
-    try:
-        firebase_admin.get_app()
-    except ValueError:
-        firebase_admin.initialize_app()
+    logger.debug(
+        "checkpoint_metrics aggregate start checkpointId=%s reason=%s",
+        checkpoint_id,
+        reason,
+    )
 
-    db = firestore.client()
-    try:
-        metrics = aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
-        duration_ms = (time.time() - start) * 1000
-        logger.info(
-            f"Aggregated metrics for user={user_id} property={property_id} (checkpoint={checkpoint_id}) in {duration_ms:.1f}ms"
-        )
-        _publish_result(
-            {
-                "status": "ok",
-                "userId": user_id,
-                "propertyId": property_id,
-                "checkpointId": checkpoint_id,
-                "reason": reason,
-                "durationMs": duration_ms,
-            }
-        )
-        return metrics
-    except Exception as e:
-        duration_ms = (time.time() - start) * 1000
-        logger.error(f"Failed to aggregate metrics: {e}", exc_info=True)
-        _publish_result(
-            {
-                "status": "error",
-                "userId": user_id,
-                "propertyId": property_id,
-                "checkpointId": checkpoint_id,
-                "reason": reason,
-                "durationMs": duration_ms,
-                "error": str(e),
-            }
-        )
-        raise
+    with firebase_uid_scope(user_id):
+        # Initialize Firebase Admin if not already initialized
+        try:
+            firebase_admin.get_app()
+        except ValueError:
+            firebase_admin.initialize_app()
+
+        db = firestore.client()
+        try:
+            metrics = aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
+            duration_ms = (time.time() - start) * 1000
+            logger.info(
+                f"Aggregated metrics for user={user_id} property={property_id} (checkpoint={checkpoint_id}) in {duration_ms:.1f}ms"
+            )
+            _publish_result(
+                {
+                    "status": "ok",
+                    "userId": user_id,
+                    "propertyId": property_id,
+                    "checkpointId": checkpoint_id,
+                    "reason": reason,
+                    "durationMs": duration_ms,
+                }
+            )
+            return metrics
+        except Exception as e:
+            duration_ms = (time.time() - start) * 1000
+            logger.error(f"Failed to aggregate metrics: {e}", exc_info=True)
+            _publish_result(
+                {
+                    "status": "error",
+                    "userId": user_id,
+                    "propertyId": property_id,
+                    "checkpointId": checkpoint_id,
+                    "reason": reason,
+                    "durationMs": duration_ms,
+                    "error": str(e),
+                }
+            )
+            raise
 
 

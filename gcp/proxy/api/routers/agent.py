@@ -16,7 +16,7 @@ async def firebase_webhook(request_data: AgentRequest):
     try:
         return await handle_firebase_agent_query(request_data)
     except Exception as e:
-        logger.error(f"Error processing Firebase webhook: {e}")
+        logger.exception("Error processing Firebase webhook: %s", e)
         return {"status": "error", "message": str(e)}
 
 @router.post("/firebase-agent-stream", summary="Stream Agent Response", description="Process a query from the agent and stream the response.")
@@ -24,7 +24,7 @@ async def firebase_streaming_webhook(request_data: AgentRequest):
     try:
         return StreamingResponse(stream_firebase_agent_answers(request_data), media_type="text/event-stream")
     except Exception as e:
-        logger.error(f"Error processing Firebase streaming webhook: {e}")
+        logger.exception("Error processing Firebase streaming webhook: %s", e)
         return {"status": "error", "message": str(e)}
 
 @router.post("/agent-session", summary="Create Agent Session", description="Create a new session for the agent.")
@@ -42,7 +42,7 @@ async def firebase_agent_session_create(request_data: AgentRequest):
             "period": e.period_key,
         }
     except Exception as e:
-        logger.error(f"Error processing agent session create: {e}")
+        logger.exception("Error processing agent session create: %s", e)
         return {"status": "error", "message": str(e)}
 
 @router.delete("/agent-session", summary="Delete Agent Session", description="Delete an existing agent session.")
@@ -52,5 +52,5 @@ async def firebase_agent_session_delete(request_data: SessionRequest):
         delete_reasoning_engine_session(request_data.user_id, request_data.session_id)
         return {"status": "success", "message": "Deleted Session"}
     except Exception as e:
-        logger.error(f"Error processing agent session delete: {e}")
+        logger.exception("Error processing agent session delete: %s", e)
         return {"status": "error", "message": str(e)}

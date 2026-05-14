@@ -9,8 +9,11 @@ import json
 import logging
 import traceback
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from opentelemetry import trace
+
+from .logging_context import get_firebase_uid
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,9 @@ def log_event(
     
     Args:
         event_type: Event type identifier (e.g., "checkpoint.analysis.completed")
-        body: Event body with all relevant data
+        body: Event body with all relevant data. If ``firebase_uid`` is omitted and
+            :func:`logging_context.get_firebase_uid` is set, ``firebase_uid`` is added
+            for log sinks / BigQuery queries.
         severity: Log severity (INFO, WARNING, ERROR)
         logger_instance: Optional logger instance (defaults to module logger)
     """
@@ -42,7 +47,12 @@ def log_event(
             "trace_id": format(span_context.trace_id, "032x"),
             "span_id": format(span_context.span_id, "016x"),
         }
-    
+
+    merged_body = dict(body)
+    ctx_uid = get_firebase_uid()
+    if ctx_uid is not None and "firebase_uid" not in merged_body:
+        merged_body["firebase_uid"] = ctx_uid
+
     # Build log structure
     log_entry = {
         "severity": severity,
@@ -51,8 +61,8 @@ def log_event(
         "body": {
             "event_type": event_type,
             "event_version": "1.0",
-            **body
-        }
+            **merged_body,
+        },
     }
     
     # Log as JSON string for structured logging

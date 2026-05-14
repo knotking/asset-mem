@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from datetime import datetime, timezone
 from google.cloud import pubsub_v1
 
@@ -10,6 +11,12 @@ from exceptions import WorkerError
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
+from common.observability.logging_context import (
+    firebase_uid_scope,
+    install_firebase_uid_logging_if_needed,
+)
+
+install_firebase_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 def pubsub_to_user_docs(request, context):
@@ -25,36 +32,59 @@ def pubsub_to_user_docs(request, context):
         logger.warning("No user_id or gcs_urls in payload, skipping.")
         return
 
-    logger.info(f"Payload: {gcs_urls}, {user_id}, {user_query}")
-    
-    success = False
-    result_msg = ""
-    
-    try:
-        rag_service = RagService()
-        result_msg = rag_service.import_files(gcs_urls, user_id)
-        success = True
-    except WorkerError as e:
-        logger.error(f"Worker Error: {e}")
-        result_msg = str(e)
-    except Exception as e:
-        logger.error(f"Unexpected Error: {e}")
-        result_msg = f"Unexpected error: {str(e)}"
-    
-    logger.info(f"Result: {result_msg}")
+    with firebase_uid_scope(user_id):
+        t0 = time.monotonic()
+        logger.info(
+            "user_docs worker start gcs_urls=%d user_query_len=%d source=%s",
+            len(gcs_urls),
+            len(user_query or ""),
+            source,
+        )
+        logger.debug(
+            "user_docs worker gcs_urls_preview=%r user_query_preview=%r",
+            gcs_urls[:15],
+            (user_query or "")[:400],
+        )
 
-    data = {
-        "gcs_urls": gcs_urls,
-        "user_id": user_id,
-        "user_query": user_query,
-        "result": result_msg,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "success": success,
-        "error": "" if success else str(result_msg),
-        "source": source
-    }
+        success = False
+        result_msg = ""
 
-    _publish_result(data)
+        try:
+            rag_service = RagService()
+            result_msg = rag_service.import_files(gcs_urls, user_id)
+            success = True
+        except WorkerError as e:
+            logger.warning("user_docs WorkerError: %s", e)
+            result_msg = str(e)
+        except Exception as e:
+            logger.exception("user_docs unexpected error: %s", e)
+            result_msg = f"Unexpected error: {str(e)}"
+
+        logger.info(
+            "user_docs import outcome success=%s result_len=%d",
+            success,
+            len(result_msg or ""),
+        )
+        logger.debug("user_docs result_preview=%r", (result_msg or "")[:800])
+
+        data = {
+            "gcs_urls": gcs_urls,
+            "user_id": user_id,
+            "user_query": user_query,
+            "result": result_msg,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "success": success,
+            "error": "" if success else str(result_msg),
+            "source": source,
+        }
+
+        _publish_result(data)
+        logger.info(
+            "user_docs worker done duration_ms=%d success=%s gcs_urls=%d",
+            int((time.monotonic() - t0) * 1000),
+            success,
+            len(gcs_urls),
+        )
 
 def _publish_result(data):
     """Publishes the result to the configured Pub/Sub topic."""
@@ -66,5 +96,5 @@ def _publish_result(data):
         else:
             logger.warning("USER_UPLOAD_RESULT_TOPIC not set, skipping publish.")
     except Exception as e:
-        logger.error(f"Failed to publish to Pub/Sub topic: {e}")
+        logger.exception("Failed to publish to Pub/Sub topic: %s", e)
 

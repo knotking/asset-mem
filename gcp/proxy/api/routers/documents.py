@@ -18,7 +18,7 @@ async def firebase_webhook_file_upload(request_data: AgentRequest):
     try:
         return handle_firebase_file_upload(request_data)
     except Exception as e:
-        logger.error(f"Error processing Firebase webhook: {e}")
+        logger.exception("Error processing Firebase webhook (rag upload): %s", e)
         return {"status": "error", "message": str(e)}
 
 

@@ -44,5 +44,16 @@ def publish_document_analysis(request: ExtractDocInfoRequest) -> str:
     data = json.dumps(payload).encode("utf-8")
     future = publisher.publish(topic_path, data)
     message_id = future.result()
-    logger.info("Published document analysis to %s: %s", DOCUMENT_ANALYSIS_TOPIC, message_id)
+    logger.info(
+        "Published document analysis topic=%s message_id=%s docId=%s content_type=%s",
+        DOCUMENT_ANALYSIS_TOPIC,
+        message_id,
+        request.docId,
+        request.contentType,
+    )
+    logger.debug(
+        "Published document analysis docUrl_len=%s docUrl_scheme=%s",
+        len(request.docUrl or ""),
+        (request.docUrl.split(":")[0] if request.docUrl else ""),
+    )
     return message_id
