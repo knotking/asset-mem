@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Dict, List
@@ -70,6 +71,11 @@ def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List
 
     items = body.get("items") if isinstance(body, dict) else None
     if not isinstance(items, list):
+        logger.info(
+            "YouTube Data API: no items list (items_type=%s query=%r)",
+            type(items).__name__,
+            query,
+        )
         return []
 
     normalized: List[Dict[str, Any]] = []
@@ -98,6 +104,27 @@ def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List
                 "duration": "",
             }
         )
+    if not normalized and items:
+        kinds: List[str] = []
+        for item in items[:10]:
+            if isinstance(item, dict):
+                vid = item.get("id")
+                if isinstance(vid, dict):
+                    kinds.append(str(vid.get("kind", "")))
+        logger.info(
+            "YouTube Data API: %d item(s) but none usable as youtube#video (kinds=%s query=%r)",
+            len(items),
+            kinds or ["(none)"],
+            query,
+        )
+    elif not normalized:
+        page = body.get("pageInfo") if isinstance(body, dict) else None
+        total = page.get("totalResults") if isinstance(page, dict) else None
+        logger.info(
+            "YouTube Data API: zero videos (items=0 totalResults=%s query=%r)",
+            total,
+            query,
+        )
     return normalized
 
 
@@ -111,6 +138,15 @@ def _youtube_search_innertube(query: str, max_results: int) -> List[Dict[str, An
 
     raw_list = payload.get("result") if isinstance(payload, dict) else None
     if not isinstance(raw_list, list):
+        logger.info(
+            "YouTube InnerTube: unexpected payload (result_type=%s query=%r)",
+            type(raw_list).__name__,
+            query,
+        )
+        return []
+
+    if not raw_list:
+        logger.info("YouTube InnerTube: empty result list (query=%r)", query)
         return []
 
     normalized_results: List[Dict[str, Any]] = []
@@ -131,6 +167,14 @@ def _youtube_search_innertube(query: str, max_results: int) -> List[Dict[str, An
                 "duration": item.get("duration", "") or "",
             }
         )
+    if not normalized_results and raw_list:
+        types = [str(x.get("type")) for x in raw_list if isinstance(x, dict)][:8]
+        logger.info(
+            "YouTube InnerTube: %d raw row(s) but none type=video (types=%s query=%r)",
+            len(raw_list),
+            types or ["(none)"],
+            query,
+        )
     return normalized_results
 
 
@@ -143,6 +187,7 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     ``yt-search-python``, which is often blocked with HTTP 403 from datacenter IPs.
     """
     if not query or not query.strip():
+        logger.info("youtube_search: empty query, returning 0 videos")
         return []
 
     safe_max_results = max(1, min(int(max_results), 10))
@@ -150,7 +195,28 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
 
     api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip()
     if api_key:
-        return _youtube_search_data_api(q, safe_max_results, api_key)
+        logger.info(
+            "youtube_search: path=data_api max_results=%d query=%r",
+            safe_max_results,
+            q,
+        )
+        out = _youtube_search_data_api(q, safe_max_results, api_key)
+        logger.info(
+            "youtube_search: data_api done videos=%d full_results=%s",
+            len(out),
+            json.dumps(out, ensure_ascii=False),
+        )
+        return out
 
-    logger.debug("YOUTUBE_API_KEY unset; using InnerTube fallback for YouTube search")
-    return _youtube_search_innertube(q, safe_max_results)
+    logger.info(
+        "youtube_search: path=innertube (YOUTUBE_API_KEY unset) max_results=%d query=%r",
+        safe_max_results,
+        q,
+    )
+    out = _youtube_search_innertube(q, safe_max_results)
+    logger.info(
+        "youtube_search: innertube done videos=%d full_results=%s",
+        len(out),
+        json.dumps(out, ensure_ascii=False),
+    )
+    return out

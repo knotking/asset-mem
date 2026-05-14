@@ -27,6 +27,7 @@ def checkpoint_analysis_agent_instructions() -> str:
         **Input Parameters:**
         *   `checkpoint_results` (str, REQUIRED): The checkpoint retrieval results containing checkpoint data, analysis, conditions, and detected issues
         *   `user_query` (str, REQUIRED): The original user query for context
+        *   `search_query` (Optional[str]): Short phrase for external search (YouTube, shopping). When set by the caller, the parallel optional runner passes it to sub-agents as their `user_query` for API search seeds. Omit to use a server-side compact query from `checkpoint_results`.
         *   `checkpoint_optional_agents` (List[str], REQUIRED): List of sub-agents to invoke. Allowed values: "coverage", "diy", "service", "cost"
         *   `context_doc_uris` (Optional[List[str]]): Context document URIs for coverage checks
         *   `property_address` (Optional[str]): Property address for location-based services
@@ -125,10 +126,10 @@ def checkpoint_analysis_agent_instructions() -> str:
                 "steps": [{"stepNumber": 1, "description": "Step 1"}, {"stepNumber": 2, "description": "Step 2"}]
               },
               "youtubeSearch": {
-                "videos": [{"title": "Video Title", "url": "https://youtube.com/...", "description": "Video description"}]
+                "videos": []
               },
               "recommendedProducts": {
-                "products": [{"item_name": "Product", "vendor": "Store", "url": "https://...", "price": "$XX.XX"}]
+                "products": []
               }
             },
             "serviceResults": {

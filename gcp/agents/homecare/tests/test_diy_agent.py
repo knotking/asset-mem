@@ -59,6 +59,138 @@ def test_infer_hire_professional_heuristics() -> None:
     assert diy_orch._infer_hire_professional("replace main electrical service panel") is True
 
 
+def test_compact_diy_search_seed_strips_checkpoint_boilerplate() -> None:
+    blob = """analyse my checkpoints
+
+Checkpoint context:
+Checkpoint Name: Checkpoint • May 11 • 9:10 PM
+Summary: A close-up view of a gray garage door showing significant paint damage and scratches, particularly around the handle area.
+Location/Asset: Garage
+Detected items: door, door handle, deadbolt, wall outlet
+Issues: Significant paint chipping and scratching on the door surface near the handle.
+"""
+    seed = diy_orch._compact_diy_search_seed(blob)
+    low = seed.lower()
+    assert "garage" in low
+    assert "paint" in low
+    assert "analyse my" not in low
+    assert "checkpoint name" not in low
+    assert "detected items" not in low
+    assert ".." not in seed
+    assert len(seed) <= diy_orch._diy_search_seed_max_chars() + 20
+
+
+def test_compact_diy_search_seed_plain_issue_unchanged() -> None:
+    assert diy_orch._compact_diy_search_seed("replace faucet washer") == "replace faucet washer"
+
+
+def test_compact_diy_search_seed_inline_comma_checkpoint_format() -> None:
+    """Client may send one-line checkpoint context (comma-separated labels)."""
+    blob = (
+        "analyse my checkpoints\n\nCheckpoint context:\n"
+        "Checkpoint Name: Checkpoint • May 11 • 9:10 PM, Location: Garage, "
+        "Summary: A close-up view of a gray garage door showing significant paint damage "
+        "and scratches, particularly around the handle area., "
+        "Issues: Significant paint chipping and scratching on the door surface near the handle."
+    )
+    seed = diy_orch._compact_diy_search_seed(blob)
+    low = seed.lower()
+    assert "checkpoint name" not in low
+    assert "may 11" not in low
+    assert "garage" in low
+    assert "paint" in low
+    assert "chipping" in low or "scratching" in low
+    assert "near the handle" in low or "handle" in low
+    assert ".." not in seed
+
+
+def test_shopping_search_seed_prefers_location_and_issues() -> None:
+    shop = diy_orch._shopping_search_seed(
+        "Garage",
+        "Long summary text about many things.",
+        "Paint chips on door",
+    )
+    assert shop.startswith("Garage")
+    assert "Paint chips" in shop or "chips" in shop
+    assert "Long summary" not in shop
+    assert len(shop) <= diy_orch._shopping_query_max_chars()
+
+
+def test_youtube_videos_client_shape_requires_url() -> None:
+    assert diy_orch._youtube_videos_client_shape(
+        [{"title": "x", "url": "", "description": "d"}]
+    ) == []
+    out = diy_orch._youtube_videos_client_shape(
+        [{"title": "T", "url": "https://www.youtube.com/watch?v=abc", "description": "D"}]
+    )
+    assert len(out) == 1
+    assert out[0]["url"].endswith("watch?v=abc")
+
+
+def test_apply_prefetched_diy_artifacts_overrides_model_hallucination() -> None:
+    dr: dict = {
+        "diySteps": {"summary": "ok", "steps": []},
+        "youtubeSearch": {"videos": []},
+        "recommendedProducts": {
+            "products": [
+                {"item_name": "fake", "vendor": "X", "store_url": None},
+            ]
+        },
+    }
+    pj = json.dumps(
+        {
+            "recommendedProducts": {
+                "DIY": {
+                    "products": [
+                        {
+                            "item_name": "Real sealant",
+                            "image_url": None,
+                            "vendor": "Store",
+                            "reviews": None,
+                            "store_url": "https://example.com/p",
+                        }
+                    ]
+                }
+            }
+        }
+    )
+    yt = [{"title": "Vid", "url": "https://www.youtube.com/watch?v=z", "description": "desc"}]
+    diy_orch._apply_prefetched_diy_artifacts(dr, yt, pj)
+    assert len(dr["youtubeSearch"]["videos"]) == 1
+    assert dr["youtubeSearch"]["videos"][0]["url"] == "https://www.youtube.com/watch?v=z"
+    assert len(dr["recommendedProducts"]["products"]) == 1
+    assert dr["recommendedProducts"]["products"][0]["item_name"] == "Real sealant"
+
+
+def test_apply_prefetched_diy_artifacts_clears_hallucination_when_fetch_empty() -> None:
+    """Empty YouTube / Serp lists must replace model placeholders (not leave invented rows)."""
+    dr: dict = {
+        "diySteps": {"summary": "ok", "steps": []},
+        "youtubeSearch": {
+            "videos": [
+                {
+                    "title": "fake",
+                    "url": "https://www.youtube.com/results?search_query=fake",
+                    "description": "x",
+                }
+            ]
+        },
+        "recommendedProducts": {
+            "products": [
+                {
+                    "item_name": "Exterior filler",
+                    "vendor": "Hardware store",
+                    "url": "N/A",
+                    "price": "Varies",
+                }
+            ]
+        },
+    }
+    diy_orch._apply_prefetched_diy_artifacts(dr, [], '{"recommendedProducts":{}}')
+    assert dr["youtubeSearch"]["videos"] == []
+    assert dr["recommendedProducts"]["products"] == []
+
+
 def test_youtube_search_uses_data_api_when_key_set(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("YOUTUBE_API_KEY", "test-youtube-key")
 

@@ -40,7 +40,7 @@ def checkpoint_agent_instruction() -> str:
         2. **Retrieve Checkpoints:** Use the `ask_checkpoints_retrieval` tool with the user's query AND the `property_id` parameter. Always call it as: `ask_checkpoints_retrieval(user_query=<query>, property_id=<property_id>, checkpoint_ids=<checkpoint_ids if provided>, location=<location if provided>)`. The tool performs vector similarity search to match natural language queries with checkpoint analysis data.
         3. **Check for Analysis Request:** After retrieving checkpoints, check if `checkpoint_optional_agents` is provided and non-empty in your input schema.
         4. **Route Based on Analysis Request:**
-           - **If `checkpoint_optional_agents` is provided and non-empty:** Call `checkpoint_analysis_agent` with the checkpoint results and optional agents list. This triggers comprehensive analysis with coverage, DIY, service, and/or cost recommendations.
+           - **If `checkpoint_optional_agents` is provided and non-empty:** Call `checkpoint_analysis_agent` with the checkpoint results, optional agents list, and a derived `search_query` (see Analysis Mode below) for YouTube/shopping APIs.
            - **If `checkpoint_optional_agents` is empty or None:** Synthesize a direct answer from the checkpoint data in DUAL FORMAT (simple query mode).
         
         **Simple Query Mode (No Optional Agents) - DUAL FORMAT REQUIRED:**
@@ -104,6 +104,11 @@ def checkpoint_agent_instruction() -> str:
            - Call `checkpoint_analysis_agent` with:
              * `checkpoint_results`: String summary of retrieved checkpoints
              * `user_query`: Original user query
+             * `search_query` (REQUIRED for this path): A **short web search style phrase** (under ~200 characters) derived **only** from checkpoint findings—locations/assets, detected items, issues, and conditions. Use it for downstream YouTube and Google Shopping (SerpAPI) style lookups.
+               - **Must** read structured fields from retrieval when present: each checkpoint's `text`, `summary`, `location`, `detectedItems`, `issues`, and `conditions`. Use `checkpointName` only to extract plain asset or room words (e.g. Garage, Kitchen)—never paste the full display title.
+               - **Must NOT** include: the words "checkpoint" or "Checkpoint"; checkpoint display titles; dates; times; bullets like `•`; internal IDs; conversational filler ("analyse my", "please help"); or suffixes like "DIY tutorial" / "how to fix".
+               - **Good examples:** `Garage door paint chipping scratches near handle`, `Kitchen sink leak under cabinet`, `Bathroom tile crack grout`.
+               - **Bad examples:** `Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage): ...`, `analyse my checkpoints Garage`, `... DIY tutorial how to fix`.
              * `checkpoint_optional_agents`: List of agents to invoke
              * `context_doc_uris`: Pass through from input
              * `property_address`: Pass through from input
@@ -214,8 +219,9 @@ def checkpoint_agent_instruction() -> str:
         IF checkpoint_optional_agents is provided AND non-empty:
             1. Retrieve checkpoints using ask_checkpoints_retrieval
             2. Format checkpoint results as string summary
-            3. Call checkpoint_analysis_agent with results and optional agents
-            4. Return analysis agent's response (dual format: Markdown + JSON)
+            3. Derive `search_query` (short phrase, no checkpoint titles/dates/times) from retrieval for optional agents
+            4. Call checkpoint_analysis_agent with results, optional agents, and `search_query`
+            5. Return analysis agent's response (dual format: Markdown + JSON)
         ELSE:
             1. Retrieve checkpoints using ask_checkpoints_retrieval
             2. Synthesize direct answer from checkpoint data
