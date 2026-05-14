@@ -12,11 +12,11 @@ from exceptions import WorkerError
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 from common.observability.logging_context import (
-    firebase_uid_scope,
-    install_firebase_uid_logging_if_needed,
+    auth_uid_scope,
+    install_auth_uid_logging_if_needed,
 )
 
-install_firebase_uid_logging_if_needed()
+install_auth_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 def pubsub_to_user_docs(request, context):
@@ -32,7 +32,7 @@ def pubsub_to_user_docs(request, context):
         logger.warning("No user_id or gcs_urls in payload, skipping.")
         return
 
-    with firebase_uid_scope(user_id):
+    with auth_uid_scope(user_id):
         t0 = time.monotonic()
         logger.info(
             "user_docs worker start gcs_urls=%d user_query_len=%d source=%s",

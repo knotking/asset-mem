@@ -7,8 +7,8 @@ from firebase_admin import firestore
 
 from common.gemini_document_extract import extract_document_fields
 from common.observability.logging_context import (
-    firebase_uid_scope,
-    install_firebase_uid_logging_if_needed,
+    auth_uid_scope,
+    install_auth_uid_logging_if_needed,
 )
 from common.token import (
     TokenQuotaExceeded,
@@ -20,7 +20,7 @@ from common.token import (
 from utils import parse_pubsub_message
 
 logging.basicConfig(level=logging.INFO)
-install_firebase_uid_logging_if_needed()
+install_auth_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +36,7 @@ def pubsub_document_analysis(request, context):
         logger.warning("Missing required fields in payload: %s", payload)
         return
 
-    with firebase_uid_scope(user_id):
+    with auth_uid_scope(user_id):
         logger.debug(
             "document_analysis start docId=%s content_type=%s docUrl_len=%s",
             doc_id,

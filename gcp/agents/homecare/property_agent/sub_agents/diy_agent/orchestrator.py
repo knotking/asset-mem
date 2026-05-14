@@ -16,10 +16,11 @@ import re
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from google.genai import types
 
+from ...logging_context import auth_uid_scope, get_auth_uid
 from ...model_config import LEGACY_API_GEMINI
 from ..cost_agent.agent import cost_estimation_diy_from_library
 from ..shopping_agent.agent import product_recommendations
@@ -27,6 +28,13 @@ from ..shopping_agent.agent import product_recommendations
 from .youtube import youtube_search
 
 logger = logging.getLogger(__name__)
+
+
+def _run_pool_phase(fn: Callable[..., Any], args: tuple[Any, ...], uid: Optional[str]) -> Any:
+    """Run ``fn(*args)`` in a thread pool with the caller's Firebase UID on log records."""
+    with auth_uid_scope(uid):
+        return fn(*args)
+
 
 _CACHE_LOCK = threading.Lock()
 _DIY_CACHE: Dict[str, Tuple[float, str]] = {}
@@ -764,8 +772,10 @@ def run_diy_pipeline_sync(
     future_map: Dict[Future[Any], str] = {}
     submit_at: Dict[Future[Any], float] = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
+        submit_uid = get_auth_uid()
+
         def submit_phase(phase: str, fn, *args: Any) -> None:
-            fut = pool.submit(fn, *args)
+            fut = pool.submit(_run_pool_phase, fn, args, submit_uid)
             future_map[fut] = phase
             submit_at[fut] = time.monotonic()
 
