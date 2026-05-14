@@ -236,6 +236,13 @@ def test_youtube_search_uses_data_api_when_key_set(monkeypatch: pytest.MonkeyPat
     assert out[0]["duration"] == ""
 
 
+def test_youtube_search_returns_empty_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("YOUTUBE_API_KEY", raising=False)
+    from property_agent.sub_agents.diy_agent.youtube import youtube_search
+
+    assert youtube_search("patch drywall hole", max_results=3) == []
+
+
 def test_cost_estimation_diy_from_library_returns_diy_slice() -> None:
     out = cost_estimation_diy_from_library("clogged sink drain DIY cost estimate")
     data = json.loads(out)

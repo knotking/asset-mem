@@ -24,7 +24,7 @@ requires_serpapi_key = pytest.mark.skipif(
 
 requires_youtube_api_key = pytest.mark.skipif(
     not os.environ.get("YOUTUBE_API_KEY", "").strip(),
-    reason="YOUTUBE_API_KEY is required for live YouTube search (Data API; InnerTube is unreliable).",
+    reason="YOUTUBE_API_KEY is required for live YouTube search (YouTube Data API v3).",
 )
 
 

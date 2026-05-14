@@ -9,7 +9,6 @@ import time
 from typing import Any, Dict, List
 
 import requests
-from youtubesearchpython import VideosSearch
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +16,8 @@ _YOUTUBE_DATA_API_SEARCH = "https://www.googleapis.com/youtube/v3/search"
 _REQUEST_TIMEOUT_S = 15
 
 
-def _snippet_to_text(snippet: object) -> str:
-    if not snippet:
-        return ""
-    if isinstance(snippet, str):
-        return snippet
-    if isinstance(snippet, list):
-        parts: List[str] = []
-        for seg in snippet:
-            if isinstance(seg, dict) and "text" in seg:
-                parts.append(str(seg.get("text", "")))
-            elif isinstance(seg, str):
-                parts.append(seg)
-        return "".join(parts)
-    return ""
-
-
 def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List[Dict[str, Any]]:
-    """Official YouTube Data API v3 search (reliable from GCP; requires API key + quota)."""
+    """YouTube Data API v3 search (requires API key + quota)."""
     try:
         resp = requests.get(
             _YOUTUBE_DATA_API_SEARCH,
@@ -129,63 +112,11 @@ def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List
     return normalized
 
 
-def _youtube_search_innertube(query: str, max_results: int) -> List[Dict[str, Any]]:
-    """Legacy path via yt-search-python / InnerTube (often 403 from cloud IPs)."""
-    try:
-        payload = VideosSearch(query, limit=max_results).result()
-    except Exception:
-        logger.exception("YouTube InnerTube search failed for query: %s", query)
-        return []
-
-    raw_list = payload.get("result") if isinstance(payload, dict) else None
-    if not isinstance(raw_list, list):
-        logger.debug(
-            "YouTube InnerTube: unexpected payload (result_type=%s query=%r)",
-            type(raw_list).__name__,
-            query,
-        )
-        return []
-
-    if not raw_list:
-        logger.debug("YouTube InnerTube: empty result list (query=%r)", query)
-        return []
-
-    normalized_results: List[Dict[str, Any]] = []
-    for item in raw_list:
-        if not isinstance(item, dict) or item.get("type") != "video":
-            continue
-        title = item.get("title", "") or ""
-        url = item.get("link", "") or ""
-        description = _snippet_to_text(item.get("descriptionSnippet"))
-        channel = item.get("channel")
-        if not description and isinstance(channel, dict):
-            description = channel.get("name", "") or ""
-        normalized_results.append(
-            {
-                "title": title,
-                "url": url,
-                "description": description,
-                "duration": item.get("duration", "") or "",
-            }
-        )
-    if not normalized_results and raw_list:
-        types = [str(x.get("type")) for x in raw_list if isinstance(x, dict)][:8]
-        logger.debug(
-            "YouTube InnerTube: %d raw row(s) but none type=video (types=%s query=%r)",
-            len(raw_list),
-            types or ["(none)"],
-            query,
-        )
-    return normalized_results
-
-
 def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """
-    Searches YouTube videos using plain text query input.
+    Searches YouTube videos using plain text query input via YouTube Data API v3.
 
-    When ``YOUTUBE_API_KEY`` is set, uses YouTube Data API v3 (recommended for
-    Vertex / server environments). Otherwise falls back to InnerTube via
-    ``yt-search-python``, which is often blocked with HTTP 403 from datacenter IPs.
+    Requires ``YOUTUBE_API_KEY``. Returns an empty list when the key is missing.
     """
     t0 = time.monotonic()
 
@@ -200,32 +131,24 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     q = query.strip()
 
     api_key = (os.getenv("YOUTUBE_API_KEY") or "").strip()
-    if api_key:
-        logger.debug("youtube_search: path=data_api query=%r", q)
-        out = _youtube_search_data_api(q, safe_max_results, api_key)
-        logger.info(
-            "youtube_search: path=data_api max_results=%d query_len=%d videos=%d duration_ms=%d",
-            safe_max_results,
+    if not api_key:
+        logger.warning(
+            "youtube_search: YOUTUBE_API_KEY is not set; skipping search (query_len=%d)",
             len(q),
-            len(out),
-            _elapsed_ms(),
         )
-        logger.debug(
-            "youtube_search: data_api full_results=%s",
-            json.dumps(out, ensure_ascii=False),
-        )
-        return out
+        return []
 
-    logger.debug(
-        "youtube_search: path=innertube (YOUTUBE_API_KEY unset) query=%r",
-        q,
-    )
-    out = _youtube_search_innertube(q, safe_max_results)
+    logger.debug("youtube_search: query=%r", q)
+    out = _youtube_search_data_api(q, safe_max_results, api_key)
     logger.info(
-        "youtube_search: path=innertube max_results=%d query_len=%d videos=%d duration_ms=%d",
+        "youtube_search: max_results=%d query_len=%d videos=%d duration_ms=%d",
         safe_max_results,
         len(q),
         len(out),
         _elapsed_ms(),
+    )
+    logger.debug(
+        "youtube_search: full_results=%s",
+        json.dumps(out, ensure_ascii=False),
     )
     return out
