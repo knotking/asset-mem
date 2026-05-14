@@ -20,7 +20,7 @@ from ..coverage_agent.agent import coverage_agent
 from ..diy_agent.agent import diy_agent
 from ..diy_agent.orchestrator import run_diy_pipeline
 from ..service_agent.agent import service_agent
-from ..cost_agent.agent import cost_agent
+from ..cost_agent.agent import _cost_estimation_sync, cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
 from ...model_config import GLOBAL_GEMINI_MODEL
 from ..checkpoint_dual_format_guard import synthesis_after_model_callback
@@ -155,6 +155,29 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
     )
 
 
+def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
+    """JSON query for cost tools: same diagnosis seed as DIY + explicit property_address."""
+    branch_q = (payload.get("user_query") or "").strip()
+    ck = (payload.get("checkpoint_results") or "").strip()
+    if ck and branch_q:
+        diagnosis = f"{branch_q}\n\nCheckpoint context:\n{ck[:6000]}"
+    elif ck:
+        diagnosis = ck[:8000]
+    else:
+        diagnosis = branch_q or "Property maintenance"
+    addr = (payload.get("property_address") or "").strip() or None
+    body: Dict[str, Any] = {"diagnosis": diagnosis}
+    if addr:
+        body["property_address"] = addr
+    return json.dumps(body, ensure_ascii=False)
+
+
+async def _run_checkpoint_cost_pipeline(payload: Dict[str, Any]) -> str:
+    """Run full cost estimation in a worker thread (no cost_agent LLM), mirroring the DIY direct path."""
+    query = _build_checkpoint_cost_query(payload)
+    return await asyncio.to_thread(_cost_estimation_sync, query)
+
+
 async def _invoke_optional_agent_async(
     agent: Agent, payload: Dict[str, Any], tool_context: ToolContext
 ) -> Any:
@@ -185,6 +208,8 @@ async def _run_single_optional_agent_async(
     try:
         if name == "diy":
             result = await _run_checkpoint_diy_pipeline(payload)
+        elif name == "cost":
+            result = await _run_checkpoint_cost_pipeline(payload)
         else:
             agent, _ = _BRANCH_AGENTS[name]
             result = await _invoke_optional_agent_async(agent, payload, tool_context)
