@@ -148,6 +148,58 @@ def test_parallel_runner_payload_uses_search_user_query(monkeypatch: pytest.Monk
     assert "diy tutorial" not in captured[0]["user_query"].lower()
 
 
+def test_build_checkpoint_cost_query_includes_diagnosis_and_address():
+    payload = {
+        "user_query": "garage door paint",
+        "checkpoint_results": "Issues: chipping on panel.",
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+        "checkpoint_retrieval_search_query": "",
+    }
+    raw = caa._build_checkpoint_cost_query(payload)
+    data = json.loads(raw)
+    assert data["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert "garage door paint" in data["diagnosis"]
+    assert "Checkpoint context" in data["diagnosis"]
+    assert "chipping" in data["diagnosis"].lower()
+
+
+def test_build_checkpoint_cost_query_omits_empty_address():
+    payload = {
+        "user_query": "q",
+        "checkpoint_results": "Issues: leak",
+        "property_address": "  ",
+        "checkpoint_retrieval_search_query": "",
+    }
+    data = json.loads(caa._build_checkpoint_cost_query(payload))
+    assert "property_address" not in data
+    assert "leak" in data["diagnosis"].lower()
+
+
+def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.MonkeyPatch):
+    captured: list[str] = []
+
+    def _sync_capture(query: str) -> str:
+        captured.append(query)
+        return '{"costEstimates": {"repair_type": "stub", "DIY": {}, "Service": {}, "comparison": {}}}'
+
+    # checkpoint_analysis_agent imports _cost_estimation_sync by name; patch that binding.
+    monkeypatch.setattr(caa, "_cost_estimation_sync", _sync_capture)
+    out = asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results="Issues: paint chip",
+            user_query="estimate repair",
+            checkpoint_optional_agents=["cost"],
+            property_address="1 Main St, City, ST 12345",
+            tool_context=_minimal_tool_context(),
+        )
+    )
+    assert len(captured) == 1
+    inner = json.loads(captured[0])
+    assert inner.get("property_address") == "1 Main St, City, ST 12345"
+    parsed = json.loads(out)
+    assert "costEstimates" in json.loads(parsed["checkpoint_parallel_cost_result"])
+
+
 def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.MonkeyPatch):
     captured: list[dict] = []
 
