@@ -4,12 +4,13 @@ from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.agents.context import Context
+from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
 from .agent_inputs import DiagnosisInput, DocsInput
-from .logging_context import bind_firebase_uid, install_firebase_uid_logging, unbind_firebase_uid
+from .logging_context import bind_auth_uid, install_auth_uid_logging, unbind_auth_uid
 from .model_config import GLOBAL_GEMINI_MODEL
 from .prompts import doculink_agent_system_instruction, root_agent_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
@@ -18,7 +19,7 @@ from .sub_agents.user_docs_agent import user_docs_agent
 
 
 load_dotenv()
-install_firebase_uid_logging(level=logging.INFO)
+install_auth_uid_logging(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -30,32 +31,42 @@ def _uid_from_context(ctx: Context) -> Optional[str]:
     return uid
 
 
-def before_model_firebase_uid(ctx: Context) -> None:
-    uid = _uid_from_context(ctx)
-    bind_firebase_uid(uid)
+def before_model_auth_uid(
+    callback_context: Context, llm_request: LlmRequest
+) -> None:
+    _ = llm_request
+    uid = _uid_from_context(callback_context)
+    bind_auth_uid(uid)
     logger.debug(
         "ADK before_model agent_name=%s invocation_id=%s uid_bound=%s",
-        getattr(ctx, "agent_name", None),
-        getattr(ctx, "invocation_id", None),
+        getattr(callback_context, "agent_name", None),
+        getattr(callback_context, "invocation_id", None),
         bool(uid),
     )
 
 
-def after_model_firebase_uid(_ctx: Context, _llm_response: LlmResponse) -> None:
-    unbind_firebase_uid()
+def after_model_auth_uid(
+    callback_context: Context, llm_response: LlmResponse
+) -> None:
+    _ = (callback_context, llm_response)
+    unbind_auth_uid()
 
 
-def after_tool_firebase_uid(
-    _tool: BaseTool, _args: Dict[str, Any], _ctx: Context, _tool_response: dict
+def after_tool_auth_uid(
+    tool: BaseTool,
+    args: Dict[str, Any],
+    tool_context: ToolContext,
+    tool_response: dict,
 ) -> Optional[dict]:
-    unbind_firebase_uid()
+    _ = (tool, args, tool_context, tool_response)
+    unbind_auth_uid()
     return None
 
 
 def before_tool_callback(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, **kwargs
 ):
-    bind_firebase_uid(tool_context._invocation_context.session.user_id)
+    bind_auth_uid(tool_context._invocation_context.session.user_id)
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
     property_id = args.get("property_id")
     tool_name = getattr(tool, "name", None) or type(tool).__name__
@@ -94,10 +105,10 @@ doculink_agent = Agent(
         ),
     ],
     disallow_transfer_to_parent=True,
-    before_model_callback=before_model_firebase_uid,
-    after_model_callback=after_model_firebase_uid,
+    before_model_callback=before_model_auth_uid,
+    after_model_callback=after_model_auth_uid,
     before_tool_callback=before_tool_callback,
-    after_tool_callback=after_tool_firebase_uid,
+    after_tool_callback=after_tool_auth_uid,
 )
 
 # Note: ADK doesn't have before_sub_agent callback, so we rely on property_id being passed
@@ -110,6 +121,6 @@ root_agent = Agent(
     instruction=root_agent_instructions(),
     input_schema=DiagnosisInput,
     sub_agents=[doculink_agent],
-    before_model_callback=before_model_firebase_uid,
-    after_model_callback=after_model_firebase_uid,
+    before_model_callback=before_model_auth_uid,
+    after_model_callback=after_model_auth_uid,
 )

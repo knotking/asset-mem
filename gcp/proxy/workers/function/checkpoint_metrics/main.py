@@ -13,11 +13,11 @@ from metrics_aggregator import aggregate_property_metrics
 
 logging.basicConfig(level=logging.INFO)
 from common.observability.logging_context import (
-    firebase_uid_scope,
-    install_firebase_uid_logging_if_needed,
+    auth_uid_scope,
+    install_auth_uid_logging_if_needed,
 )
 
-install_firebase_uid_logging_if_needed()
+install_auth_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 
@@ -70,7 +70,7 @@ def pubsub_checkpoint_metrics_aggregate(request, context):
         reason,
     )
 
-    with firebase_uid_scope(user_id):
+    with auth_uid_scope(user_id):
         # Initialize Firebase Admin if not already initialized
         try:
             firebase_admin.get_app()

@@ -28,8 +28,8 @@ from common.observability.logging_helper import log_event, log_exception
 from common.observability.base import get_tracer
 from common.observability.metrics_helper import record_histogram
 from common.observability.logging_context import (
-    firebase_uid_scope,
-    install_firebase_uid_logging_if_needed,
+    auth_uid_scope,
+    install_auth_uid_logging_if_needed,
 )
 from common.token import (
     TokenQuotaExceeded,
@@ -46,7 +46,7 @@ initialize_observability(enable_tracing=True, enable_metrics=True)
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
-install_firebase_uid_logging_if_needed()
+install_auth_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
 
 # Pub/Sub topic to trigger property metrics aggregation (optional)
@@ -95,7 +95,7 @@ def pubsub_checkpoint_analysis(request, context):
             logger.warning(f"Missing required fields in payload: {payload}")
             return
 
-        with firebase_uid_scope(user_id):
+        with auth_uid_scope(user_id):
             # Set span attributes
             span.set_attribute("checkpoint_id", checkpoint_id)
             span.set_attribute("user_id", user_id)

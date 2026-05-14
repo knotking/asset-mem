@@ -1,7 +1,7 @@
-"""Bind Firebase Auth UID to stdlib logging for every log line (Cloud Run / Functions).
+"""Bind authenticated user id to stdlib logging for every log line (Cloud Run / Functions).
 
-Uses a ContextVar + logging.Filter so existing logger.info(...) calls gain a
-``firebase_uid`` field on the LogRecord without touching each call site.
+Uses a ContextVar + logging.Filter so existing logger.info(...) calls gain an
+``auth_uid`` field on the LogRecord without touching each call site.
 """
 
 from __future__ import annotations
@@ -12,51 +12,51 @@ import logging
 from contextlib import contextmanager
 from typing import Any, Iterator, Optional
 
-_firebase_uid: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "firebase_uid", default=None
+_auth_uid: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "auth_uid", default=None
 )
 
 # LIFO stack of tokens from contextvar.set(), for nested bind/unbind (e.g. workers).
 _token_stack: contextvars.ContextVar[list[contextvars.Token[Optional[str]]]] = (
-    contextvars.ContextVar("firebase_uid_token_stack", default=[])
+    contextvars.ContextVar("auth_uid_token_stack", default=[])
 )
 
 
-def get_firebase_uid() -> Optional[str]:
-    return _firebase_uid.get()
+def get_auth_uid() -> Optional[str]:
+    return _auth_uid.get()
 
 
-def bind_firebase_uid(uid: Optional[str]) -> None:
+def bind_auth_uid(uid: Optional[str]) -> None:
     """Push a uid onto the logging context (nested-safe)."""
     if uid is not None and not isinstance(uid, str):
         uid = str(uid)
     stack = list(_token_stack.get())
-    stack.append(_firebase_uid.set(uid))
+    stack.append(_auth_uid.set(uid))
     _token_stack.set(stack)
 
 
-def unbind_firebase_uid() -> None:
-    """Pop the most recent bind_firebase_uid."""
+def unbind_auth_uid() -> None:
+    """Pop the most recent bind_auth_uid."""
     stack = list(_token_stack.get())
     if not stack:
         return
     tok = stack.pop()
     _token_stack.set(stack)
-    _firebase_uid.reset(tok)
+    _auth_uid.reset(tok)
 
 
 @contextmanager
-def firebase_uid_scope(uid: Optional[str]) -> Iterator[None]:
-    """Bind Firebase UID for the duration of the block (nested-safe)."""
-    bind_firebase_uid(uid)
+def auth_uid_scope(uid: Optional[str]) -> Iterator[None]:
+    """Bind auth uid for the duration of the block (nested-safe)."""
+    bind_auth_uid(uid)
     try:
         yield
     finally:
-        unbind_firebase_uid()
+        unbind_auth_uid()
 
 
-def extract_uid_from_json_dict(data: Any) -> Optional[str]:
-    """Resolve Firebase UID from common JSON request shapes (proxy bodies)."""
+def extract_auth_uid_from_json_dict(data: Any) -> Optional[str]:
+    """Resolve auth user id from common JSON request shapes (proxy bodies)."""
     if not isinstance(data, dict):
         return None
     uid = data.get("user_id") or data.get("userId")
@@ -71,29 +71,29 @@ def extract_uid_from_json_dict(data: Any) -> Optional[str]:
     return None
 
 
-class FirebaseUidLogFilter(logging.Filter):
-    """Sets record.firebase_uid for formatters."""
+class AuthUidLogFilter(logging.Filter):
+    """Sets record.auth_uid for formatters."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        uid = get_firebase_uid()
-        record.firebase_uid = uid if uid else "-"
+        uid = get_auth_uid()
+        record.auth_uid = uid if uid else "-"
         return True
 
 
-_FILTER_SINGLETON = FirebaseUidLogFilter()
+_FILTER_SINGLETON = AuthUidLogFilter()
 _INSTALLED = False
 
 _DEFAULT_FORMAT = (
-    "%(asctime)s [firebase_uid=%(firebase_uid)s] %(name)s %(levelname)s %(message)s"
+    "%(asctime)s [auth_uid=%(auth_uid)s] %(name)s %(levelname)s %(message)s"
 )
 
 
-def install_firebase_uid_logging(
+def install_auth_uid_logging(
     *,
     level: int = logging.INFO,
     datefmt: Optional[str] = None,
 ) -> None:
-    """Attach FirebaseUidLogFilter and formatter to the root logger (idempotent)."""
+    """Attach AuthUidLogFilter and formatter to the root logger (idempotent)."""
     global _INSTALLED
     root = logging.getLogger()
     root.setLevel(level)
@@ -113,25 +113,25 @@ def install_firebase_uid_logging(
                 fmt_str = ""
                 if isinstance(fmt_obj, logging.Formatter):
                     fmt_str = getattr(fmt_obj, "_fmt", "") or ""
-                if not fmt_str or "firebase_uid" not in fmt_str:
+                if not fmt_str or "auth_uid" not in fmt_str:
                     h.setFormatter(logging.Formatter(_DEFAULT_FORMAT, datefmt=datefmt))
 
     _INSTALLED = True
 
 
-def install_firebase_uid_logging_if_needed(
+def install_auth_uid_logging_if_needed(
     *, level: int = logging.INFO, datefmt: Optional[str] = None
 ) -> None:
     """Call from workers after their basicConfig so root handlers already exist."""
     if not _INSTALLED:
-        install_firebase_uid_logging(level=level, datefmt=datefmt)
+        install_auth_uid_logging(level=level, datefmt=datefmt)
 
 
-def parse_json_uid_from_body(raw: bytes) -> Optional[str]:
+def parse_json_auth_uid_from_body(raw: bytes) -> Optional[str]:
     if not raw:
         return None
     try:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
         return None
-    return extract_uid_from_json_dict(data)
+    return extract_auth_uid_from_json_dict(data)
