@@ -714,7 +714,7 @@ def run_diy_pipeline_sync(
         JSON string suitable for clients (includes hire_professional_recommended and diyResults).
     """
     del context_doc_uris  # reserved
-    diagnosis = (user_query or "").strip()
+    diagnosis = (checkpoint_retrieval_search_query or user_query or "").strip()
     if not diagnosis:
         return json.dumps(
             {
