@@ -350,7 +350,7 @@ def _compact_diy_search_seed(diagnosis: str) -> str:
         seed = re.sub(r"\s+", " ", raw)[:200].strip()
 
     if len(diagnosis) > len(seed) + 80:
-        logger.info(
+        logger.debug(
             "DIY external search seed: diagnosis_len=%d seed_len=%d",
             len(diagnosis),
             len(seed),
@@ -509,13 +509,13 @@ def _apply_prefetched_diy_artifacts(
     """Mutate ``diy_results`` so YouTube / shopping always match fetchers (never LLM placeholders)."""
     yt_norm = _youtube_videos_client_shape(youtube_videos)
     diy_results["youtubeSearch"] = {"videos": yt_norm}
-    logger.info(
+    logger.debug(
         "DIY synthesis: applied prefetched youtube videos=%d",
         len(yt_norm),
     )
     serp_products = _serp_shopping_products_list(products_json)
     diy_results["recommendedProducts"] = {"products": serp_products}
-    logger.info(
+    logger.debug(
         "DIY synthesis: applied SerpAPI products=%d",
         len(serp_products),
     )
@@ -745,6 +745,17 @@ def run_diy_pipeline_sync(
     t0 = time.monotonic()
     cost_q = _cost_query(diagnosis, addr)
 
+    logger.info(
+        "DIY orchestrator: pipeline_start diagnosis_chars=%d address_set=%s "
+        "retrieval_seed_len=%d cache_ttl_s=%.0f",
+        len(diagnosis),
+        bool(addr),
+        -1
+        if checkpoint_retrieval_search_query is None
+        else len(checkpoint_retrieval_search_query.strip()),
+        ttl,
+    )
+
     web_text = ""
     yt: list[Dict[str, Any]] = []
     products_raw = ""
@@ -761,9 +772,11 @@ def run_diy_pipeline_sync(
         submit_phase("web", _diy_web_search_grounded, diagnosis, addr)
         if checkpoint_retrieval_search_query is not None:
             api_seed = checkpoint_retrieval_search_query.strip()
-            logger.info(
-                "DIY orchestrator: YouTube+shopping use checkpoint retrieval search_query only len=%d",
+            logger.debug(
+                "DIY orchestrator: YouTube+shopping use checkpoint retrieval "
+                "search_query only len=%d query=%r",
                 len(api_seed),
+                api_seed,
             )
             submit_phase("youtube", _youtube_for_checkpoint_retrieval_seed, api_seed)
             submit_phase("products", _products_for_checkpoint_retrieval_seed, api_seed)
@@ -799,13 +812,23 @@ def run_diy_pipeline_sync(
                     vcount,
                     full_yt,
                 )
+                logger.info(
+                    "DIY orchestrator phase=youtube duration_ms=%d videos=%d",
+                    dur_ms,
+                    vcount,
+                )
             elif name == "products":
                 pj = result if isinstance(result, str) else ""
-                logger.info(
+                logger.debug(
                     "DIY orchestrator phase=products duration_ms=%d %s full_json=%s",
                     dur_ms,
                     _product_recommendations_log_summary(pj),
                     pj if (pj or "").strip() else "(empty)",
+                )
+                logger.info(
+                    "DIY orchestrator phase=products duration_ms=%d %s",
+                    dur_ms,
+                    _product_recommendations_log_summary(pj),
                 )
             else:
                 logger.info(
@@ -822,16 +845,32 @@ def run_diy_pipeline_sync(
             elif name == "cost" and isinstance(result, str):
                 cost_raw = result
 
+    prefetch_ms = int((time.monotonic() - t0) * 1000)
+    logger.info(
+        "DIY orchestrator: prefetch_parallel_done wall_ms=%d "
+        "(web+youtube+products+cost thread pool complete)",
+        prefetch_ms,
+    )
+
     if not cost_raw:
         cost_raw = cost_estimation_diy_from_library(cost_q)
     if not isinstance(products_raw, str):
         products_raw = json.dumps({"recommendedProducts": {}})
 
+    t_syn = time.monotonic()
     merged = _synthesize_diy_json(diagnosis, web_text, yt, products_raw, cost_raw)
+    syn_ms = int((time.monotonic() - t_syn) * 1000)
 
     logger.info(
-        "DIY orchestrator total_duration_ms=%d diagnosis_chars=%d",
+        "DIY orchestrator phase=synthesis duration_ms=%d",
+        syn_ms,
+    )
+    logger.info(
+        "DIY orchestrator total_duration_ms=%d prefetch_ms=%d synthesis_ms=%d "
+        "diagnosis_chars=%d",
         int((time.monotonic() - t0) * 1000),
+        prefetch_ms,
+        syn_ms,
         len(diagnosis),
     )
 

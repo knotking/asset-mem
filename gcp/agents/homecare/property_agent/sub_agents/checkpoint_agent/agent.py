@@ -8,6 +8,7 @@ Can optionally trigger comprehensive analysis with coverage, DIY, service, and c
 import json
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 from google.genai import types
@@ -143,6 +144,7 @@ class _LastNonEmptyTextAgentTool(AgentTool):
         tool_context: ToolContext,
     ) -> Any:
         wrapped = getattr(self.agent, "name", type(self.agent).__name__)
+        _nested_t0 = time.monotonic()
         logger.debug(
             "_LastNonEmptyTextAgentTool.run_async start wrapped=%r "
             "state_fallback_key=%r parallel_state_key=%r arg_keys=%s",
@@ -246,19 +248,23 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                         )
 
             await runner.close()
-            logger.debug(
-                "_LastNonEmptyTextAgentTool runner done wrapped=%r events=%d "
-                "state_delta_batches=%d",
-                wrapped,
-                event_count,
-                state_delta_updates,
-            )
+
+            def _nested_done_ms() -> int:
+                return int((time.monotonic() - _nested_t0) * 1000)
 
             if last_content is None or last_content.parts is None:
                 out = last_non_empty or ""
                 logger.debug(
                     "_LastNonEmptyTextAgentTool no last_content; return_len=%d",
                     len(out),
+                )
+                logger.info(
+                    "nested_agent_tool: done wrapped=%r duration_ms=%d events=%d "
+                    "state_delta_batches=%d outcome=empty_content",
+                    wrapped,
+                    _nested_done_ms(),
+                    event_count,
+                    state_delta_updates,
                 )
                 return out
             merged_text = _extract_tool_visible_text(last_content)
@@ -336,6 +342,15 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                 type(tool_result).__name__,
                 ret_len,
             )
+            logger.info(
+                "nested_agent_tool: done wrapped=%r duration_ms=%d events=%d "
+                "state_delta_batches=%d outcome=ok return_len=%s",
+                wrapped,
+                _nested_done_ms(),
+                event_count,
+                state_delta_updates,
+                ret_len,
+            )
             return tool_result
         finally:
             if self.skip_summarization:
@@ -365,13 +380,37 @@ def ask_checkpoints_retrieval(
         downstream YouTube / shopping search. On failure or no matches, ``checkpoints``
         is empty and ``search_query`` is ``""``.
     """
+    t0 = time.monotonic()
+
+    def _elapsed_ms() -> int:
+        return int((time.monotonic() - t0) * 1000)
+
     try:
-        logger.info(f"ask_checkpoints_retrieval called with: user_query='{user_query}', property_id={property_id}, location={location}, checkpoint_ids={checkpoint_ids}")
-        
+        ck_mode = (
+            "by_id"
+            if checkpoint_ids and len(checkpoint_ids) > 0
+            else "vector"
+        )
+        logger.info(
+            "checkpoint_retrieval: start mode=%s property_id=%s "
+            "user_query_len=%d location_set=%s checkpoint_id_count=%d",
+            ck_mode,
+            property_id or "",
+            len(user_query or ""),
+            bool(location and str(location).strip()),
+            len(checkpoint_ids or []),
+        )
+        logger.debug(
+            "checkpoint_retrieval: args user_query=%r location=%r checkpoint_ids=%r",
+            user_query,
+            location,
+            checkpoint_ids,
+        )
+
         # Get user_id from context
         user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
-        logger.info(f"Retrieved user_id from context: {user_id}")
-        
+        logger.debug("checkpoint_retrieval: user_id=%s", user_id)
+
         # property_id is now mandatory in function signature, but check tool_context.state as fallback if somehow missing
         if not property_id:
             property_id = tool_context.state.get("property_id")
@@ -379,13 +418,25 @@ def ask_checkpoints_retrieval(
         
         if not user_id:
             logger.error(f"Missing user_id: user_id={user_id}")
+            logger.info(
+                "checkpoint_retrieval: end duration_ms=%d outcome=no_user checkpoints=0",
+                _elapsed_ms(),
+            )
             return {"checkpoints": [], "search_query": ""}
         
         if not property_id:
             logger.error("Missing property_id - checkpoint retrieval REQUIRES property_id. Cannot proceed without it.")
+            logger.info(
+                "checkpoint_retrieval: end duration_ms=%d outcome=no_property checkpoints=0",
+                _elapsed_ms(),
+            )
             return {"checkpoints": [], "search_query": ""}
         
-        logger.info(f"Using user_id={user_id}, property_id={property_id} for checkpoint retrieval")
+        logger.debug(
+            "checkpoint_retrieval: resolved user_id=%s property_id=%s",
+            user_id,
+            property_id,
+        )
         
         # Lazy import to avoid deployment issues
         from google.cloud import firestore
@@ -395,34 +446,62 @@ def ask_checkpoints_retrieval(
         
         # If specific checkpoint IDs are provided, fetch those checkpoints directly
         if checkpoint_ids and len(checkpoint_ids) > 0:
-            logger.info(f"Fetching specific checkpoints by ID: {checkpoint_ids} (count: {len(checkpoint_ids)})")
+            logger.debug(
+                "checkpoint_retrieval: fetching by id count=%d ids=%r",
+                len(checkpoint_ids),
+                checkpoint_ids,
+            )
             checkpoints = []
             checkpoints_ref = db.collection("users").document(user_id)\
                 .collection("properties").document(property_id)\
                 .collection("checkpoints")
-            logger.info(f"Checkpoint collection path: users/{user_id}/properties/{property_id}/checkpoints")
-            
+            logger.debug(
+                "checkpoint_retrieval: collection users/%s/properties/%s/checkpoints",
+                user_id,
+                property_id,
+            )
+
+            t_fetch = time.monotonic()
             for checkpoint_id in checkpoint_ids:
                 try:
-                    logger.info(f"Fetching checkpoint document: {checkpoint_id}")
+                    logger.debug("checkpoint_retrieval: fetch doc id=%s", checkpoint_id)
                     checkpoint_doc = checkpoints_ref.document(checkpoint_id).get()
                     if checkpoint_doc.exists:
                         checkpoint_data = checkpoint_doc.to_dict()
                         checkpoint_data["id"] = checkpoint_doc.id
                         checkpoints.append(checkpoint_data)
-                        logger.info(f"Successfully fetched checkpoint {checkpoint_id}: has aiAnalysis={bool(checkpoint_data.get('aiAnalysis'))}")
+                        logger.debug(
+                            "checkpoint_retrieval: loaded id=%s aiAnalysis=%s",
+                            checkpoint_id,
+                            bool(checkpoint_data.get("aiAnalysis")),
+                        )
                     else:
                         logger.warning(f"Checkpoint document {checkpoint_id} does not exist")
                 except Exception as e:
                     logger.error(f"Error fetching checkpoint {checkpoint_id}: {e}", exc_info=True)
             
-            logger.info(f"Fetched {len(checkpoints)} checkpoints out of {len(checkpoint_ids)} requested")
+            logger.info(
+                "checkpoint_retrieval: firestore_by_id fetch_duration_ms=%d "
+                "fetched=%d requested=%d total_elapsed_ms=%d",
+                int((time.monotonic() - t_fetch) * 1000),
+                len(checkpoints),
+                len(checkpoint_ids),
+                _elapsed_ms(),
+            )
             if not checkpoints:
                 logger.warning(f"None of the specified checkpoint IDs were found: {checkpoint_ids}")
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
+                    _elapsed_ms(),
+                )
                 return {"checkpoints": [], "search_query": ""}
         else:
             # Perform vector search when no specific checkpoint IDs provided
-            logger.info(f"Performing vector search for query: '{user_query}' (no specific checkpoint_ids provided)")
+            _vs = time.monotonic()
+            logger.debug(
+                "checkpoint_retrieval: vector_search start query_len=%d",
+                len(user_query or ""),
+            )
             checkpoints = search_checkpoints_by_vector(
                 db=db,
                 user_id=user_id,
@@ -431,18 +510,34 @@ def ask_checkpoints_retrieval(
                 limit=5,
                 location=location
             )
-            
-            logger.info(f"Vector search returned {len(checkpoints)} checkpoints")
+            logger.info(
+                "checkpoint_retrieval: vector_search duration_ms=%d returned=%d",
+                int((time.monotonic() - _vs) * 1000),
+                len(checkpoints),
+            )
             if not checkpoints:
                 logger.warning(f"No checkpoints found for query: {user_query}")
+                logger.info(
+                    "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
+                    _elapsed_ms(),
+                )
                 return {"checkpoints": [], "search_query": ""}
         
         # Format checkpoints for agent consumption
         # Extract relevant information: summary, location, detected items, issues, etc.
-        logger.info(f"Formatting {len(checkpoints)} checkpoints for agent consumption")
+        logger.debug(
+            "checkpoint_retrieval: formatting checkpoint_count=%d",
+            len(checkpoints),
+        )
+        t_fmt = time.monotonic()
         formatted_results = []
         for idx, checkpoint in enumerate(checkpoints):
-            logger.info(f"Processing checkpoint {idx+1}/{len(checkpoints)}: id={checkpoint.get('id')}")
+            logger.debug(
+                "checkpoint_retrieval: format %d/%d id=%s",
+                idx + 1,
+                len(checkpoints),
+                checkpoint.get("id"),
+            )
             checkpoint_id = checkpoint.get("id")
             ai_analysis = checkpoint.get("aiAnalysis", {})
             
@@ -504,16 +599,41 @@ def ask_checkpoints_retrieval(
             )
 
             formatted_results.append(formatted_checkpoint)
-            logger.info(f"Formatted checkpoint {idx+1}: has text={bool(formatted_checkpoint.get('text'))}, text_length={len(formatted_checkpoint.get('text', ''))}")
+            logger.debug(
+                "checkpoint_retrieval: formatted idx=%d text_len=%d",
+                idx + 1,
+                len(formatted_checkpoint.get("text") or ""),
+            )
         
-        logger.info(f"Successfully formatted {len(formatted_results)} checkpoints for query: '{user_query[:100]}'")
-        if formatted_results:
-            logger.info(f"Sample formatted checkpoint text (first 200 chars): {formatted_results[0].get('text', '')[:200]}")
         search_query = build_search_query_from_checkpoints(formatted_results)
-        logger.info("Retrieval search_query for optional branches: %r", search_query)
+        if formatted_results:
+            logger.debug(
+                "checkpoint_retrieval: sample_text_head=%r",
+                (formatted_results[0].get("text") or "")[:200],
+            )
+        logger.debug(
+            "checkpoint_retrieval: search_query for branches=%r",
+            search_query,
+        )
+        logger.info(
+            "checkpoint_retrieval: format duration_ms=%d checkpoints=%d",
+            int((time.monotonic() - t_fmt) * 1000),
+            len(formatted_results),
+        )
+        logger.info(
+            "checkpoint_retrieval: end duration_ms=%d outcome=ok checkpoints=%d "
+            "search_query_len=%d",
+            _elapsed_ms(),
+            len(formatted_results),
+            len(search_query or ""),
+        )
         return {"checkpoints": formatted_results, "search_query": search_query}
     except Exception as e:
         logger.error(f"Error retrieving checkpoints: {e}", exc_info=True)
+        logger.info(
+            "checkpoint_retrieval: end duration_ms=%d outcome=error checkpoints=0",
+            _elapsed_ms(),
+        )
         return {"checkpoints": [], "search_query": ""}
 
 

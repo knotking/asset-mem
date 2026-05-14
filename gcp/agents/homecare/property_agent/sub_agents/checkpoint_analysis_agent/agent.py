@@ -181,6 +181,7 @@ async def _run_single_optional_agent_async(
     tool_context: ToolContext,
 ) -> str:
     branch_start = time.monotonic()
+    branch_failed = False
     try:
         if name == "diy":
             result = await _run_checkpoint_diy_pipeline(payload)
@@ -189,13 +190,15 @@ async def _run_single_optional_agent_async(
             result = await _invoke_optional_agent_async(agent, payload, tool_context)
         return _normalize_agent_result(result)
     except Exception:
+        branch_failed = True
         logger.exception("checkpoint optional branch failed: %s", name)
         return "SKIPPED"
     finally:
         logger.info(
-            "checkpoint optional branch timing: branch=%s duration_ms=%d",
+            "checkpoint optional branch timing: branch=%s duration_ms=%d failed=%s",
             name,
             int((time.monotonic() - branch_start) * 1000),
+            branch_failed,
         )
 
 
@@ -235,6 +238,10 @@ async def run_checkpoint_optional_agents_parallel(
 
     requested = [n for n in (checkpoint_optional_agents or []) if n in _BRANCH_AGENTS]
     if not requested:
+        logger.info(
+            "checkpoint optional parallel: skip duration_ms=%d reason=no_valid_branches",
+            int((time.monotonic() - total_start) * 1000),
+        )
         return _serialize_and_store_parallel_results(tool_context, results)
 
     if tool_context is None:
@@ -246,10 +253,18 @@ async def run_checkpoint_optional_agents_parallel(
     branch_user_query = resolve_branch_search_user_query(
         search_query, checkpoint_results, max_chars=400
     )
+    logger.info(
+        "checkpoint optional parallel: start branches=%s checkpoint_blob_len=%d "
+        "retrieval_search_query_len=%d branch_user_query_len=%d",
+        sorted(set(requested)),
+        len(checkpoint_results or ""),
+        len((search_query or "").strip()),
+        len(branch_user_query),
+    )
     if not (search_query or "").strip() and len(branch_user_query) + 40 < len(
         checkpoint_results or ""
     ):
-        logger.info(
+        logger.debug(
             "checkpoint optional branches: derived from checkpoint_results only query_len=%d checkpoint_results_len=%d",
             len(branch_user_query),
             len(checkpoint_results or ""),
@@ -280,9 +295,10 @@ async def run_checkpoint_optional_agents_parallel(
         results[key] = value
 
     logger.info(
-        "checkpoint optional runner timing: requested=%s total_duration_ms=%d",
+        "checkpoint optional parallel: done requested=%s wall_ms=%d branch_user_query_len=%d",
         sorted(set(requested)),
         int((time.monotonic() - total_start) * 1000),
+        len(branch_user_query),
     )
     return _serialize_and_store_parallel_results(tool_context, results)
 

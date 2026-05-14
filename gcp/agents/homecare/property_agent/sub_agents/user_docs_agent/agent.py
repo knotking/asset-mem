@@ -1,6 +1,7 @@
 import asyncio
 import os
 import json
+import time
 from typing import Optional, List
 
 from google.cloud.storage.client import Client
@@ -18,7 +19,7 @@ from ...model_config import GLOBAL_GEMINI_MODEL
 
 load_dotenv()
 
-logger: logging.Logger = logging.getLogger("__name__")
+logger = logging.getLogger(__name__)
 
 def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
     """
@@ -64,9 +65,16 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
     If context_doc_uris is provided, returns only matching file IDs.
     If context_doc_uris is None/empty, returns all user file IDs.
     """
+    t0 = time.monotonic()
     file_ids = get_user_file_ids(user_id, context_doc_uris)
     mode = "all documents" if not context_doc_uris or len(context_doc_uris) == 0 else f"{len(context_doc_uris)} selected documents"
-    logger.info(f"Fetched {len(file_ids)} file IDs for user {user_id} from GCS ({mode} mode).")
+    logger.info(
+        "user_docs: gcs_file_ids duration_ms=%d count=%d user_id=%s mode=%s",
+        int((time.monotonic() - t0) * 1000),
+        len(file_ids),
+        user_id,
+        mode,
+    )
     return file_ids
 
 def _ask_user_docs_retreival_sync(
