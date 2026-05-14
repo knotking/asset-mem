@@ -8,7 +8,7 @@ recommendations based on checkpoint data analysis.
 import asyncio
 import json
 import logging
-import os
+import re
 import time
 from typing import Optional, List, Dict, Any, Tuple
 from google.adk.agents import Agent, SequentialAgent
@@ -28,10 +28,65 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+def _strip_checkpoint_title_noise(text: str) -> str:
+    """Remove checkpoint titles, dates, and times from retrieval blobs before search seeding."""
+    s = (text or "").strip()
+    if not s:
+        return ""
+    s = re.sub(r"\r\n?", " ", s)
+    # Narrative: Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage):
+    s = re.sub(r"Checkpoint\s+'[^']*'(?:\s*\([^)]*\))?\s*:\s*", " ", s, flags=re.I)
+    s = re.sub(r'Checkpoint\s+"[^"]*"(?:\s*\([^)]*\))?\s*:\s*', " ", s, flags=re.I)
+    s = re.sub(r"Checkpoint\s+Name\s*:\s*[^,\n]+", " ", s, flags=re.I)
+    # Stray suffix if a prior pipeline merged DIY search text into checkpoint prose
+    s = re.sub(r"\bDIY\s+tutorial\s+how\s+to\s+fix\s*$", "", s, flags=re.I)
+    s = re.sub(r"•+", " ", s)
+    s = re.sub(r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b", " ", s, flags=re.I)
+    s = re.sub(
+        r"\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|"
+        r"Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+"
+        r"\d{1,2}(?:st|nd|rd|th)?(?:,?\s*\d{4})?\b",
+        " ",
+        s,
+        flags=re.I,
+    )
+    s = re.sub(r"\b\d{4}-\d{2}-\d{2}\b", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def optional_branch_search_user_query(checkpoint_results: str, *, max_chars: int = 280) -> str:
+    """
+    Short plain-text query for optional parallel agents (DIY / shopping / YouTube paths).
+
+    Strips checkpoint names and timestamps, then reuses DIY checkpoint-field compaction
+    when structured labels (Summary / Issues / Location) are present.
+    """
+    from ..diy_agent.orchestrator import _compact_diy_search_seed
+
+    cleaned = _strip_checkpoint_title_noise(checkpoint_results)
+    seed = _compact_diy_search_seed(cleaned)
+    out = (seed or cleaned).strip()
+    out = re.sub(r"\s+", " ", out)
+    if len(out) > max_chars:
+        cut = out[: max_chars + 1]
+        out = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_chars].strip()
+    if not out:
+        out = cleaned[:max_chars].strip() if cleaned else ""
+    return out
+
+
 class CheckpointAnalysisInput(BaseModel):
     """Input schema for checkpoint analysis agent."""
     checkpoint_results: str = Field(description="The checkpoint retrieval results containing checkpoint data and analysis")
     user_query: str = Field(description="The original user query for context")
+    search_query: Optional[str] = Field(
+        default=None,
+        description=(
+            "Short plain-text search phrase derived from checkpoint findings (location, asset, issues only). "
+            "No checkpoint titles, dates, or times. Used by optional parallel agents for YouTube and shopping search APIs. "
+            "Omit to fall back to a server-side compact query from checkpoint_results."
+        ),
+    )
     checkpoint_optional_agents: List[CheckpointOptionalAgent] = Field(
         description="List of optional sub-agents to invoke: coverage, diy, service, cost"
     )
@@ -107,6 +162,7 @@ async def run_checkpoint_optional_agents_parallel(
     property_id: Optional[str] = None,
     location_coordinates: Optional[Dict[str, float]] = None,
     location_radius: Optional[int] = None,
+    search_query: Optional[str] = None,
     tool_context: ToolContext = None,
 ) -> str:
     """Run requested optional agents concurrently on the active event loop."""
@@ -131,8 +187,25 @@ async def run_checkpoint_optional_agents_parallel(
         )
         return json.dumps(results, ensure_ascii=False)
 
+    llm_sq = (search_query or "").strip()
+    if llm_sq:
+        branch_user_query = llm_sq[:400]
+        logger.info(
+            "checkpoint optional branches: using input search_query len=%d",
+            len(branch_user_query),
+        )
+    else:
+        branch_user_query = optional_branch_search_user_query(checkpoint_results)
+        if len(branch_user_query) + 40 < len(checkpoint_results or ""):
+            logger.info(
+                "checkpoint optional branches: derived search_user_query_len=%d checkpoint_results_len=%d",
+                len(branch_user_query),
+                len(checkpoint_results or ""),
+            )
+
     payload: Dict[str, Any] = {
-        "user_query": f"{user_query}\n\nCheckpoint context:\n{checkpoint_results}",
+        # Passed to coverage/diy/service/cost as DocsInput.user_query; DIY uses it for YouTube/SerpAPI seeds.
+        "user_query": branch_user_query,
         "checkpoint_results": checkpoint_results,
         "context_doc_uris": context_doc_uris,
         "property_address": property_address,
@@ -225,6 +298,7 @@ CRITICAL SCHEMA CONTRACT FOR WEBAPP/MAPP:
 DIY branch merge rule (checkpoint_parallel_diy_result):
 - The DIY tool may return JSON shaped as { "hire_professional_recommended": <boolean>, "diyResults": { ... } }.
 - Always set analysis.diyResults to the INNER "diyResults" object only (must contain diySteps, youtubeSearch, recommendedProducts as today).
+- For youtubeSearch.videos and recommendedProducts.products: copy those arrays exactly from the DIY tool's diyResults. If either array is empty or missing there, output [] for that array—never substitute placeholder videos (e.g. youtube.com/results search URLs), "N/A" links, generic "Hardware store" rows, or invented prices.
 - You may copy hire_professional_recommended into analysis.diyResults as optional boolean "hireProfessionalRecommended" for clients; omit if false.
 - Preserve diyCostEstimates inside analysis.diyResults when present (optional object).
 
@@ -258,9 +332,16 @@ diyResults (object):
     "videos": [{"title": <string>, "url": <string>, "description": <string>}]
   },
   "recommendedProducts": {
-    "products": [{"item_name": <string>, "vendor": <string>, "url": <string>, "price": <string>}]
+    "products": [
+      {
+        "item_name": <string|null>,
+        "image_url": <string|null>,
+        "vendor": <string|null>,
+        "reviews": <string|null>,
+        "store_url": <string|null>
+      }
+    ]
   }
-}
 
 serviceResults (object):
 {

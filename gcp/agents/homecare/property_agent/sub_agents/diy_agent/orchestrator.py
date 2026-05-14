@@ -92,6 +92,166 @@ def _infer_hire_professional(diagnosis: str) -> bool:
     return any(k in low for k in _HIRE_PRO_KEYWORDS)
 
 
+def _diy_search_seed_max_chars() -> int:
+    raw = os.getenv("DIY_SEARCH_SEED_MAX_CHARS", "280").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 280
+    return max(40, min(n, 2000))
+
+
+def _extract_labeled_line(text: str, label: str) -> str:
+    """Return one-line value after ``Label:`` (checkpoint-style blobs)."""
+    m = re.search(rf"(?im)^{re.escape(label)}\s*:\s*(.+)$", text)
+    if not m:
+        return ""
+    return re.sub(r"\s+", " ", m.group(1).strip())
+
+
+# Comma-separated checkpoint summaries (single line) use the same labels; values end at the next label.
+_KNOWN_CHECKPOINT_LABEL = (
+    r"(?:Checkpoint\s+Name|(?:Location/Asset|Location)|Summary|Issues|Detected\s+items)"
+)
+
+
+def _extract_inline_labeled_value(one_line: str, label_regex: str) -> str:
+    """Parse ``..., Label: value, NextLabel:`` style checkpoint text."""
+    m = re.search(
+        rf"(?i)(?:^|,)\s*{label_regex}\s*:\s*(.+?)(?=,\s*{_KNOWN_CHECKPOINT_LABEL}\s*:|$)",
+        one_line,
+    )
+    if not m:
+        return ""
+    return re.sub(r"\s+", " ", m.group(1).strip())
+
+
+def _joined_clean_parts(loc: str, sum_: str, iss: str) -> list[str]:
+    """Join Location / Summary / Issues without duplicating sentence-ending periods."""
+    out: list[str] = []
+    for p in (loc, sum_, iss):
+        s = (p or "").strip().rstrip(" \t.;")
+        if s:
+            out.append(s)
+    return out
+
+
+def _shopping_query_max_chars() -> int:
+    raw = os.getenv("DIY_SHOPPING_QUERY_MAX_CHARS", "120").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 120
+    return max(30, min(n, 400))
+
+
+def _shopping_search_seed(loc: str, sum_: str, iss: str) -> str:
+    """
+    Short keyword-style query for Google Shopping (SerpAPI).
+
+    Long narrative strings often return ``Google hasn't returned any results``;
+    location + issues (or summary) tends to match product search better than
+    the full YouTube-oriented seed.
+    """
+    loc = (loc or "").strip().rstrip(" \t.;")
+    sum_ = (sum_ or "").strip().rstrip(" \t.;")
+    iss = (iss or "").strip().rstrip(" \t.;")
+    chunks: list[str] = []
+    if loc:
+        chunks.append(loc)
+    body = iss or sum_
+    if body:
+        chunks.append(body)
+    elif sum_ and not chunks:
+        chunks.append(sum_)
+    q = " ".join(chunks).strip()
+    q = re.sub(r"\s+", " ", q)
+    max_c = _shopping_query_max_chars()
+    if len(q) > max_c:
+        cut = q[: max_c + 1]
+        q = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_c].strip()
+    return q
+
+
+def _parse_checkpoint_fields(diagnosis: str) -> tuple[str, str, str, str]:
+    """
+    Strip checkpoint boilerplate; return (location, summary, issues, rest_one_line).
+
+    ``rest_one_line`` is the blob collapsed to one line if structured fields are absent.
+    """
+    raw = (diagnosis or "").strip()
+    if not raw:
+        return "", "", "", ""
+
+    t = re.sub(r"\r\n?", "\n", raw)
+    t = re.sub(
+        r"(?is)^\s*analyse?\s+my\s+checkpoints\s*",
+        "",
+        t,
+        count=1,
+    ).lstrip()
+    t = re.sub(r"(?is)\bcheckpoint\s+context\s*:?\s*", "", t, count=1).strip()
+    t = re.sub(r"(?is)checkpoint\s+name\s*:\s*[^\n,]+(?:,|\n)?\s*", "", t, count=1).strip()
+
+    one_line = re.sub(r"\s+", " ", t)
+
+    loc = _extract_labeled_line(t, "Location/Asset") or _extract_labeled_line(t, "Location")
+    sum_ = _extract_labeled_line(t, "Summary")
+    iss = _extract_labeled_line(t, "Issues")
+
+    if not loc:
+        loc = _extract_inline_labeled_value(one_line, r"(?:Location/Asset|Location)")
+    if not sum_:
+        sum_ = _extract_inline_labeled_value(one_line, "Summary")
+    if not iss:
+        iss = _extract_inline_labeled_value(one_line, "Issues")
+
+    return loc, sum_, iss, one_line
+
+
+def _compact_diy_search_seed(diagnosis: str) -> str:
+    """
+    Turn long checkpoint-style prompts into a short phrase for YouTube search (and fallbacks).
+
+    SerpAPI uses ``_shopping_search_seed`` with a shorter keyword-style query. Full diagnosis is
+    still passed to grounded web search and synthesis.
+    """
+    raw = (diagnosis or "").strip()
+    if not raw:
+        return ""
+
+    loc, sum_, iss, one_line = _parse_checkpoint_fields(diagnosis)
+
+    parts = _joined_clean_parts(loc, sum_, iss)
+    if parts:
+        seed = ". ".join(parts)
+    else:
+        seed = one_line
+
+    seed = re.sub(r"(?i),?\s*detected\s+items\s*:.*$", "", seed).strip()
+    seed = re.sub(r"\s+", " ", seed).strip()
+    seed = re.sub(r"\.\s*\.+", ". ", seed).strip()
+
+    max_c = _diy_search_seed_max_chars()
+    if len(seed) > max_c:
+        cut = seed[: max_c + 1]
+        if " " in cut:
+            seed = cut.rsplit(" ", 1)[0].strip()
+        else:
+            seed = cut[:max_c].strip()
+
+    if not seed:
+        seed = re.sub(r"\s+", " ", raw)[:200].strip()
+
+    if len(diagnosis) > len(seed) + 80:
+        logger.info(
+            "DIY external search seed: diagnosis_len=%d seed_len=%d",
+            len(diagnosis),
+            len(seed),
+        )
+    return seed
+
+
 def _strip_code_fences(text: str) -> str:
     s = text.strip()
     if s.startswith("```"):
@@ -133,13 +293,17 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
 
 
 def _youtube_for_diagnosis(diagnosis: str) -> list[Dict[str, Any]]:
-    q = f"{diagnosis.strip()[:400]} DIY tutorial how to fix"
+    seed = _compact_diy_search_seed(diagnosis)
+    q = f"{seed} DIY tutorial how to fix"
     return youtube_search(q, max_results=5)
 
 
 def _products_for_diagnosis(diagnosis: str) -> str:
-    q = f"{diagnosis.strip()[:400]} DIY repair products tools materials"
-    return product_recommendations(q, "DIY")
+    loc, sum_, iss, _one = _parse_checkpoint_fields(diagnosis)
+    seed = _shopping_search_seed(loc, sum_, iss)
+    if not seed.strip():
+        seed = _compact_diy_search_seed(diagnosis)
+    return product_recommendations(seed, "DIY")
 
 
 def _product_recommendations_log_summary(products_json: str) -> str:
@@ -166,6 +330,79 @@ def _product_recommendations_log_summary(products_json: str) -> str:
     if not isinstance(raw_list, list):
         return "products=0 bad_products_list"
     return f"products={len(raw_list)}"
+
+
+def _youtube_videos_client_shape(
+    raw: list[Dict[str, Any]], *, limit: int = 10
+) -> list[Dict[str, Any]]:
+    """Normalize prefetched YouTube rows to the client JSON shape (title, url, description)."""
+    out: list[Dict[str, Any]] = []
+    for v in raw[:limit]:
+        if not isinstance(v, dict):
+            continue
+        url = str(v.get("url") or "").strip()
+        if not url:
+            continue
+        out.append(
+            {
+                "title": str(v.get("title") or "").strip(),
+                "url": url,
+                "description": str(v.get("description") or "").strip(),
+            }
+        )
+    return out
+
+
+def _serp_shopping_products_list(
+    products_json: str, *, max_items: int = 8
+) -> list[Dict[str, Any]]:
+    """Parse SerpAPI shopping JSON from ``product_recommendations`` into synthesis/fallback product rows."""
+    products: list[Dict[str, Any]] = []
+    if not (products_json or "").strip():
+        return products
+    try:
+        blob = json.loads(products_json)
+        rp = blob.get("recommendedProducts") if isinstance(blob, dict) else None
+        if not isinstance(rp, dict) or rp.get("message") or rp.get("error"):
+            return products
+        diy_block = rp.get("DIY") if isinstance(rp.get("DIY"), dict) else {}
+        raw_list = diy_block.get("products") if isinstance(diy_block, dict) else None
+        if not isinstance(raw_list, list):
+            return products
+        for p in raw_list[:max_items]:
+            if isinstance(p, dict):
+                products.append(
+                    {
+                        "item_name": p.get("item_name"),
+                        "image_url": p.get("image_url"),
+                        "vendor": p.get("vendor"),
+                        "reviews": p.get("reviews"),
+                        "store_url": p.get("store_url"),
+                    }
+                )
+    except Exception:
+        logger.debug("Serp shopping product parse failed", exc_info=True)
+    return products
+
+
+def _apply_prefetched_diy_artifacts(
+    diy_results: Dict[str, Any],
+    youtube_videos: list[Dict[str, Any]],
+    products_json: str,
+) -> None:
+    """Mutate ``diy_results`` so YouTube / shopping always match fetchers (never LLM placeholders)."""
+    yt_norm = _youtube_videos_client_shape(youtube_videos)
+    diy_results["youtubeSearch"] = {"videos": yt_norm}
+    logger.info(
+        "DIY synthesis: applied prefetched youtube videos=%d",
+        len(yt_norm),
+    )
+    serp_products = _serp_shopping_products_list(products_json)
+    diy_results["recommendedProducts"] = {"products": serp_products}
+    logger.info(
+        "DIY synthesis: applied SerpAPI products=%d",
+        len(serp_products),
+    )
 
 
 def _cost_query(diagnosis: str, property_address: str) -> str:
@@ -220,10 +457,10 @@ Return ONE JSON object only (no markdown fences) with this shape:
 Rules:
 - Set hire_professional_recommended true if the work involves gas, main electrical, structural, asbestos, sewage, HVAC sealed refrigerant, or similar hazards implied by the diagnosis or web summary.
 - diySteps.steps must be numbered from 1; derive steps from web_research_summary when possible.
-- youtubeSearch.videos must come from the youtube_videos list (titles/urls/descriptions); do not invent URLs.
-- recommendedProducts.products must be parsed from product_recommendations_raw_json when possible; otherwise use an empty array.
+- youtubeSearch.videos: copy ONLY from the youtube_videos array in INPUT_JSON (same title/url/description per item, in order). If youtube_videos is empty or missing, set videos to [] exactly. Never use search-results pages, youtu.be without a real id from inputs, or any URL not present in youtube_videos.
+- recommendedProducts.products: copy ONLY real shopping rows from product_recommendations_raw_json (recommendedProducts.DIY.products when present). If that list is empty, missing, or the payload is an error/unavailable message, set products to [] exactly. Never fabricate items, "N/A" URLs, generic "Hardware store" rows, or placeholder prices.
 - diyCostEstimates must match the JSON object in diy_cost_raw_json (same diyCostEstimates subtree); if parse fails use {}.
-- Do not invent store_url or image_url values not present in the inputs.
+- Do not invent store_url, image_url, url, or price fields not present in the inputs.
 """
     prompt = (
         "You consolidate prefetched DIY research into strict JSON.\n"
@@ -237,8 +474,8 @@ Rules:
             config=types.GenerateContentConfig(
                 temperature=0.2,
                 top_p=0.85,
-                max_output_tokens=int(os.getenv("DIY_SYNTHESIS_MAX_OUTPUT_TOKENS", "4096")),
-                response_modalities=["TEXT"],
+                max_output_tokens=int(os.getenv("DIY_SYNTHESIS_MAX_OUTPUT_TOKENS", "8192")),
+                response_mime_type="application/json",
             ),
         )
         raw = (response.text or "").strip()
@@ -264,6 +501,8 @@ Rules:
                     dr["diyCostEstimates"] = {}
             except Exception:
                 dr["diyCostEstimates"] = {}
+        if isinstance(dr, dict):
+            _apply_prefetched_diy_artifacts(dr, youtube_videos, products_json)
         return json.dumps(parsed, ensure_ascii=False)
     except Exception as exc:
         logger.exception(
@@ -281,27 +520,7 @@ def _fallback_json(
     products_json: str,
     cost_json: str,
 ) -> str:
-    products: list[Dict[str, Any]] = []
-    try:
-        blob = json.loads(products_json)
-        rp = blob.get("recommendedProducts") if isinstance(blob, dict) else None
-        if isinstance(rp, dict):
-            diy_block = rp.get("DIY") if isinstance(rp.get("DIY"), dict) else {}
-            raw_list = diy_block.get("products") if isinstance(diy_block, dict) else None
-            if isinstance(raw_list, list):
-                for p in raw_list[:8]:
-                    if isinstance(p, dict):
-                        products.append(
-                            {
-                                "item_name": p.get("item_name"),
-                                "image_url": p.get("image_url"),
-                                "vendor": p.get("vendor"),
-                                "reviews": p.get("reviews"),
-                                "store_url": p.get("store_url"),
-                            }
-                        )
-    except Exception:
-        logger.debug("Fallback product parse failed", exc_info=True)
+    products = _serp_shopping_products_list(products_json)
 
     steps: list[Dict[str, Any]] = []
     for line in web_summary.splitlines()[:12]:
@@ -329,7 +548,7 @@ def _fallback_json(
                 "summary": web_summary[:2500] if web_summary else "See steps below.",
                 "steps": steps or [{"stepNumber": 1, "description": "Review manufacturer guidance before starting."}],
             },
-            "youtubeSearch": {"videos": youtube_videos[:10]},
+            "youtubeSearch": {"videos": _youtube_videos_client_shape(youtube_videos)},
             "recommendedProducts": {"products": products},
             "diyCostEstimates": cost_inner,
         },
@@ -416,17 +635,24 @@ def run_diy_pipeline_sync(
             dur_ms = int((time.monotonic() - t_submit) * 1000)
             if name == "youtube":
                 vcount = len(result) if isinstance(result, list) else 0
+                full_yt = (
+                    json.dumps(result, ensure_ascii=False)
+                    if isinstance(result, list)
+                    else repr(result)
+                )
                 logger.info(
-                    "DIY orchestrator phase=youtube duration_ms=%d videos=%d",
+                    "DIY orchestrator phase=youtube duration_ms=%d videos=%d full_results=%s",
                     dur_ms,
                     vcount,
+                    full_yt,
                 )
             elif name == "products":
                 pj = result if isinstance(result, str) else ""
                 logger.info(
-                    "DIY orchestrator phase=products duration_ms=%d %s",
+                    "DIY orchestrator phase=products duration_ms=%d %s full_json=%s",
                     dur_ms,
                     _product_recommendations_log_summary(pj),
+                    pj if (pj or "").strip() else "(empty)",
                 )
             else:
                 logger.info(

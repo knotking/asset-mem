@@ -4,6 +4,8 @@ import asyncio
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
 
 
@@ -79,3 +81,67 @@ def test_parallel_runner_skips_all_when_tool_context_missing():
     parsed = json.loads(out)
     assert parsed["checkpoint_parallel_coverage_result"] == "SKIPPED"
     assert parsed["checkpoint_parallel_diy_result"] == "SKIPPED"
+
+
+def test_optional_branch_search_user_query_strips_checkpoint_prose():
+    blob = (
+        "Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage): Detected door, handle. "
+        "Issues: Significant paint chipping near handle. DIY tutorial how to fix"
+    )
+    q = caa.optional_branch_search_user_query(blob)
+    low = q.lower()
+    assert "9:10" not in q
+    assert "may 11" not in low
+    assert "checkpoint •" not in low
+    assert "diy tutorial" not in low
+    assert "garage" in low or "paint" in low or "chipping" in low
+
+
+def test_parallel_runner_payload_uses_search_user_query(monkeypatch: pytest.MonkeyPatch):
+    captured: list[dict] = []
+
+    async def _capture(agent, payload, tool_context):
+        captured.append(dict(payload))
+        return "ok"
+
+    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _capture)
+    blob = (
+        "Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage): Detected door. "
+        "Issues: Paint damage DIY tutorial how to fix"
+    )
+    asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results=blob,
+            user_query="analyse my checkpoints",
+            checkpoint_optional_agents=["diy"],
+            tool_context=_minimal_tool_context(),
+        )
+    )
+    assert len(captured) == 1
+    assert captured[0]["checkpoint_results"] == blob
+    assert captured[0]["user_query"] != blob
+    assert "9:10" not in captured[0]["user_query"]
+    assert "diy tutorial" not in captured[0]["user_query"].lower()
+
+
+def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.MonkeyPatch):
+    captured: list[dict] = []
+
+    async def _capture(agent, payload, tool_context):
+        captured.append(dict(payload))
+        return "ok"
+
+    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _capture)
+    blob = "long checkpoint prose " * 20
+    explicit = "garage door paint touch up"
+    asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results=blob,
+            user_query="q",
+            checkpoint_optional_agents=["diy"],
+            search_query=explicit,
+            tool_context=_minimal_tool_context(),
+        )
+    )
+    assert len(captured) == 1
+    assert captured[0]["user_query"] == explicit

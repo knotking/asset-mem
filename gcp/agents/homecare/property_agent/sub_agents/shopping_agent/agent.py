@@ -13,8 +13,13 @@ load_dotenv()
 def product_recommendations(query: str, category: str = "DIY") -> str:
     """Provides product recommendations for repairs. Can be used for DIY or professional service products."""
     serpapi_api_key = os.environ.get("SERP_API_KEY")
-    
+
     if not serpapi_api_key:
+        logger.info(
+            "product_recommendations: SERP_API_KEY unset; returning unavailable payload (category=%s query_len=%d)",
+            category,
+            len(query or ""),
+        )
         return json.dumps({"recommendedProducts": {"message": "Product recommendations service not available (missing API key)."}})
     
     try:
@@ -25,7 +30,9 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
             search_query = f"{query} DIY repair products tools"
         else:
             search_query = f"{query} {category} repair products tools"
-        
+
+        logger.info("product_recommendations: SerpAPI search_query=%r", search_query)
+
         product_search = serpapi.GoogleSearch({
             "q": search_query,
             "tbm": "shop",
@@ -36,7 +43,20 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
         })
         
         search_results = product_search.get_dict()
-        products = search_results.get("shopping_results", [])
+        if isinstance(search_results, dict) and search_results.get("error"):
+            logger.info(
+                "product_recommendations: SerpAPI error in response category=%s search_query=%r error=%s",
+                category,
+                search_query,
+                search_results.get("error"),
+            )
+        products = search_results.get("shopping_results") or []
+        if not isinstance(products, list):
+            logger.info(
+                "product_recommendations: shopping_results not a list (type=%s); treating as empty",
+                type(products).__name__,
+            )
+            products = []
         
         # Process products
         def process_products(products, max_results=5):
@@ -64,7 +84,26 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
             return processed
         
         processed_items = process_products(products)
-        
+        logger.info(
+            "product_recommendations: SerpAPI processed_items=%s",
+            json.dumps(processed_items, ensure_ascii=False),
+        )
+
+        if not processed_items:
+            top_keys = (
+                list(search_results.keys())[:15]
+                if isinstance(search_results, dict)
+                else []
+            )
+            logger.info(
+                "product_recommendations: zero products after processing "
+                "(category=%s search_query=%r raw_shopping_count=%d response_keys=%s)",
+                category,
+                search_query,
+                len(products),
+                top_keys,
+            )
+
         response_data = {
             "recommendedProducts": {
                 category: {
