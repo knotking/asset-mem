@@ -15,6 +15,8 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 
+logger = logging.getLogger(__name__)
+
 # Cloud exporters (conditionally imported)
 # NOTE:
 # - Modern/maintained Google Cloud exporters are published via:
@@ -22,17 +24,38 @@ from opentelemetry.sdk.resources import Resource
 #   - opentelemetry-exporter-gcp-monitoring
 # They expose the same import paths used below.
 try:
+    from google.api_core import exceptions as google_api_exceptions
     from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
     from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
+
+    class _ResilientCloudMonitoringMetricsExporter(CloudMonitoringMetricsExporter):
+        """Cloud Monitoring rejects points written too close together for a time series.
+
+        On Cloud Functions / short-lived workers, a shutdown flush often runs shortly
+        after a periodic export, which triggers InvalidArgument and noisy ERROR logs
+        from the upstream exporter. Sampling violations are safe to drop.
+        """
+
+        def _batch_write(self, series):  # type: ignore[no-untyped-def]
+            try:
+                super()._batch_write(series)
+            except google_api_exceptions.InvalidArgument as e:
+                if "maximum sampling period" in str(e).lower():
+                    logger.debug(
+                        "Skipped Cloud Monitoring batch (sampling interval): %s", e
+                    )
+                    return
+                raise
+
     CLOUD_EXPORTERS_AVAILABLE = True
 except ImportError:
+    google_api_exceptions = None  # type: ignore[assignment,misc]
     CLOUD_EXPORTERS_AVAILABLE = False
+    _ResilientCloudMonitoringMetricsExporter = None  # type: ignore[misc,assignment]
     logging.warning(
         "Cloud exporters not available. Install opentelemetry-exporter-gcp-trace and "
         "opentelemetry-exporter-gcp-monitoring for Google Cloud integration."
     )
-
-logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 # Safety wrappers
@@ -149,7 +172,7 @@ def _initialize_metrics(project_id: Optional[str]):
     
     try:
         if project_id:
-            exporter = CloudMonitoringMetricsExporter(project_id=project_id)
+            exporter = _ResilientCloudMonitoringMetricsExporter(project_id=project_id)
             reader = PeriodicExportingMetricReader(exporter, export_interval_millis=60000)
             _meter_provider = MeterProvider(resource=_RESOURCE, metric_readers=[reader])
             logger.info(f"Cloud Monitoring exporter initialized for project {project_id}")
