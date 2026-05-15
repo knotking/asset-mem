@@ -56,9 +56,9 @@ Optional branches are executed in parallel and then synthesized into a single fi
    - Synthesize into clear problem statement
 
 2. **Agent Orchestration**
-   - Run optional agent branches in parallel (coverage, diy, service, cost)
+   - Run optional agent branches in parallel via Python (`CheckpointOptionalParallelAgent`; no LLM hop)
    - Each branch no-ops unless its agent key is present in `checkpoint_optional_agents`
-   - Collect branch outputs and synthesize one final response
+   - Collect branch outputs and synthesize one final response (single LLM synthesis step)
 
 3. **Response Assembly**
    - Combine all results into structured format

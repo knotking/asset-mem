@@ -1,6 +1,6 @@
 """
 Python orchestrator for DIY: parallel data fetch (web + YouTube + products + library cost),
-then a single Gemini synthesis call (no second Google Search on cost).
+then a steps-only Gemini call plus deterministic JSON assembly (YouTube, products, cost).
 
 Caching is optional via DIY_ORCHESTRATOR_CACHE_TTL_SECONDS (default 300; set 0 to disable).
 """
@@ -109,101 +109,42 @@ def _infer_hire_professional(diagnosis: str) -> bool:
     return any(k in low for k in _HIRE_PRO_KEYWORDS)
 
 
-# Constrains Gemini synthesis output so responses stay parseable (avoids truncated
-# JSON / unterminated strings when free-form JSON runs long).
-_DIY_SYNTHESIS_RESPONSE_JSON_SCHEMA: Dict[str, Any] = {
+# Steps-only LLM schema; YouTube / products / cost are assembled in Python.
+_DIY_STEPS_ONLY_JSON_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "properties": {
         "hire_professional_recommended": {"type": "boolean"},
-        "diyResults": {
+        "diySteps": {
             "type": "object",
             "properties": {
-                "diySteps": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string", "maxLength": 4000},
-                        "steps": {
-                            "type": "array",
-                            "maxItems": 8,
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "stepNumber": {"type": "integer"},
-                                    "description": {
-                                        "type": "string",
-                                        "maxLength": 800,
-                                    },
-                                },
-                                "required": ["stepNumber", "description"],
-                            },
+                "summary": {"type": "string", "maxLength": 2000},
+                "steps": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "stepNumber": {"type": "integer"},
+                            "description": {"type": "string", "maxLength": 700},
                         },
+                        "required": ["stepNumber", "description"],
                     },
-                    "required": ["summary", "steps"],
-                },
-                "youtubeSearch": {
-                    "type": "object",
-                    "properties": {
-                        "videos": {
-                            "type": "array",
-                            "maxItems": 15,
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "title": {"type": "string", "maxLength": 400},
-                                    "url": {"type": "string", "maxLength": 600},
-                                    "description": {
-                                        "type": "string",
-                                        "maxLength": 600,
-                                    },
-                                },
-                                "required": ["title", "url", "description"],
-                            },
-                        }
-                    },
-                    "required": ["videos"],
-                },
-                "recommendedProducts": {
-                    "type": "object",
-                    "properties": {
-                        "products": {
-                            "type": "array",
-                            "maxItems": 8,
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "item_name": {"type": "string", "maxLength": 400},
-                                    "image_url": {"type": "string", "maxLength": 2000},
-                                    "vendor": {"type": "string", "maxLength": 200},
-                                    "reviews": {"type": "string", "maxLength": 80},
-                                    "store_url": {"type": "string", "maxLength": 2000},
-                                },
-                                "required": [
-                                    "item_name",
-                                    "image_url",
-                                    "vendor",
-                                    "reviews",
-                                    "store_url",
-                                ],
-                            },
-                        }
-                    },
-                    "required": ["products"],
-                },
-                "diyCostEstimates": {
-                    "type": "object",
-                    "additionalProperties": True,
                 },
             },
-            "required": [
-                "diySteps",
-                "youtubeSearch",
-                "recommendedProducts",
-                "diyCostEstimates",
-            ],
+            "required": ["summary", "steps"],
         },
     },
-    "required": ["hire_professional_recommended", "diyResults"],
+    "required": ["hire_professional_recommended", "diySteps"],
 }
+
+
+def _steps_llm_max_output_tokens() -> int:
+    raw = os.getenv("DIY_STEPS_LLM_MAX_OUTPUT_TOKENS", "2048").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 2048
+    return max(512, min(n, 4096))
 
 
 def _diy_search_seed_max_chars() -> int:
@@ -213,6 +154,63 @@ def _diy_search_seed_max_chars() -> int:
     except ValueError:
         return 280
     return max(40, min(n, 2000))
+
+
+def _web_grounding_max_output_tokens() -> int:
+    raw = os.getenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "1536").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 1536
+    return max(256, min(n, 4096))
+
+
+def _web_summary_max_chars() -> int:
+    raw = os.getenv("DIY_WEB_SUMMARY_MAX_CHARS", "3500").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        return 3500
+    return max(500, min(n, 8000))
+
+
+def _truncate_web_summary(text: str) -> str:
+    cap = _web_summary_max_chars()
+    s = (text or "").strip()
+    if len(s) <= cap:
+        return s
+    cut = s[: cap + 1]
+    if " " in cut:
+        return cut.rsplit(" ", 1)[0].strip()
+    return s[:cap].strip()
+
+
+def resolve_pipeline_diagnosis(
+    user_query: str,
+    checkpoint_retrieval_search_query: Optional[str] = None,
+) -> tuple[str, Optional[str]]:
+    """
+    Split synthesis context from external API / web-grounding seeds.
+
+    ``user_query`` carries the full diagnosis / checkpoint blob for synthesis. When a
+    checkpoint retrieval seed is set, grounded web search, YouTube, SerpAPI, and library
+    DIY cost use that phrase (after strip). Synthesis always uses ``user_query`` (falling
+    back to the seed if ``user_query`` is empty).
+    """
+    llm_diagnosis = (user_query or "").strip()
+    seed = (checkpoint_retrieval_search_query or "").strip()
+    api_seed = seed if seed else None
+    if not llm_diagnosis and api_seed:
+        llm_diagnosis = api_seed
+    return llm_diagnosis, api_seed
+
+
+def _web_grounding_query(llm_diagnosis: str, api_seed: Optional[str]) -> str:
+    """Issue text for Google Search grounding: retrieval seed when set, else compacted diagnosis."""
+    if api_seed:
+        return api_seed
+    compact = _compact_diy_search_seed(llm_diagnosis)
+    return compact or llm_diagnosis
 
 
 def _extract_labeled_line(text: str, label: str) -> str:
@@ -323,12 +321,54 @@ def _parse_checkpoint_fields(diagnosis: str) -> tuple[str, str, str, str]:
     return loc, sum_, iss, one_line
 
 
+def _split_list_field(raw: str) -> list[str]:
+    if not (raw or "").strip():
+        return []
+    return [x.strip() for x in re.split(r"[,;]", raw) if x.strip()]
+
+
+def parse_checkpoint_structured_context(diagnosis: str) -> Dict[str, Any]:
+    """
+    Structured checkpoint fields for step generation (location, summary, issues, etc.).
+
+    Returns a dict with only non-empty values suitable for JSON ``checkpoint`` input.
+    """
+    raw = (diagnosis or "").strip()
+    if not raw:
+        return {}
+
+    t = re.sub(r"\r\n?", "\n", raw)
+    loc, sum_, iss, one_line = _parse_checkpoint_fields(diagnosis)
+
+    detected_raw = _extract_labeled_line(t, "Detected items") or _extract_inline_labeled_value(
+        one_line, r"Detected\s+items"
+    )
+    conditions_raw = _extract_labeled_line(t, "Conditions") or _extract_inline_labeled_value(
+        one_line, "Conditions"
+    )
+
+    out: Dict[str, Any] = {}
+    if loc:
+        out["location"] = loc
+    if sum_:
+        out["summary"] = sum_
+    if iss:
+        out["issues"] = iss
+    detected = _split_list_field(detected_raw)
+    if detected:
+        out["detected_items"] = detected
+    conditions = _split_list_field(conditions_raw)
+    if conditions:
+        out["conditions"] = conditions
+    return out
+
+
 def _compact_diy_search_seed(diagnosis: str) -> str:
     """
     Turn long checkpoint-style prompts into a short phrase for YouTube search (and fallbacks).
 
-    SerpAPI uses ``_shopping_search_seed`` with a shorter keyword-style query. Full diagnosis is
-    still passed to grounded web search and synthesis.
+    SerpAPI uses ``_shopping_search_seed`` with a shorter keyword-style query. Checkpoint flows
+    pass the retrieval seed to YouTube/shopping/web/cost; synthesis uses full ``user_query``.
     """
     raw = (diagnosis or "").strip()
     if not raw:
@@ -378,11 +418,19 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
     """One Gemini call with Google Search grounding for DIY steps context."""
     client = LEGACY_API_GEMINI.api_client
     addr = property_address.strip() if property_address else "not provided"
+    checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
+    ctx_block = ""
+    if checkpoint_ctx:
+        ctx_block = (
+            f"Structured checkpoint:\n{json.dumps(checkpoint_ctx, ensure_ascii=False)}\n\n"
+        )
     prompt = (
-        f"Issue / diagnosis:\n{diagnosis}\n\n"
+        f"{ctx_block}"
+        f"Issue / search focus:\n{diagnosis[:4000]}\n\n"
         f"Property address context: {addr}\n\n"
-        "Summarize practical DIY repair steps, tools, materials, and important safety warnings. "
-        "Be concise (under 900 words). Do not fabricate URLs."
+        "Using web search when helpful, list practical DIY repair steps (numbered, at most 8), "
+        "required tools, materials, and safety warnings. Be concise (under 500 words). "
+        "Do not fabricate URLs."
     )
     try:
         response = client.models.generate_content(
@@ -391,12 +439,12 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
             config=types.GenerateContentConfig(
                 temperature=0.35,
                 top_p=0.9,
-                max_output_tokens=4096,
+                max_output_tokens=_web_grounding_max_output_tokens(),
                 response_modalities=["TEXT"],
                 tools=[types.Tool(google_search=types.GoogleSearch())],
             ),
         )
-        return (response.text or "").strip()
+        return _truncate_web_summary(response.text or "")
     except Exception as exc:
         logger.exception(
             "DIY grounded web search failed (%s: %s)",
@@ -540,59 +588,86 @@ def _cost_query(diagnosis: str, property_address: str) -> str:
     return " ".join(parts)
 
 
-def _synthesize_diy_json(
-    diagnosis: str,
-    web_summary: str,
+def _parse_diy_cost_inner(cost_json: str) -> Dict[str, Any]:
+    if not (cost_json or "").strip():
+        return {}
+    try:
+        parsed = json.loads(cost_json)
+        if isinstance(parsed, dict):
+            inner = parsed.get("diyCostEstimates")
+            if isinstance(inner, dict):
+                return inner
+    except Exception:
+        logger.debug("DIY cost inner parse failed", exc_info=True)
+    return {}
+
+
+def _normalize_step_list(raw_steps: Any) -> list[Dict[str, Any]]:
+    if not isinstance(raw_steps, list):
+        return []
+    out: list[Dict[str, Any]] = []
+    for i, item in enumerate(raw_steps[:8]):
+        if not isinstance(item, dict):
+            continue
+        desc = str(item.get("description") or "").strip()
+        if not desc:
+            continue
+        try:
+            num = int(item.get("stepNumber", i + 1))
+        except (TypeError, ValueError):
+            num = i + 1
+        out.append({"stepNumber": num, "description": desc[:700]})
+    for j, step in enumerate(out, start=1):
+        step["stepNumber"] = j
+    return out
+
+
+def _assemble_diy_results(
+    hire_professional_recommended: bool,
+    diy_steps: Dict[str, Any],
     youtube_videos: list[Dict[str, Any]],
     products_json: str,
     cost_json: str,
-) -> str:
-    """Single Gemini call: merge inputs into the nested DIY JSON schema (no tools)."""
-    client = LEGACY_API_GEMINI.api_client
-    payload = {
-        "diagnosis": diagnosis[:4000],
-        "web_research_summary": web_summary[:6000],
-        "youtube_videos": youtube_videos[:15],
-        "product_recommendations_raw_json": products_json[:12000],
-        "diy_cost_raw_json": cost_json[:8000],
+) -> Dict[str, Any]:
+    """Build client ``diyResults`` from steps LLM output and prefetched artifacts."""
+    summary = str((diy_steps or {}).get("summary") or "").strip()
+    steps = _normalize_step_list((diy_steps or {}).get("steps"))
+    dr: Dict[str, Any] = {
+        "diySteps": {
+            "summary": summary or "See steps below.",
+            "steps": steps,
+        },
+        "youtubeSearch": {"videos": []},
+        "recommendedProducts": {"products": []},
+        "diyCostEstimates": _parse_diy_cost_inner(cost_json),
     }
-    schema_hint = """
-Return ONE JSON object only (no markdown fences) with this shape:
-{
-  "hire_professional_recommended": <boolean>,
-  "diyResults": {
-    "diySteps": {
-      "summary": "<string>",
-      "steps": [ { "stepNumber": <int>, "description": "<string>" } ]
-    },
-    "youtubeSearch": {
-      "videos": [ { "title": "<string>", "url": "<string>", "description": "<string>" } ]
-    },
-    "recommendedProducts": {
-      "products": [
-        {
-          "item_name": "<string|null>",
-          "image_url": "<string|null>",
-          "vendor": "<string|null>",
-          "reviews": "<string|null>",
-          "store_url": "<string|null>"
-        }
-      ]
-    },
-    "diyCostEstimates": <object: parse diy_cost_raw_json and place the diyCostEstimates object here>
-  }
-}
-Rules:
-- Set hire_professional_recommended true if the work involves gas, main electrical, structural, asbestos, sewage, HVAC sealed refrigerant, or similar hazards implied by the diagnosis or web summary.
-- diySteps.steps must be numbered from 1; derive steps from web_research_summary when possible. Use at most 8 steps; keep each description under 700 characters (complete sentences; no trailing commas).
-- youtubeSearch.videos: copy ONLY from the youtube_videos array in INPUT_JSON (same title/url/description per item, in order). If youtube_videos is empty or missing, set videos to [] exactly. Never use search-results pages, youtu.be without a real id from inputs, or any URL not present in youtube_videos.
-- recommendedProducts.products: copy ONLY real shopping rows from product_recommendations_raw_json (recommendedProducts.DIY.products when present). If that list is empty, missing, or the payload is an error/unavailable message, set products to [] exactly. Never fabricate items, "N/A" URLs, generic "Hardware store" rows, or placeholder prices. Use string type for reviews (e.g. "1200" not bare numbers).
-- diyCostEstimates must match the JSON object in diy_cost_raw_json (same diyCostEstimates subtree); if parse fails use {}.
-- Do not invent store_url, image_url, url, or price fields not present in the inputs.
-"""
+    _apply_prefetched_diy_artifacts(dr, youtube_videos, products_json)
+    return {
+        "hire_professional_recommended": hire_professional_recommended,
+        "diyResults": dr,
+    }
+
+
+def _generate_diy_steps_llm(
+    diagnosis: str,
+    web_summary: str,
+) -> Tuple[bool, Dict[str, Any]]:
+    """
+    Single Gemini call: steps + hire-pro only (no YouTube/products/cost in schema).
+
+    Returns ``(hire_professional_recommended, diySteps dict)``.
+    """
+    client = LEGACY_API_GEMINI.api_client
+    checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
+    payload: Dict[str, Any] = {
+        "checkpoint": checkpoint_ctx,
+        "diagnosis_excerpt": diagnosis[:4000],
+        "web_research_summary": (web_summary or "")[:6000],
+    }
     prompt = (
-        "You consolidate prefetched DIY research into strict JSON.\n"
-        f"{schema_hint}\n\n"
+        "You write DIY repair steps as strict JSON only (no markdown fences).\n"
+        "Use checkpoint fields and web_research_summary when present; prefer web for step order. "
+        "Do not invent tools or materials not implied by the inputs. At most 8 numbered steps.\n\n"
         f"INPUT_JSON:\n{json.dumps(payload, ensure_ascii=False)}"
     )
     last_exc: Optional[Exception] = None
@@ -601,63 +676,93 @@ Rules:
             cfg_kwargs: Dict[str, Any] = {
                 "temperature": 0.2,
                 "top_p": 0.85,
-                "max_output_tokens": int(
-                    os.getenv("DIY_SYNTHESIS_MAX_OUTPUT_TOKENS", "8192")
-                ),
+                "max_output_tokens": _steps_llm_max_output_tokens(),
                 "response_mime_type": "application/json",
             }
             if use_response_schema:
-                cfg_kwargs["response_json_schema"] = (
-                    _DIY_SYNTHESIS_RESPONSE_JSON_SCHEMA
-                )
+                cfg_kwargs["response_json_schema"] = _DIY_STEPS_ONLY_JSON_SCHEMA
             response = client.models.generate_content(
                 model=_synthesis_model(),
                 contents=prompt,
                 config=types.GenerateContentConfig(**cfg_kwargs),
             )
-            raw = (response.text or "").strip()
-            cleaned = _strip_code_fences(raw)
-            parsed = json.loads(cleaned)
+            raw = _strip_code_fences((response.text or "").strip())
+            parsed = json.loads(raw)
             if not isinstance(parsed, dict):
-                raise ValueError("synthesis root must be object")
-            if "diyResults" not in parsed:
-                raise ValueError("missing diyResults")
+                raise ValueError("steps LLM root must be object")
+            diy_steps = parsed.get("diySteps")
+            if not isinstance(diy_steps, dict):
+                raise ValueError("missing diySteps")
             model_hire = parsed.get("hire_professional_recommended")
             inferred = _infer_hire_professional(diagnosis)
-            if isinstance(model_hire, bool):
-                parsed["hire_professional_recommended"] = model_hire or inferred
-            else:
-                parsed["hire_professional_recommended"] = inferred
-            dr = parsed.get("diyResults")
-            if isinstance(dr, dict) and "diyCostEstimates" not in dr:
-                try:
-                    ce = json.loads(cost_json)
-                    if isinstance(ce, dict) and "diyCostEstimates" in ce:
-                        dr["diyCostEstimates"] = ce["diyCostEstimates"]
-                    else:
-                        dr["diyCostEstimates"] = {}
-                except Exception:
-                    dr["diyCostEstimates"] = {}
-            if isinstance(dr, dict):
-                _apply_prefetched_diy_artifacts(dr, youtube_videos, products_json)
-            return json.dumps(parsed, ensure_ascii=False)
+            hire = (model_hire or inferred) if isinstance(model_hire, bool) else inferred
+            return hire, diy_steps
         except Exception as exc:
             last_exc = exc
             if use_response_schema:
                 logger.warning(
-                    "DIY synthesis with response_json_schema failed (%s: %s); "
-                    "retrying without response schema",
+                    "DIY steps LLM with response_json_schema failed (%s: %s); retrying",
                     type(exc).__name__,
                     exc,
                 )
             continue
-
     logger.exception(
-        "DIY synthesis failed after retries; using deterministic fallback (%s: %s)",
+        "DIY steps LLM failed after retries (%s: %s)",
         type(last_exc).__name__ if last_exc else "Unknown",
         last_exc,
     )
-    return _fallback_json(diagnosis, web_summary, youtube_videos, products_json, cost_json)
+    return _infer_hire_professional(diagnosis), _fallback_diy_steps(diagnosis, web_summary)
+
+
+def _fallback_diy_steps(diagnosis: str, web_summary: str) -> Dict[str, Any]:
+    steps: list[Dict[str, Any]] = []
+    for line in (web_summary or "").splitlines()[:12]:
+        line = line.strip()
+        if len(line) < 8:
+            continue
+        steps.append({"stepNumber": len(steps) + 1, "description": line[:500]})
+        if len(steps) >= 8:
+            break
+    if not steps:
+        ctx = parse_checkpoint_structured_context(diagnosis)
+        hint = (ctx.get("issues") or ctx.get("summary") or diagnosis or "")[:500]
+        steps = [
+            {
+                "stepNumber": 1,
+                "description": (
+                    f"Review the issue ({hint}) and manufacturer guidance before starting."
+                    if hint
+                    else "Review manufacturer guidance before starting."
+                ),
+            }
+        ]
+    summary = (web_summary or "")[:2000]
+    if not summary.strip():
+        parts = [
+            parse_checkpoint_structured_context(diagnosis).get(k)
+            for k in ("location", "issues", "summary")
+        ]
+        summary = ". ".join(p for p in parts if p)[:2000] or "See steps below."
+    return {"summary": summary, "steps": steps}
+
+
+def _synthesize_diy_json(
+    diagnosis: str,
+    web_summary: str,
+    youtube_videos: list[Dict[str, Any]],
+    products_json: str,
+    cost_json: str,
+) -> str:
+    """Steps-only LLM call, then Python assembly of prefetched YouTube / products / cost."""
+    hire, diy_steps = _generate_diy_steps_llm(diagnosis, web_summary)
+    assembled = _assemble_diy_results(
+        hire,
+        diy_steps,
+        youtube_videos,
+        products_json,
+        cost_json,
+    )
+    return json.dumps(assembled, ensure_ascii=False)
 
 
 def _fallback_json(
@@ -667,40 +772,16 @@ def _fallback_json(
     products_json: str,
     cost_json: str,
 ) -> str:
-    products = _serp_shopping_products_list(products_json)
-
-    steps: list[Dict[str, Any]] = []
-    for line in web_summary.splitlines()[:12]:
-        line = line.strip()
-        if len(line) < 8:
-            continue
-        steps.append({"stepNumber": len(steps) + 1, "description": line[:500]})
-        if len(steps) >= 8:
-            break
-
-    cost_inner: Dict[str, Any] = {}
-    if cost_json:
-        try:
-            parsed_cost = json.loads(cost_json)
-            if isinstance(parsed_cost, dict):
-                inner = parsed_cost.get("diyCostEstimates")
-                cost_inner = inner if isinstance(inner, dict) else {}
-        except Exception:
-            logger.debug("Fallback cost parse failed", exc_info=True)
-
-    out = {
-        "hire_professional_recommended": _infer_hire_professional(diagnosis),
-        "diyResults": {
-            "diySteps": {
-                "summary": web_summary[:2500] if web_summary else "See steps below.",
-                "steps": steps or [{"stepNumber": 1, "description": "Review manufacturer guidance before starting."}],
-            },
-            "youtubeSearch": {"videos": _youtube_videos_client_shape(youtube_videos)},
-            "recommendedProducts": {"products": products},
-            "diyCostEstimates": cost_inner,
-        },
-    }
-    return json.dumps(out, ensure_ascii=False)
+    hire = _infer_hire_professional(diagnosis)
+    diy_steps = _fallback_diy_steps(diagnosis, web_summary)
+    assembled = _assemble_diy_results(
+        hire,
+        diy_steps,
+        youtube_videos,
+        products_json,
+        cost_json,
+    )
+    return json.dumps(assembled, ensure_ascii=False)
 
 
 def run_diy_pipeline_sync(
@@ -711,24 +792,24 @@ def run_diy_pipeline_sync(
 ) -> str:
     """
     Runs the optimized DIY pipeline: parallel grounded web search, YouTube, shopping,
-    library-only DIY cost, then one synthesis LLM call.
+    library-only DIY cost, then steps-only LLM + Python assembly.
 
     Args:
         user_query: Diagnosis or issue text (checkpoint branch usually embeds checkpoint context here).
         property_address: Optional property address for location context in search prompts.
         context_doc_uris: Reserved for future RAG; ignored for now.
-        checkpoint_retrieval_search_query: When not ``None``, YouTube and shopping APIs are driven by
-            this string (after strip), not by compacted ``user_query``. YouTube appends the same
-            `` DIY tutorial how to fix`` tail as the non-checkpoint path; shopping passes it as the
-            stem to ``product_recommendations`` (which adds its own ``DIY repair products tools`` suffix).
-            Checkpoint optional-branch code always passes the retrieval tool's ``search_query`` (may be empty).
-            When ``None`` (default), YouTube/products derive from ``user_query`` via compaction helpers.
+        checkpoint_retrieval_search_query: When set, grounded web search, YouTube, shopping,
+            and library DIY cost use this retrieval phrase (after strip). Synthesis uses
+            ``user_query`` (full checkpoint / diagnosis text). When ``None``, web/YouTube/products
+            derive from compacted ``user_query``.
 
     Returns:
         JSON string suitable for clients (includes hire_professional_recommended and diyResults).
     """
     del context_doc_uris  # reserved
-    diagnosis = (checkpoint_retrieval_search_query or user_query or "").strip()
+    diagnosis, api_seed = resolve_pipeline_diagnosis(
+        user_query, checkpoint_retrieval_search_query
+    )
     if not diagnosis:
         return json.dumps(
             {
@@ -747,7 +828,7 @@ def run_diy_pipeline_sync(
     ck = _cache_key(
         diagnosis,
         addr,
-        checkpoint_retrieval_search_query=checkpoint_retrieval_search_query,
+        checkpoint_retrieval_search_query=api_seed,
     )
     if ttl > 0:
         with _CACHE_LOCK:
@@ -757,16 +838,18 @@ def run_diy_pipeline_sync(
                 return hit[1]
 
     t0 = time.monotonic()
-    cost_q = _cost_query(diagnosis, addr)
+    cost_source = api_seed or diagnosis
+    web_query = _web_grounding_query(diagnosis, api_seed)
+    cost_q = _cost_query(cost_source, addr)
 
     logger.info(
-        "DIY orchestrator: pipeline_start diagnosis_chars=%d address_set=%s "
-        "retrieval_seed_len=%d cache_ttl_s=%.0f",
+        "DIY orchestrator: pipeline_start diagnosis_chars=%d web_query_chars=%d "
+        "cost_query_chars=%d address_set=%s retrieval_seed_len=%d cache_ttl_s=%.0f",
         len(diagnosis),
+        len(web_query),
+        len(cost_source),
         bool(addr),
-        -1
-        if checkpoint_retrieval_search_query is None
-        else len(checkpoint_retrieval_search_query.strip()),
+        -1 if api_seed is None else len(api_seed),
         ttl,
     )
 
@@ -785,12 +868,11 @@ def run_diy_pipeline_sync(
             future_map[fut] = phase
             submit_at[fut] = time.monotonic()
 
-        submit_phase("web", _diy_web_search_grounded, diagnosis, addr)
-        api_seed = (checkpoint_retrieval_search_query or "").strip()
+        submit_phase("web", _diy_web_search_grounded, web_query, addr)
         if api_seed:
             logger.debug(
-                "DIY orchestrator: YouTube+shopping use checkpoint retrieval search_query stem "
-                "len=%d query=%r",
+                "DIY orchestrator: web+YouTube+shopping use checkpoint retrieval search_query "
+                "stem len=%d query=%r",
                 len(api_seed),
                 api_seed,
             )
@@ -878,7 +960,7 @@ def run_diy_pipeline_sync(
     syn_ms = int((time.monotonic() - t_syn) * 1000)
 
     logger.info(
-        "DIY orchestrator phase=synthesis duration_ms=%d",
+        "DIY orchestrator phase=steps_synthesis duration_ms=%d",
         syn_ms,
     )
     logger.info(
