@@ -344,7 +344,7 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_products(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Checkpoint branch passes retrieval ``search_query``; APIs must not use compacted diagnosis."""
+    """Checkpoint branch uses retrieval ``search_query`` for YouTube/shopping (not compacted diagnosis)."""
     monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "0")
     seen: dict[str, tuple] = {}
 
@@ -397,7 +397,7 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
             checkpoint_retrieval_search_query=retrieval,
         )
     )
-    assert seen["yt"] == (retrieval, 5)
+    assert seen["yt"] == (f"{retrieval} DIY tutorial how to fix", 5)
     assert seen["pr"] == (retrieval, "DIY")
 
 

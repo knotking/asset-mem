@@ -12,7 +12,8 @@ import re
 import time
 from typing import Optional, List, Dict, Any, Tuple
 from google.adk.agents import Agent, SequentialAgent
-from google.adk.tools import ToolContext
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.agent_tool import AgentTool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -28,6 +29,85 @@ from ..checkpoint_dual_format_guard import synthesis_after_model_callback
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# Session state key: refined search_query from checkpoint retrieval (YouTube / shopping).
+CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY = "checkpoint_retrieval_search_query"
+
+
+def _text_from_user_content(content: Any) -> str:
+    if content is None:
+        return ""
+    parts = getattr(content, "parts", None) or []
+    chunks: list[str] = []
+    for part in parts:
+        t = getattr(part, "text", None)
+        if isinstance(t, str) and t.strip():
+            chunks.append(t.strip())
+    return "\n".join(chunks).strip()
+
+
+def _search_query_from_analysis_json(text: str) -> str:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    return (data.get("search_query") or "").strip()
+
+
+def resolve_effective_search_query(
+    search_query: Optional[str],
+    tool_context: Optional[ToolContext],
+) -> str:
+    """Tool arg first, then session state (retrieval stash or workflow input)."""
+    sq = (search_query or "").strip()
+    if sq:
+        return sq
+    if tool_context is None:
+        return ""
+    st = tool_context.state.get(CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY)
+    if isinstance(st, str) and st.strip():
+        return st.strip()
+    return ""
+
+
+def parallel_runner_before_agent(
+    callback_context: CallbackContext,
+) -> None:
+    """Stash search_query from CheckpointAnalysisInput JSON before the runner LLM omits it."""
+    text = _text_from_user_content(callback_context.user_content)
+    sq = _search_query_from_analysis_json(text)
+    if sq:
+        callback_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = sq
+        logger.debug(
+            "checkpoint optional parallel: stashed search_query from workflow input len=%d",
+            len(sq),
+        )
+
+
+def parallel_runner_before_tool(
+    tool: BaseTool,
+    args: Dict[str, Any],
+    tool_context: ToolContext,
+    **kwargs: Any,
+) -> None:
+    """Inject search_query when the runner model drops it from the tool call."""
+    _ = kwargs
+    if getattr(tool, "name", None) != "run_checkpoint_optional_agents_parallel":
+        return None
+    if not isinstance(args, dict):
+        return None
+    if (args.get("search_query") or "").strip():
+        return None
+    sq = resolve_effective_search_query(None, tool_context)
+    if sq:
+        args["search_query"] = sq
+        logger.info(
+            "checkpoint optional parallel: injected search_query len=%d",
+            len(sq),
+        )
+    return None
 
 
 def _strip_checkpoint_title_noise(text: str) -> str:
@@ -147,11 +227,12 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
         diagnosis = branch_q or "Property maintenance"
     addr = (payload.get("property_address") or "").strip() or None
     uris = payload.get("context_doc_uris")
+    seed = (payload.get("checkpoint_retrieval_search_query") or "").strip()
     return await run_diy_pipeline(
         diagnosis,
         property_address=addr,
         context_doc_uris=uris,
-        checkpoint_retrieval_search_query=payload["checkpoint_retrieval_search_query"],
+        checkpoint_retrieval_search_query=seed or None,
     )
 
 
@@ -275,18 +356,19 @@ async def run_checkpoint_optional_agents_parallel(
         )
         return json.dumps(results, ensure_ascii=False)
 
+    search_query = resolve_effective_search_query(search_query, tool_context)
     branch_user_query = resolve_branch_search_user_query(
-        search_query, checkpoint_results, max_chars=400
+        search_query or None, checkpoint_results, max_chars=400
     )
     logger.info(
         "checkpoint optional parallel: start branches=%s checkpoint_blob_len=%d "
         "retrieval_search_query_len=%d branch_user_query_len=%d",
         sorted(set(requested)),
         len(checkpoint_results or ""),
-        len((search_query or "").strip()),
+        len(search_query),
         len(branch_user_query),
     )
-    if not (search_query or "").strip() and len(branch_user_query) + 40 < len(
+    if not search_query and len(branch_user_query) + 40 < len(
         checkpoint_results or ""
     ):
         logger.debug(
@@ -296,11 +378,11 @@ async def run_checkpoint_optional_agents_parallel(
         )
 
     payload: Dict[str, Any] = {
-        # Passed to coverage/diy/service/cost as DocsInput.user_query; DIY YouTube/shopping ignore this
-        # when ``checkpoint_retrieval_search_query`` is set (they use only the retrieval seed).
+        # Passed to coverage/diy/service/cost as DocsInput.user_query; DIY YouTube/shopping use
+        # ``checkpoint_retrieval_search_query`` as the API query stem when set (orchestrator adds DIY tails).
         "user_query": branch_user_query,
         "checkpoint_results": checkpoint_results,
-        "checkpoint_retrieval_search_query": (search_query or "").strip(),
+        "checkpoint_retrieval_search_query": search_query,
         "context_doc_uris": context_doc_uris,
         "property_address": property_address,
         "property_id": property_id,
@@ -339,6 +421,8 @@ Return only the tool output without additional narration.
     tools=[run_checkpoint_optional_agents_parallel],
     input_schema=CheckpointAnalysisInput,
     disallow_transfer_to_parent=True,
+    before_agent_callback=parallel_runner_before_agent,
+    before_tool_callback=parallel_runner_before_tool,
 )
 
 synthesis_agent = Agent(

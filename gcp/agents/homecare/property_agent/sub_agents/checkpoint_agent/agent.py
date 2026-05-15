@@ -25,11 +25,15 @@ from typing_extensions import override
 from dotenv import load_dotenv
 from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
+from .media_search_query_refiner import refine_checkpoint_media_search_query
 from ..checkpoint_dual_format_guard import (
     checkpoint_agent_after_model_callback,
     ensure_dual_format_body,
 )
-from ..checkpoint_analysis_agent.agent import checkpoint_analysis_agent
+from ..checkpoint_analysis_agent.agent import (
+    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY,
+    checkpoint_analysis_agent,
+)
 from ...agent_inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
 
@@ -606,6 +610,9 @@ def ask_checkpoints_retrieval(
             )
         
         search_query = build_search_query_from_checkpoints(formatted_results)
+        search_query = refine_checkpoint_media_search_query(
+            search_query, formatted_results
+        )
         if formatted_results:
             logger.debug(
                 "checkpoint_retrieval: sample_text_head=%r",
@@ -620,6 +627,8 @@ def ask_checkpoints_retrieval(
             int((time.monotonic() - t_fmt) * 1000),
             len(formatted_results),
         )
+        if tool_context is not None and search_query:
+            tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = search_query
         logger.info(
             "checkpoint_retrieval: end duration_ms=%d outcome=ok checkpoints=%d "
             "search_query_len=%d",
