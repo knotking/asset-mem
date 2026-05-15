@@ -200,6 +200,67 @@ def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.M
     assert "costEstimates" in json.loads(parsed["checkpoint_parallel_cost_result"])
 
 
+def test_resolve_effective_search_query_from_state():
+    tc = _minimal_tool_context()
+    tc.state["checkpoint_retrieval_search_query"] = "garage door paint repair"
+    assert (
+        caa.resolve_effective_search_query(None, tc)
+        == "garage door paint repair"
+    )
+    assert (
+        caa.resolve_effective_search_query("  explicit wins  ", tc)
+        == "explicit wins"
+    )
+
+
+def test_search_query_from_analysis_json():
+    payload = json.dumps(
+        {
+            "checkpoint_results": "x",
+            "user_query": "q",
+            "search_query": "residential garage door paint",
+            "checkpoint_optional_agents": ["diy"],
+        }
+    )
+    assert (
+        caa._search_query_from_analysis_json(payload)
+        == "residential garage door paint"
+    )
+
+
+def test_parallel_runner_uses_state_when_search_query_arg_missing(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured: list[dict] = []
+
+    async def _capture_diy(payload):
+        captured.append(dict(payload))
+        return "ok"
+
+    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _capture_diy)
+    tc = _minimal_tool_context()
+    tc.state["checkpoint_retrieval_search_query"] = (
+        "residential garage door paint chipping scratches repair"
+    )
+    asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results="long blob " * 30,
+            user_query="analyse my checkpoints",
+            checkpoint_optional_agents=["diy"],
+            search_query=None,
+            tool_context=tc,
+        )
+    )
+    assert len(captured) == 1
+    assert (
+        captured[0]["checkpoint_retrieval_search_query"]
+        == "residential garage door paint chipping scratches repair"
+    )
+    assert captured[0]["user_query"] == (
+        "residential garage door paint chipping scratches repair"
+    )
+
+
 def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.MonkeyPatch):
     captured: list[dict] = []
 

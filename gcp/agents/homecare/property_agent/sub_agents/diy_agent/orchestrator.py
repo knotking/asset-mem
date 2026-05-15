@@ -413,8 +413,12 @@ def _youtube_for_diagnosis(diagnosis: str) -> list[Dict[str, Any]]:
 
 
 def _youtube_for_checkpoint_retrieval_seed(seed: str) -> list[Dict[str, Any]]:
-    """YouTube Data API uses only the server-built checkpoint retrieval phrase (no extra suffix)."""
-    return youtube_search((seed or "").strip(), max_results=5)
+    """YouTube: server-built checkpoint retrieval seed plus DIY intent (same tail as diagnosis path)."""
+    base = (seed or "").strip()
+    if not base:
+        return youtube_search("", max_results=5)
+    q = f"{base} DIY tutorial how to fix"
+    return youtube_search(q, max_results=5)
 
 
 def _products_for_diagnosis(diagnosis: str) -> str:
@@ -713,10 +717,12 @@ def run_diy_pipeline_sync(
         user_query: Diagnosis or issue text (checkpoint branch usually embeds checkpoint context here).
         property_address: Optional property address for location context in search prompts.
         context_doc_uris: Reserved for future RAG; ignored for now.
-        checkpoint_retrieval_search_query: When not ``None``, YouTube and shopping APIs use **only**
-            this string (after strip). Checkpoint optional-branch code always passes the retrieval
-            tool's ``search_query`` (may be empty). When ``None`` (default), YouTube/products derive
-            from ``user_query`` via compaction helpers.
+        checkpoint_retrieval_search_query: When not ``None``, YouTube and shopping APIs are driven by
+            this string (after strip), not by compacted ``user_query``. YouTube appends the same
+            `` DIY tutorial how to fix`` tail as the non-checkpoint path; shopping passes it as the
+            stem to ``product_recommendations`` (which adds its own ``DIY repair products tools`` suffix).
+            Checkpoint optional-branch code always passes the retrieval tool's ``search_query`` (may be empty).
+            When ``None`` (default), YouTube/products derive from ``user_query`` via compaction helpers.
 
     Returns:
         JSON string suitable for clients (includes hire_professional_recommended and diyResults).
@@ -780,11 +786,11 @@ def run_diy_pipeline_sync(
             submit_at[fut] = time.monotonic()
 
         submit_phase("web", _diy_web_search_grounded, diagnosis, addr)
-        if checkpoint_retrieval_search_query is not None:
-            api_seed = checkpoint_retrieval_search_query.strip()
+        api_seed = (checkpoint_retrieval_search_query or "").strip()
+        if api_seed:
             logger.debug(
-                "DIY orchestrator: YouTube+shopping use checkpoint retrieval "
-                "search_query only len=%d query=%r",
+                "DIY orchestrator: YouTube+shopping use checkpoint retrieval search_query stem "
+                "len=%d query=%r",
                 len(api_seed),
                 api_seed,
             )
