@@ -101,6 +101,21 @@ jobs:
           workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
           service_account: "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
 
+      - name: Prepare shared modules (sync gcp/common → function source)
+        shell: bash
+        run: |
+          set -euo pipefail
+          DST_COMMON_DIR="${{ env.SOURCE_DIRECTORY }}/common"
+          mkdir -p "${DST_COMMON_DIR}"
+          if [ ! -f "${DST_COMMON_DIR}/__init__.py" ]; then
+            printf '%s\n' "# Shared modules synced at deploy time." > "${DST_COMMON_DIR}/__init__.py"
+          fi
+          SRC_OBS_DIR="gcp/common/observability"
+          DST_OBS_DIR="${DST_COMMON_DIR}/observability"
+          mkdir -p "${DST_OBS_DIR}"
+          rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
+          echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
