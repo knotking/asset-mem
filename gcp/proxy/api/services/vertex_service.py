@@ -80,11 +80,17 @@ _DISPLAY_NAME_MAP = {
     "checkpoint_analysis_agent": "Analyzing checkpoints",
     "checkpoint_analysis_synthesis_agent": "Putting it all together",
     "checkpoint_optional_agents_parallel_runner": "Running analysis in parallel",
+    "checkpoint_analysis_progress": "Updating checkpoint analysis",
 }
 
 _CHECKPOINT_ROLLUP_TOOLS = {
     "checkpoint_agent",
     "checkpoint_analysis_agent",
+}
+
+_CHECKPOINT_PROGRESS_AUTHORS = {
+    "checkpoint_analysis_progress",
+    "checkpoint_optional_agents_parallel_runner",
 }
 
 _CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
@@ -511,6 +517,38 @@ def _checkpoint_optional_completed_steps(response_payload: Any) -> List[Dict[str
         preview = _preview_for_response(agent_name, response_payload)
         updates.append(_step_update(agent_name, "completed", preview=preview))
     return updates
+
+
+def _progressive_checkpoint_step_updates_from_text(
+    event_text: str,
+) -> List[Dict[str, Any]]:
+    """Mark optional specialist rows completed from progressive dual-format JSON."""
+    if not (event_text or "").strip():
+        return []
+    data = _coerce_result_to_dict(event_text)
+    if not data:
+        return []
+    root = _unwrap_analysis(data)
+    if not isinstance(root, dict):
+        return []
+    status = root.get("analysisStatus")
+    if not isinstance(status, dict):
+        return []
+    updates: List[Dict[str, Any]] = []
+    for branch, st in status.items():
+        if st != "completed":
+            continue
+        agent_name = _CHECKPOINT_OPTIONAL_AGENT_BY_KEY.get(str(branch))
+        if agent_name:
+            updates.append(_step_update(agent_name, "completed"))
+    return updates
+
+
+def _is_checkpoint_progress_event(event: Dict[str, Any], event_text: str) -> bool:
+    if not event_text:
+        return False
+    author = event.get("author")
+    return isinstance(author, str) and author in _CHECKPOINT_PROGRESS_AUTHORS
 
 
 def extract_agent_step_updates_from_event(event: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -944,9 +982,16 @@ async def stream_agent_answers(
         ):
             event_text = extract_text_from_event(event)
             if event_text:
-                assistant_content_accumulated += event_text
+                if _is_checkpoint_progress_event(event, event_text):
+                    assistant_content_accumulated = event_text
+                else:
+                    assistant_content_accumulated += event_text
 
             step_updates = extract_agent_step_updates_from_event(event)
+            if _is_checkpoint_progress_event(event, event_text):
+                step_updates = step_updates + _progressive_checkpoint_step_updates_from_text(
+                    event_text
+                )
             if step_updates:
                 for step_update in step_updates:
                     _merge_step_update(step_update)

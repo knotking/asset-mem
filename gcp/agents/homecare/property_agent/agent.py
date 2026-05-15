@@ -15,7 +15,13 @@ from .logging_context import bind_auth_uid, install_auth_uid_logging, unbind_aut
 from .model_config import GLOBAL_GEMINI_MODEL
 from .prompts import doculink_agent_system_instruction, root_agent_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
-from .sub_agents.checkpoint_dual_format_guard import doculink_after_model_callback
+from .sub_agents.checkpoint_analysis_agent.agent import checkpoint_progress_agent
+from .sub_agents.checkpoint_dual_format_guard import (
+    doculink_after_model_callback,
+    doculink_progressive_streaming_callback,
+    ensure_checkpoint_analysis_pending_stashed,
+    sync_checkpoint_tool_args_to_state,
+)
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
 
@@ -58,6 +64,11 @@ def doculink_after_model_combined(
     callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
     after_model_auth_uid(callback_context, llm_response)
+    streamed = doculink_progressive_streaming_callback(
+        callback_context, llm_response
+    )
+    if streamed is not None:
+        return streamed
     return doculink_after_model_callback(callback_context, llm_response)
 
 
@@ -70,6 +81,31 @@ def after_tool_auth_uid(
     _ = (tool, args, tool_context, tool_response)
     unbind_auth_uid()
     return None
+
+
+def doculink_after_tool_combined(
+    tool: BaseTool,
+    args: Dict[str, Any],
+    tool_context: ToolContext,
+    tool_response: dict,
+) -> Optional[dict]:
+    result = after_tool_auth_uid(tool, args, tool_context, tool_response)
+    tool_name = getattr(tool, "name", None) or type(tool).__name__
+    if tool_name == "checkpoint_agent":
+        if ensure_checkpoint_analysis_pending_stashed(tool_context.state):
+            logger.info(
+                "doculink after_tool: checkpoint_analysis_pending_input ready"
+            )
+        else:
+            optional = tool_context.state.get("checkpoint_optional_agents")
+            if optional:
+                logger.warning(
+                    "doculink after_tool: checkpoint_agent finished but pending "
+                    "analysis input missing (optional_agents=%r has_checkpoint_results=%s)",
+                    optional,
+                    bool(tool_context.state.get("checkpoint_results")),
+                )
+    return result
 
 
 def before_tool_callback(
@@ -86,10 +122,16 @@ def before_tool_callback(
         arg_keys,
         property_id is not None,
     )
+    if tool_name == "checkpoint_agent" and isinstance(args, dict):
+        sync_checkpoint_tool_args_to_state(tool_context.state, args)
+        logger.info(
+            "doculink before_tool: synced checkpoint session fields optional_agents=%r",
+            tool_context.state.get("checkpoint_optional_agents"),
+        )
     if property_id:
         tool_context.state["property_id"] = property_id
         logger.info("property_id %s set in tool context", property_id)
-    else:
+    elif tool_name != "transfer_to_agent":
         logger.warning("property_id not found in args for tool=%s: %s", tool_name, args)
 
 
@@ -117,7 +159,8 @@ doculink_agent = Agent(
     before_model_callback=before_model_auth_uid,
     after_model_callback=doculink_after_model_combined,
     before_tool_callback=before_tool_callback,
-    after_tool_callback=after_tool_auth_uid,
+    after_tool_callback=doculink_after_tool_combined,
+    sub_agents=[checkpoint_progress_agent],
 )
 
 # Note: ADK doesn't have before_sub_agent callback, so we rely on property_id being passed

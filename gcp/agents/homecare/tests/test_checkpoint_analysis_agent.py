@@ -200,6 +200,53 @@ def test_parse_checkpoint_analysis_input_from_json():
     assert inp.checkpoint_optional_agents == ["diy"]
 
 
+def test_parse_checkpoint_analysis_input_falls_back_to_pending_on_partial_json():
+    """Transfer JSON without checkpoint_results must not block stashed pending input."""
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    pending = {
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
+        "user_query": "analyse my checkpoints",
+        "search_query": "garage door paint repair",
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+        "location_radius": 5,
+    }
+    partial_transfer = {
+        "user_query": "analyse my checkpoints",
+        "location_radius": 5,
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+        "property_id": "prop-1",
+    }
+    session = SimpleNamespace(
+        user_id="u1",
+        state={
+            dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
+            "checkpoint_results": pending["checkpoint_results"],
+            "checkpoint_optional_agents": pending["checkpoint_optional_agents"],
+        },
+        app_name="property_agent",
+        id="sess-1",
+    )
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=json.dumps(partial_transfer))],
+    )
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=session,
+        invocation_id="inv-1",
+        agent=caa.checkpoint_optional_parallel_agent,
+        branch=None,
+    )
+    inp = caa._parse_checkpoint_analysis_input(invocation)
+    assert inp is not None
+    assert "paint chipping" in inp.checkpoint_results
+    assert inp.checkpoint_optional_agents == ["coverage", "diy", "service", "cost"]
+    assert inp.location_radius == 5
+
+
 @pytest.mark.asyncio
 async def test_execute_checkpoint_optional_parallel_invokes_runner(monkeypatch):
     calls: list[dict] = []
@@ -885,6 +932,228 @@ Conditions: good
     assert summary["issuesDetected"]
 
 
+def test_sync_checkpoint_tool_args_to_state():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    state: dict = {}
+    dfg.sync_checkpoint_tool_args_to_state(
+        state,
+        {
+            "user_query": "analyse",
+            "checkpoint_optional_agents": ["coverage", "diy"],
+            "property_id": "prop1",
+        },
+    )
+    assert state["checkpoint_optional_agents"] == ["coverage", "diy"]
+    assert state["property_id"] == "prop1"
+
+
+def test_ensure_checkpoint_analysis_pending_stashed_from_fields():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    state = {
+        "checkpoint_optional_agents": ["service"],
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: leak",
+        "user_query": "analyse",
+        "checkpoint_retrieval_search_query": "garage leak",
+    }
+    assert dfg.ensure_checkpoint_analysis_pending_stashed(state) is True
+    raw = state[dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY]
+    data = json.loads(raw)
+    assert data["checkpoint_optional_agents"] == ["service"]
+    assert "leak" in data["checkpoint_results"]
+
+
+def test_format_checkpoints_for_analysis_blob():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    formatted = [
+        {
+            "checkpointName": "Garage May 11",
+            "location": "Garage",
+            "text": "Summary: door wear\nIssues: paint chipping",
+        },
+        {
+            "checkpointName": "Garage May 8",
+            "location": "Garage",
+            "text": "Issues: minor wear",
+        },
+    ]
+    blob = dfg.format_checkpoints_for_analysis_blob(formatted)
+    assert "Garage May 11" in blob
+    assert "Garage May 8" in blob
+    assert "paint chipping" in blob
+    assert blob.count("Checkpoint Name:") == 2
+
+
+def test_pending_checkpoint_analysis_input_from_state():
+    from unittest.mock import MagicMock, patch
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    pending = {
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: leak",
+        "user_query": "analyse",
+        "checkpoint_optional_agents": ["diy"],
+        "search_query": "garage leak",
+    }
+    ctx = MagicMock()
+    tool_ctx = MagicMock()
+    tool_ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending)
+    }
+    with patch.object(caa, "Context", return_value=tool_ctx):
+        inp = caa._pending_checkpoint_analysis_input_from_state(ctx)
+    assert inp is not None
+    assert inp.checkpoint_optional_agents == ["diy"]
+    assert inp.search_query == "garage leak"
+
+
+def test_doculink_progressive_streaming_callback_emits_on_seq():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# T
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 1
+
+```json
+{"analysis": {"title": "T", "checkpointSummary": {"checkpointsAnalyzed": 1, "issuesDetected": ["x"], "overallCondition": "ok", "locations": ["Garage"]}, "analysisStatus": {"diy": "running"}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY: stashed,
+        dfg.CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY: 1,
+        dfg.CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY: -1,
+    }
+    partial = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text="...")]),
+        partial=True,
+    )
+    out = dfg.doculink_progressive_streaming_callback(ctx, partial)
+    assert out is not None
+    assert "## Checkpoint Summary" in out.content.parts[0].text
+    assert ctx.state[dfg.CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY] == 1
+
+
+def test_patch_dual_format_adds_analysis_status():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    body = """# Garage analysis
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 2
+
+```json
+{
+  "analysis": {
+    "title": "Garage analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "issuesDetected": ["chip"],
+      "overallCondition": "damaged",
+      "locations": ["Garage"]
+    }
+  }
+}
+```
+"""
+    state = {
+        "checkpoint_optional_agents": ["coverage", "diy"],
+        "checkpoint_results": "Checkpoint Name: A\nLocation/Asset: Garage\nIssues: chip",
+        "user_query": "analyse",
+        dfg.CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY: "",
+    }
+    fixed = dfg.patch_dual_format_from_state(body, state)
+    analysis = dfg.extract_analysis_object_from_dual_format(fixed)
+    assert analysis is not None
+    assert analysis.get("analysisStatus") == {
+        "coverage": "running",
+        "diy": "pending",
+    }
+
+
+def test_patch_dual_format_repairs_placeholder_summary():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    body = """# T
+
+```json
+{
+  "analysis": {
+    "title": "T",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 0,
+      "issuesDetected": [],
+      "overallCondition": "See markdown above for details.",
+      "locations": []
+    }
+  }
+}
+```
+"""
+    state = {
+        "checkpoint_results": (
+            "Checkpoint Name: Garage A\nLocation/Asset: Garage\n"
+            "Issues: paint chip\nConditions: fair\n\n"
+            "Checkpoint Name: Garage B\nIssues: scratch"
+        ),
+    }
+    fixed = dfg.patch_dual_format_from_state(body, state)
+    analysis = dfg.extract_analysis_object_from_dual_format(fixed)
+    assert analysis is not None
+    assert analysis["checkpointSummary"]["checkpointsAnalyzed"] == 2
+    assert "paint chip" in analysis["checkpointSummary"]["issuesDetected"][0]
+
+
+def test_synthesis_after_model_callback_skips_streaming_partials():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    ctx = MagicMock()
+    ctx.state = {}
+    partial = LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part(text="# Bad\n\n```json\n{\"analysis\":{}}\n```")],
+        ),
+        partial=True,
+    )
+    assert dfg.synthesis_after_model_callback(ctx, partial) is None
+
+
+def test_enrich_dual_format_skips_placeholder_summary():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    body = """# T
+
+```json
+{
+  "analysis": {
+    "title": "T",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 0,
+      "issuesDetected": [],
+      "overallCondition": "See markdown above for details.",
+      "locations": []
+    }
+  }
+}
+```
+"""
+    assert dfg.enrich_dual_format_markdown(body) == body
+
+
 def test_doculink_after_model_callback_skips_streaming_partials():
     from unittest.mock import MagicMock
 
@@ -991,3 +1260,64 @@ Full markdown from synthesis.
     assert m
     blob = json.loads(m.group(1).strip())
     assert blob["analysis"]["checkpointSummary"]["checkpointsAnalyzed"] == 2
+
+
+def test_build_progressive_checkpoint_dual_format_includes_status():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    blob = """Checkpoint Name: Garage
+Location/Asset: Garage
+Issues: paint chipping
+"""
+    parallel = {
+        "checkpoint_parallel_coverage_result": "SKIPPED",
+        "checkpoint_parallel_diy_result": "SKIPPED",
+        "checkpoint_parallel_service_result": '{"serviceResults": {"localPros": {"serpAPIResults": [], "googleSearchResults": []}}}',
+        "checkpoint_parallel_cost_result": "SKIPPED",
+    }
+    body = dfg.build_progressive_checkpoint_dual_format(
+        checkpoint_results=blob,
+        user_query="analyse checkpoints",
+        parallel_results=parallel,
+        requested_branches=["service", "diy"],
+        completed_branches=["service"],
+        pending_branches=["diy"],
+        in_progress=True,
+    )
+    assert dfg.dual_format_has_valid_analysis_json(body)
+    analysis = dfg.extract_analysis_object_from_dual_format(body)
+    assert analysis is not None
+    assert analysis.get("analysisStatus") == {
+        "service": "completed",
+        "diy": "running",
+    }
+
+
+@pytest.mark.asyncio
+async def test_parallel_runner_emits_progressive_callbacks(monkeypatch):
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    order: list[str] = []
+
+    async def _stub_branch(name, payload, tool_context):
+        return f"{name}-ok"
+
+    async def on_complete(branch, results, body, tool_context):
+        order.append(branch or "phase0")
+        assert dfg.dual_format_has_valid_analysis_json(body)
+
+    monkeypatch.setattr(caa, "_run_single_optional_agent_async", _stub_branch)
+    blob = """Checkpoint Name: Garage
+Location/Asset: Garage
+Issues: paint chipping
+"""
+    await caa.run_checkpoint_optional_agents_parallel(
+        checkpoint_results=blob,
+        user_query="analyse",
+        checkpoint_optional_agents=["coverage", "diy"],
+        tool_context=_minimal_tool_context(),
+        on_branch_complete=on_complete,
+    )
+    assert order[0] == "phase0"
+    assert set(order[1:]) == {"coverage", "diy"}
+    assert len(order) == 3
