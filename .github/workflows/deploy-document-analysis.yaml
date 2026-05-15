@@ -105,6 +105,12 @@ jobs:
           cp gcp/common/gemini_document_extract.py "${DST_COMMON_DIR}/gemini_document_extract.py"
           echo "✓ Copied gemini_document_extract.py -> ${DST_COMMON_DIR}/"
 
+          SRC_OBS_DIR="gcp/common/observability"
+          DST_OBS_DIR="${DST_COMMON_DIR}/observability"
+          mkdir -p "${DST_OBS_DIR}"
+          rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
+          echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
