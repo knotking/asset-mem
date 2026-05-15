@@ -345,14 +345,40 @@ def test_dual_format_guard_detects_valid_json_fence():
     assert dfg.dual_format_has_valid_analysis_json(body)
 
 
-def test_dual_format_guard_appends_when_markdown_only():
+def test_dual_format_guard_accepts_simple_query_shape():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    body = """# Your Recent Garage Checkpoints
+
+```json
+{
+  "analysis": {
+    "title": "Garage Checkpoint Overview",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "queryType": "location-specific",
+      "locations": ["Garage"],
+      "dateRange": "May 11, 2026"
+    },
+    "checkpointDetails": [
+      {"name": "Checkpoint • May 11 • 9:10 PM", "location": "Garage", "issues": ["paint chipping"]}
+    ],
+    "insights": {"patterns": "Both show paint damage.", "recommendations": "Repaint."}
+  }
+}
+```
+"""
+    assert dfg.dual_format_has_valid_analysis_json(body)
+
+
+def test_dual_format_guard_markdown_only_without_stub_json():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 
     md = "# My Analysis\n\nSome prose only."
     out = dfg.ensure_dual_format_body(md, parallel_results_json=None)
-    assert "```json" in out
+    assert "```json" not in out
     assert "My Analysis" in out
-    assert dfg.dual_format_has_valid_analysis_json(out)
+    assert not dfg.dual_format_has_valid_analysis_json(out)
 
 
 def test_dual_format_guard_merges_fenced_coverage_coverage_result_shape():
@@ -416,7 +442,7 @@ def test_dual_format_guard_merges_parallel_diy_json():
     assert "diyResults" in blob["analysis"]
 
 
-def test_dual_format_guard_replaces_invalid_json_fence():
+def test_dual_format_guard_strips_invalid_json_fence_keeps_markdown():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 
     body = """# X
@@ -428,9 +454,11 @@ not json at all
 more md
 """
     out = dfg.ensure_dual_format_body(body, parallel_results_json=None)
-    assert out.count("```json") == 1
-    assert dfg.dual_format_has_valid_analysis_json(out)
+    assert "```json" not in out
+    assert not dfg.dual_format_has_valid_analysis_json(out)
     assert "not json at all" not in out
+    assert "# X" in out
+    assert "more md" in out
 
 
 def test_llm_response_declares_tool_use_detects_function_call():
