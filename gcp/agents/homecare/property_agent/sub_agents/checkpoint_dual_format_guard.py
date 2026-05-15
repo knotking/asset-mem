@@ -39,8 +39,63 @@ def llm_response_declares_tool_use(llm_response: LlmResponse) -> bool:
     return False
 
 
+def _is_valid_synthesis_checkpoint_summary(cs: dict) -> bool:
+    """Analysis/synthesis mode: full checkpointSummary (issuesDetected, overallCondition, …)."""
+    missing = any(
+        key not in cs
+        for key in (
+            "checkpointsAnalyzed",
+            "issuesDetected",
+            "overallCondition",
+            "locations",
+        )
+    )
+    if missing:
+        return False
+    if not isinstance(cs.get("issuesDetected"), list):
+        return False
+    if not isinstance(cs.get("locations"), list):
+        return False
+    if not isinstance(cs.get("overallCondition"), str):
+        return False
+    if not isinstance(cs.get("checkpointsAnalyzed"), (int, float)):
+        return False
+    return True
+
+
+def _is_valid_simple_query_checkpoint_summary(cs: dict) -> bool:
+    """Simple retrieval mode: count + locations (queryType/dateRange optional)."""
+    if not isinstance(cs.get("checkpointsAnalyzed"), (int, float)):
+        return False
+    if not isinstance(cs.get("locations"), list):
+        return False
+    return True
+
+
+def _is_valid_checkpoint_details(details: Any) -> bool:
+    """Simple retrieval mode may put per-checkpoint rows in checkpointDetails."""
+    if not isinstance(details, list) or not details:
+        return False
+    return any(isinstance(item, dict) for item in details)
+
+
+def _analysis_object_is_valid(analysis: dict) -> bool:
+    title = analysis.get("title")
+    if not isinstance(title, str) or not title.strip():
+        return False
+    cs = analysis.get("checkpointSummary")
+    if isinstance(cs, dict):
+        if _is_valid_synthesis_checkpoint_summary(cs):
+            return True
+        if _is_valid_simple_query_checkpoint_summary(cs):
+            return True
+    if _is_valid_checkpoint_details(analysis.get("checkpointDetails")):
+        return True
+    return False
+
+
 def dual_format_has_valid_analysis_json(body: str) -> bool:
-    """True if any ```json fence contains parseable ``analysis`` + ``checkpointSummary``."""
+    """True if any ```json fence contains parseable ``analysis`` in a known shape."""
     if not (body or "").strip():
         return False
     for m in _JSON_FENCE_RE.finditer(body):
@@ -54,32 +109,8 @@ def dual_format_has_valid_analysis_json(body: str) -> bool:
         analysis = data.get("analysis")
         if not isinstance(analysis, dict):
             continue
-        title = analysis.get("title")
-        if not isinstance(title, str) or not title.strip():
-            continue
-        cs = analysis.get("checkpointSummary")
-        if not isinstance(cs, dict):
-            continue
-        missing = any(
-            key not in cs
-            for key in (
-                "checkpointsAnalyzed",
-                "issuesDetected",
-                "overallCondition",
-                "locations",
-            )
-        )
-        if missing:
-            continue
-        if not isinstance(cs.get("issuesDetected"), list):
-            continue
-        if not isinstance(cs.get("locations"), list):
-            continue
-        if not isinstance(cs.get("overallCondition"), str):
-            continue
-        if not isinstance(cs.get("checkpointsAnalyzed"), (int, float)):
-            continue
-        return True
+        if _analysis_object_is_valid(analysis):
+            return True
     return False
 
 
@@ -186,12 +217,37 @@ def _merge_service_into(analysis: Dict[str, Any], raw: str) -> None:
     }
 
 
+def analysis_has_structured_ui_sections(analysis: Dict[str, Any]) -> bool:
+    """True when JSON is worth emitting (branch agents or real checkpoint data, not empty stub)."""
+    for key in (
+        "triageResult",
+        "coverageResult",
+        "diyResults",
+        "serviceResults",
+        "costEstimationResults",
+        "checkpointDetails",
+        "insights",
+    ):
+        val = analysis.get(key)
+        if val:
+            return True
+    cs = analysis.get("checkpointSummary")
+    if isinstance(cs, dict):
+        if isinstance(cs.get("checkpointsAnalyzed"), (int, float)) and cs["checkpointsAnalyzed"] > 0:
+            return True
+        if cs.get("issuesDetected"):
+            return True
+        if cs.get("locations"):
+            return True
+    return False
+
+
 def build_fallback_analysis(
     *,
     parallel_blob: Optional[Dict[str, Any]],
     markdown_source: str,
 ) -> Dict[str, Any]:
-    """Minimal analysis object + merged optional-branch payloads when JSON is missing."""
+    """Analysis object from parallel-branch merges (used only when UI sections exist)."""
     title = title_from_markdown_first_heading(markdown_source)
     analysis: Dict[str, Any] = {
         "title": title,
@@ -217,10 +273,10 @@ def ensure_dual_format_body(
     *,
     parallel_results_json: Optional[str] = None,
 ) -> str:
-    """Ensure a valid ```json fence; strip invalid fences, then append a corrected one if needed."""
+    """Strip invalid ```json fences; append JSON only when parallel branches supply UI sections."""
     if dual_format_has_valid_analysis_json(body):
         return body
-    base = strip_json_fences(body)
+    base = strip_json_fences(body).rstrip()
     parallel: Optional[Dict[str, Any]] = None
     if parallel_results_json and parallel_results_json.strip():
         try:
@@ -228,12 +284,14 @@ def ensure_dual_format_body(
         except json.JSONDecodeError:
             parallel = None
     analysis = build_fallback_analysis(parallel_blob=parallel, markdown_source=body)
+    if not analysis_has_structured_ui_sections(analysis):
+        return base
     fence = (
         "\n\n```json\n"
         + json.dumps({"analysis": analysis}, ensure_ascii=False, indent=2)
         + "\n```\n"
     )
-    return base.rstrip() + fence
+    return base + fence
 
 
 def synthesis_after_model_callback(
@@ -249,10 +307,14 @@ def synthesis_after_model_callback(
     parallel = callback_context.state.get("checkpoint_parallel_results")
     par_str = parallel if isinstance(parallel, str) else None
     fixed = ensure_dual_format_body(text, parallel_results_json=par_str)
+    if fixed == text:
+        return None
+    appended_json = "```json" in fixed and "```json" not in text
     logger.warning(
         "checkpoint_analysis_synthesis: model output missing valid ```json``` block; "
-        "appending fallback analysis (parallel_state=%s)",
+        "repaired response (parallel_state=%s, appended_json=%s)",
         "yes" if par_str else "no",
+        appended_json,
     )
     new_content = types.Content(role="model", parts=[types.Part(text=fixed)])
     return llm_response.model_copy(update={"content": new_content})
@@ -271,10 +333,14 @@ def checkpoint_agent_after_model_callback(
     parallel = callback_context.state.get("checkpoint_parallel_results")
     par_str = parallel if isinstance(parallel, str) else None
     fixed = ensure_dual_format_body(text, parallel_results_json=par_str)
+    if fixed == text:
+        return None
+    appended_json = "```json" in fixed and "```json" not in text
     logger.warning(
         "checkpoint_agent: model output missing valid ```json``` block; "
-        "appending fallback analysis (parallel_state=%s)",
+        "repaired response (parallel_state=%s, appended_json=%s)",
         "yes" if par_str else "no",
+        appended_json,
     )
     new_content = types.Content(role="model", parts=[types.Part(text=fixed)])
     return llm_response.model_copy(update={"content": new_content})
