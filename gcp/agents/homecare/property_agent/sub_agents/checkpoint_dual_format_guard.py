@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
@@ -24,6 +24,147 @@ _JSON_FENCE_RE = re.compile(r"```json\s*\n?([\s\S]*?)```", re.IGNORECASE)
 
 # Stashed by nested checkpoint_analysis workflow; parent checkpoint_agent / doculink read this.
 CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY = "checkpoint_analysis_dual_format"
+# Incremental optional-branch payloads for progressive UI updates.
+CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY = "checkpoint_analysis_progress"
+# Stream author for partial checkpoint analysis (proxy replaces assistant content).
+CHECKPOINT_PROGRESS_EVENT_AUTHOR = "checkpoint_analysis_progress"
+# State delta key: optional branch name that just completed (coverage|diy|service|cost).
+CHECKPOINT_BRANCH_COMPLETED_STATE_KEY = "checkpoint_branch_completed"
+# Serialized CheckpointAnalysisInput for doculink transfer → checkpoint_progress_agent.
+CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY = "checkpoint_analysis_pending_input"
+# Monotonic counter bumped when progress stash updates (doculink streaming callback).
+CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY = "checkpoint_progress_emit_seq"
+CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY = "checkpoint_progress_last_emitted_seq"
+
+OPTIONAL_BRANCH_TO_AGENT_NAME: Dict[str, str] = {
+    "coverage": "coverage_agent",
+    "diy": "diy_agent",
+    "service": "service_agent",
+    "cost": "cost_agent",
+}
+
+_PARALLEL_KEY_TO_BRANCH: Dict[str, str] = {
+    "checkpoint_parallel_coverage_result": "coverage",
+    "checkpoint_parallel_diy_result": "diy",
+    "checkpoint_parallel_service_result": "service",
+    "checkpoint_parallel_cost_result": "cost",
+}
+
+# Copied from tool args / DocsInput into session before nested checkpoint_agent runs.
+CHECKPOINT_SESSION_INPUT_KEYS: tuple[str, ...] = (
+    "user_query",
+    "checkpoint_optional_agents",
+    "checkpoint_ids",
+    "context_doc_uris",
+    "property_address",
+    "property_id",
+    "location_coordinates",
+    "location_radius",
+    "location_type",
+)
+
+_CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
+_VALID_OPTIONAL_BRANCHES = frozenset(OPTIONAL_BRANCH_TO_AGENT_NAME.keys())
+
+
+def normalize_checkpoint_optional_agents(
+    value: Any,
+) -> List[str]:
+    """Return valid optional branch names from state / tool args."""
+    if not isinstance(value, list):
+        return []
+    return [str(x) for x in value if str(x) in _VALID_OPTIONAL_BRANCHES]
+
+
+def sync_checkpoint_tool_args_to_state(state: Any, args: Dict[str, Any]) -> None:
+    """Persist checkpoint tool args on session state for nested runners and transfer."""
+    if not hasattr(state, "__setitem__") or not isinstance(args, dict):
+        return
+    for key in CHECKPOINT_SESSION_INPUT_KEYS:
+        if key in args and args[key] is not None:
+            state[key] = args[key]
+
+
+def build_checkpoint_analysis_pending_payload(state: Any) -> Optional[Dict[str, Any]]:
+    """Build CheckpointAnalysisInput dict from session fields when JSON stash is absent."""
+    if not hasattr(state, "get"):
+        return None
+    requested = normalize_checkpoint_optional_agents(
+        state.get("checkpoint_optional_agents")
+    )
+    if not requested:
+        return None
+    checkpoint_results = state.get("checkpoint_results")
+    if not isinstance(checkpoint_results, str) or not checkpoint_results.strip():
+        return None
+    user_query = state.get("user_query")
+    if not isinstance(user_query, str):
+        user_query = ""
+    search_query = state.get(_CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY)
+    if not isinstance(search_query, str):
+        search_query = ""
+    payload: Dict[str, Any] = {
+        "checkpoint_results": checkpoint_results.strip(),
+        "user_query": user_query,
+        "search_query": search_query,
+        "checkpoint_optional_agents": requested,
+    }
+    for key in (
+        "context_doc_uris",
+        "property_address",
+        "property_id",
+        "location_coordinates",
+        "location_radius",
+    ):
+        value = state.get(key)
+        if value is not None:
+            payload[key] = value
+    return payload
+
+
+def apply_tool_context_state_delta(
+    tool_context: Any, delta: Dict[str, Any]
+) -> None:
+    """Write session fields and merge into outgoing tool ``state_delta`` for parent sync."""
+    if not delta or tool_context is None:
+        return
+    state = getattr(tool_context, "state", None)
+    if state is not None and hasattr(state, "update"):
+        state.update(delta)
+    actions = getattr(tool_context, "actions", None)
+    if actions is None:
+        return
+    existing = getattr(actions, "state_delta", None)
+    if isinstance(existing, dict):
+        actions.state_delta = {**existing, **delta}
+    else:
+        actions.state_delta = dict(delta)
+
+
+def ensure_checkpoint_analysis_pending_stashed(state: Any) -> bool:
+    """
+    Ensure ``checkpoint_analysis_pending_input`` exists when retrieval + optional agents are set.
+    Returns True when pending input is present after this call.
+    """
+    if not hasattr(state, "get"):
+        return False
+    existing = state.get(CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY)
+    if isinstance(existing, str) and existing.strip():
+        return True
+    if isinstance(existing, dict) and existing:
+        return True
+    payload = build_checkpoint_analysis_pending_payload(state)
+    if payload is None:
+        return False
+    state[CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY] = json.dumps(
+        payload, ensure_ascii=False
+    )
+    logger.info(
+        "checkpoint session: ensured pending analysis input branches=%s blob_len=%d",
+        payload.get("checkpoint_optional_agents"),
+        len(str(payload.get("checkpoint_results") or "")),
+    )
+    return True
 
 
 def extract_text_from_llm_response(llm_response: LlmResponse) -> str:
@@ -164,11 +305,168 @@ def stash_checkpoint_dual_format_in_state(state: Any, body: str) -> None:
     state["checkpoint_result"] = body
 
 
+def _analysis_status_for_branches(
+    requested: List[str],
+    *,
+    completed: List[str],
+    pending: List[str],
+) -> Dict[str, str]:
+    status: Dict[str, str] = {}
+    done = set(completed)
+    for branch in requested:
+        if branch in done:
+            status[branch] = "completed"
+        elif pending and branch == pending[0]:
+            status[branch] = "running"
+        else:
+            status[branch] = "pending"
+    return status
+
+
+def build_progressive_checkpoint_dual_format(
+    *,
+    checkpoint_results: str,
+    user_query: str,
+    parallel_results: Dict[str, str],
+    requested_branches: List[str],
+    completed_branches: List[str],
+    pending_branches: List[str],
+    in_progress: bool = True,
+) -> str:
+    """
+    Dual-format body with whatever optional branches have finished so far.
+
+    Used for progressive streaming while asyncio.as_completed finishes each branch.
+    """
+    parallel_blob = {
+        k: parallel_results.get(k, "SKIPPED")
+        for k in (
+            "checkpoint_parallel_coverage_result",
+            "checkpoint_parallel_diy_result",
+            "checkpoint_parallel_service_result",
+            "checkpoint_parallel_cost_result",
+        )
+    }
+    analysis = build_fallback_analysis(
+        parallel_blob=parallel_blob,
+        markdown_source="",
+        checkpoint_results=checkpoint_results,
+    )
+    if not (analysis.get("title") or "").strip():
+        analysis["title"] = title_from_markdown_first_heading(
+            (user_query or "").strip()
+        ) or "Checkpoint analysis"
+    if in_progress and requested_branches:
+        analysis["analysisStatus"] = _analysis_status_for_branches(
+            requested_branches,
+            completed=completed_branches,
+            pending=pending_branches,
+        )
+    markdown = render_analysis_markdown(analysis)
+    if not (user_query or "").strip():
+        intro = ""
+    else:
+        intro = f"{user_query.strip()}\n\n" if markdown else user_query.strip()
+    body_md = f"{intro}{markdown}".strip() if intro else markdown
+    if not body_md.strip():
+        body_md = f"# {analysis.get('title') or 'Checkpoint analysis'}\n"
+    payload = {"analysis": analysis}
+    return (
+        f"{body_md.rstrip()}\n\n```json\n"
+        f"{json.dumps(payload, ensure_ascii=False, indent=2)}\n```\n"
+    )
+
+
+def build_phase0_checkpoint_dual_format(
+    *,
+    checkpoint_results: str,
+    user_query: str,
+    requested_branches: List[str],
+) -> str:
+    """Summary-only dual format before optional branches start."""
+    empty_parallel = {
+        "checkpoint_parallel_coverage_result": "SKIPPED",
+        "checkpoint_parallel_diy_result": "SKIPPED",
+        "checkpoint_parallel_service_result": "SKIPPED",
+        "checkpoint_parallel_cost_result": "SKIPPED",
+    }
+    return build_progressive_checkpoint_dual_format(
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        parallel_results=empty_parallel,
+        requested_branches=requested_branches,
+        completed_branches=[],
+        pending_branches=list(requested_branches),
+        in_progress=bool(requested_branches),
+    )
+
+
+def agent_steps_from_progressive_dual_format(body: str) -> List[Dict[str, Any]]:
+    """Map analysisStatus in progressive JSON to completed agent step rows."""
+    analysis = extract_analysis_object_from_dual_format(body)
+    if not isinstance(analysis, dict):
+        return []
+    status = analysis.get("analysisStatus")
+    if not isinstance(status, dict):
+        return []
+    updates: List[Dict[str, Any]] = []
+    for branch, st in status.items():
+        if st != "completed":
+            continue
+        agent_name = OPTIONAL_BRANCH_TO_AGENT_NAME.get(str(branch))
+        if agent_name:
+            updates.append({"name": agent_name, "status": "completed"})
+    return updates
+
+
+def bump_checkpoint_progress_emit_seq(state: Any) -> int:
+    """Increment progress emit sequence; used by doculink streaming callback."""
+    if not hasattr(state, "get"):
+        return 0
+    current = state.get(CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY, 0)
+    try:
+        seq = int(current) + 1
+    except (TypeError, ValueError):
+        seq = 1
+    state[CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY] = seq
+    return seq
+
+
+def format_checkpoints_for_analysis_blob(
+    formatted_results: List[Dict[str, Any]],
+) -> str:
+    """Build checkpoint_results prose for optional analysis branches."""
+    blocks: list[str] = []
+    for fc in formatted_results or ():
+        if not isinstance(fc, dict):
+            continue
+        lines: list[str] = []
+        name = (fc.get("checkpointName") or "Checkpoint").strip()
+        if name:
+            lines.append(f"Checkpoint Name: {name}")
+        loc = (fc.get("location") or "").strip()
+        if loc:
+            lines.append(f"Location/Asset: {loc}")
+        text = (fc.get("text") or "").strip()
+        if text:
+            for line in text.splitlines():
+                s = line.strip()
+                if s and s not in lines:
+                    lines.append(s)
+        if lines:
+            blocks.append("\n".join(lines))
+    return "\n\n".join(blocks).strip()
+
+
 def resolve_passthrough_dual_format_from_state(state: Any) -> Optional[str]:
     """Return stashed dual-format body when present."""
     if not hasattr(state, "get"):
         return None
-    for key in (CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY, "checkpoint_result"):
+    for key in (
+        CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
+        CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY,
+        "checkpoint_result",
+    ):
         raw = state.get(key)
         if isinstance(raw, str) and dual_format_is_passthrough_quality(raw):
             return raw
@@ -468,6 +766,106 @@ def _extract_markdown_intro(markdown: str) -> str:
     return "\n".join(intro).strip()
 
 
+def rebuild_dual_format_from_analysis(
+    analysis: Dict[str, Any],
+    *,
+    markdown_source: str = "",
+    user_query: str = "",
+) -> str:
+    """Rebuild markdown + ```json fence from a complete analysis object."""
+    md = strip_json_fences(markdown_source).strip()
+    intro = _extract_markdown_intro(md)
+    uq = (user_query or "").strip()
+    if uq and uq not in intro:
+        intro = f"{uq}\n\n{intro}".strip() if intro else uq
+    rendered = render_analysis_markdown(analysis)
+    if intro:
+        rendered_lines = rendered.splitlines()
+        if rendered_lines and rendered_lines[0].startswith("# "):
+            rendered = (
+                rendered_lines[0]
+                + "\n\n"
+                + intro
+                + "\n\n"
+                + "\n".join(rendered_lines[1:])
+            )
+        else:
+            rendered = intro + "\n\n" + rendered
+    fence = (
+        "\n\n```json\n"
+        + json.dumps({"analysis": analysis}, ensure_ascii=False, indent=2)
+        + "\n```\n"
+    )
+    return rendered.rstrip() + fence
+
+
+def patch_dual_format_from_state(body: str, state: Any) -> str:
+    """
+    Repair checkpoint_agent / synthesis dual-format using session fields.
+
+    - Fills missing ``analysisStatus`` when optional branches were requested.
+    - Replaces placeholder ``checkpointSummary`` (e.g. checkpointsAnalyzed: 0) from
+      stashed ``checkpoint_results``.
+    """
+    if not (body or "").strip():
+        stashed = resolve_passthrough_dual_format_from_state(state)
+        return stashed if stashed else body
+
+    analysis = extract_analysis_object_from_dual_format(body)
+    if not analysis:
+        stashed = resolve_passthrough_dual_format_from_state(state)
+        return stashed if stashed else body
+
+    changed = False
+    ck_blob = state.get("checkpoint_results") if hasattr(state, "get") else None
+    if isinstance(ck_blob, str) and ck_blob.strip():
+        cs = analysis.get("checkpointSummary")
+        if isinstance(cs, dict) and _is_placeholder_checkpoint_summary(cs):
+            _enrich_checkpoint_summary_from_results(
+                analysis, ck_blob, markdown_source=body
+            )
+            cs_after = analysis.get("checkpointSummary")
+            if isinstance(cs_after, dict) and not _is_placeholder_checkpoint_summary(
+                cs_after
+            ):
+                changed = True
+
+    requested = normalize_checkpoint_optional_agents(
+        state.get("checkpoint_optional_agents") if hasattr(state, "get") else None
+    )
+    if requested:
+        status = analysis.get("analysisStatus")
+        if not isinstance(status, dict) or not status:
+            prog = (
+                state.get(CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY)
+                if hasattr(state, "get")
+                else None
+            )
+            prog_analysis: Optional[Dict[str, Any]] = None
+            if isinstance(prog, str):
+                prog_analysis = extract_analysis_object_from_dual_format(prog)
+            if isinstance(prog_analysis, dict) and isinstance(
+                prog_analysis.get("analysisStatus"), dict
+            ):
+                analysis["analysisStatus"] = dict(prog_analysis["analysisStatus"])
+            else:
+                analysis["analysisStatus"] = _analysis_status_for_branches(
+                    requested,
+                    completed=[],
+                    pending=list(requested),
+                )
+            changed = True
+
+    if not changed:
+        return body
+
+    uq = state.get("user_query") if hasattr(state, "get") else ""
+    user_query = uq if isinstance(uq, str) else ""
+    return rebuild_dual_format_from_analysis(
+        analysis, markdown_source=body, user_query=user_query
+    )
+
+
 def enrich_dual_format_markdown(body: str) -> str:
     """
     Ensure dual-format bodies include rich ## sections derived from analysis JSON.
@@ -476,6 +874,9 @@ def enrich_dual_format_markdown(body: str) -> str:
     """
     analysis = extract_analysis_object_from_dual_format(body)
     if not analysis:
+        return body
+    cs = analysis.get("checkpointSummary")
+    if isinstance(cs, dict) and _is_placeholder_checkpoint_summary(cs):
         return body
     md = strip_json_fences(body).strip()
     if markdown_has_rich_analysis_sections(md):
@@ -867,7 +1268,10 @@ def synthesis_after_model_callback(
     """ADK hook: checkpoint analysis synthesizer must emit markdown + valid analysis JSON."""
     if llm_response_declares_tool_use(llm_response):
         return None
+    if llm_response_is_streaming_partial(llm_response):
+        return None
     text = extract_text_from_llm_response(llm_response)
+    text = patch_dual_format_from_state(text, callback_context.state)
     parallel = callback_context.state.get("checkpoint_parallel_results")
     par_str = parallel if isinstance(parallel, str) else None
 
@@ -924,10 +1328,27 @@ def checkpoint_agent_after_model_callback(
     """ADK hook: checkpoint_agent (simple query or passthrough) must keep dual format."""
     if llm_response_declares_tool_use(llm_response):
         return None
+    if llm_response_is_streaming_partial(llm_response):
+        return None
     text = extract_text_from_llm_response(llm_response)
     parallel = callback_context.state.get("checkpoint_parallel_results")
     par_str = parallel if isinstance(parallel, str) else None
     stashed = resolve_passthrough_dual_format_from_state(callback_context.state)
+
+    requested = normalize_checkpoint_optional_agents(
+        callback_context.state.get("checkpoint_optional_agents")
+    )
+    if requested:
+        text = patch_dual_format_from_state(text, callback_context.state)
+        analysis = extract_analysis_object_from_dual_format(text)
+        if not isinstance(analysis, dict) or not analysis.get("analysisStatus"):
+            progress = callback_context.state.get(
+                CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY
+            )
+            if isinstance(progress, str) and progress.strip():
+                text = patch_dual_format_from_state(
+                    progress, callback_context.state
+                )
 
     if stashed and not dual_format_is_passthrough_quality(text):
         stashed = enrich_dual_format_markdown(stashed)
@@ -941,11 +1362,12 @@ def checkpoint_agent_after_model_callback(
         return llm_response.model_copy(update={"content": new_content})
 
     if dual_format_is_passthrough_quality(text):
+        text = patch_dual_format_from_state(text, callback_context.state)
         enriched = enrich_dual_format_markdown(text)
         if enriched != text:
             text = enriched
         stash_checkpoint_dual_format_in_state(callback_context.state, text)
-        if enriched != extract_text_from_llm_response(llm_response):
+        if text != extract_text_from_llm_response(llm_response):
             new_content = types.Content(role="model", parts=[types.Part(text=text)])
             return llm_response.model_copy(update={"content": new_content})
         return None
@@ -955,6 +1377,7 @@ def checkpoint_agent_after_model_callback(
     fixed = ensure_dual_format_body(
         text, parallel_results_json=par_str, checkpoint_results=ck_blob
     )
+    fixed = patch_dual_format_from_state(fixed, callback_context.state)
     if fixed == text:
         return None
     appended_json = "```json" in fixed and "```json" not in text
@@ -968,6 +1391,44 @@ def checkpoint_agent_after_model_callback(
     stash_checkpoint_dual_format_in_state(callback_context.state, fixed)
     new_content = types.Content(role="model", parts=[types.Part(text=fixed)])
     return llm_response.model_copy(update={"content": new_content})
+
+
+def doculink_progressive_streaming_callback(
+    callback_context: CallbackContext,
+    llm_response: LlmResponse,
+) -> Optional[LlmResponse]:
+    """
+    While doculink streams a follow-up turn, emit the latest stashed checkpoint
+    progress body when the progress sequence advances (pairs with sub-agent events).
+    """
+    if llm_response_declares_tool_use(llm_response):
+        return None
+    if not llm_response_is_streaming_partial(llm_response):
+        return None
+    state = callback_context.state
+    if state is None or not hasattr(state, "get"):
+        return None
+    stashed = state.get(CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY)
+    if not isinstance(stashed, str) or not dual_format_has_valid_analysis_json(stashed):
+        return None
+    seq = state.get(CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY, 0)
+    last = state.get(CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY, -1)
+    try:
+        seq_i = int(seq)
+        last_i = int(last)
+    except (TypeError, ValueError):
+        return None
+    if seq_i <= last_i:
+        return None
+    state[CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY] = seq_i
+    body = enrich_dual_format_markdown(stashed)
+    logger.info(
+        "doculink_agent: streaming checkpoint progress (seq=%d chars=%d)",
+        seq_i,
+        len(body),
+    )
+    new_content = types.Content(role="model", parts=[types.Part(text=body)])
+    return llm_response.model_copy(update={"content": new_content, "partial": True})
 
 
 def doculink_after_model_callback(

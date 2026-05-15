@@ -29,13 +29,26 @@ from .prompts import checkpoint_agent_instruction
 from .firestore_vector_search import search_checkpoints_by_vector
 from .media_search_query_refiner import refine_checkpoint_media_search_query
 from ..checkpoint_dual_format_guard import (
+    CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY,
+    CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
+    CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
+    CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
+    CHECKPOINT_PROGRESS_EVENT_AUTHOR,
+    bump_checkpoint_progress_emit_seq,
+    build_phase0_checkpoint_dual_format,
     checkpoint_agent_after_model_callback,
+    dual_format_has_valid_analysis_json,
     dual_format_is_passthrough_quality,
     enrich_dual_format_markdown,
+    apply_tool_context_state_delta,
+    ensure_checkpoint_analysis_pending_stashed,
     ensure_dual_format_body,
+    format_checkpoints_for_analysis_blob,
+    normalize_checkpoint_optional_agents,
     resolve_passthrough_dual_format_from_state,
     stash_checkpoint_dual_format_in_state,
 )
+from google.adk.events.event import Event, EventActions
 from ..checkpoint_request_timing import (
     begin_checkpoint_request,
     begin_doculink_phase,
@@ -45,7 +58,6 @@ from ..checkpoint_request_timing import (
 from ..checkpoint_analysis_agent.agent import (
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY,
     CheckpointAnalysisInput,
-    checkpoint_analysis_agent,
     normalize_checkpoint_analysis_tool_args,
 )
 from ...agent_inputs import DocsInput
@@ -85,6 +97,63 @@ def build_search_query_from_checkpoints(
         cut = q[: max_chars + 1]
         q = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_chars].strip()
     return q
+
+
+def _stash_pending_checkpoint_analysis(
+    tool_context: ToolContext,
+    *,
+    formatted_results: List[Dict[str, Any]],
+    search_query: str,
+    user_query: str,
+) -> None:
+    """Stash structured analysis input for doculink → checkpoint_progress_agent transfer."""
+    requested = normalize_checkpoint_optional_agents(
+        tool_context.state.get("checkpoint_optional_agents")
+    )
+    if not requested or not formatted_results:
+        return
+
+    blob = format_checkpoints_for_analysis_blob(formatted_results)
+    pending: Dict[str, Any] = {
+        "checkpoint_results": blob,
+        "user_query": user_query,
+        "search_query": search_query or "",
+        "checkpoint_optional_agents": requested,
+    }
+    for key in (
+        "context_doc_uris",
+        "property_address",
+        "property_id",
+        "location_coordinates",
+        "location_radius",
+    ):
+        value = tool_context.state.get(key)
+        if value is not None:
+            pending[key] = value
+
+    pending_json = json.dumps(pending, ensure_ascii=False)
+    phase0 = build_phase0_checkpoint_dual_format(
+        checkpoint_results=blob,
+        user_query=user_query,
+        requested_branches=requested,
+    )
+    phase0 = enrich_dual_format_markdown(phase0)
+    stash_checkpoint_dual_format_in_state(tool_context.state, phase0)
+    delta: Dict[str, Any] = {
+        "checkpoint_results": blob,
+        CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: pending_json,
+        CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY: phase0,
+        CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: phase0,
+        CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY: search_query or "",
+        "checkpoint_optional_agents": requested,
+    }
+    apply_tool_context_state_delta(tool_context, delta)
+    bump_checkpoint_progress_emit_seq(tool_context.state)
+    logger.info(
+        "checkpoint retrieval: stashed pending analysis branches=%s blob_len=%d",
+        requested,
+        len(blob),
+    )
 
 
 def _stringify_function_response_payload(resp: Any) -> str:
@@ -131,6 +200,42 @@ def _extract_tool_visible_text(content: types.Content | None) -> str:
     return "\n".join(thought_chunks).strip()
 
 
+async def _forward_checkpoint_progress_to_parent(
+    tool_context: ToolContext,
+    body: str,
+    *,
+    branch: Optional[str] = None,
+    state_delta: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Append a progressive checkpoint analysis model event on the parent session."""
+    if not (body or "").strip():
+        return
+    invocation_context = tool_context._invocation_context
+    if invocation_context is None or invocation_context.session_service is None:
+        return
+    delta: Dict[str, Any] = dict(state_delta or {})
+    if branch:
+        delta[CHECKPOINT_BRANCH_COMPLETED_STATE_KEY] = branch
+    event = Event(
+        invocation_id=invocation_context.invocation_id,
+        author=CHECKPOINT_PROGRESS_EVENT_AUTHOR,
+        content=types.Content(role="model", parts=[types.Part(text=body)]),
+        actions=EventActions(state_delta=delta) if delta else EventActions(),
+    )
+    try:
+        await invocation_context.session_service.append_event(
+            session=invocation_context.session,
+            event=event,
+        )
+        logger.info(
+            "checkpoint progress forwarded to parent session branch=%r chars=%d",
+            branch or "",
+            len(body),
+        )
+    except Exception:
+        logger.exception("checkpoint progress forward to parent session failed")
+
+
 class _LastNonEmptyTextAgentTool(AgentTool):
     """AgentTool variant: ADK may emit a trailing model turn with no visible text, which would make
     the stock AgentTool return ''. We return the last non-empty visible model text instead.
@@ -150,11 +255,13 @@ class _LastNonEmptyTextAgentTool(AgentTool):
         state_fallback_key: Optional[str] = None,
         parallel_state_key: Optional[str] = None,
         tool_input_schema: Optional[Type[BaseModel]] = None,
+        forward_progress_events: bool = False,
     ):
         super().__init__(agent, skip_summarization=True)
         self._state_fallback_key = state_fallback_key
         self._parallel_state_key = parallel_state_key
         self._tool_input_schema = tool_input_schema
+        self._forward_progress_events = forward_progress_events
 
     @override
     async def run_async(
@@ -263,6 +370,34 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                         vis = _extract_tool_visible_text(event.content)
                         if vis:
                             last_non_empty = vis
+                        if (
+                            self._forward_progress_events
+                            and vis
+                            and dual_format_has_valid_analysis_json(vis)
+                        ):
+                            author = getattr(event, "author", None) or ""
+                            branch: Optional[str] = None
+                            delta = (
+                                event.actions.state_delta
+                                if event.actions and event.actions.state_delta
+                                else None
+                            )
+                            if isinstance(delta, dict):
+                                raw_branch = delta.get(
+                                    CHECKPOINT_BRANCH_COMPLETED_STATE_KEY
+                                )
+                                if isinstance(raw_branch, str):
+                                    branch = raw_branch
+                            if (
+                                author == CHECKPOINT_PROGRESS_EVENT_AUTHOR
+                                or branch is not None
+                            ):
+                                await _forward_checkpoint_progress_to_parent(
+                                    tool_context,
+                                    vis,
+                                    branch=branch,
+                                    state_delta=delta if isinstance(delta, dict) else None,
+                                )
                         logger.debug(
                             "_LastNonEmptyTextAgentTool event=%d author=%r "
                             "visible_len=%d last_non_empty_len=%d",
@@ -684,6 +819,13 @@ def ask_checkpoints_retrieval(
         )
         if tool_context is not None and search_query:
             tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = search_query
+        if tool_context is not None and formatted_results:
+            _stash_pending_checkpoint_analysis(
+                tool_context,
+                formatted_results=formatted_results,
+                search_query=search_query,
+                user_query=user_query,
+            )
         logger.info(
             "checkpoint_retrieval: end duration_ms=%d outcome=ok checkpoints=%d "
             "search_query_len=%d",
@@ -710,12 +852,6 @@ checkpoint_agent = Agent(
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
         ask_checkpoints_retrieval,
-        _LastNonEmptyTextAgentTool(
-            checkpoint_analysis_agent,
-            tool_input_schema=CheckpointAnalysisInput,
-            state_fallback_key="checkpoint_result",
-            parallel_state_key="checkpoint_parallel_results",
-        ),
     ],
     disallow_transfer_to_parent=True,
     output_key='checkpoint_result',

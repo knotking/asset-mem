@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import time
-from typing import Optional, List, Dict, Any, Tuple, AsyncGenerator
+from typing import Awaitable, Callable, Optional, List, Dict, Any, Tuple, AsyncGenerator
 from google.adk.agents import Agent, BaseAgent, SequentialAgent
 from google.adk.agents.context import Context
 from google.adk.agents.invocation_context import InvocationContext
@@ -28,7 +28,19 @@ from ..service_agent.agent import service_agent
 from ..cost_agent.agent import _cost_estimation_sync, cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
 from ...model_config import GLOBAL_GEMINI_MODEL
-from ..checkpoint_dual_format_guard import synthesis_after_model_callback
+from ..checkpoint_dual_format_guard import (
+    CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
+    CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
+    CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
+    CHECKPOINT_PROGRESS_EVENT_AUTHOR,
+    bump_checkpoint_progress_emit_seq,
+    build_checkpoint_analysis_pending_payload,
+    build_phase0_checkpoint_dual_format,
+    build_progressive_checkpoint_dual_format,
+    ensure_checkpoint_analysis_pending_stashed,
+    stash_checkpoint_dual_format_in_state,
+    synthesis_after_model_callback,
+)
 from ..checkpoint_request_timing import (
     mark_synthesis_started,
     record_diy_ms,
@@ -354,30 +366,67 @@ def normalize_checkpoint_analysis_tool_args(
     return merged
 
 
+def _pending_checkpoint_analysis_input_from_state(
+    ctx: InvocationContext,
+) -> Optional[CheckpointAnalysisInput]:
+    """Load analysis input stashed during checkpoint retrieval (doculink transfer path)."""
+    tool_ctx = Context(invocation_context=ctx)
+    ensure_checkpoint_analysis_pending_stashed(tool_ctx.state)
+    raw = tool_ctx.state.get(CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY)
+    data: Optional[Dict[str, Any]] = None
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                data = parsed
+        except json.JSONDecodeError:
+            data = parse_checkpoint_analysis_payload(raw)
+    elif isinstance(raw, dict):
+        data = raw
+    if data is None:
+        data = build_checkpoint_analysis_pending_payload(tool_ctx.state)
+    if data is None:
+        return None
+    try:
+        return CheckpointAnalysisInput.model_validate(data)
+    except Exception as exc:
+        logger.warning(
+            "checkpoint optional parallel: pending input validation failed: %s",
+            exc,
+        )
+        return None
+
+
 def _parse_checkpoint_analysis_input(
     ctx: InvocationContext,
 ) -> Optional[CheckpointAnalysisInput]:
     """Parse workflow input (JSON or legacy prose) from the invocation user message."""
     text = _text_from_user_content(Context(invocation_context=ctx).user_content)
-    if not text:
+    if text:
+        data = parse_checkpoint_analysis_payload(text)
+        if data is not None:
+            try:
+                return CheckpointAnalysisInput.model_validate(data)
+            except Exception as exc:
+                logger.warning(
+                    "checkpoint optional parallel: workflow input validation failed: %s",
+                    exc,
+                )
+                # Doculink transfer often passes routing-only JSON (user_query,
+                # location_*, optional_agents) without checkpoint_results; use stash.
+        else:
+            logger.warning(
+                "checkpoint optional parallel: workflow input is not valid JSON or legacy prose"
+            )
+
+    pending = _pending_checkpoint_analysis_input_from_state(ctx)
+    if pending is not None:
+        logger.info(
+            "checkpoint optional parallel: using pending analysis input from session state"
+        )
+    else:
         logger.warning("checkpoint optional parallel: missing workflow input text")
-        return None
-
-    data = parse_checkpoint_analysis_payload(text)
-    if data is None:
-        logger.warning(
-            "checkpoint optional parallel: workflow input is not valid JSON or legacy prose"
-        )
-        return None
-
-    try:
-        return CheckpointAnalysisInput.model_validate(data)
-    except Exception as exc:
-        logger.warning(
-            "checkpoint optional parallel: workflow input validation failed: %s",
-            exc,
-        )
-        return None
+    return pending
 
 
 def _stash_retrieval_search_query(tool_ctx: Context, inp: CheckpointAnalysisInput) -> None:
@@ -393,8 +442,15 @@ def _stash_retrieval_search_query(tool_ctx: Context, inp: CheckpointAnalysisInpu
         )
 
 
+BranchCompleteCallback = Callable[
+    [str, Dict[str, str], str, ToolContext], Awaitable[None]
+]
+
+
 async def execute_checkpoint_optional_parallel(
     ctx: InvocationContext,
+    *,
+    on_branch_complete: Optional[BranchCompleteCallback] = None,
 ) -> Context:
     """Run optional branches in Python (no LLM). Returns context with session state updates."""
     tool_ctx = Context(invocation_context=ctx)
@@ -405,6 +461,7 @@ async def execute_checkpoint_optional_parallel(
             user_query="",
             checkpoint_optional_agents=[],
             tool_context=tool_ctx,
+            on_branch_complete=on_branch_complete,
         )
         return tool_ctx
 
@@ -420,6 +477,7 @@ async def execute_checkpoint_optional_parallel(
         location_radius=inp.location_radius,
         search_query=inp.search_query,
         tool_context=tool_ctx,
+        on_branch_complete=on_branch_complete,
     )
     return tool_ctx
 
@@ -431,8 +489,59 @@ class CheckpointOptionalParallelAgent(BaseAgent):
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        tool_ctx = await execute_checkpoint_optional_parallel(ctx)
-        if tool_ctx.state.has_delta():
+        from google.genai import types
+        from google.adk.events.event import EventActions
+
+        progress_queue: asyncio.Queue[Optional[Event]] = asyncio.Queue()
+        tool_ctx_holder: List[Optional[ToolContext]] = [None]
+
+        async def on_branch_complete(
+            branch: str,
+            results: Dict[str, str],
+            body: str,
+            tool_context: ToolContext,
+        ) -> None:
+            stash_checkpoint_dual_format_in_state(tool_context.state, body)
+            if hasattr(tool_context.state, "__setitem__"):
+                tool_context.state[CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY] = body
+                bump_checkpoint_progress_emit_seq(tool_context.state)
+            delta: Dict[str, Any] = {
+                "checkpoint_parallel_results": json.dumps(
+                    results, ensure_ascii=False
+                ),
+            }
+            if branch:
+                delta[CHECKPOINT_BRANCH_COMPLETED_STATE_KEY] = branch
+            await progress_queue.put(
+                Event(
+                    invocation_id=ctx.invocation_id,
+                    author=CHECKPOINT_PROGRESS_EVENT_AUTHOR,
+                    branch=ctx.branch,
+                    content=types.Content(
+                        role="model", parts=[types.Part(text=body)]
+                    ),
+                    actions=EventActions(state_delta=delta),
+                )
+            )
+
+        async def run_parallel() -> None:
+            tool_ctx_holder[0] = await execute_checkpoint_optional_parallel(
+                ctx, on_branch_complete=on_branch_complete
+            )
+            await progress_queue.put(None)
+
+        runner_task = asyncio.create_task(run_parallel())
+        try:
+            while True:
+                ev = await progress_queue.get()
+                if ev is None:
+                    break
+                yield ev
+        finally:
+            await runner_task
+
+        tool_ctx = tool_ctx_holder[0]
+        if tool_ctx is not None and tool_ctx.state.has_delta():
             yield Event(
                 invocation_id=ctx.invocation_id,
                 author=self.name,
@@ -573,6 +682,31 @@ def _serialize_and_store_parallel_results(
     return out
 
 
+async def _emit_progressive_update(
+    *,
+    branch: str,
+    results: Dict[str, str],
+    checkpoint_results: str,
+    user_query: str,
+    requested: List[str],
+    completed: List[str],
+    pending: List[str],
+    tool_context: ToolContext,
+    on_branch_complete: Optional[BranchCompleteCallback],
+) -> None:
+    body = build_progressive_checkpoint_dual_format(
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        parallel_results=results,
+        requested_branches=requested,
+        completed_branches=completed,
+        pending_branches=pending,
+        in_progress=bool(pending),
+    )
+    if on_branch_complete is not None:
+        await on_branch_complete(branch, results, body, tool_context)
+
+
 async def run_checkpoint_optional_agents_parallel(
     checkpoint_results: str,
     user_query: str,
@@ -584,6 +718,7 @@ async def run_checkpoint_optional_agents_parallel(
     location_radius: Optional[int] = None,
     search_query: Optional[str] = None,
     tool_context: ToolContext = None,
+    on_branch_complete: Optional[BranchCompleteCallback] = None,
 ) -> str:
     """Run requested optional agents concurrently on the active event loop."""
     total_start = time.monotonic()
@@ -645,16 +780,44 @@ async def run_checkpoint_optional_agents_parallel(
         "location_radius": location_radius,
     }
 
-    branch_results = await asyncio.gather(
-        *(
-            _run_single_optional_agent_async(name, payload, tool_context)
-            for name in requested
-        ),
-        return_exceptions=False,
+    completed: List[str] = []
+    pending: List[str] = list(requested)
+    phase0 = build_phase0_checkpoint_dual_format(
+        checkpoint_results=checkpoint_results,
+        user_query=user_query,
+        requested_branches=requested,
     )
-    for name, value in zip(requested, branch_results):
+    if on_branch_complete is not None:
+        await on_branch_complete("", results, phase0, tool_context)
+    else:
+        stash_checkpoint_dual_format_in_state(tool_context.state, phase0)
+
+    async def _run_named_branch(name: str) -> Tuple[str, str]:
+        value = await _run_single_optional_agent_async(name, payload, tool_context)
+        return name, value
+
+    branch_tasks = {
+        asyncio.create_task(_run_named_branch(name)): name for name in requested
+    }
+    for finished in asyncio.as_completed(branch_tasks.keys()):
+        name, value = await finished
         _, key = _BRANCH_AGENTS[name]
         results[key] = value
+        if name in pending:
+            pending.remove(name)
+        completed.append(name)
+        _serialize_and_store_parallel_results(tool_context, results)
+        await _emit_progressive_update(
+            branch=name,
+            results=results,
+            checkpoint_results=checkpoint_results,
+            user_query=user_query,
+            requested=requested,
+            completed=list(completed),
+            pending=list(pending),
+            tool_context=tool_context,
+            on_branch_complete=on_branch_complete,
+        )
 
     parallel_ms = int((time.monotonic() - total_start) * 1000)
     if tool_context is not None:
@@ -669,16 +832,7 @@ async def run_checkpoint_optional_agents_parallel(
     return _serialize_and_store_parallel_results(tool_context, results)
 
 
-checkpoint_optional_parallel_agent = CheckpointOptionalParallelAgent(
-    name="checkpoint_optional_agents_parallel_runner",
-    description="Runs requested optional checkpoint branches in parallel using Python orchestration.",
-)
-
-synthesis_agent = Agent(
-    name="checkpoint_analysis_synthesis_agent",
-    model=GLOBAL_GEMINI_MODEL,
-    description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
-    instruction="""
+_CHECKPOINT_SYNTHESIS_INSTRUCTION = """
 You are the final checkpoint analysis synthesizer.
 
 Inputs:
@@ -812,15 +966,56 @@ Final validation before returning:
    - locations (array)
 4) Any included optional section is an object, never string.
 5) JSON is valid and parseable.
-""",
-    input_schema=CheckpointAnalysisInput,
-    after_model_callback=synthesis_after_model_callback,
+"""
+
+
+def _build_checkpoint_analysis_workflow(
+    *,
+    workflow_name: str,
+    parallel_agent_name: str,
+    synthesis_agent_name: str,
+    workflow_description: str,
+) -> Tuple[SequentialAgent, CheckpointOptionalParallelAgent, Agent]:
+    """Build a fresh parallel+synthesis workflow (ADK forbids sharing sub-agents)."""
+    parallel = CheckpointOptionalParallelAgent(
+        name=parallel_agent_name,
+        description="Runs requested optional checkpoint branches in parallel using Python orchestration.",
+    )
+    synthesis = Agent(
+        name=synthesis_agent_name,
+        model=GLOBAL_GEMINI_MODEL,
+        description="Synthesizes parallel checkpoint analysis results into final dual-format output.",
+        instruction=_CHECKPOINT_SYNTHESIS_INSTRUCTION,
+        input_schema=CheckpointAnalysisInput,
+        after_model_callback=synthesis_after_model_callback,
+    )
+    workflow = SequentialAgent(
+        name=workflow_name,
+        description=workflow_description,
+        sub_agents=[parallel, synthesis],
+    )
+    return workflow, parallel, synthesis
+
+
+checkpoint_analysis_workflow, checkpoint_optional_parallel_agent, synthesis_agent = (
+    _build_checkpoint_analysis_workflow(
+        workflow_name="checkpoint_analysis_agent",
+        parallel_agent_name="checkpoint_optional_agents_parallel_runner",
+        synthesis_agent_name="checkpoint_analysis_synthesis_agent",
+        workflow_description=(
+            "Runs optional checkpoint agents in parallel then synthesizes one stable response."
+        ),
+    )
 )
 
-checkpoint_analysis_workflow = SequentialAgent(
-    name="checkpoint_analysis_agent",
-    description="Runs optional checkpoint agents in parallel then synthesizes one stable response.",
-    sub_agents=[checkpoint_optional_parallel_agent, synthesis_agent],
+checkpoint_progress_agent, _, _ = _build_checkpoint_analysis_workflow(
+    workflow_name="checkpoint_progress_agent",
+    parallel_agent_name="checkpoint_progress_parallel_runner",
+    synthesis_agent_name="checkpoint_progress_synthesis_agent",
+    workflow_description=(
+        "Runs optional checkpoint analysis with progressive updates; "
+        "invoked via doculink transfer after checkpoint retrieval."
+    ),
 )
 
 # Use the workflow directly as the exported entrypoint to remove one extra
@@ -829,6 +1024,7 @@ checkpoint_analysis_agent = checkpoint_analysis_workflow
 
 __all__ = [
     "checkpoint_analysis_agent",
+    "checkpoint_progress_agent",
     "CheckpointAnalysisInput",
     "CheckpointOptionalParallelAgent",
     "checkpoint_optional_parallel_agent",
