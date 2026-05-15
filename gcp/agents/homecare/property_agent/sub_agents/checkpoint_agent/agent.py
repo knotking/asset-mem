@@ -9,7 +9,9 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
+
+from pydantic import BaseModel
 
 from google.genai import types
 from google.adk.agents import Agent
@@ -28,11 +30,23 @@ from .firestore_vector_search import search_checkpoints_by_vector
 from .media_search_query_refiner import refine_checkpoint_media_search_query
 from ..checkpoint_dual_format_guard import (
     checkpoint_agent_after_model_callback,
+    dual_format_is_passthrough_quality,
+    enrich_dual_format_markdown,
     ensure_dual_format_body,
+    resolve_passthrough_dual_format_from_state,
+    stash_checkpoint_dual_format_in_state,
+)
+from ..checkpoint_request_timing import (
+    begin_checkpoint_request,
+    begin_doculink_phase,
+    record_retrieval_ms,
+    set_return_chars,
 )
 from ..checkpoint_analysis_agent.agent import (
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY,
+    CheckpointAnalysisInput,
     checkpoint_analysis_agent,
+    normalize_checkpoint_analysis_tool_args,
 )
 from ...agent_inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
@@ -135,10 +149,12 @@ class _LastNonEmptyTextAgentTool(AgentTool):
         agent: Agent,
         state_fallback_key: Optional[str] = None,
         parallel_state_key: Optional[str] = None,
+        tool_input_schema: Optional[Type[BaseModel]] = None,
     ):
         super().__init__(agent, skip_summarization=True)
         self._state_fallback_key = state_fallback_key
         self._parallel_state_key = parallel_state_key
+        self._tool_input_schema = tool_input_schema
 
     @override
     async def run_async(
@@ -148,6 +164,8 @@ class _LastNonEmptyTextAgentTool(AgentTool):
         tool_context: ToolContext,
     ) -> Any:
         wrapped = getattr(self.agent, "name", type(self.agent).__name__)
+        if wrapped == "checkpoint_agent":
+            begin_checkpoint_request(tool_context.state)
         _nested_t0 = time.monotonic()
         logger.debug(
             "_LastNonEmptyTextAgentTool.run_async start wrapped=%r "
@@ -160,9 +178,12 @@ class _LastNonEmptyTextAgentTool(AgentTool):
         if self.skip_summarization:
             tool_context.actions.skip_summarization = True
         try:
-            input_schema = _get_input_schema(self.agent)
+            input_schema = self._tool_input_schema or _get_input_schema(self.agent)
             if input_schema:
-                input_value = input_schema.model_validate(args)
+                payload_args = args
+                if input_schema is CheckpointAnalysisInput:
+                    payload_args = normalize_checkpoint_analysis_tool_args(args)
+                input_value = input_schema.model_validate(payload_args)
                 content = types.Content(
                     role="user",
                     parts=[
@@ -328,8 +349,12 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                         self._parallel_state_key,
                         len(par),
                     )
+                    ck_results = tool_context.state.get("checkpoint_results")
+                    ck_blob = ck_results if isinstance(ck_results, str) else ""
                     tool_result = ensure_dual_format_body(
-                        "", parallel_results_json=par
+                        "",
+                        parallel_results_json=par,
+                        checkpoint_results=ck_blob,
                     )
                     logger.info(
                         "AgentTool %s: built dual-format tool result from %s (chars=%d)",
@@ -338,7 +363,29 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                         len(tool_result),
                     )
 
+            if isinstance(tool_result, str) and dual_format_is_passthrough_quality(tool_result):
+                tool_result = enrich_dual_format_markdown(tool_result)
+                stash_checkpoint_dual_format_in_state(tool_context.state, tool_result)
+
+            stashed = resolve_passthrough_dual_format_from_state(tool_context.state)
+            if (
+                stashed
+                and isinstance(tool_result, str)
+                and not dual_format_is_passthrough_quality(tool_result)
+            ):
+                logger.info(
+                    "_LastNonEmptyTextAgentTool: using stashed dual-format for wrapped=%r "
+                    "(tool_chars=%d stash_chars=%d)",
+                    wrapped,
+                    len(tool_result),
+                    len(stashed),
+                )
+                tool_result = stashed
+
             ret_len = len(tool_result) if isinstance(tool_result, str) else None
+            if wrapped == "checkpoint_agent" and isinstance(tool_result, str):
+                set_return_chars(tool_context.state, len(tool_result))
+                begin_doculink_phase(tool_context.state)
             logger.debug(
                 "_LastNonEmptyTextAgentTool.run_async end wrapped=%r "
                 "return_type=%s return_len=%s",
@@ -389,6 +436,10 @@ def ask_checkpoints_retrieval(
     def _elapsed_ms() -> int:
         return int((time.monotonic() - t0) * 1000)
 
+    def _record_retrieval_timing() -> None:
+        if tool_context is not None:
+            record_retrieval_ms(tool_context.state, _elapsed_ms())
+
     try:
         ck_mode = (
             "by_id"
@@ -426,6 +477,7 @@ def ask_checkpoints_retrieval(
                 "checkpoint_retrieval: end duration_ms=%d outcome=no_user checkpoints=0",
                 _elapsed_ms(),
             )
+            _record_retrieval_timing()
             return {"checkpoints": [], "search_query": ""}
         
         if not property_id:
@@ -434,6 +486,7 @@ def ask_checkpoints_retrieval(
                 "checkpoint_retrieval: end duration_ms=%d outcome=no_property checkpoints=0",
                 _elapsed_ms(),
             )
+            _record_retrieval_timing()
             return {"checkpoints": [], "search_query": ""}
         
         logger.debug(
@@ -498,6 +551,7 @@ def ask_checkpoints_retrieval(
                     "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
                     _elapsed_ms(),
                 )
+                _record_retrieval_timing()
                 return {"checkpoints": [], "search_query": ""}
         else:
             # Perform vector search when no specific checkpoint IDs provided
@@ -525,6 +579,7 @@ def ask_checkpoints_retrieval(
                     "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
                     _elapsed_ms(),
                 )
+                _record_retrieval_timing()
                 return {"checkpoints": [], "search_query": ""}
         
         # Format checkpoints for agent consumption
@@ -636,6 +691,7 @@ def ask_checkpoints_retrieval(
             len(formatted_results),
             len(search_query or ""),
         )
+        _record_retrieval_timing()
         return {"checkpoints": formatted_results, "search_query": search_query}
     except Exception as e:
         logger.error(f"Error retrieving checkpoints: {e}", exc_info=True)
@@ -643,6 +699,7 @@ def ask_checkpoints_retrieval(
             "checkpoint_retrieval: end duration_ms=%d outcome=error checkpoints=0",
             _elapsed_ms(),
         )
+        _record_retrieval_timing()
         return {"checkpoints": [], "search_query": ""}
 
 
@@ -653,7 +710,12 @@ checkpoint_agent = Agent(
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
         ask_checkpoints_retrieval,
-        _LastNonEmptyTextAgentTool(checkpoint_analysis_agent),
+        _LastNonEmptyTextAgentTool(
+            checkpoint_analysis_agent,
+            tool_input_schema=CheckpointAnalysisInput,
+            state_fallback_key="checkpoint_result",
+            parallel_state_key="checkpoint_parallel_results",
+        ),
     ],
     disallow_transfer_to_parent=True,
     output_key='checkpoint_result',

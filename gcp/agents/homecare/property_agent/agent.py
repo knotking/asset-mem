@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.context import Context
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
@@ -14,6 +15,7 @@ from .logging_context import bind_auth_uid, install_auth_uid_logging, unbind_aut
 from .model_config import GLOBAL_GEMINI_MODEL
 from .prompts import doculink_agent_system_instruction, root_agent_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
+from .sub_agents.checkpoint_dual_format_guard import doculink_after_model_callback
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
 
@@ -50,6 +52,13 @@ def after_model_auth_uid(
 ) -> None:
     _ = (callback_context, llm_response)
     unbind_auth_uid()
+
+
+def doculink_after_model_combined(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> Optional[LlmResponse]:
+    after_model_auth_uid(callback_context, llm_response)
+    return doculink_after_model_callback(callback_context, llm_response)
 
 
 def after_tool_auth_uid(
@@ -106,7 +115,7 @@ doculink_agent = Agent(
     ],
     disallow_transfer_to_parent=True,
     before_model_callback=before_model_auth_uid,
-    after_model_callback=after_model_auth_uid,
+    after_model_callback=doculink_after_model_combined,
     before_tool_callback=before_tool_callback,
     after_tool_callback=after_tool_auth_uid,
 )

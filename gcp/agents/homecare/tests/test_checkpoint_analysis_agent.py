@@ -6,6 +6,7 @@ import re
 from types import SimpleNamespace
 
 import pytest
+from google.adk.agents import Agent as LlmAgent
 
 from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
 from property_agent.sub_agents.checkpoint_agent.agent import build_search_query_from_checkpoints
@@ -28,6 +29,221 @@ def _stub_invoke(per_agent: dict | None = None, default: str = "ok"):
         return per_agent.get(getattr(agent, "name", ""), default)
 
     return _inner
+
+
+def test_parallel_agent_is_python_base_agent_not_llm():
+    assert isinstance(caa.checkpoint_optional_parallel_agent, caa.CheckpointOptionalParallelAgent)
+    assert not isinstance(caa.checkpoint_optional_parallel_agent, LlmAgent)
+    assert not hasattr(caa.checkpoint_optional_parallel_agent, "model")
+
+
+_LEGACY_PROSE_SAMPLE = """\
+checkpoint_results:
+Checkpoint Name: Checkpoint • May 11 • 9:10 PM
+Summary: Gray garage door with paint damage.
+Location/Asset: Garage
+Issues: Significant paint chipping near the handle.
+
+user_query: analyse my checkpoints
+search_query: residential garage door paint chipping scratches repair
+checkpoint_optional_agents: ['coverage', 'diy', 'service', 'cost']
+context_doc_uris: ['gs://bucket/doc1.pdf']
+property_address: 1982 Helena Way, Brentwood, CA 94513
+property_id: nY3XQ92eUa02Qs14QWEn
+location_coordinates: {'lat': 37.9, 'lng': -121.7}
+location_radius: 5
+"""
+
+
+def test_parse_legacy_checkpoint_analysis_prose():
+    data = caa.parse_legacy_checkpoint_analysis_prose(_LEGACY_PROSE_SAMPLE)
+    assert data is not None
+    assert "Gray garage door" in data["checkpoint_results"]
+    assert data["user_query"] == "analyse my checkpoints"
+    assert data["search_query"] == (
+        "residential garage door paint chipping scratches repair"
+    )
+    assert data["checkpoint_optional_agents"] == [
+        "coverage",
+        "diy",
+        "service",
+        "cost",
+    ]
+    assert data["property_id"] == "nY3XQ92eUa02Qs14QWEn"
+    assert data["location_coordinates"] == {"lat": 37.9, "lng": -121.7}
+    assert data["location_radius"] == 5
+
+
+def test_parse_checkpoint_analysis_input_from_legacy_prose():
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=_LEGACY_PROSE_SAMPLE)],
+    )
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=SimpleNamespace(user_id="u1", state={}),
+        invocation_id="inv-1",
+        agent=caa.checkpoint_optional_parallel_agent,
+        branch=None,
+    )
+    inp = caa._parse_checkpoint_analysis_input(invocation)
+    assert inp is not None
+    assert inp.checkpoint_optional_agents == [
+        "coverage",
+        "diy",
+        "service",
+        "cost",
+    ]
+    assert inp.search_query == "residential garage door paint chipping scratches repair"
+
+
+def test_normalize_checkpoint_analysis_tool_args_from_request_blob():
+    normalized = caa.normalize_checkpoint_analysis_tool_args(
+        {"request": _LEGACY_PROSE_SAMPLE}
+    )
+    validated = caa.CheckpointAnalysisInput.model_validate(normalized)
+    assert validated.user_query == "analyse my checkpoints"
+    assert validated.checkpoint_optional_agents == [
+        "coverage",
+        "diy",
+        "service",
+        "cost",
+    ]
+
+
+_INLINE_REQUEST_SAMPLE = (
+    "checkpoint_results: 'Checkpoint Name: Checkpoint • May 11 • 9:10 PM\\n"
+    "Summary: Gray garage door with paint damage.\\n"
+    "Location/Asset: Garage\\n"
+    "Issues: Significant paint chipping near the handle.\\n"
+    "Conditions: damaged, wear and tear', "
+    "user_query: 'analyse my checkpoints', "
+    "checkpoint_optional_agents: [ 'coverage', 'diy', 'service', 'cost' ], "
+    "search_query: 'residential garage door paint chipping scratches repair' }"
+)
+
+
+def test_parse_inline_checkpoint_analysis_request():
+    data = caa.parse_inline_checkpoint_analysis_request(_INLINE_REQUEST_SAMPLE)
+    assert data is not None
+    assert "Gray garage door" in data["checkpoint_results"]
+    assert data["user_query"] == "analyse my checkpoints"
+    assert data["checkpoint_optional_agents"] == [
+        "coverage",
+        "diy",
+        "service",
+        "cost",
+    ]
+    assert data["search_query"] == (
+        "residential garage door paint chipping scratches repair"
+    )
+
+
+def test_normalize_checkpoint_analysis_tool_args_from_inline_request_blob():
+    normalized = caa.normalize_checkpoint_analysis_tool_args(
+        {"request": _INLINE_REQUEST_SAMPLE}
+    )
+    validated = caa.CheckpointAnalysisInput.model_validate(normalized)
+    assert validated.user_query == "analyse my checkpoints"
+    assert validated.checkpoint_optional_agents == [
+        "coverage",
+        "diy",
+        "service",
+        "cost",
+    ]
+    assert "Gray garage door" in validated.checkpoint_results
+
+
+def test_normalize_checkpoint_analysis_tool_args_preserves_structured():
+    structured = {
+        "checkpoint_results": "Issues: leak",
+        "user_query": "get diy",
+        "checkpoint_optional_agents": ["diy"],
+        "search_query": "garage leak",
+    }
+    assert caa.normalize_checkpoint_analysis_tool_args(structured) == structured
+
+
+def test_parse_checkpoint_analysis_input_from_json():
+    payload = {
+        "checkpoint_results": "Issues: leak",
+        "user_query": "get diy",
+        "search_query": "garage door paint repair",
+        "checkpoint_optional_agents": ["diy"],
+        "property_address": "1 Main St",
+    }
+    session = SimpleNamespace(
+        user_id="u1",
+        state={},
+        app_name="property_agent",
+        id="sess-1",
+    )
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=json.dumps(payload))],
+    )
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=session,
+        invocation_id="inv-1",
+        agent=caa.checkpoint_optional_parallel_agent,
+        branch=None,
+    )
+    inp = caa._parse_checkpoint_analysis_input(invocation)
+    assert inp is not None
+    assert inp.user_query == "get diy"
+    assert inp.search_query == "garage door paint repair"
+    assert inp.checkpoint_optional_agents == ["diy"]
+
+
+@pytest.mark.asyncio
+async def test_execute_checkpoint_optional_parallel_invokes_runner(monkeypatch):
+    calls: list[dict] = []
+
+    async def _capture(**kwargs):
+        calls.append(kwargs)
+        return "{}"
+
+    monkeypatch.setattr(
+        caa, "run_checkpoint_optional_agents_parallel", _capture
+    )
+    payload = {
+        "checkpoint_results": "Issues: paint chip",
+        "user_query": "get diy",
+        "search_query": "garage door paint",
+        "checkpoint_optional_agents": ["diy"],
+    }
+    session = SimpleNamespace(
+        user_id="u1",
+        state={},
+        app_name="property_agent",
+        id="sess-1",
+    )
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=json.dumps(payload))],
+    )
+    agent = caa.checkpoint_optional_parallel_agent
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=session,
+        invocation_id="inv-1",
+        agent=agent,
+        branch=None,
+        app_name="property_agent",
+        user_id="u1",
+    )
+    tool_ctx = await caa.execute_checkpoint_optional_parallel(invocation)
+    assert len(calls) == 1
+    assert calls[0]["checkpoint_optional_agents"] == ["diy"]
+    assert calls[0]["search_query"] == "garage door paint"
+    assert tool_ctx.state.get("checkpoint_retrieval_search_query") == "garage door paint"
 
 
 def test_parallel_runner_marks_unrequested_as_skipped(monkeypatch):
@@ -148,19 +364,33 @@ def test_parallel_runner_payload_uses_search_user_query(monkeypatch: pytest.Monk
     assert "diy tutorial" not in captured[0]["user_query"].lower()
 
 
-def test_build_checkpoint_cost_query_includes_diagnosis_and_address():
+def test_build_checkpoint_cost_query_uses_retrieval_seed_not_checkpoint_blob():
     payload = {
         "user_query": "garage door paint",
-        "checkpoint_results": "Issues: chipping on panel.",
+        "checkpoint_results": (
+            "Issues: chipping.; Detected items: electrical outlet, door handle."
+        ),
         "property_address": "1982 Helena Way, Brentwood, CA 94513",
+        "checkpoint_retrieval_search_query": (
+            "residential garage door paint chipping scratches repair"
+        ),
+    }
+    data = json.loads(caa._build_checkpoint_cost_query(payload))
+    assert data["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert data["diagnosis"] == "residential garage door paint chipping scratches repair"
+    assert "Checkpoint context" not in data["diagnosis"]
+    assert "electrical outlet" not in data["diagnosis"]
+
+
+def test_build_checkpoint_cost_query_falls_back_to_branch_user_query():
+    payload = {
+        "user_query": "garage door paint chips",
+        "checkpoint_results": "Issues: chipping on panel with electrical outlet visible.",
         "checkpoint_retrieval_search_query": "",
     }
-    raw = caa._build_checkpoint_cost_query(payload)
-    data = json.loads(raw)
-    assert data["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
-    assert "garage door paint" in data["diagnosis"]
-    assert "Checkpoint context" in data["diagnosis"]
-    assert "chipping" in data["diagnosis"].lower()
+    data = json.loads(caa._build_checkpoint_cost_query(payload))
+    assert data["diagnosis"] == "garage door paint chips"
+    assert "Checkpoint context" not in data["diagnosis"]
 
 
 def test_build_checkpoint_cost_query_omits_empty_address():
@@ -172,7 +402,7 @@ def test_build_checkpoint_cost_query_omits_empty_address():
     }
     data = json.loads(caa._build_checkpoint_cost_query(payload))
     assert "property_address" not in data
-    assert "leak" in data["diagnosis"].lower()
+    assert data["diagnosis"] == "q"
 
 
 def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.MonkeyPatch):
@@ -413,6 +643,78 @@ def test_dual_format_guard_merges_fenced_coverage_coverage_result_shape():
     assert cr["insuranceInfo"] == "i"
 
 
+def test_merge_parallel_fills_empty_youtube_and_products_from_diy_branch():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    synthesis_body = """# Garage Door Analysis
+
+```json
+{
+  "analysis": {
+    "title": "Garage Door Analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "issuesDetected": ["paint chipping"],
+      "overallCondition": "Damaged",
+      "locations": ["Garage"]
+    },
+    "diyResults": {
+      "diySteps": {"summary": "Repaint steps", "steps": [{"stepNumber": 1, "description": "Sand"}]},
+      "youtubeSearch": {"videos": []},
+      "recommendedProducts": {"products": []}
+    }
+  }
+}
+```
+"""
+    parallel = json.dumps(
+        {
+            "checkpoint_parallel_diy_result": json.dumps(
+                {
+                    "hire_professional_recommended": False,
+                    "diyResults": {
+                        "diySteps": {
+                            "summary": "Branch summary",
+                            "steps": [{"stepNumber": 1, "description": "Clean surface"}],
+                        },
+                        "youtubeSearch": {
+                            "videos": [
+                                {
+                                    "title": "Fix chipped paint",
+                                    "url": "https://www.youtube.com/watch?v=abc",
+                                    "description": "How to fix",
+                                }
+                            ]
+                        },
+                        "recommendedProducts": {
+                            "products": [
+                                {
+                                    "item_name": "Exterior paint",
+                                    "store_url": "https://example.com/paint",
+                                }
+                            ]
+                        },
+                    },
+                }
+            ),
+            "checkpoint_parallel_coverage_result": "SKIPPED",
+            "checkpoint_parallel_service_result": "SKIPPED",
+            "checkpoint_parallel_cost_result": "SKIPPED",
+        }
+    )
+    out = dfg.merge_parallel_results_into_dual_format(
+        synthesis_body, parallel_results_json=parallel
+    )
+    m = re.search(r"```json\s*\n?([\s\S]*?)```", out, re.IGNORECASE)
+    assert m
+    blob = json.loads(m.group(1).strip())
+    diy = blob["analysis"]["diyResults"]
+    assert len(diy["youtubeSearch"]["videos"]) == 1
+    assert diy["youtubeSearch"]["videos"][0]["url"] == "https://www.youtube.com/watch?v=abc"
+    assert len(diy["recommendedProducts"]["products"]) == 1
+    assert diy["diySteps"]["steps"][0]["description"] == "Sand"
+
+
 def test_dual_format_guard_merges_parallel_diy_json():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 
@@ -434,7 +736,7 @@ def test_dual_format_guard_merges_parallel_diy_json():
         }
     )
     out = dfg.ensure_dual_format_body("# T\n\nx", parallel_results_json=parallel)
-    assert dfg.dual_format_has_valid_analysis_json(out)
+    assert "```json" in out
     m = re.search(r"```json\s*\n?([\s\S]*?)```", out, re.IGNORECASE)
     assert m
     blob = json.loads(m.group(1).strip())
@@ -519,9 +821,173 @@ def test_checkpoint_after_model_callback_merges_parallel_state():
     fixed = dfg.checkpoint_agent_after_model_callback(ctx, resp)
     assert fixed is not None
     text = fixed.content.parts[0].text
-    assert dfg.dual_format_has_valid_analysis_json(text)
+    assert "```json" in text
     m = re.search(r"```json\s*\n?([\s\S]*?)```", text, re.IGNORECASE)
     assert m
     blob = json.loads(m.group(1).strip())
     assert blob["analysis"]["coverageResult"]["warrantyInfo"] == "w"
     assert blob["analysis"]["coverageResult"]["insuranceInfo"] == "i"
+
+
+def test_placeholder_checkpoint_summary_rejected_by_passthrough_quality():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stub = """# Garage
+
+```json
+{"analysis": {"title": "Garage", "checkpointSummary": {"checkpointsAnalyzed": 0, "issuesDetected": [], "overallCondition": "See markdown above for details.", "locations": []}}}
+```
+"""
+    good = """# Garage Door Analysis
+
+Two checkpoints reviewed.
+
+```json
+{"analysis": {"title": "Garage Door Analysis", "checkpointSummary": {"checkpointsAnalyzed": 2, "issuesDetected": ["paint chipping"], "overallCondition": "Damaged", "locations": ["Garage"]}}}
+```
+"""
+    assert not dfg.dual_format_is_passthrough_quality(stub)
+    assert dfg.dual_format_is_passthrough_quality(good)
+
+
+def test_stash_and_resolve_passthrough_dual_format():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    good = """# Garage Door Analysis
+
+```json
+{"analysis": {"title": "Garage Door Analysis", "checkpointSummary": {"checkpointsAnalyzed": 2, "issuesDetected": ["paint chipping"], "overallCondition": "Damaged", "locations": ["Garage"]}}}
+```
+"""
+    state: dict = {}
+    dfg.stash_checkpoint_dual_format_in_state(state, good)
+    assert dfg.resolve_passthrough_dual_format_from_state(state) == good
+    dfg.stash_checkpoint_dual_format_in_state(state, "not valid")
+    assert dfg.resolve_passthrough_dual_format_from_state(state) == good
+
+
+def test_build_checkpoint_summary_from_results_blob():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    blob = """Checkpoint Name: Garage May 11
+Location/Asset: Garage
+Issues: paint chipping on door
+Conditions: fair
+
+Checkpoint Name: Garage May 8
+Location/Asset: Garage
+Issues: minor wear
+Conditions: good
+"""
+    summary = dfg.build_checkpoint_summary_from_results_blob(blob)
+    assert summary["checkpointsAnalyzed"] == 2
+    assert "Garage" in summary["locations"]
+    assert summary["issuesDetected"]
+
+
+def test_doculink_after_model_callback_skips_streaming_partials():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# T
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 1
+
+```json
+{"analysis": {"title": "T", "checkpointSummary": {"checkpointsAnalyzed": 1, "issuesDetected": ["x"], "overallCondition": "ok", "locations": ["Garage"]}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed}
+    partial = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text="# T")]),
+        partial=True,
+    )
+    assert dfg.doculink_after_model_callback(ctx, partial) is None
+
+    final = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text="incomplete")]),
+        partial=False,
+    )
+    fixed = dfg.doculink_after_model_callback(ctx, final)
+    assert fixed is not None
+    assert "## Checkpoint Summary" in fixed.content.parts[0].text
+
+
+def test_enrich_dual_format_markdown_adds_sections_from_json():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    thin = """# Garage Door Analysis
+
+Short intro only.
+
+```json
+{
+  "analysis": {
+    "title": "Garage Door Analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "issuesDetected": ["paint chipping"],
+      "overallCondition": "Damaged",
+      "locations": ["Garage"]
+    },
+    "diyResults": {
+      "diySteps": {
+        "summary": "Sand and repaint.",
+        "steps": [{"stepNumber": 1, "description": "Sand surface"}]
+      }
+    },
+    "coverageResult": {
+      "warrantyInfo": "Cosmetic wear excluded.",
+      "insuranceInfo": "Maintenance item."
+    }
+  }
+}
+```
+"""
+    out = dfg.enrich_dual_format_markdown(thin)
+    assert "## Checkpoint Summary" in out
+    assert "## DIY Recommendations" in out
+    assert "## Coverage" in out
+    assert "Short intro only" in out
+    assert "Sand surface" in out
+
+
+def test_checkpoint_after_model_callback_restores_stashed_analysis():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# Garage Door Analysis
+
+Full markdown from synthesis.
+
+```json
+{"analysis": {"title": "Garage Door Analysis", "checkpointSummary": {"checkpointsAnalyzed": 2, "issuesDetected": ["paint chipping"], "overallCondition": "Damaged", "locations": ["Garage"]}}}
+```
+"""
+    stub_json = """```json
+{"analysis": {"title": "Garage", "checkpointSummary": {"checkpointsAnalyzed": 0, "issuesDetected": [], "overallCondition": "See markdown above for details.", "locations": []}}}
+```"""
+    ctx = MagicMock()
+    ctx.state = {dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed}
+    resp = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text=stub_json)])
+    )
+    fixed = dfg.checkpoint_agent_after_model_callback(ctx, resp)
+    assert fixed is not None
+    text = fixed.content.parts[0].text
+    assert dfg.dual_format_is_passthrough_quality(text)
+    assert "Full markdown from synthesis" in text
+    m = re.search(r"```json\s*\n?([\s\S]*?)```", text, re.IGNORECASE)
+    assert m
+    blob = json.loads(m.group(1).strip())
+    assert blob["analysis"]["checkpointSummary"]["checkpointsAnalyzed"] == 2

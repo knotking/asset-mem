@@ -59,6 +59,80 @@ def test_infer_hire_professional_heuristics() -> None:
     assert diy_orch._infer_hire_professional("replace main electrical service panel") is True
 
 
+def test_parse_checkpoint_structured_context() -> None:
+    blob = """analyse my checkpoints
+
+Checkpoint context:
+Location/Asset: Garage
+Summary: Gray garage door with paint damage.
+Detected items: door, door handle
+Issues: Paint chipping near the handle.
+Conditions: damaged, wear and tear
+"""
+    ctx = diy_orch.parse_checkpoint_structured_context(blob)
+    assert ctx.get("location") == "Garage"
+    assert "paint" in (ctx.get("summary") or "").lower()
+    assert "chipping" in (ctx.get("issues") or "").lower()
+    assert "door" in ctx.get("detected_items", [])
+    assert "damaged" in ctx.get("conditions", [])
+
+
+def test_assemble_diy_results_applies_prefetch() -> None:
+    cost = json.dumps({"diyCostEstimates": {"repair_type": "t", "DIY": {"cost_range": "$1-2"}}})
+    yt = [{"title": "T", "url": "https://www.youtube.com/watch?v=abc", "description": "D"}]
+    products = json.dumps(
+        {
+            "recommendedProducts": {
+                "DIY": {
+                    "products": [
+                        {
+                            "item_name": "Sealant",
+                            "image_url": None,
+                            "vendor": "Store",
+                            "reviews": "10",
+                            "store_url": "https://example.com/p",
+                        }
+                    ]
+                }
+            }
+        }
+    )
+    out = diy_orch._assemble_diy_results(
+        False,
+        {"summary": "Fix paint", "steps": [{"stepNumber": 1, "description": "Sand"}]},
+        yt,
+        products,
+        cost,
+    )
+    dr = out["diyResults"]
+    assert dr["diySteps"]["steps"][0]["description"] == "Sand"
+    assert len(dr["youtubeSearch"]["videos"]) == 1
+    assert dr["recommendedProducts"]["products"][0]["item_name"] == "Sealant"
+    assert dr["diyCostEstimates"]["repair_type"] == "t"
+
+
+def test_synthesize_diy_json_uses_steps_llm_and_assembly(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: dict = {}
+
+    def fake_steps(diagnosis: str, web_summary: str) -> tuple:
+        calls["steps"] = (diagnosis, web_summary)
+        return False, {"summary": "s", "steps": [{"stepNumber": 1, "description": "Step A"}]}
+
+    monkeypatch.setattr(diy_orch, "_generate_diy_steps_llm", fake_steps)
+    out = json.loads(
+        diy_orch._synthesize_diy_json(
+            "Garage door paint chips",
+            "web text",
+            [],
+            '{"recommendedProducts":{}}',
+            '{"diyCostEstimates":{}}',
+        )
+    )
+    assert calls["steps"][0] == "Garage door paint chips"
+    assert out["diyResults"]["diySteps"]["steps"][0]["description"] == "Step A"
+    assert out["diyResults"]["youtubeSearch"]["videos"] == []
+
+
 def test_compact_diy_search_seed_strips_checkpoint_boilerplate() -> None:
     blob = """analyse my checkpoints
 
@@ -344,7 +418,7 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_products(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Checkpoint branch uses retrieval ``search_query`` for YouTube/shopping (not compacted diagnosis)."""
+    """Checkpoint branch: retrieval seed for web/YouTube/shopping/cost; full diagnosis for synthesis."""
     monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "0")
     seen: dict[str, tuple] = {}
 
@@ -356,7 +430,11 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
         seen["pr"] = (q, category)
         return '{"recommendedProducts":{"DIY":{"products":[]}}}'
 
-    monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", lambda d, a: "")
+    def cap_web(d: str, a: str) -> str:
+        seen["web"] = (d, a)
+        return ""
+
+    monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", cap_web)
     monkeypatch.setattr(diy_orch, "youtube_search", cap_yt)
     monkeypatch.setattr(diy_orch, "product_recommendations", cap_pr)
 
@@ -368,11 +446,12 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
 
     monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", boom_yt)
     monkeypatch.setattr(diy_orch, "_products_for_diagnosis", boom_pr)
-    monkeypatch.setattr(
-        diy_orch,
-        "cost_estimation_diy_from_library",
-        lambda q: '{"diyCostEstimates":{"repair_type":"t","DIY":{"cost_range":"$1-2"}}}',
-    )
+
+    def cap_cost(q: str) -> str:
+        seen["cost"] = (q,)
+        return '{"diyCostEstimates":{"repair_type":"t","DIY":{"cost_range":"$1-2"}}}'
+
+    monkeypatch.setattr(diy_orch, "cost_estimation_diy_from_library", cap_cost)
     monkeypatch.setattr(
         diy_orch,
         "_synthesize_diy_json",
@@ -399,6 +478,56 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
     )
     assert seen["yt"] == (f"{retrieval} DIY tutorial how to fix", 5)
     assert seen["pr"] == (retrieval, "DIY")
+    assert seen["web"][0] == retrieval
+    assert "Checkpoint context:" not in seen["web"][0]
+    assert "NOISE" not in seen["web"][0]
+    assert retrieval in seen["cost"][0]
+    assert "NOISE" not in seen["cost"][0]
+    assert "Checkpoint context:" not in seen["cost"][0]
+
+
+def test_web_grounding_query_uses_retrieval_seed_when_set() -> None:
+    assert (
+        diy_orch._web_grounding_query("full blob with outlet", "garage door paint repair")
+        == "garage door paint repair"
+    )
+
+
+def test_web_grounding_query_compacts_diagnosis_without_seed() -> None:
+    blob = (
+        "Location/Asset: Garage\n"
+        "Summary: Paint chipping on door.\n"
+        "Issues: scratches near handle."
+    )
+    q = diy_orch._web_grounding_query(blob, None)
+    assert len(q) < len(blob)
+    assert "garage" in q.lower() or "paint" in q.lower() or "chip" in q.lower()
+
+
+def test_resolve_pipeline_diagnosis_prefers_user_query_for_llm() -> None:
+    llm, seed = diy_orch.resolve_pipeline_diagnosis(
+        "full blob",
+        "short seed",
+    )
+    assert llm == "full blob"
+    assert seed == "short seed"
+
+
+def test_resolve_pipeline_diagnosis_falls_back_to_seed_when_query_empty() -> None:
+    llm, seed = diy_orch.resolve_pipeline_diagnosis("", "only seed")
+    assert llm == "only seed"
+    assert seed == "only seed"
+
+
+def test_truncate_web_summary_respects_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(diy_orch, "_web_summary_max_chars", lambda: 24)
+    out = diy_orch._truncate_web_summary("one two three four five six seven eight")
+    assert len(out) <= 24
+
+
+def test_web_grounding_max_output_tokens_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DIY_WEB_GROUNDING_MAX_OUTPUT_TOKENS", "1024")
+    assert diy_orch._web_grounding_max_output_tokens() == 1024
 
 
 def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -101,16 +101,13 @@ def checkpoint_agent_instruction() -> str:
            - Execute in single-path mode: call `checkpoint_analysis_agent` exactly once after retrieval
            - Do not run any extra explanatory/tool-selection steps between retrieval and analysis call
            - Format the `checkpoints` array from the retrieval tool as a string summary for `checkpoint_results`
-           - Call `checkpoint_analysis_agent` with:
-             * `checkpoint_results`: String summary of retrieved checkpoints
-             * `user_query`: Original user query
-             * `search_query`: Pass through **exactly** the `search_query` field from the `ask_checkpoints_retrieval` tool response (server-built from locations and issue descriptions). Do not invent or rewrite it.
-             * `checkpoint_optional_agents`: List of agents to invoke
-             * `context_doc_uris`: Pass through from input
-             * `property_address`: Pass through from input
-             * `property_id`: Pass through from input
-             * `location_coordinates`: Pass through from input
-             * `location_radius`: Pass through from input
+           - **CRITICAL — structured tool call only:** Call `checkpoint_analysis_agent` with **separate parameters** (not a single `request` field). Required shape:
+             * `checkpoint_results` (string): Summary of retrieved checkpoints
+             * `user_query` (string): Original user query
+             * `checkpoint_optional_agents` (array of strings): e.g. `["diy"]` or `["coverage","diy","service","cost"]`
+             * `search_query` (string): Pass through **exactly** the `search_query` from `ask_checkpoints_retrieval` (do not invent or rewrite)
+             * `context_doc_uris`, `property_address`, `property_id`, `location_coordinates`, `location_radius`: Pass through from input when present
+           - **Never** pass one combined `request` string or YAML-style `key: value` prose — the analysis workflow requires structured fields.
            - Return the analysis agent's response directly (it will be in dual format: Markdown + JSON)
 
         **Tool Call Requirements:**
@@ -216,7 +213,7 @@ def checkpoint_agent_instruction() -> str:
             1. Retrieve checkpoints using ask_checkpoints_retrieval
             2. Format the `checkpoints` array as a string summary for `checkpoint_results`
             3. Pass the retrieval tool's `search_query` through to `checkpoint_analysis_agent` unchanged
-            4. Call checkpoint_analysis_agent with results, optional agents, and that `search_query`
+            4. Call checkpoint_analysis_agent with structured args: checkpoint_results, user_query, checkpoint_optional_agents, search_query, plus property/context fields (never a single `request` blob)
             5. Return analysis agent's response (dual format: Markdown + JSON)
         ELSE:
             1. Retrieve checkpoints using ask_checkpoints_retrieval

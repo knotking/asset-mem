@@ -5,15 +5,19 @@ Orchestrates coverage, DIY, service, and cost agents to provide comprehensive
 recommendations based on checkpoint data analysis.
 """
 
+import ast
 import asyncio
 import json
 import logging
 import re
 import time
-from typing import Optional, List, Dict, Any, Tuple
-from google.adk.agents import Agent, SequentialAgent
-from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools import BaseTool, ToolContext
+from typing import Optional, List, Dict, Any, Tuple, AsyncGenerator
+from google.adk.agents import Agent, BaseAgent, SequentialAgent
+from google.adk.agents.context import Context
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events.event import Event
+from google.adk.tools import ToolContext
+from typing_extensions import override
 from google.adk.tools.agent_tool import AgentTool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -25,6 +29,11 @@ from ..cost_agent.agent import _cost_estimation_sync, cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
 from ...model_config import GLOBAL_GEMINI_MODEL
 from ..checkpoint_dual_format_guard import synthesis_after_model_callback
+from ..checkpoint_request_timing import (
+    mark_synthesis_started,
+    record_diy_ms,
+    record_parallel_ms,
+)
 
 load_dotenv()
 
@@ -32,6 +41,28 @@ logger = logging.getLogger(__name__)
 
 # Session state key: refined search_query from checkpoint retrieval (YouTube / shopping).
 CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY = "checkpoint_retrieval_search_query"
+
+# Legacy prose keys emitted when checkpoint_agent passes a single ``request`` blob.
+_LEGACY_ANALYSIS_FIELD_NAMES: Tuple[str, ...] = (
+    "checkpoint_results",
+    "user_query",
+    "search_query",
+    "checkpoint_optional_agents",
+    "context_doc_uris",
+    "property_address",
+    "property_id",
+    "location_coordinates",
+    "location_radius",
+)
+_LEGACY_FIELD_MARKER_RE = re.compile(
+    r"(?:^|\n)(" + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES) + r")\s*:\s*",
+    re.IGNORECASE,
+)
+# checkpoint_agent sometimes emits one line: field: '...', user_query: '...', ...
+_INLINE_FIELD_MARKER_RE = re.compile(
+    r"(?:^|,\s*)(" + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES) + r")\s*:\s*",
+    re.IGNORECASE,
+)
 
 
 def _text_from_user_content(content: Any) -> str:
@@ -70,44 +101,6 @@ def resolve_effective_search_query(
     if isinstance(st, str) and st.strip():
         return st.strip()
     return ""
-
-
-def parallel_runner_before_agent(
-    callback_context: CallbackContext,
-) -> None:
-    """Stash search_query from CheckpointAnalysisInput JSON before the runner LLM omits it."""
-    text = _text_from_user_content(callback_context.user_content)
-    sq = _search_query_from_analysis_json(text)
-    if sq:
-        callback_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = sq
-        logger.debug(
-            "checkpoint optional parallel: stashed search_query from workflow input len=%d",
-            len(sq),
-        )
-
-
-def parallel_runner_before_tool(
-    tool: BaseTool,
-    args: Dict[str, Any],
-    tool_context: ToolContext,
-    **kwargs: Any,
-) -> None:
-    """Inject search_query when the runner model drops it from the tool call."""
-    _ = kwargs
-    if getattr(tool, "name", None) != "run_checkpoint_optional_agents_parallel":
-        return None
-    if not isinstance(args, dict):
-        return None
-    if (args.get("search_query") or "").strip():
-        return None
-    sq = resolve_effective_search_query(None, tool_context)
-    if sq:
-        args["search_query"] = sq
-        logger.info(
-            "checkpoint optional parallel: injected search_query len=%d",
-            len(sq),
-        )
-    return None
 
 
 def _strip_checkpoint_title_noise(text: str) -> str:
@@ -196,6 +189,258 @@ class CheckpointAnalysisInput(BaseModel):
     location_radius: Optional[int] = Field(default=None, description="Search radius for local services")
 
 
+def _coerce_legacy_analysis_field(key: str, value_str: str) -> Any:
+    """Parse one legacy ``key: value`` field from checkpoint_agent request prose."""
+    raw = (value_str or "").strip()
+    if not raw:
+        return None
+    if key in (
+        "checkpoint_optional_agents",
+        "context_doc_uris",
+        "location_coordinates",
+    ):
+        try:
+            return ast.literal_eval(raw)
+        except (SyntaxError, ValueError):
+            logger.debug(
+                "checkpoint analysis parse: literal_eval failed for %s", key
+            )
+            return raw
+    if key == "location_radius":
+        try:
+            return int(raw)
+        except ValueError:
+            return raw
+    return raw
+
+
+def parse_legacy_checkpoint_analysis_prose(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse checkpoint_agent's legacy single-string tool arg:
+
+        checkpoint_results: ...
+        user_query: ...
+        search_query: ...
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    if not _LEGACY_FIELD_MARKER_RE.search(raw):
+        return None
+
+    matches = list(_LEGACY_FIELD_MARKER_RE.finditer(raw))
+    if not matches:
+        return None
+
+    out: Dict[str, Any] = {}
+    for i, match in enumerate(matches):
+        key = match.group(1).lower()
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
+        value_str = raw[start:end].strip()
+        coerced = _coerce_legacy_analysis_field(key, value_str)
+        if coerced is not None:
+            out[key] = coerced
+
+    if not out.get("checkpoint_results") and not out.get("user_query"):
+        return None
+    if not out.get("checkpoint_optional_agents"):
+        return None
+    return out
+
+
+def _strip_inline_field_value(value_str: str) -> str:
+    """Trim commas, trailing braces, and optional wrapping quotes from inline field values."""
+    raw = (value_str or "").strip()
+    while raw.endswith("}"):
+        raw = raw[:-1].strip()
+    while raw.endswith(","):
+        raw = raw[:-1].strip()
+    if len(raw) >= 2:
+        if raw[0] == raw[-1] and raw[0] in ("'", '"'):
+            return raw[1:-1].strip()
+    return raw
+
+
+def parse_inline_checkpoint_analysis_request(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse single-line comma-separated tool args from checkpoint_agent, e.g.::
+
+        checkpoint_results: '...', user_query: 'analyse my checkpoints',
+        checkpoint_optional_agents: ['coverage', 'diy'], search_query: 'garage paint'
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    if not _INLINE_FIELD_MARKER_RE.search(raw):
+        return None
+
+    matches = list(_INLINE_FIELD_MARKER_RE.finditer(raw))
+    if not matches:
+        return None
+
+    out: Dict[str, Any] = {}
+    for i, match in enumerate(matches):
+        key = match.group(1).lower()
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
+        value_str = _strip_inline_field_value(raw[start:end])
+        coerced = _coerce_legacy_analysis_field(key, value_str)
+        if coerced is not None:
+            out[key] = coerced
+
+    if not out.get("checkpoint_results") and not out.get("user_query"):
+        return None
+    if not out.get("checkpoint_optional_agents"):
+        return None
+    return out
+
+
+def parse_checkpoint_analysis_payload(text: str) -> Optional[Dict[str, Any]]:
+    """JSON object or legacy ``key: value`` prose → dict for CheckpointAnalysisInput."""
+    raw = (text or "").strip()
+    if not raw:
+        return None
+
+    if raw.startswith("{"):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            data = None
+        if isinstance(data, dict):
+            return data
+
+    legacy = parse_legacy_checkpoint_analysis_prose(raw)
+    if legacy is not None:
+        return legacy
+
+    inline = parse_inline_checkpoint_analysis_request(raw)
+    if inline is not None:
+        return inline
+
+    return None
+
+
+def normalize_checkpoint_analysis_tool_args(
+    args: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Normalize checkpoint_analysis_agent tool args to CheckpointAnalysisInput fields.
+
+    Accepts structured args, legacy ``request`` prose, or a JSON string in ``request``.
+    """
+    if not isinstance(args, dict):
+        raise TypeError("checkpoint_analysis_agent args must be a dict")
+
+    structured_keys = {
+        "checkpoint_results",
+        "user_query",
+        "checkpoint_optional_agents",
+    }
+    if structured_keys.issubset(args.keys()):
+        return dict(args)
+
+    merged: Dict[str, Any] = {
+        k: v for k, v in args.items() if k != "request" and v is not None
+    }
+    request_blob = args.get("request")
+    if isinstance(request_blob, str) and request_blob.strip():
+        parsed = parse_checkpoint_analysis_payload(request_blob)
+        if parsed:
+            merged = {**parsed, **merged}
+        elif "checkpoint_results" not in merged:
+            merged["checkpoint_results"] = request_blob.strip()
+
+    return merged
+
+
+def _parse_checkpoint_analysis_input(
+    ctx: InvocationContext,
+) -> Optional[CheckpointAnalysisInput]:
+    """Parse workflow input (JSON or legacy prose) from the invocation user message."""
+    text = _text_from_user_content(Context(invocation_context=ctx).user_content)
+    if not text:
+        logger.warning("checkpoint optional parallel: missing workflow input text")
+        return None
+
+    data = parse_checkpoint_analysis_payload(text)
+    if data is None:
+        logger.warning(
+            "checkpoint optional parallel: workflow input is not valid JSON or legacy prose"
+        )
+        return None
+
+    try:
+        return CheckpointAnalysisInput.model_validate(data)
+    except Exception as exc:
+        logger.warning(
+            "checkpoint optional parallel: workflow input validation failed: %s",
+            exc,
+        )
+        return None
+
+
+def _stash_retrieval_search_query(tool_ctx: Context, inp: CheckpointAnalysisInput) -> None:
+    sq = (inp.search_query or "").strip()
+    if not sq:
+        text = _text_from_user_content(tool_ctx.user_content)
+        sq = _search_query_from_analysis_json(text)
+    if sq:
+        tool_ctx.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = sq
+        logger.debug(
+            "checkpoint optional parallel: stashed search_query len=%d",
+            len(sq),
+        )
+
+
+async def execute_checkpoint_optional_parallel(
+    ctx: InvocationContext,
+) -> Context:
+    """Run optional branches in Python (no LLM). Returns context with session state updates."""
+    tool_ctx = Context(invocation_context=ctx)
+    inp = _parse_checkpoint_analysis_input(ctx)
+    if inp is None:
+        await run_checkpoint_optional_agents_parallel(
+            checkpoint_results="",
+            user_query="",
+            checkpoint_optional_agents=[],
+            tool_context=tool_ctx,
+        )
+        return tool_ctx
+
+    _stash_retrieval_search_query(tool_ctx, inp)
+    await run_checkpoint_optional_agents_parallel(
+        checkpoint_results=inp.checkpoint_results,
+        user_query=inp.user_query,
+        checkpoint_optional_agents=inp.checkpoint_optional_agents,
+        context_doc_uris=inp.context_doc_uris,
+        property_address=inp.property_address,
+        property_id=inp.property_id,
+        location_coordinates=inp.location_coordinates,
+        location_radius=inp.location_radius,
+        search_query=inp.search_query,
+        tool_context=tool_ctx,
+    )
+    return tool_ctx
+
+
+class CheckpointOptionalParallelAgent(BaseAgent):
+    """Python-only parallel runner (replaces the prior LLM tool-caller hop)."""
+
+    @override
+    async def _run_async_impl(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        tool_ctx = await execute_checkpoint_optional_parallel(ctx)
+        if tool_ctx.state.has_delta():
+            yield Event(
+                invocation_id=ctx.invocation_id,
+                author=self.name,
+                branch=ctx.branch,
+                actions=tool_ctx.actions,
+            )
+
+
 def _normalize_agent_result(result: Any) -> str:
     if result is None:
         return "SKIPPED"
@@ -236,16 +481,23 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
     )
 
 
-def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
-    """JSON query for cost tools: same diagnosis seed as DIY + explicit property_address."""
+def _checkpoint_cost_diagnosis(payload: Dict[str, Any]) -> str:
+    """Diagnosis for checkpoint cost tools: retrieval seed, else branch query, else compact blob."""
+    seed = (payload.get("checkpoint_retrieval_search_query") or "").strip()
+    if seed:
+        return seed
     branch_q = (payload.get("user_query") or "").strip()
+    if branch_q:
+        return branch_q
     ck = (payload.get("checkpoint_results") or "").strip()
-    if ck and branch_q:
-        diagnosis = f"{branch_q}\n\nCheckpoint context:\n{ck[:6000]}"
-    elif ck:
-        diagnosis = ck[:8000]
-    else:
-        diagnosis = branch_q or "Property maintenance"
+    if ck:
+        return optional_branch_search_user_query(ck)
+    return "Property maintenance"
+
+
+def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
+    """JSON query for cost tools: refined diagnosis seed + optional property_address."""
+    diagnosis = _checkpoint_cost_diagnosis(payload)
     addr = (payload.get("property_address") or "").strip() or None
     body: Dict[str, Any] = {"diagnosis": diagnosis}
     if addr:
@@ -300,10 +552,13 @@ async def _run_single_optional_agent_async(
         logger.exception("checkpoint optional branch failed: %s", name)
         return "SKIPPED"
     finally:
+        branch_ms = int((time.monotonic() - branch_start) * 1000)
+        if name == "diy" and tool_context is not None:
+            record_diy_ms(tool_context.state, branch_ms)
         logger.info(
             "checkpoint optional branch timing: branch=%s duration_ms=%d failed=%s",
             name,
-            int((time.monotonic() - branch_start) * 1000),
+            branch_ms,
             branch_failed,
         )
 
@@ -401,28 +656,22 @@ async def run_checkpoint_optional_agents_parallel(
         _, key = _BRANCH_AGENTS[name]
         results[key] = value
 
+    parallel_ms = int((time.monotonic() - total_start) * 1000)
+    if tool_context is not None:
+        record_parallel_ms(tool_context.state, parallel_ms)
+        mark_synthesis_started(tool_context.state)
     logger.info(
         "checkpoint optional parallel: done requested=%s wall_ms=%d branch_user_query_len=%d",
         sorted(set(requested)),
-        int((time.monotonic() - total_start) * 1000),
+        parallel_ms,
         len(branch_user_query),
     )
     return _serialize_and_store_parallel_results(tool_context, results)
 
 
-parallel_optional_runner_agent = Agent(
+checkpoint_optional_parallel_agent = CheckpointOptionalParallelAgent(
     name="checkpoint_optional_agents_parallel_runner",
-    model=GLOBAL_GEMINI_MODEL,
     description="Runs requested optional checkpoint branches in parallel using Python orchestration.",
-    instruction="""
-Call run_checkpoint_optional_agents_parallel exactly once with the full input payload.
-Return only the tool output without additional narration.
-""",
-    tools=[run_checkpoint_optional_agents_parallel],
-    input_schema=CheckpointAnalysisInput,
-    disallow_transfer_to_parent=True,
-    before_agent_callback=parallel_runner_before_agent,
-    before_tool_callback=parallel_runner_before_tool,
 )
 
 synthesis_agent = Agent(
@@ -571,11 +820,22 @@ Final validation before returning:
 checkpoint_analysis_workflow = SequentialAgent(
     name="checkpoint_analysis_agent",
     description="Runs optional checkpoint agents in parallel then synthesizes one stable response.",
-    sub_agents=[parallel_optional_runner_agent, synthesis_agent],
+    sub_agents=[checkpoint_optional_parallel_agent, synthesis_agent],
 )
 
 # Use the workflow directly as the exported entrypoint to remove one extra
 # LLM delegation hop from the checkpoint-analysis path.
 checkpoint_analysis_agent = checkpoint_analysis_workflow
 
-__all__ = ["checkpoint_analysis_agent", "CheckpointAnalysisInput"]
+__all__ = [
+    "checkpoint_analysis_agent",
+    "CheckpointAnalysisInput",
+    "CheckpointOptionalParallelAgent",
+    "checkpoint_optional_parallel_agent",
+    "execute_checkpoint_optional_parallel",
+    "normalize_checkpoint_analysis_tool_args",
+    "parse_checkpoint_analysis_payload",
+    "parse_inline_checkpoint_analysis_request",
+    "parse_legacy_checkpoint_analysis_prose",
+    "run_checkpoint_optional_agents_parallel",
+]
