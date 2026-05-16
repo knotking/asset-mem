@@ -1,12 +1,30 @@
 /**
  * Webapp logging utility. Namespaced, level-gated debug, structured metadata.
  * Not shared with @homeapp/common — webapp keeps its own copy.
+ *
+ * Levels in production (NODE_ENV=production):
+ * - debug, info: off unless NEXT_PUBLIC_DEBUG_LOGS=true
+ * - warn, error: always on
  */
 
 export type LogMeta = Record<string, unknown>;
 
+function parseTruthyEnv(value: string | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 const isDev =
   typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
+/** Opt-in verbose client logs in production (e.g. Firebase App Hosting troubleshooting). */
+const debugLogsEnabled = parseTruthyEnv(
+  typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_DEBUG_LOGS : undefined
+);
+
+/** When true, debug + info are emitted. */
+export const isVerboseLogging = isDev || debugLogsEnabled;
 
 function formatLine(namespace: string, message: string, meta?: LogMeta): string {
   const base = `[${namespace}] ${message}`;
@@ -51,10 +69,11 @@ export type Logger = {
 export function createLogger(namespace: string): Logger {
   return {
     debug(message, meta) {
-      if (!isDev) return;
+      if (!isVerboseLogging) return;
       console.debug(formatLine(namespace, message, meta));
     },
     info(message, meta) {
+      if (!isVerboseLogging) return;
       console.info(formatLine(namespace, message, meta));
     },
     warn(message, meta) {

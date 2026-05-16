@@ -1,16 +1,30 @@
 /**
  * Shared logger for @homeapp/common (consumed by mapp).
  * Webapp uses its own copy under apps/webapp/src/lib/logger.ts.
+ *
+ * Verbose levels (debug, info) follow __DEV__ or EXPO_PUBLIC_DEBUG_LOGS at build time.
  */
 
 export type LogMeta = Record<string, unknown>;
 
 declare const __DEV__: boolean | undefined;
 
+function parseTruthyEnv(value: string | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 const isDev =
   typeof __DEV__ !== 'undefined'
     ? __DEV__
     : typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
+const debugLogsEnabled = parseTruthyEnv(
+  typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_DEBUG_LOGS : undefined
+);
+
+export const isVerboseLogging = isDev || debugLogsEnabled;
 
 function formatLine(namespace: string, message: string, meta?: LogMeta): string {
   const base = `[${namespace}] ${message}`;
@@ -43,10 +57,11 @@ export type Logger = {
 export function createLogger(namespace: string): Logger {
   return {
     debug(message, meta) {
-      if (!isDev) return;
+      if (!isVerboseLogging) return;
       console.debug(formatLine(namespace, message, meta));
     },
     info(message, meta) {
+      if (!isVerboseLogging) return;
       console.info(formatLine(namespace, message, meta));
     },
     warn(message, meta) {

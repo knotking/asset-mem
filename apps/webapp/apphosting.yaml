@@ -22,6 +22,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # Verbose client logs (debug/info). Omit or set false in production backends.
+  - variable: NEXT_PUBLIC_DEBUG_LOGS
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
   - variable: NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS
     value: "1000000"
     availability:

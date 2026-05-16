@@ -72,6 +72,10 @@ module.exports = {
       },
       // Environment
       appEnv: process.env.APP_ENV || 'dev',
+      /** When true, emit debug/info logs in release builds (see lib/logger.ts). */
+      debugLogs:
+        process.env.EXPO_PUBLIC_DEBUG_LOGS === 'true' ||
+        process.env.EXPO_PUBLIC_DEBUG_LOGS === '1',
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
       // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json

@@ -10,6 +10,7 @@
       "channel": "development",
       "env": {
         "APP_ENV": "dev",
+        "EXPO_PUBLIC_DEBUG_LOGS": "true",
         "APP_SLUG": "homegeekai-development",
         "IOS_BUNDLE_ID": "com.homegeekai.dev",
         "ANDROID_PACKAGE": "com.homegeekai.dev",
@@ -32,6 +33,7 @@
       "channel": "staging",
       "env": {
         "APP_ENV": "staging",
+        "EXPO_PUBLIC_DEBUG_LOGS": "true",
         "APP_SLUG": "homegeekai-staging",
         "IOS_BUNDLE_ID": "com.homegeekai.staging",
         "ANDROID_PACKAGE": "com.homegeekai.staging",
