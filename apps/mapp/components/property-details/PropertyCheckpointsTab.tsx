@@ -37,6 +37,9 @@ import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
 
 import { analyzeCheckpoint } from '../../lib/api';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
 
 type IssueSeverity = 'critical' | 'major' | 'moderate' | 'minor';
@@ -649,7 +652,7 @@ export function PropertyCheckpointsTab({
         updateCheckpoint(id, {
           analysisStatus: 'processing',
         }).catch((err) => {
-          console.error('Error updating checkpoint status:', err);
+          checkpointLog.error('checkpoint.statusUpdate.failed', undefined, err);
         });
 
         // Publish to Pub/Sub for async processing (fire and forget)
@@ -663,12 +666,12 @@ export function PropertyCheckpointsTab({
           userId: user.uid,
           propertyId: property.id,
         }).catch((err) => {
-          console.error('Error publishing checkpoint analysis:', err);
+          checkpointLog.error('checkpoint.analysis.publish.failed', undefined, err);
           // Update status to failed if publish fails
           updateCheckpoint(id, {
             analysisStatus: 'failed',
           }).catch((updateErr) => {
-            console.error('Error updating checkpoint status to failed:', updateErr);
+            checkpointLog.error('checkpoint.statusFailedUpdate.failed', undefined, updateErr);
           });
         });
       } else {
@@ -678,7 +681,7 @@ export function PropertyCheckpointsTab({
         });
       }
     } catch (error) {
-      console.error('Failed to create checkpoint', error);
+      checkpointLog.error('checkpoint.create.failed', undefined, error);
     }
   };
 
@@ -781,7 +784,7 @@ export function PropertyCheckpointsTab({
       setIsSelectionMode(false);
       setIsDeleteConfirmOpen(false);
     } catch (error) {
-      console.error('Failed to delete checkpoints', error);
+      checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
     }
   };
 

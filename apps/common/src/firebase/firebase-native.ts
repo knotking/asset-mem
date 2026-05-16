@@ -23,7 +23,7 @@ function initAuth(): Auth {
       persistence: getReactNativePersistence(AsyncStorage),
     });
   } catch (error: any) {
-    console.log("Auth ERROR:", error);
+    console.error("[auth] signIn.error", error);
     // If already initialized (happens on hot reload), getAuth returns the existing instance
     // The persistence configuration from the first initialization is preserved
     if (error?.code === "auth/already-initialized") {

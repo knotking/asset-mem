@@ -18,6 +18,9 @@ import {
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
+import { createLogger } from '@/lib/logger';
+
+const authLog = createLogger('auth');
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
@@ -50,7 +53,7 @@ export default function SettingsScreen() {
       // Redirect to landing page after logout
       router.replace('/');
     } catch (error) {
-      console.error('Error signing out:', error);
+      authLog.error('signOut.failed', undefined, error);
       // Optionally, show an error message to the user
     }
   };

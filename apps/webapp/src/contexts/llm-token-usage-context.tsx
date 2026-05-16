@@ -12,6 +12,9 @@ import { db } from '@/lib/firebase';
 import { getPublicDefaultMonthlyTokenLimit } from '@/lib/token-quota-public';
 import { apiUrls } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
+import { createLogger } from '@/lib/logger';
+
+const quotaLog = createLogger('quota');
 
 function formatUpdatedAt(value: unknown): string | null {
   if (value == null) return null;
@@ -170,8 +173,11 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
           typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
         if (cancelled) return;
         setProxyDefaultLimit(cap > 0 ? cap : null);
-      } catch {
+      } catch (err) {
         if (!cancelled) {
+          quotaLog.warn('tokenQuotaStatus.fetch.failed', {
+            cause: err instanceof Error ? err.message : String(err),
+          });
           setProxyDefaultLimit('pending');
         }
       }

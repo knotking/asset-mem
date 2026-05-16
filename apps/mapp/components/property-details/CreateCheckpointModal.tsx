@@ -10,6 +10,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
+const cameraLog = createLogger('camera');
 
 interface CreateCheckpointModalProps {
   visible: boolean;
@@ -170,7 +174,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         applyAutoDefaults();
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
+      cameraLog.error('photo.failed', undefined, error);
     }
   };
 
@@ -199,7 +203,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         applyAutoDefaults();
       }
     } catch (error) {
-      console.error('Error selecting photo:', error);
+      cameraLog.error('photo.select.failed', undefined, error);
     }
   };
 
@@ -225,7 +229,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         applyAutoDefaults();
       }
     } catch (error) {
-      console.error('Error recording video:', error);
+      cameraLog.error('video.failed', undefined, error);
     }
   };
 
@@ -244,7 +248,7 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
       await onCreate({ name: finalName, assetType, location: finalLocation, mediaAsset, mediaType });
       // Note: Don't call onClose() here - let parent handle modal transitions to prevent blank screen
     } catch (error) {
-      console.error('Error creating checkpoint:', error);
+      checkpointLog.error('checkpoint.create.failed', undefined, error);
       alert('Failed to create checkpoint. Please try again.');
       setLoading(false); // Only reset loading on error
     }

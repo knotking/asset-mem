@@ -17,6 +17,9 @@ import { PreferencesProvider } from '@homeapp/common/contexts/preferences-contex
 import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
 import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvider';
+import { createLogger } from '@/lib/logger';
+
+const routesLog = createLogger('routes');
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -57,63 +60,43 @@ function Routes() {
   const segments = useSegments();
 
   React.useEffect(() => {
-    console.log('[ROUTES] Auth state changed:', {
-      user: user?.email || 'none',
-      loading,
-      isSignedIn,
-      isLoaded,
-    });
+    routesLog.debug('auth.state', { isSignedIn, isLoaded, loading });
     if (isLoaded) {
-      console.log('[ROUTES] Hiding splash screen');
       SplashScreen.hideAsync();
     }
-  }, [isLoaded, user, loading, isSignedIn]);
+  }, [isLoaded, loading, isSignedIn]);
 
   // Handle navigation based on auth state
   React.useEffect(() => {
     if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === 'auth';
-    const inTabsGroup = segments[0] === '(tabs)';
     const isAtRoot = segments.length === 0 || segments[0] === 'index' || !segments[0];
 
-    console.log('[ROUTES] Navigation check:', {
+    routesLog.debug('navigation.check', {
       isSignedIn,
       inAuthGroup,
-      inTabsGroup,
       isAtRoot,
       segments,
     });
 
     // Allow landing page (root) to be accessible to everyone
     if (isAtRoot) {
-      return; // Don't redirect, let landing page show
+      return;
     }
 
     if (isSignedIn && inAuthGroup) {
-      // User is signed in but in auth screens, redirect to tabs
-      console.log('[ROUTES] Redirecting to /(tabs)/home');
+      routesLog.debug('navigation.redirect', { target: '/(tabs)/home' });
       router.replace('/(tabs)/home');
     } else if (!isSignedIn && !inAuthGroup && !isAtRoot) {
-      // User is not signed in but not in auth/landing screens, redirect to landing page
-      console.log('[ROUTES] Redirecting to landing page');
+      routesLog.debug('navigation.redirect', { target: '/' });
       router.replace('/');
     }
   }, [isSignedIn, isLoaded, segments, router]);
 
-  console.log('[ROUTES] Rendering with:', { isSignedIn, isLoaded, loading });
-
   if (!isLoaded) {
-    console.log('[ROUTES] Not loaded yet, returning null');
     return null;
   }
-
-  console.log(
-    '[ROUTES] Stack rendering - isSignedIn:',
-    isSignedIn,
-    '- Should show:',
-    isSignedIn ? '(tabs)' : 'auth'
-  );
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

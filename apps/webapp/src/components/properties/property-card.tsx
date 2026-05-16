@@ -23,6 +23,9 @@ import { collection, deleteDoc, doc, getDocs, query, where, writeBatch } from 'f
 import { deleteObject, ref } from 'firebase/storage';
 import { deleteCollection } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
 
 
 const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: number, label: string }) => (
@@ -85,7 +88,7 @@ export function PropertyCard({ property }: { property: Property }) {
                     const storageRef = ref(storage, gsUri);
                     return deleteObject(storageRef).catch(err => {
                         if (err.code !== 'storage/object-not-found') {
-                            console.error(`Failed to delete file from storage: ${gsUri}`, err);
+                            propertyLog.error('storage.fileDelete.failed', undefined, err);
                         }
                     });
                 }
@@ -111,7 +114,7 @@ export function PropertyCard({ property }: { property: Property }) {
             toast({ title: 'Success', description: 'Property and all associated data have been deleted.' });
 
         } catch (error) {
-            console.error('Error deleting property:', error);
+            propertyLog.error('property.delete.failed', undefined, error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
             toast({ variant: 'destructive', title: 'Error', description: `Failed to delete property: ${errorMessage}` });
         }

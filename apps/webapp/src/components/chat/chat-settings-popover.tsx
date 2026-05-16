@@ -24,6 +24,9 @@ import type {
   LocationType,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { createLogger } from "@/lib/logger";
+
+const chatLog = createLogger("chat");
 
 interface ChatSettingsPopoverProps {
   children: React.ReactNode;
@@ -110,7 +113,7 @@ export function ChatSettingsPopover({
         setIsGettingLocation(false);
       },
       (error) => {
-        console.error('Error getting location:', error);
+        chatLog.error('location.failed', undefined, error);
         alert('Failed to get current location');
         setIsGettingLocation(false);
       }

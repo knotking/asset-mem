@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Camera, Info } from 'lucide-react-native';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { CheckpointComparisonPreferences } from '@homeapp/common/types';
+import { createLogger } from '@/lib/logger';
+
+const prefsLog = createLogger('preferences');
 
 const DEFAULT_PREFERENCES: CheckpointComparisonPreferences = {
   enabled: true,
@@ -42,7 +45,7 @@ export function CheckpointComparisonSettings() {
       });
       setHasChanges(false);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      prefsLog.error('preferences.save.failed', undefined, error);
     }
   };
 

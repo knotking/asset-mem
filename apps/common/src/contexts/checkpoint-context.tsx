@@ -25,6 +25,9 @@ import { Checkpoint, CheckpointMedia } from "../types";
 import { useAuth } from "./auth-context";
 import { useProperty } from "./property-context";
 import { useFirebase } from "./firebase-context";
+import { createLogger, truncateId } from "../lib/logger";
+
+const checkpointLog = createLogger("checkpoint");
 
 interface CheckpointContextType {
   checkpoints: Checkpoint[];
@@ -71,7 +74,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       const newLimit = checkpointsLimit + 20;
       setCheckpointsLimit(newLimit);
     } catch (err) {
-      console.error("Error loading more checkpoints:", err);
+      checkpointLog.error("checkpoints.loadMore.failed", undefined, err);
     } finally {
       setIsLoadingEarlier(false);
     }
@@ -120,7 +123,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         setHasMoreCheckpoints(snapshot.docs.length >= checkpointsLimit);
       },
       (error) => {
-        console.error("Error fetching checkpoints:", error);
+        checkpointLog.error("checkpoints.fetch.failed", undefined, error);
         setLoading(false);
       }
     );
@@ -171,7 +174,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
               thumbnailUrl = await getDownloadURL(thumbRef);
             }
           } catch (e) {
-            console.warn("Failed to generate/upload video thumbnail:", e);
+            checkpointLog.warn("checkpoint.thumbnail.failed");
           }
         }
 
@@ -211,7 +214,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
       return { id: docRef.id, media: uploadedMedia };
     } catch (error) {
-      console.error("Error creating checkpoint:", error);
+      checkpointLog.error("checkpoint.create.failed", undefined, error);
       throw error;
     }
   };
@@ -238,7 +241,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
   const compareCheckpoints = async (id1: string, id2: string) => {
     // This will be implemented in Phase 8 (Cloud Function trigger)
-    console.log("Triggering comparison for:", id1, id2);
+    checkpointLog.debug("checkpoint.compare", { id1: truncateId(id1), id2: truncateId(id2) });
     // For now, we just log. In future, this might call a cloud function directly
     // or update a document to trigger a background job.
   };

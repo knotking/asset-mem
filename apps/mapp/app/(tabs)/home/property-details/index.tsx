@@ -38,6 +38,10 @@ import type {
 } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { streamAgentResponse } from '@/lib/api';
+import { createLogger } from '@/lib/logger';
+
+const chatLog = createLogger('chat');
+const propertyLog = createLogger('property');
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
@@ -170,17 +174,12 @@ export default function PropertyDetailsScreen() {
               locationRadius: 5, // Default 5 mile radius
             };
             setLocationData(defaultLocationData);
-            console.log(
-              '[PropertyDetails] Auto-set current location for analysis_agent:',
-              defaultLocationData
-            );
+            propertyLog.debug('location.autoSet');
           } else {
-            console.log(
-              '[PropertyDetails] Location permission not granted, skipping auto-location'
-            );
+            propertyLog.debug('location.permissionDenied');
           }
         } catch (error) {
-          console.error('[PropertyDetails] Error getting default location:', error);
+          propertyLog.error('location.error', undefined, error);
           // Silently fail - user can manually set location if needed
         }
       }
@@ -219,7 +218,7 @@ export default function PropertyDetailsScreen() {
 
       await uploadAsset(result.assets[0]);
     } catch (error) {
-      console.error('[Camera] Error in handleTakePhoto:', error);
+      propertyLog.error('camera.photo.failed', undefined, error);
       setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setErrorAlertOpen(true);
     }
@@ -230,7 +229,7 @@ export default function PropertyDetailsScreen() {
       if (!user) return;
       setCameraModalVisible(true);
     } catch (error) {
-      console.error('[Camera] Error in handleRecordVideo:', error);
+      propertyLog.error('camera.video.failed', undefined, error);
       setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setErrorAlertOpen(true);
     }
@@ -298,7 +297,7 @@ export default function PropertyDetailsScreen() {
 
       await uploadDocument(result.assets[0]);
     } catch (error) {
-      console.error('Error picking file:', error);
+      propertyLog.error('file.pick.failed', undefined, error);
       setErrorMessage('Failed to select file. Please try again.');
       setErrorAlertOpen(true);
     }
@@ -313,7 +312,7 @@ export default function PropertyDetailsScreen() {
         await deleteObject(fileRef);
       } catch (error: any) {
         if (error.code !== 'storage/object-not-found') {
-          console.error('Error deleting file from storage:', error);
+          propertyLog.error('file.storageDelete.failed', undefined, error);
         }
       }
     }
@@ -452,20 +451,21 @@ export default function PropertyDetailsScreen() {
               : undefined,
           locationData,
           signal,
+          firebaseChatId: selectedSessionId,
           onError: (error) => {
             updateDoc(assistantMessageRef, {
               content: `Error: ${error.message}`,
-            }).catch((err) => console.error('Error updating error message:', err));
+            }).catch((err) => chatLog.error('assistant.errorMessageUpdate.failed', undefined, err));
             throw error;
           },
         });
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          console.log('Message sending was stopped by user');
+          chatLog.debug('message.send.aborted');
           return;
         }
 
-        console.error('Error sending message:', error);
+        chatLog.error('message.send.failed', undefined, error);
         setErrorMessage(
           `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
@@ -990,15 +990,8 @@ function PropertyDetailsScreenContent({
                         onLocationDataChange={setLocationData}
                         propertyAddress={property?.address}
                         onSend={(messages) => {
-                          console.log('[PropertyDetails] onSend called with messages:', messages);
                           if (messages.length > 0) {
                             const text = messages[0].text;
-                            console.log(
-                              '[PropertyDetails] Extracted text:',
-                              text,
-                              'fileAttachment:',
-                              !!fileAttachment
-                            );
                             setMessage(text);
                             handleSendMessage(text);
                           }

@@ -11,6 +11,9 @@ import { compareCheckpoints, CompareCheckpointsOutput } from '../../lib/api';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { Timestamp } from 'firebase/firestore';
 import { ActivityIndicator } from 'react-native';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 interface CheckpointComparisonModalProps {
     visible: boolean;
@@ -123,7 +126,7 @@ export function CheckpointComparisonModal({
                         });
                     }
                 } catch (e) {
-                    console.error('Comparison failed', e);
+                    checkpointLog.error('comparison.failed', undefined, e);
                 } finally {
                     setLoading(false);
                 }

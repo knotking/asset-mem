@@ -35,6 +35,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { deleteCollection, cn } from '@/lib/utils';
 import { deleteAgentSession, WEB_APP_URL } from '@/lib/api';
+import { createLogger } from '@/lib/logger';
+
+const sessionLog = createLogger('session');
 import {
   collection,
   doc,
@@ -217,7 +220,7 @@ export default function SessionsList({
       setSessionBeingRenamed(null);
       setRenameValue('');
     } catch (error) {
-      console.error('Error renaming session:', error);
+      sessionLog.error('session.rename.failed', undefined, error);
       showAlert('Error', 'Could not rename the chat session. Please try again.');
     } finally {
       setIsRenaming(false);
@@ -237,7 +240,7 @@ export default function SessionsList({
           try {
             await deleteAgentSession(user.uid, sessionItem.agentSessionId);
           } catch (error) {
-            console.error('Failed to delete agent session from backend:', error);
+            sessionLog.error('session.agentDelete.failed', undefined, error);
           }
         }
 
@@ -251,7 +254,7 @@ export default function SessionsList({
       );
       exitSelectionMode();
     } catch (error) {
-      console.error('Error deleting sessions:', error);
+      sessionLog.error('sessions.bulkDelete.failed', undefined, error);
       showAlert('Error', 'Could not delete the selected chat sessions. Please try again.');
     } finally {
       setIsBulkDeleting(false);
@@ -297,7 +300,7 @@ export default function SessionsList({
       // Delete agent session from backend if it exists
       if (sessionToDeleteCache.agentSessionId) {
         deleteAgentSession(user.uid, sessionToDeleteCache.agentSessionId).catch((error) => {
-          console.error('Failed to delete agent session from backend:', error);
+          sessionLog.error('session.agentDelete.failed', undefined, error);
         });
       }
 
@@ -308,7 +311,7 @@ export default function SessionsList({
 
       showAlert('Success', 'Chat session deleted successfully');
     } catch (error) {
-      console.error('Error deleting session:', error);
+      sessionLog.error('session.delete.failed', undefined, error);
       showAlert('Error', 'Could not delete the chat session. Please try again.');
     }
   };

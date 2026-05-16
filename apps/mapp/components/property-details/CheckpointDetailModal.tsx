@@ -18,6 +18,9 @@ import {
   Award,
 } from 'lucide-react-native';
 import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
@@ -130,7 +133,7 @@ export function CheckpointDetailModal({
       setIsDeleteConfirmOpen(false);
       onClose();
     } catch (error) {
-      console.error('Error deleting checkpoint:', error);
+      checkpointLog.error('checkpoint.delete.failed', undefined, error);
       Alert.alert('Error', 'Failed to delete checkpoint');
     } finally {
       setIsDeleting(false);

@@ -9,6 +9,9 @@ import { Text } from '../../components/ui/text';
 import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2, Home } from 'lucide-react-native';
 import { Icon } from '../../components/ui/icon';
+import { createLogger } from '@/lib/logger';
+
+const authLog = createLogger('auth');
 
 const getErrorMessage = (errorCode: string) => {
   const errorMessages: { [key: string]: string } = {
@@ -82,13 +85,13 @@ export default function SignupScreen() {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       await createUserWithEmailAndPassword(auth, state.email, state.password);
-      console.log('[SIGNUP] Sign-up successful, navigating to home');
+      authLog.debug('signup.success');
       router.replace('/(tabs)/home');
     } catch (err: any) {
-      console.log('ERROR CODE:', err.code);
+      authLog.debug('signup.errorCode', { code: err.code });
       const errorMessage = getErrorMessage(err.code);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      console.log('[SIGNUP] Sign-up failed:', errorMessage);
+      authLog.warn('signup.failed', { cause: errorMessage });
     }
   };
 

@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, ExternalLink, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { createLogger } from '@/lib/logger';
+
+const shareLog = createLogger('share');
 
 function SharedChatHeader({ sessionName }: { sessionName: string | null }) {
     const { toast } = useToast();
@@ -92,7 +95,7 @@ export default function SharedChatPage() {
                 setMessages(fetchedMessages);
 
             } catch (err: any) {
-                console.error("Error fetching shared chat:", err);
+                shareLog.error('chat.fetch.failed', undefined, err);
                 setError(err.message || "Could not load the shared chat.");
                 toast({ variant: 'destructive', title: 'Error', description: err.message || 'Could not load shared chat.' });
             } finally {

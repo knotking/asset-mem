@@ -6,94 +6,20 @@ import { addDoc, collection, serverTimestamp, doc, getDoc, deleteDoc, query, whe
 import { ref, deleteObject } from 'firebase/storage';
 import { deleteCollection, apiUrls } from '@/lib/utils';
 import type { Property, Message } from '@/lib/types';
-
+import {
+  createAgentSession,
+  deleteAgentSession,
+  postFileToAgent as postFileToAgentImpl,
+} from '@/lib/api-agent';
 
 export async function createAgentSessionAction(userId: string): Promise<{ agentSessionId?: string; error?: string }> {
-    try {
-        const url = apiUrls.agentSession();
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: userId,
-            })
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Failed to create session, status: ${response.status}, body: ${errorBody}`);
-        }
-        
-        const data = await response.json();
-        const agentSessionId = data.id;
-
-        if (!agentSessionId) {
-            throw new Error("session_id not found in response");
-        }
-
-        return { agentSessionId };
-    } catch (error) {
-        const url = apiUrls.agentSession();
-        console.error('Error creating agent session:', { error, url });
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { error: `Failed to create agent session: ${errorMessage}` };
-    }
+  return createAgentSession(userId);
 }
 
 export async function deleteAgentSessionAction(userId: string, agentSessionId: string): Promise<{ success?: boolean; error?: string }> {
-    try {
-        const url = apiUrls.agentSession();
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({user_id: userId, session_id: agentSessionId})
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                // If the session is already not found, we can consider it a success for the client.
-                console.warn(`Agent session ${agentSessionId} not found on backend, but proceeding with UI deletion.`);
-                return { success: true };
-            }
-            const errorBody = await response.text();
-            throw new Error(`Failed to delete session, status: ${response.status}, body: ${errorBody}`);
-        }
-        
-        return { success: true };
-    } catch (error) {
-        console.error('Error deleting agent session:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { error: `Failed to delete agent session: ${errorMessage}` };
-    }
+  return deleteAgentSession(userId, agentSessionId);
 }
 
-export async function postFileToAgent(gsURI: string, userId: string): Promise<{ success: boolean; summary?: string; error?: string }> {
-    try {
-        const url = apiUrls.ragFileUpload();
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                context_doc_uris: [gsURI]
-            })
-        });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Failed to post file, status: ${response.status}, body: ${errorBody}`);
-        }
-        const result = await response.json();
-        return { success: true, summary: result.message };
-
-    } catch (error) {
-        console.error('Error posting file to cloud function:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, error: `Failed to process file: ${errorMessage}` };
-    }
+export async function postFileToAgent(gsURI: string, userId: string) {
+  return postFileToAgentImpl(gsURI, userId);
 }

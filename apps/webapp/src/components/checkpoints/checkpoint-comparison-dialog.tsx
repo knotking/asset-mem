@@ -18,6 +18,9 @@ import { Calendar, MapPin, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { compareCheckpoints } from '@/lib/api-checkpoint';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 interface CheckpointComparisonDialogProps {
   open: boolean;
@@ -55,12 +58,12 @@ export function CheckpointComparisonDialog({
 
     // Validate required fields
     if (!image1?.gsURI || !image2?.gsURI) {
-      console.error('Missing image URLs for comparison');
+      checkpointLog.error('comparison.missingUrls');
       return;
     }
 
     if (!image1.contentType || !image2.contentType) {
-      console.error('Missing content types for comparison');
+      checkpointLog.error('comparison.missingContentTypes');
       return;
     }
 
@@ -76,7 +79,7 @@ export function CheckpointComparisonDialog({
 
       setComparisonResult(result);
     } catch (error) {
-      console.error('Failed to compare checkpoints:', error);
+      checkpointLog.error('comparison.failed', undefined, error);
     } finally {
       setIsComparing(false);
     }

@@ -15,6 +15,9 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
 
 interface AddPropertyModalProps {
   visible: boolean;
@@ -94,7 +97,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         setSelectedFiles((prev) => [...prev, ...validAssets]);
       }
     } catch (error) {
-      console.error('Error picking documents:', error);
+      propertyLog.error('picker.failed', undefined, error);
       setErrorMessage('Failed to pick documents. Please try again.');
     }
   };
@@ -138,7 +141,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       }
       
       if (imageSize < MIN_RECOMMENDED_SIZE && imageSize > 0) {
-        console.warn('Image quality may be low for optimal text extraction:', imageSize, 'bytes');
+        propertyLog.warn('photo.quality.low', { bytes: imageSize });
         // Don't block - just log warning, AI can still try to process it
       }
       
@@ -151,7 +154,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
       setSelectedFiles((prev) => [...prev, convertedAsset]);
     } catch (error) {
-      console.error('Error taking photo:', error);
+      propertyLog.error('photo.failed', undefined, error);
       setErrorMessage('Failed to take photo. Please try again.');
     }
   };
@@ -168,8 +171,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       const firstFileName = selectedFiles[0].name.replace(/\.[^/.]+$/, '');
       const propertyName = firstFileName || 'New Property';
 
-      console.log('Creating property with name:', propertyName);
-      console.log('Documents selected:', selectedFiles.length);
+      propertyLog.info('create.start', { docCount: selectedFiles.length });
 
       // Create property in Firestore
       const propertyData: any = {
@@ -189,14 +191,14 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
 
       const propRef = await addDoc(collection(db, 'users', user.uid, 'properties'), propertyData);
 
-      console.log('Property created with ID:', propRef.id);
+      propertyLog.info('create.complete', { propertyId: propRef.id });
 
       // Create draft session in background (non-blocking)
       // The session context will auto-create it if it doesn't exist when needed
       createPropertyDraftSession(user.uid, propRef.id).then(() => {
-        console.log('Draft session created in background');
+        propertyLog.debug('draft.created');
       }).catch((err) => {
-        console.error('Background draft creation failed (will retry later):', err);
+        propertyLog.warn('draft.failed', { cause: err instanceof Error ? err.message : String(err) });
       });
 
       // Close modal and navigate immediately with selected files
@@ -206,7 +208,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       onClose();
       onSuccess(propRef.id, filesToUpload);
     } catch (error) {
-      console.error('Error creating property:', error);
+      propertyLog.error('create.failed', undefined, error);
       setIsCreating(false);
       setErrorMessage('Failed to create property. Please try again.');
     }

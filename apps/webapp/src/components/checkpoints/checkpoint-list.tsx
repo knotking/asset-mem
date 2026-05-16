@@ -21,6 +21,9 @@ import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useToast } from '@/hooks/use-toast';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 interface CheckpointListProps {
   checkpoints: Checkpoint[];
@@ -123,7 +126,7 @@ export function CheckpointList({
       setSelectionMode(false);
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      console.error('Failed to delete checkpoints:', error);
+      checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
       toast({
         title: 'Deletion Failed',
         description: 'Failed to delete checkpoints. Please try again.',

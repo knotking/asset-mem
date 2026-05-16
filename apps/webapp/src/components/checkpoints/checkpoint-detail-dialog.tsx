@@ -19,6 +19,9 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 export function CheckpointDetailDialog() {
   const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint, updateCheckpoint } = useCheckpoint();
@@ -85,7 +88,7 @@ export function CheckpointDetailDialog() {
       });
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to rename checkpoint:', error);
+      checkpointLog.error('checkpoint.rename.failed', undefined, error);
       toast({
         title: 'Rename Failed',
         description: 'Failed to rename checkpoint. Please try again.',
@@ -106,7 +109,7 @@ export function CheckpointDetailDialog() {
         });
         setSelectedCheckpoint(null);
       } catch (error) {
-        console.error('Failed to delete checkpoint:', error);
+        checkpointLog.error('checkpoint.delete.failed', undefined, error);
         toast({
           title: 'Deletion Failed',
           description: 'Failed to delete checkpoint. Please try again.',

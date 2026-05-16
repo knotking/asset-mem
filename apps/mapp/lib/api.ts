@@ -5,6 +5,9 @@ import type {
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
+import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
+
+const log = createLogger('agent');
 
 // Get environment-specific URLs from EAS build configuration
 const extra = Constants.expoConfig?.extra || {};
@@ -50,9 +53,10 @@ export async function createAgentSession(
       throw new Error('session_id not found in response');
     }
 
+    log.info('session.created', { agentSessionId: truncateId(agentSessionId) });
     return { agentSessionId };
   } catch (error) {
-    console.error('Error creating agent session:', error);
+    log.error('session.create.error', undefined, error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: `Failed to create agent session: ${errorMessage}` };
   }
@@ -68,7 +72,7 @@ export async function deleteAgentSession(
   try {
     const url = AGENT_SESSION_URL;
     if (!url) {
-      console.warn('AGENT_SESSION_URL not set, skipping agent session deletion');
+      log.warn('session.delete.urlNotSet');
       return { success: true };
     }
 
@@ -82,18 +86,17 @@ export async function deleteAgentSession(
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.warn(
-          `Agent session ${agentSessionId} not found on backend, but proceeding with UI deletion.`
-        );
+        log.warn('session.delete.notFound', { agentSessionId: truncateId(agentSessionId) });
         return { success: true };
       }
       const errorBody = await response.text();
       throw new Error(`Failed to delete session, status: ${response.status}, body: ${errorBody}`);
     }
 
+    log.info('session.deleted', { agentSessionId: truncateId(agentSessionId) });
     return { success: true };
   } catch (error) {
-    console.error('Error deleting agent session:', error);
+    log.error('session.delete.error', { agentSessionId: truncateId(agentSessionId) }, error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: `Failed to delete agent session: ${errorMessage}` };
   }
@@ -111,6 +114,8 @@ export interface StreamAgentResponseParams {
   checkpointOptionalAgents?: string[];
   locationData?: LocationData;
   signal?: AbortSignal;
+  /** Firebase chat doc id (for correlating with proxy persistence logs). */
+  firebaseChatId?: string;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -129,11 +134,23 @@ export async function streamAgentResponse({
   checkpointOptionalAgents = [],
   locationData,
   signal,
+  firebaseChatId,
   onChunk,
   onAgentStep,
   onComplete,
   onError,
 }: StreamAgentResponseParams): Promise<void> {
+  const startedAt = Date.now();
+  const streamMeta = {
+    firebaseChatId: truncateId(firebaseChatId),
+    agentSessionId: truncateId(agentSessionId),
+    primaryAgent: primaryAgent ?? 'default',
+    docCount: contextDocURIs.length,
+    checkpointCount: checkpointIds.length,
+  };
+
+  log.info('stream.start', streamMeta);
+
   try {
     const url = AGENT_SSE_URL;
     if (!url) {
@@ -187,7 +204,13 @@ export async function streamAgentResponse({
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Failed to stream response, status: ${response.status}, body: ${errorBody}`);
+      const code = parseAgentErrorCode(errorBody);
+      log.error('stream.httpError', { status: response.status, code });
+      throw new Error(
+        code === 'TOKEN_QUOTA_EXCEEDED'
+          ? 'Monthly AI usage limit reached.'
+          : `Failed to stream response, status: ${response.status}`
+      );
     }
 
     // Check if streaming is supported (response.body exists)
@@ -244,6 +267,7 @@ export async function streamAgentResponse({
         onComplete(finalResponse, agentSteps);
       }
 
+      log.info('stream.complete', { ...streamMeta, durationMs: Date.now() - startedAt, mode: 'buffered' });
       return;
     }
 
@@ -253,12 +277,16 @@ export async function streamAgentResponse({
     let finalAssistantResponse = '';
     let agentSteps: AgentStep[] = [];
     const agentStatusRegex = /\*\*.*?Agent\*\* (\w+): (.+)/;
+    let chunkCount = 0;
+    let byteCount = 0;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const rawChunk = decoder.decode(value, { stream: true });
+      byteCount += value.byteLength;
+      chunkCount += 1;
 
       // Check for error prefix
       if (rawChunk.startsWith('STREAM_ERROR:')) {
@@ -313,6 +341,13 @@ export async function streamAgentResponse({
         "I apologize, but I wasn't able to generate a response. This might be due to a temporary issue. Please try asking your question again after some time.";
       onComplete(finalResponse, agentSteps);
     }
+
+    log.info('stream.complete', {
+      ...streamMeta,
+      durationMs: Date.now() - startedAt,
+      chunkCount,
+      byteCount,
+    });
   } catch (error) {
     // Don't log or propagate AbortError - it's expected when user stops
     // Check for abort/cancellation errors from various sources
@@ -323,11 +358,11 @@ export async function streamAgentResponse({
         error.message.includes('Fetch request has been canceled') ||
         error.message.includes('fetch failed'))
     ) {
-      console.log('Agent request was cancelled by user');
+      log.debug('stream.aborted', { ...streamMeta, durationMs: Date.now() - startedAt });
       return;
     }
 
-    console.error('Error streaming agent response:', error);
+    log.error('stream.failed', { ...streamMeta, durationMs: Date.now() - startedAt }, error);
     if (onError) {
       onError(error instanceof Error ? error : new Error('Unknown error occurred'));
     } else {
@@ -415,14 +450,15 @@ export async function postFileToAgent(
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.warn(`RAG upload failed (non-blocking): ${response.status}, ${errorBody}`);
+      log.warn('rag.upload.failed', { status: response.status });
       // Don't throw - RAG failures shouldn't block document upload
       return { success: false, error: errorBody };
     }
 
+    log.info('rag.upload.ok');
     return { success: true };
   } catch (error) {
-    console.error('Error uploading to RAG:', error);
+    log.error('rag.upload.error', undefined, error);
     // Don't throw - RAG failures shouldn't block document upload
     return {
       success: false,
@@ -472,9 +508,10 @@ export async function analyzeCheckpoint(
     }
 
     const data = await response.json();
+    log.info('checkpoint.analysis.accepted', { checkpointId: truncateId(input.checkpointId) });
     return data;
   } catch (error) {
-    console.error('Error analyzing checkpoint:', error);
+    log.error('checkpoint.analysis.failed', { checkpointId: truncateId(input.checkpointId) }, error);
     throw error;
   }
 }
@@ -527,9 +564,10 @@ export async function compareCheckpoints(
     }
 
     const data = await response.json();
+    log.info('checkpoint.comparison.complete');
     return data;
   } catch (error) {
-    console.error('Error comparing checkpoints:', error);
+    log.error('checkpoint.comparison.failed', undefined, error);
     throw error;
   }
 }
@@ -599,7 +637,7 @@ export async function analyzeMultipleCheckpoints(
     // const data = await response.json();
     // return data;
   } catch (error) {
-    console.error('Error analyzing multiple checkpoints:', error);
+    log.error('checkpoint.multiAnalysis.failed', undefined, error);
     throw error;
   }
 }

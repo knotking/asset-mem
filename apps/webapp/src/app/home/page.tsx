@@ -14,6 +14,9 @@ import { PropertyCard } from '@/components/properties/property-card';
 import { SessionProvider } from '@/contexts/session-context';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+
+const propertiesLog = createLogger('properties');
 
 function PropertiesDashboardSkeleton() {
   return (
@@ -101,7 +104,7 @@ function PropertiesDashboardContent() {
             setProperties(propertiesWithDetails.sort((a, b) => a.address.localeCompare(b.address)));
             setIsPropertiesLoading(false);
         }, (error) => {
-            console.error("Error fetching properties:", error);
+            propertiesLog.error('fetch.failed', undefined, error);
             toast({
                 variant: "destructive",
                 title: "Error",

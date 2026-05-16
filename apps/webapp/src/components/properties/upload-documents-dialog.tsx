@@ -37,6 +37,9 @@ import {
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
 import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
 import { postFileToAgent } from "@/app/actions";
+import { createLogger } from "@/lib/logger";
+
+const uploadLog = createLogger("upload");
 import { useParams, useRouter } from "next/navigation";
 import type { Property } from "@/lib/types";
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
@@ -247,7 +250,7 @@ export function UploadDocumentsDialog({
     try {
       await batch.commit();
     } catch (error) {
-      console.error("Error creating placeholder documents:", error);
+      uploadLog.error("documents.placeholder.failed", undefined, error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -340,7 +343,7 @@ export function UploadDocumentsDialog({
           })(),
         ]);
       } catch (error) {
-        console.error(`Error processing file ${file.name}:`, error);
+        uploadLog.error("file.process.failed", { name: file.name }, error);
         await updateDoc(doc(db, "users", user.uid, "docs", docId), {
           status: "failed",
           summary: "Analysis failed for this document.",

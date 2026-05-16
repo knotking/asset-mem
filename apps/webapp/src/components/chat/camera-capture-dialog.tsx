@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera as CameraIcon, Circle, RefreshCw, StopCircle, Video } from "lucide-react";
+import { createLogger } from "@/lib/logger";
+
+const cameraLog = createLogger("camera");
 
 type CameraCaptureDialogProps = {
   open: boolean;
@@ -101,7 +104,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
 
         setHasCameraAccess(true);
       } catch (err) {
-        console.error("Camera access error:", err);
+        cameraLog.error("access.failed", undefined, err);
         setHasCameraAccess(false);
         setError("Unable to access camera. Please check your browser permissions.");
       } finally {
@@ -158,7 +161,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
     const MIN_RECOMMENDED_HEIGHT = 480;
     
     if (video.videoWidth < MIN_RECOMMENDED_WIDTH || video.videoHeight < MIN_RECOMMENDED_HEIGHT) {
-      console.warn('Camera resolution may be low for optimal text extraction:', video.videoWidth, 'x', video.videoHeight);
+      cameraLog.warn("resolution.low", { width: video.videoWidth, height: video.videoHeight });
       // Don't block - just log warning, AI can still try to process it
     }
 
@@ -228,7 +231,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       };
 
       recorder.onerror = (event) => {
-        console.error("MediaRecorder error:", event);
+        cameraLog.error("recorder.error");
         setError("Recording encountered an issue. Please try again.");
         setIsRecording(false);
         recordedChunksRef.current = [];
@@ -261,7 +264,7 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
       setIsRecording(true);
       setError(null);
     } catch (err) {
-      console.error("Failed to start recording:", err);
+      cameraLog.error("record.start.failed", undefined, err);
       setError("Failed to start recording. Please try again.");
     }
   }, [canRecordVideo, onCapture, onOpenChange]);

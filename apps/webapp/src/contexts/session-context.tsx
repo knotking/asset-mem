@@ -8,6 +8,9 @@ import type { Session } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { createAgentSessionAction } from '@/app/actions';
+import { createLogger } from '@/lib/logger';
+
+const sessionLog = createLogger('session');
 
 interface SessionContextType {
   sessionsByProperty: Record<string, Session[]>;
@@ -49,7 +52,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       });
       return docRef.id;
     } catch (err) {
-      console.error(`Failed to pre-create global draft session:`, err);
+      sessionLog.error('draft.global.failed', undefined, err);
       // Don't show a toast for this background task
       return null;
     }
@@ -68,7 +71,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       });
       return docRef.id;
     } catch (err) {
-      console.error(`Failed to create draft for property ${propertyId}:`, err);
+      sessionLog.error('draft.property.failed', { propertyId }, err);
       return null;
     }
   }, [createAgentSession]);
@@ -129,7 +132,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       });
 
     }, (error) => {
-        console.error("Session context error:", error);
+        sessionLog.error("sessions.subscribe.failed", undefined, error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load chat sessions.' });
         setIsLoading(false);
     });

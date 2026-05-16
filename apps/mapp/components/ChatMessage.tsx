@@ -52,6 +52,9 @@ import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
+import { createLogger } from '@/lib/logger';
+
+const chatLog = createLogger('chat');
 
 interface ChatMessageProps {
   message: Message;
@@ -1458,7 +1461,7 @@ const FilePreview = React.memo(
                 placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
                 placeholderContentFit="cover"
                 onError={(e) => {
-                  console.error('Image load error:', e.error);
+                  chatLog.error('image.load.failed');
                   setImageError(true);
                 }}
               />
@@ -1566,7 +1569,7 @@ function ChatMessage({ message }: ChatMessageProps) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setShowContextMenu(false);
     } catch (error) {
-      console.error('Failed to share message:', error);
+      chatLog.error('share.failed', undefined, error);
       setShowContextMenu(false);
     }
   }, [formatMessageContent, getMarkdownContent]);

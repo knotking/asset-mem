@@ -22,6 +22,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
 
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
@@ -157,7 +160,7 @@ function PropertyDetailsContent() {
             toast({ title: "Property Updated", description: "The property details have been saved." });
             setIsEditing(false);
         } catch (error) {
-            console.error("Error updating property details:", error);
+            propertyLog.error('property.update.failed', undefined, error);
             toast({ variant: "destructive", title: "Error", description: "Could not save the new property details." });
         } finally {
             setIsSaving(false);
@@ -193,7 +196,7 @@ function PropertyDetailsContent() {
             
             toast({ title: "Document Deleted", description: `"${docToDeleteCache.name}" has been removed.` });
         } catch (error) {
-            console.error(`Failed to delete document ${docToDeleteCache.id}:`, error);
+            propertyLog.error('document.delete.failed', { docId: docToDeleteCache.id }, error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
             toast({ variant: "destructive", title: "Deletion Failed", description: errorMessage });
         }

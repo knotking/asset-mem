@@ -33,6 +33,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import type { Document } from '@homeapp/common/types';
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
+const uploadLog = createLogger('upload');
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
@@ -126,7 +130,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
       setSuccessMessage('Property updated successfully.');
       setSuccessAlertOpen(true);
     } catch (error) {
-      console.error('Error updating property:', error);
+      propertyLog.error('property.update.failed', undefined, error);
       setErrorMessage('Failed to update property. Please try again.');
       setErrorAlertOpen(true);
     } finally {
@@ -156,7 +160,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
       if (result.canceled || !result.assets) {
         return;
       }
-      console.log('RESULT: ', result);
+      uploadLog.debug('picker.result');
 
       // Start uploading using the common hook
       await uploadDocuments(result.assets, {
@@ -187,11 +191,11 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
           ]);
 
           if (ragResult.status === 'rejected') {
-            console.warn('RAG upload failed (non-blocking):', ragResult.reason);
+            uploadLog.warn('rag.failed');
           }
 
           if (queueResult.status === 'rejected') {
-            console.warn('Queue document analysis failed:', queueResult.reason);
+            uploadLog.warn('analysis.queue.failed');
             throw queueResult.reason;
           }
 
@@ -233,7 +237,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
                   address: completedDoc.propertyAddress,
                   name: completedDoc.propertyAddress,
                 });
-                console.log('Auto-updated property address to:', completedDoc.propertyAddress);
+                uploadLog.debug('property.address.autoUpdated');
               } else if (currentAddress && currentAddress !== completedDoc.propertyAddress) {
                 setAddressDialogData({
                   newAddress: completedDoc.propertyAddress,
@@ -246,12 +250,12 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
 
             removeUploadingDoc(completedDoc.id);
           } catch (error) {
-            console.error('Error after document upload:', error);
+            uploadLog.error('postUpload.failed', undefined, error);
           }
         },
       });
     } catch (error) {
-      console.error('Error picking documents:', error);
+      uploadLog.error('picker.failed', undefined, error);
       setErrorMessage('Failed to pick documents');
       setErrorAlertOpen(true);
     }
@@ -270,9 +274,9 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
         address: addressDialogData.newAddress,
         name: addressDialogData.newAddress,
       });
-      console.log('User confirmed: Updated property address to:', addressDialogData.newAddress);
+      propertyLog.debug('property.address.confirmed');
     } catch (error) {
-      console.error('Error updating property address:', error);
+      propertyLog.error('property.address.update.failed', undefined, error);
     }
 
     setAddressDialogOpen(false);
@@ -288,10 +292,10 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
         const fileRef = ref(storage, documentToDelete.storagePath);
         try {
           await deleteObject(fileRef);
-          console.log('Deleted from storage:', documentToDelete.storagePath);
+          uploadLog.debug('document.storage.deleted');
         } catch (error: any) {
           if (error.code !== 'storage/object-not-found') {
-            console.error('Error deleting from storage:', error);
+            uploadLog.error('document.storageDelete.failed', undefined, error);
             throw error;
           }
         }
@@ -300,14 +304,14 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
       // Delete from Firestore
       const docRef = doc(db, 'users', user.uid, 'docs', documentToDelete.id);
       await deleteDoc(docRef);
-      console.log('Deleted from Firestore:', documentToDelete.id);
+      uploadLog.debug('document.firestore.deleted');
 
       setDeleteDialogOpen(false);
       setDocumentToDelete(null);
       setSuccessMessage('Document deleted successfully.');
       setSuccessAlertOpen(true);
     } catch (error) {
-      console.error('Error deleting document:', error);
+      uploadLog.error('document.delete.failed', undefined, error);
       setErrorMessage('Failed to delete document. Please try again.');
       setErrorAlertOpen(true);
     }
