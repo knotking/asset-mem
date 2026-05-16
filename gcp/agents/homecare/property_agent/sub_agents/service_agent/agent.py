@@ -35,4 +35,7 @@ service_agent = Agent(
     input_schema=DocsInput,
 )
 
-__all__ = ["service_agent"]
+# ADK AgentEvaluator expects ``root_agent`` on ``*.agent`` modules.
+root_agent = service_agent
+
+__all__ = ["service_agent", "root_agent"]

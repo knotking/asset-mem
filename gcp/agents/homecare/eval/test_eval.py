@@ -96,30 +96,27 @@ async def test_eval_checkpoint_optional_agents():
 
 @pytest.mark.asyncio
 async def test_eval_cost_agent():
-    """Isolated cost_agent tool trajectory and response."""
+    """E2E: checkpoint flow with checkpoint_optional_agents including cost."""
     await _run_eval(
-        agent_module="property_agent.sub_agents.cost_agent",
+        agent_module="property_agent",
         evalset_file="cost_agent.evalset.json",
         recording_hint=(
-            "1. uv run adk web → property_agent (or cost-only session if available)\n"
-            "2. Query that triggers cost_estimation / cost_estimation_diy only\n"
-            "3. Save as cost_agent.evalset.json\n"
-            "4. Run: uv run adk eval property_agent.sub_agents.cost_agent "
-            "property_agent/evals/cost_agent.evalset.json "
-            "--config_file_path=property_agent/evals/test_config.json"
+            "1. uv run adk web → property_agent\n"
+            "2. checkpoint_ids + checkpoint_optional_agents: [\"cost\"]; ask for cost details\n"
+            "3. Save as cost_agent.evalset.json (full root session, not isolated cost_agent)"
         ),
     )
 
 
 @pytest.mark.asyncio
 async def test_eval_shopping_agent():
-    """Isolated shopping_agent product recommendations."""
+    """E2E: checkpoint flow with DIY branch (products via run_diy_pipeline)."""
     await _run_eval(
-        agent_module="property_agent.sub_agents.shopping_agent",
+        agent_module="property_agent",
         evalset_file="shopping_agent.evalset.json",
         recording_hint=(
-            "1. uv run adk web → session that calls product_recommendations\n"
-            "2. Example: product search for a DIY repair (needs SERP_API_KEY)\n"
+            "1. uv run adk web → property_agent\n"
+            "2. checkpoint_optional_agents: [\"diy\"]; query like find products to fix it\n"
             "3. Save as shopping_agent.evalset.json"
         ),
     )
@@ -127,13 +124,13 @@ async def test_eval_shopping_agent():
 
 @pytest.mark.asyncio
 async def test_eval_service_agent():
-    """Isolated service_agent (serpapi_search / google_search)."""
+    """E2E: checkpoint flow with service branch (local providers)."""
     await _run_eval(
-        agent_module="property_agent.sub_agents.service_agent",
+        agent_module="property_agent",
         evalset_file="service_agent.evalset.json",
         recording_hint=(
-            "1. uv run adk web → session asking for local service providers\n"
-            "2. Needs SERP_API_KEY; expect serpapi_search and/or google_search\n"
+            "1. uv run adk web → property_agent\n"
+            "2. checkpoint_optional_agents: [\"service\"]; ask for local service providers\n"
             "3. Save as service_agent.evalset.json"
         ),
     )
