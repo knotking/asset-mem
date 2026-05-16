@@ -353,7 +353,9 @@ All cost estimates must pass these validation checks:
 ```bash
 cd gcp/agents/homecare
 make test
-# e.g. tests/test_diy_agent.py::test_cost_estimation_diy_from_library
+# tests/test_cost_agent.py — AI path, validation, library fallback (mocked)
+# tests/test_diy_agent.py::test_cost_estimation_diy_from_library
+# tests/test_coverage_agent.py — coverage_agent wiring
 ```
 
 ### ADK eval (live, E2E)
