@@ -159,9 +159,9 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
 
     (async () => {
       try {
-        const res = await fetch(apiUrls.tokenQuotaStatus(), {
+        const { proxyFetch } = await import('@/lib/correlation-id');
+        const res = await proxyFetch(apiUrls.tokenQuotaStatus(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId }),
         });
         if (!res.ok) {

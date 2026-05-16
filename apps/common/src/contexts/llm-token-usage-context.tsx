@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import { createLogger } from "../lib/logger";
+import { proxyFetch } from "../lib/correlation-id";
 
 const quotaLog = createLogger("quota");
 
@@ -179,9 +180,8 @@ function useLlmTokenUsageSubscription(
 
     (async () => {
       try {
-        const res = await fetch(tokenQuotaStatusUrl, {
+        const res = await proxyFetch(tokenQuotaStatusUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: userId }),
         });
         if (!res.ok) {

@@ -141,7 +141,21 @@ In Chrome DevTools or Metro, filter by e.g. `[agent]` or `[checkpoint]`.
 
 - **`warn` and `error`** always emit (subject to `removeConsole` only removing non-warn/error on webapp prod builds).
 - **Firebase config** one-off messages (`[firebase] Unknown environment…`) use raw `console.warn`, not the logger.
-- **Backend** logs are unchanged; see `gcp/common/observability/README.md` and Cloud Logging / Error Reporting.
+- **Backend** logs include `[req=…]` correlation ids when requests hit the proxy; see below.
+
+## Correlation IDs (client ↔ proxy)
+
+Every proxy `fetch` should send **`X-Request-ID`** so Cloud Run logs, structured JSON logs, and browser verbose logs line up for a single HTTP request.
+
+| Layer | Module / behavior |
+|-------|-------------------|
+| Webapp | `apps/webapp/src/lib/correlation-id.ts` — `proxyFetch()`, `createCorrelationId()` |
+| Mapp | `apps/mapp/lib/correlation-id.ts` |
+| Common (mapp quota) | `@homeapp/common/lib/correlation-id` |
+| Proxy | `CorrelationIdMiddleware` — reads header (or `X-Correlation-ID`), echoes on response |
+| Python logs | `[req=…]` via `gcp/common/observability/logging_context.py`; JSON `log_event` adds `correlation_id` |
+
+Agent streams log `correlationId` (truncated) in `stream.start` / `stream.complete` metadata alongside `firebaseChatId` and `agentSessionId`. Use the same value as the `X-Request-ID` header on that stream request to grep proxy logs.
 
 ## Security notes
 
