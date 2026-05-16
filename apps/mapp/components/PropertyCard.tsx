@@ -39,6 +39,9 @@ import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
 
 interface PropertyCardProps {
   address: string;
@@ -139,7 +142,7 @@ export default function PropertyCard({
           const storageRef = ref(storage, gsUri);
           return deleteObject(storageRef).catch((err: any) => {
             if (err.code !== 'storage/object-not-found') {
-              console.error(`Failed to delete file from storage: ${gsUri}`, err);
+              propertyLog.error('storage.fileDelete.failed', undefined, err);
             }
           });
         }
@@ -167,7 +170,7 @@ export default function PropertyCard({
       // Show success dialog after deletion completes
       setSuccessDialogOpen(true);
     } catch (error) {
-      console.error('Error deleting property:', error);
+      propertyLog.error('property.delete.failed', undefined, error);
       const errMsg = error instanceof Error ? error.message : 'An unknown error occurred.';
       setErrorMessage(`Failed to delete property: ${errMsg}`);
       setIsDeleting(false);

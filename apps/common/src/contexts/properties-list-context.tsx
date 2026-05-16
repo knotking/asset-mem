@@ -3,6 +3,9 @@ import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestor
 import type { Property } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
+import { createLogger } from '../lib/logger';
+
+const propertiesLog = createLogger('properties');
 
 interface PropertiesListContextType {
   properties: Property[];
@@ -25,7 +28,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
     }
 
     if (!user) {
-      console.log('No user logged in, cannot fetch properties.');
+      propertiesLog.debug('fetch.skipped.noUser');
       setProperties([]);
       setLoading(false);
       return;
@@ -93,7 +96,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
         setError(null);
       },
       (err) => {
-        console.error('Failed to fetch properties: ', err);
+        propertiesLog.error('fetch.failed', undefined, err);
         setError(err.message);
         setLoading(false);
       }

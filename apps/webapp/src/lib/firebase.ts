@@ -40,7 +40,7 @@ const getFirebaseConfig = (): FirebaseOptions => {
   const config = firebaseConfigs[env];
 
   if (!config) {
-    console.warn(`Unknown environment: ${env}, falling back to dev`);
+    console.warn(`[firebase] Unknown environment: ${env}, falling back to dev`);
     return firebaseConfigs.dev;
   }
 

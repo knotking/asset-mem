@@ -3,6 +3,9 @@ import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 
 import type { Session } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
+import { createLogger } from '../lib/logger';
+
+const sessionLog = createLogger('session');
 
 interface SessionContextType {
   sessionsByProperty: Record<string, Session[]>;
@@ -50,7 +53,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       });
       return docRef.id;
     } catch (err) {
-      console.error(`Failed to pre-create global draft session:`, err);
+      sessionLog.error('draft.global.failed', undefined, err);
       // Don't show a toast for this background task
       return null;
     }
@@ -69,7 +72,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       });
       return docRef.id;
     } catch (err) {
-      console.error(`Failed to create draft for property ${propertyId}:`, err);
+      sessionLog.error('draft.property.failed', { propertyId }, err);
       return null;
     }
   }, [createAgentSession]);
@@ -154,7 +157,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       });
 
     }, (error) => {
-        console.error("Session context error:", error);
+        sessionLog.error("sessions.subscribe.failed", undefined, error);
         if (onError) {
           onError(new Error('Could not load chat sessions.'));
         }

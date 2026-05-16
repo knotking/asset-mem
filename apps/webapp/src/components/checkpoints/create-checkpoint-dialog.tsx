@@ -30,6 +30,9 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 interface CreateCheckpointDialogProps {
   open: boolean;
@@ -195,7 +198,7 @@ export function CreateCheckpointDialog({
             propertyId: property.id,
           });
         } catch (error) {
-          console.error('Failed to trigger analysis:', error);
+          checkpointLog.error('checkpoint.analysis.trigger.failed', undefined, error);
           // Don't show error to user - analysis will happen eventually
         }
       }
@@ -207,7 +210,7 @@ export function CreateCheckpointDialog({
       setDescription('');
       setFiles([]);
     } catch (error) {
-      console.error('Failed to create checkpoint:', error);
+      checkpointLog.error('checkpoint.create.failed', undefined, error);
       toast({
         title: 'Creation Failed',
         description: 'Failed to create checkpoint. Please try again.',

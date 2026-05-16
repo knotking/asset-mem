@@ -17,6 +17,9 @@ import {
 import { UserPreferences, CheckpointComparisonPreferences } from "../types";
 import { useAuth } from "./auth-context";
 import { useFirebase } from "./firebase-context";
+import { createLogger } from "../lib/logger";
+
+const prefsLog = createLogger("preferences");
 
 interface PreferencesContextType {
   preferences: UserPreferences | null;
@@ -71,7 +74,7 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       },
       (error) => {
-        console.error("Error loading preferences:", error);
+        prefsLog.error("preferences.load.failed", undefined, error);
         setLoading(false);
       }
     );
@@ -99,7 +102,7 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
           { merge: true }
         );
       } catch (error) {
-        console.error("Error updating preferences:", error);
+        prefsLog.error("preferences.update.failed", undefined, error);
         throw error;
       }
     },

@@ -3,6 +3,9 @@ import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestor
 import type { Message } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
+import { createLogger } from '../lib/logger';
+
+const messagesLog = createLogger('messages');
 
 interface MessagesContextType {
   messages: Message[];
@@ -51,7 +54,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
       const newLimit = messagesLimit + 50;
       setMessagesLimit(newLimit);
     } catch (err) {
-      console.error('Error loading earlier messages:', err);
+      messagesLog.error('messages.loadEarlier.failed', undefined, err);
       setError('Could not load earlier messages.');
       if (onError) {
         onError(new Error('Could not load earlier messages.'));
@@ -90,7 +93,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
         setHasMoreMessages(snapshot.docs.length >= messagesLimit);
       },
       (err) => {
-        console.error('Messages context error:', err);
+        messagesLog.error('messages.subscribe.failed', undefined, err);
         setError('Could not load messages.');
         setIsLoading(false);
         if (onError) {

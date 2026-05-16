@@ -49,7 +49,10 @@ import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
 import type { Checkpoint } from "@/lib/types";
-import { apiUrls } from "@/lib/utils";
+import { streamAgentResponse } from "@/lib/api-agent";
+import { createLogger } from "@/lib/logger";
+
+const chatLog = createLogger("chat");
 
 export default function PropertyChatSessionPage() {
   const { toast } = useToast();
@@ -136,7 +139,7 @@ export default function PropertyChatSessionPage() {
         setIsMessagesLoading(false);
       },
       (error) => {
-        console.error("Error subscribing to messages:", error);
+        chatLog.error("messages.subscribe.failed", { sessionId }, error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -170,18 +173,17 @@ export default function PropertyChatSessionPage() {
                   locationRadius: 5, // Default 5 mile radius
                 };
                 setLocationData(defaultLocationData);
-                console.log('[ChatPage] Auto-set current location:', defaultLocationData);
+                chatLog.debug("location.autoSet");
               },
-              (error) => {
-                console.log('[ChatPage] Location permission not granted or error:', error);
-                // Silently fail - user can manually set location if needed
+              () => {
+                chatLog.debug("location.permissionDenied");
               }
             );
           } else {
-            console.log('[ChatPage] Geolocation not supported by browser');
+            chatLog.debug("location.unsupported");
           }
         } catch (error) {
-          console.error('[ChatPage] Error getting default location:', error);
+          chatLog.error("location.error", undefined, error);
           // Silently fail - user can manually set location if needed
         }
       }
@@ -219,7 +221,7 @@ export default function PropertyChatSessionPage() {
       );
       return docRef.id;
     } catch (error) {
-      console.error("Error adding message to Firestore:", error);
+      chatLog.error("message.add.failed", undefined, error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -260,7 +262,7 @@ export default function PropertyChatSessionPage() {
           setFileAttachment((prev) => (prev ? { ...prev, progress } : null));
         },
         (error) => {
-          console.error("Upload error:", error);
+          chatLog.error("file.upload.failed", undefined, error);
           setFileAttachment((prev) =>
             prev ? { ...prev, error: "Upload failed. Please try again." } : null
           );
@@ -273,7 +275,7 @@ export default function PropertyChatSessionPage() {
               prev ? { ...prev, progress: 100, downloadURL } : null
             );
           } catch (error) {
-            console.error("Failed to get download URL:", error);
+            chatLog.error("file.downloadUrl.failed", undefined, error);
             setFileAttachment((prev) =>
               prev ? { ...prev, error: "Failed to process file." } : null
             );
@@ -293,7 +295,7 @@ export default function PropertyChatSessionPage() {
         await deleteObject(fileRef);
       } catch (error: any) {
         if (error.code !== "storage/object-not-found") {
-          console.error("Error deleting file from storage:", error);
+          chatLog.error("file.storageDelete.failed", undefined, error);
           toast({
             variant: "destructive",
             title: "Error",
@@ -444,62 +446,31 @@ export default function PropertyChatSessionPage() {
                 .filter((id): id is string => !!id)
             : [];
 
-        const normalizedPrimaryAgent =
-          primaryAgent === "docs" || primaryAgent === "checkpoint"
-            ? primaryAgent
-            : undefined;
+        if (!agentSessionId) {
+          throw new Error("Agent session ID not found");
+        }
 
-        const requestBody: Record<string, any> = {
-          user_id: user.uid,
-          session_id: agentSessionId,
-          user_query: content,
-          context_doc_uris: contextDocURIs,
-          diagnosis_uris: diagnosisURIs,
-          property_address: property?.address,
-          property_id: property?.id, // Pass property_id for checkpoint queries
-          primary_agent: normalizedPrimaryAgent,
-          checkpoint_optional_agents:
+        await streamAgentResponse({
+          userId: user.uid,
+          agentSessionId,
+          userQuery: content,
+          contextDocURIs,
+          diagnosisURIs,
+          checkpointIds,
+          propertyAddress: property?.address,
+          propertyId: property?.id,
+          primaryAgent:
+            primaryAgent === "docs" || primaryAgent === "checkpoint"
+              ? primaryAgent
+              : undefined,
+          checkpointOptionalAgents:
             primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0
               ? selectedCheckpointOptionalAgents
               : undefined,
-          checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
-        };
-
-        // Add location data if provided
-        if (locationData) {
-          if (locationData.locationType) {
-            requestBody.location_type = locationData.locationType;
-          }
-          if (locationData.locationCoordinates) {
-            requestBody.location_coordinates = locationData.locationCoordinates;
-          }
-          if (locationData.locationRadius !== undefined) {
-            requestBody.location_radius = locationData.locationRadius;
-          }
-        }
-
-        const response = await fetch(apiUrls.agentSse(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+          locationData,
           signal,
+          firebaseChatId: activeSessionId,
         });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          throw new Error(`API request failed: ${errorBody}`);
-        }
-        if (!response.body) throw new Error("The response body is empty.");
-
-        const reader = response.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const rawChunk = new TextDecoder().decode(value, { stream: true });
-          if (rawChunk.startsWith("STREAM_ERROR:")) {
-            throw new Error(rawChunk.substring("STREAM_ERROR:".length));
-          }
-        }
       } catch (error: any) {
         if (error.name !== "AbortError") {
           const errorMessage =
@@ -524,7 +495,7 @@ export default function PropertyChatSessionPage() {
             updateDoc(assistantDocRef, {
               content: `Sorry, an error occurred: ${errorMessage}`,
             }).catch((updateError) =>
-              console.error("Failed to update assistant error message:", updateError)
+              chatLog.error("assistant.errorMessageUpdate.failed", undefined, updateError)
             );
           }
         }

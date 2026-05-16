@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { X, SwitchCamera, Zap, ZapOff, Plus, Minus, Settings, Mic, MicOff } from 'lucide-react-native';
+import { createLogger } from '@/lib/logger';
+
+const cameraLog = createLogger('camera');
 
 export interface CameraSettings {
   // Video quality and performance
@@ -130,7 +133,7 @@ export function CameraModal({ visible, onClose, onVideoRecorded, settings = {} }
           onVideoRecorded(video.uri);
         }
       } catch (error) {
-        console.error('Error recording video:', error);
+        cameraLog.error('video.record.failed', undefined, error);
       } finally {
         setIsRecording(false);
       }
@@ -142,7 +145,7 @@ export function CameraModal({ visible, onClose, onVideoRecorded, settings = {} }
       try {
         cameraRef.current.stopRecording();
       } catch (error) {
-        console.error('Error stopping recording:', error);
+        cameraLog.error('video.stop.failed', undefined, error);
       }
     }
   };

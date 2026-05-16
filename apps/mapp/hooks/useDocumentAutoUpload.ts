@@ -5,6 +5,9 @@ import type { FirebaseStorage } from 'firebase/storage';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
+import { createLogger } from '@/lib/logger';
+
+const uploadLog = createLogger('upload');
 
 interface UseDocumentAutoUploadParams {
   files: string | undefined;
@@ -31,7 +34,7 @@ export function useDocumentAutoUpload({
 
     // Prevent duplicate uploads on remount/refresh
     if (hasUploadedFilesRef.current) {
-      console.log('Files already uploaded, skipping duplicate upload');
+      uploadLog.debug('batch.skipped.duplicate');
       return;
     }
 
@@ -40,7 +43,7 @@ export function useDocumentAutoUpload({
         const parsedFiles = JSON.parse(files);
         if (!parsedFiles || parsedFiles.length === 0) return;
 
-        console.log('Starting upload for', parsedFiles.length, 'files');
+        uploadLog.info('batch.start', { count: parsedFiles.length });
 
         // Mark as uploaded to prevent duplicates
         hasUploadedFilesRef.current = true;
@@ -77,11 +80,11 @@ export function useDocumentAutoUpload({
             ]);
 
             if (ragResult.status === 'rejected') {
-              console.warn('RAG upload failed (non-blocking):', ragResult.reason);
+              uploadLog.warn('rag.failed');
             }
 
             if (queueResult.status === 'rejected') {
-              console.warn('Queue document analysis failed:', queueResult.reason);
+              uploadLog.warn('analysis.queue.failed');
               throw queueResult.reason;
             }
 
@@ -108,7 +111,7 @@ export function useDocumentAutoUpload({
                 return;
               }
 
-              console.log('Document analysis finished:', completedDoc.name);
+              uploadLog.info('analysis.complete', { name: completedDoc.name });
 
               if (
                 completedDoc.propertyAddress &&
@@ -125,18 +128,18 @@ export function useDocumentAutoUpload({
                     address: completedDoc.propertyAddress,
                     name: completedDoc.propertyAddress,
                   });
-                  console.log('Auto-updated property address to:', completedDoc.propertyAddress);
+                  uploadLog.debug('property.address.autoUpdated');
                 }
               }
 
               removeUploadingDoc(completedDoc.id);
             } catch (error) {
-              console.error('Error after document upload:', error);
+              uploadLog.error('postUpload.failed', undefined, error);
             }
           },
         });
       } catch (error) {
-        console.error('Error parsing or uploading files:', error);
+        uploadLog.error('batch.failed', undefined, error);
       }
     };
 

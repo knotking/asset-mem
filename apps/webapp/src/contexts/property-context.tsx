@@ -7,6 +7,9 @@ import { db } from '@/lib/firebase';
 import type { Document as DocumentType, Property } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { useParams } from 'next/navigation';
+import { createLogger } from '@/lib/logger';
+
+const propertyLog = createLogger('property');
 
 interface PropertyContextType {
   documents: DocumentType[];
@@ -47,7 +50,7 @@ export const PropertyProvider = ({ children }: { children: React.ReactNode }) =>
       setDocuments(docs);
       // We set loading to false here, but property might still be loading
     }, (error) => {
-      console.error("Error fetching documents for context:", error);
+      propertyLog.error("documents.fetch.failed", undefined, error);
       setIsLoading(false);
     });
 
@@ -61,7 +64,7 @@ export const PropertyProvider = ({ children }: { children: React.ReactNode }) =>
         }
         setIsLoading(false); // Loading is complete once we have property info
     }, (error) => {
-        console.error("Error fetching property for context:", error);
+        propertyLog.error("property.fetch.failed", undefined, error);
         setProperty(null);
         setIsLoading(false);
     });

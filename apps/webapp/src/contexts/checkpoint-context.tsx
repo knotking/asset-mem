@@ -27,6 +27,9 @@ import { Checkpoint, CheckpointMedia } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useProperty } from "@/contexts/property-context";
 import { useFirebase } from "@/contexts/firebase-context";
+import { createLogger, truncateId } from "@/lib/logger";
+
+const checkpointLog = createLogger("checkpoint");
 
 interface CheckpointContextType {
   checkpoints: Checkpoint[];
@@ -71,7 +74,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       const newLimit = checkpointsLimit + 20;
       setCheckpointsLimit(newLimit);
     } catch (err) {
-      console.error("Error loading more checkpoints:", err);
+      checkpointLog.error("checkpoints.loadMore.failed", undefined, err);
     } finally {
       setIsLoadingEarlier(false);
     }
@@ -110,7 +113,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       },
       (error) => {
-        console.error("Error fetching checkpoints:", error);
+        checkpointLog.error("checkpoints.fetch.failed", undefined, error);
         setLoading(false);
       }
     );
@@ -181,7 +184,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
         return { id: docRef.id, media: uploadedMedia };
       } catch (error) {
-        console.error("Error creating checkpoint:", error);
+        checkpointLog.error("checkpoint.create.failed", undefined, error);
         throw error;
       }
     },
@@ -205,7 +208,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           updatedAt: serverTimestamp(),
         });
       } catch (error) {
-        console.error("Error updating checkpoint:", error);
+        checkpointLog.error("checkpoint.update.failed", undefined, error);
         throw error;
       }
     },
@@ -226,7 +229,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         );
         await deleteDoc(docRef);
       } catch (error) {
-        console.error("Error deleting checkpoint:", error);
+        checkpointLog.error("checkpoint.delete.failed", undefined, error);
         throw error;
       }
     },
@@ -235,7 +238,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
   const compareCheckpoints = useCallback(async (id1: string, id2: string) => {
     // Comparison is handled by the comparison dialog component
-    console.log("Compare checkpoints:", id1, id2);
+    checkpointLog.debug("checkpoint.compare", { id1: truncateId(id1), id2: truncateId(id2) });
   }, []);
 
   return (

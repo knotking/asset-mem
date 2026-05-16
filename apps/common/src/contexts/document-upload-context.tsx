@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { createLogger } from '../lib/logger';
+
+const uploadLog = createLogger('upload');
 
 export type UploadingDocument = {
   id: string;
@@ -112,14 +115,14 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
           );
 
           // Read file using fetch API
-          console.log('Reading file from URI:', doc.uri);
+          uploadLog.debug('file.read', { name: doc.name });
           const response = await fetch(doc.uri);
           const blob = await response.blob();
-          console.log('File loaded - type:', blob.type, 'size:', blob.size);
+          uploadLog.debug('file.loaded', { type: blob.type, size: blob.size });
 
           // Create storage reference
           const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${doc.name}`);
-          console.log('Uploading to:', storageRef.fullPath);
+          uploadLog.debug('file.uploading', { path: storageRef.fullPath });
 
           // Upload with progress tracking
           const uploadTask = uploadBytesResumable(storageRef, blob, {
@@ -136,7 +139,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                 );
               },
               (error) => {
-                console.error('Upload error:', error);
+                uploadLog.error('file.upload.failed', { name: doc.name }, error);
                 setUploadingDocs((prev) =>
                   prev.map((d) =>
                     d.id === doc.id ? { ...d, status: 'failed', error: error.message } : d
@@ -180,7 +183,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                         storagePath: storageRef.fullPath,
                       });
                     } catch (error) {
-                      console.warn('Analysis failed (non-blocking):', error);
+                      uploadLog.warn('file.analysis.failed', { name: doc.name, cause: error instanceof Error ? error.message : String(error) });
                       analysisResult.summary = 'Analysis failed';
                     }
                   }
@@ -207,7 +210,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
 
                   resolve();
                 } catch (error) {
-                  console.error('Error processing document:', error);
+                  uploadLog.error('file.process.failed', { name: doc.name }, error);
                   setUploadingDocs((prev) =>
                     prev.map((d) =>
                       d.id === doc.id ? { ...d, status: 'failed', error: 'Processing failed' } : d
@@ -219,7 +222,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
             );
           });
         } catch (error) {
-          console.error('Failed to upload', doc.name, ':', error);
+          uploadLog.error('file.upload.failed', { name: doc.name }, error);
           setUploadingDocs((prev) =>
             prev.map((d) =>
               d.id === doc.id

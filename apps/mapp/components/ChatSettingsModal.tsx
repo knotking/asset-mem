@@ -28,6 +28,9 @@ import type {
   LocationType,
 } from '@homeapp/common/types';
 import * as Location from 'expo-location';
+import { createLogger } from '@/lib/logger';
+
+const chatLog = createLogger('chat');
 // Note: Using button-based radius selector instead of slider for better cross-platform compatibility
 
 interface ChatSettingsModalProps {
@@ -141,7 +144,7 @@ export function ChatSettingsModal({
       setLocationType('location');
       onLocationDataChange?.(newLocationData);
     } catch (error) {
-      console.error('Error getting location:', error);
+      chatLog.error('location.failed', undefined, error);
       alert('Failed to get current location');
     } finally {
       setIsGettingLocation(false);

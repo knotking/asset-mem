@@ -5,6 +5,9 @@ import * as VideoThumbnails from 'expo-video-thumbnails';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type { FileAttachment } from '@homeapp/common/types';
 import type { FirebaseStorage } from 'firebase/storage';
+import { createLogger } from '@/lib/logger';
+
+const uploadLog = createLogger('upload');
 
 export function useFileUpload(storage: FirebaseStorage, userId: string | undefined) {
   const [fileAttachment, setFileAttachment] = React.useState<FileAttachment | null>(null);
@@ -53,7 +56,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
           });
           thumbnailUri = uri;
         } catch (error) {
-          console.warn('Failed to generate video thumbnail:', error);
+          uploadLog.warn('thumbnail.failed');
         }
       }
 
@@ -87,7 +90,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
             );
           },
           (error) => {
-            console.error('Upload error:', error);
+            uploadLog.error('file.upload.failed', undefined, error);
             setFileAttachment((prev: FileAttachment | null) =>
               prev ? { ...prev, error: 'Upload failed. Please try again.' } : null
             );
@@ -99,7 +102,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
                 prev ? { ...prev, progress: 100, downloadURL } : null
               );
             } catch (error) {
-              console.error('Error getting download URL:', error);
+              uploadLog.error('file.downloadUrl.failed', undefined, error);
               setFileAttachment((prev: FileAttachment | null) =>
                 prev ? { ...prev, error: 'Failed to process file.' } : null
               );
@@ -107,7 +110,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
           }
         );
       } catch (error) {
-        console.error('Error uploading file:', error);
+        uploadLog.error('file.upload.failed', undefined, error);
         setFileAttachment((prev: FileAttachment | null) =>
           prev ? { ...prev, error: 'Failed to upload file.' } : null
         );
@@ -154,7 +157,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
             );
           },
           (error) => {
-            console.error('Upload error:', error);
+            uploadLog.error('file.upload.failed', undefined, error);
             setFileAttachment((prev: FileAttachment | null) =>
               prev ? { ...prev, error: 'Upload failed' } : null
             );
@@ -173,7 +176,7 @@ export function useFileUpload(storage: FirebaseStorage, userId: string | undefin
           }
         );
       } catch (error) {
-        console.error('Error uploading file:', error);
+        uploadLog.error('file.upload.failed', undefined, error);
         setFileAttachment((prev: FileAttachment | null) =>
           prev ? { ...prev, error: 'Upload failed' } : null
         );

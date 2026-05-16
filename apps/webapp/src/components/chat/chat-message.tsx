@@ -25,6 +25,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createLogger } from "@/lib/logger";
+
+const parseLog = createLogger("parse");
 
 // Helper function to safely extract string from warranty/insurance info
 const extractTextFromCoverageInfo = (info: any): string => {
@@ -446,9 +449,7 @@ const StructuredResponse = ({
     const hasService = !needsClarification && hasProviders;
     const hasCostEstimates = !needsClarification && !!(cost && cost.costEstimates);
     
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Service Recommendations Debug:', {
+    parseLog.debug('serviceRecommendations', {
             serviceExists: !!service,
             rawProvidersCount: allProvidersRaw.length,
             filteredProvidersCount: allProviders.length,
@@ -461,7 +462,6 @@ const StructuredResponse = ({
             firstProvider: allProvidersRaw.length > 0 ? allProvidersRaw[0] : null,
             fullServiceData: service
         });
-    }
 
     // Currency helper
     const toCurrency = (value: any): string => {
@@ -1577,13 +1577,11 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
         if (!isUser && message.content) {
           let contentToParse = message.content.trim();
           
-          // Debug logging to help diagnose parsing issues
-          console.log('=== ChatMessage Content Parsing ===');
-          console.log('Content length:', contentToParse.length);
-          console.log('Has ```json:', contentToParse.includes('```json'));
-          console.log('Has ```markdown:', contentToParse.includes('```markdown'));
-          console.log('First 300 chars:', contentToParse.substring(0, 300));
-          console.log('===================================');
+          parseLog.debug('contentParsing.start', {
+            length: contentToParse.length,
+            hasJsonFence: contentToParse.includes('```json'),
+            hasMarkdownFence: contentToParse.includes('```markdown'),
+          });
           
           // Helper function to check if parsed JSON has structured data keys
           const hasStructuredDataKeys = (parsed: any): boolean => {
@@ -1610,16 +1608,12 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                       const parsed = JSON.parse(codeContent);
                       if (hasStructuredDataKeys(parsed)) {
                           structuredData = parsed;
-                          if (process.env.NODE_ENV === 'development') {
-                              console.log('✓ Parsed JSON from ```json code block (Method 1 - Dual Format)');
-                          }
+                          parseLog.debug('contentParsing.method1');
                       } else if (parsed && typeof parsed === 'object') {
                           fallbackParsedJson = parsed;
                       }
                   } catch (e) {
-                      if (process.env.NODE_ENV === 'development') {
-                          console.warn('Failed to parse JSON from ```json code block:', e);
-                      }
+                      parseLog.warn('contentParsing.method1.failed', { cause: String(e) });
                   }
               }
           }
@@ -1637,9 +1631,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                           const parsed = JSON.parse(codeContent);
                           if (hasStructuredDataKeys(parsed)) {
                               structuredData = parsed;
-                              if (process.env.NODE_ENV === 'development') {
-                                  console.log('✓ Parsed JSON from generic code block (Method 2)');
-                              }
+                              parseLog.debug('contentParsing.method2');
                               break; // Stop after finding valid JSON
                           }
                       } catch {
@@ -1655,9 +1647,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                   const parsed = JSON.parse(contentToParse);
                   if (hasStructuredDataKeys(parsed)) {
                       structuredData = parsed;
-                      if (process.env.NODE_ENV === 'development') {
-                          console.log('✓ Parsed JSON directly from content (Method 3 - Pure JSON)');
-                      }
+                      parseLog.debug('contentParsing.method3');
                   } else if (parsed && typeof parsed === 'object') {
                       fallbackParsedJson = parsed;
                   }
@@ -1686,9 +1676,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                               const parsed = JSON.parse(match);
                               if (hasStructuredDataKeys(parsed)) {
                                   structuredData = parsed;
-                                  if (process.env.NODE_ENV === 'development') {
-                                      console.log('✓ Parsed JSON from pattern match (Method 4 - Fallback)');
-                                  }
+                                  parseLog.debug('contentParsing.method4');
                                   break;
                               }
                           } catch {
@@ -1710,9 +1698,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                           const parsed = JSON.parse(potentialJson);
                           if (hasStructuredDataKeys(parsed)) {
                               structuredData = parsed;
-                              if (process.env.NODE_ENV === 'development') {
-                                  console.log('✓ Parsed JSON from brace matching (Method 5 - Last Resort)');
-                              }
+                              parseLog.debug('contentParsing.method5');
                           }
                       } catch {
                           // Try cleaning common issues
@@ -1727,9 +1713,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                               const parsed = JSON.parse(cleaned);
                               if (hasStructuredDataKeys(parsed)) {
                                   structuredData = parsed;
-                                  if (process.env.NODE_ENV === 'development') {
-                                      console.log('✓ Parsed JSON after cleaning (Method 5b)');
-                                  }
+                                  parseLog.debug('contentParsing.method5b');
                               }
                           } catch {
                               // Final fallback - give up
@@ -1741,41 +1725,34 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
           
           // Debug logging
         if (structuredData) {
-            if (process.env.NODE_ENV === 'development') {
-                const sd: any = structuredData;
-                const serviceData = sd?.analysis?.serviceResults || sd?.serviceResults;
-                console.log('✓ Successfully parsed structured data:', {
-                    hasAnalysis: !!sd?.analysis,
-                    hasTriage: !!(sd?.analysis?.triageResult || sd?.triageResult),
-                    hasDiy: !!(sd?.analysis?.diyResults || sd?.diyResults),
-                    hasService: !!(sd?.analysis?.serviceResults || sd?.serviceResults),
-                    hasCoverage: !!(sd?.analysis?.coverageResult || sd?.coverageResult),
-                    structure: sd?.analysis ? 'nested' : 'flat',
-                    serviceDataDetails: serviceData ? {
-                        hasCostEstimates: !!serviceData.costEstimates,
-                        hasLocalPros: !!serviceData.localPros,
-                        localProsKeys: serviceData.localPros ? Object.keys(serviceData.localPros) : [],
-                        serpCount: Array.isArray(serviceData.localPros?.serpAPIResults) ? serviceData.localPros.serpAPIResults.length : 'not array',
-                    } : null
-                });
-            }
-        } else if (process.env.NODE_ENV === 'development') {
+            const sd: any = structuredData;
+            const serviceData = sd?.analysis?.serviceResults || sd?.serviceResults;
+            parseLog.debug('contentParsing.success', {
+              hasAnalysis: !!sd?.analysis,
+              hasTriage: !!(sd?.analysis?.triageResult || sd?.triageResult),
+              hasDiy: !!(sd?.analysis?.diyResults || sd?.diyResults),
+              hasService: !!(sd?.analysis?.serviceResults || sd?.serviceResults),
+              hasCoverage: !!(sd?.analysis?.coverageResult || sd?.coverageResult),
+              structure: sd?.analysis ? 'nested' : 'flat',
+              serpCount: serviceData?.localPros?.serpAPIResults
+                ? Array.isArray(serviceData.localPros.serpAPIResults)
+                  ? serviceData.localPros.serpAPIResults.length
+                  : 'not array'
+                : undefined,
+            });
+        } else {
               const hasJsonMarkers = message.content.includes('"analysis"') || 
                                      message.content.includes('"triageResult"') || 
                                      message.content.includes('"serviceResults"') ||
                                      message.content.includes('"diyResults"') ||
                                      message.content.includes('"coverageResult"');
               if (hasJsonMarkers) {
-                  console.warn('⚠ Detected JSON markers but failed to parse structured data. Content preview:', message.content.substring(0, 500));
-                  console.warn('Full content length:', message.content.length);
+                  parseLog.warn('contentParsing.markersButFailed', { length: message.content.length });
               }
           }
         }
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-          console.error('Exception parsing structured data:', e);
-      }
-        // Not a JSON object, treat as plain text
+      parseLog.error('contentParsing.exception', undefined, e);
     }
 
   const displayTitleAnalysisInProgress = useMemo(() => {

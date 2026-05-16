@@ -45,6 +45,9 @@ import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, writeBatch, Timestamp, limit } from 'firebase/firestore';
 import { deleteAgentSessionAction } from '@/app/actions';
+import { createLogger } from '@/lib/logger';
+
+const sessionLog = createLogger('session');
 
 type ShareState = 'idle' | 'checking' | 'prompt_update' | 'creating' | 'updating' | 'done';
 
@@ -146,7 +149,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         setSessions(userSessions);
         setIsInitialLoading(false);
     }, (error) => {
-        console.error("Error with session snapshot: ", error);
+        sessionLog.error('sessions.snapshot.failed', undefined, error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update chat sessions in real-time.' });
         setIsInitialLoading(false);
     });
@@ -215,7 +218,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           try {
             await deleteAgentSessionAction(user.uid, sessionItem.agentSessionId);
           } catch (error) {
-            console.error('Failed to delete agent session from backend:', error);
+            sessionLog.error('session.agentDelete.failed', undefined, error);
           }
         }
 
@@ -233,7 +236,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
       });
       exitSelectionMode();
     } catch (error) {
-      console.error('Error deleting selected sessions:', error);
+      sessionLog.error('sessions.bulkDelete.failed', undefined, error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -273,7 +276,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
       setSessionBeingRenamed(null);
       setRenameValue('');
     } catch (error) {
-      console.error('Failed to rename session:', error);
+      sessionLog.error('session.rename.failed', undefined, error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -304,7 +307,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
         if (sessionToDeleteCache.agentSessionId) {
             deleteAgentSessionAction(user.uid, sessionToDeleteCache.agentSessionId).catch(error => {
-                console.error("Failed to delete agent session from backend:", error);
+                sessionLog.error('session.agentDelete.failed', undefined, error);
             });
         }
 
@@ -316,7 +319,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         }
 
     } catch (error) {
-        console.error("Error deleting session:", error);
+        sessionLog.error('session.delete.failed', undefined, error);
         toast({
             variant: 'destructive',
             title: 'Error',

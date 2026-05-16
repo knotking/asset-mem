@@ -18,6 +18,9 @@ import { Icon } from '../../components/ui/icon';
 import { Input } from 'components/ui/input';
 import { Text } from '../../components/ui/text';
 import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
+import { createLogger } from '@/lib/logger';
+
+const authLog = createLogger('auth');
 import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 const getErrorMessage = (errorCode: string) => {
@@ -80,7 +83,7 @@ export default function LoginScreen() {
       const { id_token } = responseGoogle.params;
       const credential = GoogleAuthProvider.credential(id_token);
       signInWithCredential(auth, credential).then(() => {
-        console.log('[LOGIN] Google sign-in successful, navigating to home');
+        authLog.debug('login.google.success');
         router.replace('/(tabs)/home');
       });
     }
@@ -91,13 +94,13 @@ export default function LoginScreen() {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       await signInWithEmailAndPassword(auth, state.email, state.password);
-      console.log('[LOGIN] Sign-in successful, navigating to home');
+      authLog.debug('login.success');
       router.replace('/(tabs)/home');
     } catch (err: any) {
-      console.log('ERROR CODE:', err.code);
+      authLog.debug('login.errorCode', { code: err.code });
       const errorMessage = getErrorMessage(err.code);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      console.log('[LOGIN] Sign-in failed:', errorMessage);
+      authLog.warn('login.failed', { cause: errorMessage });
     }
   };
 

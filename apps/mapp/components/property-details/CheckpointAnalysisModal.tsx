@@ -7,6 +7,9 @@ import { Card } from '@/components/ui/card';
 import { X, TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
+import { createLogger } from '@/lib/logger';
+
+const checkpointLog = createLogger('checkpoint');
 
 interface CheckpointAnalysisModalProps {
   visible: boolean;
@@ -57,7 +60,7 @@ export function CheckpointAnalysisModal({
       const mockAnalysis: AnalysisResult = generateMockAnalysis(checkpoints);
       setAnalysis(mockAnalysis);
     } catch (error) {
-      console.error('Analysis failed', error);
+      checkpointLog.error('analysis.failed', undefined, error);
     } finally {
       setLoading(false);
     }
