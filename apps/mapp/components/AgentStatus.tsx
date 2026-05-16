@@ -3,11 +3,13 @@ import { View, Animated } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Sparkles } from 'lucide-react-native';
 import type { AgentStep } from '@homeapp/common/types';
-import { prettifyAgentName, pickActiveAgentStep } from '@homeapp/common/lib/agent-display';
+import { useDebouncedThinkingStatus } from '@homeapp/common/hooks/use-debounced-thinking-status';
 import { Text } from '@/components/ui/text';
 
 type Props = {
   steps: AgentStep[];
+  /** When set, progressive checkpoint JSON drives the ticker (matches footer). */
+  messageContent?: string | null;
 };
 
 function SparkleAnimation() {
@@ -78,17 +80,13 @@ function AnimatedThinkingText({ text }: { text: string }) {
   );
 }
 
-function stepLabel(step: AgentStep): string {
-  return step.displayName ?? prettifyAgentName(step.name);
-}
-
-export function AgentStatus({ steps }: Props) {
-  const activeStep = pickActiveAgentStep(steps);
+export function AgentStatus({ steps, messageContent }: Props) {
+  const { header: headerText, preview: headerPreview } = useDebouncedThinkingStatus(
+    steps,
+    { messageContent },
+  );
 
   if (!steps || steps.length === 0) return null;
-
-  const headerText = activeStep ? stepLabel(activeStep) : 'Thinking...';
-  const headerPreview = activeStep?.preview;
 
   return (
     <View className="self-start max-w-full flex-row items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 shadow-sm">

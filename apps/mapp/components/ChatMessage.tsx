@@ -51,6 +51,7 @@ import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
+import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 
 interface ChatMessageProps {
   message: Message;
@@ -878,9 +879,14 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         {hasCoverage && (
           <AccordionItem value="coverage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="flex-row items-center gap-2">
+              <View className="w-full flex-row items-center gap-2">
                 <Icon as={ShieldCheck} size={16} className="text-success" />
-                <Text className="font-medium text-foreground">Coverage Analysis</Text>
+                <Text className="flex-1 font-medium text-foreground">Coverage Analysis</Text>
+                <CheckpointAccordionBranchBadge
+                  branch="coverage"
+                  analysis={analysis}
+                  sectionReady={hasCoverage}
+                />
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
@@ -911,9 +917,14 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         {hasDIY && (
           <AccordionItem value="diy" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="flex-row items-center gap-2">
+              <View className="w-full flex-row items-center gap-2">
                 <Icon as={Wrench} size={16} className="text-warning" />
-                <Text className="font-medium text-foreground">DIY Recommendations</Text>
+                <Text className="flex-1 font-medium text-foreground">DIY Recommendations</Text>
+                <CheckpointAccordionBranchBadge
+                  branch="diy"
+                  analysis={analysis}
+                  sectionReady={hasDIY}
+                />
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
@@ -1037,9 +1048,14 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         {hasService && (
           <AccordionItem value="service" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="flex-row items-center gap-2">
+              <View className="w-full flex-row items-center gap-2">
                 <Icon as={Users} size={16} className="text-indigo-600" />
-                <Text className="font-medium text-foreground">Service Recommendations</Text>
+                <Text className="flex-1 font-medium text-foreground">Service Recommendations</Text>
+                <CheckpointAccordionBranchBadge
+                  branch="service"
+                  analysis={analysis}
+                  sectionReady={hasService}
+                />
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
@@ -1062,9 +1078,14 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
         {hasCostEstimates && (
           <AccordionItem value="cost-estimates" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="flex-row items-center gap-2">
+              <View className="w-full flex-row items-center gap-2">
                 <Icon as={DollarSign} size={16} className="text-purple-600" />
-                <Text className="font-medium text-foreground">Cost Estimates</Text>
+                <Text className="flex-1 font-medium text-foreground">Cost Estimates</Text>
+                <CheckpointAccordionBranchBadge
+                  branch="cost"
+                  analysis={analysis}
+                  sectionReady={hasCostEstimates}
+                />
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
@@ -1478,6 +1499,8 @@ function ChatMessage({ message }: ChatMessageProps) {
     return extractContentParts(message.content, isUser);
   }, [message.content, isUser]);
 
+  const showEarlyLoading = !isUser && !message.content;
+
   const handleLongPress = useCallback(() => {
     if (!isLoading && message.content) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1567,18 +1590,24 @@ function ChatMessage({ message }: ChatMessageProps) {
                 onPress={() => setShowMediaDetail(true)}
               />
             )}
-            {isLoading ? (
+            {showEarlyLoading ? (
               <>
                 {message.agentSteps && message.agentSteps.length > 0 ? (
-                  <AgentStatus steps={message.agentSteps} />
+                  <View className="p-3">
+                    <AgentStatus
+                      steps={message.agentSteps}
+                      messageContent={message.content}
+                    />
+                  </View>
                 ) : (
                   <View className="p-3">
                     <TypingIndicator />
                   </View>
                 )}
               </>
-            ) : message.content ? (
-              <View className="p-3">
+            ) : null}
+            {message.content ? (
+              <View className="flex flex-col gap-3 p-3">
                 <MessageContent content={message.content} isUser={isUser} />
               </View>
             ) : null}

@@ -93,8 +93,11 @@ export default {
           'to': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         'text-gradient': {
-          to: {
-            'background-position': '200% center',
+          '0%, 100%': {
+            backgroundPosition: '0% 50%',
+          },
+          '50%': {
+            backgroundPosition: '100% 50%',
           },
         },
       },
@@ -102,7 +105,7 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'message-in': 'message-in 0.3s ease-out',
-        'text-gradient': 'text-gradient 2s linear infinite',
+        'text-gradient': 'text-gradient 2.5s ease-in-out infinite',
       },
     },
   },

@@ -9,6 +9,8 @@ import { useMessages } from '@homeapp/common/contexts/messages-context';
 import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
+import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
+import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
 import type {
   FileAttachment,
   AnalysisOptionalAgent,
@@ -97,6 +99,11 @@ export function PropertyChatTab({
     [messages, userId]
   );
 
+  const branchProgress = React.useMemo(
+    () => getInFlightCheckpointProgressFromMessages(messages),
+    [messages]
+  );
+
   if (!sessionId) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -150,6 +157,11 @@ export function PropertyChatTab({
             </View>
           </View>
         )}
+        renderFooter={() =>
+          branchProgress ? (
+            <CheckpointAnalysisProgressFooter progress={branchProgress} />
+          ) : null
+        }
         renderInputToolbar={(props) => (
           <GiftedChatInputToolbar
             {...props}

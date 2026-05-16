@@ -8,11 +8,15 @@ import Image from "next/image";
 import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useDebouncedThinkingStatus } from "@/hooks/use-debounced-thinking-status";
+import { CheckpointAccordionBranchBadge } from "@/components/chat/checkpoint-accordion-branch-badge";
 import {
-  prettifyAgentName,
-  pickActiveAgentStep,
-} from "@/lib/agent-display";
+  DISPLAY_TITLE_GRADIENT_CLASS,
+  hasCheckpointDisplayTitleInProgress,
+  parseStructuredResponseFromContent,
+} from "@/lib/checkpoint-branch-progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -337,7 +341,13 @@ const getPreviewText = (value?: string, max = 240) => {
     return plain.slice(0, max).trim().replace(/[.,!?;:]?$/, '') + '…';
 };
 
-const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
+const StructuredResponse = ({
+  data,
+  displayTitleInProgress,
+}: {
+  data: StructuredResponseData;
+  displayTitleInProgress?: boolean;
+}) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
     // Support both nested (analysis.*) and flat structures (top-level keys)
     const triage = analysis?.triageResult || (data as any)?.triageResult;
@@ -579,13 +589,21 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
         ? getPreviewText(triage?.message || triage?.diagnosis)
         : undefined;
     const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
+    const showTitleGradient =
+      displayTitleInProgress ?? hasCheckpointDisplayTitleInProgress(data);
 
     return (
         <div className="space-y-4">
             {displayTitle && (
                 <div className="rounded-lg border bg-muted/40 px-4 py-3">
-                    <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                        {displayTitle}
+                    <h2 className="text-base sm:text-lg font-semibold">
+                        <span
+                            className={cn(
+                                showTitleGradient ? DISPLAY_TITLE_GRADIENT_CLASS : "text-foreground",
+                            )}
+                        >
+                            {displayTitle}
+                        </span>
                     </h2>
                 </div>
             )}
@@ -750,9 +768,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             {hasCoverage && (
                 <AccordionItem value="coverage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <ShieldCheck className="h-5 w-5 text-green-600" />
-                            <span className="font-semibold">Coverage Analysis</span>
+                        <div className="flex w-full items-center gap-2 text-left">
+                            <ShieldCheck className="h-5 w-5 shrink-0 text-green-600" />
+                            <span className="flex-1 font-semibold">Coverage Analysis</span>
+                            <CheckpointAccordionBranchBadge
+                                branch="coverage"
+                                analysis={analysis}
+                                sectionReady={hasCoverage}
+                            />
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
@@ -779,9 +802,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             {hasDIY && (
                 <AccordionItem value="diy" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Wrench className="h-5 w-5 text-orange-600" />
-                            <span className="font-semibold">DIY Recommendations</span>
+                        <div className="flex w-full items-center gap-2 text-left">
+                            <Wrench className="h-5 w-5 shrink-0 text-orange-600" />
+                            <span className="flex-1 font-semibold">DIY Recommendations</span>
+                            <CheckpointAccordionBranchBadge
+                                branch="diy"
+                                analysis={analysis}
+                                sectionReady={hasDIY}
+                            />
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
@@ -937,9 +965,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             {hasService && (
                 <AccordionItem value="service" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <TrendingUp className="h-5 w-5 text-purple-600" />
-                            <span className="font-semibold">Service Recommendations</span>
+                        <div className="flex w-full items-center gap-2 text-left">
+                            <TrendingUp className="h-5 w-5 shrink-0 text-purple-600" />
+                            <span className="flex-1 font-semibold">Service Recommendations</span>
+                            <CheckpointAccordionBranchBadge
+                                branch="service"
+                                analysis={analysis}
+                                sectionReady={hasService}
+                            />
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-4">
@@ -971,9 +1004,14 @@ const StructuredResponse = ({ data }: { data: StructuredResponseData }) => {
             {hasCostEstimates && (
                 <AccordionItem value="cost-estimates" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <DollarSign className="h-5 w-5 text-purple-600" />
-                            <span className="font-semibold">Cost Estimates</span>
+                        <div className="flex w-full items-center gap-2 text-left">
+                            <DollarSign className="h-5 w-5 shrink-0 text-purple-600" />
+                            <span className="flex-1 font-semibold">Cost Estimates</span>
+                            <CheckpointAccordionBranchBadge
+                                branch="cost"
+                                analysis={analysis}
+                                sectionReady={hasCostEstimates}
+                            />
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-3">
@@ -1251,6 +1289,45 @@ type Props = {
   context?: 'property' | null;
 };
 
+const stripTextTransition = { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const };
+
+function AssistantProgressStrip({
+  header,
+  detail,
+}: {
+  header: string;
+  detail?: string | null;
+}) {
+  const textKey = `${header}\u0000${detail ?? ""}`;
+  return (
+    <motion.div
+      layout
+      className="flex items-start gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm"
+    >
+      <Sparkles className="h-4 w-4 mt-0.5 shrink-0 animate-pulse text-primary" />
+      <div className="relative min-w-0 flex-1">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={textKey}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={stripTextTransition}
+            className="flex flex-col min-w-0"
+          >
+            <span className={DISPLAY_TITLE_GRADIENT_CLASS}>
+              {header}
+            </span>
+            {detail ? (
+              <span className="text-xs text-muted-foreground">{detail}</span>
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
 const ChatMessageComponent = ({ message, isLoading = false, context }: Props) => {
   const isUser = message.role === "user";
   const [isMediaLoaded, setIsMediaLoaded] = React.useState(false);
@@ -1300,11 +1377,12 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
       (s) => s.status === 'executing' || s.status === 'transferredto'
     ) ?? false;
   const showThinkingStrip = !isUser && !hasAssistantResponse && hasInFlightAgentStep;
-  const activeStep = showThinkingStrip ? pickActiveAgentStep(message.agentSteps) : null;
-  const thinkingHeader = activeStep
-    ? activeStep.displayName ?? prettifyAgentName(activeStep.name)
-    : 'Thinking...';
-  const thinkingPreview = activeStep?.preview;
+  const thinkingStatus = useDebouncedThinkingStatus(
+    showThinkingStrip ? message.agentSteps : null,
+    { messageContent: message.content },
+  );
+  const thinkingHeader = thinkingStatus.header;
+  const thinkingPreview = thinkingStatus.preview;
   /** Dots when the list marks this bubble as the in-flight reply; agentSteps must not hide this (e.g. only completed steps while waiting for text). */
   const showLoadingIndicator =
     isLoading && !isUser && !hasAssistantResponse && !showThinkingStrip;
@@ -1700,6 +1778,13 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
         // Not a JSON object, treat as plain text
     }
 
+  const displayTitleAnalysisInProgress = useMemo(() => {
+    if (isUser || !message.content?.trim()) return false;
+    const parsed = parseStructuredResponseFromContent(message.content);
+    if (!parsed) return false;
+    return hasCheckpointDisplayTitleInProgress(parsed);
+  }, [isUser, message.content]);
+
   return (
     <div
       className={cn(
@@ -1725,7 +1810,9 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                 "bg-muted border":
                   !isUser && !showThinkingStrip && !showLoadingIndicator && !structuredData,
                 "bg-transparent border-0 shadow-none":
-                  showThinkingStrip || showLoadingIndicator || structuredData
+                  showThinkingStrip ||
+                  showLoadingIndicator ||
+                  structuredData
               },
               (isUser && message.content) && "bg-secondary text-secondary-foreground",
               fileData && message.content ? "gap-2" : "",
@@ -1742,19 +1829,10 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                 </Button>
             )}
             {showThinkingStrip ? (
-              <div className="flex items-start gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm">
-                <Sparkles className="h-4 w-4 mt-0.5 shrink-0 animate-pulse text-primary" />
-                <div className="flex flex-col min-w-0">
-                  <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
-                    {thinkingHeader}
-                  </span>
-                  {thinkingPreview && (
-                    <span className="text-xs text-muted-foreground">
-                      {thinkingPreview}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <AssistantProgressStrip
+                header={thinkingHeader}
+                detail={thinkingPreview}
+              />
             ) : showLoadingIndicator ? (
                <div className="flex items-center justify-start p-2">
                 <svg width="45" height="24" viewBox="0 0 45 24" fill="currentColor" className="text-muted-foreground">
@@ -1773,7 +1851,12 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                 </svg>
                </div>
             ) : structuredData ? (
-                <StructuredResponse data={structuredData} />
+                <motion.div layout className="flex w-full flex-col gap-3">
+                  <StructuredResponse
+                    data={structuredData}
+                    displayTitleInProgress={displayTitleAnalysisInProgress}
+                  />
+                </motion.div>
             ) : (
                 <>
                 {renderFilePreview()}

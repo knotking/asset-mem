@@ -160,6 +160,9 @@ export type StructuredResponseData = {
         };
       };
     };
+    analysisStatus?: Partial<
+      Record<"coverage" | "diy" | "service" | "cost", "pending" | "running" | "completed">
+    >;
   };
   title?: string;
 };

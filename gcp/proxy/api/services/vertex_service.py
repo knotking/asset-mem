@@ -1,6 +1,5 @@
 import os
 import logging
-import random
 import re
 import time
 import vertexai
@@ -22,28 +21,15 @@ from common.token import TokenQuotaExceeded, check_token_quota_or_raise
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Agents that act as routers/orchestrators rather than producing user-visible
-# content directly. We pick a random label from _COORDINATING_VARIANTS each time
-# one of these surfaces, so back-to-back hand-offs don't read as identical
-# "Coordinating … Coordinating" rows. The merge logic in stream_agent_answers
-# keeps the chosen variant stable across status transitions for a given step.
+# Router/orchestrator agents — one stable user-facing label (see agent-display.ts).
 _COORDINATING_AGENTS = {
     "property_agent",
     "doculink_agent",
 }
 
-_COORDINATING_VARIANTS = [
-    "Coordinating",
-    "Orchestrating",
-    "Lining up the experts",
-    "Planning the work",
-    "Mapping the work",
-    "Strategizing",
-    "Game-planning",
-    "Picking the right specialist",
-    "Sizing things up",
-    "Warming up",
-]
+_COORDINATING_LABEL = "Understanding your request…"
+
+_DEFAULT_DISPLAY_LABEL = "Working on it…"
 
 def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
     uq = payload.get("user_query") or ""
@@ -60,27 +46,29 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
 
 
 _DISPLAY_NAME_MAP = {
-    "diagnostic_agent": "Diagnosing",
-    "ask_knowledge_base_agent": "Scanning HomeGeekAI catalog",
-    "ask_user_docs_agent": "Scanning your documents",
-    "transfer_to_agent": "Handing off",
-    "ask_knowledge_base_retrieval": "Accessing HomeGeekAI catalog",
-    "ask_user_docs_retrieval": "Accessing your documents",
-    "analyse_multimodal_data": "Analyzing media",
-    "research_agent": "Researching solutions",
-    "service_provider_agent": "Finding local pros",
-    "service_agent": "Finding local pros",
-    "product_recommendations_agent": "Finding recommended products",
-    "shopping_agent": "Finding recommended products",
-    "cost_estimation_agent": "Estimating costs",
-    "cost_agent": "Estimating costs",
-    "coverage_agent": "Checking warranty & insurance",
-    "diy_agent": "Compiling DIY steps",
-    "checkpoint_agent": "Reviewing checkpoints",
-    "checkpoint_analysis_agent": "Analyzing checkpoints",
-    "checkpoint_analysis_synthesis_agent": "Putting it all together",
-    "checkpoint_optional_agents_parallel_runner": "Running analysis in parallel",
-    "checkpoint_analysis_progress": "Updating checkpoint analysis",
+    "diagnostic_agent": "Diagnosing the issue…",
+    "ask_knowledge_base_agent": "Searching repair guides…",
+    "ask_knowledge_base_retrieval": "Searching repair guides…",
+    "ask_user_docs_agent": "Searching your documents…",
+    "ask_user_docs_retrieval": "Searching your documents…",
+    "analyse_multimodal_data": "Reviewing your photo or video…",
+    "research_agent": "Researching options…",
+    "service_provider_agent": "Finding pros near you…",
+    "service_agent": "Finding pros near you…",
+    "product_recommendations_agent": "Finding recommended products…",
+    "shopping_agent": "Finding recommended products…",
+    "cost_estimation_agent": "Estimating repair costs…",
+    "cost_agent": "Estimating repair costs…",
+    "coverage_agent": "Checking warranty & insurance…",
+    "diy_agent": "Building DIY steps…",
+    "checkpoint_agent": "Loading your checkpoints…",
+    "checkpoint_analysis_agent": "Analyzing your checkpoints…",
+    "checkpoint_progress_agent": "Preparing your analysis…",
+    "checkpoint_analysis_synthesis_agent": "Writing your summary…",
+    "checkpoint_optional_agents_parallel_runner": "Finishing your analysis…",
+    "checkpoint_analysis_progress": "Updating your analysis…",
+    "agent_stream": "Almost done…",
+    "agent_response": "Done",
 }
 
 _CHECKPOINT_ROLLUP_TOOLS = {
@@ -103,21 +91,15 @@ _CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
 _CHECKPOINT_OPTIONAL_AGENT_NAMES = set(_CHECKPOINT_OPTIONAL_AGENT_BY_KEY.values())
 
 def _display_name_for(name: str) -> str:
-    """Resolve a friendly label for an agent/tool name.
-
-    Orchestrator agents (see _COORDINATING_AGENTS) draw from a small pool of
-    synonyms so repeated hand-offs don't show the same word back-to-back. The
-    stream_agent_answers merge helper locks the variant in once per step so the
-    chosen word stays stable across status transitions.
-    """
+    """Resolve a friendly label for an agent/tool name (mirrors agent-display.ts)."""
     if not name:
         return ""
     if name in _COORDINATING_AGENTS:
-        return random.choice(_COORDINATING_VARIANTS)
+        return _COORDINATING_LABEL
     mapped = _DISPLAY_NAME_MAP.get(name)
     if mapped:
         return mapped
-    return " ".join(part.capitalize() for part in name.split("_") if part)
+    return _DEFAULT_DISPLAY_LABEL
 
 # --- Environment Variables ---
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -575,16 +557,10 @@ def extract_agent_step_updates_from_event(event: Dict[str, Any]) -> List[Dict[st
             tool_name = function_call.get("name")
             if tool_name and tool_name != "transfer_to_agent":
                 tool_name_str = str(tool_name)
-                updates = [_step_update(tool_name_str, "executing")]
-                if tool_name_str in _CHECKPOINT_ROLLUP_TOOLS:
-                    optional_agent_names = _extract_checkpoint_optional_agent_names(
-                        function_call.get("args")
-                    )
-                    updates.extend(
-                        _step_update(agent_name, "executing")
-                        for agent_name in optional_agent_names
-                    )
-                return updates
+                # Only the rollup tool is "executing" here; optional specialists
+                # get agentSteps rows from progressive checkpoint_analysis_progress
+                # events (completed per branch) so the UI is not biased to cost_agent.
+                return [_step_update(tool_name_str, "executing")]
             if tool_name == "transfer_to_agent":
                 args = function_call.get("args", {})
                 target = args.get("agent_name") if isinstance(args, dict) else None
@@ -1068,7 +1044,7 @@ async def stream_agent_answers(
                 {
                     "name": "agent_stream",
                     "status": "failed",
-                    "displayName": "Streaming response",
+                    "displayName": _display_name_for("agent_stream"),
                 }
             )
         persist_chat_message_state()

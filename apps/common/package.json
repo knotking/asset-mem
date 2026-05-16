@@ -23,7 +23,9 @@
     "./contexts/llm-token-usage-context": "./src/contexts/llm-token-usage-context.tsx",
     "./lib/format-tokens": "./src/lib/format-tokens.ts",
     "./lib/service-providers": "./src/lib/service-providers.ts",
-    "./lib/agent-display": "./src/lib/agent-display.ts"
+    "./lib/agent-display": "./src/lib/agent-display.ts",
+    "./hooks/use-debounced-thinking-status": "./src/hooks/use-debounced-thinking-status.ts",
+    "./lib/checkpoint-branch-progress": "./src/lib/checkpoint-branch-progress.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

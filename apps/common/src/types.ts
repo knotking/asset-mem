@@ -265,6 +265,10 @@ export type StructuredResponseData = {
         };
       };
     };
+    /** Per optional-agent progress during progressive checkpoint analysis (chat only). */
+    analysisStatus?: Partial<
+      Record<CheckpointOptionalAgent, "pending" | "running" | "completed">
+    >;
   };
 };
 
