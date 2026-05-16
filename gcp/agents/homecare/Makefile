@@ -69,29 +69,35 @@ run: ## Run the agent locally
 	$(call print_header,Running Agent)
 	adk run $(AGENT_DIR)
 
-test: ## Run all tests
-	$(call print_header,Running All Tests)
-	$(PYTEST) -v
+test: ## Run unit tests only (excludes live ADK evals)
+	$(call print_header,Running Unit Tests)
+	$(PYTEST) tests/ -v
 
-test-eval: ## Run evaluation tests
+test-all: ## Run unit tests and ADK evals (evals skip until golden files exist)
+	$(call print_header,Running All Tests)
+	$(PYTEST) tests/ eval/ -v
+
+test-eval: ## Run ADK eval tests (skips until property_agent/evals/*.evalset.json exist)
 	$(call print_header,Running Evaluation Tests)
 	$(PYTEST) eval/ -v
 
-test-full: ## Run full conversation tests
-	$(call print_header,Running Full Conversation Tests)
-	$(PYTEST) eval/test_eval.py::test_eval_full_conversation -v
+test-eval-routing: ## Eval: doculink_routing.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_doculink_routing -v
 
-test-cost: ## Run cost estimation tests
-	$(call print_header,Running Cost Estimation Tests)
-	$(PYTEST) eval/test_eval.py::test_eval_cost_estimation -v
+test-eval-docs: ## Eval: doculink_docs.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_doculink_docs -v
 
-test-products: ## Run product recommendation tests
-	$(call print_header,Running Product Recommendation Tests)
-	$(PYTEST) eval/test_eval.py::test_eval_product_recommendations -v
+test-eval-checkpoint: ## Eval: checkpoint_optional_agents.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_checkpoint_optional_agents -v
 
-test-service: ## Run service provider tests
-	$(call print_header,Running Service Provider Tests)
-	$(PYTEST) eval/test_eval.py::test_eval_service_provider -v
+test-eval-cost: ## Eval: cost_agent.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_cost_agent -v
+
+test-eval-shopping: ## Eval: shopping_agent.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_shopping_agent -v
+
+test-eval-service: ## Eval: service_agent.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_service_agent -v
 
 deploy: ## Deploy the agent to Vertex AI
 	$(call print_header,Deploying Agent)

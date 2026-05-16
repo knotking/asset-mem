@@ -50,23 +50,21 @@ Don't activate the venv manually unless you need to; `uv run` handles it.
 
 ## Evaluation
 
-Eval cases live under `gcp/agents/homecare/eval/` (test_eval.py + JSON datasets). They hit live Vertex AI / Reasoning Engine, so they need credentials and will burn tokens.
+Golden eval sets are recorded from **`adk web`** and committed under `property_agent/evals/*.evalset.json`. See `property_agent/evals/README.md`. Tests in `eval/test_eval.py` **skip** until each file exists. Evals hit live Vertex/Gemini and need credentials.
 
 ```bash
-make test-eval          # all evals
-make test-agent         # test_eval_analysis_agent
-make test-products      # test_eval_product_recommendations
-make test-service       # test_eval_service_provider
-make test-cost          # test_eval_cost_estimation
-make test-full          # test_eval_full_conversation
+make test-eval              # all evals (skip until golden files exist)
+make test-eval-routing      # doculink_routing.evalset.json
+make test-eval-docs
+make test-eval-checkpoint
+make test-eval-cost
+make test-eval-shopping
+make test-eval-service
 ```
 
-Run a single test ad-hoc:
-```bash
-uv run pytest eval/test_eval.py::test_eval_analysis_agent -v
-```
+Unit tests only (CI-safe): `make test` or `uv run pytest tests/ -v`.
 
-Conversation datasets are JSON: `property_agent/car_diagnostics.evalset.json`, `property_agent/eval1.evalset.json`. Each entry has a query, expected tool trajectory, and reference answer. `eval/test_config.json` defines pass thresholds (`tool_trajectory_avg_score`, `response_match_score`).
+Pass thresholds: `property_agent/evals/test_config.json`.
 
 ## Lint / type-check
 
