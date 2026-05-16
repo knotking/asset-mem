@@ -326,7 +326,7 @@ make deploy
 
 ### Unit tests (`tests/`)
 
-`make test` runs **only** fast unit tests under `tests/` (no live ADK evals). For unit tests + evals:
+`make test` runs **only** fast unit tests under `tests/` (no live ADK evals). CI runs this on PRs via `.github/workflows/test-homecare-agent.yaml`. For unit tests + evals:
 
 ```bash
 make test-all

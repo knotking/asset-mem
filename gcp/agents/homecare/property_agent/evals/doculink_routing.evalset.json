@@ -3,14 +3,14 @@
   "name": "doculink_routing",
   "eval_cases": [
     {
-      "eval_id": "user_query_hello_How_can_you_help_me_",
+      "eval_id": "user_query_hello_context_doc_uris_g",
       "conversation": [
         {
-          "invocation_id": "e-6385f3a3-6cf7-49a0-a9ac-3df8ca674fab",
+          "invocation_id": "e-f5ad00a5-3d4c-47f1-934c-f3b28c178019",
           "user_content": {
             "parts": [
               {
-                "text": "{\"user_query\": “hello. How can you help me?“, \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": “docs”,  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
+                "text": "{\"user_query\": “hello“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"],  \"primary_agent\": \"checkpoint\", \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
               }
             ],
             "role": "user"
@@ -18,11 +18,11 @@
           "final_response": {
             "parts": [
               {
-                "text": "I can assist you with your insurance-related questions or problems by providing information from your policy documents.\n\nIf you have questions regarding your coverage, premiums, or policy, you should first contact your agent or broker. If you are unable to receive a satisfactory answer from them, you may contact your insurance company directly.\n\nIf you are still not satisfied after contacting your agent, broker, or insurance company, you may reach out to the **California Department of Insurance Consumer Affairs Unit** for further assistance:\n\n*   **California Department of Insurance Consumer Affairs Unit**\n    300 South Spring Street\n    Los Angeles, CA 90013\n*   **California Only Toll-Free Number:** 1-800-927-HELP (4357)\n*   **Website:** [http://www.insurance.ca.gov/01-consumers/](http://www.insurance.ca.gov/01-consumers/)\n\nAdditionally, for policy-specific inquiries, your documents indicate you can contact **Millennial Specialty Insurance**:\n*   **Address:** PO Box 210788, Bedford, TX 76021\n*   **Phone:** 800-676-5066\n\nCitations:\n- Important Information - Consumer Affairs — California\n- CALIFORNIA RESIDENTIAL PROPERTY INSURANCE BILL OF RIGHTS AND CLAIM REPORTING DISCLOSURE NOTICE"
+                "text": "Hello! I am here to help you with information regarding your property checkpoints at 1982 Helena Way. You can ask me questions about the condition of your property, historical inspections, or specific maintenance issues, and I will be happy to look into your records for you.\n\nHow can I assist you with your property today?"
               },
               {
                 "text": "",
-                "thought_signature": "AY89a1-gulLCwHfaJ9HrM94S94LXk8wkCe3TRBvOuCH59JwHs3cP0AKTsevCCm4fws8="
+                "thought_signature": "AY89a1-mLq5slZVV5tqXISKLC_OY-My-BE4Zun4ofIwYjksENnL8LaNcwyd-QdQbYwM="
               }
             ],
             "role": "model"
@@ -35,13 +35,13 @@
                   "parts": [
                     {
                       "function_call": {
-                        "id": "adk-80fdf34d-0d05-4a80-a4ce-364aaea3873b",
+                        "id": "adk-589414fe-3a33-4e19-88a4-fe08c1c64a4c",
                         "args": {
                           "agent_name": "doculink_agent"
                         },
                         "name": "transfer_to_agent"
                       },
-                      "thought_signature": "AY89a1858DMCfuOgI2iHKmL216wePS4F_TPBu30ExSe6slPyIJAnaBCuGdvFaQStIrk="
+                      "thought_signature": "AY89a1_LsWChvY7SgGc12SNGRF2Zuq1TfTQ0O5CAM8WMcivJ_EzyUuujeZgjYPGe3Dk="
                     },
                     {
                       "text": ""
@@ -56,7 +56,7 @@
                   "parts": [
                     {
                       "function_response": {
-                        "id": "adk-80fdf34d-0d05-4a80-a4ce-364aaea3873b",
+                        "id": "adk-589414fe-3a33-4e19-88a4-fe08c1c64a4c",
                         "name": "transfer_to_agent",
                         "response": {
                           "result": null
@@ -73,14 +73,25 @@
                   "parts": [
                     {
                       "function_call": {
-                        "id": "adk-7cf67acb-a38c-45cd-9a27-1881f002fb5c",
+                        "id": "adk-cc658101-16d7-4704-b87c-f00c68292136",
                         "args": {
-                          "user_query": "hello. How can you help me?",
-                          "property_address": "1982 Helena Way, Brentwood, CA 94513"
+                          "location_coordinates": {
+                            "lat": 37.9,
+                            "lng": -121.7
+                          },
+                          "user_query": "hello",
+                          "location_radius": 5,
+                          "property_address": "1982 Helena Way, Brentwood, CA 94513",
+                          "context_doc_uris": [
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"
+                          ],
+                          "location_type": "location"
                         },
-                        "name": "ask_user_docs_agent"
+                        "name": "checkpoint_agent"
                       },
-                      "thought_signature": "AY89a19tBTiu_mB083VcFDUxRcZHHzMiISJNQlgsJD9sBiRE_1hKTxXYD7sEs9asQzA="
+                      "thought_signature": "AY89a19KJ_Sj2UzjVuhgz3aMgtBmhRBpAiqljO3eeclFRIX4EQoA_AEPIZHDlmhKJI4="
                     },
                     {
                       "text": ""
@@ -95,10 +106,10 @@
                   "parts": [
                     {
                       "function_response": {
-                        "id": "adk-7cf67acb-a38c-45cd-9a27-1881f002fb5c",
-                        "name": "ask_user_docs_agent",
+                        "id": "adk-cc658101-16d7-4704-b87c-f00c68292136",
+                        "name": "checkpoint_agent",
                         "response": {
-                          "result": "I can assist you with your insurance-related questions or problems by providing information from your policy documents.\n\nIf you have questions regarding your coverage, premiums, or policy, you should first contact your agent or broker. If you are unable to receive a satisfactory answer from them, you may contact your insurance company directly.\n\nIf you are still not satisfied after contacting your agent, broker, or insurance company, you may reach out to the **California Department of Insurance Consumer Affairs Unit** for further assistance:\n\n*   **California Department of Insurance Consumer Affairs Unit**\n    300 South Spring Street\n    Los Angeles, CA 90013\n*   **California Only Toll-Free Number:** 1-800-927-HELP (4357)\n*   **Website:** [http://www.insurance.ca.gov/01-consumers/](http://www.insurance.ca.gov/01-consumers/)\n\nAdditionally, for policy-specific inquiries, your documents indicate you can contact **Millennial Specialty Insurance**:\n*   **Address:** PO Box 210788, Bedford, TX 76021\n*   **Phone:** 800-676-5066\n\nCitations:\n- Important Information - Consumer Affairs — California\n- CALIFORNIA RESIDENTIAL PROPERTY INSURANCE BILL OF RIGHTS AND CLAIM REPORTING DISCLOSURE NOTICE"
+                          "result": "Hello! I am here to help you with information regarding your property checkpoints at 1982 Helena Way. You can ask me questions about the condition of your property, historical inspections, or specific maintenance issues, and I will be happy to look into your records for you.\n\nHow can I assist you with your property today?"
                         }
                       }
                     }
@@ -108,15 +119,15 @@
               }
             ]
           },
-          "creation_timestamp": 1778938506.5544379
+          "creation_timestamp": 1778947505.4920828
         }
       ],
       "session_input": {
         "app_name": "property_agent",
         "user_id": "GqC3zTlnb6hRS4vTH6TGeCpDXgH2"
       },
-      "creation_timestamp": 1778938592.349825
+      "creation_timestamp": 1778947664.592112
     }
   ],
-  "creation_timestamp": 1778938584.506567
+  "creation_timestamp": 1778947644.110424
 }

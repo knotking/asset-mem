@@ -27,7 +27,7 @@ Pass thresholds: `property_agent/evals/test_config.json`.
 
 ## Unit tests vs evals
 
-- **`make test`** — `tests/` only (mocked, CI-safe)
+- **`make test`** — `tests/` only (mocked, CI-safe; runs on PR via `test-homecare-agent.yaml`)
 - **`make test-all`** — unit tests + evals
 - **`make test-eval`** — ADK evals only (Vertex/Gemini; costs tokens)
 
