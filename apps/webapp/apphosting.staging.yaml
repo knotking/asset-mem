@@ -20,6 +20,11 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: NEXT_PUBLIC_DEBUG_LOGS
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
   # Align with GitHub Actions TOKEN_QUOTA_PERIOD_MAX_TOKENS / proxy Cloud Run (AI usage UI)
   - variable: NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS
     value: "1000000"

@@ -1,11 +1,37 @@
 /**
  * Mapp logging utility. Namespaced, level-gated debug, structured metadata.
  * Not shared with @homeapp/common — mapp keeps its own copy (parallel to webapp).
+ *
+ * Levels in release builds (__DEV__=false):
+ * - debug, info: off unless EXPO_PUBLIC_DEBUG_LOGS=true (or extra.debugLogs)
+ * - warn, error: always on
  */
+
+import Constants from 'expo-constants';
 
 export type LogMeta = Record<string, unknown>;
 
+declare const __DEV__: boolean | undefined;
+
+function parseTruthyEnv(value: string | undefined): boolean {
+  if (!value) return false;
+  const v = String(value).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV === 'development';
+
+const extra = Constants.expoConfig?.extra as { debugLogs?: boolean | string } | undefined;
+
+const debugLogsEnabled =
+  extra?.debugLogs === true ||
+  parseTruthyEnv(typeof extra?.debugLogs === 'string' ? extra.debugLogs : undefined) ||
+  parseTruthyEnv(
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_DEBUG_LOGS : undefined
+  );
+
+/** When true, debug + info are emitted. */
+export const isVerboseLogging = isDev || debugLogsEnabled;
 
 function formatLine(namespace: string, message: string, meta?: LogMeta): string {
   const base = `[${namespace}] ${message}`;
@@ -49,10 +75,11 @@ export type Logger = {
 export function createLogger(namespace: string): Logger {
   return {
     debug(message, meta) {
-      if (!isDev) return;
+      if (!isVerboseLogging) return;
       console.debug(formatLine(namespace, message, meta));
     },
     info(message, meta) {
+      if (!isVerboseLogging) return;
       console.info(formatLine(namespace, message, meta));
     },
     warn(message, meta) {

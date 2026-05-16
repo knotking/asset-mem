@@ -1,0 +1,155 @@
+# Client logging (webapp & mapp)
+
+HomeApp frontends use small, app-local loggers (not shared with each other for webapp). Logs are **namespaced**, **structured**, and **gated in production** so routine `info`/`debug` noise does not appear in user browsers or production bundles unless explicitly enabled.
+
+Backend Python services use `gcp/common/observability/` (OpenTelemetry, Cloud Logging). This document covers **TypeScript clients only**.
+
+## Logger locations
+
+| App | Module | Used by |
+|-----|--------|---------|
+| Webapp | `apps/webapp/src/lib/logger.ts` | Webapp only |
+| Mapp | `apps/mapp/lib/logger.ts` | Mapp app code (`@/lib/logger`) |
+| Mapp contexts | `apps/common/src/lib/logger.ts` | `@homeapp/common` contexts (document upload, sessions, etc.) |
+
+Webapp does **not** import `@homeapp/common/lib/logger`; the two mobile/web copies stay in sync by convention.
+
+## API
+
+```ts
+import { createLogger } from '@/lib/logger'; // or @/lib/logger on mapp
+
+const log = createLogger('agent');
+
+log.debug('stream.chunk', { byteCount: 128 });  // verbose only
+log.info('stream.start', { sessionId: '…' });   // verbose only
+log.warn('quota.fetch.failed', { cause: 'HTTP 503' });
+log.error('stream.failed', { status: 500 }, err);
+```
+
+Helpers: `truncateId()`, `parseAgentErrorCode()` (webapp/mapp agent modules).
+
+Exported flag: `isVerboseLogging` — `true` when debug/info are emitted.
+
+## Log levels and production behavior
+
+| Level | When it runs | Typical use |
+|-------|----------------|-------------|
+| **debug** | Verbose mode only | Routing, JSON parse attempts, upload progress, geolocation |
+| **info** | Verbose mode only | Agent stream start/complete, session created, batch upload started |
+| **warn** | **Always** | Non-fatal issues (quota status fetch failed, RAG upload failed, 404 on session delete) |
+| **error** | **Always** | Failures users care about (stream failed, Firestore errors) |
+
+### Verbose mode (`debug` + `info`)
+
+Verbose mode is **on** when any of the following is true:
+
+**Webapp**
+
+- `NODE_ENV === 'development'` (local `npm run dev`), or
+- `NEXT_PUBLIC_DEBUG_LOGS` is `true`, `1`, or `yes` (case-insensitive)
+
+**Mapp / common (mapp)**
+
+- `__DEV__ === true` (Expo dev client / debug builds), or
+- `EXPO_PUBLIC_DEBUG_LOGS` is `true`/`1`/`yes` at **build time**, or
+- `extra.debugLogs === true` from `app.config.js` (derived from `EXPO_PUBLIC_DEBUG_LOGS`)
+
+Verbose mode is **off** in production release builds when none of the above apply.
+
+## Webapp: build-time stripping
+
+For production **builds** where `NEXT_PUBLIC_DEBUG_LOGS` is **not** `true`, `apps/webapp/next.config.ts` enables:
+
+```ts
+compiler: {
+  removeConsole: { exclude: ['error', 'warn'] },
+}
+```
+
+So `console.log`, `console.info`, and `console.debug` calls are removed from the client bundle (in addition to the runtime gate in `logger.ts`). `console.warn` and `console.error` remain.
+
+This applies to Firebase App Hosting builds: the flag must be set at **BUILD** time in `apphosting.*.yaml` to affect stripping.
+
+Server-side code (Server Actions, RSC) still uses the runtime gate; server `console` output goes to **Cloud Run logs** (Cloud Logging), not the user’s browser.
+
+## Environment defaults
+
+### Webapp (Firebase App Hosting)
+
+| Config file | `NEXT_PUBLIC_DEBUG_LOGS` | Verbose logs |
+|-------------|--------------------------|--------------|
+| `apphosting.yaml` (dev) | `true` | On in prod builds of dev backend |
+| `apphosting.staging.yaml` | `true` | On in staging |
+| `apphosting.prod.yaml` | *(unset)* | **Off** |
+
+Also set: `NEXT_PUBLIC_ENV` (`dev` / `staging` / `prod`) for app logic — separate from logging.
+
+Local dev: verbose always on via `NODE_ENV=development` (no env var required).
+
+### Mapp (EAS)
+
+| EAS profile | `EXPO_PUBLIC_DEBUG_LOGS` | Verbose in release build |
+|-------------|--------------------------|---------------------------|
+| `development` | `true` | On (`__DEV__` is usually true anyway) |
+| `staging` | `true` | On (intentional for QA) |
+| `prod` | *(unset)* | **Off** |
+
+`app.config.js` exposes `extra.debugLogs` for the mapp logger.
+
+Local dev: `.env` may set `EXPO_PUBLIC_DEBUG_LOGS=true`; `__DEV__` already enables verbose logs.
+
+## Enabling verbose logs temporarily in production
+
+### Webapp
+
+Add to `apps/webapp/apphosting.prod.yaml` (both BUILD and RUNTIME):
+
+```yaml
+  - variable: NEXT_PUBLIC_DEBUG_LOGS
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+```
+
+Redeploy the App Hosting backend. Remove or set to `false` when finished.
+
+### Mapp
+
+Add to `apps/mapp/eas.json` under `build.prod.env`:
+
+```json
+"EXPO_PUBLIC_DEBUG_LOGS": "true"
+```
+
+Create a new EAS build (OTA update alone may not change inlined env; prefer a new binary for store builds).
+
+## Filtering logs
+
+All logger output uses a consistent prefix:
+
+```text
+[namespace] message {"key":"value"}
+```
+
+Namespaces in use include: `agent`, `chat`, `checkpoint`, `upload`, `session`, `property`, `properties`, `quota`, `preferences`, `auth`, `routes`, `parse`, `camera`, `share`.
+
+In Chrome DevTools or Metro, filter by e.g. `[agent]` or `[checkpoint]`.
+
+## What is not gated
+
+- **`warn` and `error`** always emit (subject to `removeConsole` only removing non-warn/error on webapp prod builds).
+- **Firebase config** one-off messages (`[firebase] Unknown environment…`) use raw `console.warn`, not the logger.
+- **Backend** logs are unchanged; see `gcp/common/observability/README.md` and Cloud Logging / Error Reporting.
+
+## Security notes
+
+- Do not log user queries, document text, full tokens, or precise location in production.
+- Prefer `truncateId()` for session/property/checkpoint IDs in metadata.
+- `parseAgentErrorCode()` helps classify quota errors without logging full response bodies in user-facing paths (errors still go to `error` with `cause` message only when using the logger’s `err` argument).
+
+## Related code
+
+- Agent streaming: `apps/webapp/src/lib/api-agent.ts`, `apps/mapp/lib/api.ts`
+- Checkpoint API (webapp): `apps/webapp/src/lib/api-checkpoint.ts`
