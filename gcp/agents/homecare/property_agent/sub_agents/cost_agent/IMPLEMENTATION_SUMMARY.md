@@ -105,27 +105,18 @@ Six specialized prompt templates:
    c. Return fallback estimate
 ```
 
-### 6. Comprehensive Test Suite
-**File**: `eval/data/cost_estimation_ai.test.json` (15 test cases)
+### 6. Evaluation
 
-**Test Coverage**:
-- Location-aware pricing (San Francisco, NYC, rural areas)
-- Various repair types (plumbing, electrical, HVAC, automotive, pest control)
-- Complexity levels (simple DIY to complex professional-only)
-- Service provider calibration scenarios
-- Edge cases and fallback triggers
+**Golden eval (ADK):** `property_agent/evals/cost_agent.evalset.json` — E2E session with `checkpoint_optional_agents: ["cost"]`, recorded from `adk web`. Run with `make test-eval-cost`.
+
+**Unit tests:** `tests/test_diy_agent.py` (e.g. `test_cost_estimation_diy_from_library`, mocked pipeline).
+
+**Scenarios to cover when updating goldens:**
+- Location-aware pricing
+- Various repair types and complexity
+- Service provider calibration
+- Fallback to hardcoded library
 - Validation rule enforcement
-
-**Test Categories**:
-1. AI estimation with location context
-2. Complex repairs with high severity
-3. Simple DIY-friendly repairs
-4. Automotive and appliance repairs
-5. Pest control (professional-only)
-6. Fallback scenarios
-7. Service provider calibration
-8. Multiple complexity factors
-9. Cost validation tests
 
 ### 7. Comprehensive Documentation
 **File**: `README.md` (650+ lines)
@@ -304,7 +295,7 @@ All key events are logged:
 3. `service_pricing_extractor.py` - 358 lines
 4. `config.py` - 202 lines
 5. `README.md` - 650+ lines
-6. `eval/data/cost_estimation_ai.test.json` - 15 test cases
+6. `property_agent/evals/cost_agent.evalset.json` - ADK golden eval (E2E)
 
 ### Modified Files (1)
 1. `agent.py` - Enhanced from 280 to 380+ lines
@@ -327,24 +318,11 @@ All key events are logged:
 
 ## Testing
 
-### Test Files
-- `cost_estimation.test.json` - Original tests (still valid)
-- `cost_estimation_ai.test.json` - New AI-specific tests
-
-### Test Execution
 ```bash
 cd gcp/agents/homecare
-make test-eval
+make test              # unit tests (includes cost library / DIY mocks)
+make test-eval-cost    # live ADK eval: property_agent/evals/cost_agent.evalset.json
 ```
-
-### Test Coverage
-- ✅ Location-aware pricing
-- ✅ Various repair types
-- ✅ Complexity levels
-- ✅ Service provider calibration
-- ✅ Fallback scenarios
-- ✅ Edge cases
-- ✅ Validation rules
 
 ## Next Steps
 

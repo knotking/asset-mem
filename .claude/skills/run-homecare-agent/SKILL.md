@@ -50,10 +50,10 @@ Don't activate the venv manually unless you need to; `uv run` handles it.
 
 ## Evaluation
 
-Golden eval sets are recorded from **`adk web`** and committed under `property_agent/evals/*.evalset.json`. See `property_agent/evals/README.md`. Tests in `eval/test_eval.py` **skip** until each file exists. Evals hit live Vertex/Gemini and need credentials.
+Golden eval sets are recorded from **`adk web`** and committed under `property_agent/evals/*.evalset.json`. See `property_agent/evals/README.md`. Evals hit live Vertex/Gemini and need credentials.
 
 ```bash
-make test-eval              # all evals (skip until golden files exist)
+make test-eval              # all evals (live Vertex, ~3 min)
 make test-eval-routing      # doculink_routing.evalset.json
 make test-eval-docs
 make test-eval-checkpoint

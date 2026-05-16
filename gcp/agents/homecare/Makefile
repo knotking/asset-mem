@@ -77,7 +77,7 @@ test-all: ## Run unit tests and ADK evals
 	$(call print_header,Running All Tests)
 	$(PYTEST) tests/ eval/ -v
 
-test-eval: ## Run ADK eval tests (skips until property_agent/evals/*.evalset.json exist)
+test-eval: ## Run ADK eval tests (live Vertex; property_agent/evals/*.evalset.json)
 	$(call print_header,Running Evaluation Tests)
 	$(PYTEST) eval/ -v
 

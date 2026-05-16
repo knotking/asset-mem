@@ -348,25 +348,30 @@ All cost estimates must pass these validation checks:
 
 ## Testing
 
-### Test Files
-
-- **`eval/data/cost_estimation.test.json`**: Original hardcoded library tests
-- **`eval/data/cost_estimation_ai.test.json`**: AI estimation test cases
-
-### Test Categories
-
-1. **Location-Aware Tests**: Different cities and regions
-2. **Complexity Tests**: Simple, moderate, and complex repairs
-3. **Calibration Tests**: With and without service provider data
-4. **Fallback Tests**: Edge cases triggering fallback
-5. **Validation Tests**: Ensure unrealistic estimates are rejected
-
-### Running Tests
+### Unit tests (fast, mocked)
 
 ```bash
 cd gcp/agents/homecare
-make test-eval
+make test
+# e.g. tests/test_diy_agent.py::test_cost_estimation_diy_from_library
 ```
+
+### ADK eval (live, E2E)
+
+Cost behavior in production is exercised via checkpoint analysis with `checkpoint_optional_agents: ["cost"]`:
+
+- Golden file: **`property_agent/evals/cost_agent.evalset.json`** (record from `adk web`)
+- Run: `make test-eval-cost` or `make test-eval`
+
+Covers AI + library fallback paths in a full `property_agent` session, not an isolated `cost_agent` module eval.
+
+### What to validate manually
+
+1. Location-aware pricing (different regions)
+2. Complexity (simple DIY vs professional-only)
+3. Service provider calibration when SerpAPI data is present
+4. Fallback to hardcoded library when AI confidence is low
+5. Validation rules (ranges, DIY vs pro ratio)
 
 ## Monitoring & Logging
 
@@ -499,8 +504,8 @@ config.LOG_FALLBACK_USAGE = True
 
 When modifying the cost agent:
 
-1. **Update Tests**: Add test cases to `cost_estimation_ai.test.json`
-2. **Validate Changes**: Run full test suite
+1. **Update tests**: Add unit tests under `tests/` and/or re-record `property_agent/evals/cost_agent.evalset.json` from `adk web`
+2. **Validate changes**: `make test` (CI) and `make test-eval-cost` when changing cost output shape
 3. **Monitor Impact**: Track fallback rates and confidence scores
 4. **Document Changes**: Update this README
 5. **Consider Backward Compatibility**: Maintain existing API contract

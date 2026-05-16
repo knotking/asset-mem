@@ -403,7 +403,7 @@ Golden eval sets are **recorded from `adk web`** and stored under `property_agen
 From the `gcp/agents/homecare` directory:
 
 ```bash
-make test-eval              # all eval tests (skip until golden files exist)
+make test-eval              # all eval tests (live Vertex, ~3 min)
 make test-eval-routing      # doculink_routing.evalset.json
 make test-eval-docs         # doculink_docs.evalset.json
 make test-eval-checkpoint   # checkpoint_optional_agents.evalset.json
