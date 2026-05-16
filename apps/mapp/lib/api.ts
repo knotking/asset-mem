@@ -5,6 +5,7 @@ import type {
   LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
+import { createCorrelationId, proxyFetch } from '@/lib/correlation-id';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
 const log = createLogger('agent');
@@ -31,11 +32,8 @@ export async function createAgentSession(
       throw new Error('AGENT_SESSION_URL not set.');
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         user_id: userId,
       }),
@@ -76,11 +74,8 @@ export async function deleteAgentSession(
       return { success: true };
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ user_id: userId, session_id: agentSessionId }),
     });
 
@@ -141,7 +136,9 @@ export async function streamAgentResponse({
   onError,
 }: StreamAgentResponseParams): Promise<void> {
   const startedAt = Date.now();
+  const correlationId = createCorrelationId();
   const streamMeta = {
+    correlationId: truncateId(correlationId),
     firebaseChatId: truncateId(firebaseChatId),
     agentSessionId: truncateId(agentSessionId),
     primaryAgent: primaryAgent ?? 'default',
@@ -193,11 +190,9 @@ export async function streamAgentResponse({
       }
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      correlationId,
       body: JSON.stringify(requestBody),
       signal,
     });
@@ -408,11 +403,8 @@ export async function queueExtractDocInfo(
     throw new Error('DOCUMENT_ANALYSIS_URL not set.');
   }
 
-  const response = await fetch(url, {
+  const response = await proxyFetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(input),
   });
 
@@ -437,11 +429,8 @@ export async function postFileToAgent(
       throw new Error('RAG_FILE_UPLOAD_URL not set.');
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         user_id: userId,
         context_doc_uris: [gsURI],
@@ -492,11 +481,8 @@ export async function analyzeCheckpoint(
       throw new Error('CHECKPOINT_ANALYSIS_URL not set.');
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(input),
     });
 
@@ -548,11 +534,8 @@ export async function compareCheckpoints(
       throw new Error('CHECKPOINT_COMPARISON_URL not set.');
     }
 
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(input),
     });
 

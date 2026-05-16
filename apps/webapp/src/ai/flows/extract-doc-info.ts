@@ -34,11 +34,9 @@ export async function queueExtractDocInfo(
     throw new Error('Extract doc info API URL not configured');
   }
 
-  const response = await fetch(url, {
+  const { proxyFetch } = await import('@/lib/correlation-id');
+  const response = await proxyFetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(input),
   });
 

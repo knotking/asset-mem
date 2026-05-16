@@ -1,7 +1,7 @@
-"""Bind authenticated user id to stdlib logging for every log line (Cloud Run / Functions).
+"""Bind request context (auth uid, correlation id) to stdlib logging.
 
-Uses a ContextVar + logging.Filter so existing logger.info(...) calls gain an
-``auth_uid`` field on the LogRecord without touching each call site.
+Uses ContextVars + logging.Filter so existing logger.info(...) calls gain
+``auth_uid`` and ``correlation_id`` on each LogRecord without touching call sites.
 """
 
 from __future__ import annotations
@@ -9,11 +9,19 @@ from __future__ import annotations
 import contextvars
 import json
 import logging
+import re
+import uuid
 from contextlib import contextmanager
 from typing import Any, Iterator, Optional
 
+REQUEST_ID_HEADER = "X-Request-ID"
+
 _auth_uid: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "auth_uid", default=None
+)
+
+_correlation_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "correlation_id", default=None
 )
 
 # LIFO stack of tokens from contextvar.set(), for nested bind/unbind (e.g. workers).
@@ -21,9 +29,54 @@ _token_stack: contextvars.ContextVar[list[contextvars.Token[Optional[str]]]] = (
     contextvars.ContextVar("auth_uid_token_stack", default=[])
 )
 
+_correlation_token_stack: contextvars.ContextVar[
+    list[contextvars.Token[Optional[str]]]
+] = contextvars.ContextVar("correlation_id_token_stack", default=[])
+
+_CORRELATION_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+
 
 def get_auth_uid() -> Optional[str]:
     return _auth_uid.get()
+
+
+def get_correlation_id() -> Optional[str]:
+    return _correlation_id.get()
+
+
+def resolve_correlation_id(header_value: Optional[str]) -> str:
+    """Use client ``X-Request-ID`` when valid; otherwise generate a new id."""
+    if isinstance(header_value, str):
+        candidate = header_value.strip()
+        if candidate and _CORRELATION_ID_RE.match(candidate):
+            return candidate
+    return str(uuid.uuid4())
+
+
+def bind_correlation_id(correlation_id: Optional[str]) -> None:
+    if correlation_id is not None and not isinstance(correlation_id, str):
+        correlation_id = str(correlation_id)
+    stack = list(_correlation_token_stack.get())
+    stack.append(_correlation_id.set(correlation_id))
+    _correlation_token_stack.set(stack)
+
+
+def unbind_correlation_id() -> None:
+    stack = list(_correlation_token_stack.get())
+    if not stack:
+        return
+    tok = stack.pop()
+    _correlation_token_stack.set(stack)
+    _correlation_id.reset(tok)
+
+
+@contextmanager
+def correlation_id_scope(correlation_id: Optional[str]) -> Iterator[None]:
+    bind_correlation_id(correlation_id)
+    try:
+        yield
+    finally:
+        unbind_correlation_id()
 
 
 def bind_auth_uid(uid: Optional[str]) -> None:
@@ -71,20 +124,26 @@ def extract_auth_uid_from_json_dict(data: Any) -> Optional[str]:
     return None
 
 
-class AuthUidLogFilter(logging.Filter):
-    """Sets record.auth_uid for formatters."""
+class RequestContextLogFilter(logging.Filter):
+    """Sets record.auth_uid and record.correlation_id for formatters."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         uid = get_auth_uid()
         record.auth_uid = uid if uid else "-"
+        cid = get_correlation_id()
+        record.correlation_id = cid if cid else "-"
         return True
 
 
-_FILTER_SINGLETON = AuthUidLogFilter()
+# Backwards-compatible alias
+AuthUidLogFilter = RequestContextLogFilter
+
+_FILTER_SINGLETON = RequestContextLogFilter()
 _INSTALLED = False
 
 _DEFAULT_FORMAT = (
-    "%(asctime)s [auth_uid=%(auth_uid)s] %(name)s %(levelname)s %(message)s"
+    "%(asctime)s [auth_uid=%(auth_uid)s] [req=%(correlation_id)s] "
+    "%(name)s %(levelname)s %(message)s"
 )
 
 
@@ -113,7 +172,7 @@ def install_auth_uid_logging(
                 fmt_str = ""
                 if isinstance(fmt_obj, logging.Formatter):
                     fmt_str = getattr(fmt_obj, "_fmt", "") or ""
-                if not fmt_str or "auth_uid" not in fmt_str:
+                if not fmt_str or "auth_uid" not in fmt_str or "correlation_id" not in fmt_str:
                     h.setFormatter(logging.Formatter(_DEFAULT_FORMAT, datefmt=datefmt))
 
     _INSTALLED = True

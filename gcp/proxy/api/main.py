@@ -30,6 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from common.observability.logging_context import install_auth_uid_logging
 from core.auth_uid_middleware import AuthUidLoggingMiddleware
+from core.correlation_middleware import CorrelationIdMiddleware
 from core.config import settings
 from core.events import lifespan
 from routers import agent, documents, telegram, service_broker, checkpoint, token_quota
@@ -55,6 +56,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(AuthUidLoggingMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
 
 @app.get("/health", summary="Health Check", description="Check the health status of the API and Reasoning Engine connection.")
 async def health_check():

@@ -3,6 +3,7 @@
  */
 
 import { apiUrls } from '@/lib/utils';
+import { createCorrelationId, proxyFetch } from '@/lib/correlation-id';
 import {
   createLogger,
   parseAgentErrorCode,
@@ -17,9 +18,8 @@ export async function createAgentSession(
 ): Promise<{ agentSessionId?: string; error?: string }> {
   try {
     const url = apiUrls.agentSession();
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId }),
     });
 
@@ -52,9 +52,8 @@ export async function deleteAgentSession(
 ): Promise<{ success?: boolean; error?: string }> {
   try {
     const url = apiUrls.agentSession();
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, session_id: agentSessionId }),
     });
 
@@ -85,9 +84,8 @@ export async function postFileToAgent(
 ): Promise<{ success: boolean; summary?: string; error?: string }> {
   try {
     const url = apiUrls.ragFileUpload();
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, context_doc_uris: [gsURI] }),
     });
     if (!response.ok) {
@@ -147,7 +145,9 @@ export async function streamAgentResponse({
   onError,
 }: StreamAgentResponseParams): Promise<void> {
   const startedAt = Date.now();
+  const correlationId = createCorrelationId();
   const streamMeta = {
+    correlationId: truncateId(correlationId),
     firebaseChatId: truncateId(firebaseChatId),
     agentSessionId: truncateId(agentSessionId),
     primaryAgent: primaryAgent ?? 'default',
@@ -189,9 +189,9 @@ export async function streamAgentResponse({
       }
     }
 
-    const response = await fetch(apiUrls.agentSse(), {
+    const response = await proxyFetch(apiUrls.agentSse(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      correlationId,
       body: JSON.stringify(requestBody),
       signal,
     });

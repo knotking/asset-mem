@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from opentelemetry import trace
 
-from .logging_context import get_auth_uid
+from .logging_context import get_auth_uid, get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,9 @@ def log_event(
     ctx_uid = get_auth_uid()
     if ctx_uid is not None and "auth_uid" not in merged_body:
         merged_body["auth_uid"] = ctx_uid
+    ctx_req = get_correlation_id()
+    if ctx_req is not None and "correlation_id" not in merged_body:
+        merged_body["correlation_id"] = ctx_req
 
     # Build log structure
     log_entry = {
