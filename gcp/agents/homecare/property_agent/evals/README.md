@@ -31,9 +31,11 @@ Pass thresholds: `test_config.json` (`tool_trajectory_avg_score`, `response_matc
 | `doculink_routing.evalset.json` | General property question → root delegates to `doculink_agent` |
 | `doculink_docs.evalset.json` | `primary_agent: "docs"` and/or `context_doc_uris`; user-docs query |
 | `checkpoint_optional_agents.evalset.json` | `checkpoint_ids` + `checkpoint_optional_agents: ["coverage","diy","service","cost"]` |
-| `cost_agent.evalset.json` | Cost estimate request → `cost_estimation` or `cost_estimation_diy` |
-| `shopping_agent.evalset.json` | Product recommendation request → `product_recommendations` |
-| `service_agent.evalset.json` | Local providers request → `serpapi_search` / `google_search` |
+| `cost_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["cost"]` → cost in checkpoint analysis |
+| `shopping_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["diy"]` → DIY/products path |
+| `service_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["service"]` → local providers path |
+
+All evalsets are recorded against **`property_agent`** (full session). Sub-agent-only evals are not used.
 
 ## Run evals locally
 

@@ -1,0 +1,122 @@
+{
+  "eval_set_id": "doculink_routing",
+  "name": "doculink_routing",
+  "eval_cases": [
+    {
+      "eval_id": "user_query_hello_How_can_you_help_me_",
+      "conversation": [
+        {
+          "invocation_id": "e-6385f3a3-6cf7-49a0-a9ac-3df8ca674fab",
+          "user_content": {
+            "parts": [
+              {
+                "text": "{\"user_query\": “hello. How can you help me?“, \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": “docs”,  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can assist you with your insurance-related questions or problems by providing information from your policy documents.\n\nIf you have questions regarding your coverage, premiums, or policy, you should first contact your agent or broker. If you are unable to receive a satisfactory answer from them, you may contact your insurance company directly.\n\nIf you are still not satisfied after contacting your agent, broker, or insurance company, you may reach out to the **California Department of Insurance Consumer Affairs Unit** for further assistance:\n\n*   **California Department of Insurance Consumer Affairs Unit**\n    300 South Spring Street\n    Los Angeles, CA 90013\n*   **California Only Toll-Free Number:** 1-800-927-HELP (4357)\n*   **Website:** [http://www.insurance.ca.gov/01-consumers/](http://www.insurance.ca.gov/01-consumers/)\n\nAdditionally, for policy-specific inquiries, your documents indicate you can contact **Millennial Specialty Insurance**:\n*   **Address:** PO Box 210788, Bedford, TX 76021\n*   **Phone:** 800-676-5066\n\nCitations:\n- Important Information - Consumer Affairs — California\n- CALIFORNIA RESIDENTIAL PROPERTY INSURANCE BILL OF RIGHTS AND CLAIM REPORTING DISCLOSURE NOTICE"
+              },
+              {
+                "text": "",
+                "thought_signature": "AY89a1-gulLCwHfaJ9HrM94S94LXk8wkCe3TRBvOuCH59JwHs3cP0AKTsevCCm4fws8="
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-80fdf34d-0d05-4a80-a4ce-364aaea3873b",
+                        "args": {
+                          "agent_name": "doculink_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      },
+                      "thought_signature": "AY89a1858DMCfuOgI2iHKmL216wePS4F_TPBu30ExSe6slPyIJAnaBCuGdvFaQStIrk="
+                    },
+                    {
+                      "text": ""
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-80fdf34d-0d05-4a80-a4ce-364aaea3873b",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-7cf67acb-a38c-45cd-9a27-1881f002fb5c",
+                        "args": {
+                          "user_query": "hello. How can you help me?",
+                          "property_address": "1982 Helena Way, Brentwood, CA 94513"
+                        },
+                        "name": "ask_user_docs_agent"
+                      },
+                      "thought_signature": "AY89a19tBTiu_mB083VcFDUxRcZHHzMiISJNQlgsJD9sBiRE_1hKTxXYD7sEs9asQzA="
+                    },
+                    {
+                      "text": ""
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-7cf67acb-a38c-45cd-9a27-1881f002fb5c",
+                        "name": "ask_user_docs_agent",
+                        "response": {
+                          "result": "I can assist you with your insurance-related questions or problems by providing information from your policy documents.\n\nIf you have questions regarding your coverage, premiums, or policy, you should first contact your agent or broker. If you are unable to receive a satisfactory answer from them, you may contact your insurance company directly.\n\nIf you are still not satisfied after contacting your agent, broker, or insurance company, you may reach out to the **California Department of Insurance Consumer Affairs Unit** for further assistance:\n\n*   **California Department of Insurance Consumer Affairs Unit**\n    300 South Spring Street\n    Los Angeles, CA 90013\n*   **California Only Toll-Free Number:** 1-800-927-HELP (4357)\n*   **Website:** [http://www.insurance.ca.gov/01-consumers/](http://www.insurance.ca.gov/01-consumers/)\n\nAdditionally, for policy-specific inquiries, your documents indicate you can contact **Millennial Specialty Insurance**:\n*   **Address:** PO Box 210788, Bedford, TX 76021\n*   **Phone:** 800-676-5066\n\nCitations:\n- Important Information - Consumer Affairs — California\n- CALIFORNIA RESIDENTIAL PROPERTY INSURANCE BILL OF RIGHTS AND CLAIM REPORTING DISCLOSURE NOTICE"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1778938506.5544379
+        }
+      ],
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "GqC3zTlnb6hRS4vTH6TGeCpDXgH2"
+      },
+      "creation_timestamp": 1778938592.349825
+    }
+  ],
+  "creation_timestamp": 1778938584.506567
+}

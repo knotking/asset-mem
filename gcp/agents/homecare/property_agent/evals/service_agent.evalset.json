@@ -1,0 +1,196 @@
+{
+  "eval_set_id": "service_agent",
+  "name": "service_agent",
+  "eval_cases": [
+    {
+      "eval_id": "user_query_find_service_providers_conte",
+      "conversation": [
+        {
+          "invocation_id": "e-2a071264-df4c-4c9e-9b36-31af8623eb4b",
+          "user_content": {
+            "parts": [
+              {
+                "text": "{\"user_query\": “find service providers“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"], \"checkpoint_ids\": [\"HMaFGfwgL58ef5bGYS8o\", \"CZMA72oMvQPHRsq7phyb\"], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": \"checkpoint\", \"checkpoint_optional_agents\": [“service”], \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "# Service Provider Analysis for Garage Door Restoration\n\nfind service providers\n\nBased on the recent inspections at 1982 Helena Way, significant cosmetic wear has been identified on the garage door, including extensive paint chipping and surface scratches. Professional restoration is recommended to address these issues. Below are the findings and local service options identified.\n\n\n## Checkpoint Summary\n- **Checkpoints Analyzed**: 2\n- **Issues Detected**: Significant paint chipping and scratching on the door surface near the handle, Extensive paint chipping on the door surface and edges., Multiple scratches on the door\n- **Locations**: Garage\n- **Overall Condition**: Damaged, wear and tear, clean\n\n## Service Providers\n- **Provider** — (925) 399-1054\n- **Provider** — (925) 766-9912\n- **Provider**\n- **Provider**\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Service Provider Analysis for Garage Door Restoration\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"issuesDetected\": [\n        \"Significant paint chipping and scratching on the door surface near the handle\",\n        \"Extensive paint chipping on the door surface and edges.\",\n        \"Multiple scratches on the door\"\n      ],\n      \"overallCondition\": \"Damaged, wear and tear, clean\",\n      \"locations\": [\n        \"Garage\"\n      ]\n    },\n    \"serviceResults\": {\n      \"localPros\": {\n        \"serpAPIResults\": [\n          {\n            \"title\": \"Home Pro Painters\",\n            \"address\": \"18 Oak St #1495, Brentwood, CA 94513\",\n            \"phone\": \"(925) 399-1054\",\n            \"services\": \"Residential painting, drywall and dry rot repairs, exterior refinishing\"\n          },\n          {\n            \"title\": \"Bay-Valley Painting\",\n            \"phone\": \"(925) 766-9912\",\n            \"services\": \"Exterior home painting, surface preparation, sanding, priming, and finishing\"\n          },\n          {\n            \"title\": \"S. B. Painting, Inc.\",\n            \"services\": \"Interior and exterior residential painting, highly recommended for quality and reliability\"\n          },\n          {\n            \"title\": \"Garage Door Repair Brentwood (Various Providers)\",\n            \"note\": \"While companies like R & P Garage Doors and local repair services focus on mechanical repairs, some offer general refurbishment. It is recommended to contact a painting professional for cosmetic scratch and paint chip repairs as they have the specialized materials for surface finishes.\"\n          }\n        ],\n        \"googleSearchResults\": [\n          \"https://paintbyhomepro.com\",\n          \"https://bayvalleypainting.com\",\n          \"https://diamondcertified.org\"\n        ]\n      }\n    }\n  }\n}\n```\n"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-deadb55a-bdd1-4a27-b578-52640815ba5a",
+                        "args": {
+                          "agent_name": "doculink_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      },
+                      "thought_signature": "AY89a1_2aS2lYQztnfzbalyrDnMHOG6MOH2Nc0g8oW6CFluf-DvKu9Z-wRiU-kBOmv0="
+                    },
+                    {
+                      "text": ""
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-deadb55a-bdd1-4a27-b578-52640815ba5a",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-0ebb0271-940d-4239-9309-7cb59e4972ac",
+                        "args": {
+                          "location_radius": 5,
+                          "user_query": "find service providers",
+                          "property_id": "nY3XQ92eUa02Qs14QWEn",
+                          "checkpoint_optional_agents": [
+                            "service"
+                          ],
+                          "location_coordinates": {
+                            "lat": 37.9,
+                            "lng": -121.7
+                          },
+                          "property_address": "1982 Helena Way, Brentwood, CA 94513",
+                          "context_doc_uris": [
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"
+                          ],
+                          "checkpoint_ids": [
+                            "HMaFGfwgL58ef5bGYS8o",
+                            "CZMA72oMvQPHRsq7phyb"
+                          ]
+                        },
+                        "name": "checkpoint_agent"
+                      },
+                      "thought_signature": "AY89a19J2RXExQoKFLMqg3xJNXN21Ke24CJgPNWVI8Ugawd6PRPKkL5GhrDPQDv8ncs="
+                    },
+                    {
+                      "text": ""
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-0ebb0271-940d-4239-9309-7cb59e4972ac",
+                        "name": "checkpoint_agent",
+                        "response": {
+                          "result": "# Service Provider Search for Garage Door Repairs\n\nBased on your recent checkpoints, I have identified maintenance issues in your garage that may require professional service providers. The following items have been flagged for further analysis:\n\n\n## Checkpoint Summary\n- **Checkpoints Analyzed**: 2\n- **Locations**: Garage\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Service Provider Search for Garage Door Repairs\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\n        \"Garage\"\n      ],\n      \"dateRange\": \"May 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"Significant paint chipping and scratching on the door surface near the handle.\",\n        \"detectedItems\": [\n          \"door\",\n          \"door handle\",\n          \"deadbolt\",\n          \"wall outlet\"\n        ],\n        \"conditions\": [\n          \"damaged\",\n          \"wear and tear\"\n        ],\n        \"issues\": [\n          \"Significant paint chipping and scratching on the door surface near the handle.\"\n        ]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"Gray door in garage showing significant paint chipping and scratches, particularly along edges and across the surface.\",\n        \"detectedItems\": [\n          \"door\",\n          \"doorknob\",\n          \"deadbolt\",\n          \"wall\",\n          \"electrical outlet\"\n        ],\n        \"conditions\": [\n          \"damaged\",\n          \"wear and tear\",\n          \"clean\",\n          \"functional\"\n        ],\n        \"issues\": [\n          \"Extensive paint chipping on the door surface and edges.\",\n          \"Multiple scratches on the door.\"\n        ]\n      }\n    ],\n    \"analysisStatus\": {\n      \"service\": \"pending\"\n    },\n    \"insights\": {\n      \"patterns\": \"Both recent inspections indicate recurring cosmetic damage to the garage door, specifically paint loss and surface scratches.\",\n      \"recommendations\": \"Professional service for garage door surface restoration or refinishing is recommended to address the identified wear.\"\n    }\n  }\n}\n```"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-d4e30d40-a934-4196-abe2-6310850107ae",
+                        "args": {
+                          "agent_name": "checkpoint_progress_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      },
+                      "thought_signature": "AY89a19F-gxBj9Htun30sumAQDfc0VmE_pKcCdW1FVGj1AbJ6iN-fm3350_0aYjnuJQ="
+                    },
+                    {
+                      "text": ""
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "doculink_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-d4e30d40-a934-4196-abe2-6310850107ae",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "checkpoint_analysis_progress",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "find service providers\n\n# Checkpoint analysis\n\n## Checkpoint Summary\n- **Checkpoints Analyzed**: 2\n- **Issues Detected**: Significant paint chipping and scratching on the door surface near the handle, Extensive paint chipping on the door surface and edges., Multiple scratches on the door\n- **Locations**: Garage\n- **Overall Condition**: damaged, wear and tear, clean\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Checkpoint analysis\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"issuesDetected\": [\n        \"Significant paint chipping and scratching on the door surface near the handle\",\n        \"Extensive paint chipping on the door surface and edges.\",\n        \"Multiple scratches on the door\"\n      ],\n      \"overallCondition\": \"damaged, wear and tear, clean\",\n      \"locations\": [\n        \"Garage\"\n      ]\n    },\n    \"analysisStatus\": {\n      \"service\": \"running\"\n    }\n  }\n}\n```\n"
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "checkpoint_analysis_progress",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "find service providers\n\n# Checkpoint analysis\n\n## Checkpoint Summary\n- **Checkpoints Analyzed**: 2\n- **Issues Detected**: Significant paint chipping and scratching on the door surface near the handle, Extensive paint chipping on the door surface and edges., Multiple scratches on the door\n- **Locations**: Garage\n- **Overall Condition**: damaged, wear and tear, clean\n\n## Service Providers\n- **Provider** — (925) 399-1054\n- **Provider** — (925) 766-9912\n- **Provider**\n- **Provider**\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Checkpoint analysis\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"issuesDetected\": [\n        \"Significant paint chipping and scratching on the door surface near the handle\",\n        \"Extensive paint chipping on the door surface and edges.\",\n        \"Multiple scratches on the door\"\n      ],\n      \"overallCondition\": \"damaged, wear and tear, clean\",\n      \"locations\": [\n        \"Garage\"\n      ]\n    },\n    \"serviceResults\": {\n      \"localPros\": {\n        \"serpAPIResults\": [\n          {\n            \"title\": \"Home Pro Painters\",\n            \"address\": \"18 Oak St #1495, Brentwood, CA 94513\",\n            \"phone\": \"(925) 399-1054\",\n            \"services\": \"Residential painting, drywall and dry rot repairs, exterior refinishing\"\n          },\n          {\n            \"title\": \"Bay-Valley Painting\",\n            \"phone\": \"(925) 766-9912\",\n            \"services\": \"Exterior home painting, surface preparation, sanding, priming, and finishing\"\n          },\n          {\n            \"title\": \"S. B. Painting, Inc.\",\n            \"services\": \"Interior and exterior residential painting, highly recommended for quality and reliability\"\n          },\n          {\n            \"title\": \"Garage Door Repair Brentwood (Various Providers)\",\n            \"note\": \"While companies like R & P Garage Doors and local repair services focus on mechanical repairs, some offer general refurbishment. It is recommended to contact a painting professional for cosmetic scratch and paint chip repairs as they have the specialized materials for surface finishes.\"\n          }\n        ],\n        \"googleSearchResults\": [\n          \"https://paintbyhomepro.com\",\n          \"https://bayvalleypainting.com\",\n          \"https://diamondcertified.org\"\n        ]\n      }\n    }\n  }\n}\n```\n"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1778939015.550563
+        }
+      ],
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "GqC3zTlnb6hRS4vTH6TGeCpDXgH2"
+      },
+      "creation_timestamp": 1778939068.877307
+    }
+  ],
+  "creation_timestamp": 1778939063.858803
+}

@@ -162,5 +162,8 @@ shopping_agent = Agent(
     input_schema=DocsInput
 )
 
-__all__ = ["shopping_agent", "product_recommendations"]
+# ADK AgentEvaluator expects ``root_agent`` on ``*.agent`` modules.
+root_agent = shopping_agent
+
+__all__ = ["shopping_agent", "product_recommendations", "root_agent"]
 

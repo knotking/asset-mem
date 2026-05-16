@@ -511,7 +511,7 @@ def cost_estimation_diy_from_library(query: str) -> str:
 
 cost_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='cost_agent',
+    name="cost_agent",
     description='Provides AI-powered, location-aware DIY vs Service cost estimations and DIY-only estimates.',
     instruction=(
         'You are an AI-powered cost estimation agent that provides accurate, location-aware repair cost estimates. '
@@ -544,8 +544,12 @@ cost_agent = Agent(
     ],
 )
 
+# ADK AgentEvaluator expects ``root_agent`` on ``*.agent`` modules.
+root_agent = cost_agent
+
 __all__ = [
     "cost_agent",
+    "root_agent",
 ]
 
 
