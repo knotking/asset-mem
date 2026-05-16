@@ -157,7 +157,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         let thumbnailUrl: string | undefined;
         if (file.type === "video") {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const VideoThumbnails = await import("expo-video-thumbnails");
             const thumb = await VideoThumbnails.getThumbnailAsync(file.uri, {
               time: 1000,

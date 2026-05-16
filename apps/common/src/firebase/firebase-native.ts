@@ -8,6 +8,9 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import type { FirebaseApp } from "firebase/app";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { createLogger } from "../lib/logger";
+
+const authLog = createLogger("auth");
 
 // Initialize auth with proper persistence for React Native
 // This handles both initial load and hot module reloads
@@ -23,7 +26,7 @@ function initAuth(): Auth {
       persistence: getReactNativePersistence(AsyncStorage),
     });
   } catch (error: any) {
-    console.error("[auth] signIn.error", error);
+    authLog.error("auth.init.failed", undefined, error);
     // If already initialized (happens on hot reload), getAuth returns the existing instance
     // The persistence configuration from the first initialization is preserved
     if (error?.code === "auth/already-initialized") {

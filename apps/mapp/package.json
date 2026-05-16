@@ -7,7 +7,8 @@
     "android": "expo start -c --android",
     "ios": "expo start -c --ios",
     "web": "expo start -c --web",
-    "clean": "rm -rf .expo node_modules"
+    "clean": "rm -rf .expo node_modules",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@homeapp/common": "*",
@@ -86,6 +87,8 @@
     "web-streams-polyfill": "^4.2.0"
   },
   "devDependencies": {
+    "eslint": "^9",
+    "typescript-eslint": "^8",
     "@babel/core": "^7.26.0",
     "@rnx-kit/metro-config": "^2.1.2",
     "@rnx-kit/metro-resolver-symlinks": "^0.2.6",
