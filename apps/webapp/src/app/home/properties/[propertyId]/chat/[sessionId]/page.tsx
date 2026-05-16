@@ -338,6 +338,13 @@ export default function PropertyChatSessionPage() {
     }
   }, [primaryAgent, checkpoints, selectedCheckpoints.length]);
 
+  // Clear checkpoint context when Docs agent is selected
+  useEffect(() => {
+    if (primaryAgent === 'docs') {
+      setSelectedCheckpoints([]);
+    }
+  }, [primaryAgent]);
+
   const handleSend = useCallback(
     async (content: string) => {
       if (!user) return;
@@ -430,9 +437,12 @@ export default function PropertyChatSessionPage() {
           ? [userMessagePayload.file.gsURI]
           : [];
 
-        const checkpointIds = selectedCheckpoints
-          .map((cp) => cp.id)
-          .filter((id): id is string => !!id);
+        const checkpointIds =
+          primaryAgent === "checkpoint"
+            ? selectedCheckpoints
+                .map((cp) => cp.id)
+                .filter((id): id is string => !!id)
+            : [];
 
         const normalizedPrimaryAgent =
           primaryAgent === "docs" || primaryAgent === "checkpoint"
@@ -448,7 +458,10 @@ export default function PropertyChatSessionPage() {
           property_address: property?.address,
           property_id: property?.id, // Pass property_id for checkpoint queries
           primary_agent: normalizedPrimaryAgent,
-          checkpoint_optional_agents: selectedCheckpointOptionalAgents.length > 0 ? selectedCheckpointOptionalAgents : undefined,
+          checkpoint_optional_agents:
+            primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0
+              ? selectedCheckpointOptionalAgents
+              : undefined,
           checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined,
         };
 

@@ -146,10 +146,17 @@ export async function streamAgentResponse({
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
       diagnosis_uris: diagnosisURIs,
-      checkpoint_ids: checkpointIds.length > 0 ? checkpointIds : undefined, // Only include if checkpoints selected
       property_address: propertyAddress,
-      checkpoint_optional_agents: checkpointOptionalAgents,
     };
+
+    if (primaryAgent === 'checkpoint') {
+      if (checkpointIds.length > 0) {
+        requestBody.checkpoint_ids = checkpointIds;
+      }
+      if (checkpointOptionalAgents.length > 0) {
+        requestBody.checkpoint_optional_agents = checkpointOptionalAgents;
+      }
+    }
 
     // Backend no longer accepts analysis as an explicit primary agent.
     if (primaryAgent === 'docs' || primaryAgent === 'checkpoint') {
