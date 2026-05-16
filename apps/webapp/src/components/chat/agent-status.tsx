@@ -6,14 +6,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 import type { AgentStep } from '@/lib/types';
 import {
-  prettifyAgentName,
-  pickActiveAgentStep,
+  getAgentStepDisplayLabel,
+  isStepVisibleInStatusList,
   formatAgentStepDuration,
 } from '@/lib/agent-display';
+import { useDebouncedThinkingStatus } from '@/hooks/use-debounced-thinking-status';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 
 type Props = {
   steps: AgentStep[];
+  messageContent?: string | null;
 };
 
 const statusIcons: { [key in AgentStep['status']]: React.ReactNode } = {
@@ -33,21 +35,18 @@ function useTick(active: boolean): void {
   }, [active]);
 }
 
-function stepLabel(step: AgentStep): string {
-  return step.displayName ?? prettifyAgentName(step.name);
-}
-
-export function AgentStatus({ steps }: Props) {
-  const activeStep = pickActiveAgentStep(steps);
+export function AgentStatus({ steps, messageContent }: Props) {
+  const { header: headerText, preview: headerPreview } = useDebouncedThinkingStatus(steps, {
+    messageContent,
+  });
+  const activeStep = steps?.find(
+    (s) => s.status === 'executing' || s.status === 'transferredto',
+  );
   useTick(!!activeStep);
 
   if (!steps || steps.length === 0) return null;
 
-  // Hide raw "transferredto" rows from the list; the active ticker covers them.
-  const listSteps = steps.filter((step) => step.status !== 'transferredto');
-
-  const headerText = activeStep ? stepLabel(activeStep) : 'Thinking...';
-  const headerPreview = activeStep?.preview;
+  const listSteps = steps.filter(isStepVisibleInStatusList);
 
   return (
     <Card className="w-full max-w-md bg-background/50 shadow-md">
@@ -55,7 +54,7 @@ export function AgentStatus({ steps }: Props) {
         <CardTitle className="text-sm font-medium flex items-start gap-2">
           <Sparkles className="h-4 w-4 mt-0.5 shrink-0 animate-pulse text-primary" />
           <div className="flex flex-col">
-            <span className="bg-gradient-to-r from-primary via-muted-foreground to-primary bg-clip-text text-transparent animate-text-gradient">
+            <span className="display-title-gradient-text">
               {headerText}
             </span>
             {headerPreview && (
@@ -82,7 +81,7 @@ export function AgentStatus({ steps }: Props) {
                   <div className="flex items-start gap-2 min-w-0">
                     <div className="mt-0.5 shrink-0">{statusIcons[step.status]}</div>
                     <div className="min-w-0">
-                      <div className="truncate text-foreground">{stepLabel(step)}</div>
+                      <div className="truncate text-foreground">{getAgentStepDisplayLabel(step, steps)}</div>
                       {step.preview && (
                         <div className="text-xs text-muted-foreground truncate">
                           {step.preview}

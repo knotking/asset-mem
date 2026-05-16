@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Message,
@@ -16,6 +16,8 @@ import type {
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
 import { ChatInput } from "@/components/chat/chat-input";
+import { CheckpointAnalysisProgressFooter } from "@/components/chat/checkpoint-analysis-progress-footer";
+import { getInFlightCheckpointProgressFromMessages } from "@/lib/checkpoint-branch-progress";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter, useParams } from "next/navigation";
 import { db, storage } from "@/lib/firebase";
@@ -536,6 +538,11 @@ export default function PropertyChatSessionPage() {
     ]
   );
 
+  const branchProgress = useMemo(
+    () => getInFlightCheckpointProgressFromMessages(messages),
+    [messages]
+  );
+
   if (authLoading || isMessagesLoading || isDocsLoading) {
     return <ChatPageSkeleton />;
   }
@@ -555,6 +562,9 @@ export default function PropertyChatSessionPage() {
         />
       </main>
       <div className="shrink-0">
+        {branchProgress ? (
+          <CheckpointAnalysisProgressFooter progress={branchProgress} />
+        ) : null}
         <footer className="flex items-center p-4 bg-card border-t">
           <ChatInput
             onSend={handleSend}
