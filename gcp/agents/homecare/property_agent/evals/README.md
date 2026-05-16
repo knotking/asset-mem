@@ -54,5 +54,5 @@ uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.jso
 
 ## CI
 
-Use `make test-eval` on a schedule or pre-deploy only after all evalsets exist.
-PR pipelines should run `uv run pytest tests/ -v` (unit tests) without evals until goldens are stable.
+- **Pull requests:** GitHub Actions workflow `test-homecare-agent.yaml` runs `make test` (unit tests only).
+- **Evals:** Run `make test-eval` locally or add a separate nightly/pre-deploy workflow (live Vertex; not on every PR).

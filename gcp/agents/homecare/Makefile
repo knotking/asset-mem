@@ -73,7 +73,7 @@ test: ## Run unit tests only (excludes live ADK evals)
 	$(call print_header,Running Unit Tests)
 	$(PYTEST) tests/ -v
 
-test-all: ## Run unit tests and ADK evals (evals skip until golden files exist)
+test-all: ## Run unit tests and ADK evals
 	$(call print_header,Running All Tests)
 	$(PYTEST) tests/ eval/ -v
 

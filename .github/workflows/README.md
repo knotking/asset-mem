@@ -79,6 +79,11 @@ Deploys the homecare agent proxy to Cloud Run.
 
 See [README-homecare-agent-proxy.md](README-homecare-agent-proxy.md) for details.
 
+#### [test-homecare-agent.yaml](test-homecare-agent.yaml)
+Runs fast unit tests for the homecare ADK agent on pull requests (no Vertex / eval cost).
+
+See [README-homecare-agent-test.md](README-homecare-agent-test.md) for details.
+
 #### [deploy-homecare-agent.yaml](deploy-homecare-agent.yaml)
 Deploys the homecare reasoning engine.
 
