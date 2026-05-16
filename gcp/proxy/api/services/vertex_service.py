@@ -81,6 +81,13 @@ _CHECKPOINT_PROGRESS_AUTHORS = {
     "checkpoint_optional_agents_parallel_runner",
 }
 
+# Authors and payloads that emit a full checkpoint dual-format body — replace, never append.
+_CHECKPOINT_CONTENT_REPLACE_AUTHORS = _CHECKPOINT_PROGRESS_AUTHORS | {
+    "checkpoint_analysis_synthesis_agent",
+    "checkpoint_progress_synthesis_agent",
+    "doculink_agent",
+}
+
 _CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
     "coverage": "coverage_agent",
     "diy": "diy_agent",
@@ -205,6 +212,154 @@ _JSON_FENCE_RE = re.compile(
     r"```(?:json)?\s*(\{.*?\})\s*```",
     flags=re.DOTALL | re.IGNORECASE,
 )
+
+_CHECKPOINT_ANALYSIS_JSON_FENCE_RE = re.compile(
+    r"```json\s*(\{[\s\S]*?\})\s*```",
+    flags=re.IGNORECASE,
+)
+
+
+def _is_checkpoint_dual_format_content(text: str) -> bool:
+    """True when text looks like markdown + fenced analysis JSON from checkpoint agents."""
+    if not (text or "").strip() or "```json" not in text:
+        return False
+    return bool(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.search(text))
+
+
+def _should_replace_assistant_content(event: Dict[str, Any], event_text: str) -> bool:
+    """Checkpoint analysis bodies are full snapshots; later events must not append."""
+    author = event.get("author")
+    if isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS:
+        return True
+    return _is_checkpoint_dual_format_content(event_text)
+
+
+def _strip_user_query_echoes(content: str, user_query: str) -> str:
+    """Remove echoed user_query lines that checkpoint dual-format builders insert."""
+    content = (content or "").strip()
+    uq = (user_query or "").strip()
+    if not content or not uq:
+        return content
+    if content == uq:
+        return ""
+    if content.startswith(uq + "\n"):
+        content = content[len(uq) + 1 :].lstrip()
+    elif content.startswith(uq + "\n\n"):
+        content = content[len(uq) + 2 :].lstrip()
+    lines = content.splitlines()
+    filtered = [line for line in lines if line.strip() != uq]
+    return "\n".join(filtered).strip()
+
+
+def _keep_last_checkpoint_dual_format(content: str) -> str:
+    """When multiple analysis JSON blocks were concatenated, keep the last valid one."""
+    matches = list(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.finditer(content))
+    if len(matches) <= 1:
+        return content
+    for match in reversed(matches):
+        try:
+            parsed = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(parsed, dict) or "analysis" not in parsed:
+            continue
+        prior_ends = [m.end() for m in matches if m.end() <= match.start()]
+        markdown_start = prior_ends[-1] if prior_ends else 0
+        markdown_part = content[markdown_start : match.start()].strip()
+        json_text = json.dumps(parsed, ensure_ascii=False, indent=2)
+        if markdown_part:
+            return f"{markdown_part}\n\n```json\n{json_text}\n```\n"
+        return f"```json\n{json_text}\n```\n"
+    return content
+
+
+_CHECKPOINT_BRANCH_SECTION_KEYS = {
+    "coverage": "coverageResult",
+    "diy": "diyResults",
+    "service": "serviceResults",
+    "cost": "costEstimationResults",
+}
+
+
+def _strip_analysis_status_from_dual_format(content: str) -> str:
+    """Remove analysisStatus from completed checkpoint bodies (stale after synthesis)."""
+    if not _is_checkpoint_dual_format_content(content):
+        return content
+    match = None
+    for candidate in reversed(list(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.finditer(content))):
+        try:
+            parsed = json.loads(candidate.group(1))
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict) and isinstance(parsed.get("analysis"), dict):
+            match = candidate
+            parsed_root = parsed
+            break
+    else:
+        return content
+
+    analysis = dict(parsed_root["analysis"])
+    if "analysisStatus" not in analysis:
+        return content
+    analysis.pop("analysisStatus", None)
+    parsed_root = {**parsed_root, "analysis": analysis}
+    markdown_part = content[: match.start()].rstrip()
+    json_text = json.dumps(parsed_root, ensure_ascii=False, indent=2)
+    if markdown_part:
+        return f"{markdown_part}\n\n```json\n{json_text}\n```\n"
+    return f"```json\n{json_text}\n```\n"
+
+
+def _should_strip_analysis_status_on_finalize(
+    content: str,
+    agent_steps_by_name: Dict[str, Dict[str, Any]],
+    optional_agent_keys: List[str],
+) -> bool:
+    """Drop analysisStatus when the stream finished and branch work is done or sections exist."""
+    if not _is_checkpoint_dual_format_content(content):
+        return False
+    if optional_agent_keys:
+        expected = [
+            _CHECKPOINT_OPTIONAL_AGENT_BY_KEY[k]
+            for k in optional_agent_keys
+            if k in _CHECKPOINT_OPTIONAL_AGENT_BY_KEY
+        ]
+        if expected and all(
+            agent_steps_by_name.get(name, {}).get("status") == "completed"
+            for name in expected
+        ):
+            return True
+    data = _coerce_result_to_dict(content)
+    if not data:
+        return False
+    analysis = _unwrap_analysis(data)
+    if not isinstance(analysis, dict):
+        return False
+    status = analysis.get("analysisStatus")
+    if not isinstance(status, dict):
+        return False
+    for branch, section_key in _CHECKPOINT_BRANCH_SECTION_KEYS.items():
+        branch_status = status.get(branch)
+        if branch_status in ("pending", "running") and section_key in analysis:
+            return True
+    return all(st == "completed" for st in status.values())
+
+
+def _normalize_assistant_content_for_persist(
+    content: str,
+    user_query: str,
+    *,
+    agent_steps_by_name: Optional[Dict[str, Dict[str, Any]]] = None,
+    optional_agent_keys: Optional[List[str]] = None,
+    finalize: bool = False,
+) -> str:
+    if _is_checkpoint_dual_format_content(content):
+        content = _keep_last_checkpoint_dual_format(content)
+    if finalize and agent_steps_by_name is not None and _should_strip_analysis_status_on_finalize(
+        content, agent_steps_by_name, optional_agent_keys or []
+    ):
+        content = _strip_analysis_status_from_dual_format(content)
+    return _strip_user_query_echoes(content, user_query)
 
 
 def _coerce_result_to_dict(result: Any) -> Optional[Dict[str, Any]]:
@@ -886,7 +1041,7 @@ async def stream_agent_answers(
             logger.warning("Failed to initialize Firestore stream persistence: %s", e, exc_info=True)
             db_client = None
 
-    def persist_chat_message_state() -> None:
+    def persist_chat_message_state(*, finalize: bool = False) -> None:
         if not assistant_message_ref:
             return
         try:
@@ -894,7 +1049,13 @@ async def stream_agent_answers(
             assistant_message_ref.set(
                 {
                     "role": "assistant",
-                    "content": assistant_content_accumulated,
+                    "content": _normalize_assistant_content_for_persist(
+                        assistant_content_accumulated,
+                        user_query,
+                        agent_steps_by_name=agent_steps_by_name,
+                        optional_agent_keys=checkpoint_optional_agents,
+                        finalize=finalize,
+                    ),
                     "agentSteps": steps_list,
                     "primaryAgent": primary_agent,
                     "updatedAt": firestore.SERVER_TIMESTAMP,
@@ -958,7 +1119,7 @@ async def stream_agent_answers(
         ):
             event_text = extract_text_from_event(event)
             if event_text:
-                if _is_checkpoint_progress_event(event, event_text):
+                if _should_replace_assistant_content(event, event_text):
                     assistant_content_accumulated = event_text
                 else:
                     assistant_content_accumulated += event_text
@@ -1047,7 +1208,7 @@ async def stream_agent_answers(
                     "displayName": _display_name_for("agent_stream"),
                 }
             )
-        persist_chat_message_state()
+        persist_chat_message_state(finalize=not stream_failed)
         persist_user_token_usage(user_id, usage_running)
 
         
