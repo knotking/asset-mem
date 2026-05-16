@@ -326,9 +326,11 @@ make deploy
 
 ### Unit tests (`tests/`)
 
-`make test` runs pytest over this directory (by default that includes both `tests/` and `eval/`). To run **only** fast unit tests under `tests/`:
+`make test` runs **only** fast unit tests under `tests/` (no live ADK evals). For unit tests + evals:
 
 ```bash
+make test-all
+# or
 uv run pytest tests/ -v
 ```
 
@@ -394,58 +396,33 @@ Agent Response:
 
 ## Evaluating the Agent
 
+Golden eval sets are **recorded from `adk web`** and stored under `property_agent/evals/*.evalset.json`. See **`property_agent/evals/README.md`** for the recording checklist.
+
 ### Using Makefile (Recommended)
 
 From the `gcp/agents/homecare` directory:
 
 ```bash
-# Run all evaluation tests
-make test-eval
-
-# Run specific test categories
-make test-agent      # Analysis agent tests
-make test-products   # Product recommendation tests
-make test-service    # Service provider tests
-make test-full       # Full conversation tests
+make test-eval              # all eval tests (skip until golden files exist)
+make test-eval-routing      # doculink_routing.evalset.json
+make test-eval-docs         # doculink_docs.evalset.json
+make test-eval-checkpoint   # checkpoint_optional_agents.evalset.json
+make test-eval-cost         # cost_agent.evalset.json
+make test-eval-shopping     # shopping_agent.evalset.json
+make test-eval-service      # service_agent.evalset.json
 ```
 
-### Using UV Directly
-
-The evaluation can be run using UV:
+### Using UV / ADK CLI
 
 ```bash
-uv run pytest eval
+uv run pytest eval/ -v
+
+uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.json \
+  --config_file_path=property_agent/evals/test_config.json \
+  --print_detailed_results
 ```
 
-Or if your virtual environment is already activated:
-
-```bash
-pytest eval
-```
-
-### Evaluation Process
-
-The evaluation framework consists of three key components:
-
-1. **test_eval.py**: The main test script that orchestrates the evaluation process. It uses the `AgentEvaluator` from Google ADK to run the agent against a test dataset and assess its performance based on predefined criteria.
-
-2. **conversation.test.json**: Contains a sequence of test cases structured as a conversation. Each test case includes:
-   - A user query (e.g., questions about Alphabet's 10-K report)
-   - Expected tool usage (which tools the agent should call and with what parameters)
-   - Reference answers (ideal responses the agent should provide)
-
-3. **test_config.json**: Defines evaluation criteria and thresholds:
-   - `tool_trajectory_avg_score`: Measures how well the agent uses the appropriate tools
-   - `response_match_score`: Measures how closely the agent's responses match the reference answers
-
-When you run the evaluation, the system:
-1. Loads the test cases from conversation.test.json
-2. Sends each query to the agent
-3. Compares the agent's tool usage against expected tool usage
-4. Compares the agent's responses against reference answers
-5. Calculates scores based on the criteria in test_config.json
-
-This evaluation helps ensure the agent correctly leverages the RAG capabilities to retrieve relevant information and generates accurate responses with proper citations.
+Pass thresholds live in `property_agent/evals/test_config.json` (`tool_trajectory_avg_score`, `response_match_score`).
 
 ## Deploying the Agent
 
