@@ -7,8 +7,8 @@ Live agent evaluations use **web-recorded** golden files under `property_agent/e
 ```bash
 cd gcp/agents/homecare
 make setup
-uv run adk web    # record golden sessions — see property_agent/evals/README.md
-make test-eval    # skips until each evalset file exists
+uv run adk web    # record sessions — see property_agent/evals/README.md
+make test-eval    # run all eval tests (live Vertex/Gemini)
 ```
 
 ## Makefile targets
@@ -27,8 +27,10 @@ Pass thresholds: `property_agent/evals/test_config.json`.
 
 ## Unit tests vs evals
 
-- **`make test`** — `tests/` only (mocked, CI-safe; runs on PR via `test-homecare-agent.yaml`)
-- **`make test-all`** — unit tests + evals
-- **`make test-eval`** — ADK evals only (Vertex/Gemini; costs tokens)
+| Command | What runs |
+|---------|-----------|
+| `make test` | `tests/` only — mocked, CI on every PR |
+| `make test-all` | unit tests + ADK evals |
+| `make test-eval` | ADK evals only (Vertex/Gemini; costs tokens) |
 
-Recording instructions: **`property_agent/evals/README.md`**.
+Recording and updating goldens: **`property_agent/evals/README.md`**.

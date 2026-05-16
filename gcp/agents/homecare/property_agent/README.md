@@ -2,7 +2,7 @@
 
 The **property agent** (`root_agent` in `agent.py`, ADK name `property_agent`) is the Home Care orchestrator. It delegates almost all work to **DocuLink** (`doculink_agent`), which performs checkpoint retrieval, user-document RAG, or general knowledge-base lookup. Optional **checkpoint analysis** (coverage, DIY, service, cost) runs inside the checkpoint path when `checkpoint_optional_agents` is set.
 
-There is **no separate `analysis_agent` sub-agent under the root** in the current tree; multimodal “analysis” style flows are represented elsewhere (e.g. eval datasets may still reference legacy `tool_name` values). The canonical routing text lives in `prompts.py` (`root_agent_instructions`, `doculink_agent_system_instruction`).
+The canonical routing text lives in `prompts.py` (`root_agent_instructions`, `doculink_agent_system_instruction`). Regression goldens are ADK evalsets under `property_agent/evals/`.
 
 ## Architecture (current)
 
