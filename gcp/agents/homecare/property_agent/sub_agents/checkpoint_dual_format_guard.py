@@ -1293,6 +1293,21 @@ def synthesis_after_model_callback(
             )
             text = enriched
 
+    analysis = extract_analysis_object_from_dual_format(text)
+    if isinstance(analysis, dict) and analysis.get("analysisStatus"):
+        analysis = dict(analysis)
+        analysis.pop("analysisStatus", None)
+        text = rebuild_dual_format_from_analysis(
+            analysis,
+            markdown_source=text,
+            user_query=(
+                callback_context.state.get("user_query")
+                if hasattr(callback_context.state, "get")
+                else ""
+            )
+            or "",
+        )
+
     record_synthesis_ms(callback_context.state)
     stash_checkpoint_dual_format_in_state(callback_context.state, text)
 
