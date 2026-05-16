@@ -6,6 +6,9 @@ import {
   FirebaseOptions,
 } from "firebase/app";
 import Constants from "expo-constants";
+import { createLogger } from "../lib/logger";
+
+const firebaseLog = createLogger("firebase");
 
 type Environment = "dev" | "staging" | "prod";
 
@@ -54,7 +57,7 @@ const getFirebaseConfig = (): FirebaseConfigWithClient => {
   const config = firebaseConfigs[env];
 
   if (!config) {
-    console.warn(`[firebase] Unknown environment: ${env}, falling back to dev`);
+    firebaseLog.warn("unknownEnvironment", { env });
     return firebaseConfigs.dev;
   }
 

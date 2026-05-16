@@ -149,6 +149,20 @@ In Chrome DevTools or Metro, filter by e.g. `[agent]` or `[checkpoint]`.
 - Prefer `truncateId()` for session/property/checkpoint IDs in metadata.
 - `parseAgentErrorCode()` helps classify quota errors without logging full response bodies in user-facing paths (errors still go to `error` with `cause` message only when using the logger’s `err` argument).
 
+## ESLint guardrails
+
+`no-console` is enforced in application code. Use `createLogger()` instead of raw `console.*`.
+
+| Package | Config | Lint command |
+|---------|--------|--------------|
+| Webapp | `apps/webapp/eslint.config.mjs` | `cd apps/webapp && npm run lint` |
+| Mapp | `apps/mapp/eslint.config.js` | `cd apps/mapp && npm run lint` |
+| Common | `apps/common/eslint.config.mjs` | `cd apps/common && npm run lint` |
+
+**Allowed `console` usage:** only inside each package’s `lib/logger.ts` (implementation of the logger). Webapp `scripts/**` are ignored by ESLint.
+
+Configs are intentionally **minimal** (only `no-console` on TypeScript sources). They do not enable full `eslint-config-next` / `eslint-config-expo` rule sets yet, to avoid unrelated legacy violations. Use `npm run typecheck` in webapp for TypeScript checks.
+
 ## Related code
 
 - Agent streaming: `apps/webapp/src/lib/api-agent.ts`, `apps/mapp/lib/api.ts`

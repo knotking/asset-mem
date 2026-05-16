@@ -1,4 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
+import { createLogger } from "@/lib/logger";
+
+const firebaseLog = createLogger("firebase");
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
@@ -40,7 +43,7 @@ const getFirebaseConfig = (): FirebaseOptions => {
   const config = firebaseConfigs[env];
 
   if (!config) {
-    console.warn(`[firebase] Unknown environment: ${env}, falling back to dev`);
+    firebaseLog.warn("unknownEnvironment", { env });
     return firebaseConfigs.dev;
   }
 
