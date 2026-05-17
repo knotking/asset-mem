@@ -44,7 +44,10 @@ See `doculink_agent_system_instruction()` in `prompts.py`: priority among `check
 
 | Path | Role |
 |------|------|
-| `agent.py` | `doculink_agent`, `root_agent` |
+| `agent.py` | `doculink_agent`, `root_agent`, `app` (ADK session compaction) |
+| `app_config.py` | `property_app` + `EventsCompactionConfig` (env-tunable) |
+| `vertex_adk_app.py` | `HomecareAdkApp` for Agent Engine deploy |
+| `memory_bank.py` | Memory Bank ingest (`ingest_events`) + env toggles |
 | `prompts.py` | Root + DocuLink system instructions |
 | `agent_inputs.py` | Pydantic schemas |
 | `sub_agents/checkpoint_agent/` | Retrieval + optional `checkpoint_analysis_agent` |
