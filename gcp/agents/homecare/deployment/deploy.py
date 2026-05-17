@@ -21,8 +21,7 @@ import tomllib
 import vertexai
 from dotenv import load_dotenv, set_key
 from vertexai import agent_engines
-from vertexai.preview.reasoning_engines import AdkApp
-
+from property_agent.vertex_adk_app import HomecareAdkApp
 from property_agent.agent import root_agent
 
 # Distributions present in pyproject.toml that should NOT be sent to the
@@ -82,9 +81,9 @@ def update_env_file(agent_engine_id, env_file_path):
         print(f"Error updating .env file: {e}")
 
 logger.info("deploying app...")
-app = AdkApp(
+app = HomecareAdkApp(
     agent=root_agent,
-    enable_tracing=True
+    enable_tracing=True,
 )
 
 def main():

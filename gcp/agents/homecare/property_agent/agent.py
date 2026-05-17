@@ -9,8 +9,17 @@ from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools.preload_memory_tool import preload_memory_tool
 
 from .agent_inputs import DiagnosisInput, DocsInput
+from .memory_bank import (
+    DOCULINK_AGENT_NAME,
+    PROPERTY_AGENT_NAME,
+    ingest_invocation_to_memory_bank,
+    invocation_used_doculink,
+    memory_preload_enabled,
+    resolve_property_id,
+)
 from .logging_context import (
     bind_auth_uid,
     bind_correlation_id,
@@ -61,6 +70,9 @@ def before_model_auth_uid(
     callback_context: Context, llm_request: LlmRequest
 ) -> None:
     _ = llm_request
+    property_id = resolve_property_id(callback_context.state)
+    if property_id:
+        callback_context.state.setdefault("property_id", property_id)
     uid = _uid_from_context(callback_context)
     cid = _correlation_from_context(callback_context)
     bind_auth_uid(uid)
@@ -104,6 +116,46 @@ def after_tool_auth_uid(
     unbind_correlation_id()
     unbind_auth_uid()
     return None
+
+
+async def doculink_after_agent_memory(
+    callback_context: CallbackContext,
+) -> None:
+    await ingest_invocation_to_memory_bank(
+        callback_context,
+        agent_name=DOCULINK_AGENT_NAME,
+        include_checkpoint_facts=True,
+    )
+
+
+async def property_agent_after_agent_memory(
+    callback_context: CallbackContext,
+) -> None:
+    invocation = callback_context._invocation_context
+    if invocation_used_doculink(
+        invocation.session.events, invocation.invocation_id
+    ):
+        return
+    await ingest_invocation_to_memory_bank(
+        callback_context,
+        agent_name=PROPERTY_AGENT_NAME,
+        include_checkpoint_facts=False,
+    )
+
+
+def _doculink_tools() -> list:
+    tools = [
+        AgentTool(user_docs_agent),
+        AgentTool(knowledge_base_agent),
+        _LastNonEmptyTextAgentTool(
+            checkpoint_agent,
+            state_fallback_key="checkpoint_result",
+            parallel_state_key="checkpoint_parallel_results",
+        ),
+    ]
+    if memory_preload_enabled():
+        tools.append(preload_memory_tool)
+    return tools
 
 
 def doculink_after_tool_combined(
@@ -171,25 +223,22 @@ doculink_agent = Agent(
     description=("Agent that manages and executes document retrieval-related tasks."),
     instruction=doculink_agent_system_instruction(),
     input_schema=DocsInput,
-    tools=[
-        AgentTool(user_docs_agent),
-        AgentTool(knowledge_base_agent),
-        _LastNonEmptyTextAgentTool(
-            checkpoint_agent,
-            state_fallback_key="checkpoint_result",
-            parallel_state_key="checkpoint_parallel_results",
-        ),
-    ],
+    tools=_doculink_tools(),
     disallow_transfer_to_parent=True,
     before_model_callback=before_model_auth_uid,
     after_model_callback=doculink_after_model_combined,
     before_tool_callback=before_tool_callback,
     after_tool_callback=doculink_after_tool_combined,
+    after_agent_callback=doculink_after_agent_memory,
     sub_agents=[checkpoint_progress_agent],
 )
 
 # Note: ADK doesn't have before_sub_agent callback, so we rely on property_id being passed
 # through DocsInput schema when root agent delegates to doculink_agent
+
+def _root_tools() -> list:
+    return [preload_memory_tool] if memory_preload_enabled() else []
+
 
 root_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
@@ -197,7 +246,12 @@ root_agent = Agent(
     description=("Agent that manages and executes homecare-related tasks."),
     instruction=root_agent_instructions(),
     input_schema=DiagnosisInput,
+    tools=_root_tools(),
     sub_agents=[doculink_agent],
     before_model_callback=before_model_auth_uid,
     after_model_callback=after_model_auth_uid,
+    after_agent_callback=property_agent_after_agent_memory,
 )
+
+# ADK Web / ``adk run`` use ``app`` when present so post-invocation session compaction runs.
+from property_agent.app_config import property_app as app  # noqa: E402
