@@ -1,0 +1,10 @@
+{
+  "rubrics": [
+    {
+      "rubric_id": "cost_estimates_present",
+      "rubric_content": {
+        "text_property": "The response includes cost estimate information with DIY and/or professional service options (dollar ranges, costEstimates, or costEstimationResults)."
+      }
+    }
+  ]
+}

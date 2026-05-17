@@ -1,0 +1,10 @@
+{
+  "rubrics": [
+    {
+      "rubric_id": "diy_guidance_present",
+      "rubric_content": {
+        "text_property": "The response includes DIY guidance such as repair steps, YouTube video links or titles, and/or recommended products (diyResults, diySteps, or an equivalent section)."
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "rubrics": [
+    {
+      "rubric_id": "service_providers_present",
+      "rubric_content": {
+        "text_property": "The response includes local service provider information such as company names, phone numbers, or a serviceResults / localPros section."
+      }
+    }
+  ]
+}

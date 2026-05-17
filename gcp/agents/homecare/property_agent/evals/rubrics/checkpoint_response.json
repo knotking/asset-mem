@@ -1,0 +1,22 @@
+{
+  "rubrics": [
+    {
+      "rubric_id": "dual_format_json",
+      "rubric_content": {
+        "text_property": "The response includes a fenced ```json code block containing a JSON object (dual-format checkpoint analysis output)."
+      }
+    },
+    {
+      "rubric_id": "checkpoint_summary_in_json",
+      "rubric_content": {
+        "text_property": "The JSON block includes checkpoint analysis fields such as checkpointSummary (e.g. checkpointsAnalyzed, issuesDetected, overallCondition, or locations) under an \"analysis\" key or equivalent structure."
+      }
+    },
+    {
+      "rubric_id": "addresses_user_query",
+      "rubric_content": {
+        "text_property": "The response addresses the user's property checkpoint or home-care request in natural language markdown, not only raw JSON."
+      }
+    }
+  ]
+}

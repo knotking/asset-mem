@@ -22,7 +22,16 @@ Select **`property_agent`** in the UI.
 4. Save under this directory with the exact filename below.
 5. Commit the `.evalset.json` file.
 
-Pass thresholds: `test_config.json` (`tool_trajectory_avg_score` ≥ 0.8, `response_match_score` ≥ 0.6).
+Pass thresholds depend on the eval (see `eval/rubric_criteria.py`):
+
+| Eval | Criteria |
+|------|----------|
+| `doculink_docs` | `test_config.json`: tool trajectory (IN_ORDER) ≥ 0.8, ROUGE ≥ 0.6 |
+| `doculink_routing` | Tool trajectory + `rubric_based_tool_use_quality_v1` (transfer to doculink) |
+| `checkpoint_*` | Tool trajectory + `rubric_based_final_response_quality_v1` (dual-format rubrics) + `final_response_match_v2` |
+| `cost` / `shopping` / `service` | Checkpoint rubrics plus branch rubrics in `property_agent/evals/rubrics/branch_*.json` |
+
+`evaluate_full_response` is set on rubric criteria for forward compatibility when ADK merges [PR #5316](https://github.com/google/adk-python/pull/5316).
 
 ## Golden files
 
