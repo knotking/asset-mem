@@ -99,6 +99,20 @@ test-eval-shopping: ## Eval: shopping_agent.evalset.json
 test-eval-service: ## Eval: service_agent.evalset.json
 	$(PYTEST) eval/test_eval.py::test_eval_service_agent -v
 
+test-simulation: ## Live user-simulation evals (RUN_ADK_SIMULATION_TESTS=1, Vertex)
+	$(call print_header,Running Simulation Evals)
+	RUN_ADK_SIMULATION_TESTS=1 $(PYTEST) eval/test_simulation.py -v
+
+CONFORMANCE_DIR := property_agent/conformance
+
+conformance-record: ## Record conformance YAML (requires `uv run adk web` on :8000)
+	$(call print_header,Recording Conformance Fixtures)
+	uv run adk conformance record $(CONFORMANCE_DIR) none
+
+conformance-test: ## Replay conformance tests (requires recordings + adk web)
+	$(call print_header,Running Conformance Tests)
+	uv run adk conformance test $(CONFORMANCE_DIR) --mode replay --streaming-mode none
+
 deploy: ## Deploy the agent to Vertex AI
 	$(call print_header,Deploying Agent)
 	@if [ ! -f .env ]; then \

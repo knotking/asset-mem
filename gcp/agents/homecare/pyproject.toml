@@ -44,6 +44,7 @@ packages = ["property_agent"]
 [tool.pytest.ini_options]
 markers = [
     "integration_external: live YouTube / SerpAPI (opt-in via RUN_EXTERNAL_DIY_SEARCH_TESTS=1)",
+    "integration_simulation: live ADK user-simulation evals (opt-in via RUN_ADK_SIMULATION_TESTS=1)",
 ]
 
 [build-system]
