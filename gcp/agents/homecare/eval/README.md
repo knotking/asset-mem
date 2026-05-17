@@ -34,3 +34,7 @@ Pass thresholds: `property_agent/evals/test_config.json`.
 | `make test-eval` | ADK evals only (Vertex/Gemini; costs tokens) |
 
 Recording and updating goldens: **`property_agent/evals/README.md`**.
+
+## Legacy `eval/data/`
+
+Removed. Older hand-authored `*.test.json` fixtures under `eval/data/` are replaced by ADK web-recorded `property_agent/evals/*.evalset.json`. Cost-agent logic is covered by unit tests in `tests/test_cost_agent.py` and `tests/test_diy_agent.py`.

@@ -198,7 +198,8 @@ docs/costing/
 
 ### Code Location
 - **Cost Agent**: `gcp/agents/homecare/property_agent/sub_agents/cost_agent/`
-- **Tests**: `gcp/agents/homecare/eval/data/cost_estimation*.test.json`
+- **E2E eval**: `gcp/agents/homecare/property_agent/evals/cost_agent.evalset.json`
+- **Unit tests**: `gcp/agents/homecare/tests/test_cost_agent.py`
 - **Documentation**: `docs/costing/`
 
 ### Getting Help
