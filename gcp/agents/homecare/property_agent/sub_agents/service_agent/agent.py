@@ -13,14 +13,27 @@ from ...model_config import GLOBAL_GEMINI_MODEL
 logger = logging.getLogger(__name__)
 load_dotenv()
 
-_serpapi_wrapper = SerpAPIWrapper(
-    serpapi_api_key=os.environ.get("SERP_API_KEY"),
-)
+_serpapi_wrapper: SerpAPIWrapper | None = None
+
+
+def _get_serpapi_wrapper() -> SerpAPIWrapper | None:
+    global _serpapi_wrapper
+    if _serpapi_wrapper is not None:
+        return _serpapi_wrapper
+    api_key = os.environ.get("SERP_API_KEY")
+    if not api_key:
+        return None
+    _serpapi_wrapper = SerpAPIWrapper(serpapi_api_key=api_key)
+    return _serpapi_wrapper
 
 
 async def serpapi_search(query: str) -> str:
     """Searches for local business listings and service providers (worker thread; avoids blocking the event loop)."""
-    return await asyncio.to_thread(_serpapi_wrapper.run, query)
+    wrapper = _get_serpapi_wrapper()
+    if wrapper is None:
+        logger.info("serpapi_search: skip reason=no_api_key query_len=%d", len(query or ""))
+        return "Service provider search not available (missing API key)."
+    return await asyncio.to_thread(wrapper.run, query)
 
 
 service_agent = Agent(
