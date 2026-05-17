@@ -10,6 +10,7 @@ import os
 
 from google.cloud import pubsub_v1
 
+from common.observability.logging_context import pubsub_payload_with_correlation
 from schemas.document import ExtractDocInfoRequest
 
 logger = logging.getLogger(__name__)
@@ -33,13 +34,13 @@ def publish_document_analysis(request: ExtractDocInfoRequest) -> str:
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(PROJECT_ID, DOCUMENT_ANALYSIS_TOPIC)
 
-    payload = {
+    payload = pubsub_payload_with_correlation({
         "docId": request.docId,
         "userId": request.userId,
         "docUrl": request.docUrl,
         "contentType": request.contentType,
         "source": "document-analysis-api",
-    }
+    })
 
     data = json.dumps(payload).encode("utf-8")
     future = publisher.publish(topic_path, data)

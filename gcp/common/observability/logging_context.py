@@ -79,6 +79,20 @@ def correlation_id_scope(correlation_id: Optional[str]) -> Iterator[None]:
         unbind_correlation_id()
 
 
+@contextmanager
+def request_context_scope(
+    uid: Optional[str], correlation_id: Optional[str]
+) -> Iterator[None]:
+    """Bind auth uid and correlation id for workers / nested handlers."""
+    bind_auth_uid(uid)
+    bind_correlation_id(correlation_id)
+    try:
+        yield
+    finally:
+        unbind_correlation_id()
+        unbind_auth_uid()
+
+
 def bind_auth_uid(uid: Optional[str]) -> None:
     """Push a uid onto the logging context (nested-safe)."""
     if uid is not None and not isinstance(uid, str):
@@ -106,6 +120,34 @@ def auth_uid_scope(uid: Optional[str]) -> Iterator[None]:
         yield
     finally:
         unbind_auth_uid()
+
+
+def extract_correlation_id_from_json_dict(data: Any) -> Optional[str]:
+    """Resolve correlation id from Pub/Sub payloads or agent input JSON."""
+    if not isinstance(data, dict):
+        return None
+    for key in ("correlation_id", "correlationId", "request_id", "requestId"):
+        val = data.get(key)
+        if isinstance(val, str):
+            candidate = val.strip()
+            if candidate and _CORRELATION_ID_RE.match(candidate):
+                return candidate
+    for nest_key in ("metadata", "context", "payload"):
+        sub = data.get(nest_key)
+        if isinstance(sub, dict):
+            found = extract_correlation_id_from_json_dict(sub)
+            if found:
+                return found
+    return None
+
+
+def pubsub_payload_with_correlation(payload: dict[str, Any]) -> dict[str, Any]:
+    """Copy *payload* and attach ``correlation_id`` from the current HTTP/worker context."""
+    out = dict(payload)
+    cid = get_correlation_id()
+    if cid and "correlation_id" not in out and "correlationId" not in out:
+        out["correlation_id"] = cid
+    return out
 
 
 def extract_auth_uid_from_json_dict(data: Any) -> Optional[str]:

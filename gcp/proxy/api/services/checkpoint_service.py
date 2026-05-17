@@ -15,6 +15,10 @@ from google.cloud import pubsub_v1
 from google import genai
 from google.genai import types
 
+from common.observability.logging_context import (
+    get_correlation_id,
+    pubsub_payload_with_correlation,
+)
 from schemas.checkpoint import AnalyzeCheckpointRequest, CheckpointComparisonResponse
 
 logger = logging.getLogger(__name__)
@@ -55,16 +59,16 @@ def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(PROJECT_ID, CHECKPOINT_ANALYSIS_TOPIC)
         
-        payload = {
+        payload = pubsub_payload_with_correlation({
             "imageUrl": request.imageUrl,
             "contentType": request.contentType,
             "location": request.location,
             "checkpointId": request.checkpointId,
             "userId": request.userId,
             "propertyId": request.propertyId,
-            "source": "checkpoint-analysis-api"
-        }
-        
+            "source": "checkpoint-analysis-api",
+        })
+
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)
         message_id = future.result()
@@ -103,8 +107,10 @@ def compare_checkpoints(
         raise Exception("Google Gen AI SDK not initialized")
 
     t0 = time.monotonic()
+    cid = get_correlation_id()
     logger.debug(
-        "compare_checkpoints start image1_len=%d image2_len=%d location_set=%s",
+        "compare_checkpoints start correlation_id=%s image1_len=%d image2_len=%d location_set=%s",
+        cid or "-",
         len(image1_url or ""),
         len(image2_url or ""),
         bool((location or "").strip()),

@@ -11,7 +11,14 @@ from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
 from .agent_inputs import DiagnosisInput, DocsInput
-from .logging_context import bind_auth_uid, install_auth_uid_logging, unbind_auth_uid
+from .logging_context import (
+    bind_auth_uid,
+    bind_correlation_id,
+    extract_correlation_id_from_json_dict,
+    install_auth_uid_logging,
+    unbind_auth_uid,
+    unbind_correlation_id,
+)
 from .model_config import GLOBAL_GEMINI_MODEL
 from .prompts import doculink_agent_system_instruction, root_agent_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
@@ -39,17 +46,31 @@ def _uid_from_context(ctx: Context) -> Optional[str]:
     return uid
 
 
+def _correlation_from_context(ctx: Context) -> Optional[str]:
+    session = getattr(ctx, "session", None)
+    if session is not None:
+        state = getattr(session, "state", None)
+        if isinstance(state, dict):
+            cid = extract_correlation_id_from_json_dict(state)
+            if cid:
+                return cid
+    return None
+
+
 def before_model_auth_uid(
     callback_context: Context, llm_request: LlmRequest
 ) -> None:
     _ = llm_request
     uid = _uid_from_context(callback_context)
+    cid = _correlation_from_context(callback_context)
     bind_auth_uid(uid)
+    bind_correlation_id(cid)
     logger.debug(
-        "ADK before_model agent_name=%s invocation_id=%s uid_bound=%s",
+        "ADK before_model agent_name=%s invocation_id=%s uid_bound=%s correlation_id=%s",
         getattr(callback_context, "agent_name", None),
         getattr(callback_context, "invocation_id", None),
         bool(uid),
+        cid or "-",
     )
 
 
@@ -57,6 +78,7 @@ def after_model_auth_uid(
     callback_context: Context, llm_response: LlmResponse
 ) -> None:
     _ = (callback_context, llm_response)
+    unbind_correlation_id()
     unbind_auth_uid()
 
 
@@ -79,6 +101,7 @@ def after_tool_auth_uid(
     tool_response: dict,
 ) -> Optional[dict]:
     _ = (tool, args, tool_context, tool_response)
+    unbind_correlation_id()
     unbind_auth_uid()
     return None
 
@@ -113,6 +136,8 @@ def before_tool_callback(
 ):
     bind_auth_uid(tool_context._invocation_context.session.user_id)
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
+    cid = extract_correlation_id_from_json_dict(tool_context.state)
+    bind_correlation_id(cid)
     property_id = args.get("property_id")
     tool_name = getattr(tool, "name", None) or type(tool).__name__
     arg_keys = sorted(args.keys()) if isinstance(args, dict) else []

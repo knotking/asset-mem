@@ -38,15 +38,18 @@ def get_user_gcs_files(bucket_name: str, folder_name: str, user_id: str) -> list
 
 def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
     from google.cloud import pubsub_v1
+
+    from common.observability.logging_context import pubsub_payload_with_correlation
+
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
 
-    event = {
+    event = pubsub_payload_with_correlation({
         "gcs_urls": gcs_urls,
         "user_id": user_id,
         "user_query": user_query,
-        "source": source  # Add source parameter
-    }
+        "source": source,
+    })
 
     data = json.dumps(event).encode("utf-8")
     future = publisher.publish(topic_path, data)

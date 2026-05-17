@@ -6,10 +6,8 @@ import firebase_admin
 from firebase_admin import firestore
 
 from common.gemini_document_extract import extract_document_fields
-from common.observability.logging_context import (
-    auth_uid_scope,
-    install_auth_uid_logging_if_needed,
-)
+from common.observability.logging_context import install_auth_uid_logging_if_needed
+from common.observability.pubsub_context import worker_request_scope
 from common.token import (
     TokenQuotaExceeded,
     accumulate_google_genai_generate_response,
@@ -36,7 +34,7 @@ def pubsub_document_analysis(request, context):
         logger.warning("Missing required fields in payload: %s", payload)
         return
 
-    with auth_uid_scope(user_id):
+    with worker_request_scope(payload):
         logger.debug(
             "document_analysis start docId=%s content_type=%s docUrl_len=%s",
             doc_id,

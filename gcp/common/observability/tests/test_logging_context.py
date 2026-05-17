@@ -5,8 +5,12 @@ from common.observability.logging_context import (
     bind_auth_uid,
     correlation_id_scope,
     extract_auth_uid_from_json_dict,
+    extract_correlation_id_from_json_dict,
+    get_correlation_id,
     install_auth_uid_logging,
     parse_json_auth_uid_from_body,
+    pubsub_payload_with_correlation,
+    request_context_scope,
     resolve_correlation_id,
     unbind_auth_uid,
 )
@@ -64,6 +68,32 @@ def test_resolve_correlation_id():
     generated = resolve_correlation_id(None)
     assert len(generated) == 36
     assert resolve_correlation_id("bad id with spaces") != "bad id with spaces"
+
+
+def test_extract_correlation_id_from_json_dict():
+    assert extract_correlation_id_from_json_dict({"correlation_id": "req-1"}) == "req-1"
+    assert extract_correlation_id_from_json_dict({"correlationId": "req-2"}) == "req-2"
+    assert (
+        extract_correlation_id_from_json_dict({"metadata": {"request_id": "req-3"}})
+        == "req-3"
+    )
+    assert extract_correlation_id_from_json_dict({"correlation_id": "bad id"}) is None
+
+
+def test_pubsub_payload_with_correlation():
+    with correlation_id_scope("parent-req"):
+        out = pubsub_payload_with_correlation({"userId": "u1"})
+    assert out["correlation_id"] == "parent-req"
+    assert out["userId"] == "u1"
+
+
+def test_request_context_scope():
+    with request_context_scope("user-9", "req-9"):
+        from common.observability import logging_context as lc
+
+        assert lc.get_auth_uid() == "user-9"
+        assert lc.get_correlation_id() == "req-9"
+    assert get_correlation_id() is None
 
 
 def test_correlation_id_scope_log_record():
