@@ -188,3 +188,7 @@ def emit_checkpoint_request_timing(
         " ".join(parts),
         source,
     )
+
+    from ..checkpoint_timing_metrics import emit_checkpoint_timing_metrics
+
+    emit_checkpoint_timing_metrics(payload, source=source, state=state)
