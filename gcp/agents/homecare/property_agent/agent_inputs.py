@@ -8,6 +8,10 @@ DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
+    correlation_id: Optional[str] = Field(
+        default=None,
+        description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
+    )
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).")
@@ -49,6 +53,10 @@ class DiagnosisInput(BaseModel):
 
 class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
+    correlation_id: Optional[str] = Field(
+        default=None,
+        description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
+    )
     context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for DocuLink Agent.")
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).")
     property_address: Optional[str] = Field(default=None, description="The property address.")

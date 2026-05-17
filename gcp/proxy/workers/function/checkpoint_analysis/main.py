@@ -28,9 +28,10 @@ from common.observability.logging_helper import log_event, log_exception
 from common.observability.base import get_tracer
 from common.observability.metrics_helper import record_histogram
 from common.observability.logging_context import (
-    auth_uid_scope,
     install_auth_uid_logging_if_needed,
+    pubsub_payload_with_correlation,
 )
+from common.observability.pubsub_context import worker_request_scope
 from common.token import (
     TokenQuotaExceeded,
     check_token_quota_or_raise,
@@ -60,12 +61,12 @@ def _publish_metrics_aggregate_event(user_id: str, property_id: str, checkpoint_
     try:
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(GCP_PROJECT_ID, CHECKPOINT_METRICS_TOPIC)
-        payload = {
+        payload = pubsub_payload_with_correlation({
             "userId": user_id,
             "propertyId": property_id,
             "checkpointId": checkpoint_id,
             "reason": reason,
-        }
+        })
         publisher.publish(topic_path, json.dumps(payload).encode("utf-8")).result()
     except Exception as e:
         logger.warning(
@@ -95,7 +96,7 @@ def pubsub_checkpoint_analysis(request, context):
             logger.warning(f"Missing required fields in payload: {payload}")
             return
 
-        with auth_uid_scope(user_id):
+        with worker_request_scope(payload):
             # Set span attributes
             span.set_attribute("checkpoint_id", checkpoint_id)
             span.set_attribute("user_id", user_id)

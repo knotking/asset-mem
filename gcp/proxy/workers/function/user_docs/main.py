@@ -11,10 +11,8 @@ from exceptions import WorkerError
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
-from common.observability.logging_context import (
-    auth_uid_scope,
-    install_auth_uid_logging_if_needed,
-)
+from common.observability.logging_context import install_auth_uid_logging_if_needed
+from common.observability.pubsub_context import worker_request_scope
 
 install_auth_uid_logging_if_needed()
 logger = logging.getLogger(__name__)
@@ -32,7 +30,7 @@ def pubsub_to_user_docs(request, context):
         logger.warning("No user_id or gcs_urls in payload, skipping.")
         return
 
-    with auth_uid_scope(user_id):
+    with worker_request_scope(payload):
         t0 = time.monotonic()
         logger.info(
             "user_docs worker start gcs_urls=%d user_query_len=%d source=%s",

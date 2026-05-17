@@ -157,6 +157,11 @@ Every proxy `fetch` should send **`X-Request-ID`** so Cloud Run logs, structured
 
 Agent streams log `correlationId` (truncated) in `stream.start` / `stream.complete` metadata alongside `firebaseChatId` and `agentSessionId`. Use the same value as the `X-Request-ID` header on that stream request to grep proxy logs.
 
+**Downstream propagation**
+
+- **Pub/Sub workers** (document analysis, checkpoint analysis, user docs, checkpoint metrics): proxy publishes `correlation_id` on the message; workers bind it via `worker_request_scope` so Cloud Function logs show the same `[req=…]`.
+- **Vertex agent engine**: proxy includes `correlation_id` in the Reasoning Engine JSON payload; ADK session state + `before_model` / `before_tool` callbacks bind it in Agent Engine logs.
+
 ## Security notes
 
 - Do not log user queries, document text, full tokens, or precise location in production.

@@ -16,6 +16,10 @@ from services.token_usage_service import (
     accumulate_usage_from_stream_event,
     persist_user_token_usage,
 )
+from common.observability.logging_context import (
+    get_correlation_id,
+    pubsub_payload_with_correlation,
+)
 from common.token import TokenQuotaExceeded, check_token_quota_or_raise
  
 # Configure logging
@@ -133,12 +137,12 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str
         publisher = pubsub_v1.PublisherClient()
         
         topic_path = publisher.topic_path(os.environ.get("GCP_PROJECT_ID"), os.environ.get("USER_UPLOAD_TOPIC")) # Assuming only topic name, or pass full path
-        payload = {
+        payload = pubsub_payload_with_correlation({
             "gcs_urls": gcs_urls,
             "user_id": user_id,
             "user_query": user_query,
-            "source": 'rag-file-upload'  # Add source parameter
-        }
+            "source": "rag-file-upload",
+        })
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)
         return "Data published to Pub/Sub successfully with ID: {}".format(future.result())
@@ -921,10 +925,15 @@ async def stream_agent_answers(
         payload["location_radius"] = location_radius
         logger.info(f"Including location_radius in payload: {location_radius} miles")
 
+    correlation_id = get_correlation_id()
+    if correlation_id:
+        payload["correlation_id"] = correlation_id
+
     message = json.dumps(payload)
     logger.info(
-        "Reasoning Engine stream_query start session_id=%s message_bytes=%s %s",
+        "Reasoning Engine stream_query start session_id=%s correlation_id=%s message_bytes=%s %s",
         session_id,
+        correlation_id or "-",
         len(message.encode("utf-8")),
         _reasoning_payload_summary(payload),
     )
