@@ -791,9 +791,9 @@ uvicorn main:app --host=0.0.0.0 --port=8080 --reload
 ### Testing
 
 **Agent Evaluation:**
-- Test datasets in `eval/data/`
-- Evaluation framework using Google ADK
-- Tool trajectory and response matching scores
+- Golden datasets in `property_agent/evals/*.evalset.json` (recorded via `adk web`)
+- Pytest runner: `gcp/agents/homecare/eval/test_eval.py` (`make test-eval`)
+- Google ADK `AgentEvaluator` with tool trajectory and response matching scores (`property_agent/evals/test_config.json`)
 
 **Integration Tests:**
 - Firebase integration tests

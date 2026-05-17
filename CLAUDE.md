@@ -53,11 +53,14 @@ From `gcp/agents/homecare`:
 ```bash
 make setup            # uv sync + .env from .env.example
 make run              # adk run property_agent
-make test-eval        # uv run pytest eval/
-make test-full        # eval/test_eval.py::test_eval_full_conversation
-make test-cost        # eval/test_eval.py::test_eval_cost_estimation
-make test-products    # eval/test_eval.py::test_eval_product_recommendations
-make test-service     # eval/test_eval.py::test_eval_service_provider
+make test             # unit tests only (tests/; CI on PRs)
+make test-eval        # all ADK evalsets (eval/; live Vertex)
+make test-eval-routing
+make test-eval-docs
+make test-eval-checkpoint
+make test-eval-cost
+make test-eval-shopping
+make test-eval-service
 make deploy           # uv run python deployment/deploy.py create
 make update           # uv run python deployment/deploy.py update
 make grant-permissions

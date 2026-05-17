@@ -94,8 +94,8 @@
 - **Prompts**: `gcp/agents/homecare/property_agent/sub_agents/cost_agent/prompts.py`
 
 ### Tests
-- **Original Tests**: `gcp/agents/homecare/eval/data/cost_estimation.test.json`
-- **AI Tests**: `gcp/agents/homecare/eval/data/cost_estimation_ai.test.json`
+- **E2E eval**: `gcp/agents/homecare/property_agent/evals/cost_agent.evalset.json` (`make test-eval-cost`)
+- **Unit tests**: `gcp/agents/homecare/tests/test_cost_agent.py`, `tests/test_diy_agent.py`
 
 ### Documentation
 - **Code README**: `gcp/agents/homecare/property_agent/sub_agents/cost_agent/README.md`
