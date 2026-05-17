@@ -11,7 +11,7 @@ from .config import config
 from .ai_cost_estimator import estimate_costs_with_ai, validate_cost_ranges
 from .service_pricing_extractor import extract_and_combine_all_pricing, calibrate_ai_estimate_with_provider_data
 from ...agent_inputs import CheckpointOptionalAgent
-from ...model_config import LEGACY_API_GEMINI, GLOBAL_GEMINI_MODEL
+from ...model_config import GLOBAL_GEMINI_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -266,21 +266,17 @@ def _estimate_with_ai(
         return None, 0.0, "invalid_input"
     
     try:
-        # Direct genai API uses gemini-2.5-flash (see LEGACY_API_GEMINI), not the ADK default.
-        client = LEGACY_API_GEMINI.api_client
-        
         # Extract service provider pricing data if available
         provider_pricing = None
         if service_results and config.should_calibrate_with_provider_data():
             provider_pricing = extract_and_combine_all_pricing(service_results)
         
-        # Call AI cost estimator
+        # Call AI cost estimator (client created inside estimate_costs_with_ai when needed)
         logger.info(f"Calling AI cost estimator for: {diagnosis[:100]}...")
         ai_estimate, confidence = estimate_costs_with_ai(
             diagnosis=diagnosis,
             property_address=property_address,
             service_provider_data=provider_pricing,
-            client=client
         )
         
         if not ai_estimate:
