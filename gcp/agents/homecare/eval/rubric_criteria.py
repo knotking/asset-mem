@@ -109,6 +109,37 @@ def config_checkpoint() -> EvalConfig:
     )
 
 
+def config_simulation() -> EvalConfig:
+    """User-simulator scenarios (multi-turn; no golden final_response)."""
+    return EvalConfig.model_validate(
+        {
+            "criteria": {
+                "multi_turn_task_success_v1": {
+                    "threshold": 0.7,
+                    "judge_model_options": _JUDGE_MODEL_OPTIONS,
+                },
+                "rubric_based_tool_use_quality_v1": _rubric_tool_use_criterion(
+                    ["routing_tool_use"],
+                    threshold=1.0,
+                ),
+                "safety_v1": {
+                    "threshold": 0.8,
+                    "judge_model_options": _JUDGE_MODEL_OPTIONS,
+                },
+                "hallucinations_v1": {
+                    "threshold": 0.5,
+                    "evaluate_intermediate_nl_responses": True,
+                    "judge_model_options": _JUDGE_MODEL_OPTIONS,
+                },
+            },
+            "user_simulator_config": {
+                "model": "gemini-2.5-flash",
+                "max_allowed_invocations": 6,
+            },
+        }
+    )
+
+
 def config_checkpoint_branch(branch: str) -> EvalConfig:
     """Checkpoint E2E with branch-specific response rubrics (cost, diy, service)."""
     branch_file = f"branch_{branch}"

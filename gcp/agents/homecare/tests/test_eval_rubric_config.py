@@ -9,6 +9,7 @@ from eval.rubric_criteria import (
     config_checkpoint_branch,
     config_default,
     config_routing,
+    config_simulation,
 )
 
 
@@ -41,6 +42,14 @@ def test_checkpoint_config_uses_response_rubrics_and_semantic_match() -> None:
     extra = getattr(response, "evaluate_full_response", None)
     if extra is not None:
         assert extra is True
+
+
+def test_simulation_config_has_multi_turn_and_user_simulator() -> None:
+    cfg = config_simulation()
+    assert "multi_turn_task_success_v1" in cfg.criteria
+    assert "hallucinations_v1" in cfg.criteria
+    assert cfg.user_simulator_config is not None
+    assert cfg.user_simulator_config.max_allowed_invocations >= 1
 
 
 def test_checkpoint_branch_merges_branch_rubrics() -> None:

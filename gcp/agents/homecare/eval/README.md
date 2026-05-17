@@ -35,6 +35,16 @@ Pass thresholds: per-eval configs in `eval/rubric_criteria.py` (see `property_ag
 
 Recording and updating goldens: **`property_agent/evals/README.md`**.
 
+## Simulation & conformance
+
+| Command | Purpose |
+|---------|---------|
+| `RUN_ADK_SIMULATION_TESTS=1 make test-simulation` | Live user-simulator evals (`eval/test_simulation.py`) |
+| `make conformance-record` | Record `generated-*.yaml` (needs `uv run adk web` on :8000) |
+| `make conformance-test` | Replay `property_agent/conformance/` |
+
+See **`property_agent/evals/README.md`** for scenario details.
+
 ## Legacy `eval/data/`
 
 Removed. Older hand-authored `*.test.json` fixtures under `eval/data/` are replaced by ADK web-recorded `property_agent/evals/*.evalset.json`. Cost-agent logic is covered by unit tests in `tests/test_cost_agent.py` and `tests/test_diy_agent.py`.

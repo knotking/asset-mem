@@ -1,0 +1,8 @@
+description: >
+  Root property_agent receives a checkpoint-oriented DiagnosisInput greeting
+  and should transfer to doculink_agent (replay compares session events).
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "hello", "primary_agent": "checkpoint", "property_address": "1982 Helena Way, Brentwood, CA 94513", "location_type": "location", "location_coordinates": {"lat": 37.9, "lng": -121.7}, "location_radius": 5}

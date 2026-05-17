@@ -61,6 +61,33 @@ uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.jso
 
 Missing evalset files cause pytest to **skip** that test with recording instructions.
 
+## User simulation (ADK 1.25+)
+
+**`simulation.evalset.json`** uses `conversation_scenario` (LLM user simulator) instead of a fixed golden `final_response`. Scenario definitions are also listed in **`conversation_scenarios.json`**.
+
+```bash
+export RUN_ADK_SIMULATION_TESTS=1
+make test-simulation
+```
+
+Criteria: `test_config_simulation.json` / `eval/rubric_criteria.config_simulation()` — `multi_turn_task_success_v1`, routing tool rubrics, `safety_v1`, `hallucinations_v1`, and `user_simulator_config`.
+
+```bash
+uv run adk eval property_agent property_agent/evals/simulation.evalset.json \
+  --config_file_path=property_agent/evals/test_config_simulation.json \
+  --print_detailed_results
+```
+
+## Conformance (replay)
+
+Deterministic replay tests live under **`property_agent/conformance/`** (`spec.yaml` per case). Record fixtures with ADK web running, then replay:
+
+```bash
+uv run adk web          # terminal 1 (default http://127.0.0.1:8000)
+make conformance-record # terminal 2 — writes generated-recordings.yaml
+make conformance-test   # replay; skips cases without recordings
+```
+
 ## CI
 
 - **Pull requests:** `.github/workflows/test-homecare-agent.yaml` runs `make test` (unit tests only).
