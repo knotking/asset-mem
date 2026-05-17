@@ -1,6 +1,6 @@
 """Tests for checkpoint_request_timing structured log emission."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -20,10 +20,18 @@ def test_emit_logs_single_structured_line():
     logger = MagicMock()
     crt.logger = logger
 
-    crt.emit_checkpoint_request_timing(state, return_chars=11832, source="test")
+    with patch(
+        "property_agent.checkpoint_timing_metrics.emit_checkpoint_timing_metrics"
+    ) as emit_metrics:
+        crt.emit_checkpoint_request_timing(state, return_chars=11832, source="test")
 
     assert crt.timing_already_emitted(state)
     logger.info.assert_called_once()
+    emit_metrics.assert_called_once()
+    metrics_payload = emit_metrics.call_args[0][0]
+    assert metrics_payload["retrieval_ms"] == 6000
+    assert metrics_payload["return_chars"] == 11832
+    assert emit_metrics.call_args.kwargs["source"] == "test"
     message = logger.info.call_args[0][0]
     assert message == "checkpoint_request_timing: %s source=%s"
     parts = logger.info.call_args[0][1]
