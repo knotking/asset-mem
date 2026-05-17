@@ -23,7 +23,7 @@ make test-eval    # run all eval tests (live Vertex/Gemini)
 | `make test-eval-shopping` | `shopping_agent.evalset.json` |
 | `make test-eval-service` | `service_agent.evalset.json` |
 
-Pass thresholds: `property_agent/evals/test_config.json`.
+Pass thresholds: per-eval configs in `eval/rubric_criteria.py` (see `property_agent/evals/README.md`).
 
 ## Unit tests vs evals
 

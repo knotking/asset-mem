@@ -2,21 +2,30 @@
 
 Golden datasets live under ``property_agent/evals/``. Each test is skipped until
 you record the corresponding evalset from ``adk web`` (see ``property_agent/evals/README.md``).
+
+Rubric-based criteria (dual-format checkpoint output, routing tool use, branch
+sections) are defined in ``eval/rubric_criteria.py`` and ``property_agent/evals/rubrics/``.
 """
 
 from __future__ import annotations
 
 import pathlib
-
 import dotenv
 import pytest
 from google.adk.evaluation.agent_evaluator import AgentEvaluator
+from google.adk.evaluation.eval_config import EvalConfig
+
+from eval.rubric_criteria import (
+    config_checkpoint,
+    config_checkpoint_branch,
+    config_default,
+    config_routing,
+)
 
 pytest_plugins = ("pytest_asyncio",)
 
 REPO_HOME = pathlib.Path(__file__).resolve().parents[1]
 EVALS_DIR = REPO_HOME / "property_agent" / "evals"
-EVAL_CONFIG = EVALS_DIR / "test_config.json"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -38,11 +47,23 @@ def _require_evalset(filename: str, recording_hint: str) -> pathlib.Path:
     return path
 
 
-async def _run_eval(*, agent_module: str, evalset_file: str, recording_hint: str) -> None:
+async def _run_eval(
+    *,
+    agent_module: str,
+    evalset_file: str,
+    recording_hint: str,
+    eval_config: EvalConfig,
+) -> None:
     path = _require_evalset(evalset_file, recording_hint)
-    await AgentEvaluator.evaluate(
+    eval_set = AgentEvaluator._load_eval_set_from_file(
+        str(path),
+        eval_config,
+        initial_session={},
+    )
+    await AgentEvaluator.evaluate_eval_set(
         agent_module=agent_module,
-        eval_dataset_file_path_or_dir=str(path),
+        eval_set=eval_set,
+        eval_config=eval_config,
         num_runs=1,
         print_detailed_results=True,
     )
@@ -54,6 +75,7 @@ async def test_eval_doculink_routing():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="doculink_routing.evalset.json",
+        eval_config=config_routing(),
         recording_hint=(
             "1. uv run adk web → select property_agent\n"
             "2. Send a property-related question (no checkpoint_ids / primary_agent)\n"
@@ -69,6 +91,7 @@ async def test_eval_doculink_docs():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="doculink_docs.evalset.json",
+        eval_config=config_default(),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. Session with primary_agent=docs and/or context_doc_uris; ask about uploaded docs\n"
@@ -84,6 +107,7 @@ async def test_eval_checkpoint_optional_agents():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="checkpoint_optional_agents.evalset.json",
+        eval_config=config_checkpoint(),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. Provide checkpoint_ids, property_id, checkpoint_optional_agents "
@@ -100,6 +124,7 @@ async def test_eval_cost_agent():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="cost_agent.evalset.json",
+        eval_config=config_checkpoint_branch("cost"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. checkpoint_ids + checkpoint_optional_agents: [\"cost\"]; ask for cost details\n"
@@ -114,6 +139,7 @@ async def test_eval_shopping_agent():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="shopping_agent.evalset.json",
+        eval_config=config_checkpoint_branch("diy"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. checkpoint_optional_agents: [\"diy\"]; query like find products to fix it\n"
@@ -128,6 +154,7 @@ async def test_eval_service_agent():
     await _run_eval(
         agent_module="property_agent",
         evalset_file="service_agent.evalset.json",
+        eval_config=config_checkpoint_branch("service"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. checkpoint_optional_agents: [\"service\"]; ask for local service providers\n"

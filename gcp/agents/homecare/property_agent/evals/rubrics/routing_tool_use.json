@@ -1,0 +1,10 @@
+{
+  "rubrics": [
+    {
+      "rubric_id": "transfer_to_doculink",
+      "rubric_content": {
+        "text_property": "The root property_agent calls transfer_to_agent with agent_name doculink_agent to hand off document and checkpoint work (not answering the property query entirely at the root without transfer)."
+      }
+    }
+  ]
+}
