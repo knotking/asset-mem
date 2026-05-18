@@ -925,6 +925,11 @@ CRITICAL SCHEMA CONTRACT FOR WEBAPP/MAPP:
 - NEVER set analysis.coverageResult to a string.
 - NEVER set analysis.costEstimationResults to a string.
 
+Branch array preservation (CRITICAL — do not summarize structured lists):
+- Parse checkpoint_parallel_results once. For each requested optional branch, copy structured arrays verbatim from the branch payload into analysis JSON (same length and entries). Use markdown only for narrative; never drop branch items to shorten JSON.
+- checkpoint_parallel_service_result → analysis.serviceResults.localPros.serpAPIResults and googleSearchResults: copy exactly from the branch serviceResults object. Do not pick a subset of providers.
+- checkpoint_parallel_diy_result → analysis.diyResults: use the inner "diyResults" object; copy youtubeSearch.videos and recommendedProducts.products exactly (full arrays from the branch). Do not shorten these arrays in synthesis.
+
 DIY branch merge rule (checkpoint_parallel_diy_result):
 - The DIY tool may return JSON shaped as { "hire_professional_recommended": <boolean>, "diyResults": { ... } }.
 - Always set analysis.diyResults to the INNER "diyResults" object only (must contain diySteps, youtubeSearch, recommendedProducts as today).

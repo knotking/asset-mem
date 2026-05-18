@@ -641,7 +641,7 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
         if isinstance(yt, dict) and isinstance(yt.get("videos"), list) and yt["videos"]:
             lines.append("")
             lines.append("**Helpful videos:**")
-            for vid in yt["videos"][:5]:
+            for vid in yt["videos"][:10]:
                 if not isinstance(vid, dict):
                     continue
                 vtitle = str(vid.get("title") or "Video").strip()
@@ -653,7 +653,7 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
             if prods:
                 lines.append("")
                 lines.append("**Recommended products:**")
-                for p in prods[:5]:
+                for p in prods[:10]:
                     if not isinstance(p, dict):
                         continue
                     name = str(p.get("item_name") or p.get("name") or "Product").strip()
@@ -680,12 +680,10 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
         local = svc.get("localPros")
         serp: list[Any] = []
         if isinstance(local, dict):
-            raw = local.get("serpAPIResults")
-            if isinstance(raw, list):
-                serp = raw
+            serp = _coerce_json_array(local.get("serpAPIResults"))
         if serp:
             lines.extend(["## Service Providers"])
-            for pro in serp[:6]:
+            for pro in serp[:10]:
                 if not isinstance(pro, dict):
                     continue
                 name = str(pro.get("name") or "Provider").strip()
@@ -950,6 +948,56 @@ def _list_is_empty(val: Any) -> bool:
     return not isinstance(val, list) or len(val) == 0
 
 
+def _coerce_json_array(val: Any) -> List[Any]:
+    """Normalize branch/synthesis list fields (list or JSON-encoded string)."""
+    if isinstance(val, list):
+        return val
+    if isinstance(val, str) and val.strip():
+        parsed = _safe_json_load(val.strip())
+        if isinstance(parsed, list):
+            return parsed
+    return []
+
+
+def _overlay_branch_array(existing: Any, branch: Any) -> List[Any]:
+    """Prefer non-empty branch arrays so synthesis cannot trim branch payloads."""
+    branch_items = _coerce_json_array(branch)
+    if branch_items:
+        return list(branch_items)
+    return list(_coerce_json_array(existing))
+
+
+def _extract_service_results_from_branch(raw: str) -> Optional[Dict[str, Any]]:
+    obj = _parse_branch_json_blob(raw or "")
+    if not isinstance(obj, dict):
+        return None
+    inner = obj.get("serviceResults")
+    if isinstance(inner, dict):
+        return inner
+    if isinstance(obj.get("localPros"), dict):
+        return obj
+    return None
+
+
+def _enrich_service_results_from_branch(
+    existing: Dict[str, Any], branch: Dict[str, Any]
+) -> None:
+    """Overlay service branch localPros arrays onto synthesis (branch wins when non-empty)."""
+    branch_local = branch.get("localPros")
+    if not isinstance(branch_local, dict):
+        return
+    ex_local = existing.get("localPros")
+    if not isinstance(ex_local, dict):
+        ex_local = {}
+        existing["localPros"] = ex_local
+    for key in ("serpAPIResults", "googleSearchResults"):
+        if key not in branch_local:
+            continue
+        merged = _overlay_branch_array(ex_local.get(key), branch_local.get(key))
+        if merged:
+            ex_local[key] = merged
+
+
 def _enrich_diy_results_from_branch(
     existing: Dict[str, Any], branch: Dict[str, Any]
 ) -> None:
@@ -973,14 +1021,13 @@ def _enrich_diy_results_from_branch(
         if not isinstance(branch_block, dict):
             continue
         branch_items = branch_block.get(items_key)
-        if _list_is_empty(branch_items):
-            continue
         ex_block = existing.get(block_key)
         if not isinstance(ex_block, dict):
             ex_block = {}
             existing[block_key] = ex_block
-        if _list_is_empty(ex_block.get(items_key)):
-            ex_block[items_key] = list(branch_items)
+        merged = _overlay_branch_array(ex_block.get(items_key), branch_items)
+        if merged:
+            ex_block[items_key] = merged
 
     if isinstance(branch.get("diyCostEstimates"), dict) and not isinstance(
         existing.get("diyCostEstimates"), dict
@@ -1040,12 +1087,9 @@ def _merge_service_into(analysis: Dict[str, Any], raw: str) -> None:
     text = (raw or "").strip()
     if not text or text == "SKIPPED":
         return
-    obj = _parse_branch_json_blob(text)
-    if isinstance(obj, dict) and "localPros" in obj:
-        analysis["serviceResults"] = obj
-        return
-    if isinstance(obj, dict) and "serviceResults" in obj and isinstance(obj["serviceResults"], dict):
-        analysis["serviceResults"] = obj["serviceResults"]
+    extracted = _extract_service_results_from_branch(text)
+    if isinstance(extracted, dict):
+        analysis["serviceResults"] = extracted
         return
     analysis["serviceResults"] = {
         "localPros": {"serpAPIResults": [], "googleSearchResults": []},
@@ -1163,8 +1207,8 @@ def merge_parallel_results_into_dual_format(
     """
     Merge checkpoint_parallel_* branch payloads into an existing dual-format response.
 
-    Used after synthesis when the model emits valid JSON but empty youtubeSearch /
-    recommendedProducts (or other empty branch sections).
+    Used after synthesis when the model emits valid JSON but empty or trimmed branch
+    sections (youtubeSearch, recommendedProducts, service localPros, etc.).
     """
     if not (parallel_results_json or "").strip():
         return body
@@ -1204,10 +1248,11 @@ def merge_parallel_results_into_dual_format(
         analysis["coverageResult"] = branch_cov
 
     branch_svc = branch_merged.get("serviceResults")
-    if isinstance(branch_svc, dict) and _service_results_empty(
-        analysis.get("serviceResults")
-    ):
-        analysis["serviceResults"] = branch_svc
+    if isinstance(branch_svc, dict):
+        if not isinstance(analysis.get("serviceResults"), dict):
+            analysis["serviceResults"] = branch_svc
+        else:
+            _enrich_service_results_from_branch(analysis["serviceResults"], branch_svc)
 
     branch_cost = branch_merged.get("costEstimationResults")
     if isinstance(branch_cost, dict) and _cost_results_empty(

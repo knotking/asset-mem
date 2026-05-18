@@ -854,6 +854,138 @@ def test_merge_parallel_fills_empty_youtube_and_products_from_diy_branch():
     assert diy["diySteps"]["steps"][0]["description"] == "Sand"
 
 
+def test_merge_parallel_restores_trimmed_service_pros_from_branch():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    synthesis_body = """# Analysis
+
+```json
+{
+  "analysis": {
+    "title": "Analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 1,
+      "issuesDetected": ["paint"],
+      "overallCondition": "Damaged",
+      "locations": ["Garage"]
+    },
+    "serviceResults": {
+      "localPros": {
+        "serpAPIResults": [
+          {"name": "Pro A", "phone": "111"},
+          {"name": "Pro B", "phone": "222"}
+        ],
+        "googleSearchResults": []
+      }
+    }
+  }
+}
+```
+"""
+    branch_service = {
+        "serviceResults": {
+            "localPros": {
+                "serpAPIResults": [
+                    {"name": "Pro A", "phone": "111"},
+                    {"name": "Pro B", "phone": "222"},
+                    {"name": "Pro C", "phone": "333"},
+                    {"name": "Pro D", "phone": "444"},
+                ],
+                "googleSearchResults": [{"title": "Web", "url": "https://example.com"}],
+            }
+        }
+    }
+    parallel = json.dumps(
+        {
+            "checkpoint_parallel_service_result": json.dumps(branch_service),
+            "checkpoint_parallel_coverage_result": "SKIPPED",
+            "checkpoint_parallel_diy_result": "SKIPPED",
+            "checkpoint_parallel_cost_result": "SKIPPED",
+        }
+    )
+    out = dfg.merge_parallel_results_into_dual_format(
+        synthesis_body, parallel_results_json=parallel
+    )
+    m = re.search(r"```json\s*\n?([\s\S]*?)```", out, re.IGNORECASE)
+    blob = json.loads(m.group(1).strip())
+    serp = blob["analysis"]["serviceResults"]["localPros"]["serpAPIResults"]
+    assert len(serp) == 4
+    assert serp[3]["name"] == "Pro D"
+    assert len(blob["analysis"]["serviceResults"]["localPros"]["googleSearchResults"]) == 1
+
+
+def test_merge_parallel_restores_trimmed_diy_products_from_branch():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    synthesis_body = """# Analysis
+
+```json
+{
+  "analysis": {
+    "title": "Analysis",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 1,
+      "issuesDetected": ["paint"],
+      "overallCondition": "Damaged",
+      "locations": ["Garage"]
+    },
+    "diyResults": {
+      "diySteps": {"summary": "Steps", "steps": []},
+      "youtubeSearch": {"videos": [{"title": "V1", "url": "https://youtu.be/1"}]},
+      "recommendedProducts": {
+        "products": [
+          {"item_name": "Paint A"},
+          {"item_name": "Paint B"}
+        ]
+      }
+    }
+  }
+}
+```
+"""
+    branch_products = [
+        {"item_name": f"Product {i}", "store_url": f"https://example.com/{i}"}
+        for i in range(5)
+    ]
+    parallel = json.dumps(
+        {
+            "checkpoint_parallel_diy_result": json.dumps(
+                {
+                    "diyResults": {
+                        "diySteps": {"summary": "Branch", "steps": []},
+                        "youtubeSearch": {
+                            "videos": [
+                                {"title": "V1", "url": "https://youtu.be/1"},
+                                {"title": "V2", "url": "https://youtu.be/2"},
+                            ]
+                        },
+                        "recommendedProducts": {"products": branch_products},
+                    }
+                }
+            ),
+            "checkpoint_parallel_coverage_result": "SKIPPED",
+            "checkpoint_parallel_service_result": "SKIPPED",
+            "checkpoint_parallel_cost_result": "SKIPPED",
+        }
+    )
+    out = dfg.merge_parallel_results_into_dual_format(
+        synthesis_body, parallel_results_json=parallel
+    )
+    m = re.search(r"```json\s*\n?([\s\S]*?)```", out, re.IGNORECASE)
+    blob = json.loads(m.group(1).strip())
+    diy = blob["analysis"]["diyResults"]
+    assert len(diy["recommendedProducts"]["products"]) == 5
+    assert len(diy["youtubeSearch"]["videos"]) == 2
+
+
+def test_overlay_branch_array_prefers_branch_when_non_empty():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    assert len(dfg._overlay_branch_array([{"a": 1}], [{"a": 1}, {"b": 2}])) == 2
+    assert dfg._overlay_branch_array([], [{"a": 1}]) == [{"a": 1}]
+    assert dfg._overlay_branch_array([{"a": 1}], []) == [{"a": 1}]
+
+
 def test_dual_format_guard_merges_parallel_diy_json():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 
