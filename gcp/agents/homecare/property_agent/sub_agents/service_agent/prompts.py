@@ -16,15 +16,17 @@ def service_agent_instructions() -> str:
         **Input Parameters:**
         *   `user_query` (str): The user's question or description.
         *   `context_doc_uris` (List[str], optional): Additional context documents.
-        *   `property_address` (str, optional): The property address if available.
-        *   `location_coordinates` (Dict[str, float], optional): Location coordinates as {"lat": float, "lng": float}. May be from user's current location or geocoded from property_address.
-        *   `location_radius` (int, optional): Search radius in miles (5-100). Defaults to 5 if not specified.
+        *   `property_address` (str, optional): Property record address for identity/context only — do NOT use for local search when `search_location` is provided.
+        *   `search_location` (object, optional): Single source of truth for market/geo:
+            - `source`: `property_address` or `device_gps`
+            - `coordinates`: `{"lat": float, "lng": float}`
+            - `radius_miles`: int (5-100)
+            - `label`: optional human-readable place name
         
         **Location Handling:**
-        *   When `location_coordinates` is provided (either from current location or geocoded address), ALWAYS use coordinates with radius for precise search.
-        *   The `property_address` may be provided for context even when coordinates are available.
-        *   Coordinates enable precise radius-based filtering (e.g., "within 5 miles of 37.4224,-122.0842").
-        *   If only `property_address` is available without coordinates, use address-based search as fallback.
+        *   When `search_location` is provided, ALWAYS use `search_location.coordinates` and `search_location.radius_miles` for local provider search.
+        *   Do NOT use `property_address` for geo search when `search_location` is present.
+        *   If `search_location` is missing, fall back to address-only search only when no coordinates exist.
         
         **Available Tools:**
         *   `serpapi_search`: Searches for local service providers.
@@ -32,16 +34,10 @@ def service_agent_instructions() -> str:
         
         **MANDATORY Sequence of Operations - Always Call ALL REQUIRED TOOLS:**
         1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
-        2. Call `serpapi_search` with query incorporating the diagnosis and location information
-           - **PRIORITY 1 - Coordinates with Radius (PREFERRED)**: If `location_coordinates` is provided, ALWAYS use coordinates with radius for precise search: "[diagnosis] professionals near [lat],[lng] within [radius] miles"
-             * This provides the most accurate results within the specified radius
-             * Coordinates may come from user's current location OR geocoded property address
-             * Example: "plumber near 37.4224,-122.0842 within 5 miles"
-           - **PRIORITY 2 - Address Only (Fallback)**: If `location_coordinates` is NOT provided but `property_address` is available, use: "[diagnosis] professionals near [address]"
-             * Example: "plumber near 123 Main St, City, State"
-           - **PRIORITY 3 - No Location (Last Resort)**: If no location data available, use: "[diagnosis] repair service near me"
-           - ALWAYS apply `location_radius` (default: 5 miles) when coordinates are available
-           - Filter results to only include providers within the specified radius
+        2. Call `serpapi_search` with:
+           - `query`: diagnosis-only text (e.g. "garage door paint repair professionals") — do NOT embed lat/lng or "within N miles" in the query; geo is applied via `search_location`
+           - `search_location`: pass through the input `search_location` object when present (the tool also reads session state if omitted)
+           - **Fallback (no search_location)**: `query` only, e.g. "[diagnosis] repair service near me"
         3. Optionally call `google_search` when you need extra context to disambiguate provider categories
         4. Return results in a nested JSON structure
         
@@ -62,12 +58,9 @@ def service_agent_instructions() -> str:
         * You MUST call serpapi_search for provider results.
         * Do not generate cost estimates here; cost estimation is handled by the dedicated cost agent.
         * Use the diagnosis from triage_agent to tailor your queries and get more accurate results.
-        * ALWAYS prioritize `location_coordinates` with `location_radius` when available for precise radius-based search.
-        * When coordinates are provided, ensure ALL search results are filtered to within the specified radius.
         * Focus ONLY on professional service options - do not include DIY solutions.
         * Include contact information, ratings, distances, and locations for all service providers.
         * Sort results by distance (closest first) when using coordinate-based search.
         * All data should be properly nested in JSON structure.
     """
     return instruction
-

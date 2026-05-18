@@ -28,6 +28,7 @@ from ..service_agent.agent import service_agent
 from ..cost_agent.agent import _cost_estimation_sync, cost_agent
 from ...agent_inputs import CheckpointOptionalAgent
 from ...model_config import GLOBAL_GEMINI_MODEL
+from ...search_location_utils import legacy_search_location_from_payload
 from ..checkpoint_dual_format_guard import (
     CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
     CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
@@ -63,6 +64,7 @@ _LEGACY_ANALYSIS_FIELD_NAMES: Tuple[str, ...] = (
     "context_doc_uris",
     "property_address",
     "property_id",
+    "search_location",
     "location_coordinates",
     "location_radius",
 )
@@ -195,10 +197,13 @@ class CheckpointAnalysisInput(BaseModel):
         description="List of optional sub-agents to invoke: coverage, diy, service, cost"
     )
     context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for coverage checks")
-    property_address: Optional[str] = Field(default=None, description="Property address for location-based services")
+    property_address: Optional[str] = Field(
+        default=None, description="Property record address (identity/context only)"
+    )
     property_id: Optional[str] = Field(default=None, description="Property ID for reference")
-    location_coordinates: Optional[Dict[str, float]] = Field(default=None, description="Location coordinates for service searches")
-    location_radius: Optional[int] = Field(default=None, description="Search radius for local services")
+    search_location: Optional[Dict[str, Any]] = Field(
+        default=None, description="Unified market/geo for service, cost, DIY"
+    )
 
 
 def _coerce_legacy_analysis_field(key: str, value_str: str) -> Any:
@@ -210,6 +215,7 @@ def _coerce_legacy_analysis_field(key: str, value_str: str) -> Any:
         "checkpoint_optional_agents",
         "context_doc_uris",
         "location_coordinates",
+        "search_location",
     ):
         try:
             return ast.literal_eval(raw)
@@ -397,34 +403,71 @@ def _pending_checkpoint_analysis_input_from_state(
         return None
 
 
+def _merge_routing_into_pending(
+    routing: Dict[str, Any],
+    pending: CheckpointAnalysisInput,
+) -> Optional[CheckpointAnalysisInput]:
+    """Overlay routing-only workflow JSON onto stashed pending analysis input."""
+    merged = pending.model_dump()
+    for key in (
+        "user_query",
+        "search_query",
+        "checkpoint_optional_agents",
+        "context_doc_uris",
+        "property_address",
+        "property_id",
+        "search_location",
+    ):
+        if key in routing and routing[key] is not None:
+            merged[key] = routing[key]
+    try:
+        return CheckpointAnalysisInput.model_validate(merged)
+    except Exception as exc:
+        logger.warning(
+            "checkpoint optional parallel: routing merge validation failed: %s",
+            exc,
+        )
+        return pending
+
+
 def _parse_checkpoint_analysis_input(
     ctx: InvocationContext,
 ) -> Optional[CheckpointAnalysisInput]:
     """Parse workflow input (JSON or legacy prose) from the invocation user message."""
     text = _text_from_user_content(Context(invocation_context=ctx).user_content)
+    pending = _pending_checkpoint_analysis_input_from_state(ctx)
+
     if text:
         data = parse_checkpoint_analysis_payload(text)
         if data is not None:
             try:
                 return CheckpointAnalysisInput.model_validate(data)
             except Exception as exc:
+                ck = data.get("checkpoint_results")
+                if pending is not None and (
+                    not isinstance(ck, str) or not ck.strip()
+                ):
+                    merged = _merge_routing_into_pending(data, pending)
+                    if merged is not None:
+                        logger.info(
+                            "checkpoint optional parallel: merged routing JSON "
+                            "with pending analysis input"
+                        )
+                        return merged
                 logger.warning(
                     "checkpoint optional parallel: workflow input validation failed: %s",
                     exc,
                 )
-                # Doculink transfer often passes routing-only JSON (user_query,
-                # location_*, optional_agents) without checkpoint_results; use stash.
         else:
             logger.warning(
                 "checkpoint optional parallel: workflow input is not valid JSON or legacy prose"
             )
 
-    pending = _pending_checkpoint_analysis_input_from_state(ctx)
     if pending is not None:
         logger.info(
             "checkpoint optional parallel: using pending analysis input from session state"
         )
-    else:
+    elif text:
         logger.warning("checkpoint optional parallel: missing workflow input text")
     return pending
 
@@ -473,8 +516,7 @@ async def execute_checkpoint_optional_parallel(
         context_doc_uris=inp.context_doc_uris,
         property_address=inp.property_address,
         property_id=inp.property_id,
-        location_coordinates=inp.location_coordinates,
-        location_radius=inp.location_radius,
+        search_location=inp.search_location,
         search_query=inp.search_query,
         tool_context=tool_ctx,
         on_branch_complete=on_branch_complete,
@@ -579,12 +621,13 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
         diagnosis = ck[:8000]
     else:
         diagnosis = branch_q or "Property maintenance"
-    addr = (payload.get("property_address") or "").strip() or None
     uris = payload.get("context_doc_uris")
     seed = (payload.get("checkpoint_retrieval_search_query") or "").strip()
+    sl = legacy_search_location_from_payload(payload)
     return await run_diy_pipeline(
         diagnosis,
-        property_address=addr,
+        property_address=(payload.get("property_address") or "").strip() or None,
+        search_location=sl,
         context_doc_uris=uris,
         checkpoint_retrieval_search_query=seed or None,
     )
@@ -605,12 +648,20 @@ def _checkpoint_cost_diagnosis(payload: Dict[str, Any]) -> str:
 
 
 def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
-    """JSON query for cost tools: refined diagnosis seed + optional property_address."""
+    """JSON query for cost tools: diagnosis + market location from search_location."""
+    from ...search_location_utils import market_label
+
     diagnosis = _checkpoint_cost_diagnosis(payload)
-    addr = (payload.get("property_address") or "").strip() or None
     body: Dict[str, Any] = {"diagnosis": diagnosis}
-    if addr:
-        body["property_address"] = addr
+    sl = legacy_search_location_from_payload(payload)
+    pa = (payload.get("property_address") or "").strip() or None
+    label = market_label(sl, property_address=pa)
+    if label:
+        body["market_location"] = label
+    if pa:
+        body["property_address"] = pa
+    if sl is not None:
+        body["search_location"] = sl.model_dump()
     return json.dumps(body, ensure_ascii=False)
 
 
@@ -714,8 +765,7 @@ async def run_checkpoint_optional_agents_parallel(
     context_doc_uris: Optional[List[str]] = None,
     property_address: Optional[str] = None,
     property_id: Optional[str] = None,
-    location_coordinates: Optional[Dict[str, float]] = None,
-    location_radius: Optional[int] = None,
+    search_location: Optional[Dict[str, Any]] = None,
     search_query: Optional[str] = None,
     tool_context: ToolContext = None,
     on_branch_complete: Optional[BranchCompleteCallback] = None,
@@ -776,8 +826,7 @@ async def run_checkpoint_optional_agents_parallel(
         "context_doc_uris": context_doc_uris,
         "property_address": property_address,
         "property_id": property_id,
-        "location_coordinates": location_coordinates,
-        "location_radius": location_radius,
+        "search_location": search_location,
     }
 
     completed: List[str] = []

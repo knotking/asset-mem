@@ -10,7 +10,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "{\"user_query\": “hello“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"],  \"primary_agent\": \"checkpoint\", \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
+                "text": "{\"user_query\": “hello“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"],  \"primary_agent\": \"checkpoint\", \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"search_location\": {\"source\": \"device_gps\", \"coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"radius_miles\": 5}}"
               }
             ],
             "role": "user"
@@ -75,19 +75,21 @@
                       "function_call": {
                         "id": "adk-cc658101-16d7-4704-b87c-f00c68292136",
                         "args": {
-                          "location_coordinates": {
-                            "lat": 37.9,
-                            "lng": -121.7
-                          },
                           "user_query": "hello",
-                          "location_radius": 5,
                           "property_address": "1982 Helena Way, Brentwood, CA 94513",
                           "context_doc_uris": [
                             "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf",
                             "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf",
                             "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"
                           ],
-                          "location_type": "location"
+                          "search_location": {
+                            "source": "device_gps",
+                            "radius_miles": 5,
+                            "coordinates": {
+                              "lat": 37.9,
+                              "lng": -121.7
+                            }
+                          }
                         },
                         "name": "checkpoint_agent"
                       },

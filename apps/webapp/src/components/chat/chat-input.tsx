@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, X, File, Square, AlertCircle, Building, Check, FileText, Send, Camera, Clock } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
-import type { FileAttachment, Property, Document as DocumentType, LocationData, PrimaryAgent } from "@/lib/types";
+import type { FileAttachment, Property, Document as DocumentType, PrimaryAgent } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { cn } from "@/lib/utils";
@@ -45,8 +45,8 @@ type Props = {
   onOpenCheckpointDrawer?: () => void;
   onRemoveCheckpoint?: (checkpoint: Checkpoint) => void;
   // Location
-  locationData?: LocationData;
-  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  searchLocation?: import('@/lib/types').SearchLocationInput;
+  onSearchLocationChange?: (searchLocation: import('@/lib/types').SearchLocationInput | undefined) => void;
   propertyAddress?: string;
 };
 
@@ -73,8 +73,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
     selectedCheckpoints = [],
     onOpenCheckpointDrawer,
     onRemoveCheckpoint,
-    locationData,
-    onLocationDataChange,
+    searchLocation,
+    onSearchLocationChange,
     propertyAddress,
 }, ref) => {
   const [content, setContent] = useState("");
@@ -242,8 +242,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
             onToggleOptionalAgent={handleOptionalAgentToggle}
             selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
             onToggleCheckpointOptionalAgent={handleCheckpointOptionalAgentToggle}
-            locationData={locationData}
-            onLocationDataChange={onLocationDataChange}
+            searchLocation={searchLocation}
+            onSearchLocationChange={onSearchLocationChange}
             propertyAddress={propertyAddress}
             initialTab={settingsPopoverTab}>
             <div onClick={() => setSettingsPopoverOpen(true)}>
@@ -251,7 +251,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(({
                 primaryAgent={primaryAgent}
                 selectedOptionalAgents={selectedOptionalAgents}
                 selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-                locationData={locationData}
+                searchLocation={searchLocation}
                 propertyAddress={propertyAddress}
                 onOpenSettings={() => {
                   setSettingsPopoverTab('agent');

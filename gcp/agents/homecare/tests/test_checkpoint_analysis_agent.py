@@ -213,7 +213,11 @@ def test_parse_checkpoint_analysis_input_falls_back_to_pending_on_partial_json()
     }
     partial_transfer = {
         "user_query": "analyse my checkpoints",
-        "location_radius": 5,
+        "search_location": {
+            "source": "device_gps",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9, "lng": -121.7},
+        },
         "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
         "property_id": "prop-1",
     }
@@ -244,7 +248,9 @@ def test_parse_checkpoint_analysis_input_falls_back_to_pending_on_partial_json()
     assert inp is not None
     assert "paint chipping" in inp.checkpoint_results
     assert inp.checkpoint_optional_agents == ["coverage", "diy", "service", "cost"]
-    assert inp.location_radius == 5
+    assert inp.user_query == "analyse my checkpoints"
+    assert inp.search_location is not None
+    assert inp.search_location["coordinates"]["lat"] == 37.9
 
 
 @pytest.mark.asyncio
@@ -478,6 +484,23 @@ def test_parallel_runner_payload_uses_search_user_query(monkeypatch: pytest.Monk
     assert "diy tutorial" not in captured[0]["user_query"].lower()
 
 
+def test_build_checkpoint_cost_query_uses_property_address_when_gps_has_no_label():
+    payload = {
+        "user_query": "garage door paint",
+        "checkpoint_results": "Issues: chipping.",
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+        "search_location": {
+            "source": "device_gps",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9, "lng": -121.7},
+        },
+        "checkpoint_retrieval_search_query": "garage door paint repair",
+    }
+    data = json.loads(caa._build_checkpoint_cost_query(payload))
+    assert data["market_location"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert data["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
+
+
 def test_build_checkpoint_cost_query_uses_retrieval_seed_not_checkpoint_blob():
     payload = {
         "user_query": "garage door paint",
@@ -490,7 +513,7 @@ def test_build_checkpoint_cost_query_uses_retrieval_seed_not_checkpoint_blob():
         ),
     }
     data = json.loads(caa._build_checkpoint_cost_query(payload))
-    assert data["property_address"] == "1982 Helena Way, Brentwood, CA 94513"
+    assert data["market_location"] == "1982 Helena Way, Brentwood, CA 94513"
     assert data["diagnosis"] == "residential garage door paint chipping scratches repair"
     assert "Checkpoint context" not in data["diagnosis"]
     assert "electrical outlet" not in data["diagnosis"]
@@ -515,6 +538,7 @@ def test_build_checkpoint_cost_query_omits_empty_address():
         "checkpoint_retrieval_search_query": "",
     }
     data = json.loads(caa._build_checkpoint_cost_query(payload))
+    assert "market_location" not in data
     assert "property_address" not in data
     assert data["diagnosis"] == "q"
 
@@ -539,6 +563,7 @@ def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.M
     )
     assert len(captured) == 1
     inner = json.loads(captured[0])
+    assert inner.get("market_location") == "1 Main St, City, ST 12345"
     assert inner.get("property_address") == "1 Main St, City, ST 12345"
     parsed = json.loads(out)
     assert "costEstimates" in json.loads(parsed["checkpoint_parallel_cost_result"])

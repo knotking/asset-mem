@@ -32,8 +32,7 @@ def checkpoint_analysis_agent_instructions() -> str:
         *   `context_doc_uris` (Optional[List[str]]): Context document URIs for coverage checks
         *   `property_address` (Optional[str]): Property address for location-based services
         *   `property_id` (Optional[str]): Property ID for reference
-        *   `location_coordinates` (Optional[Dict]): Location coordinates for service searches
-        *   `location_radius` (Optional[int]): Search radius for local services
+        *   `search_location` (Optional[object]): Unified market/geo for optional agents
         
         **Available Sub-Agent Tools:**
         *   `coverage_agent`: Retrieves warranty and insurance coverage information
@@ -68,7 +67,7 @@ def checkpoint_analysis_agent_instructions() -> str:
            
            **If "service" is in the list:**
            - Call `service_agent` with the synthesized issues
-           - Pass: user_query (with issue context), property_address, location_coordinates, location_radius
+           - Pass: user_query (with issue context), search_location
            - The service agent will find local professionals for the detected issues
            
            **If "cost" is in the list:**

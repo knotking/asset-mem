@@ -40,8 +40,10 @@ interface PropertyChatTabProps {
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
   onSend: (messages: IMessage[]) => void;
-  locationData?: LocationData;
-  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  searchLocation?: import('@homeapp/common/types').SearchLocationInput;
+  onSearchLocationChange?: (
+    searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
+  ) => void;
   propertyAddress?: string;
 }
 
@@ -66,8 +68,8 @@ export function PropertyChatTab({
   onSelectFromLibrary,
   onSelectFiles,
   onSend,
-  locationData,
-  onLocationDataChange,
+  searchLocation,
+  onSearchLocationChange,
   propertyAddress,
 }: PropertyChatTabProps) {
   const {
@@ -182,8 +184,8 @@ export function PropertyChatTab({
             onRecordVideo={onRecordVideo}
             onSelectFromLibrary={onSelectFromLibrary}
             onSelectFiles={onSelectFiles}
-            locationData={locationData}
-            onLocationDataChange={onLocationDataChange}
+            searchLocation={searchLocation}
+            onSearchLocationChange={onSearchLocationChange}
             propertyAddress={propertyAddress}
           />
         )}

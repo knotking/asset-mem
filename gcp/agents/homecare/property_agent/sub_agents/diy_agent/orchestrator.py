@@ -20,8 +20,10 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from google.genai import types
 
+from ...agent_inputs import SearchLocation
 from ...logging_context import auth_uid_scope, get_auth_uid
 from ...model_config import LEGACY_API_GEMINI
+from ...search_location_utils import market_label, parse_search_location
 from ..cost_agent.agent import cost_estimation_diy_from_library
 from ..shopping_agent.agent import product_recommendations
 
@@ -414,10 +416,20 @@ def _strip_code_fences(text: str) -> str:
     return s.strip()
 
 
-def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
+def _market_location_string(
+    search_location: Optional[SearchLocation],
+    property_address: Optional[str],
+) -> str:
+    label = market_label(search_location, property_address=property_address)
+    if label:
+        return label
+    return (property_address or "").strip() or "not provided"
+
+
+def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
     """One Gemini call with Google Search grounding for DIY steps context."""
     client = LEGACY_API_GEMINI.api_client
-    addr = property_address.strip() if property_address else "not provided"
+    addr = market_location.strip() if market_location else "not provided"
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     ctx_block = ""
     if checkpoint_ctx:
@@ -427,7 +439,7 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
     prompt = (
         f"{ctx_block}"
         f"Issue / search focus:\n{diagnosis[:4000]}\n\n"
-        f"Property address context: {addr}\n\n"
+        f"Search/market location: {addr}\n\n"
         "Using web search when helpful, list practical DIY repair steps (numbered, at most 8), "
         "required tools, materials, and safety warnings. Be concise (under 500 words). "
         "Do not fabricate URLs."
@@ -454,32 +466,55 @@ def _diy_web_search_grounded(diagnosis: str, property_address: str) -> str:
         return ""
 
 
-def _youtube_for_diagnosis(diagnosis: str) -> list[Dict[str, Any]]:
+def _youtube_for_diagnosis(
+    diagnosis: str,
+    search_location: Optional[SearchLocation] = None,
+) -> list[Dict[str, Any]]:
     seed = _compact_diy_search_seed(diagnosis)
     q = f"{seed} DIY tutorial how to fix"
-    return youtube_search(q, max_results=5)
+    return youtube_search(q, max_results=5, search_location=search_location)
 
 
-def _youtube_for_checkpoint_retrieval_seed(seed: str) -> list[Dict[str, Any]]:
+def _youtube_for_checkpoint_retrieval_seed(
+    seed: str,
+    search_location: Optional[SearchLocation] = None,
+) -> list[Dict[str, Any]]:
     """YouTube: server-built checkpoint retrieval seed plus DIY intent (same tail as diagnosis path)."""
     base = (seed or "").strip()
     if not base:
-        return youtube_search("", max_results=5)
+        return youtube_search("", max_results=5, search_location=search_location)
     q = f"{base} DIY tutorial how to fix"
-    return youtube_search(q, max_results=5)
+    return youtube_search(q, max_results=5, search_location=search_location)
 
 
-def _products_for_diagnosis(diagnosis: str) -> str:
+def _products_for_diagnosis(
+    diagnosis: str,
+    search_location: Optional[SearchLocation] = None,
+    property_address: Optional[str] = None,
+) -> str:
     loc, sum_, iss, _one = _parse_checkpoint_fields(diagnosis)
     seed = _shopping_search_seed(loc, sum_, iss)
     if not seed.strip():
         seed = _compact_diy_search_seed(diagnosis)
-    return product_recommendations(seed, "DIY")
+    sl_dict = search_location.model_dump() if search_location else None
+    return product_recommendations(
+        seed, "DIY", search_location=sl_dict, property_address=property_address
+    )
 
 
-def _products_for_checkpoint_retrieval_seed(seed: str) -> str:
-    """SerpAPI shopping uses only the server-built checkpoint retrieval phrase as the user stem."""
-    return product_recommendations((seed or "").strip(), "DIY")
+def _products_for_checkpoint_retrieval_seed(
+    seed: str,
+    search_location: Optional[SearchLocation] = None,
+    property_address: Optional[str] = None,
+) -> str:
+    """SerpAPI shopping uses checkpoint retrieval phrase; geo via search_location."""
+    sl_dict = search_location.model_dump() if search_location else None
+    return product_recommendations(
+        (seed or "").strip(),
+        "DIY",
+        search_location=sl_dict,
+        property_address=property_address,
+    )
 
 
 def _product_recommendations_log_summary(products_json: str) -> str:
@@ -581,10 +616,10 @@ def _apply_prefetched_diy_artifacts(
     )
 
 
-def _cost_query(diagnosis: str, property_address: str) -> str:
+def _cost_query(diagnosis: str, market_location: str) -> str:
     parts = [f"{diagnosis.strip()[:2000]} DIY cost estimate"]
-    if property_address.strip():
-        parts.append(f"Property: {property_address.strip()[:500]}")
+    if market_location.strip() and market_location.strip() != "not provided":
+        parts.append(f"Market location: {market_location.strip()[:500]}")
     return " ".join(parts)
 
 
@@ -787,6 +822,7 @@ def _fallback_json(
 def run_diy_pipeline_sync(
     user_query: str,
     property_address: Optional[str] = None,
+    search_location: Optional[SearchLocation] = None,
     context_doc_uris: Optional[list[str]] = None,
     checkpoint_retrieval_search_query: Optional[str] = None,
 ) -> str:
@@ -796,7 +832,8 @@ def run_diy_pipeline_sync(
 
     Args:
         user_query: Diagnosis or issue text (checkpoint branch usually embeds checkpoint context here).
-        property_address: Optional property address for location context in search prompts.
+        property_address: Property record address (identity only; not used for market geo when search_location is set).
+        search_location: Unified market/geo for web, cost, and shopping locality.
         context_doc_uris: Reserved for future RAG; ignored for now.
         checkpoint_retrieval_search_query: When set, grounded web search, YouTube, shopping,
             and library DIY cost use this retrieval phrase (after strip). Synthesis uses
@@ -823,11 +860,11 @@ def run_diy_pipeline_sync(
             }
         )
 
-    addr = (property_address or "").strip()
+    market_loc = _market_location_string(search_location, property_address)
     ttl = _cache_ttl_seconds()
     ck = _cache_key(
         diagnosis,
-        addr,
+        market_loc,
         checkpoint_retrieval_search_query=api_seed,
     )
     if ttl > 0:
@@ -840,15 +877,15 @@ def run_diy_pipeline_sync(
     t0 = time.monotonic()
     cost_source = api_seed or diagnosis
     web_query = _web_grounding_query(diagnosis, api_seed)
-    cost_q = _cost_query(cost_source, addr)
+    cost_q = _cost_query(cost_source, market_loc)
 
     logger.info(
         "DIY orchestrator: pipeline_start diagnosis_chars=%d web_query_chars=%d "
-        "cost_query_chars=%d address_set=%s retrieval_seed_len=%d cache_ttl_s=%.0f",
+        "cost_query_chars=%d market_location_set=%s retrieval_seed_len=%d cache_ttl_s=%.0f",
         len(diagnosis),
         len(web_query),
         len(cost_source),
-        bool(addr),
+        bool(market_loc and market_loc != "not provided"),
         -1 if api_seed is None else len(api_seed),
         ttl,
     )
@@ -868,7 +905,7 @@ def run_diy_pipeline_sync(
             future_map[fut] = phase
             submit_at[fut] = time.monotonic()
 
-        submit_phase("web", _diy_web_search_grounded, web_query, addr)
+        submit_phase("web", _diy_web_search_grounded, web_query, market_loc)
         if api_seed:
             logger.debug(
                 "DIY orchestrator: web+YouTube+shopping use checkpoint retrieval search_query "
@@ -876,11 +913,30 @@ def run_diy_pipeline_sync(
                 len(api_seed),
                 api_seed,
             )
-            submit_phase("youtube", _youtube_for_checkpoint_retrieval_seed, api_seed)
-            submit_phase("products", _products_for_checkpoint_retrieval_seed, api_seed)
+            submit_phase(
+                "youtube",
+                _youtube_for_checkpoint_retrieval_seed,
+                api_seed,
+                search_location,
+            )
+            submit_phase(
+                "products",
+                _products_for_checkpoint_retrieval_seed,
+                api_seed,
+                search_location,
+                property_address,
+            )
         else:
-            submit_phase("youtube", _youtube_for_diagnosis, diagnosis)
-            submit_phase("products", _products_for_diagnosis, diagnosis)
+            submit_phase(
+                "youtube", _youtube_for_diagnosis, diagnosis, search_location
+            )
+            submit_phase(
+                "products",
+                _products_for_diagnosis,
+                diagnosis,
+                search_location,
+                property_address,
+            )
         submit_phase("cost", cost_estimation_diy_from_library, cost_q)
 
         for fut in as_completed(future_map):
@@ -983,6 +1039,7 @@ def run_diy_pipeline_sync(
 async def run_diy_pipeline(
     user_query: str,
     property_address: Optional[str] = None,
+    search_location: Optional[SearchLocation] = None,
     context_doc_uris: Optional[list[str]] = None,
     checkpoint_retrieval_search_query: Optional[str] = None,
 ) -> str:
@@ -991,7 +1048,7 @@ async def run_diy_pipeline(
         "DIY run_diy_pipeline async entry user_query_len=%d address_set=%s "
         "checkpoint_retrieval_seed=%s context_doc_uris=%d",
         len((user_query or "").strip()),
-        bool((property_address or "").strip()),
+        bool(market_label(search_location) or (property_address or "").strip()),
         checkpoint_retrieval_search_query is not None,
         len(context_doc_uris or []),
     )
@@ -999,6 +1056,7 @@ async def run_diy_pipeline(
         run_diy_pipeline_sync,
         user_query,
         property_address,
+        search_location,
         context_doc_uris,
         checkpoint_retrieval_search_query,
     )

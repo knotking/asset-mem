@@ -10,7 +10,7 @@ import type {
   AgentStep,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-  LocationData,
+  SearchLocationInput,
   PrimaryAgent,
 } from "@/lib/types";
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from "@/lib/types";
@@ -49,6 +49,7 @@ import { usePropertyDocuments } from "@/contexts/property-documents-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { CheckpointDrawer } from "@/components/checkpoints/checkpoint-drawer";
 import type { Checkpoint } from "@/lib/types";
+import { defaultSearchLocationInput } from "@/lib/search-location";
 import { streamAgentResponse } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
 
@@ -90,7 +91,7 @@ export default function PropertyChatSessionPage() {
   >([]);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Checkpoint[]>([]);
   const [isCheckpointDrawerOpen, setIsCheckpointDrawerOpen] = useState(false);
-  const [locationData, setLocationData] = useState<LocationData | undefined>(
+  const [searchLocation, setSearchLocation] = useState<SearchLocationInput | undefined>(
     undefined
   );
 
@@ -152,45 +153,12 @@ export default function PropertyChatSessionPage() {
     return () => unsubscribe();
   }, [user, sessionId, toast]);
 
-  // Auto-set current location when session is created
+  // Default to property-address search on new sessions (no silent GPS)
   useEffect(() => {
-    const setDefaultLocation = async () => {
-      // Only set location if:
-      // 1. We have a session
-      // 2. Location data is not already set
-      // 3. It's a new session
-      if (sessionId && !locationData && isNewSession) {
-        try {
-          if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const defaultLocationData: LocationData = {
-                  locationType: 'location',
-                  locationCoordinates: {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                  },
-                  locationRadius: 5, // Default 5 mile radius
-                };
-                setLocationData(defaultLocationData);
-                chatLog.debug("location.autoSet");
-              },
-              () => {
-                chatLog.debug("location.permissionDenied");
-              }
-            );
-          } else {
-            chatLog.debug("location.unsupported");
-          }
-        } catch (error) {
-          chatLog.error("location.error", undefined, error);
-          // Silently fail - user can manually set location if needed
-        }
-      }
-    };
-
-    setDefaultLocation();
-  }, [sessionId, locationData, isNewSession]);
+    if (sessionId && !searchLocation && isNewSession) {
+      setSearchLocation(defaultSearchLocationInput());
+    }
+  }, [sessionId, searchLocation, isNewSession]);
 
   const handleStop = () => {
     if (abortControllerRef.current) {
@@ -467,7 +435,7 @@ export default function PropertyChatSessionPage() {
             primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0
               ? selectedCheckpointOptionalAgents
               : undefined,
-          locationData,
+          searchLocation,
           signal,
           firebaseChatId: activeSessionId,
         });
@@ -518,7 +486,7 @@ export default function PropertyChatSessionPage() {
       selectedOptionalAgents,
       selectedCheckpointOptionalAgents,
       selectedCheckpoints,
-      locationData,
+      searchLocation,
     ]
   );
 
@@ -567,8 +535,8 @@ export default function PropertyChatSessionPage() {
             selectedCheckpoints={selectedCheckpoints}
             onOpenCheckpointDrawer={() => setIsCheckpointDrawerOpen(true)}
             onRemoveCheckpoint={handleRemoveCheckpoint}
-            locationData={locationData}
-            onLocationDataChange={setLocationData}
+            searchLocation={searchLocation}
+            onSearchLocationChange={setSearchLocation}
             propertyAddress={property?.address}
           />
         </footer>

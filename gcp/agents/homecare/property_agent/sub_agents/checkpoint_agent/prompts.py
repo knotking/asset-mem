@@ -31,9 +31,8 @@ def checkpoint_agent_instruction() -> str:
         *   `checkpoint_ids` (Optional[List[str]]): Specific checkpoint IDs to query
         *   `checkpoint_optional_agents` (Optional[List[str]]): Optional analysis agents to invoke after retrieval. Allowed values: "coverage", "diy", "service", "cost"
         *   `context_doc_uris` (Optional[List[str]]): Context documents for coverage checks
-        *   `property_address` (Optional[str]): Property address for location-based services
-        *   `location_coordinates` (Optional[Dict]): Coordinates for service searches
-        *   `location_radius` (Optional[int]): Search radius for local services
+        *   `property_address` (Optional[str]): Property record address (identity/context only)
+        *   `search_location` (Optional[object]): Unified market/geo for optional agents (service, cost, DIY)
 
         **Your Core Task and Workflow:**
         1. **Extract property_id:** Get `property_id` from your input schema. This is REQUIRED.

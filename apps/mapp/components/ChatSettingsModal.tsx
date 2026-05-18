@@ -24,8 +24,8 @@ import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-  LocationData,
-  LocationType,
+  SearchLocationInput,
+  SearchLocationSource,
 } from '@homeapp/common/types';
 import * as Location from 'expo-location';
 import { createLogger } from '@/lib/logger';
@@ -42,8 +42,8 @@ interface ChatSettingsModalProps {
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
   onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
-  locationData?: LocationData;
-  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  searchLocation?: SearchLocationInput;
+  onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
   initialTab?: 'agent' | 'location';
 }
@@ -79,19 +79,19 @@ export function ChatSettingsModal({
   onToggleOptionalAgent,
   selectedCheckpointOptionalAgents,
   onToggleCheckpointOptionalAgent,
-  locationData,
-  onLocationDataChange,
+  searchLocation,
+  onSearchLocationChange,
   propertyAddress,
   initialTab = 'agent',
 }: ChatSettingsModalProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [activeTab, setActiveTab] = React.useState<'agent' | 'location'>(initialTab);
-  const [locationType, setLocationType] = React.useState<LocationType | undefined>(
-    locationData?.locationType || 'location'
+  const [locationSource, setLocationSource] = React.useState<SearchLocationSource>(
+    searchLocation?.source || 'property_address'
   );
   const [locationRadius, setLocationRadius] = React.useState<number>(
-    locationData?.locationRadius || 5
+    searchLocation?.radiusMiles || 5
   );
   const [isGettingLocation, setIsGettingLocation] = React.useState(false);
 
@@ -114,13 +114,13 @@ export function ChatSettingsModal({
   }, [visible, initialTab]);
 
   React.useEffect(() => {
-    if (locationData) {
-      setLocationType(locationData.locationType);
-      if (locationData.locationRadius !== undefined) {
-        setLocationRadius(locationData.locationRadius);
+    if (searchLocation) {
+      setLocationSource(searchLocation.source);
+      if (searchLocation.radiusMiles !== undefined) {
+        setLocationRadius(searchLocation.radiusMiles);
       }
     }
-  }, [locationData]);
+  }, [searchLocation]);
 
   const handleGetCurrentLocation = async () => {
     setIsGettingLocation(true);
@@ -133,16 +133,16 @@ export function ChatSettingsModal({
       }
 
       const location = await Location.getCurrentPositionAsync({});
-      const newLocationData: LocationData = {
-        locationType: 'location',
-        locationCoordinates: {
+      const next: SearchLocationInput = {
+        source: 'device_gps',
+        coordinates: {
           lat: location.coords.latitude,
           lng: location.coords.longitude,
         },
-        locationRadius: locationRadius,
+        radiusMiles: locationRadius,
       };
-      setLocationType('location');
-      onLocationDataChange?.(newLocationData);
+      setLocationSource('device_gps');
+      onSearchLocationChange?.(next);
     } catch (error) {
       chatLog.error('location.failed', undefined, error);
       alert('Failed to get current location');
@@ -151,39 +151,34 @@ export function ChatSettingsModal({
     }
   };
 
-  const handleLocationTypeChange = (type: LocationType) => {
-    setLocationType(type);
-    if (type === 'address') {
+  const handleLocationSourceChange = (source: SearchLocationSource) => {
+    setLocationSource(source);
+    if (source === 'property_address') {
       if (propertyAddress) {
-        const newLocationData: LocationData = {
-          locationType: 'address',
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
+        onSearchLocationChange?.({ source: 'property_address', radiusMiles: locationRadius });
       } else {
-        onLocationDataChange?.(undefined);
+        onSearchLocationChange?.(undefined);
       }
-    } else if (type === 'location') {
-      if (locationData?.locationCoordinates) {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: locationData.locationCoordinates,
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
-      }
+    } else if (source === 'device_gps' && searchLocation?.coordinates) {
+      onSearchLocationChange?.({
+        source: 'device_gps',
+        coordinates: searchLocation.coordinates,
+        radiusMiles: locationRadius,
+      });
     }
   };
 
   const handleRadiusChange = (radius: number) => {
     setLocationRadius(radius);
-    if (locationType && onLocationDataChange) {
-      const newLocationData: LocationData = {
-        locationType,
-        locationCoordinates: locationData?.locationCoordinates,
-        locationRadius: radius,
-      };
-      onLocationDataChange(newLocationData);
+    if (!onSearchLocationChange) return;
+    if (locationSource === 'property_address' && propertyAddress) {
+      onSearchLocationChange({ source: 'property_address', radiusMiles: radius });
+    } else if (locationSource === 'device_gps' && searchLocation?.coordinates) {
+      onSearchLocationChange({
+        source: 'device_gps',
+        coordinates: searchLocation.coordinates,
+        radiusMiles: radius,
+      });
     }
   };
 
@@ -219,7 +214,7 @@ export function ChatSettingsModal({
                 Agent
               </Text>
             </Pressable>
-            {onLocationDataChange && (
+            {onSearchLocationChange && (
               <Pressable
                 onPress={() => setActiveTab('location')}
                 className={`flex-1 border-b-2 py-3 ${
@@ -384,16 +379,16 @@ export function ChatSettingsModal({
               </View>
             )}
 
-            {activeTab === 'location' && onLocationDataChange && (
+            {activeTab === 'location' && onSearchLocationChange && (
               <View className="gap-4">
                 {/* Location Type */}
                 <View>
                   <Text className="mb-3 text-sm font-semibold text-foreground">Location Type</Text>
                   <View className="flex-row gap-3">
                     <Pressable
-                      onPress={() => handleLocationTypeChange('address')}
+                      onPress={() => handleLocationSourceChange('property_address')}
                       className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
-                        locationType === 'address'
+                        locationSource === 'property_address'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
                       }`}>
@@ -401,20 +396,20 @@ export function ChatSettingsModal({
                         as={MapPin}
                         size={18}
                         className={
-                          locationType === 'address' ? 'text-primary-foreground' : 'text-foreground'
+                          locationSource === 'property_address' ? 'text-primary-foreground' : 'text-foreground'
                         }
                       />
                       <Text
                         className={`text-sm font-semibold ${
-                          locationType === 'address' ? 'text-primary-foreground' : 'text-foreground'
+                          locationSource === 'property_address' ? 'text-primary-foreground' : 'text-foreground'
                         }`}>
                         Address
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => handleLocationTypeChange('location')}
+                      onPress={() => handleLocationSourceChange('device_gps')}
                       className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3 ${
-                        locationType === 'location'
+                        locationSource === 'device_gps'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
                       }`}>
@@ -422,12 +417,12 @@ export function ChatSettingsModal({
                         as={Navigation}
                         size={18}
                         className={
-                          locationType === 'location' ? 'text-primary-foreground' : 'text-foreground'
+                          locationSource === 'device_gps' ? 'text-primary-foreground' : 'text-foreground'
                         }
                       />
                       <Text
                         className={`text-sm font-semibold ${
-                          locationType === 'location' ? 'text-primary-foreground' : 'text-foreground'
+                          locationSource === 'device_gps' ? 'text-primary-foreground' : 'text-foreground'
                         }`}>
                         Current
                       </Text>
@@ -436,7 +431,7 @@ export function ChatSettingsModal({
                 </View>
 
                 {/* Address Mode Info */}
-                {locationType === 'address' && propertyAddress && (
+                {locationSource === 'property_address' && propertyAddress && (
                   <View className="rounded-lg bg-muted/50 p-3">
                     <Text className="text-xs leading-5 text-muted-foreground">
                       Using property address: {propertyAddress.substring(0, 50)}
@@ -445,7 +440,7 @@ export function ChatSettingsModal({
                   </View>
                 )}
 
-                {locationType === 'address' && !propertyAddress && (
+                {locationSource === 'property_address' && !propertyAddress && (
                   <View className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3">
                     <Text className="text-xs leading-5 text-yellow-700 dark:text-yellow-400">
                       No property address available. Please select a property or use Current
@@ -455,7 +450,7 @@ export function ChatSettingsModal({
                 )}
 
                 {/* Current Location Button */}
-                {locationType === 'location' && (
+                {locationSource === 'device_gps' && (
                   <View>
                     <Pressable
                       onPress={handleGetCurrentLocation}
@@ -470,11 +465,11 @@ export function ChatSettingsModal({
                         {isGettingLocation ? 'Getting location...' : 'Get Current Location'}
                       </Text>
                     </Pressable>
-                    {locationData?.locationCoordinates && (
+                    {searchLocation?.coordinates && (
                       <View className="mt-3 rounded-lg border border-green-500/20 bg-green-500/10 p-3">
                         <Text className="text-xs text-green-700 dark:text-green-400">
-                          ✓ Location set: {locationData.locationCoordinates.lat.toFixed(4)},{' '}
-                          {locationData.locationCoordinates.lng.toFixed(4)}
+                          ✓ Location set: {searchLocation.coordinates.lat.toFixed(4)},{' '}
+                          {searchLocation.coordinates.lng.toFixed(4)}
                         </Text>
                       </View>
                     )}
@@ -482,7 +477,7 @@ export function ChatSettingsModal({
                 )}
 
                 {/* Radius Selector */}
-                {(locationType === 'location' || locationType === 'address') && (
+                {(locationSource === 'device_gps' || locationSource === 'property_address') && (
                   <View>
                     <View className="mb-2 flex-row items-center justify-between">
                       <Text className="text-sm font-semibold text-foreground">Search Radius</Text>

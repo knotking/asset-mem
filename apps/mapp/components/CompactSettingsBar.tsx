@@ -10,13 +10,19 @@ import {
   Navigation,
   Settings,
 } from 'lucide-react-native';
-import type { PrimaryAgent, LocationData, AnalysisOptionalAgent, CheckpointOptionalAgent } from '@homeapp/common/types';
+import type {
+  PrimaryAgent,
+  SearchLocationInput,
+  AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
+} from '@homeapp/common/types';
+import { searchLocationLabel } from '@homeapp/common/lib/search-location';
 
 interface CompactSettingsBarProps {
   primaryAgent: PrimaryAgent;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
-  locationData?: LocationData;
+  searchLocation?: SearchLocationInput;
   propertyAddress?: string;
   onOpenSettings: () => void;
   onAgentPress?: () => void;
@@ -27,28 +33,24 @@ export function CompactSettingsBar({
   primaryAgent,
   selectedOptionalAgents,
   selectedCheckpointOptionalAgents,
-  locationData,
+  searchLocation,
   propertyAddress,
   onOpenSettings,
   onAgentPress,
   onLocationPress,
 }: CompactSettingsBarProps) {
   const hasLocation = !!(
-    (locationData?.locationType === 'location' && locationData?.locationCoordinates) ||
-    (locationData?.locationType === 'address' && propertyAddress)
+    (searchLocation?.source === 'device_gps' && searchLocation?.coordinates) ||
+    (searchLocation?.source === 'property_address' && propertyAddress)
   );
 
   const getLocationLabel = () => {
     if (!hasLocation) return 'No location';
-    if (locationData?.locationType === 'location') {
-      return `${locationData.locationRadius || 5}mi`;
-    }
-    return `${locationData?.locationRadius || 5}mi`;
+    return searchLocationLabel(searchLocation, propertyAddress);
   };
 
   return (
     <View className="mb-2 flex-row items-center gap-2">
-      {/* Agent Selector */}
       <Pressable
         onPress={onAgentPress || onOpenSettings}
         className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
@@ -78,14 +80,13 @@ export function CompactSettingsBar({
         )}
       </Pressable>
 
-      {/* Location Indicator */}
       <Pressable
         onPress={onLocationPress || onOpenSettings}
         className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
         accessibilityRole="button"
         accessibilityLabel={`Location: ${getLocationLabel()}`}>
         <Icon
-          as={locationData?.locationType === 'location' ? Navigation : MapPin}
+          as={searchLocation?.source === 'device_gps' ? Navigation : MapPin}
           size={14}
           className={hasLocation ? 'text-primary' : 'text-muted-foreground'}
         />
@@ -94,7 +95,6 @@ export function CompactSettingsBar({
         </Text>
       </Pressable>
 
-      {/* Settings Button */}
       <Pressable
         onPress={onOpenSettings}
         className="h-8 w-8 items-center justify-center rounded-full border border-border bg-background"
@@ -105,4 +105,3 @@ export function CompactSettingsBar({
     </View>
   );
 }
-

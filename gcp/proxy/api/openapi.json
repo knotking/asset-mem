@@ -1,13 +1,15 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FastAPI",
-    "version": "0.1.0"
+    "title": "HomeApp Proxy API",
+    "description": "API for handling HomeApp proxy requests, including Firebase and Telegram webhooks.",
+    "version": "1.0.0"
   },
   "paths": {
     "/health": {
       "get": {
         "summary": "Health Check",
+        "description": "Check the health status of the API and Reasoning Engine connection.",
         "operationId": "health_check_health_get",
         "responses": {
           "200": {
@@ -21,9 +23,53 @@
         }
       }
     },
+    "/token-quota-status": {
+      "post": {
+        "tags": [
+          "Token quota"
+        ],
+        "summary": "Token quota status",
+        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS.",
+        "operationId": "token_quota_status_token_quota_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenQuotaStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mock_secret/firebase-agent-query": {
       "post": {
-        "summary": "Firebase Webhook",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Handle Agent Query",
+        "description": "Process a query from the agent and return a response.",
         "operationId": "firebase_webhook_mock_secret_firebase_agent_query_post",
         "requestBody": {
           "content": {
@@ -59,7 +105,11 @@
     },
     "/mock_secret/firebase-agent-stream": {
       "post": {
-        "summary": "Firebase Streaming Webhook",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Stream Agent Response",
+        "description": "Process a query from the agent and stream the response.",
         "operationId": "firebase_streaming_webhook_mock_secret_firebase_agent_stream_post",
         "requestBody": {
           "content": {
@@ -95,7 +145,11 @@
     },
     "/mock_secret/agent-session": {
       "post": {
-        "summary": "Firebase Agent Session Create",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Create Agent Session",
+        "description": "Create a new session for the agent.",
         "operationId": "firebase_agent_session_create_mock_secret_agent_session_post",
         "requestBody": {
           "content": {
@@ -129,7 +183,11 @@
         }
       },
       "delete": {
-        "summary": "Firebase Agent Session Delete",
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Delete Agent Session",
+        "description": "Delete an existing agent session.",
         "operationId": "firebase_agent_session_delete_mock_secret_agent_session_delete",
         "requestBody": {
           "content": {
@@ -165,7 +223,11 @@
     },
     "/mock_secret/rag-file-upload": {
       "post": {
-        "summary": "Firebase Webhook File Upload",
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload RAG File",
+        "description": "Upload a file for RAG (Retrieval-Augmented Generation) processing.",
         "operationId": "firebase_webhook_file_upload_mock_secret_rag_file_upload_post",
         "requestBody": {
           "content": {
@@ -201,7 +263,11 @@
     },
     "/mock_secret/extract-doc-info": {
       "post": {
+        "tags": [
+          "Documents"
+        ],
         "summary": "Queue document extraction",
+        "description": "Publishes document analysis to Pub/Sub. The worker updates the Firestore doc (`users/{userId}/docs/{docId}`) when complete. Clients should listen on that document.",
         "operationId": "extract_document_info_endpoint_mock_secret_extract_doc_info_post",
         "requestBody": {
           "content": {
@@ -214,8 +280,8 @@
           "required": true
         },
         "responses": {
-          "202": {
-            "description": "Analysis queued",
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
@@ -237,7 +303,11 @@
     },
     "/mock_secret/service-broker-agent": {
       "post": {
-        "summary": "Service Broker Agent Webhook",
+        "tags": [
+          "Service Broker"
+        ],
+        "summary": "Service Broker Webhook",
+        "description": "Handle incoming webhooks for the service broker agent.",
         "operationId": "service_broker_agent_webhook_mock_secret_service_broker_agent_post",
         "responses": {
           "200": {
@@ -254,6 +324,7 @@
     "/mock_secret/analyze-checkpoint": {
       "post": {
         "summary": "Analyze Checkpoint Endpoint",
+        "description": "Analyze a property checkpoint image using Gemini AI.\n\nThis endpoint publishes the analysis request to Pub/Sub for async processing.\nReturns immediately (202 Accepted). The worker function will process the\nanalysis and update Firestore directly. Frontend should listen to Firestore\nchanges to see when analysis completes.\n\nRequires: checkpointId, userId, propertyId for Firestore update.",
         "operationId": "analyze_checkpoint_endpoint_mock_secret_analyze_checkpoint_post",
         "requestBody": {
           "content": {
@@ -290,6 +361,7 @@
     "/mock_secret/compare-checkpoints": {
       "post": {
         "summary": "Compare Checkpoints Endpoint",
+        "description": "Compare two checkpoint images (previous vs current) using Gemini AI.\nReturns structured comparison data including similarity score, semantic changes, and specific regions of interest.",
         "operationId": "compare_checkpoints_endpoint_mock_secret_compare_checkpoints_post",
         "requestBody": {
           "content": {
@@ -323,9 +395,53 @@
         }
       }
     },
+    "/mock_secret/token-quota-status": {
+      "post": {
+        "tags": [
+          "Token quota"
+        ],
+        "summary": "Token quota status",
+        "description": "Returns resolved monthly max tokens (0 = unlimited) and usage for the current UTC month. Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS.",
+        "operationId": "token_quota_status_mock_secret_token_quota_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenQuotaStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mock_telegram_secret": {
       "post": {
+        "tags": [
+          "Telegram"
+        ],
         "summary": "Telegram Webhook",
+        "description": "Handle incoming Telegram webhooks.",
         "operationId": "telegram_webhook_mock_telegram_secret_post",
         "responses": {
           "200": {
@@ -346,7 +462,8 @@
         "properties": {
           "user_id": {
             "type": "string",
-            "title": "User Id"
+            "title": "User Id",
+            "description": "Unique identifier for the user"
           },
           "session_id": {
             "anyOf": [
@@ -358,11 +475,13 @@
               }
             ],
             "title": "Session Id",
+            "description": "Session ID for the conversation context",
             "default": ""
           },
           "user_query": {
             "type": "string",
             "title": "User Query",
+            "description": "The query or prompt from the user",
             "default": "Analyse"
           },
           "context_doc_uris": {
@@ -370,26 +489,84 @@
               "type": "string"
             },
             "type": "array",
-            "title": "Context Doc Uris"
+            "title": "Context Doc Uris",
+            "description": "List of GCS URIs for context documents"
           },
           "diagnosis_uris": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Diagnosis Uris"
+            "title": "Diagnosis Uris",
+            "description": "List of GCS URIs for diagnosis documents"
+          },
+          "checkpoint_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Ids",
+            "description": "Checkpoint IDs for checkpoint context (enables checkpoint_agent routing)"
           },
           "property_address": {
             "type": "string",
             "title": "Property Address",
+            "description": "Property record address (identity/context only, not market geo)",
             "default": ""
           },
-          "analysis_optional_agents": {
+          "search_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchLocationRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Unified search/market location (resolved server-side for agents)"
+          },
+          "property_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Id",
+            "description": "Property ID for property-specific queries (e.g., checkpoint retrieval)"
+          },
+          "primary_agent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "checkpoint",
+                  "docs"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Agent",
+            "description": "Primary agent selection for explicit routing: 'checkpoint' for checkpoint queries, 'docs' for document queries"
+          },
+          "checkpoint_optional_agents": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Analysis Optional Agents"
+            "title": "Checkpoint Optional Agents",
+            "description": "List of optional agents to include in checkpoint analysis"
           },
           "location_type": {
             "anyOf": [
@@ -404,7 +581,8 @@
                 "type": "null"
               }
             ],
-            "title": "Location Type"
+            "title": "Location Type",
+            "description": "Deprecated. Use search_location.source instead."
           },
           "location_coordinates": {
             "anyOf": [
@@ -418,7 +596,8 @@
                 "type": "null"
               }
             ],
-            "title": "Location Coordinates"
+            "title": "Location Coordinates",
+            "description": "Deprecated. Use search_location.coordinates instead."
           },
           "location_radius": {
             "anyOf": [
@@ -429,7 +608,8 @@
                 "type": "null"
               }
             ],
-            "title": "Location Radius"
+            "title": "Location Radius",
+            "description": "Deprecated. Use search_location.radius_miles instead."
           }
         },
         "type": "object",
@@ -543,19 +723,23 @@
         "properties": {
           "docId": {
             "type": "string",
-            "title": "Doc Id"
+            "title": "Docid",
+            "description": "Firestore document id under users/{userId}/docs"
           },
           "docUrl": {
             "type": "string",
-            "title": "Docurl"
+            "title": "Docurl",
+            "description": "The GCS URL of the document to analyze (gs://...)"
           },
           "contentType": {
             "type": "string",
-            "title": "Contenttype"
+            "title": "Contenttype",
+            "description": "MIME type of the document"
           },
           "userId": {
             "type": "string",
-            "title": "User Id"
+            "title": "Userid",
+            "description": "Firebase Auth UID \u2014 required for quota accounting and Firestore path"
           }
         },
         "type": "object",
@@ -565,7 +749,8 @@
           "contentType",
           "userId"
         ],
-        "title": "ExtractDocInfoRequest"
+        "title": "ExtractDocInfoRequest",
+        "description": "Queue document extraction; the worker updates `users/{userId}/docs/{docId}` in Firestore."
       },
       "HTTPValidationError": {
         "properties": {
@@ -580,11 +765,71 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "SearchLocationCoordinatesRequest": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lng": {
+            "type": "number",
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "SearchLocationCoordinatesRequest"
+      },
+      "SearchLocationRequest": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "property_address",
+              "device_gps"
+            ],
+            "title": "Source"
+          },
+          "radius_miles": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius Miles",
+            "description": "Search radius in miles (5-100)"
+          },
+          "coordinates": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchLocationCoordinatesRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required when source is device_gps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "SearchLocationRequest",
+        "description": "Client search location (resolved to canonical search_location in proxy)."
+      },
       "SessionRequest": {
         "properties": {
           "user_id": {
             "type": "string",
-            "title": "User Id"
+            "title": "User Id",
+            "description": "Unique identifier for the user"
           },
           "session_id": {
             "anyOf": [
@@ -595,7 +840,8 @@
                 "type": "null"
               }
             ],
-            "title": "Session Id"
+            "title": "Session Id",
+            "description": "Session ID to operate on"
           }
         },
         "type": "object",
@@ -603,6 +849,21 @@
           "user_id"
         ],
         "title": "SessionRequest"
+      },
+      "TokenQuotaStatusRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "User Id",
+            "description": "Firebase Auth UID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "TokenQuotaStatusRequest"
       },
       "ValidationError": {
         "properties": {

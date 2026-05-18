@@ -16,6 +16,11 @@ from ...model_config import LEGACY_API_GEMINI
 logger = logging.getLogger(__name__)
 
 
+_COORD_PAIR_RE = re.compile(
+    r"^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$"
+)
+
+
 def _extract_location_info(property_address: Optional[str]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Extract city, state, and full location string from property address.
@@ -28,6 +33,13 @@ def _extract_location_info(property_address: Optional[str]) -> Tuple[Optional[st
     """
     if not property_address:
         return None, None, None
+
+    coord_match = _COORD_PAIR_RE.match(property_address.strip())
+    if coord_match:
+        lat = float(coord_match.group(1))
+        lng = float(coord_match.group(2))
+        location_string = f"{lat:.4f},{lng:.4f}"
+        return None, None, location_string
     
     # Try to parse common address formats
     # Format: "123 Main St, San Francisco, CA 94102"

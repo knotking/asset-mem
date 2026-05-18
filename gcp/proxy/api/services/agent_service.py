@@ -18,7 +18,7 @@ def _agent_request_debug_summary(req: AgentRequest) -> str:
         f"diagnosis_uris={len(req.diagnosis_uris or [])} "
         f"checkpoint_ids={len(req.checkpoint_ids or [])} "
         f"checkpoint_optional_agents={len(req.checkpoint_optional_agents or [])} "
-        f"location_type={req.location_type!r}"
+        f"search_location_source={(req.search_location.source if req.search_location else None)!r}"
     )
 
 

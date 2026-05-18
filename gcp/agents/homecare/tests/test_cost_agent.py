@@ -65,6 +65,13 @@ def test_extract_location_info_parses_city_state() -> None:
     assert "Brentwood" in (loc or "")
 
 
+def test_extract_location_info_parses_coordinate_pair() -> None:
+    city, state, loc = _extract_location_info("37.9000,-121.7000")
+    assert city is None
+    assert state is None
+    assert loc == "37.9000,-121.7000"
+
+
 # --- query parsing ---
 
 
@@ -85,6 +92,42 @@ def test_extract_property_address_from_json_payload() -> None:
     query = json.dumps({"property_address": "1982 Helena Way, Brentwood, CA 94513"})
     assert (
         cost_mod._extract_property_address_from_query(query)
+        == "1982 Helena Way, Brentwood, CA 94513"
+    )
+
+
+def test_extract_market_location_prefers_explicit_market_location() -> None:
+    query = json.dumps(
+        {
+            "diagnosis": "garage door paint repair",
+            "market_location": "1982 Helena Way, Brentwood, CA 94513",
+            "search_location": {
+                "source": "device_gps",
+                "radius_miles": 5,
+                "coordinates": {"lat": 37.9, "lng": -121.7},
+            },
+        }
+    )
+    assert (
+        cost_mod._extract_market_location_from_query(query)
+        == "1982 Helena Way, Brentwood, CA 94513"
+    )
+
+
+def test_extract_market_location_uses_property_address_over_coords() -> None:
+    query = json.dumps(
+        {
+            "diagnosis": "garage door paint repair",
+            "property_address": "1982 Helena Way, Brentwood, CA 94513",
+            "search_location": {
+                "source": "device_gps",
+                "radius_miles": 5,
+                "coordinates": {"lat": 37.9, "lng": -121.7},
+            },
+        }
+    )
+    assert (
+        cost_mod._extract_market_location_from_query(query)
         == "1982 Helena Way, Brentwood, CA 94513"
     )
 

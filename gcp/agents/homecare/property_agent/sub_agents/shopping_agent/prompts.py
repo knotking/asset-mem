@@ -16,12 +16,14 @@ def shopping_agent_instructions() -> str:
         **Input Parameters:**
         *   `user_query` (str): The user's question or description of the product need.
         *   `context_doc_uris` (List[str], optional): Additional context documents.
-        *   `property_address` (str, optional): The property address if available.
+        *   `property_address` (str, optional): Property record address (identity only).
+        *   `search_location` (object, optional): Market/geo for localized shopping (`coordinates`, `radius_miles`, `label`).
         
         **Available Tool:**
-        *   `product_recommendations(query: str, category: str = "DIY")`: Searches for and returns product recommendations.
-           - `query`: The search query describing the products needed
+        *   `product_recommendations(query: str, category: str = "DIY", search_location: object = None)`: Searches for and returns product recommendations.
+           - `query`: Product search text only (no lat/lng in the query)
            - `category`: The category of products (default: "DIY", can be "DIY", "Professional", or other categories as specified by the calling agent)
+           - `search_location`: Pass through when present for localized results
         
         **Instructions from Calling Agent:**
         The calling agent will provide specific instructions about:
@@ -38,6 +40,7 @@ def shopping_agent_instructions() -> str:
         2. Call `product_recommendations` with:
            - A query that incorporates the user's query and any relevant context (you may clean up the query to remove category keywords if already included in the category parameter)
            - The category determined from step 1
+           - `search_location` when provided in your inputs
         3. Return the results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**

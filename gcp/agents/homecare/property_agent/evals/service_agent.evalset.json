@@ -10,7 +10,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "{\"user_query\": “find service providers“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"], \"checkpoint_ids\": [\"HMaFGfwgL58ef5bGYS8o\", \"CZMA72oMvQPHRsq7phyb\"], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": \"checkpoint\", \"checkpoint_optional_agents\": [“service”], \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"location_type\": \"location\", \"location_coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"location_radius\": 5}"
+                "text": "{\"user_query\": “find service providers“, \"context_doc_uris\": [\"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"], \"checkpoint_ids\": [\"HMaFGfwgL58ef5bGYS8o\", \"CZMA72oMvQPHRsq7phyb\"], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": \"checkpoint\", \"checkpoint_optional_agents\": [“service”], \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"search_location\": {\"source\": \"device_gps\", \"coordinates\": {\"lat\": 37.9, \"lng\": -121.7}, \"radius_miles\": 5}}"
               }
             ],
             "role": "user"
@@ -71,16 +71,11 @@
                       "function_call": {
                         "id": "adk-0ebb0271-940d-4239-9309-7cb59e4972ac",
                         "args": {
-                          "location_radius": 5,
                           "user_query": "find service providers",
                           "property_id": "nY3XQ92eUa02Qs14QWEn",
                           "checkpoint_optional_agents": [
                             "service"
                           ],
-                          "location_coordinates": {
-                            "lat": 37.9,
-                            "lng": -121.7
-                          },
                           "property_address": "1982 Helena Way, Brentwood, CA 94513",
                           "context_doc_uris": [
                             "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf",
@@ -90,7 +85,15 @@
                           "checkpoint_ids": [
                             "HMaFGfwgL58ef5bGYS8o",
                             "CZMA72oMvQPHRsq7phyb"
-                          ]
+                          ],
+                          "search_location": {
+                            "source": "device_gps",
+                            "radius_miles": 5,
+                            "coordinates": {
+                              "lat": 37.9,
+                              "lng": -121.7
+                            }
+                          }
                         },
                         "name": "checkpoint_agent"
                       },
