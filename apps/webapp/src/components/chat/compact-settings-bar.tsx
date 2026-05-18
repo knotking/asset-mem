@@ -1,5 +1,10 @@
 import { Settings, Stethoscope, Clock, FileText, MapPin, Navigation } from "lucide-react";
-import type { PrimaryAgent, SearchLocationInput, AnalysisOptionalAgent, CheckpointOptionalAgent } from "@/lib/types";
+import type {
+  PrimaryAgent,
+  SearchLocationInput,
+  AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
+} from "@/lib/types";
 import { searchLocationLabel } from "@/lib/search-location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -55,9 +60,14 @@ export function CompactSettingsBar({
       >
         <AgentIcon className="h-3.5 w-3.5" />
         <span className="capitalize">{primaryAgent}</span>
-        {(selectedOptionalAgents.length > 0 || selectedCheckpointOptionalAgents.length > 0) && (
-          <span className="text-muted-foreground">
-            +{selectedOptionalAgents.length + selectedCheckpointOptionalAgents.length}
+        {primaryAgent === "analysis" && selectedOptionalAgents.length > 0 && (
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+            +{selectedOptionalAgents.length}
+          </span>
+        )}
+        {primaryAgent === "checkpoint" && selectedCheckpointOptionalAgents.length > 0 && (
+          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+            +{selectedCheckpointOptionalAgents.length}
           </span>
         )}
       </Button>
