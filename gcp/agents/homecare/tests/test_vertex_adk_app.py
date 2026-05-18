@@ -9,7 +9,9 @@ from property_agent.app_config import property_app
 
 
 def test_homecare_adk_app_wires_runner_with_property_app():
-    adk = HomecareAdkApp(agent=property_app.root_agent, enable_tracing=False)
+    # AdkApp.__init__ resolves GCP project/credentials; not available in CI.
+    with patch("property_agent.vertex_adk_app.AdkApp.__init__", return_value=None):
+        adk = HomecareAdkApp(agent=property_app.root_agent, enable_tracing=False)
     adk._tmpl_attrs = {
         "app_name": "test-engine-id",
         "session_service": MagicMock(),
