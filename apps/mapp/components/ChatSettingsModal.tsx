@@ -291,91 +291,77 @@ export function ChatSettingsModal({
                   </View>
                 </View>
 
-                {/* Optional Agents (Analysis Mode) */}
-                {primaryAgent === 'analysis' && (
-                  <View>
-                    <Text className="mb-3 text-sm font-semibold text-foreground">
-                      Optional Agents
-                    </Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                        const isSelected = selectedOptionalAgents.includes(option.id);
-                        return (
-                          <Pressable
-                            key={option.id}
-                            onPress={() => onToggleOptionalAgent(option.id)}
-                            className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
-                              isSelected
-                                ? 'border-primary bg-primary'
-                                : 'border-border bg-transparent'
-                            }`}>
-                            <Icon
-                              as={option.icon}
-                              size={14}
-                              className={
-                                isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                {/* Optional Agents — fixed footprint so switching to Docs does not collapse the modal */}
+                <View className="min-h-[140px]">
+                  <Text className="mb-3 text-sm font-semibold text-foreground">
+                    Optional Agents
+                  </Text>
+                  {primaryAgent === 'docs' ? (
+                    <>
+                      <View className="min-h-[72px] justify-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                        <Text className="text-xs leading-relaxed text-muted-foreground">
+                          Not available for Docs. The Docs agent answers from your uploaded property
+                          documents. Switch to Checkpoint to add coverage, DIY, service, or cost
+                          recommendations.
+                        </Text>
+                      </View>
+                      <View className="mt-2 min-h-[40px]" />
+                    </>
+                  ) : (
+                    <>
+                      <View className="min-h-[72px] flex-row flex-wrap content-start gap-2">
+                        {(primaryAgent === 'checkpoint'
+                          ? CHECKPOINT_OPTIONAL_AGENT_OPTIONS
+                          : OPTIONAL_AGENT_OPTIONS
+                        ).map((option) => {
+                          const isSelected =
+                            primaryAgent === 'checkpoint'
+                              ? selectedCheckpointOptionalAgents.includes(option.id)
+                              : selectedOptionalAgents.includes(option.id);
+                          return (
+                            <Pressable
+                              key={option.id}
+                              onPress={() =>
+                                primaryAgent === 'checkpoint'
+                                  ? onToggleCheckpointOptionalAgent(option.id)
+                                  : onToggleOptionalAgent(option.id)
                               }
-                            />
-                            <Text
-                              className={`text-xs font-medium ${
-                                isSelected ? 'text-primary-foreground' : 'text-foreground'
+                              className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
+                                isSelected
+                                  ? 'border-primary bg-primary'
+                                  : 'border-border bg-transparent'
                               }`}>
-                              {option.label}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                    {selectedOptionalAgents.length === 0 && (
-                      <Text className="mt-2 text-xs text-muted-foreground">
-                        Triage agent will run by default
+                              <Icon
+                                as={option.icon}
+                                size={14}
+                                className={
+                                  isSelected
+                                    ? 'text-primary-foreground'
+                                    : 'text-muted-foreground'
+                                }
+                              />
+                              <Text
+                                className={`text-xs font-medium ${
+                                  isSelected ? 'text-primary-foreground' : 'text-foreground'
+                                }`}>
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      <Text className="mt-2 min-h-[40px] text-xs text-muted-foreground">
+                        {primaryAgent === 'checkpoint'
+                          ? selectedCheckpointOptionalAgents.length === 0
+                            ? 'Basic checkpoint query will run by default'
+                            : `Checkpoint Agent will analyze checkpoints and provide ${selectedCheckpointOptionalAgents.join(', ')} recommendations`
+                          : selectedOptionalAgents.length === 0
+                            ? 'Triage agent will run by default'
+                            : ''}
                       </Text>
-                    )}
-                  </View>
-                )}
-
-                {/* Optional Agents (Checkpoint Mode) */}
-                {primaryAgent === 'checkpoint' && (
-                  <View>
-                    <Text className="mb-3 text-sm font-semibold text-foreground">
-                      Optional Agents
-                    </Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {CHECKPOINT_OPTIONAL_AGENT_OPTIONS.map((option) => {
-                        const isSelected = selectedCheckpointOptionalAgents.includes(option.id);
-                        return (
-                          <Pressable
-                            key={option.id}
-                            onPress={() => onToggleCheckpointOptionalAgent(option.id)}
-                            className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${
-                              isSelected
-                                ? 'border-primary bg-primary'
-                                : 'border-border bg-transparent'
-                            }`}>
-                            <Icon
-                              as={option.icon}
-                              size={14}
-                              className={
-                                isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-                              }
-                            />
-                            <Text
-                              className={`text-xs font-medium ${
-                                isSelected ? 'text-primary-foreground' : 'text-foreground'
-                              }`}>
-                              {option.label}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                    {selectedCheckpointOptionalAgents.length === 0 && (
-                      <Text className="mt-2 text-xs text-muted-foreground">
-                        Basic checkpoint query will run by default
-                      </Text>
-                    )}
-                  </View>
-                )}
+                    </>
+                  )}
+                </View>
               </View>
             )}
 

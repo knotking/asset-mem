@@ -197,69 +197,71 @@ export function ChatSettingsPopover({
               </div>
             </div>
 
-            {/* Optional Agents (Analysis Mode) */}
-            {primaryAgent === 'analysis' && (
-              <div>
-                <label className="text-sm font-semibold mb-3 block">Optional Agents</label>
-                <div className="flex flex-wrap gap-2">
-                  {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                    const isSelected = selectedOptionalAgents.includes(option.id);
-                    const Icon = option.icon;
-                    return (
-                      <Button
-                        key={option.id}
-                        type="button"
-                        variant={isSelected ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => onToggleOptionalAgent(option.id)}
-                        className="gap-1.5">
-                        <Icon className="h-3.5 w-3.5" />
-                        <span>{option.label}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-                {selectedOptionalAgents.length === 0 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Triage agent will run by default
+            {/* Optional Agents — fixed footprint so switching to Docs does not collapse the popover */}
+            <div className="min-h-[8.75rem]">
+              <label className="text-sm font-semibold mb-3 block">Optional Agents</label>
+              {primaryAgent === 'docs' ? (
+                <>
+                  <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Not available for Docs. The Docs agent answers from your uploaded property
+                      documents. Switch to Checkpoint to add coverage, DIY, service, or cost
+                      recommendations.
+                    </p>
+                  </div>
+                  <div className="mt-2 min-h-[2.5rem]" aria-hidden />
+                </>
+              ) : (
+                <>
+                  <div className="flex min-h-[4.5rem] flex-wrap content-start gap-2">
+                    {OPTIONAL_AGENT_OPTIONS.map((option) => {
+                      const isSelected =
+                        primaryAgent === 'checkpoint'
+                          ? selectedCheckpointOptionalAgents.includes(
+                              option.id as CheckpointOptionalAgent
+                            )
+                          : selectedOptionalAgents.includes(option.id);
+                      const Icon = option.icon;
+                      return (
+                        <Button
+                          key={option.id}
+                          type="button"
+                          variant={isSelected ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() =>
+                            primaryAgent === 'checkpoint'
+                              ? onToggleCheckpointOptionalAgent(
+                                  option.id as CheckpointOptionalAgent
+                                )
+                              : onToggleOptionalAgent(option.id)
+                          }
+                          className="gap-1.5">
+                          <Icon className="h-3.5 w-3.5" />
+                          <span>{option.label}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 min-h-[2.5rem] text-xs text-muted-foreground">
+                    {primaryAgent === 'checkpoint' ? (
+                      selectedCheckpointOptionalAgents.length === 0 ? (
+                        <>
+                          Checkpoint Agent will answer questions about your checkpoints without
+                          recommendations
+                        </>
+                      ) : (
+                        <>
+                          Checkpoint Agent will analyze checkpoints and provide{' '}
+                          {selectedCheckpointOptionalAgents.join(', ')} recommendations
+                        </>
+                      )
+                    ) : selectedOptionalAgents.length === 0 ? (
+                      <>Triage agent will run by default</>
+                    ) : null}
                   </p>
-                )}
-              </div>
-            )}
-
-            {/* Optional Agents (Checkpoint Mode) */}
-            {primaryAgent === 'checkpoint' && (
-              <div>
-                <label className="text-sm font-semibold mb-3 block">Optional Agents</label>
-                <div className="flex flex-wrap gap-2">
-                  {OPTIONAL_AGENT_OPTIONS.map((option) => {
-                    const isSelected = selectedCheckpointOptionalAgents.includes(option.id as CheckpointOptionalAgent);
-                    const Icon = option.icon;
-                    return (
-                      <Button
-                        key={option.id}
-                        type="button"
-                        variant={isSelected ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => onToggleCheckpointOptionalAgent(option.id as CheckpointOptionalAgent)}
-                        className="gap-1.5">
-                        <Icon className="h-3.5 w-3.5" />
-                        <span>{option.label}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-                {selectedCheckpointOptionalAgents.length === 0 ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Checkpoint Agent will answer questions about your checkpoints without recommendations
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Checkpoint Agent will analyze checkpoints and provide {selectedCheckpointOptionalAgents.join(', ')} recommendations
-                  </p>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </TabsContent>
 
           {onSearchLocationChange && (
