@@ -1,9 +1,11 @@
 import { fetch } from 'expo/fetch';
 import Constants from 'expo-constants';
+import { buildAgentSearchLocation } from '@homeapp/common/lib/search-location';
 import type {
   AgentStep,
   LocationData,
   PrimaryAgent,
+  SearchLocationInput,
 } from '@homeapp/common/types';
 import { createCorrelationId, proxyFetch } from '@/lib/correlation-id';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
@@ -107,6 +109,8 @@ export interface StreamAgentResponseParams {
   propertyAddress?: string;
   primaryAgent?: PrimaryAgent;
   checkpointOptionalAgents?: string[];
+  searchLocation?: SearchLocationInput;
+  /** @deprecated Use searchLocation */
   locationData?: LocationData;
   signal?: AbortSignal;
   /** Firebase chat doc id (for correlating with proxy persistence logs). */
@@ -127,6 +131,7 @@ export async function streamAgentResponse({
   propertyAddress,
   primaryAgent,
   checkpointOptionalAgents = [],
+  searchLocation,
   locationData,
   signal,
   firebaseChatId,
@@ -177,17 +182,12 @@ export async function streamAgentResponse({
       requestBody.primary_agent = primaryAgent;
     }
 
-    // Add location data if provided
-    if (locationData) {
-      if (locationData.locationType) {
-        requestBody.location_type = locationData.locationType;
-      }
-      if (locationData.locationCoordinates) {
-        requestBody.location_coordinates = locationData.locationCoordinates;
-      }
-      if (locationData.locationRadius !== undefined) {
-        requestBody.location_radius = locationData.locationRadius;
-      }
+    const resolvedSearchLocation = buildAgentSearchLocation(
+      searchLocation ?? locationData,
+      propertyAddress
+    );
+    if (resolvedSearchLocation) {
+      requestBody.search_location = resolvedSearchLocation;
     }
 
     const response = await proxyFetch(url, {

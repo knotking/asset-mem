@@ -20,8 +20,8 @@ import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-  LocationData,
-  LocationType,
+  SearchLocationInput,
+  SearchLocationSource,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createLogger } from "@/lib/logger";
@@ -38,8 +38,8 @@ interface ChatSettingsPopoverProps {
   onToggleOptionalAgent: (agent: AnalysisOptionalAgent) => void;
   selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
   onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
-  locationData?: LocationData;
-  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  searchLocation?: SearchLocationInput;
+  onSearchLocationChange?: (searchLocation: SearchLocationInput | undefined) => void;
   propertyAddress?: string;
   initialTab?: 'agent' | 'location';
 }
@@ -61,17 +61,17 @@ export function ChatSettingsPopover({
   onToggleOptionalAgent,
   selectedCheckpointOptionalAgents,
   onToggleCheckpointOptionalAgent,
-  locationData,
-  onLocationDataChange,
+  searchLocation,
+  onSearchLocationChange,
   propertyAddress,
   initialTab = 'agent',
 }: ChatSettingsPopoverProps) {
   const [activeTab, setActiveTab] = useState<'agent' | 'location'>(initialTab);
-  const [locationType, setLocationType] = useState<LocationType | undefined>(
-    locationData?.locationType || 'location'
+  const [locationSource, setLocationSource] = useState<SearchLocationSource>(
+    searchLocation?.source || 'property_address'
   );
   const [locationRadius, setLocationRadius] = useState<number>(
-    locationData?.locationRadius || 5
+    searchLocation?.radiusMiles || 5
   );
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
@@ -82,13 +82,13 @@ export function ChatSettingsPopover({
   }, [open, initialTab]);
 
   useEffect(() => {
-    if (locationData) {
-      setLocationType(locationData.locationType);
-      if (locationData.locationRadius !== undefined) {
-        setLocationRadius(locationData.locationRadius);
+    if (searchLocation) {
+      setLocationSource(searchLocation.source);
+      if (searchLocation.radiusMiles !== undefined) {
+        setLocationRadius(searchLocation.radiusMiles);
       }
     }
-  }, [locationData]);
+  }, [searchLocation]);
 
   const handleGetCurrentLocation = () => {
     setIsGettingLocation(true);
@@ -100,16 +100,16 @@ export function ChatSettingsPopover({
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: {
+        const next: SearchLocationInput = {
+          source: 'device_gps',
+          coordinates: {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           },
-          locationRadius: locationRadius,
+          radiusMiles: locationRadius,
         };
-        setLocationType('location');
-        onLocationDataChange?.(newLocationData);
+        setLocationSource('device_gps');
+        onSearchLocationChange?.(next);
         setIsGettingLocation(false);
       },
       (error) => {
@@ -120,39 +120,37 @@ export function ChatSettingsPopover({
     );
   };
 
-  const handleLocationTypeChange = (type: LocationType) => {
-    setLocationType(type);
-    if (type === 'address') {
+  const handleLocationSourceChange = (source: SearchLocationSource) => {
+    setLocationSource(source);
+    if (source === 'property_address') {
       if (propertyAddress) {
-        const newLocationData: LocationData = {
-          locationType: 'address',
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
+        onSearchLocationChange?.({
+          source: 'property_address',
+          radiusMiles: locationRadius,
+        });
       } else {
-        onLocationDataChange?.(undefined);
+        onSearchLocationChange?.(undefined);
       }
-    } else if (type === 'location') {
-      if (locationData?.locationCoordinates) {
-        const newLocationData: LocationData = {
-          locationType: 'location',
-          locationCoordinates: locationData.locationCoordinates,
-          locationRadius: locationRadius,
-        };
-        onLocationDataChange?.(newLocationData);
-      }
+    } else if (source === 'device_gps' && searchLocation?.coordinates) {
+      onSearchLocationChange?.({
+        source: 'device_gps',
+        coordinates: searchLocation.coordinates,
+        radiusMiles: locationRadius,
+      });
     }
   };
 
   const handleRadiusChange = (radius: number) => {
     setLocationRadius(radius);
-    if (locationType && onLocationDataChange) {
-      const newLocationData: LocationData = {
-        locationType,
-        locationCoordinates: locationData?.locationCoordinates,
-        locationRadius: radius,
-      };
-      onLocationDataChange(newLocationData);
+    if (!onSearchLocationChange) return;
+    if (locationSource === 'property_address' && propertyAddress) {
+      onSearchLocationChange({ source: 'property_address', radiusMiles: radius });
+    } else if (locationSource === 'device_gps' && searchLocation?.coordinates) {
+      onSearchLocationChange({
+        source: 'device_gps',
+        coordinates: searchLocation.coordinates,
+        radiusMiles: radius,
+      });
     }
   };
 
@@ -167,7 +165,7 @@ export function ChatSettingsPopover({
               <TabsTrigger value="agent" className="flex-1">
                 Agent
               </TabsTrigger>
-              {onLocationDataChange && (
+              {onSearchLocationChange && (
                 <TabsTrigger value="location" className="flex-1">
                   Location
                 </TabsTrigger>
@@ -264,25 +262,25 @@ export function ChatSettingsPopover({
             )}
           </TabsContent>
 
-          {onLocationDataChange && (
+          {onSearchLocationChange && (
             <TabsContent value="location" className="p-4 space-y-4 m-0">
               {/* Location Type */}
               <div>
-                <label className="text-sm font-semibold mb-3 block">Location Type</label>
+                <label className="text-sm font-semibold mb-3 block">Search near</label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant={locationType === 'address' ? 'default' : 'outline'}
+                    variant={locationSource === 'property_address' ? 'default' : 'outline'}
                     className="flex-1 gap-2"
-                    onClick={() => handleLocationTypeChange('address')}>
+                    onClick={() => handleLocationSourceChange('property_address')}>
                     <MapPin className="h-4 w-4" />
-                    <span>Address</span>
+                    <span>Property</span>
                   </Button>
                   <Button
                     type="button"
-                    variant={locationType === 'location' ? 'default' : 'outline'}
+                    variant={locationSource === 'device_gps' ? 'default' : 'outline'}
                     className="flex-1 gap-2"
-                    onClick={() => handleLocationTypeChange('location')}>
+                    onClick={() => handleLocationSourceChange('device_gps')}>
                     <Navigation className="h-4 w-4" />
                     <span>Current</span>
                   </Button>
@@ -290,7 +288,7 @@ export function ChatSettingsPopover({
               </div>
 
               {/* Address Mode Info */}
-              {locationType === 'address' && propertyAddress && (
+              {locationSource === 'property_address' && propertyAddress && (
                 <div className="rounded-lg bg-muted/50 p-3">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     Using property address: {propertyAddress.substring(0, 50)}
@@ -299,7 +297,7 @@ export function ChatSettingsPopover({
                 </div>
               )}
 
-              {locationType === 'address' && !propertyAddress && (
+              {locationSource === 'property_address' && !propertyAddress && (
                 <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3">
                   <p className="text-xs leading-relaxed text-yellow-700 dark:text-yellow-400">
                     No property address available. Please select a property or use Current Location.
@@ -308,7 +306,7 @@ export function ChatSettingsPopover({
               )}
 
               {/* Current Location Button */}
-              {locationType === 'location' && (
+              {locationSource === 'device_gps' && (
                 <div className="space-y-3">
                   <Button
                     type="button"
@@ -328,11 +326,11 @@ export function ChatSettingsPopover({
                       </>
                     )}
                   </Button>
-                  {locationData?.locationCoordinates && (
+                  {searchLocation?.coordinates && (
                     <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3">
                       <p className="text-xs text-green-700 dark:text-green-400">
-                        ✓ Location set: {locationData.locationCoordinates.lat.toFixed(4)},{' '}
-                        {locationData.locationCoordinates.lng.toFixed(4)}
+                        ✓ Location set: {searchLocation.coordinates.lat.toFixed(4)},{' '}
+                        {searchLocation.coordinates.lng.toFixed(4)}
                       </p>
                     </div>
                   )}
@@ -340,7 +338,7 @@ export function ChatSettingsPopover({
               )}
 
               {/* Radius Selector */}
-              {(locationType === 'location' || locationType === 'address') && (
+              {(locationSource === 'device_gps' || locationSource === 'property_address') && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-semibold">Search Radius</label>

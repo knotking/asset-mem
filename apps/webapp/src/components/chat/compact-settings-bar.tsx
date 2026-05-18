@@ -1,5 +1,6 @@
 import { Settings, Stethoscope, Clock, FileText, MapPin, Navigation } from "lucide-react";
-import type { PrimaryAgent, LocationData, AnalysisOptionalAgent, CheckpointOptionalAgent } from "@/lib/types";
+import type { PrimaryAgent, SearchLocationInput, AnalysisOptionalAgent, CheckpointOptionalAgent } from "@/lib/types";
+import { searchLocationLabel } from "@/lib/search-location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +8,7 @@ interface CompactSettingsBarProps {
   primaryAgent: PrimaryAgent;
   selectedOptionalAgents: AnalysisOptionalAgent[];
   selectedCheckpointOptionalAgents?: CheckpointOptionalAgent[];
-  locationData?: LocationData;
+  searchLocation?: SearchLocationInput;
   propertyAddress?: string;
   onOpenSettings: () => void;
   onAgentPress?: () => void;
@@ -18,29 +19,26 @@ export function CompactSettingsBar({
   primaryAgent,
   selectedOptionalAgents,
   selectedCheckpointOptionalAgents = [],
-  locationData,
+  searchLocation,
   propertyAddress,
   onOpenSettings,
   onAgentPress,
   onLocationPress,
 }: CompactSettingsBarProps) {
   const hasLocation = !!(
-    (locationData?.locationType === 'location' && locationData?.locationCoordinates) ||
-    (locationData?.locationType === 'address' && propertyAddress)
+    (searchLocation?.source === 'device_gps' && searchLocation?.coordinates) ||
+    (searchLocation?.source === 'property_address' && propertyAddress)
   );
 
   const getLocationLabel = () => {
     if (!hasLocation) return 'No location';
-    if (locationData?.locationType === 'location') {
-      return `${locationData.locationRadius || 5}mi`;
-    }
-    return `${locationData?.locationRadius || 5}mi`;
+    return searchLocationLabel(searchLocation, propertyAddress);
   };
 
   const AgentIcon = primaryAgent === 'analysis' ? Stethoscope : 
                      primaryAgent === 'checkpoint' ? Clock : 
                      FileText;
-  const LocationIcon = locationData?.locationType === 'location' ? Navigation : MapPin;
+  const LocationIcon = searchLocation?.source === 'device_gps' ? Navigation : MapPin;
 
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -49,49 +47,47 @@ export function CompactSettingsBar({
         type="button"
         variant="outline"
         size="sm"
-        onClick={onAgentPress || onOpenSettings}
-        className="h-8 gap-1.5 px-3 text-xs font-medium">
-        <AgentIcon className="h-3.5 w-3.5" />
-        <span>
-          {primaryAgent === 'analysis' ? 'Analysis' : 
-           primaryAgent === 'checkpoint' ? 'Checkpoint' : 
-           'Docs'}
-        </span>
-        {primaryAgent === 'analysis' && selectedOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
-            +{selectedOptionalAgents.length}
-          </span>
-        )}
-        {primaryAgent === 'checkpoint' && selectedCheckpointOptionalAgents.length > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
-            +{selectedCheckpointOptionalAgents.length}
-          </span>
-        )}
-      </Button>
-
-      {/* Location Indicator */}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={onLocationPress || onOpenSettings}
         className={cn(
-          "h-8 gap-1.5 px-3 text-xs font-medium",
-          hasLocation && "text-foreground"
-        )}>
-        <LocationIcon className={cn("h-3.5 w-3.5", hasLocation && "text-primary")} />
-        <span className={cn(!hasLocation && "text-muted-foreground")}>{getLocationLabel()}</span>
+          "h-8 gap-1.5 px-2.5 text-xs font-medium",
+          onAgentPress && "cursor-pointer"
+        )}
+        onClick={onAgentPress || onOpenSettings}
+      >
+        <AgentIcon className="h-3.5 w-3.5" />
+        <span className="capitalize">{primaryAgent}</span>
+        {(selectedOptionalAgents.length > 0 || selectedCheckpointOptionalAgents.length > 0) && (
+          <span className="text-muted-foreground">
+            +{selectedOptionalAgents.length + selectedCheckpointOptionalAgents.length}
+          </span>
+        )}
       </Button>
 
-      {/* Settings Button */}
+      {/* Location Selector */}
+      {onLocationPress && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-8 gap-1.5 px-2.5 text-xs font-medium",
+            hasLocation ? "border-primary/30" : "text-muted-foreground"
+          )}
+          onClick={onLocationPress}
+        >
+          <LocationIcon className="h-3.5 w-3.5" />
+          <span>{getLocationLabel()}</span>
+        </Button>
+      )}
+
+      {/* Settings */}
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="icon"
+        className="h-8 w-8 ml-auto"
         onClick={onOpenSettings}
-        className="h-8 w-8">
+      >
         <Settings className="h-4 w-4" />
-        <span className="sr-only">Open chat settings</span>
       </Button>
     </div>
   );

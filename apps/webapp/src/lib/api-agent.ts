@@ -9,7 +9,8 @@ import {
   parseAgentErrorCode,
   truncateId,
 } from '@/lib/logger';
-import type { AgentStep, LocationData, PrimaryAgent } from '@/lib/types';
+import { buildAgentSearchLocation } from '@/lib/search-location';
+import type { AgentStep, LocationData, PrimaryAgent, SearchLocationInput } from '@/lib/types';
 
 const log = createLogger('agent');
 
@@ -115,6 +116,8 @@ export interface StreamAgentResponseParams {
   propertyId?: string;
   primaryAgent?: PrimaryAgent;
   checkpointOptionalAgents?: string[];
+  searchLocation?: SearchLocationInput;
+  /** @deprecated Use searchLocation */
   locationData?: LocationData;
   signal?: AbortSignal;
   /** Firebase chat doc id (for correlating with proxy persistence logs). */
@@ -136,6 +139,7 @@ export async function streamAgentResponse({
   propertyId,
   primaryAgent,
   checkpointOptionalAgents = [],
+  searchLocation,
   locationData,
   signal,
   firebaseChatId,
@@ -179,14 +183,12 @@ export async function streamAgentResponse({
       requestBody.primary_agent = primaryAgent;
     }
 
-    if (locationData) {
-      if (locationData.locationType) requestBody.location_type = locationData.locationType;
-      if (locationData.locationCoordinates) {
-        requestBody.location_coordinates = locationData.locationCoordinates;
-      }
-      if (locationData.locationRadius !== undefined) {
-        requestBody.location_radius = locationData.locationRadius;
-      }
+    const resolvedSearchLocation = buildAgentSearchLocation(
+      searchLocation ?? locationData,
+      propertyAddress
+    );
+    if (resolvedSearchLocation) {
+      requestBody.search_location = resolvedSearchLocation;
     }
 
     const response = await proxyFetch(apiUrls.agentSse(), {

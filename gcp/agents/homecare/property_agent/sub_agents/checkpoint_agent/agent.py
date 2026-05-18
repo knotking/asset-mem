@@ -124,8 +124,7 @@ def _stash_pending_checkpoint_analysis(
         "context_doc_uris",
         "property_address",
         "property_id",
-        "location_coordinates",
-        "location_radius",
+        "search_location",
     ):
         value = tool_context.state.get(key)
         if value is not None:

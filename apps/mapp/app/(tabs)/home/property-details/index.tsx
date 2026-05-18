@@ -32,11 +32,12 @@ import type {
   Session,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-  LocationData,
+  SearchLocationInput,
   Checkpoint,
   PrimaryAgent,
 } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
+import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
 import { streamAgentResponse } from '@/lib/api';
 import { createLogger } from '@/lib/logger';
 
@@ -121,7 +122,9 @@ export default function PropertyDetailsScreen() {
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
   const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
-  const [locationData, setLocationData] = React.useState<LocationData | undefined>(undefined);
+  const [searchLocation, setSearchLocation] = React.useState<SearchLocationInput | undefined>(
+    undefined
+  );
 
   // Refs
   const abortControllerRef = React.useRef<AbortController | null>(null);
@@ -153,40 +156,11 @@ export default function PropertyDetailsScreen() {
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
 
-  // Auto-set current location when session is created for analysis_agent
   React.useEffect(() => {
-    const setDefaultLocation = async () => {
-      // Only set location if:
-      // 1. We have a selected session
-      // 2. Primary agent is 'analysis'
-      // 3. Location data is not already set
-      if (selectedSessionId && primaryAgent === 'analysis' && !locationData) {
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const currentLocation = await Location.getCurrentPositionAsync({});
-            const defaultLocationData: LocationData = {
-              locationType: 'location',
-              locationCoordinates: {
-                lat: currentLocation.coords.latitude,
-                lng: currentLocation.coords.longitude,
-              },
-              locationRadius: 5, // Default 5 mile radius
-            };
-            setLocationData(defaultLocationData);
-            propertyLog.debug('location.autoSet');
-          } else {
-            propertyLog.debug('location.permissionDenied');
-          }
-        } catch (error) {
-          propertyLog.error('location.error', undefined, error);
-          // Silently fail - user can manually set location if needed
-        }
-      }
-    };
-
-    setDefaultLocation();
-  }, [selectedSessionId, primaryAgent, locationData]);
+    if (selectedSessionId && !searchLocation) {
+      setSearchLocation(defaultSearchLocationInput());
+    }
+  }, [selectedSessionId, searchLocation]);
 
   // Clear checkpoint resources when Docs agent is selected
   React.useEffect(() => {
@@ -449,7 +423,7 @@ export default function PropertyDetailsScreen() {
             selectedCheckpointOptionalAgents.length > 0
               ? selectedCheckpointOptionalAgents
               : undefined,
-          locationData,
+          searchLocation,
           signal,
           firebaseChatId: selectedSessionId,
           onError: (error) => {
@@ -491,7 +465,7 @@ export default function PropertyDetailsScreen() {
       properties,
       selectedCheckpointOptionalAgents,
       primaryAgent,
-      locationData,
+      searchLocation,
       setFileAttachment,
     ]
   );
@@ -590,8 +564,8 @@ export default function PropertyDetailsScreen() {
         handleRecordVideo={handleRecordVideo}
         handleSelectFromLibrary={handleSelectFromLibrary}
         handleSelectFiles={handleSelectFiles}
-        locationData={locationData}
-        setLocationData={setLocationData}
+        searchLocation={searchLocation}
+        setSearchLocation={setSearchLocation}
         router={router}
         user={user}
         db={db}
@@ -655,8 +629,8 @@ function PropertyDetailsScreenContent({
   handleRecordVideo,
   handleSelectFromLibrary,
   handleSelectFiles,
-  locationData,
-  setLocationData,
+  searchLocation,
+  setSearchLocation,
   updateMessageLocallyRef,
   router,
   user,
@@ -986,8 +960,8 @@ function PropertyDetailsScreenContent({
                         onRecordVideo={handleRecordVideo}
                         onSelectFromLibrary={handleSelectFromLibrary}
                         onSelectFiles={handleSelectFiles}
-                        locationData={locationData}
-                        onLocationDataChange={setLocationData}
+        searchLocation={searchLocation}
+        onSearchLocationChange={setSearchLocation}
                         propertyAddress={property?.address}
                         onSend={(messages) => {
                           if (messages.length > 0) {

@@ -27,7 +27,8 @@
     "./hooks/use-debounced-thinking-status": "./src/hooks/use-debounced-thinking-status.ts",
     "./lib/checkpoint-branch-progress": "./src/lib/checkpoint-branch-progress.ts",
     "./lib/logger": "./src/lib/logger.ts",
-    "./lib/correlation-id": "./src/lib/correlation-id.ts"
+    "./lib/correlation-id": "./src/lib/correlation-id.ts",
+    "./lib/search-location": "./src/search-location.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

@@ -1,10 +1,38 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, Dict
+from typing import List, Optional, Literal
 
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 PrimaryAgent = Literal["checkpoint", "docs"]
+SearchLocationSource = Literal["property_address", "device_gps"]
 
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
+
+
+class SearchLocationCoordinates(BaseModel):
+    lat: float = Field(..., description="Latitude")
+    lng: float = Field(..., description="Longitude")
+
+
+class SearchLocation(BaseModel):
+    """Resolved market/geo anchor (single source of truth for local search, cost, DIY)."""
+
+    source: SearchLocationSource = Field(
+        ...,
+        description="property_address: geocoded property; device_gps: user device location",
+    )
+    radius_miles: int = Field(
+        default=5,
+        description="Search radius in miles for local market queries (5-100)",
+    )
+    coordinates: SearchLocationCoordinates = Field(
+        ...,
+        description="Resolved lat/lng",
+    )
+    label: Optional[str] = Field(
+        default=None,
+        description="Human-readable label (formatted address or place name)",
+    )
+
 
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
@@ -14,9 +42,18 @@ class DiagnosisInput(BaseModel):
     )
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
-    checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).")
-    property_address: Optional[str] = Field(default=None, description="The property address.")
-    property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")
+    checkpoint_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).",
+    )
+    property_address: Optional[str] = Field(
+        default=None,
+        description="Property record address (identity/context only, not market geo).",
+    )
+    property_id: Optional[str] = Field(
+        default=None,
+        description="Property ID for property-specific queries (e.g., checkpoint retrieval).",
+    )
     primary_agent: Optional[PrimaryAgent] = Field(
         default=None,
         description=(
@@ -34,22 +71,14 @@ class DiagnosisInput(BaseModel):
             "checkpoint analysis with recommendations. When empty or None, returns simple checkpoint query results."
         ),
     )
-    location_type: Optional[Literal["address", "location"]] = Field(
+    search_location: Optional[SearchLocation] = Field(
         default=None,
-        description="Location selection type: 'address' uses property_address if available, else location_coordinates; 'location' uses location_coordinates only."
+        description="Unified search/market location for service, cost, DIY, and shopping.",
     )
-    location_coordinates: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Location coordinates as {'lat': float, 'lng': float}."
-    )
-    location_radius: Optional[int] = Field(
-        default=None,
-        description="Search radius in miles (10-100). Used for local professional searches."
-    )
-    
+
     class Config:
-        # Allow extra fields to be ignored, making the schema more flexible
         extra = "ignore"
+
 
 class DocsInput(BaseModel):
     user_query: str = Field(description="The user query for DocuLink Agent.")
@@ -57,21 +86,24 @@ class DocsInput(BaseModel):
         default=None,
         description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
     )
-    context_doc_uris: Optional[List[str]] = Field(default=None, description="Context document URIs for DocuLink Agent.")
-    checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).")
-    property_address: Optional[str] = Field(default=None, description="The property address.")
-    property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval).")
-    location_type: Optional[Literal["address", "location"]] = Field(
-        default=None,
-        description="Location selection type: 'address' uses property_address if available, else location_coordinates; 'location' uses location_coordinates only."
+    context_doc_uris: Optional[List[str]] = Field(
+        default=None, description="Context document URIs for DocuLink Agent."
     )
-    location_coordinates: Optional[Dict[str, float]] = Field(
+    checkpoint_ids: Optional[List[str]] = Field(
         default=None,
-        description="Location coordinates as {'lat': float, 'lng': float}."
+        description="Checkpoint IDs for checkpoint context (triggers checkpoint_agent when provided).",
     )
-    location_radius: Optional[int] = Field(
+    property_address: Optional[str] = Field(
         default=None,
-        description="Search radius in miles (10-100). Used for local professional searches."
+        description="Property record address (identity/context only, not market geo).",
+    )
+    property_id: Optional[str] = Field(
+        default=None,
+        description="Property ID for property-specific queries (e.g., checkpoint retrieval).",
+    )
+    search_location: Optional[SearchLocation] = Field(
+        default=None,
+        description="Unified search/market location for service, cost, DIY, and shopping.",
     )
     checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
         default=None,

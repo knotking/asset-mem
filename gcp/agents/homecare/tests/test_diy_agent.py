@@ -317,6 +317,38 @@ def test_youtube_search_returns_empty_without_api_key(monkeypatch: pytest.Monkey
     assert youtube_search("patch drywall hole", max_results=3) == []
 
 
+def test_youtube_search_passes_geo_params(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("YOUTUBE_API_KEY", "test-youtube-key")
+    captured: list[dict] = []
+
+    def fake_get(url: str, params: dict | None = None, timeout: float | None = None):
+        captured.append(params or {})
+
+        class Resp:
+            ok = True
+
+            def json(self) -> dict:
+                return {"items": []}
+
+        return Resp()
+
+    monkeypatch.setattr(
+        "property_agent.sub_agents.diy_agent.youtube.requests.get",
+        fake_get,
+    )
+    from property_agent.agent_inputs import SearchLocation, SearchLocationCoordinates
+    from property_agent.sub_agents.diy_agent.youtube import youtube_search
+
+    sl = SearchLocation(
+        source="device_gps",
+        radius_miles=5,
+        coordinates=SearchLocationCoordinates(lat=37.9, lng=-121.7),
+    )
+    youtube_search("garage door paint", max_results=3, search_location=sl)
+    assert captured[0]["location"] == "37.9,-121.7"
+    assert captured[0]["locationRadius"] == "1000km"
+
+
 def test_cost_estimation_diy_from_library_returns_diy_slice() -> None:
     out = cost_estimation_diy_from_library("clogged sink drain DIY cost estimate")
     data = json.loads(out)
@@ -394,8 +426,14 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
     monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", lambda d, a: "1. Turn off water.\n2. Replace washer.")
-    monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", lambda d: mock_youtube)
-    monkeypatch.setattr(diy_orch, "_products_for_diagnosis", lambda d: mock_products)
+    monkeypatch.setattr(
+        diy_orch, "_youtube_for_diagnosis", lambda d, search_location=None: mock_youtube
+    )
+    monkeypatch.setattr(
+        diy_orch,
+        "_products_for_diagnosis",
+        lambda d, search_location=None, property_address=None: mock_products,
+    )
     monkeypatch.setattr(
         diy_orch,
         "cost_estimation_diy_from_library",
@@ -422,12 +460,17 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
     monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "0")
     seen: dict[str, tuple] = {}
 
-    def cap_yt(q: str, max_results: int = 5) -> list:
-        seen["yt"] = (q, max_results)
+    def cap_yt(q: str, max_results: int = 5, search_location=None) -> list:
+        seen["yt"] = (q, max_results, search_location)
         return []
 
-    def cap_pr(q: str, category: str = "DIY") -> str:
-        seen["pr"] = (q, category)
+    def cap_pr(
+        q: str,
+        category: str = "DIY",
+        search_location=None,
+        property_address=None,
+    ) -> str:
+        seen["pr"] = (q, category, search_location, property_address)
         return '{"recommendedProducts":{"DIY":{"products":[]}}}'
 
     def cap_web(d: str, a: str) -> str:
@@ -438,10 +481,10 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
     monkeypatch.setattr(diy_orch, "youtube_search", cap_yt)
     monkeypatch.setattr(diy_orch, "product_recommendations", cap_pr)
 
-    def boom_yt(_d: str) -> list:
+    def boom_yt(_d: str, search_location=None) -> list:
         raise AssertionError("legacy _youtube_for_diagnosis must not run when retrieval seed is set")
 
-    def boom_pr(_d: str) -> str:
+    def boom_pr(_d: str, search_location=None) -> str:
         raise AssertionError("legacy _products_for_diagnosis must not run when retrieval seed is set")
 
     monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", boom_yt)
@@ -476,8 +519,10 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
             checkpoint_retrieval_search_query=retrieval,
         )
     )
-    assert seen["yt"] == (f"{retrieval} DIY tutorial how to fix", 5)
-    assert seen["pr"] == (retrieval, "DIY")
+    assert seen["yt"][0] == f"{retrieval} DIY tutorial how to fix"
+    assert seen["yt"][1] == 5
+    assert seen["pr"][0] == retrieval
+    assert seen["pr"][1] == "DIY"
     assert seen["web"][0] == retrieval
     assert "Checkpoint context:" not in seen["web"][0]
     assert "NOISE" not in seen["web"][0]
@@ -539,8 +584,12 @@ def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPa
         return "cached web"
 
     monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", counted_web)
-    monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", lambda d: [])
-    monkeypatch.setattr(diy_orch, "_products_for_diagnosis", lambda d: '{"recommendedProducts":{}}')
+    monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", lambda d, search_location=None: [])
+    monkeypatch.setattr(
+        diy_orch,
+        "_products_for_diagnosis",
+        lambda d, search_location=None: '{"recommendedProducts":{}}',
+    )
     monkeypatch.setattr(
         diy_orch,
         "cost_estimation_diy_from_library",

@@ -59,9 +59,7 @@ CHECKPOINT_SESSION_INPUT_KEYS: tuple[str, ...] = (
     "context_doc_uris",
     "property_address",
     "property_id",
-    "location_coordinates",
-    "location_radius",
-    "location_type",
+    "search_location",
 )
 
 _CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
@@ -114,8 +112,7 @@ def build_checkpoint_analysis_pending_payload(state: Any) -> Optional[Dict[str, 
         "context_doc_uris",
         "property_address",
         "property_id",
-        "location_coordinates",
-        "location_radius",
+        "search_location",
     ):
         value = state.get(key)
         if value is not None:

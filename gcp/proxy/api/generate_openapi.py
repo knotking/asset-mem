@@ -10,7 +10,8 @@ os.environ["FIREBASE_WEBHOOK_SECRET"] = "mock_secret"
 os.environ["TELEGRAM_WEBHOOK_SECRET"] = "mock_telegram_secret"
 os.environ["GCP_PROJECT_ID"] = "mock-project"
 os.environ["GCP_REGION"] = "us-central1"
-os.environ["REASONING_ENGINE_ID"] = "mock-reasoning-engine"
+# Skip Vertex client init during OpenAPI generation (no GCP credentials required).
+os.environ["REASONING_ENGINE_ID"] = ""
 
 # Mock aiogram Bot to avoid connection attempts or validation errors
 sys.modules["aiogram"] = MagicMock()
@@ -36,8 +37,6 @@ except Exception as e:
     aiogram.Bot = MagicMock()
     from main import app
 
-import yaml
-
 def generate_openapi_spec(output_file: str):
     openapi_schema = get_openapi(
         title=app.title,
@@ -48,6 +47,8 @@ def generate_openapi_spec(output_file: str):
     )
     
     if output_file.endswith(('.yaml', '.yml')):
+        import yaml
+
         with open(output_file, "w") as f:
             yaml.dump(openapi_schema, f, sort_keys=False)
     else:

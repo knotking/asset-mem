@@ -79,38 +79,51 @@ def _extract_diagnosis_from_query(query: str) -> Optional[str]:
     return diagnosis
 
 
-def _extract_property_address_from_query(query: str) -> Optional[str]:
-    """Attempts to extract property address from the query payload."""
-    property_address: Optional[str] = None
+def _market_location_from_payload(parsed: Dict[str, Any]) -> Optional[str]:
+    """Resolve market label from a parsed cost/query JSON object."""
+    from ...search_location_utils import legacy_search_location_from_payload, market_label
+    from ...serpapi_geo import looks_like_coordinate_pair
+
+    pa = (parsed.get("property_address") or parsed.get("address") or "").strip() or None
+    explicit = (parsed.get("market_location") or "").strip() or None
+    if explicit and not looks_like_coordinate_pair(explicit):
+        return explicit
+    sl = legacy_search_location_from_payload(parsed)
+    resolved = market_label(sl, property_address=pa)
+    if resolved and not looks_like_coordinate_pair(resolved):
+        return resolved
+    return explicit or pa or resolved or parsed.get("location")
+
+
+def _extract_market_location_from_query(query: str) -> Optional[str]:
+    """Market/geo label for pricing — prefers explicit market_location, then property_address."""
+    market_location: Optional[str] = None
 
     # Try direct JSON parsing first
     try:
         parsed = json.loads(query)
         if isinstance(parsed, dict):
-            property_address = (
-                parsed.get("property_address")
-                or parsed.get("address")
-                or parsed.get("location")
-            )
+            market_location = _market_location_from_payload(parsed)
     except (json.JSONDecodeError, TypeError):
         pass
 
     # If JSON parse failed, try to locate JSON substring within the query
-    if property_address is None:
+    if market_location is None:
         json_match = re.search(r'\{.*\}', query, re.DOTALL)
         if json_match:
             try:
                 nested = json.loads(json_match.group(0))
                 if isinstance(nested, dict):
-                    property_address = (
-                        nested.get("property_address")
-                        or nested.get("address")
-                        or nested.get("location")
-                    )
+                    market_location = _market_location_from_payload(nested)
             except (json.JSONDecodeError, TypeError):
                 pass
 
-    return property_address
+    return market_location
+
+
+def _extract_property_address_from_query(query: str) -> Optional[str]:
+    """Deprecated alias — use market location for pricing."""
+    return _extract_market_location_from_query(query)
 
 
 def _extract_service_results_from_query(query: str) -> Optional[Dict[str, Any]]:
@@ -421,20 +434,20 @@ def _compute_full_cost_estimate(query: str) -> Dict[str, Any]:
     repeat grounded model work.
     """
     diagnosis = _extract_diagnosis_from_query(query)
-    property_address = _extract_property_address_from_query(query)
+    market_location = _extract_market_location_from_query(query)
     service_results = _extract_service_results_from_query(query)
 
     if not diagnosis:
         diagnosis = query
 
     logger.info(
-        f"Cost estimation request - diagnosis: {diagnosis[:100]}, location: {property_address or 'not provided'}"
+        f"Cost estimation request - diagnosis: {diagnosis[:100]}, market_location: {market_location or 'not provided'}"
     )
 
     if config.should_use_ai_estimation():
         ai_estimate, confidence, source = _estimate_with_ai(
             diagnosis=diagnosis,
-            property_address=property_address,
+            property_address=market_location,
             service_results=service_results,
         )
 

@@ -32,8 +32,7 @@ Checkpoint Analysis Agent (Orchestrator)
   "context_doc_uris": Optional[List[str]],  # For coverage checks
   "property_address": Optional[str],  # For location-based services
   "property_id": Optional[str],  # Property reference
-  "location_coordinates": Optional[Dict],  # For service searches
-  "location_radius": Optional[int]  # Search radius in miles
+  "search_location": Optional[object]  # Unified market/geo (source, coordinates, radius_miles, label)
 }
 ```
 

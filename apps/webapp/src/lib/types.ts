@@ -255,17 +255,37 @@ export type Property = {
   checksCount?: number;
 };
 
-export type LocationType = "address" | "location";
+/** @deprecated Use SearchLocationSource */
+export type LocationType = 'address' | 'location';
 
 export type LocationCoordinates = {
   lat: number;
   lng: number;
 };
 
+/** @deprecated Use SearchLocationInput */
 export type LocationData = {
   locationType?: LocationType;
   locationCoordinates?: LocationCoordinates;
-  locationRadius?: number; // 5-100 miles
+  locationRadius?: number;
+};
+
+/** How market/geo was chosen before proxy resolution */
+export type SearchLocationSource = 'property_address' | 'device_gps';
+
+/** Client payload; proxy resolves to canonical search_location for agents */
+export type SearchLocationInput = {
+  source: SearchLocationSource;
+  radiusMiles?: number;
+  coordinates?: LocationCoordinates;
+};
+
+/** Resolved search location (from proxy / session) */
+export type SearchLocation = {
+  source: SearchLocationSource;
+  radius_miles: number;
+  coordinates: LocationCoordinates;
+  label?: string;
 };
 
 export type Service = {

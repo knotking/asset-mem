@@ -6,9 +6,12 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
+
+from ...agent_inputs import SearchLocation
+from ...serpapi_geo import youtube_geo_params
 
 logger = logging.getLogger(__name__)
 
@@ -16,18 +19,25 @@ _YOUTUBE_DATA_API_SEARCH = "https://www.googleapis.com/youtube/v3/search"
 _REQUEST_TIMEOUT_S = 15
 
 
-def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List[Dict[str, Any]]:
+def _youtube_search_data_api(
+    query: str,
+    max_results: int,
+    api_key: str,
+    search_location: Optional[SearchLocation] = None,
+) -> List[Dict[str, Any]]:
     """YouTube Data API v3 search (requires API key + quota)."""
+    params: Dict[str, Any] = {
+        "part": "snippet",
+        "type": "video",
+        "maxResults": max_results,
+        "q": query,
+        "key": api_key,
+    }
+    params.update(youtube_geo_params(search_location))
     try:
         resp = requests.get(
             _YOUTUBE_DATA_API_SEARCH,
-            params={
-                "part": "snippet",
-                "type": "video",
-                "maxResults": max_results,
-                "q": query,
-                "key": api_key,
-            },
+            params=params,
             timeout=_REQUEST_TIMEOUT_S,
         )
     except requests.RequestException:
@@ -112,9 +122,16 @@ def _youtube_search_data_api(query: str, max_results: int, api_key: str) -> List
     return normalized
 
 
-def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+def youtube_search(
+    query: str,
+    max_results: int = 5,
+    search_location: Optional[SearchLocation] = None,
+) -> List[Dict[str, Any]]:
     """
     Searches YouTube videos using plain text query input via YouTube Data API v3.
+
+    When ``search_location`` is set, applies ``location`` (``lat,lng``) and a loose
+    ``locationRadius`` (default 2000 km intent, YouTube API max 1000 km).
 
     Requires ``YOUTUBE_API_KEY``. Returns an empty list when the key is missing.
     """
@@ -138,14 +155,16 @@ def youtube_search(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         )
         return []
 
-    logger.debug("youtube_search: query=%r", q)
-    out = _youtube_search_data_api(q, safe_max_results, api_key)
+    geo = youtube_geo_params(search_location)
+    logger.debug("youtube_search: query=%r geo=%s", q, bool(geo))
+    out = _youtube_search_data_api(q, safe_max_results, api_key, search_location)
     logger.info(
-        "youtube_search: max_results=%d query_len=%d videos=%d duration_ms=%d",
+        "youtube_search: max_results=%d query_len=%d videos=%d duration_ms=%d geo=%s",
         safe_max_results,
         len(q),
         len(out),
         _elapsed_ms(),
+        bool(geo),
     )
     logger.debug(
         "youtube_search: full_results=%s",

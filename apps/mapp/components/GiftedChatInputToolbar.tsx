@@ -54,8 +54,10 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onRecordVideo: () => void;
   onSelectFromLibrary: () => void;
   onSelectFiles: () => void;
-  locationData?: LocationData;
-  onLocationDataChange?: (locationData: LocationData | undefined) => void;
+  searchLocation?: import('@homeapp/common/types').SearchLocationInput;
+  onSearchLocationChange?: (
+    searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
+  ) => void;
   propertyAddress?: string;
 }
 
@@ -78,8 +80,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     onRecordVideo,
     onSelectFromLibrary,
     onSelectFiles,
-    locationData,
-    onLocationDataChange,
+    searchLocation,
+    onSearchLocationChange,
     propertyAddress,
     ...inputToolbarProps
   } = props;
@@ -356,7 +358,7 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         primaryAgent={primaryAgent}
         selectedOptionalAgents={selectedOptionalAgents}
         selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-        locationData={locationData}
+        searchLocation={searchLocation}
         propertyAddress={propertyAddress}
         onOpenSettings={handleOpenSettings}
         onAgentPress={handleOpenAgentSettings}
@@ -373,8 +375,8 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
         onToggleOptionalAgent={onToggleOptionalAgent}
         selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
         onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
-        locationData={locationData}
-        onLocationDataChange={onLocationDataChange}
+        searchLocation={searchLocation}
+        onSearchLocationChange={onSearchLocationChange}
         propertyAddress={propertyAddress}
         initialTab={settingsModalTab}
       />

@@ -1,17 +1,28 @@
 import os
 import json
 import time
+from typing import Any, Optional
+
 from google.adk.agents import Agent
 from dotenv import load_dotenv
 from .prompts import shopping_agent_instructions
 from ...agent_inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
+from ...serpapi_geo import (
+    parse_search_location_arg,
+    resolve_serpapi_location_name,
+)
 import logging
 
 logger = logging.getLogger(__name__)
 load_dotenv()
 
-def product_recommendations(query: str, category: str = "DIY") -> str:
+def product_recommendations(
+    query: str,
+    category: str = "DIY",
+    search_location: Optional[dict] = None,
+    property_address: Optional[str] = None,
+) -> str:
     """Provides product recommendations for repairs. Can be used for DIY or professional service products."""
     t0 = time.monotonic()
 
@@ -40,19 +51,45 @@ def product_recommendations(query: str, category: str = "DIY") -> str:
 
         logger.debug("product_recommendations: SerpAPI search_query=%r", search_query)
 
-        product_search = serpapi.GoogleSearch({
+        params: dict[str, Any] = {
+            "engine": "google_shopping",
             "q": search_query,
-            "tbm": "shop",
             "api_key": serpapi_api_key,
             "num": 6,
             "gl": "us",
-            "hl": "en"
-        })
-        
+            "hl": "en",
+        }
+        sl = parse_search_location_arg(search_location)
+        location_name = resolve_serpapi_location_name(sl, property_address=property_address)
+        if location_name:
+            params["location"] = location_name
+            logger.debug(
+                "product_recommendations: SerpAPI location=%r", location_name[:80]
+            )
+        product_search = serpapi.GoogleSearch(params)
         search_results = product_search.get_dict()
         serp_err = isinstance(search_results, dict) and bool(
             search_results.get("error")
         )
+        err_text = (
+            str(search_results.get("error") or "") if isinstance(search_results, dict) else ""
+        )
+        if (
+            serp_err
+            and "location" in params
+            and "unsupported" in err_text.lower()
+            and "location" in err_text.lower()
+        ):
+            logger.info(
+                "product_recommendations: retry without location after SerpAPI error: %s",
+                err_text[:120],
+            )
+            params.pop("location", None)
+            product_search = serpapi.GoogleSearch(params)
+            search_results = product_search.get_dict()
+            serp_err = isinstance(search_results, dict) and bool(
+                search_results.get("error")
+            )
         if serp_err:
             logger.info(
                 "product_recommendations: SerpAPI error duration_ms=%d category=%s error=%s",

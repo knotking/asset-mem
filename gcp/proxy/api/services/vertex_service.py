@@ -45,7 +45,7 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
         f"checkpoint_ids={len(payload.get('checkpoint_ids') or [])} "
         f"has_property_id={bool(payload.get('property_id'))} "
         f"primary_agent={payload.get('primary_agent')!r} "
-        f"location_type={payload.get('location_type')!r}"
+        f"search_location_source={((payload.get('search_location') or {}).get('source'))!r}"
     )
 
 
@@ -820,42 +820,38 @@ async def stream_agent_answers(
     property_id = request.property_id  # Option 1: property_id from request
     primary_agent = request.primary_agent  # Primary agent selection for explicit routing
     checkpoint_optional_agents = request.checkpoint_optional_agents or []
-    location_type = request.location_type
-    location_coordinates = request.location_coordinates
-    location_radius = request.location_radius
-    
-    # Geocode address to coordinates if location_type is "address" and we have an address
-    if location_type == "address" and property_address and not location_coordinates:
-        try:
-            from common.geocoding import GeocodingClient, GeocodingConfig
-            
-            geocoding_config = GeocodingConfig.from_env()
-            if geocoding_config.is_configured:
-                geocoding_client = GeocodingClient(geocoding_config)
-                geocode_response = await geocoding_client.geocode(property_address, region="us")
-                
-                if geocode_response.success and geocode_response.has_location:
-                    location_coordinates = {
-                        "lat": geocode_response.lat,
-                        "lng": geocode_response.lng
-                    }
-                    logger.info(f"Successfully geocoded address '{property_address}' to coordinates: {location_coordinates}")
-                else:
-                    logger.warning(f"Failed to geocode address '{property_address}': {geocode_response.error_message}")
-            else:
-                logger.debug("Geocoding not configured, skipping address geocoding")
-        except Exception as e:
-            logger.warning(
-                "Error during geocoding (continuing with address only): %s",
-                e,
-                exc_info=True,
-            )
-    
-    # Set default radius if not specified
-    if location_radius is None and (location_coordinates or location_type):
-        location_radius = 5  # Default to 5 miles
-        logger.debug(f"Setting default location_radius to {location_radius} miles")
-    
+    from common.search_location import SearchLocationInput, resolve_search_location
+    from common.search_location.models import SearchLocationCoordinates
+    from common.search_location.resolve import parse_search_location_input
+
+    search_location_input: Optional[SearchLocationInput] = None
+    if request.search_location is not None:
+        sl = request.search_location
+        coords = None
+        if sl.coordinates is not None:
+            coords = SearchLocationCoordinates(lat=sl.coordinates.lat, lng=sl.coordinates.lng)
+        search_location_input = SearchLocationInput(
+            source=sl.source,
+            radius_miles=sl.radius_miles,
+            coordinates=coords,
+        )
+    elif request.location_type or request.location_coordinates:
+        search_location_input = parse_search_location_input(
+            {
+                "source": "device_gps" if request.location_type == "location" else "property_address",
+                "radius_miles": request.location_radius,
+                "coordinates": request.location_coordinates,
+            }
+        )
+
+    resolved_search_location = await resolve_search_location(
+        property_address=property_address or None,
+        search_location_input=search_location_input,
+        location_type=request.location_type,
+        location_coordinates=request.location_coordinates,
+        location_radius=request.location_radius,
+    )
+
     if not session_id:
         logger.info('Session ID not found. trying to create a new one')
         session = get_or_create_reasoning_engine_session(user_id)
@@ -906,24 +902,20 @@ async def stream_agent_answers(
         payload["checkpoint_optional_agents"] = checkpoint_optional_agents
         logger.info(f"Including checkpoint_optional_agents in payload: {checkpoint_optional_agents}")
     
-    # Location handling logic:
-    # Always include property_address if available (for context)
+    # property_address: identity/context only (which property, docs)
     if property_address:
         payload["property_address"] = property_address
-    
-    # Include location metadata when location data is present
-    if location_type:
-        payload["location_type"] = location_type
-    
-    # Include coordinates (either from request or geocoded from address)
-    if location_coordinates:
-        payload["location_coordinates"] = location_coordinates
-        logger.info(f"Including location_coordinates in payload: {location_coordinates}")
-    
-    # Include radius (with default of 5 miles)
-    if location_radius is not None:
-        payload["location_radius"] = location_radius
-        logger.info(f"Including location_radius in payload: {location_radius} miles")
+
+    # search_location: single source of truth for market/geo (service, cost, diy, etc.)
+    if resolved_search_location is not None:
+        payload["search_location"] = resolved_search_location.to_agent_dict()
+        logger.info(
+            "Including search_location source=%s radius_miles=%s coords=%s,%s",
+            resolved_search_location.source,
+            resolved_search_location.radius_miles,
+            resolved_search_location.coordinates.lat,
+            resolved_search_location.coordinates.lng,
+        )
 
     correlation_id = get_correlation_id()
     if correlation_id:
