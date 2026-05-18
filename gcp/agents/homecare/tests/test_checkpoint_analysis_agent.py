@@ -355,6 +355,73 @@ def test_parallel_runner_writes_checkpoint_parallel_results_state(monkeypatch):
     assert parsed["checkpoint_parallel_service_result"] == "service-ok"
 
 
+def test_parallel_runner_all_four_branches_merged(monkeypatch):
+    """Regression: every requested branch key is present in final JSON."""
+
+    async def _diy_ok(_payload):
+        return "diy-ok"
+
+    async def _cost_ok(_payload):
+        return "cost-ok"
+
+    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _diy_ok)
+    monkeypatch.setattr(caa, "_run_checkpoint_cost_pipeline", _cost_ok)
+    monkeypatch.setattr(
+        caa,
+        "_invoke_optional_agent_async",
+        _stub_invoke(
+            per_agent={
+                "coverage_agent": "coverage-ok",
+                "service_agent": "service-ok",
+            }
+        ),
+    )
+    tc = _minimal_tool_context()
+    out = asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results="x",
+            user_query="q",
+            checkpoint_optional_agents=["coverage", "diy", "service", "cost"],
+            tool_context=tc,
+        )
+    )
+    parsed = json.loads(out)
+    assert parsed["checkpoint_parallel_coverage_result"] == "coverage-ok"
+    assert parsed["checkpoint_parallel_diy_result"] == "diy-ok"
+    assert parsed["checkpoint_parallel_service_result"] == "service-ok"
+    assert parsed["checkpoint_parallel_cost_result"] == "cost-ok"
+    assert json.loads(tc.state["checkpoint_parallel_results"]) == parsed
+
+
+def test_parallel_runner_completion_order_independent(monkeypatch):
+    """Final JSON is complete regardless of which branch finishes first."""
+
+    delays = {"coverage": 0.05, "service": 0.01}
+
+    async def _invoke(agent, payload, tool_context):
+        name = getattr(agent, "name", "")
+        branch = {
+            "coverage_agent": "coverage",
+            "service_agent": "service",
+        }.get(name, "")
+        if branch in delays:
+            await asyncio.sleep(delays[branch])
+        return f"{branch}-ok" if branch else "ok"
+
+    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _invoke)
+    out = asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results="x",
+            user_query="q",
+            checkpoint_optional_agents=["coverage", "service"],
+            tool_context=_minimal_tool_context(),
+        )
+    )
+    parsed = json.loads(out)
+    assert parsed["checkpoint_parallel_coverage_result"] == "coverage-ok"
+    assert parsed["checkpoint_parallel_service_result"] == "service-ok"
+
+
 def test_parallel_runner_skips_all_when_tool_context_missing():
     out = asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
@@ -821,6 +888,24 @@ def test_llm_response_declares_tool_use_detects_function_call():
     )
     resp = LlmResponse(content=types.Content(role="model", parts=[part]))
     assert dfg.llm_response_declares_tool_use(resp) is True
+    assert dfg.llm_response_has_function_responses(resp) is False
+
+
+def test_llm_response_has_function_responses():
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    part = types.Part(
+        function_response=types.FunctionResponse(
+            name="ask_checkpoints_retrieval",
+            response={"ok": True},
+        )
+    )
+    resp = LlmResponse(content=types.Content(role="user", parts=[part]))
+    assert dfg.llm_response_declares_tool_use(resp) is False
+    assert dfg.llm_response_has_function_responses(resp) is True
 
 
 def test_checkpoint_after_model_callback_skips_when_tool_calls():

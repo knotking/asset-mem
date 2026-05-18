@@ -11,6 +11,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
+from ..state_delta_merge import merge_state_delta
 from .checkpoint_request_timing import (
     emit_checkpoint_request_timing,
     record_doculink_ms,
@@ -136,9 +137,9 @@ def apply_tool_context_state_delta(
         return
     existing = getattr(actions, "state_delta", None)
     if isinstance(existing, dict):
-        actions.state_delta = {**existing, **delta}
+        actions.state_delta = merge_state_delta(existing, delta)
     else:
-        actions.state_delta = dict(delta)
+        actions.state_delta = merge_state_delta(None, delta)
 
 
 def ensure_checkpoint_analysis_pending_stashed(state: Any) -> bool:
@@ -180,14 +181,16 @@ def extract_text_from_llm_response(llm_response: LlmResponse) -> str:
 
 def llm_response_declares_tool_use(llm_response: LlmResponse) -> bool:
     """True when this model turn includes tool/function calls (content must not be replaced)."""
-    if not llm_response or not llm_response.content or not llm_response.content.parts:
+    if not llm_response:
         return False
-    for part in llm_response.content.parts:
-        if getattr(part, "function_call", None) is not None:
-            return True
-        if getattr(part, "functionCall", None) is not None:
-            return True
-    return False
+    return bool(llm_response.get_function_calls())
+
+
+def llm_response_has_function_responses(llm_response: LlmResponse) -> bool:
+    """True when this model turn includes tool/function responses."""
+    if not llm_response:
+        return False
+    return bool(llm_response.get_function_responses())
 
 
 def llm_response_is_streaming_partial(llm_response: LlmResponse) -> bool:
