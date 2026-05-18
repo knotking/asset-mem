@@ -91,6 +91,127 @@ function diyCostBlockHasContent(ce: DiyCostEstimatesSummary): boolean {
     );
 }
 
+type CostEstimatesDetail = NonNullable<
+    NonNullable<StructuredResponseData["analysis"]>["costEstimationResults"]
+>["costEstimates"];
+
+function CostEstimateLabelRow({ label, value, valueClassName }: { label: string; value: string; valueClassName?: string }) {
+    return (
+        <div className="mb-2 flex items-start gap-2">
+            <span className="text-sm font-medium text-muted-foreground shrink-0">{label}</span>
+            <span className={cn("flex-1 text-sm", valueClassName ?? "text-foreground")}>{value}</span>
+        </div>
+    );
+}
+
+function CostEstimatesAccordionBody({ costEstimates }: { costEstimates: CostEstimatesDetail }) {
+    if (typeof costEstimates === "string") {
+        return <p className="text-sm whitespace-pre-wrap break-words text-foreground">{costEstimates}</p>;
+    }
+    if (!costEstimates || typeof costEstimates !== "object") {
+        return null;
+    }
+
+    const diy = costEstimates.DIY;
+    const service = costEstimates.Service;
+    const comparison = costEstimates.comparison;
+
+    return (
+        <div className="space-y-3 not-prose">
+            {costEstimates.repair_type && (
+                <div className="mb-2">
+                    <h4 className="text-sm font-semibold text-purple-600">Repair Type</h4>
+                    <p className="text-sm text-foreground">{String(costEstimates.repair_type)}</p>
+                </div>
+            )}
+
+            {diy && (
+                <div className="mb-3 rounded-lg border border-border bg-background p-3">
+                    <h4 className="mb-2 text-sm font-semibold text-foreground">DIY Option</h4>
+                    {diy.cost_range && (
+                        <CostEstimateLabelRow
+                            label="Cost Range:"
+                            value={String(diy.cost_range)}
+                            valueClassName="font-semibold text-purple-600"
+                        />
+                    )}
+                    {diy.savings && <CostEstimateLabelRow label="Savings:" value={String(diy.savings)} />}
+                    {diy.complexity && <CostEstimateLabelRow label="Complexity:" value={String(diy.complexity)} />}
+                    {Array.isArray(diy.includes) && diy.includes.length > 0 && (
+                        <div className="mt-2">
+                            <p className="mb-1 text-sm font-medium text-muted-foreground">Includes:</p>
+                            <ul className="space-y-1">
+                                {diy.includes.map((item, idx) => (
+                                    <li key={idx} className="flex gap-2 text-sm text-foreground">
+                                        <span>•</span>
+                                        <span className="flex-1">{String(item)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {service && (
+                <div className="mb-3 rounded-lg border border-border bg-background p-3">
+                    <h4 className="mb-2 text-sm font-semibold text-foreground">Professional Service</h4>
+                    {service.cost_range && (
+                        <CostEstimateLabelRow
+                            label="Cost Range:"
+                            value={String(service.cost_range)}
+                            valueClassName="font-semibold text-purple-600"
+                        />
+                    )}
+                    {service.benefits && <CostEstimateLabelRow label="Benefits:" value={String(service.benefits)} />}
+                    {service.complexity && (
+                        <CostEstimateLabelRow label="Complexity:" value={String(service.complexity)} />
+                    )}
+                    {Array.isArray(service.includes) && service.includes.length > 0 && (
+                        <div className="mt-2">
+                            <p className="mb-1 text-sm font-medium text-muted-foreground">Includes:</p>
+                            <ul className="space-y-1">
+                                {service.includes.map((item, idx) => (
+                                    <li key={idx} className="flex gap-2 text-sm text-foreground">
+                                        <span>•</span>
+                                        <span className="flex-1">{String(item)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {comparison && (
+                <div className="mt-3 rounded-lg bg-muted p-3">
+                    <h4 className="mb-2 text-sm font-semibold text-foreground">Comparison & Considerations</h4>
+                    {comparison.diy_savings && (
+                        <p className="mb-1 flex gap-2 text-sm text-foreground">
+                            <span>•</span>
+                            <span className="flex-1">DIY Savings: {String(comparison.diy_savings)}</span>
+                        </p>
+                    )}
+                    {comparison.professional_benefits && (
+                        <p className="mb-1 flex gap-2 text-sm text-foreground">
+                            <span>•</span>
+                            <span className="flex-1">
+                                Professional Benefits: {String(comparison.professional_benefits)}
+                            </span>
+                        </p>
+                    )}
+                    {comparison.considerations && (
+                        <p className="mb-1 flex gap-2 text-sm text-foreground">
+                            <span>•</span>
+                            <span className="flex-1">Considerations: {String(comparison.considerations)}</span>
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 const docTypeIcons: { [key: string]: React.ElementType } = {
   DEED: Home,
   INSURANCE_POLICY: ShieldCheck,
@@ -1014,42 +1135,8 @@ const StructuredResponse = ({
                             />
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0 space-y-3">
-                        {typeof cost.costEstimates === 'string' ? (
-                            <p className="text-sm whitespace-pre-wrap break-words">{cost.costEstimates}</p>
-                        ) : (
-                            <div className="text-sm space-y-2">
-                                {cost.costEstimates.repair_type && (
-                                    <p className="text-muted-foreground">{String(cost.costEstimates.repair_type)}</p>
-                                )}
-                                {cost.costEstimates.DIY?.cost_range && (
-                                    <p><span className="font-medium">DIY Range:</span> {String(cost.costEstimates.DIY.cost_range)}</p>
-                                )}
-                                {cost.costEstimates.Service?.cost_range && (
-                                    <p><span className="font-medium">Pro Range:</span> {String(cost.costEstimates.Service.cost_range)}</p>
-                                )}
-                                {Array.isArray(cost.costEstimates.DIY?.includes) && cost.costEstimates.DIY.includes.length > 0 && (
-                                    <div>
-                                        <p className="font-medium">DIY Includes:</p>
-                                        <ul className="list-disc pl-5">
-                                            {cost.costEstimates.DIY.includes.map((it: any, i: number) => (
-                                                <li key={i}>{String(it)}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                {Array.isArray(cost.costEstimates.Service?.includes) && cost.costEstimates.Service.includes.length > 0 && (
-                                    <div>
-                                        <p className="font-medium">Pro Includes:</p>
-                                        <ul className="list-disc pl-5">
-                                            {cost.costEstimates.Service.includes.map((it: any, i: number) => (
-                                                <li key={i}>{String(it)}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
+                        <CostEstimatesAccordionBody costEstimates={cost.costEstimates} />
                     </AccordionContent>
                 </AccordionItem>
             )}
