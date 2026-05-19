@@ -2,7 +2,7 @@
 
 ## Overview
 
-The GCP directory contains a comprehensive AI-powered property care system built on Google Cloud Platform. It consists of multi-agent AI systems, API gateway services, shared libraries, and infrastructure-as-code components that work together to provide intelligent property diagnostics, document analysis, service recommendations, and knowledge retrieval capabilities.
+The GCP directory contains a comprehensive AI-powered property care system built on Google Cloud Platform. It consists of multi-agent AI systems, API gateway services, shared libraries, and infrastructure-as-code components that work together to provide checkpoint-aware property care, document retrieval, service recommendations, and knowledge retrieval capabilities.
 
 ## System Architecture
 
@@ -37,19 +37,12 @@ The GCP directory contains a comprehensive AI-powered property care system built
 │              Vertex AI Reasoning Engine                                 │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    Property Agent (Root Orchestrator)            │  │
-│  │  ┌──────────────────────────┬─────────────────────────────────┐  │  │
-│  │  │   Analysis Agent          │   DocuLink Agent              │  │  │
-│  │  │   (Multimodal Diagnostics)│   (Document Retrieval)        │  │  │
-│  │  │                            │                               │  │  │
-│  │  │  ┌────────────────────┐   │  ┌──────────────────────┐    │  │  │
-│  │  │  │ Triage Agent       │   │  │ User Docs Agent      │    │  │  │
-│  │  │  │ Coverage Agent     │   │  │ Knowledge Base Agent │    │  │  │
-│  │  │  │ DIY Agent          │   │  └──────────────────────┘    │  │  │
-│  │  │  │ Service Agent      │   │                               │  │  │
-│  │  │  │ Shopping Agent     │   │                               │  │  │
-│  │  │  │ Cost Agent         │   │                               │  │  │
-│  │  │  └────────────────────┘   │                               │  │  │
-│  │  └──────────────────────────┴─────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────────────────────┐  │  │
+│  │  │              DocuLink Agent (doculink_agent)               │  │  │
+│  │  │  Tools: checkpoint_agent | user_docs | knowledge_base      │  │  │
+│  │  │  Sub-agent: checkpoint_progress_agent (optional analysis)  │  │  │
+│  │  │    → parallel: coverage | diy | service | cost → synthesis │  │  │
+│  │  └────────────────────────────────────────────────────────────┘  │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────┬───────────────────────────────────────────────┘
                           │
@@ -91,7 +84,7 @@ The GCP directory contains a comprehensive AI-powered property care system built
 
 ### 1. Agents (`gcp/agents/homecare/`)
 
-A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine that orchestrates property care diagnostics, document retrieval, and service recommendations.
+A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine that orchestrates checkpoint retrieval, optional checkpoint analysis, document retrieval, and service recommendations.
 
 #### 1.1 Property Agent (Root Orchestrator)
 
@@ -121,91 +114,45 @@ class DiagnosisInput(BaseModel):
     checkpoint_optional_agents: Optional[List[str]]  # ["coverage", "diy", "service", "cost"]
 ```
 
-#### 1.2 Analysis Agent
+#### 1.2 DocuLink Agent
 
-**Location:** `gcp/agents/homecare/property_agent/sub_agents/analysis_agent/`
+**Location:** `property_agent/agent.py` (`doculink_agent`)
 
-**Purpose:** Comprehensive multimodal diagnostic workflow orchestrator for property-related issues.
+**Purpose:** Single delegation target from the root agent for property queries — checkpoint retrieval, user-document RAG, knowledge-base RAG, and optional checkpoint analysis.
 
-**Sub-Agents:**
+**Tools (ADK `AgentTool`):**
 
-1. **Triage Agent**
-   - Analyzes multimodal data (images, videos, documents) using Gemini 2.5 Flash
-   - Performs text-only triage when no media provided
-   - Produces clear diagnosis or asks clarification questions
-   - Output: JSON with diagnosis or clarification questions
+1. **Checkpoint Agent** (`checkpoint_agent/`)
+   - Firestore vector search over property checkpoints
+   - Requires `property_id` for semantic checkpoint queries
+   - Honors `checkpoint_ids` when the user selects specific checkpoints
+   - Passes `search_location` for geo-aware optional branches
+   - Returns dual-format markdown + fenced JSON for rich UI rendering
 
-2. **Coverage Agent** (`coverage_agent/`)
-   - Retrieves warranty and insurance information from user documents
+2. **User Docs Agent** (`user_docs_agent/`)
+   - Vertex AI RAG over the user upload corpus
+   - Scoped by `context_doc_uris` when provided (includes chat attachments)
    - Tool: `ask_user_docs_retrieval`
-   - Output: Warranty/insurance coverage information
 
-3. **DIY Agent** (`diy_agent/`)
-   - Provides DIY repair recommendations
-   - Tools:
-     - `google_search_agent`: Internet research for DIY steps
-     - `youtube_search`: Video tutorials
-     - `shopping_agent`: Product recommendations (DIY category)
-     - `cost_estimation_diy`: DIY cost estimates
-   - Output: DIY steps, videos, and product recommendations
+3. **Knowledge Base Agent** (`knowledge_base_agent/`)
+   - Vertex AI RAG over the shared reference corpus
+   - Used when no user documents apply to the query
 
-4. **Service Agent** (`service_agent/`)
-   - Finds local service providers
-   - Tools:
-     - `serpapi_search`: Local business search
-     - `google_search_agent`: General search
-     - `cost_estimation`: Professional service cost estimates
-   - Output: Service provider listings with contact info, ratings, reviews
+**Tool selection (priority):** See `property_agent/prompts.py` → `doculink_agent_system_instruction()` — `primary_agent`, non-empty `checkpoint_optional_agents`, `checkpoint_ids`, query intent, then `context_doc_uris`, else knowledge base.
 
-5. **Shopping Agent** (`shopping_agent/`)
-   - Reusable product recommendation agent
-   - Tool: `product_recommendations`
-   - Output: Structured product data (name, image, vendor, reviews, URL)
-   - Used by DIY Agent and can be used elsewhere
+**Optional checkpoint analysis:** When `checkpoint_optional_agents` is non-empty, DocuLink calls `checkpoint_agent` once for retrieval, then transfers to `checkpoint_progress_agent`, which runs Python-parallel branches (`coverage`, `diy`, `service`, `cost`) and a synthesis step. Output is progressive dual-format (markdown + ```json `analysis` object) for webapp/mapp.
 
-6. **Cost Agent** (`cost_agent/`)
-   - Provides cost estimates
-   - Tools: `cost_estimation`, `cost_estimation_diy`
-   - Output: Structured cost comparisons (DIY vs Professional)
+**Branch modules (invoked from checkpoint analysis, not separate root routes):**
 
-**Workflow:**
-1. Triage Agent analyzes input (multimodal or text-only)
-2. If clarification needed, asks questions iteratively
-3. Once diagnosis clear, runs optional agents based on `analysis_optional_agents`:
-   - Coverage Agent (checks user documents)
-   - DIY Agent (research + products + videos)
-   - Service Agent (finds local providers)
-   - Cost Agent (provides cost estimates)
-4. Returns structured JSON response with all results
+| Branch | Module | Role |
+|--------|--------|------|
+| Coverage | `coverage_agent/` | Warranty/insurance via user docs |
+| DIY | `diy_agent/` + `orchestrator.py` | Parallel fetch + synthesis; YouTube/shopping |
+| Service | `service_agent/` | SerpAPI local pros + optional Google Search |
+| Cost | `cost_agent/` | AI + library cost estimates |
+| Shopping | `shopping_agent/` | Product recommendations (used by DIY) |
 
-#### 1.3 DocuLink Agent
-
-**Location:** Constructed in `property_agent/agent.py`
-
-**Purpose:** Document retrieval and knowledge base access orchestrator.
-
-**Sub-Agents:**
-
-1. **User Docs Agent** (`user_docs_agent/`)
-   - Retrieves information from user-uploaded documents
-   - Uses Vertex AI RAG with user-specific corpus
-   - Filters by `context_doc_uris` when provided
-   - Tool: `ask_user_docs_retrieval`
-   - Output: Retrieved content with citations
-
-2. **Knowledge Base Agent** (`knowledge_base_agent/`)
-   - Accesses general knowledge base RAG corpus
-   - Used when no user documents available
-   - Tool: `ask_knowledge_base_retrieval`
-   - Output: Retrieved content with citations
-
-**Tool Selection Logic:**
-- If `context_doc_uris` provided → Use `user_docs_agent`
-- Else → Use `knowledge_base_agent`
-
-**Fallback Behavior:**
-- If retrieval returns no results, provides best-effort answer from base model
-- Clearly prefaced with "No relevant information was found..."
+**Fallback:** If retrieval returns nothing, DocuLink may answer from `user_query` with an explicit “no relevant information found” preface.
 
 #### 1.4 Agent Tools and Integrations
 
@@ -220,9 +167,10 @@ class DiagnosisInput(BaseModel):
 - **Google Search**: General information retrieval
 - **Google Maps**: Location-based services
 
-**Multimodal Analysis:**
-- Gemini 2.5 Flash for image/video/document analysis
-- Supports: PDFs, images (JPG, PNG), videos, documents
+**Multimodal / media (outside live agent triage):**
+- Checkpoint photos/videos: analyzed asynchronously by the checkpoint-analysis Cloud Function (Gemini), not via a root-level triage agent
+- Proxy `extract-doc-info`: Gemini document classification on upload
+- Chat attachments: sent as `context_doc_uris` into DocuLink user-docs RAG
 
 ### 2. Proxy Service (`gcp/proxy/`)
 
