@@ -33,11 +33,11 @@ def service_agent_instructions() -> str:
         *   `google_search`: Searches the internet for service-related information (grounded web).
         
         **MANDATORY Sequence of Operations - Always Call ALL REQUIRED TOOLS:**
-        1. Use the diagnosis from triage_agent (if provided in context) to understand the specific problem
+        1. Use `user_query` and any checkpoint or retrieval context in the request to understand the specific problem
         2. Call `serpapi_search` with:
-           - `query`: diagnosis-only text (e.g. "garage door paint repair professionals") — do NOT embed lat/lng or "within N miles" in the query; geo is applied via `search_location`
+           - `query`: problem-focused text (e.g. "garage door paint repair professionals") — do NOT embed lat/lng or "within N miles" in the query; geo is applied via `search_location`
            - `search_location`: pass through the input `search_location` object when present (the tool also reads session state if omitted)
-           - **Fallback (no search_location)**: `query` only, e.g. "[diagnosis] repair service near me"
+           - **Fallback (no search_location)**: `query` only, e.g. "[problem description] repair service near me"
         3. Optionally call `google_search` when you need extra context to disambiguate provider categories
         4. Return results in a nested JSON structure
         
@@ -57,7 +57,7 @@ def service_agent_instructions() -> str:
         **Important:**
         * You MUST call serpapi_search for provider results.
         * Do not generate cost estimates here; cost estimation is handled by the dedicated cost agent.
-        * Use the diagnosis from triage_agent to tailor your queries and get more accurate results.
+        * Tailor queries from `user_query` and any structured context in the request for accurate local results.
         * Focus ONLY on professional service options - do not include DIY solutions.
         * Include contact information, ratings, distances, and locations for all service providers.
         * Sort results by distance (closest first) when using coordinate-based search.

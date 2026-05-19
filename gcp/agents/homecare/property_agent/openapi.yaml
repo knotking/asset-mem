@@ -14,19 +14,15 @@ info:
     - **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
     - **General Property Care**: Home improvement, maintenance tips, property management, preventive care
     
-    **Sub-Agents:**
-    - Triage Agent: Multimodal analysis and diagnosis for property-related needs
-    - Coverage Agent: Warranty and insurance information
-    - DIY Agent: DIY repair steps, tutorials, and products
-    - Service Agent: Local service providers and cost estimates
-    - Shopping Agent: Product recommendations (reusable)
-    - Cost Agent: Structured cost estimates
-    - User Docs Agent: User document retrieval
-    - Knowledge Base Agent: General knowledge base retrieval
+    **Sub-Agents (via DocuLink and checkpoint analysis):**
+    - Checkpoint Agent: Property checkpoint retrieval (Firestore vector search)
+    - Checkpoint analysis: Optional coverage, DIY, service, cost branches + synthesis
+    - User Docs Agent: User document RAG (`context_doc_uris`)
+    - Knowledge Base Agent: Shared corpus RAG
+    - DIY / Service / Cost / Shopping: Used in optional checkpoint analysis paths
     
-    Each sub-agent has defined input and output schemas documented below.
-    The Property Agent returns either a structured analysis/aggregation object,
-    a retrieval payload, or a simple text response for casual queries.
+    The Property Agent delegates to DocuLink for retrieval and checkpoint flows,
+    or returns a simple text response for casual queries.
 
 paths: {}
 
@@ -43,7 +39,7 @@ components:
       properties:
         user_query:
           type: string
-          description: The user query or question. **This is the only required field - the triage agent can work with just this.**
+          description: The user query or question. This is the only required field.
         context_doc_uris:
           type: array
           items:
@@ -51,15 +47,31 @@ components:
             format: uri
           description: Optional list of context document URIs (GCS paths). May be omitted, null, or empty.
           nullable: true
-        property_address:
-          type: string
-          description: Optional property address for location-based searches. May be omitted, null, or empty.
-          nullable: true
-        analysis_optional_agents:
+        checkpoint_ids:
           type: array
           items:
             type: string
-          description: Optional list of analysis sub-agents to run after triage (allowed values: coverage, diy, service, cost). Defaults to all optional agents when omitted or empty.
+          description: Optional checkpoint IDs for explicit checkpoint context.
+          nullable: true
+        property_address:
+          type: string
+          description: Optional property address (identity/context; not market geo when search_location is set).
+          nullable: true
+        property_id:
+          type: string
+          description: Property ID for checkpoint and property-scoped queries.
+          nullable: true
+        primary_agent:
+          type: string
+          enum: [checkpoint, docs]
+          description: Explicit routing to checkpoint or docs path via DocuLink.
+          nullable: true
+        checkpoint_optional_agents:
+          type: array
+          items:
+            type: string
+            enum: [coverage, diy, service, cost]
+          description: Optional checkpoint analysis branches after retrieval.
           nullable: true
       description: |
         Input schema for the root property agent (orchestrator).
@@ -93,6 +105,7 @@ components:
     # Sub-Agent Output Schemas
     # ============================================================================
 
+    # Legacy schema (deprecated; checkpoint analysis uses dual-format markdown + JSON).
     TriageAgentOutput:
       type: object
       required:

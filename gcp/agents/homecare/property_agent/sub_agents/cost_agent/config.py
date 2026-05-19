@@ -15,7 +15,6 @@ class CostEstimationConfig:
     # Feature Flags
     USE_AI_COST_ESTIMATION: bool = os.getenv("USE_AI_COST_ESTIMATION", "true").lower() == "true"
     USE_SERVICE_PROVIDER_CALIBRATION: bool = os.getenv("USE_SERVICE_PROVIDER_CALIBRATION", "true").lower() == "true"
-    ENABLE_COST_CACHING: bool = os.getenv("ENABLE_COST_CACHING", "false").lower() == "true"
     
     # Confidence Thresholds
     MIN_AI_CONFIDENCE_THRESHOLD: float = float(os.getenv("MIN_AI_CONFIDENCE_THRESHOLD", "0.6"))
@@ -28,8 +27,8 @@ class CostEstimationConfig:
     # Calibration Settings
     PROVIDER_DATA_WEIGHT: float = float(os.getenv("PROVIDER_DATA_WEIGHT", "0.3"))  # 0.0-1.0
     
-    # Model Configuration
-    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-3.1-flash-lite")
+    # Model for direct generate_content (Google Search grounding); matches LEGACY_API_GEMINI default.
+    AI_MODEL_NAME: str = os.getenv("COST_ESTIMATION_MODEL", "gemini-2.5-flash")
     AI_TEMPERATURE: float = float(os.getenv("AI_TEMPERATURE", "0.3"))
     AI_MAX_OUTPUT_TOKENS: int = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2048"))
     
@@ -52,10 +51,6 @@ class CostEstimationConfig:
         # Default for unlisted cities
         "default": 1.0
     }
-    
-    # Cache Settings (if caching enabled)
-    CACHE_TTL_HOURS: int = int(os.getenv("COST_CACHE_TTL_HOURS", "24"))
-    CACHE_MAX_ENTRIES: int = int(os.getenv("COST_CACHE_MAX_ENTRIES", "1000"))
     
     # Logging
     LOG_AI_RESPONSES: bool = os.getenv("LOG_AI_COST_RESPONSES", "false").lower() == "true"
