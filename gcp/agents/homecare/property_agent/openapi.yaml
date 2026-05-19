@@ -87,89 +87,41 @@ components:
       properties:
         user_query:
           type: string
-          description: The user query for document retrieval or agent processing.
+          description: The user query for DocuLink and branch agents.
         context_doc_uris:
           type: array
           items:
             type: string
             format: uri
-          description: Optional list of context document URIs (GCS paths).
+          description: Optional context document URIs (user uploads, chat attachments).
           nullable: true
         property_address:
           type: string
-          description: Optional property address for location-based searches.
+          description: Property address (identity/context).
           nullable: true
-      description: Input schema for Coverage, DIY, Service, Shopping, User Docs, and Knowledge Base agents.
+        property_id:
+          type: string
+          nullable: true
+        checkpoint_ids:
+          type: array
+          items:
+            type: string
+          nullable: true
+        checkpoint_optional_agents:
+          type: array
+          items:
+            type: string
+            enum: [coverage, diy, service, cost]
+          nullable: true
+        search_location:
+          type: object
+          description: Unified market/geo (source, coordinates, radius_miles 5-100, label).
+          nullable: true
+      description: Input schema for DocuLink and checkpoint optional-analysis branches.
 
     # ============================================================================
-    # Sub-Agent Output Schemas
+    # Branch output schemas (checkpoint optional analysis + retrieval)
     # ============================================================================
-
-    # Legacy schema (deprecated; checkpoint analysis uses dual-format markdown + JSON).
-    TriageAgentOutput:
-      type: object
-      required:
-        - triageResult
-      properties:
-        triageResult:
-          oneOf:
-            - type: object
-              required:
-                - diagnosis
-              properties:
-                diagnosis:
-                  type: string
-                  description: Clear, factual diagnosis text derived from multimodal analysis or text-only triage.
-                needs_clarification:
-                  type: boolean
-                  description: Always false when diagnosis is provided.
-                  default: false
-            - type: object
-              required:
-                - needs_clarification
-                - clarification_questions
-              properties:
-                needs_clarification:
-                  type: boolean
-                  description: Indicates that clarification is needed from the user.
-                  const: true
-                clarification_questions:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of 1-3 targeted questions to help understand the issue better.
-                  minItems: 1
-                  maxItems: 3
-                message:
-                  type: string
-                  description: Optional friendly message explaining why clarification is needed.
-                  nullable: true
-      description: |
-        Triage Agent output - provides diagnosis for downstream agents, or asks clarification questions when the issue is unclear.
-        
-        **Behavior:**
-        - When media is provided: Returns diagnosis from multimodal analysis
-        - When text-only query is clear: Returns diagnosis from user_query analysis
-        - When text-only query is unclear: Returns needs_clarification=true with targeted questions
-        - Iterative: Continues asking questions until a clear diagnosis is obtained
-      examples:
-        - summary: Diagnosis from multimodal analysis
-          value:
-            triageResult:
-              diagnosis: "Significant white scratch marks and scuffing on the rear quarter panel and bumper of a red vehicle"
-        - summary: Diagnosis from clear text query
-          value:
-            triageResult:
-              diagnosis: "Leaking kitchen faucet due to worn cartridge"
-        - summary: Clarification needed
-          value:
-            triageResult:
-              needs_clarification: true
-              clarification_questions:
-                - "What specific issue are you experiencing?"
-                - "Is this related to a home appliance or vehicle?"
-                - "Can you describe any visible symptoms or error messages?"
-              message: "I need a bit more information to help you effectively."
 
     CoverageAgentOutput:
       type: object
@@ -628,24 +580,15 @@ components:
         - type: string
           description: Plain text response for casual or small-talk queries.
       description: |
-        The root agent returns either a structured analysis/aggregation object,
-        a structured response with both JSON and Markdown (for Analysis Agent),
-        a retrieval payload, or a simple text response.
+        The root agent returns a DocuLink retrieval payload, a checkpoint dual-format
+        response (markdown first, then fenced JSON with an `analysis` object), or plain text
+        for casual queries.
         
-        **Analysis Agent Response Format:**
-        The Analysis Agent MUST return responses in a dual format:
-        - Markdown text (FIRST): Contains human-readable formatted response for Telegram consumption and must start with `# {analysis.title}`
-        - JSON code block (SECOND): Contains structured data for webapp consumption (parsed by chat-message.tsx) and must include `analysis.title`
-        
-        The response format is:
-        ```
-        # {analysis.title}
-        [Markdown formatted human-readable response here]
-        
-        ```json
-        { ... structured JSON data including "analysis": { "title": "..." } ... }
-        ```
-        ```
+        **Checkpoint optional-analysis format:**
+        - Markdown (first): human-readable sections for Telegram and in-app display
+        - Fenced JSON (second): `analysis` object with branch results (`coverageResult`,
+          `diyResults`, `serviceResults`, `costEstimationResults`, optional `triageResult` summary)
+        - Parsed by webapp/mapp chat UI components
       examples:
         - $ref: '#/components/examples/ExampleStructuredResponse'
         - $ref: '#/components/examples/ExampleStructuredResponseWithMarkdown'
@@ -1114,51 +1057,11 @@ components:
         noInformationFound: false
 
   # ============================================================================
-  # Sub-Agent Summary
+  # Sub-Agent Summary (current)
   # ============================================================================
-  # The Property Agent orchestrates the following sub-agents:
-  #
-  # 1. Triage Agent (DiagnosisInput -> TriageAgentOutput)
-  #    - Input: DiagnosisInput (user_query, context_doc_uris, property_address)
-  #    - Output: TriageAgentOutput (triageResult with diagnosis)
-  #    - Purpose: Analyzes multimodal data or performs text-only triage
-  #
-  # 2. Coverage Agent (DocsInput -> CoverageAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: CoverageAgentOutput (coverageResult with warrantyInfo, insuranceInfo)
-  #    - Purpose: Retrieves warranty and insurance information from user documents
-  #
-  # 3. DIY Agent (DocsInput -> DIYAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: DIYAgentOutput (diyResults with diySteps, youtubeSearch, recommendedProducts)
-  #    - Purpose: Provides DIY repair steps, YouTube tutorials, and product recommendations
-  #
-  # 4. Service Agent (DocsInput -> ServiceAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: ServiceAgentOutput (serviceResults with costEstimates, localPros)
-  #    - Purpose: Finds local service providers and provides cost estimates
-  #
-  # 5. Shopping Agent (DocsInput -> ShoppingAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: ShoppingAgentOutput (recommendedProducts with category-based structure)
-  #    - Purpose: Provides product recommendations (reusable across contexts)
-  #
-  # 6. Cost Agent (CostAgentInput -> CostAgentOutput)
-  #    - Input: CostAgentInput (query string describing the repair)
-  #    - Output: CostAgentOutput (costEstimates with DIY vs Service comparison and recommendation)
-  #    - Purpose: Provides structured DIY vs Service cost estimates
-  #
-  # 7. User Docs Agent (DocsInput -> UserDocsAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: UserDocsAgentOutput (user_docs_result)
-  #    - Purpose: Retrieves information from user-uploaded documents
-  #
-  # 8. Knowledge Base Agent (DocsInput -> KnowledgeBaseAgentOutput)
-  #    - Input: DocsInput (user_query, context_doc_uris, property_address)
-  #    - Output: KnowledgeBaseAgentOutput (knowledge_base_results)
-  #    - Purpose: Retrieves information from general knowledge base RAG corpus
-  #
-  # All sub-agents are modular and can be used independently or orchestrated
-  # through the Analysis Agent.
+  # Root property_agent → doculink_agent
+  #   Tools: checkpoint_agent, ask_user_docs_agent, ask_knowledge_base_agent
+  #   Sub-agent: checkpoint_progress_agent (optional parallel coverage|diy|service|cost + synthesis)
+  # See property_agent/README.md and prompts.py for routing details.
 
 

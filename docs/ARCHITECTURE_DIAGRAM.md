@@ -190,56 +190,43 @@ A visual representation of the HomeApp platform architecture, showing the relati
                                     │                                 │
                                     │  • user_query                   │
                                     │  • context_doc_uris (optional)  │
-                                    │  • diagnosis_uris (optional)    │
-                                    │  • property_address (optional)  │
+                                    │  • checkpoint_ids (optional)    │
+                                    │  • checkpoint_optional_agents   │
+                                    │  • primary_agent (checkpoint|docs)│
+                                    │  • property_id / search_location │
                                     └───────────────┬─────────────────┘
                                                     │
                                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              ROOT PROPERTY AGENT                                  │
-│                                                                                   │
-│   Role: Orchestrator that routes requests based on input parameters              │
-│                                                                                   │
-│   Routing Logic:                                                                  │
-│   ┌─────────────────────────────────────────────────────────────────────────┐    │
-│   │  IF diagnosis_uris present  ──►  Delegate to ANALYSIS AGENT             │    │
-│   │  ELSE                       ──►  Delegate to DOCULINK AGENT             │    │
-│   │  IF casual greeting         ──►  Return simple greeting                 │    │
-│   └─────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                   │
+│   Delegates property work to DocuLink; casual queries answered directly         │
 └───────────────────────────────────────┬───────────────────────────────────────────┘
                                         │
-                       ┌────────────────┴────────────────┐
-                       │                                 │
-                       ▼                                 ▼
-┌─────────────────────────────────────┐ ┌─────────────────────────────────────────┐
-│         DOCULINK AGENT              │ │            ANALYSIS AGENT               │
-│                                     │ │                                         │
-│  Purpose: Document Q&A              │ │  Purpose: Multimodal diagnostics        │
-│                                     │ │                                         │
-│  Tool Selection:                    │ │  Capabilities:                          │
-│  ┌────────────────────────────┐     │ │  ┌─────────────────────────────────┐   │
-│  │ IF context_doc_uris:       │     │ │  │  • Image/video analysis         │   │
-│  │   ► USER DOCS AGENT        │     │ │  │  • Issue triage                 │   │
-│  │ ELSE:                      │     │ │  │  • DIY recommendations          │   │
-│  │   ► KNOWLEDGE BASE AGENT   │     │ │  │  • Provider suggestions         │   │
-│  └────────────────────────────┘     │ │  │  • Cost estimates               │   │
-│                                     │ │  │  • Product recommendations      │   │
-│        │                │           │ │  └─────────────────────────────────┘   │
-│        ▼                ▼           │ │                                         │
-│  ┌───────────┐   ┌─────────────┐   │ │                                         │
-│  │ User Docs │   │ Knowledge   │   │ │                                         │
-│  │   Agent   │   │ Base Agent  │   │ │                                         │
-│  │           │   │             │   │ │                                         │
-│  │ Searches  │   │ Searches    │   │ │                                         │
-│  │ user's    │   │ general     │   │ │                                         │
-│  │ uploaded  │   │ home care   │   │ │                                         │
-│  │ documents │   │ corpus      │   │ │                                         │
-│  └─────┬─────┘   └──────┬──────┘   │ │                                         │
-│        │                │          │ │                                         │
-└────────┼────────────────┼──────────┘ └─────────────────────────────────────────┘
-         │                │
-         ▼                ▼
+                                        ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                              DOCULINK AGENT                                       │
+│                                                                                   │
+│   Tools: checkpoint_agent | ask_user_docs_agent | ask_knowledge_base_agent      │
+│                                                                                   │
+│   IF checkpoint_optional_agents set:                                              │
+│     checkpoint_agent (retrieval) → checkpoint_progress_agent                      │
+│       → parallel coverage | diy | service | cost → synthesis (dual-format)        │
+│   ELIF checkpoint_ids / checkpoint intent / primary_agent=checkpoint:               │
+│     checkpoint_agent                                                              │
+│   ELIF primary_agent=docs OR context_doc_uris:                                    │
+│     ask_user_docs_agent                                                           │
+│   ELSE:                                                                           │
+│     ask_knowledge_base_agent                                                      │
+│                                                                                   │
+│        │              │                │                                          │
+│        ▼              ▼                ▼                                          │
+│  ┌────────────┐ ┌───────────┐ ┌─────────────┐                                    │
+│  │ Checkpoint │ │ User Docs │ │ Knowledge   │                                    │
+│  │  (vector)  │ │   RAG     │ │ Base RAG    │                                    │
+│  └─────┬──────┘ └─────┬─────┘ └──────┬──────┘                                    │
+└────────┼──────────────┼──────────────┼────────────────────────────────────────────┘
+         │              │              │
+         ▼              ▼              ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                            VERTEX AI RAG ENGINE                                  │
 │                                                                                  │
@@ -483,9 +470,11 @@ HomeApp/
     │   └── homecare/
     │       ├── property_agent/    # Root agent
     │       │   ├── sub_agents/
-    │       │   │   ├── analysis_agent/
+    │       │   │   ├── checkpoint_agent/
+    │       │   │   ├── checkpoint_analysis_agent/
     │       │   │   ├── knowledge_base_agent/
-    │       │   │   └── user_docs_agent/
+    │       │   │   ├── user_docs_agent/
+    │       │   │   └── {coverage,diy,service,cost,shopping}_agent/
     │       │   ├── agent.py       # Agent orchestration
     │       │   └── prompts.py     # Agent instructions
     │       └── eval/              # Agent evaluation
