@@ -4,6 +4,8 @@ The **property agent** (`root_agent` in `agent.py`, ADK name `property_agent`) i
 
 The canonical routing text lives in `prompts.py` (`root_agent_instructions`, `doculink_agent_system_instruction`). Regression goldens are ADK evalsets under `property_agent/evals/`.
 
+**Gemini models:** ADK agents use `GLOBAL_GEMINI_MODEL` (`gemini-3.1-flash-lite`); direct Python `generate_content` paths (cost, DIY orchestrator) use `LEGACY_API_GEMINI` (`gemini-2.5-flash`). See [`docs/MODEL_POLICY.md`](../docs/MODEL_POLICY.md).
+
 ## Architecture (current)
 
 ```

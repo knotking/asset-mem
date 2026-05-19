@@ -10,6 +10,8 @@ from typing import List, Optional, Dict, Any
 from google import genai
 from google.genai.types import EmbedContentConfig
 
+from property_agent.log_redaction import safe_text_preview
+
 logger = logging.getLogger(__name__)
 
 # Initialize Google Gen AI Client for embedding generation
@@ -47,7 +49,11 @@ def generate_query_embedding(query_text: str) -> Optional[List[float]]:
         return None
     
     try:
-        logger.info(f"Generating query embedding for query: '{query_text[:100]}...' (full length: {len(query_text)})")
+        logger.info(
+            "Generating query embedding query_len=%d preview=%r",
+            len(query_text or ""),
+            safe_text_preview(query_text, max_len=60),
+        )
         
         if not query_text or not query_text.strip():
             logger.error("Empty query text provided for embedding generation")
@@ -67,7 +73,10 @@ def generate_query_embedding(query_text: str) -> Optional[List[float]]:
         if result and result.embeddings and len(result.embeddings) > 0:
             embedding = result.embeddings[0].values
             if embedding and len(embedding) == EMBEDDING_DIMENSION:
-                logger.info(f"Successfully generated query embedding (dimension: {len(embedding)}, first few values: {list(embedding)[:5]})")
+                logger.info(
+                    "Successfully generated query embedding dimension=%d",
+                    len(embedding),
+                )
                 return list(embedding)  # Convert to list of floats
             else:
                 logger.error(f"Invalid embedding dimension: {len(embedding) if embedding else 0}, expected {EMBEDDING_DIMENSION}")
@@ -111,7 +120,16 @@ def search_checkpoints_by_vector(
         from google.cloud.firestore_v1.vector import Vector
         from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
         # Generate query embedding
-        logger.info(f"Starting vector search: user_id={user_id}, property_id={property_id}, query_text='{query_text}', limit={limit}, location={location}")
+        logger.info(
+            "Starting vector search user_id=%s property_id=%s query_len=%d preview=%r "
+            "limit=%d location=%r",
+            user_id,
+            property_id,
+            len(query_text or ""),
+            safe_text_preview(query_text, max_len=60),
+            limit,
+            location,
+        )
         query_embedding = generate_query_embedding(query_text)
         if not query_embedding:
             logger.error(f"Failed to generate query embedding for query '{query_text}', returning empty results")
@@ -142,7 +160,12 @@ def search_checkpoints_by_vector(
             filtered_query = checkpoints_ref.where(filter=firestore.FieldFilter("location", "==", location))
             
             # Perform vector search on filtered query
-            logger.info(f"Performing vector search with location filter '{location}' for query: {query_text[:100]}... (limit: {limit})")
+            logger.info(
+                "Performing vector search location_filter=%r query_len=%d limit=%d",
+                location,
+                len(query_text or ""),
+                limit,
+            )
             vector_query = filtered_query.find_nearest(
                 vector_field="embedding",
                 query_vector=query_vector,
@@ -152,7 +175,11 @@ def search_checkpoints_by_vector(
             )
         else:
             # Perform vector search on collection (no location filter)
-            logger.info(f"Performing vector search for query: {query_text[:100]}... (limit: {limit})")
+            logger.info(
+                "Performing vector search query_len=%d limit=%d",
+                len(query_text or ""),
+                limit,
+            )
             vector_query = checkpoints_ref.find_nearest(
                 vector_field="embedding",
                 query_vector=query_vector,

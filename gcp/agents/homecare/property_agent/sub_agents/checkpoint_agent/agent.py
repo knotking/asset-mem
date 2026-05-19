@@ -708,7 +708,13 @@ def ask_checkpoints_retrieval(
                 len(checkpoints),
             )
             if not checkpoints:
-                logger.warning(f"No checkpoints found for query: {user_query}")
+                from property_agent.log_redaction import safe_text_preview
+
+                logger.warning(
+                    "No checkpoints found for query_len=%d preview=%r",
+                    len(user_query or ""),
+                    safe_text_preview(user_query, max_len=60),
+                )
                 logger.info(
                     "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
                     _elapsed_ms(),

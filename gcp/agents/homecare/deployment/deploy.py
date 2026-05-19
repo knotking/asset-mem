@@ -55,7 +55,11 @@ def _load_agent_engine_requirements() -> list[str]:
     ]
 
 
-logging.basicConfig(level=logging.DEBUG)
+_deploy_log_level = os.getenv("AGENT_DEPLOY_LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, _deploy_log_level, logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 logger = logging.getLogger(__name__)
 load_dotenv()
 GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")

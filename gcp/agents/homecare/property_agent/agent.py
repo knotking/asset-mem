@@ -209,7 +209,13 @@ def before_tool_callback(
         tool_context.state["property_id"] = property_id
         logger.info("property_id %s set in tool context", property_id)
     elif tool_name != "transfer_to_agent":
-        logger.warning("property_id not found in args for tool=%s: %s", tool_name, args)
+        from property_agent.log_redaction import redact_tool_args_for_log
+
+        logger.warning(
+            "property_id not found in args for tool=%s: %s",
+            tool_name,
+            redact_tool_args_for_log(args),
+        )
 
 
 # ADK Web / session traces attribute a tool's *function response* event to the
