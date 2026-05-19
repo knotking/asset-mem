@@ -202,6 +202,54 @@ def test_merge_search_location_fills_source_from_session():
     assert sl.label == "Brentwood, CA"
 
 
+def test_ttl_cache_expires(monkeypatch):
+    import time as time_mod
+
+    clock = {"now": 0.0}
+    monkeypatch.setattr(time_mod, "monotonic", lambda: clock["now"])
+    cache = sg._TtlCache(1.0, max_size=4)
+    cache.set("key", "value")
+    assert cache.get("key") == "value"
+    clock["now"] = 2.0
+    assert cache.get("key") is None
+
+
+def test_reverse_geocode_cache_avoids_repeat_requests(monkeypatch):
+    sg.clear_geo_caches()
+    calls = {"n": 0}
+
+    class FakeResp:
+        ok = True
+
+        @staticmethod
+        def json():
+            return {
+                "status": "OK",
+                "results": [
+                    {
+                        "address_components": [
+                            {"long_name": "Brentwood", "types": ["locality"]},
+                            {"long_name": "94513", "types": ["postal_code"]},
+                            {
+                                "short_name": "CA",
+                                "types": ["administrative_area_level_1"],
+                            },
+                        ],
+                    }
+                ],
+            }
+
+    def fake_get(*_a, **_k):
+        calls["n"] += 1
+        return FakeResp()
+
+    monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "test-key")
+    monkeypatch.setattr(sg.requests, "get", fake_get)
+    assert sg._reverse_geocode_sync(37.9319, -121.6958) is not None
+    assert sg._reverse_geocode_sync(37.9319, -121.6958) is not None
+    assert calls["n"] == 1
+
+
 def test_format_google_maps_results():
     text = sg.format_google_maps_results(
         {

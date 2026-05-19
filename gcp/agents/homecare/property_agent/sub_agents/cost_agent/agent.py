@@ -285,7 +285,13 @@ def _estimate_with_ai(
             provider_pricing = extract_and_combine_all_pricing(service_results)
         
         # Call AI cost estimator (client created inside estimate_costs_with_ai when needed)
-        logger.info(f"Calling AI cost estimator for: {diagnosis[:100]}...")
+        from property_agent.log_redaction import safe_text_preview
+
+        logger.info(
+            "Calling AI cost estimator diagnosis_len=%d preview=%r",
+            len(diagnosis or ""),
+            safe_text_preview(diagnosis, max_len=80),
+        )
         ai_estimate, confidence = estimate_costs_with_ai(
             diagnosis=diagnosis,
             property_address=property_address,

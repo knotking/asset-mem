@@ -1,3 +1,9 @@
+"""
+Gemini model selection for the Homecare property agent.
+
+See ``docs/MODEL_POLICY.md`` for when to use each model class.
+"""
+
 from functools import cached_property, lru_cache
 import os
 from typing import ClassVar
@@ -31,6 +37,7 @@ class Gemini3(Gemini):
             ),
         )
 
+# ADK agents (root, doculink, checkpoint branches, synthesis): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
 
 
@@ -51,5 +58,5 @@ class _LegacyApiGemini:
         return _legacy_vertex_genai_client()
 
 
-# Cost AI + DIY orchestrator; ADK agents use GLOBAL_GEMINI_MODEL above.
+# Direct ``generate_content`` call sites (cost estimator, DIY orchestrator steps/web).
 LEGACY_API_GEMINI = _LegacyApiGemini()

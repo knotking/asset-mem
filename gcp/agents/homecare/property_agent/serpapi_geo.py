@@ -6,6 +6,7 @@ import logging
 import math
 import os
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -19,8 +20,56 @@ _GEOCODE_REVERSE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 _SERPAPI_LOCATIONS_URL = "https://serpapi.com/locations.json"
 _REVERSE_GEOCODE_TIMEOUT_S = 10
 _LOCATIONS_API_TIMEOUT_S = 10
-_reverse_geocode_cache: Dict[Tuple[float, float], str] = {}
-_serpapi_locations_cache: Dict[str, str] = {}
+_GEO_CACHE_MAX_ENTRIES = 256
+
+
+def _geo_cache_ttl_seconds() -> float:
+    raw = os.getenv("SERPAPI_GEO_CACHE_TTL_SECONDS", "86400").strip()
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 86400.0
+
+
+class _TtlCache:
+    """In-process TTL cache (disabled when ttl_seconds is 0)."""
+
+    def __init__(self, ttl_seconds: float, *, max_size: int = _GEO_CACHE_MAX_ENTRIES) -> None:
+        self._ttl = ttl_seconds
+        self._max_size = max_size
+        self._entries: Dict[Any, Tuple[Any, float]] = {}
+
+    def clear(self) -> None:
+        self._entries.clear()
+
+    def get(self, key: Any) -> Optional[Any]:
+        if self._ttl <= 0:
+            return None
+        entry = self._entries.get(key)
+        if entry is None:
+            return None
+        value, expires = entry
+        if time.monotonic() > expires:
+            self._entries.pop(key, None)
+            return None
+        return value
+
+    def set(self, key: Any, value: Any) -> None:
+        if self._ttl <= 0:
+            return
+        if len(self._entries) >= self._max_size:
+            self._entries.pop(next(iter(self._entries)))
+        self._entries[key] = (value, time.monotonic() + self._ttl)
+
+
+_reverse_geocode_cache = _TtlCache(_geo_cache_ttl_seconds())
+_serpapi_locations_cache = _TtlCache(_geo_cache_ttl_seconds())
+
+
+def clear_geo_caches() -> None:
+    """Clear SerpAPI / reverse-geocode caches (tests)."""
+    _reverse_geocode_cache.clear()
+    _serpapi_locations_cache.clear()
 
 # Abbrev → full name for SerpAPI ``locations.json?q=City,State`` queries.
 _US_STATE_FULL: Dict[str, str] = {
@@ -321,8 +370,9 @@ def lookup_serpapi_canonical_location(
 
     query = _locations_api_query(city, state)
     cache_key = query.lower()
-    if cache_key in _serpapi_locations_cache:
-        return _serpapi_locations_cache[cache_key]
+    cached = _serpapi_locations_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     try:
         resp = requests.get(
@@ -373,11 +423,10 @@ def lookup_serpapi_canonical_location(
 
     canonical = (chosen.get("canonical_name") or "").strip()
     if canonical:
-        _serpapi_locations_cache[cache_key] = canonical
-        logger.info(
-            "serpapi locations: resolved q=%r -> %r (candidates=%d)",
+        _serpapi_locations_cache.set(cache_key, canonical)
+        logger.debug(
+            "serpapi locations: resolved q=%r candidates=%d",
             query,
-            canonical,
             len(us_candidates),
         )
     return canonical or None
@@ -392,9 +441,15 @@ def resolve_serpapi_location_name(
 
 
 def _reverse_geocode_sync(lat: float, lng: float) -> Optional[str]:
+    cache_key = (round(lat, 4), round(lng, 4))
+    cached = _reverse_geocode_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     api_key = (os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GEOCODING_API_KEY") or "").strip()
     if not api_key:
         return None
+    resolved: Optional[str] = None
     try:
         resp = requests.get(
             _GEOCODE_REVERSE_URL,
@@ -417,13 +472,16 @@ def _reverse_geocode_sync(lat: float, lng: float) -> Optional[str]:
             elif "administrative_area_level_1" in types:
                 state = (comp.get("short_name") or "").strip()
         if locality and state:
-            return _format_serpapi_city_state_zip(locality, state, postal)
-        formatted = (result.get("formatted_address") or "").strip()
-        if formatted:
-            return normalize_serpapi_shopping_location(formatted) or formatted
+            resolved = _format_serpapi_city_state_zip(locality, state, postal)
+        else:
+            formatted = (result.get("formatted_address") or "").strip()
+            if formatted:
+                resolved = normalize_serpapi_shopping_location(formatted) or formatted
     except requests.RequestException:
         logger.debug("reverse geocode failed for %s,%s", lat, lng, exc_info=True)
-    return None
+    if resolved:
+        _reverse_geocode_cache.set(cache_key, resolved)
+    return resolved
 
 
 # DIY YouTube geo: loose circle (not tied to search_location.radius_miles).
