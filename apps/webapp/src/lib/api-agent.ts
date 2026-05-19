@@ -110,7 +110,6 @@ export interface StreamAgentResponseParams {
   agentSessionId: string;
   userQuery: string;
   contextDocURIs?: string[];
-  diagnosisURIs?: string[];
   checkpointIds?: string[];
   propertyAddress?: string;
   propertyId?: string;
@@ -133,7 +132,6 @@ export async function streamAgentResponse({
   agentSessionId,
   userQuery,
   contextDocURIs = [],
-  diagnosisURIs = [],
   checkpointIds = [],
   propertyAddress,
   propertyId,
@@ -167,7 +165,6 @@ export async function streamAgentResponse({
       session_id: agentSessionId,
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
-      diagnosis_uris: diagnosisURIs,
       property_address: propertyAddress,
       property_id: propertyId,
     };

@@ -392,11 +392,10 @@ export default function PropertyDetailsScreen() {
           }
         );
 
-        const contextDocURIs = selectedDocuments
-          .map((doc) => doc.gsURI)
-          .filter((uri): uri is string => !!uri);
-
-        const diagnosisURIs = fileData?.gsURI ? [fileData.gsURI] : [];
+        const contextDocURIs = [
+          ...selectedDocuments.map((doc) => doc.gsURI).filter((uri): uri is string => !!uri),
+          ...(fileData?.gsURI ? [fileData.gsURI] : []),
+        ];
 
         const currentProperty = properties.find((p: any) => p.id === id);
         const propertyAddress = currentProperty?.address;
@@ -415,7 +414,6 @@ export default function PropertyDetailsScreen() {
           agentSessionId,
           userQuery: queryText,
           contextDocURIs,
-          diagnosisURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress,
           primaryAgent,

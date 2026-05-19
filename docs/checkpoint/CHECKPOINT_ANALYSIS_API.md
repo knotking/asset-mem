@@ -23,15 +23,14 @@ interface AgentRequest {
   session_id?: string;                // Optional: Agent session ID
   user_query: string;                 // Required: User's question
   property_id?: string;               // Required for checkpoint queries
-  primary_agent: 'analysis' | 'checkpoint';  // Required: Agent type
+  primary_agent?: 'checkpoint' | 'docs';  // Optional: Explicit routing
   
   // Checkpoint-specific fields
   checkpoint_ids?: string[];          // Optional: Specific checkpoint IDs
   checkpoint_optional_agents?: CheckpointOptionalAgent[];  // Optional: Analysis agents
   
   // Context fields
-  context_doc_uris?: string[];        // Optional: Document URIs for coverage
-  diagnosis_uris?: string[];          // Optional: Media URIs for analysis
+  context_doc_uris?: string[];        // Optional: Document URIs (user uploads, attachments)
   property_address?: string;          // Optional: Property address
   
   // Location fields (for service agent)

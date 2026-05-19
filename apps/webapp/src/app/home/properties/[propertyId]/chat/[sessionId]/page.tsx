@@ -400,12 +400,10 @@ export default function PropertyChatSessionPage() {
           ? sessionDoc.data().agentSessionId
           : undefined;
 
-        const contextDocURIs = selectedDocuments
-          .map((d) => d.gsURI)
-          .filter((uri): uri is string => !!uri);
-        const diagnosisURIs = userMessagePayload.file?.gsURI
-          ? [userMessagePayload.file.gsURI]
-          : [];
+        const contextDocURIs = [
+          ...selectedDocuments.map((d) => d.gsURI).filter((uri): uri is string => !!uri),
+          ...(userMessagePayload.file?.gsURI ? [userMessagePayload.file.gsURI] : []),
+        ];
 
         const checkpointIds =
           primaryAgent === "checkpoint"
@@ -423,7 +421,6 @@ export default function PropertyChatSessionPage() {
           agentSessionId,
           userQuery: content,
           contextDocURIs,
-          diagnosisURIs,
           checkpointIds,
           propertyAddress: property?.address,
           propertyId: property?.id,
