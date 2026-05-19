@@ -37,7 +37,7 @@ See `doculink_agent_system_instruction()` in `prompts.py`: priority among `check
 
 ## Inputs
 
-- Root: `DiagnosisInput` in `agent_inputs.py` (`user_query`, optional `context_doc_uris`, `diagnosis_uris`, `checkpoint_ids`, `property_address`, `property_id`, `primary_agent`, `checkpoint_optional_agents`, location fields, …).
+- Root: `DiagnosisInput` in `agent_inputs.py` (`user_query`, optional `context_doc_uris`, `checkpoint_ids`, `property_address`, `property_id`, `primary_agent`, `checkpoint_optional_agents`, location fields, …).
 - DocuLink / checkpoint tools: `DocsInput` (overlapping fields for delegation).
 
 ## Key files

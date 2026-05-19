@@ -9,17 +9,12 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 
 ## Architecture in one paragraph
 
-`property_agent/agent.py` defines a root orchestrator. Based on input (`diagnosis_uris` present? document query? etc.) it delegates to one of the sub-agents under `property_agent/sub_agents/`:
+`property_agent/agent.py` defines a root orchestrator that delegates to **DocuLink** (`doculink_agent`). DocuLink selects among tools/sub-agents under `property_agent/sub_agents/`:
 
-- `analysis_agent` — multimodal triage (Gemini 2.5 Flash) over images/videos/docs
-- `coverage_agent` — warranty/insurance lookup over user docs
-- `diy_agent` — Google Search + YouTube + Shopping (delegates to `shopping_agent`)
-- `service_agent` — local providers via SerpAPI
-- `shopping_agent` — reusable product recommender, called by other agents with a `category`
-- `cost_agent` — DIY vs service cost estimates
-- `user_docs_agent` — RAG over user-uploaded docs
+- `checkpoint_agent` — Firestore vector retrieval; optional `checkpoint_progress_agent` for parallel coverage / DIY / service / cost analysis
+- `user_docs_agent` — RAG over user uploads (`context_doc_uris`)
 - `knowledge_base_agent` — RAG over the shared corpus
-- `checkpoint_agent` + `checkpoint_analysis_agent` — property checkpoint timeline + change detection (also has `firestore_vector_search.py`)
+- `diy_agent` / `service_agent` / `cost_agent` / `shopping_agent` — used in checkpoint optional-analysis and DIY orchestrator paths
 
 The root agent + sub-agent registration is in `property_agent/agent.py` and `property_agent/__init__.py`. Prompts are in `prompts.py` files alongside each agent.
 
@@ -96,7 +91,7 @@ In production, the user_docs corpus is populated asynchronously by the `pubsub_t
 
 ## Customization tips
 - **Adding a sub-agent**: create a new package under `property_agent/sub_agents/<name>/` with `__init__.py`, `agent.py`, and `prompts.py`. Register it in `property_agent/agent.py` so the root orchestrator can delegate to it.
-- **Changing the model**: most sub-agents use Gemini 2.5 Flash; update the model name inside the relevant `agent.py`.
+- **Changing the model**: ADK agents use `gemini-3.1-flash-lite` via `model_config.GLOBAL_GEMINI_MODEL`; direct `generate_content` call sites use `LEGACY_API_GEMINI` (`gemini-2.5-flash`).
 - **Adding tools**: ADK tools are normal Python callables; attach them to the sub-agent's `tools` list in its `agent.py`.
 
 ## Common gotchas

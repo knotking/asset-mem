@@ -41,7 +41,6 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
     return (
         f"user_query_len={len(uq)} user_query_preview={prev!r} "
         f"context_doc_uris={len(payload.get('context_doc_uris') or [])} "
-        f"diagnosis_uris={len(payload.get('diagnosis_uris') or [])} "
         f"checkpoint_ids={len(payload.get('checkpoint_ids') or [])} "
         f"has_property_id={bool(payload.get('property_id'))} "
         f"primary_agent={payload.get('primary_agent')!r} "
@@ -810,7 +809,6 @@ async def stream_agent_answers(
             return
     user_query = request.user_query
     context_doc_uris = request.context_doc_uris
-    diagnosis_uris = request.diagnosis_uris
     checkpoint_ids = request.checkpoint_ids  # Checkpoint IDs for checkpoint context
     if checkpoint_ids:
         logger.info(f"Received checkpoint_ids in request: {checkpoint_ids} (count: {len(checkpoint_ids)})")
@@ -877,9 +875,6 @@ async def stream_agent_answers(
     if context_doc_uris:
         payload["context_doc_uris"] = context_doc_uris
 
-    if diagnosis_uris:
-        payload["diagnosis_uris"] = diagnosis_uris
-    
     # Include checkpoint_ids if provided (enables checkpoint_agent routing)
     if checkpoint_ids:
         payload["checkpoint_ids"] = checkpoint_ids

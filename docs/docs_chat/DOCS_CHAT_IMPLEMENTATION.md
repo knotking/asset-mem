@@ -54,7 +54,7 @@ primary_agent: Optional[PrimaryAgent] = Field(
         "Primary agent selection. When provided, this takes precedence in routing decisions. "
         "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries, "
         "'docs' routes to doculink_agent for user document queries. "
-        "If not provided, routing falls back to legacy logic based on checkpoint_ids and diagnosis_uris."
+        "If not provided, routing falls back to legacy logic based on checkpoint_ids."
     ),
 )
 ```
@@ -71,8 +71,8 @@ primary_agent: Optional[PrimaryAgent] = Field(
 ```
 0. primary_agent="docs" → doculink_agent (user_docs_agent)
 1. primary_agent="checkpoint" → doculink_agent (checkpoint_agent)
-2. primary_agent="analysis" → analysis_agent
-3. Legacy logic based on checkpoint_ids/diagnosis_uris
+2. Legacy logic based on checkpoint_ids → doculink_agent (checkpoint path)
+3. Other property queries → doculink_agent
 ```
 
 **Code Addition**:

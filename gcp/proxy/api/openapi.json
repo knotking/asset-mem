@@ -492,14 +492,6 @@
             "title": "Context Doc Uris",
             "description": "List of GCS URIs for context documents"
           },
-          "diagnosis_uris": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Diagnosis Uris",
-            "description": "List of GCS URIs for diagnosis documents"
-          },
           "checkpoint_ids": {
             "anyOf": [
               {

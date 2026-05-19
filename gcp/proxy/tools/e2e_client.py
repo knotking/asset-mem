@@ -43,7 +43,6 @@ class E2EClient:
             "session_id": self.session_id,
             # Add defaults for other fields to match AgentRequest schema
             "context_doc_uris": [],
-            "diagnosis_uris": [],
             "property_address": "",
         }
 

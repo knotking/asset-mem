@@ -35,36 +35,22 @@ For detailed usage, see sections below.
 
 ### Main Orchestrator Agent (`root_agent`)
 
-The main orchestrator manages the overall workflow and delegates tasks to appropriate sub-agents based on input parameters:
+The main orchestrator delegates property queries to **DocuLink** (`doculink_agent`), which routes among checkpoint retrieval, user-document RAG, and knowledge-base lookup. Optional checkpoint analysis (coverage, DIY, service, cost) runs when `checkpoint_optional_agents` is set.
 
-- **Diagnostics Agent**: Activated when `diagnosis_uris` are provided for multimodal analysis
-- **DocuLink Agent**: Activated for document retrieval and general queries when no diagnosis URIs are present
+### Sub-Agents (under DocuLink / checkpoint analysis)
 
-### Sub-Agents
-
-#### 1. Analysis Agent
-Comprehensive multimodal analysis system with multiple specialized sub-agents organized as separate modules:
-
-- **Triage Agent**: Multimodal data analysis using Gemini 2.5 Flash (or text-only triage when no media provided)
-- **Coverage Agent**: Retrieves warranty and insurance information from user documents
-- **DIY Agent**: Combines Google Search, YouTube videos, and product recommendations via Shopping Agent
-- **Service Agent**: Finds local service providers via SerpAPI and SerpAPI, provides cost estimates
-- **Shopping Agent**: Reusable product recommendations agent (used by DIY agent and can be used elsewhere)
-- **Cost Agent**: Provides structured DIY vs Service cost estimates
-
-#### 2. DocuLink Agent
-Document retrieval and knowledge base access:
-
-- **User Docs Agent**: Retrieves information from user-uploaded documents
-- **Knowledge Base Agent**: Accesses pre-defined RAG corpus for reference materials
+- **Checkpoint Agent**: Firestore vector retrieval for property checkpoints
+- **Checkpoint analysis** (optional): coverage, DIY, service, cost branches + synthesis
+- **User Docs Agent**: RAG over user-uploaded documents (`context_doc_uris`)
+- **Knowledge Base Agent**: RAG over the shared corpus
+- **DIY / Service / Cost / Shopping**: Used in checkpoint optional-analysis and DIY orchestrator paths
 
 ## Key Features
 
-### Multimodal Analysis
-- **Image Analysis**: Processes photos of damage, issues, or components
-- **Video Analysis**: Analyzes video content for diagnostic purposes
-- **Document Analysis**: Processes uploaded documents, manuals, and policies
-- **Problem Identification**: Extracts core issues and relevant details
+### Document & checkpoint context
+- **User documents**: Context via `context_doc_uris` and user-docs RAG
+- **Checkpoints**: Timeline and semantic search over property checkpoints
+- **Knowledge base**: General reference materials
 
 ### Comprehensive Research
 - **Internet Search**: Google Search integration for general information
@@ -105,17 +91,15 @@ Document retrieval and knowledge base access:
 ### Input Processing
 The system accepts various input types:
 - **User Query**: Text description of the issue or question
-- **Diagnosis URIs**: GCS URLs pointing to images, videos, or documents for analysis
-- **Context Doc URIs**: Additional documents for context (warranties, manuals, policies)
-- **Property Address**: Location for local service provider search
+- **Context Doc URIs**: GCS URLs for user uploads and attached documents (warranties, manuals, policies)
+- **Checkpoint IDs**: Explicit checkpoint selection for checkpoint chat
+- **Property Address / search_location**: Location for local service and cost context
 
 ### Processing Flow
-1. **Input Analysis**: Main orchestrator determines which sub-agent to activate
-2. **Multimodal Analysis**: If diagnosis URIs provided, analyzes content using Gemini 2.5 Flash
-3. **Research Phase**: Gathers comprehensive information from multiple sources
-4. **Service Discovery**: Finds local service providers and authorized centers
-5. **Product Recommendations**: Searches multiple retailers for relevant products
-7. **Response Assembly**: Combines all results into structured JSON response
+1. **Root routing**: `primary_agent`, `checkpoint_ids`, or general property query → DocuLink
+2. **Retrieval**: Checkpoint vector search, user docs, or knowledge base
+3. **Optional analysis**: Parallel coverage / DIY / service / cost when requested
+4. **Response**: Dual-format markdown + JSON for checkpoint flows; verbatim retrieval otherwise
 
 ### Output Schema
 ```json

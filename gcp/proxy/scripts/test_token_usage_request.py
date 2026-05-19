@@ -99,7 +99,6 @@ def main() -> int:
         "user_query": args.query,
         "session_id": args.session_id,
         "context_doc_uris": [],
-        "diagnosis_uris": [],
         "property_address": "",
     }
 

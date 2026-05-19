@@ -18,7 +18,6 @@ async def test_firebase_webhook_success(client):
             json={
                 "user_id": "test_user_id",
                 "user_query": "Test query",
-                "diagnosis_uris": [],
                 "context_doc_uris": [],
                 "property_address": "",
                 "session_id": ""

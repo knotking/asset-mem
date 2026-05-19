@@ -704,9 +704,8 @@ async def handle_attachment(message: aio_types.Message):
             agent_request = AgentRequest(
                     user_id=user_id,
                     user_query=user_query,
-                    diagnosis_uris=uploaded_gcs_urls,
+                    context_doc_uris=uploaded_gcs_urls,
                     session_id=None, # Session ID will be handled by vertex_client
-                    context_doc_uris=None,
                     property_address=None,
                 )
             async for answer_part in stream_agent_answers(agent_request):
@@ -735,8 +734,6 @@ async def handle_text_message(message: aio_types.Message):
         user_id=str(chat_id),
         user_query=user_text,
         session_id=None, # Session ID will be handled by vertex_client
-        context_doc_uris=None,
-        diagnosis_uris=None,
         property_address=None,
     )
     async for answer_part in stream_agent_answers(agent_request):

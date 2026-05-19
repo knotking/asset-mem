@@ -104,7 +104,6 @@ export interface StreamAgentResponseParams {
   agentSessionId: string;
   userQuery: string;
   contextDocURIs?: string[];
-  diagnosisURIs?: string[];
   checkpointIds?: string[]; // Checkpoint IDs for checkpoint context
   propertyAddress?: string;
   primaryAgent?: PrimaryAgent;
@@ -126,7 +125,6 @@ export async function streamAgentResponse({
   agentSessionId,
   userQuery,
   contextDocURIs = [],
-  diagnosisURIs = [],
   checkpointIds = [],
   propertyAddress,
   primaryAgent,
@@ -164,7 +162,6 @@ export async function streamAgentResponse({
       session_id: agentSessionId,
       user_query: userQuery,
       context_doc_uris: contextDocURIs,
-      diagnosis_uris: diagnosisURIs,
       property_address: propertyAddress,
     };
 

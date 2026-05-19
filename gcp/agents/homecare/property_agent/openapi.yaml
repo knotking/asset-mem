@@ -51,13 +51,6 @@ components:
             format: uri
           description: Optional list of context document URIs (GCS paths). May be omitted, null, or empty.
           nullable: true
-        diagnosis_uris:
-          type: array
-          items:
-            type: string
-            format: uri
-          description: Optional list of diagnosis document URIs (GCS paths for images, videos, documents). May be omitted, null, or empty. If missing or empty, triage runs in text-only mode.
-          nullable: true
         property_address:
           type: string
           description: Optional property address for location-based searches. May be omitted, null, or empty.
@@ -69,12 +62,11 @@ components:
           description: Optional list of analysis sub-agents to run after triage (allowed values: coverage, diy, service, cost). Defaults to all optional agents when omitted or empty.
           nullable: true
       description: |
-        Input schema for Triage Agent and Analysis Agent (orchestrator).
+        Input schema for the root property agent (orchestrator).
         
         **Key Points:**
-        - Only `user_query` is required. The triage agent will never fail due to missing optional fields.
-        - If `diagnosis_uris` is missing, null, or empty, the agent performs text-only triage using `user_query`.
-        - All optional fields may be omitted entirely - the agent gracefully handles their absence.
+        - Only `user_query` is required.
+        - All optional fields may be omitted entirely; the agent delegates to DocuLink for retrieval and checkpoint flows.
 
     DocsInput:
       type: object
@@ -1114,7 +1106,7 @@ components:
   # The Property Agent orchestrates the following sub-agents:
   #
   # 1. Triage Agent (DiagnosisInput -> TriageAgentOutput)
-  #    - Input: DiagnosisInput (user_query, diagnosis_uris, context_doc_uris, property_address)
+  #    - Input: DiagnosisInput (user_query, context_doc_uris, property_address)
   #    - Output: TriageAgentOutput (triageResult with diagnosis)
   #    - Purpose: Analyzes multimodal data or performs text-only triage
   #

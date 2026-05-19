@@ -41,7 +41,6 @@ class DiagnosisInput(BaseModel):
         description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
     )
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
-    diagnosis_uris: Optional[List[str]] = Field(default=None, description="The diagnosis document URIs.")
     checkpoint_ids: Optional[List[str]] = Field(
         default=None,
         description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).",
@@ -60,7 +59,7 @@ class DiagnosisInput(BaseModel):
             "Primary agent selection. When provided, this takes precedence in routing decisions. "
             "Allowed values: 'checkpoint' routes to doculink_agent for checkpoint queries, "
             "'docs' routes to doculink_agent for user document queries. "
-            "If not provided, routing falls back to legacy logic based on checkpoint_ids and diagnosis_uris."
+            "If not provided, routing falls back to legacy logic based on checkpoint_ids."
         ),
     )
     checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(

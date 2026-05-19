@@ -100,25 +100,25 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 **Purpose:** Main orchestrator that routes user requests to specialized sub-agents based on input parameters.
 
 **Key Responsibilities:**
-- Analyzes input schema (`user_query`, `context_doc_uris`, `diagnosis_uris`, `property_address`)
-- Routes to Analysis Agent when `diagnosis_uris` are present
-- Routes to DocuLink Agent for document/knowledge base retrieval
+- Analyzes input schema (`user_query`, `context_doc_uris`, `checkpoint_ids`, `property_address`, `primary_agent`, …)
+- Delegates property queries to DocuLink (`doculink_agent`) for checkpoint, user-docs, and knowledge-base paths
 - Handles casual queries directly without delegation
 - Returns sub-agent responses verbatim without modification
 
 **Routing Logic:**
-1. **`diagnosis_uris` Present:** → Delegates to `analysis_agent` for multimodal diagnostics
-2. **`diagnosis_uris` Absent:** → Delegates to `doculink_agent` for retrieval-based queries
-3. **Casual Queries:** → Responds directly without agent delegation
+1. **`primary_agent` or `checkpoint_ids`:** → DocuLink (checkpoint or docs path)
+2. **Other property queries:** → DocuLink (tool selection among checkpoint / user docs / knowledge base)
+3. **Casual Queries:** → Direct reply, no delegation
 
 **Input Schema:**
 ```python
 class DiagnosisInput(BaseModel):
     user_query: str
     context_doc_uris: Optional[List[str]]
-    diagnosis_uris: Optional[List[str]]
+    checkpoint_ids: Optional[List[str]]
     property_address: Optional[str]
-    analysis_optional_agents: Optional[List[str]]  # ["coverage", "diy", "service", "cost"]
+    primary_agent: Optional[Literal["checkpoint", "docs"]]
+    checkpoint_optional_agents: Optional[List[str]]  # ["coverage", "diy", "service", "cost"]
 ```
 
 #### 1.2 Analysis Agent
@@ -434,7 +434,7 @@ Infrastructure as Code using Terraform for managing GCP resources.
 ```
 1. Client Request
    └─> POST /firebase-agent-stream
-       └─> Request: {user_id, user_query, context_doc_uris, diagnosis_uris, ...}
+       └─> Request: {user_id, user_query, context_doc_uris, checkpoint_ids, primary_agent, ...}
 
 2. Proxy API Handler
    └─> Validates request
@@ -442,24 +442,15 @@ Infrastructure as Code using Terraform for managing GCP resources.
            └─> Streams query to Property Agent
 
 3. Property Agent (Root Orchestrator)
-   └─> Analyzes input schema
-       ├─> If diagnosis_uris present → Analysis Agent
-       └─> Else → DocuLink Agent
+   └─> Delegates property queries to DocuLink Agent (or direct reply for casual queries)
 
-4. Analysis Agent (if diagnosis_uris present)
-   └─> Triage Agent analyzes multimodal data
-       └─> Runs optional agents (coverage, DIY, service, cost)
-           └─> Each agent calls tools (RAG, APIs, search)
-               └─> Returns structured results
+4. DocuLink Agent
+   └─> Selects tool: checkpoint_agent, ask_user_docs_agent, or ask_knowledge_base_agent
+       └─> Optional checkpoint analysis (coverage, DIY, service, cost) when requested
+           └─> Each branch calls tools (RAG, APIs, search)
+               └─> Synthesis returns dual-format markdown + JSON for checkpoint flows
 
-5. DocuLink Agent (if no diagnosis_uris)
-   └─> Selects tool based on context_doc_uris
-       ├─> If context_doc_uris → User Docs Agent
-       └─> Else → Knowledge Base Agent
-           └─> Retrieves from RAG corpus
-               └─> Returns with citations
-
-6. Response Assembly
+5. Response Assembly
    └─> Property Agent returns sub-agent response verbatim
        └─> Proxy formats for client
            └─> Streams via SSE to client
@@ -534,7 +525,7 @@ Infrastructure as Code using Terraform for managing GCP resources.
 3. Attachment Processing
    └─> Downloads from Telegram
        └─> Uploads to GCS
-           └─> Creates AgentRequest with diagnosis_uris
+           └─> Creates AgentRequest with context_doc_uris
                └─> Streams agent response
 
 4. Response Formatting

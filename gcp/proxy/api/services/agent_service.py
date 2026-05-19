@@ -15,7 +15,6 @@ def _agent_request_debug_summary(req: AgentRequest) -> str:
         f"session_id={req.session_id!r} property_id={req.property_id!r} "
         f"primary_agent={req.primary_agent!r} user_query_len={len(uq)} "
         f"context_doc_uris={len(req.context_doc_uris or [])} "
-        f"diagnosis_uris={len(req.diagnosis_uris or [])} "
         f"checkpoint_ids={len(req.checkpoint_ids or [])} "
         f"checkpoint_optional_agents={len(req.checkpoint_optional_agents or [])} "
         f"search_location_source={(req.search_location.source if req.search_location else None)!r}"
