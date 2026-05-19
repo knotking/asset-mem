@@ -57,7 +57,6 @@ Six specialized prompt templates:
 **Feature Flags**:
 - `USE_AI_COST_ESTIMATION` (default: true)
 - `USE_SERVICE_PROVIDER_CALIBRATION` (default: true)
-- `ENABLE_COST_CACHING` (default: false)
 
 **Configurable Thresholds**:
 - Minimum AI confidence: 0.6

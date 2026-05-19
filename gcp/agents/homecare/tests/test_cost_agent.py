@@ -8,8 +8,10 @@ import pytest
 
 from property_agent.sub_agents.cost_agent import agent as cost_mod
 from property_agent.sub_agents.cost_agent.config import CostEstimationConfig
+from property_agent.sub_agents.cost_agent import ai_cost_estimator as ai_cost_mod
 from property_agent.sub_agents.cost_agent.ai_cost_estimator import (
     _extract_location_info,
+    estimate_costs_with_ai,
     validate_cost_ranges,
 )
 
@@ -130,6 +132,25 @@ def test_extract_market_location_uses_property_address_over_coords() -> None:
         cost_mod._extract_market_location_from_query(query)
         == "1982 Helena Way, Brentwood, CA 94513"
     )
+
+
+def test_estimate_costs_with_ai_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+
+    monkeypatch.setattr(CostEstimationConfig, "AI_ESTIMATION_TIMEOUT", 1)
+
+    def _slow_generate(*_args, **_kwargs):
+        time.sleep(2)
+        return None
+
+    monkeypatch.setattr(ai_cost_mod, "_generate_cost_estimate_content", _slow_generate)
+    estimate, confidence = estimate_costs_with_ai(
+        diagnosis="Kitchen faucet leak requiring cartridge replacement",
+        property_address="Brentwood, CA",
+        client=object(),  # unused when generate is mocked
+    )
+    assert estimate is None
+    assert confidence == 0.0
 
 
 # --- _estimate_with_ai ---

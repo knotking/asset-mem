@@ -7,11 +7,13 @@ hardcoded values with real-time market data and AI-driven complexity analysis.
 
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Any, Dict, Optional, Tuple
 from google import genai
 from google.genai import types
 
 from ...model_config import LEGACY_API_GEMINI
+from .config import CostEstimationConfig
 
 logger = logging.getLogger(__name__)
 
@@ -290,6 +292,23 @@ def _parse_ai_response_to_json(ai_response: str, diagnosis: str, repair_details:
     return response
 
 
+def _generate_cost_estimate_content(client: genai.Client, prompt: str):
+    """Sync Vertex generate_content call (run in a thread for timeout)."""
+    ai_cfg = CostEstimationConfig.get_ai_config()
+    return client.models.generate_content(
+        model=ai_cfg["model"],
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=ai_cfg["temperature"],
+            top_p=0.8,
+            top_k=40,
+            max_output_tokens=ai_cfg["max_output_tokens"],
+            response_modalities=["TEXT"],
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+        ),
+    )
+
+
 def estimate_costs_with_ai(
     diagnosis: str,
     property_address: Optional[str] = None,
@@ -321,23 +340,19 @@ def estimate_costs_with_ai(
         # Build prompt
         prompt = _build_cost_estimation_prompt(diagnosis, location_string, repair_details)
         
-        # Initialize client if not provided
         if client is None:
             client = LEGACY_API_GEMINI.api_client
 
-        # Call Gemini with Google Search grounding
-        response = client.models.generate_content(
-            model=LEGACY_API_GEMINI.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,  # Lower temperature for more consistent cost estimates
-                top_p=0.8,
-                top_k=40,
-                max_output_tokens=2048,
-                response_modalities=["TEXT"],
-                tools=[types.Tool(google_search=types.GoogleSearch())]  # Enable Google Search grounding
-            )
-        )
+        timeout_s = CostEstimationConfig.AI_ESTIMATION_TIMEOUT
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(_generate_cost_estimate_content, client, prompt)
+            try:
+                response = future.result(timeout=timeout_s)
+            except FuturesTimeoutError:
+                logger.warning(
+                    "AI cost estimation timed out after %ss", timeout_s
+                )
+                return None, 0.0
         
         # Extract response text
         if not response or not response.text:

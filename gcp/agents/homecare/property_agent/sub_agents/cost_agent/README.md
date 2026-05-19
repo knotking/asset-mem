@@ -139,7 +139,6 @@ Centralized configuration for the cost estimation system.
 
 - `USE_AI_COST_ESTIMATION`: Enable/disable AI (default: true)
 - `USE_SERVICE_PROVIDER_CALIBRATION`: Enable calibration (default: true)
-- `ENABLE_COST_CACHING`: Enable caching (default: false)
 
 **Thresholds:**
 
@@ -262,7 +261,6 @@ The agent returns structured JSON with comprehensive cost information:
 # Feature Flags
 USE_AI_COST_ESTIMATION=true
 USE_SERVICE_PROVIDER_CALIBRATION=true
-ENABLE_COST_CACHING=false
 
 # Thresholds
 MIN_AI_CONFIDENCE_THRESHOLD=0.6
@@ -285,8 +283,6 @@ LOG_AI_COST_RESPONSES=false
 LOG_FALLBACK_USAGE=true
 
 # Caching
-COST_CACHE_TTL_HOURS=24
-COST_CACHE_MAX_ENTRIES=1000
 ```
 
 ### Adjusting Confidence Thresholds
@@ -427,8 +423,7 @@ logger.warning(f"AI cost estimate failed validation: {validation_error}")
 **Solutions:**
 
 - Reduce `AI_MAX_OUTPUT_TOKENS`
-- Enable caching: `ENABLE_COST_CACHING=true`
-- Adjust `AI_ESTIMATION_TIMEOUT`
+- Adjust `AI_ESTIMATION_TIMEOUT` (seconds; default 30)
 - Consider using fallback for simple repairs
 
 ### Issue: Calibration not working

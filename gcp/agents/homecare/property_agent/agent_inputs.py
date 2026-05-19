@@ -22,6 +22,8 @@ class SearchLocation(BaseModel):
     )
     radius_miles: int = Field(
         default=5,
+        ge=5,
+        le=100,
         description="Search radius in miles for local market queries (5-100)",
     )
     coordinates: SearchLocationCoordinates = Field(

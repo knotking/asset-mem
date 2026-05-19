@@ -18,6 +18,15 @@ class SearchLocationRequest(BaseModel):
         description="Required when source is device_gps",
     )
 
+    @field_validator("radius_miles")
+    @classmethod
+    def radius_miles_in_range(cls, v: Optional[int]) -> Optional[int]:
+        if v is None:
+            return v
+        if v < 5 or v > 100:
+            raise ValueError("radius_miles must be between 5 and 100")
+        return v
+
 
 class AgentRequest(BaseModel):
     user_id: str = Field(description="Unique identifier for the user")
