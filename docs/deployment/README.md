@@ -15,6 +15,7 @@ HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with
 
 ## Quick Links
 
+- [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md) — phase status and per-phase operational TODOs
 - [Product Hunt Launch Checklist](./PRODUCT_HUNT_LAUNCH.md)
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Web Application Deployment](./WEBAPP_DEPLOYMENT.md)

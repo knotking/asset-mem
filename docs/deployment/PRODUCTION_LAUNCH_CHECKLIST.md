@@ -4,6 +4,10 @@ Unified sign-off checklist for **production GA** (general availability), consoli
 
 **Canonical deploy path:** GitHub Actions (not raw `gcloud` snippets). See [CI/CD](./CICD.md), [SETUP_AND_DEPLOYMENT](../../gcp/docs/SETUP_AND_DEPLOYMENT.md).
 
+**Phase tracker (engineering tasks + per-phase operational TODOs):** [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md)
+
+**Product Hunt ops:** [PRODUCT_HUNT_LAUNCH.md](./PRODUCT_HUNT_LAUNCH.md) (includes §2.1 production web env vars)
+
 **Status key:** `[ ]` Not started · `[~]` In progress · `[x]` Done · `[—]` N/A or deferred with written approval
 
 ---
@@ -22,6 +26,19 @@ Phases align with the repo launch plan:
 | **1** | Product Hunt / web conversion (partial overlap below) |
 | **2** | Security & API hardening (Firebase ID token, limits, observability) |
 | **3** | Compliance, ops, CI, scalability |
+
+### Phase 1 items (Product Hunt) — cross-reference
+
+Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_PROGRESS.md#phase-1--product-hunt-readiness). GA checklist overlap:
+
+| PH / Phase 1 item | GA section | Progress |
+|-------------------|------------|----------|
+| Privacy / Terms / About pages | §4.1–4.2 | `[x]` Code shipped — legal review / prod verify `[ ]` |
+| Landing footer + contact | §4.7 | `[x]` Code — verify on prod `[ ]` |
+| OG / `NEXT_PUBLIC_SITE_URL` | §9 docs | `[x]` Code — set env + verify `[ ]` |
+| Analytics / `NEXT_PUBLIC_GA_MEASUREMENT_ID` | — | `[x]` Code — add GA ID to prod yaml `[ ]` |
+| Google sign-in web + onboarding | §7.3–7.4 | `[ ]` Not started |
+| `maxInstances` / smoke / on-call | §6.1, PH doc §3–5 | `[ ]` Not started |
 
 ---
 
@@ -222,6 +239,7 @@ Document deferred items with owner and due date:
 
 ## Related documentation
 
+- [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md)
 - [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
 - [Environments](./ENVIRONMENTS.md)
 - [Quick Reference](./QUICK_REFERENCE.md)

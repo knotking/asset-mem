@@ -86,6 +86,18 @@ Configure these in the **prod** environment:
 | `USER_UPLOAD_RESULT_SUBSCRIPTION` | `user-upload-result-subscription-prod` | Pub/Sub subscription |
 | `TOKEN_QUOTA_PERIOD_MAX_TOKENS` | `1000000` | Same as staging; set per environment if caps differ. Per-user override: Firestore `users/{userId}/preferences/user.monthlyTokenLimit`. |
 
+## Webapp marketing variables (App Hosting, not GitHub)
+
+These are **not** GitHub Actions variables. Set them in Firebase App Hosting config files:
+
+| Variable | File |
+|----------|------|
+| `NEXT_PUBLIC_SITE_URL` | `apps/webapp/apphosting.prod.yaml`, `apphosting.staging.yaml` |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | same |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | same (optional; required for Product Hunt analytics) |
+
+See [docs/deployment/PRODUCT_HUNT_LAUNCH.md §2.1](../docs/deployment/PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web) and [LAUNCH_PLAN_PROGRESS.md](../docs/deployment/LAUNCH_PLAN_PROGRESS.md).
+
 ## Notes
 
 - Variables marked with "**UPDATE THIS**" contain placeholder values (`new`) and must be updated with actual resource IDs

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { trackSignUp } from '@/lib/analytics';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       await signUp(email, password);
+      trackSignUp('email');
       router.push('/home');
     } catch (error: any) {
       toast({
@@ -72,6 +74,17 @@ export default function SignupPage() {
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            By creating an account, you agree to our{' '}
+            <Link href="/terms" className="underline hover:text-foreground">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
+          </p>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
             <Link href="/login" className="underline">

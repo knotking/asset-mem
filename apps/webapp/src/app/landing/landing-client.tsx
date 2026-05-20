@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/auth-context";
 import AIGraphic from "./ai-graphic";
 import { LandingHeader } from "./landing-header";
 import { YouTubeModal } from "@/components/landing/youtube-modal";
+import { trackLandingCta } from "@/lib/analytics";
+import { getSupportEmail } from "@/lib/site";
 import "./landing-animations.css";
 
 // Dark theme - landing page only
@@ -117,16 +119,13 @@ export default function LandingPageClient() {
   }, []);
 
   const handleButtonClick = (
-    e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    _e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    label = "primary_cta",
   ) => {
-    // Track analytics if available
-    if (typeof window !== "undefined" && (window as any).gtag) {
-      (window as any).gtag("event", "click", {
-        event_category: "CTA",
-        event_label: "Dashboard Button",
-      });
-    }
+    trackLandingCta(label);
   };
+
+  const supportEmail = getSupportEmail();
 
   const handleNavClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -1634,7 +1633,8 @@ export default function LandingPageClient() {
                 </Link>
               )}
               <a
-                href="#how-it-works"
+                href="#contact"
+                onClick={(e) => handleNavClick(e, "#contact")}
                 className="inline-flex items-center justify-center rounded-lg font-medium border-2 transition-all"
                 style={{
                   backgroundColor: "transparent",
@@ -1652,9 +1652,50 @@ export default function LandingPageClient() {
                   (e.currentTarget.style.backgroundColor = "transparent")
                 }
               >
-                Schedule Demo
+                Contact us
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section
+        id="contact"
+        className="py-24 w-full border-t"
+        style={{
+          borderColor: LANDING_COLORS.border,
+          backgroundColor: LANDING_COLORS.card,
+        }}
+      >
+        <div className="container mx-auto px-4" style={{ maxWidth: "1400px" }}>
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <h2
+              className="text-4xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
+              Get in touch
+            </h2>
+            <p
+              className="text-lg font-light leading-relaxed"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Questions about AssetMem AI, partnerships, or enterprise use — we&apos;d love to hear
+              from you.
+            </p>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="inline-flex items-center text-lg font-medium underline underline-offset-4 transition-colors"
+              style={{ color: LANDING_COLORS.primary }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = LANDING_COLORS.primaryHover)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = LANDING_COLORS.primary)
+              }
+            >
+              {supportEmail}
+            </a>
           </div>
         </div>
       </section>
@@ -1762,7 +1803,7 @@ export default function LandingPageClient() {
               >
                 <li>
                   <Link
-                    href="#"
+                    href="/about"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)
@@ -1806,7 +1847,7 @@ export default function LandingPageClient() {
               >
                 <li>
                   <Link
-                    href="#"
+                    href="/privacy"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)
@@ -1821,7 +1862,7 @@ export default function LandingPageClient() {
                 </li>
                 <li>
                   <Link
-                    href="#"
+                    href="/terms"
                     className="transition-colors hover:text-foreground"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = LANDING_COLORS.foreground)

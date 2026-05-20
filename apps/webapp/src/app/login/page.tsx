@@ -72,6 +72,15 @@ export default function LoginPage() {
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            <Link href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            {' · '}
+            <Link href="/terms" className="underline hover:text-foreground">
+              Terms of Service
+            </Link>
+          </p>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
