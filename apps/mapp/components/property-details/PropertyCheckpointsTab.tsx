@@ -564,7 +564,7 @@ function CheckpointCard({
 interface PropertyCheckpointsTabProps {
   isCreateModalVisible: boolean;
   setIsCreateModalVisible: (visible: boolean) => void;
-  setActiveTab: (tab: 'chat' | 'details' | 'timeline') => void;
+  setActiveTab: (tab: 'chat' | 'details' | 'timeline' | 'providers') => void;
 }
 
 export function PropertyCheckpointsTab({ 

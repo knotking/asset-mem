@@ -106,6 +106,32 @@ export type ServiceProvider = {
   link?: string;
 };
 
+/** Saved-provider types; mirrored in `apps/webapp/src/lib/types.ts` for App Hosting. */
+export type SavedServiceProviderSource = 'chat' | 'manual';
+
+export type SaveServiceProviderMeta = {
+  source?: SavedServiceProviderSource;
+  sessionId?: string;
+  messageId?: string;
+  checkpointId?: string;
+  searchContext?: string;
+};
+
+export type SavedServiceProvider = ServiceProvider & {
+  id: string;
+  propertyId: string;
+  userId: string;
+  dedupeKey: string;
+  savedAt: Timestamp;
+  source: SavedServiceProviderSource;
+  sessionId?: string;
+  messageId?: string;
+  checkpointId?: string;
+  searchContext?: string;
+};
+
+export type SaveServiceProviderResult = 'saved' | 'already_saved' | 'error';
+
 export type Product = {
   /** DIY agent and shopping payloads use this as the primary label */
   item_name?: string | null;

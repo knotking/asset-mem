@@ -14,6 +14,7 @@ import {
   X,
   Camera,
   Clock,
+  Users,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
@@ -45,7 +46,10 @@ const chatLog = createLogger('chat');
 const propertyLog = createLogger('property');
 import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
+import { PropertySavedProvidersTab } from '@/components/property-details/PropertySavedProvidersTab';
+import { parsePropertyScreenTab, type PropertyScreenTab } from '@/components/property-details/property-screen-tab';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
+import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
 import { DocumentsDrawerContent } from '@/components/property-details/DocumentsDrawerContent';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
@@ -79,14 +83,8 @@ export default function PropertyDetailsScreen() {
   const router = useRouter();
 
   // Tab state
-  const [activeTab, setActiveTab] = React.useState<'chat' | 'details' | 'timeline'>(
-    tab === 'details'
-      ? 'details'
-      : tab === 'timeline'
-        ? 'timeline'
-        : isNew === 'true'
-          ? 'details'
-          : 'chat'
+  const [activeTab, setActiveTab] = React.useState<PropertyScreenTab>(() =>
+    parsePropertyScreenTab(tab, isNew === 'true')
   );
 
   // Drawer state
@@ -636,6 +634,7 @@ function PropertyDetailsScreenContent({
   storage,
 }: any) {
   const { checkpoints } = useCheckpoint();
+  const { savedProviders } = useSavedServiceProviders();
   const property = properties.find((p: any) => p.id === id);
 
   // Smart checkpoint selection: Auto-select when checkpoint agent is active
@@ -786,7 +785,7 @@ function PropertyDetailsScreenContent({
                             <Icon as={Plus} size={20} className="text-foreground" />
                           </Button>
                         )}
-                        {activeTab !== 'timeline' && (
+                        {activeTab !== 'timeline' && activeTab !== 'providers' && (
                           <>
                             <View className="relative items-center justify-center">
                               <Button
@@ -863,6 +862,27 @@ function PropertyDetailsScreenContent({
                           activeTab === 'details' ? 'text-primary' : 'text-muted-foreground'
                         }
                       />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setActiveTab('providers')}
+                      className={`flex-1 items-center py-3 ${activeTab === 'providers' ? 'border-b-2 border-primary' : ''}`}
+                      accessibilityLabel="Saved service providers">
+                      <View className="relative items-center justify-center">
+                        <Icon
+                          as={Users}
+                          size={20}
+                          className={
+                            activeTab === 'providers' ? 'text-primary' : 'text-muted-foreground'
+                          }
+                        />
+                        {savedProviders.length > 0 && (
+                          <View className="absolute -right-2 -top-1 min-w-[16px] rounded-full bg-primary px-1 py-0.5">
+                            <Text className="text-center text-[9px] font-semibold text-primary-foreground">
+                              {savedProviders.length > 99 ? '99+' : savedProviders.length}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </Pressable>
                   </View>
 
@@ -976,6 +996,8 @@ function PropertyDetailsScreenContent({
                       setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
                       setActiveTab={setActiveTab}
                     />
+                  ) : activeTab === 'providers' ? (
+                    <PropertySavedProvidersTab />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
                       <PropertyDetailsTab property={property} />

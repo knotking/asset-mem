@@ -30,7 +30,11 @@ import {
   Info,
   Lightbulb,
   AlertTriangle,
+  Heart,
 } from 'lucide-react-native';
+import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
+import { buildServiceProviderDedupeKey } from '@homeapp/common/lib/saved-service-provider-dedupe';
+import type { SaveServiceProviderMeta } from '@homeapp/common/types';
 import type {
   Message,
   StructuredResponseData,
@@ -58,6 +62,7 @@ const chatLog = createLogger('chat');
 
 interface ChatMessageProps {
   message: Message;
+  sessionId?: string;
 }
 
 // Helper functions moved outside components
@@ -421,7 +426,45 @@ const YouTubeEmbed = React.memo(({ videoUrl }: { videoUrl: string }) => {
   );
 });
 
-const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvider }) => {
+const ServiceProviderCard = React.memo(
+  ({
+    provider,
+    saveMeta,
+  }: {
+    provider: ServiceProvider;
+    saveMeta?: SaveServiceProviderMeta;
+  }) => {
+  const { isSaved, saveProvider, removeProvider, savedProviders } = useSavedServiceProviders();
+  const [savePending, setSavePending] = useState(false);
+  const saved = isSaved(provider);
+  const savedRow = saved
+    ? savedProviders.find(
+        (row) => buildServiceProviderDedupeKey(row) === buildServiceProviderDedupeKey(provider)
+      )
+    : undefined;
+
+  const handleToggleSave = useCallback(async () => {
+    if (savePending) return;
+    setSavePending(true);
+    try {
+      if (saved && savedRow) {
+        await removeProvider(savedRow.id);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+      const result = await saveProvider(provider, saveMeta);
+      if (result === 'saved' || result === 'already_saved') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSavePending(false);
+    }
+  }, [savePending, saved, savedRow, removeProvider, saveProvider, provider, saveMeta]);
+
   const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
   const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
 
@@ -475,12 +518,25 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
         <Text className="flex-1 font-semibold text-foreground" numberOfLines={2}>
           {provider.name}
         </Text>
-        {provider.authorized === 'True' && (
-          <View className="ml-2 flex-row items-center gap-1 rounded-full bg-info/10 px-2 py-1">
-            <Icon as={CheckCircle} size={16} className="text-info" />
-            <Text className="text-xs text-info">Authorized</Text>
-          </View>
-        )}
+        <View className="ml-2 flex-row items-center gap-1">
+          <Pressable
+            onPress={handleToggleSave}
+            disabled={savePending}
+            accessibilityLabel={saved ? 'Remove from saved providers' : 'Save provider'}
+            className="rounded-full p-1">
+            <Icon
+              as={Heart}
+              size={20}
+              className={saved ? 'text-red-500' : 'text-muted-foreground'}
+            />
+          </Pressable>
+          {provider.authorized === 'True' && (
+            <View className="flex-row items-center gap-1 rounded-full bg-info/10 px-2 py-1">
+              <Icon as={CheckCircle} size={16} className="text-info" />
+              <Text className="text-xs text-info">Authorized</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {(hasRating || hasReviews || hasDistance) && (
@@ -550,7 +606,14 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
   );
 });
 
-const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData }) => {
+const StructuredResponse = React.memo(
+  ({
+    data,
+    saveMeta,
+  }: {
+    data: StructuredResponseData;
+    saveMeta?: SaveServiceProviderMeta;
+  }) => {
   const markdownStyles = useMarkdownStyles(false);
 
   // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -1104,7 +1167,7 @@ const StructuredResponse = React.memo(({ data }: { data: StructuredResponseData 
               </Text>
               {allProviders.length > 0 ? (
                 allProviders.map((provider, index) => (
-                  <ServiceProviderCard key={index} provider={provider} />
+                  <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
                 ))
               ) : (
                 <Text className="text-sm italic text-muted-foreground">
@@ -1390,7 +1453,18 @@ const extractContentParts = (
   return { structuredData: null, markdownContent: content };
 };
 
-const MessageContent = React.memo(({ content, isUser }: { content: string; isUser: boolean }) => {
+const MessageContent = React.memo(
+  ({
+    content,
+    isUser,
+    messageId,
+    sessionId,
+  }: {
+    content: string;
+    isUser: boolean;
+    messageId: string;
+    sessionId?: string;
+  }) => {
   const markdownStyles = useMarkdownStyles(isUser);
 
   // Memoize structured data and markdown content parsing
@@ -1408,7 +1482,14 @@ const MessageContent = React.memo(({ content, isUser }: { content: string; isUse
             {plainContent}
           </Markdown>
         )} */}
-        <StructuredResponse data={structuredData} />
+        <StructuredResponse
+          data={structuredData}
+          saveMeta={{
+            source: 'chat',
+            messageId,
+            ...(sessionId ? { sessionId } : {}),
+          }}
+        />
       </View>
     );
   }
@@ -1524,7 +1605,7 @@ const FilePreview = React.memo(
   }
 );
 
-function ChatMessage({ message }: ChatMessageProps) {
+function ChatMessage({ message, sessionId }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isLoading = message.role === 'assistant' && !message.content;
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -1648,7 +1729,12 @@ function ChatMessage({ message }: ChatMessageProps) {
             ) : null}
             {message.content ? (
               <View className="flex flex-col gap-3 p-3">
-                <MessageContent content={message.content} isUser={isUser} />
+                <MessageContent
+                  content={message.content}
+                  isUser={isUser}
+                  messageId={message.id}
+                  sessionId={sessionId}
+                />
               </View>
             ) : null}
           </View>

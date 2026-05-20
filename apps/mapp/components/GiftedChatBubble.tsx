@@ -5,14 +5,14 @@ import type { Message } from '@homeapp/common/types';
 import ChatMessage from './ChatMessage';
 
 interface CustomBubbleProps extends BubbleProps<IMessage> {
-  // Add any additional props if needed
+  sessionId?: string;
 }
 
 /**
  * Custom bubble component for GiftedChat that uses our existing ChatMessage component
  */
 export default function GiftedChatBubble(props: CustomBubbleProps) {
-  const { currentMessage } = props;
+  const { currentMessage, sessionId } = props;
 
   if (!currentMessage) {
     return null;
@@ -31,7 +31,7 @@ export default function GiftedChatBubble(props: CustomBubbleProps) {
 
   return (
     <View className="w-full">
-      <ChatMessage message={message} />
+      <ChatMessage message={message} sessionId={sessionId} />
     </View>
   );
 }

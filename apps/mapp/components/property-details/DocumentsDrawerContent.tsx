@@ -9,7 +9,7 @@ import type { Document } from '@homeapp/common/types';
 interface DocumentsDrawerContentProps {
   documents: Document[];
   selectedDocuments: Document[];
-  activeTab: 'chat' | 'details' | 'timeline';
+  activeTab: 'chat' | 'details' | 'timeline' | 'providers';
   onClose: () => void;
   onToggleDocument: (document: Document) => void;
 }

@@ -4,7 +4,9 @@
  * human-readable strings; the chat UIs expect objects with `name`, `contact_info`, etc.
  *
  * **mapp** imports this module. **webapp** cannot depend on `@homeapp/common` (Firebase App
- * Hosting); it keeps a copy at `apps/webapp/src/lib/service-providers.ts` — update both when changing parsing.
+ * Hosting); it keeps copies under `apps/webapp/src/lib/` and `apps/webapp/src/contexts/` — update
+ * both sides when changing parsing or saved-provider behavior (`service-providers.ts`,
+ * `saved-service-provider-dedupe.ts`, `saved-service-providers-context.tsx`, related types).
  */
 
 function providerObjectFromFreeformLine(line: string): Record<string, string> | null {

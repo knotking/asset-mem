@@ -1,11 +1,13 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary, SaveServiceProviderMeta } from "@/lib/types";
+import { useSavedServiceProviders } from "@/contexts/saved-service-providers-context";
+import { buildServiceProviderDedupeKey } from "@/lib/saved-service-provider-dedupe";
 import { flattenServiceProviderRawList } from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -221,9 +223,47 @@ const docTypeIcons: { [key: string]: React.ElementType } = {
   OTHER: FileText,
 };
 
-const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
-  
- 
+const ServiceProviderCard = ({
+  provider,
+  saveMeta,
+}: {
+  provider: ServiceProvider;
+  saveMeta?: SaveServiceProviderMeta;
+}) => {
+    const { toast } = useToast();
+    const { isSaved, saveProvider, removeProvider, savedProviders } = useSavedServiceProviders();
+    const [savePending, setSavePending] = React.useState(false);
+    const saved = isSaved(provider);
+    const savedRow = saved
+      ? savedProviders.find(
+          (row) => buildServiceProviderDedupeKey(row) === buildServiceProviderDedupeKey(provider)
+        )
+      : undefined;
+
+    const handleToggleSave = async () => {
+      if (savePending) return;
+      setSavePending(true);
+      try {
+        if (saved && savedRow) {
+          await removeProvider(savedRow.id);
+          toast({ title: "Removed from saved providers" });
+          return;
+        }
+        const result = await saveProvider(provider, saveMeta);
+        if (result === "saved") {
+          toast({ title: "Saved provider" });
+        } else if (result === "already_saved") {
+          toast({ title: "Already in saved providers" });
+        } else {
+          toast({ variant: "destructive", title: "Could not save provider" });
+        }
+      } catch {
+        toast({ variant: "destructive", title: "Could not update saved providers" });
+      } finally {
+        setSavePending(false);
+      }
+    };
+
     const linkStr = typeof provider.link === 'string' ? provider.link : undefined;
     const websiteStr = typeof provider.website === 'string' ? provider.website : undefined;
 
@@ -283,14 +323,32 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
     return (
     <Card className="flex flex-col h-full w-full">
         <CardHeader>
-            <CardTitle className="text-base flex justify-between items-start">
-            <span className="line-clamp-2">{provider.name}</span>
+            <CardTitle className="text-base flex justify-between items-start gap-2">
+            <span className="line-clamp-2 flex-1 min-w-0">{provider.name}</span>
+                <motion.div className="flex items-center gap-1 shrink-0">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    disabled={savePending}
+                    onClick={handleToggleSave}
+                    aria-label={saved ? "Remove from saved providers" : "Save provider"}
+                >
+                    <Heart
+                        className={cn(
+                            "h-4 w-4",
+                            saved ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                        )}
+                    />
+                </Button>
                 {provider.authorized === "True" && (
                     <Badge variant="outline" className="flex items-center gap-1 bg-blue-100 text-blue-800 border-blue-200 shrink-0">
                         <CheckCircle className="h-3 w-3" />
                           Authorized
                     </Badge>
                 )}
+                </motion.div>
             </CardTitle>
             {(hasRating || hasReviews || hasDistance) && (
                 <CardDescription className="flex flex-wrap items-center gap-2 pt-1">
@@ -506,9 +564,11 @@ const getPreviewText = (value?: string, max = 240) => {
 const StructuredResponse = ({
   data,
   displayTitleInProgress,
+  saveMeta,
 }: {
   data: StructuredResponseData;
   displayTitleInProgress?: boolean;
+  saveMeta?: SaveServiceProviderMeta;
 }) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
     // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -1149,7 +1209,7 @@ const StructuredResponse = ({
                             {allProviders.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {allProviders.map((provider, index) => (
-                                        <ServiceProviderCard key={index} provider={provider} />
+                                        <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
                                     ))}
                                 </div>
                             ) : hasProviders ? (
@@ -1963,6 +2023,10 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                   <StructuredResponse
                     data={structuredData}
                     displayTitleInProgress={displayTitleAnalysisInProgress}
+                    saveMeta={{
+                      source: 'chat',
+                      messageId: message.id,
+                    }}
                   />
                 </motion.div>
             ) : (
