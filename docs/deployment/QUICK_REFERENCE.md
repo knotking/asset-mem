@@ -5,6 +5,8 @@ Quick commands and procedures for common deployment tasks.
 ## Quick Links
 
 - [Full Documentation](./README.md)
+- [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
+- [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Web App](./WEBAPP_DEPLOYMENT.md)
 - [Mobile App](./MOBILE_DEPLOYMENT.md)
 - [AI Agent](./AGENT_DEPLOYMENT.md)
