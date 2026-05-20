@@ -32,6 +32,7 @@ from ..coverage_agent.agent import coverage_agent
 from ..diy_agent.agent import diy_agent
 from ..diy_agent.orchestrator import run_diy_pipeline
 from ..service_agent.agent import service_agent
+from ..service_agent.orchestrator import run_service_pipeline_from_payload
 from ..cost_agent.agent import _cost_estimation_sync, cost_agent
 from .input_schema import CheckpointAnalysisInput
 from .legacy_parse import _parse_checkpoint_analysis_input
@@ -270,6 +271,8 @@ async def _run_single_optional_agent_async(
             result = await _agent_attr("_run_checkpoint_diy_pipeline")(payload)
         elif name == "cost":
             result = await _agent_attr("_run_checkpoint_cost_pipeline")(payload)
+        elif name == "service":
+            result = await asyncio.to_thread(run_service_pipeline_from_payload, payload)
         else:
             branch_agent, _ = _BRANCH_AGENTS[name]
             result = await _agent_attr("_invoke_optional_agent_async")(

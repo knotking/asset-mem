@@ -730,21 +730,17 @@ def _format_maps_item_line(item: Dict[str, Any]) -> str:
     return " | ".join(bits)
 
 
-def format_google_maps_results(
+def extract_ranked_maps_items(
     data: Dict[str, Any],
     *,
     search_location: Optional[SearchLocation] = None,
     property_address: Optional[str] = None,
     max_results: int = 10,
-) -> str:
-    """Serialize ranked/filtered Google Maps local results for agent consumption."""
+) -> List[Dict[str, Any]]:
+    """Return ranked/filtered Google Maps local result dicts from a SerpAPI response."""
     local = data.get("local_results")
     if not isinstance(local, list):
-        error = data.get("error")
-        if error:
-            return f"SerpAPI Maps error: {error}"
-        return "No local results found."
-
+        return []
     items = [x for x in local if isinstance(x, dict)]
     if search_location is not None:
         items = rank_maps_local_results(
@@ -764,7 +760,50 @@ def format_google_maps_results(
             )
     else:
         items = items[:max_results]
+    return items
 
+
+def build_maps_provider_records(
+    data: Dict[str, Any],
+    *,
+    search_location: Optional[SearchLocation] = None,
+    property_address: Optional[str] = None,
+    max_results: int = 10,
+) -> List[Dict[str, Any]]:
+    """Structured provider objects from SerpAPI Google Maps results."""
+    from .service_provider_records import maps_item_to_provider_record, normalize_provider_list
+
+    items = extract_ranked_maps_items(
+        data,
+        search_location=search_location,
+        property_address=property_address,
+        max_results=max_results,
+    )
+    records = [rec for item in items if (rec := maps_item_to_provider_record(item))]
+    return normalize_provider_list(records, max_items=max_results)
+
+
+def format_google_maps_results(
+    data: Dict[str, Any],
+    *,
+    search_location: Optional[SearchLocation] = None,
+    property_address: Optional[str] = None,
+    max_results: int = 10,
+) -> str:
+    """Serialize ranked/filtered Google Maps local results for agent consumption."""
+    local = data.get("local_results")
+    if not isinstance(local, list):
+        error = data.get("error")
+        if error:
+            return f"SerpAPI Maps error: {error}"
+        return "No local results found."
+
+    items = extract_ranked_maps_items(
+        data,
+        search_location=search_location,
+        property_address=property_address,
+        max_results=max_results,
+    )
     places = [_format_maps_item_line(item) for item in items if _format_maps_item_line(item)]
     if places:
         return str(places)
