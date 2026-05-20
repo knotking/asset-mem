@@ -1,6 +1,8 @@
 /**
  * Mirrors `apps/common/src/lib/service-providers.ts` for Firebase App Hosting:
  * the webapp does not depend on `@homeapp/common`. Keep both files in sync when changing parsing.
+ * Related mirrors: `saved-service-provider-dedupe.ts`, `contexts/saved-service-providers-context.tsx`,
+ * and `SavedServiceProvider*` types in `lib/types.ts`.
  */
 
 function providerObjectFromFreeformLine(line: string): Record<string, string> | null {

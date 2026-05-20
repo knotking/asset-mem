@@ -133,7 +133,7 @@ export function PropertyChatTab({
         user={{
           _id: userId,
         }}
-        renderBubble={(props) => <GiftedChatBubble {...props} />}
+        renderBubble={(props) => <GiftedChatBubble {...props} sessionId={sessionId ?? undefined} />}
         renderChatEmpty={() => (
           <View
             style={{

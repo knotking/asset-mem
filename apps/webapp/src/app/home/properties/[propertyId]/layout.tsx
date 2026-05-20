@@ -4,7 +4,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X, MessageSquare, Clock } from 'lucide-react';
+import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X, MessageSquare, Clock, Users } from 'lucide-react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import type { Document as DocumentType, Session, Property } from '@/lib/types';
@@ -12,6 +12,7 @@ import React, { useEffect, useState, useCallback, cloneElement } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyProvider, useProperty } from '@/contexts/property-context';
 import { CheckpointProvider } from '@/contexts/checkpoint-context';
+import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { ContextDocumentsPanel } from '@/components/properties/context-documents-panel';
 import { cn } from '@/lib/utils';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
@@ -38,8 +39,7 @@ function PropertyTabs() {
         { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat', icon: MessageSquare },
         { name: 'Timeline', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints', icon: Clock },
         { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details', icon: FileText},
-        // { name: 'Services', href: '#', segment: 'services' },
-        // { name: 'Providers', href: '#', segment: 'providers' },
+        { name: 'Providers', href: `/home/properties/${propertyId}/providers`, segment: 'providers', icon: Users },
     ];
 
     return (
@@ -246,6 +246,16 @@ function LayoutWithDialog({ children }: { children: React.ReactNode }) {
   }
 
 
+function SavedProvidersScope({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+  const propertyId = params.propertyId as string | undefined;
+  return (
+    <SavedServiceProvidersProvider propertyId={propertyId}>
+      {children}
+    </SavedServiceProvidersProvider>
+  );
+}
+
 export default function PropertyChatLayout({
   children,
 }: {
@@ -254,15 +264,17 @@ export default function PropertyChatLayout({
   return (
     <SessionProvider>
       <PropertyProvider>
-        <CheckpointProvider>
-          <PropertyDocumentsProvider>
-            <UploadDialogProvider>
-              <AddressConfirmationProvider>
-                  <LayoutWithDialog>{children}</LayoutWithDialog>
-              </AddressConfirmationProvider>
-            </UploadDialogProvider>
-          </PropertyDocumentsProvider>
-        </CheckpointProvider>
+        <SavedProvidersScope>
+          <CheckpointProvider>
+            <PropertyDocumentsProvider>
+              <UploadDialogProvider>
+                <AddressConfirmationProvider>
+                    <LayoutWithDialog>{children}</LayoutWithDialog>
+                </AddressConfirmationProvider>
+              </UploadDialogProvider>
+            </PropertyDocumentsProvider>
+          </CheckpointProvider>
+        </SavedProvidersScope>
       </PropertyProvider>
     </SessionProvider>
   );

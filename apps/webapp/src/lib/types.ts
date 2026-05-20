@@ -199,6 +199,32 @@ export type ServiceProvider = {
   link?: string;
 };
 
+// Saved service provider types — copied from @homeapp/common/types for App Hosting compatibility.
+export type SavedServiceProviderSource = 'chat' | 'manual';
+
+export type SaveServiceProviderMeta = {
+  source?: SavedServiceProviderSource;
+  sessionId?: string;
+  messageId?: string;
+  checkpointId?: string;
+  searchContext?: string;
+};
+
+export type SavedServiceProvider = ServiceProvider & {
+  id: string;
+  propertyId: string;
+  userId: string;
+  dedupeKey: string;
+  savedAt: Timestamp;
+  source: SavedServiceProviderSource;
+  sessionId?: string;
+  messageId?: string;
+  checkpointId?: string;
+  searchContext?: string;
+};
+
+export type SaveServiceProviderResult = 'saved' | 'already_saved' | 'error';
+
 export type FileAttachment = {
   id: string;
   file: File;

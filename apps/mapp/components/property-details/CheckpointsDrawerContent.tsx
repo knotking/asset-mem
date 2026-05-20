@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 interface CheckpointsDrawerContentProps {
   checkpoints: Checkpoint[];
   selectedCheckpoints: Checkpoint[];
-  activeTab: 'chat' | 'details' | 'timeline';
+  activeTab: 'chat' | 'details' | 'timeline' | 'providers';
   onClose: () => void;
   onToggleCheckpoint: (checkpoint: Checkpoint) => void;
 }
