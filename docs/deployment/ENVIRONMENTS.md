@@ -457,6 +457,13 @@ RATE_LIMITS = {
 
 ## Environment Checklist
 
+For launch sign-off (Product Hunt and production GA), use the dedicated checklists:
+
+- [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md) — listing assets, UTM, launch-day ops, smoke tests
+- [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md) — security, compliance, ops, CI (full GA)
+
+The abbreviated lists below remain for quick reference during routine deploys.
+
 ### Before Deploying to Staging
 - [ ] Code reviewed and approved
 - [ ] Tests passing locally
@@ -483,6 +490,8 @@ RATE_LIMITS = {
 
 ## Related Documentation
 
+- [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
+- [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Web Application Deployment](./WEBAPP_DEPLOYMENT.md)
 - [Mobile Application Deployment](./MOBILE_DEPLOYMENT.md)
 - [Agent Deployment](./AGENT_DEPLOYMENT.md)
