@@ -96,6 +96,8 @@ export type ServiceProvider = {
   location: string;
   reviews: string;
   ratings: string;
+  /** Miles from property/search anchor (SerpAPI maps ranking). */
+  distance_miles?: string | null;
   directions: string | null;
   website: string | null;
   authorized: string;

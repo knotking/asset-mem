@@ -885,6 +885,65 @@ def test_render_analysis_markdown_includes_product_prices():
     assert "- Paint kit (Dr. ColorChip) —" not in md
 
 
+def test_render_analysis_markdown_service_provider_review_label():
+    from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+        render_analysis_markdown,
+    )
+
+    md = render_analysis_markdown(
+        {
+            "title": "Checkpoint analysis",
+            "serviceResults": {
+                "localPros": {
+                    "serpAPIResults": [
+                        {
+                            "name": "Up Right Garage Door Repair",
+                            "rating": 4.9,
+                            "reviews": 91,
+                            "phone": "(925) 293-8232",
+                        },
+                        {
+                            "name": "Terrell Painting, Inc.",
+                            "rating": 5.0,
+                            "reviews": "21 reviews",
+                            "phone": "(925) 500-7000",
+                        },
+                    ]
+                }
+            },
+        }
+    )
+    assert "## Service Providers" in md
+    assert "(rating 4.9, 91 reviews)" in md
+    assert "(rating 5.0, 21 reviews)" in md
+
+
+def test_render_analysis_markdown_service_provider_distance_label():
+    from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+        render_analysis_markdown,
+    )
+
+    md = render_analysis_markdown(
+        {
+            "title": "Checkpoint analysis",
+            "serviceResults": {
+                "localPros": {
+                    "serpAPIResults": [
+                        {
+                            "name": "Up Right Garage Door Repair",
+                            "rating": 4.9,
+                            "reviews": 91,
+                            "distance_miles": 0.6,
+                            "phone": "(925) 293-8232",
+                        },
+                    ]
+                }
+            },
+        }
+    )
+    assert "(rating 4.9, 0.6 mi, 91 reviews)" in md
+
+
 def test_render_analysis_markdown_product_store_url_is_link():
     from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
         render_analysis_markdown,

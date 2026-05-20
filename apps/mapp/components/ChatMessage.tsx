@@ -123,6 +123,7 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
   const location = p.location || p.address || p.address_line || undefined;
   const ratings = p.ratings || p.rating || undefined;
   const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
+  const distanceRaw = p.distance_miles ?? p._distance_miles ?? p.distance ?? undefined;
   const specialties = p.specialties || p.services || undefined;
   const additional_information = p.additional_information || p.description || p.about || undefined;
   const authorized = p.authorized || p.verified || undefined;
@@ -136,6 +137,8 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
     location,
     ratings: ratings != null ? String(ratings) : '',
     reviews: reviews != null ? String(reviews) : '',
+    distance_miles:
+      distanceRaw != null && distanceRaw !== '' ? parseDistanceMiles(distanceRaw) : undefined,
     specialties: specialties != null ? String(specialties) : undefined,
     additional_information: additional_information != null ? String(additional_information) : '',
     authorized: authorized != null ? String(authorized) : '',
@@ -223,6 +226,26 @@ function formatReviewCountLabel(
   if (!text) return null;
   if (/review/i.test(text)) return text;
   return `${text} reviews`;
+}
+
+function parseDistanceMiles(raw: unknown): string | undefined {
+  if (raw == null || raw === '') return undefined;
+  if (typeof raw === 'number' && !Number.isNaN(raw)) return String(raw);
+  const text = String(raw).trim();
+  if (!text) return undefined;
+  const mi = text.match(/^(\d+(?:\.\d+)?)\s*mi\b/i);
+  if (mi) return mi[1];
+  const n = Number.parseFloat(text);
+  if (!Number.isNaN(n)) return String(n);
+  return undefined;
+}
+
+/** e.g. ``4.5`` → ``4.5 mi``; pass through if ``mi`` already present. */
+function formatDistanceLabel(miles: string | number | null | undefined): string | null {
+  const parsed = parseDistanceMiles(miles);
+  if (parsed == null) return null;
+  if (/mi\b/i.test(String(miles))) return String(miles).trim();
+  return `${parsed} mi`;
 }
 
 const hasStructuredDataKeys = (parsed: any): boolean => {
@@ -420,6 +443,8 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
       : null;
   const hasRating = hasValue(ratingValue) && ratingValue !== 'N/A' && ratingValue !== '0';
   const hasReviews = hasValue(provider.reviews);
+  const distanceLabel = formatDistanceLabel(provider.distance_miles);
+  const hasDistance = !!distanceLabel;
   const hasContact = hasValue(provider.contact_info);
   const hasLocation = hasValue(provider.location);
   const hasAdditionalInfo =
@@ -458,21 +483,20 @@ const ServiceProviderCard = React.memo(({ provider }: { provider: ServiceProvide
         )}
       </View>
 
-      {(hasRating || hasReviews) && (
-        <View className="mb-2 flex-row items-center gap-2">
+      {(hasRating || hasReviews || hasDistance) && (
+        <View className="mb-2 flex-row flex-wrap items-center gap-2">
           {hasRating && (
             <>
               <Icon as={Star} size={16} className="text-warning" />
               <Text className="text-sm text-foreground">{ratingValue}</Text>
             </>
           )}
+          {hasDistance && (
+            <Text className="text-xs text-muted-foreground">{distanceLabel}</Text>
+          )}
           {hasReviews && (
             <Text className="text-xs text-muted-foreground">
-              (
-              {provider.reviews && !provider.reviews.toLowerCase().includes('review')
-                ? provider.reviews
-                : `${provider.reviews} reviews`}
-              )
+              ({formatReviewCountLabel(provider.reviews)})
             </Text>
           )}
         </View>
