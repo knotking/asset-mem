@@ -137,8 +137,8 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 
 | # | Priority | Item | Verification | Staging | Prod | Owner | Notes |
 |---|----------|------|--------------|---------|------|-------|-------|
-| 7.1 | **High** | No placeholder Providers/Services in prod nav | | [ ] | [ ] | Eng | |
-| 7.2 | **High** | Mobile multi-checkpoint analysis hidden or shipped | No mock in prod build | [ ] | [ ] | Eng | `apps/mapp/lib/api.ts` |
+| 7.1 | **High** | Providers tab available (saved from chat); Services placeholder not marketed | Providers shipped | [ ] | [ ] | Eng | ~~Launch plan §1.4 hide work cancelled~~ |
+| 7.2 | **Medium** | Mobile multi-checkpoint analysis hidden or shipped | No mock in prod build, or ship API | [ ] | [ ] | Eng | Not gated by cancelled §1.4 |
 | 7.3 | **Medium** | First-run onboarding (property → doc/photo → chat) | | [ ] | [ ] | Eng | PH conversion |
 | 7.4 | **Medium** | Web Google sign-in (optional for GA) | | [ ] | [ ] | Eng | |
 | 7.5 | **Medium** | Agent production disclaimer resolved | Risk doc or README update | [ ] | [ ] | Eng | `gcp/agents/homecare/README.md` |
