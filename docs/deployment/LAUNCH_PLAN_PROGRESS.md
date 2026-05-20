@@ -12,7 +12,7 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 
 | Phase | Goal | Target | Status |
 |-------|------|--------|--------|
-| **1** | Product Hunt readiness (web) | Weeks 1–2 | `[~]` In progress (1.1–1.3 done) |
+| **1** | Product Hunt readiness (web) | Weeks 1–2 | `[~]` In progress (1.1–1.3 done; ~~1.4 cancelled~~) |
 | **2** | Security & API hardening | Weeks 2–4 | `[ ]` Not started |
 | **3** | Production GA (compliance, ops, CI) | Weeks 4–6 | `[ ]` Not started |
 
@@ -74,15 +74,16 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 
 ---
 
-### 1.4 Hide or gate incomplete features
+### ~~1.4 Hide or gate incomplete features~~ (cancelled — will not be done) {#14-cancelled}
 
-| Task | Status | Artifacts / notes |
-|------|--------|-------------------|
-| Providers/Services not in prod nav | `[x]` | Commented in `property layout.tsx` — verify no deep links |
-| Mobile multi-checkpoint mock hidden | `[ ]` | `mapp/lib/api.ts`, `CheckpointAnalysisModal.tsx` |
-| Service broker stub disabled in prod | `[ ]` | `gcp/proxy/api/services/service_broker_service.py` |
+**Status:** Cancelled. This phase is removed from the launch plan; no further work to hide Services, multi-checkpoint Analyze, or service-broker routes for Product Hunt.
 
-**Operational TODOs after 1.4:** Manual browse prod property tabs; confirm no placeholder data pages linked.
+| ~~Task~~ | ~~Status~~ | Notes |
+|----------|------------|--------|
+| ~~Gate placeholder / stub UI for PH~~ | — | Not pursuing |
+| ~~`LAUNCH_FEATURES` hide list maintenance~~ | — | Optional flags in `apps/common/src/launch-features.ts` may remain in repo but are **not** a launch requirement |
+
+**What still applies without §1.4:** Providers tab stays enabled (`webProvidersTab` / `mobileProvidersTab` = `true`). Other incomplete surfaces (e.g. Services placeholder page, multi-checkpoint mock analyze) may still be visible — address individually in Phase 2/3 or product backlog, not via this section.
 
 ---
 

@@ -157,13 +157,13 @@ These are **required before posting on PH** (full production hardening is in [PR
 | 2 | Signup → login → `/home` works | New test account on prod | Eng | [ ] |
 | 3 | Add property → chat → one AI response | End-to-end on prod | Eng | [ ] |
 | 4 | Optional: upload doc or checkpoint photo → analysis completes | Firestore + UI update | Eng | [ ] |
-| 5 | No placeholder nav (Providers/Services) exposed | Browse property tabs | Eng | [ ] |
-| 6 | Token quota UX clear when limit hit | Lower test user limit or simulate | Eng | [ ] |
-| 7 | `maxInstances` / proxy scale reviewed for traffic spike | See `apphosting.prod.yaml`, Cloud Run console | Eng | [ ] |
-| 8 | On-call person named for launch day | See §5 | Ops | [ ] |
-| 9 | Production web env vars set and deployed (§2.1) | Firebase Console rollout + OG/analytics check | Eng | [ ] |
+| ~~5~~ | ~~No placeholder nav (Providers/Services) exposed~~ | — | — | **N/A** — [plan §1.4 cancelled](./LAUNCH_PLAN_PROGRESS.md#14-cancelled) |
+| 5 | Token quota UX clear when limit hit | Lower test user limit or simulate | Eng | [ ] |
+| 6 | `maxInstances` / proxy scale reviewed for traffic spike | See `apphosting.prod.yaml`, Cloud Run console | Eng | [ ] |
+| 7 | On-call person named for launch day | See §5 | Ops | [ ] |
+| 8 | Production web env vars set and deployed (§2.1) | Firebase Console rollout + OG/analytics check | Eng | [ ] |
 
-**Phase 1 engineering status:** [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md) (§1.1–1.5 complete / pending).
+**Phase 1 engineering status:** [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md) (§1.1–1.3, §1.5–1.6; ~~§1.4 cancelled~~).
 
 **Not required for PH day 1 (before GA):** Firebase ID token on proxy, API rate limiting, full alerting-as-code — see production checklist Phase 2.
 
