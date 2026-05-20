@@ -3,14 +3,12 @@
 import asyncio
 import json
 import re
-import time
 from types import SimpleNamespace
 
 import pytest
 from google.adk.agents import Agent as LlmAgent
 
 from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
-from property_agent.sub_agents.checkpoint_analysis_agent import parallel_runner as ca_parallel
 from property_agent.sub_agents.checkpoint_agent.agent import build_search_query_from_checkpoints
 
 
@@ -347,12 +345,7 @@ def test_parallel_runner_writes_checkpoint_parallel_results_state(monkeypatch):
     monkeypatch.setattr(
         caa,
         "_invoke_optional_agent_async",
-        _stub_invoke(default="unused-for-service"),
-    )
-    monkeypatch.setattr(
-        ca_parallel,
-        "run_service_pipeline_from_payload",
-        lambda _payload: "service-ok",
+        _stub_invoke(default="service-ok"),
     )
     out = asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
@@ -385,13 +378,9 @@ def test_parallel_runner_all_four_branches_merged(monkeypatch):
         _stub_invoke(
             per_agent={
                 "coverage_agent": "coverage-ok",
+                "service_agent": "service-ok",
             }
         ),
-    )
-    monkeypatch.setattr(
-        ca_parallel,
-        "run_service_pipeline_from_payload",
-        lambda _payload: "service-ok",
     )
     tc = _minimal_tool_context()
     out = asyncio.run(
@@ -425,14 +414,7 @@ def test_parallel_runner_completion_order_independent(monkeypatch):
             await asyncio.sleep(delays[branch])
         return f"{branch}-ok" if branch else "ok"
 
-    def _service_from_payload(_payload):
-        time.sleep(delays["service"])
-        return "service-ok"
-
     monkeypatch.setattr(caa, "_invoke_optional_agent_async", _invoke)
-    monkeypatch.setattr(
-        ca_parallel, "run_service_pipeline_from_payload", _service_from_payload
-    )
     out = asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
             checkpoint_results="x",

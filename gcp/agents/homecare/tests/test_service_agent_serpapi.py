@@ -1,10 +1,9 @@
-"""Tests for service pipeline SerpAPI Google Maps integration (orchestrator)."""
-
-import json
+"""Tests for service_agent SerpAPI Google Maps integration."""
 
 import pytest
 
-from property_agent.sub_agents.service_agent.orchestrator import run_service_pipeline_sync
+from property_agent.agent_inputs import SearchLocation, SearchLocationCoordinates
+from property_agent.sub_agents.service_agent import agent as service_mod
 
 
 def test_serpapi_maps_search_uses_structured_geo(monkeypatch: pytest.MonkeyPatch):
@@ -31,10 +30,10 @@ def test_serpapi_maps_search_uses_structured_geo(monkeypatch: pytest.MonkeyPatch
         "radius_miles": 5,
         "coordinates": {"lat": 37.9, "lng": -121.7},
     }
-    out = run_service_pipeline_sync(
+    out = service_mod._run_serpapi_maps_search(
         "plumber near 37.9,-121.7 within 5 miles",
+        sl,
         property_address="1982 Helena Way, Brentwood, CA 94513",
-        search_location=sl,
     )
     assert len(captured) == 1
     params = captured[0]
@@ -44,13 +43,7 @@ def test_serpapi_maps_search_uses_structured_geo(monkeypatch: pytest.MonkeyPatch
     assert params["lon"] == -121.7
     assert params["nearby"] is True
     assert "37.9" not in params["q"]
-    body = json.loads(out)
-    names = [
-        p["name"]
-        for p in body["serviceResults"]["localPros"]["serpAPIResults"]
-        if isinstance(p, dict)
-    ]
-    assert "Local Pro" in names
+    assert "Local Pro" in out
 
 
 def test_serpapi_maps_search_partial_llm_payload_without_source(
@@ -75,17 +68,11 @@ def test_serpapi_maps_search_partial_llm_payload_without_source(
         "coordinates": {"lng": -121.7, "lat": 37.9},
         "radius_miles": 5,
     }
-    out = run_service_pipeline_sync(
+    out = service_mod._run_serpapi_maps_search(
         "residential garage door paint repair professionals",
+        partial,
         property_address="1982 Helena Way, Brentwood, CA 94513",
-        search_location=partial,
     )
     assert captured[0]["lat"] == 37.9
     assert captured[0]["lon"] == -121.7
-    body = json.loads(out)
-    names = [
-        p["name"]
-        for p in body["serviceResults"]["localPros"]["serpAPIResults"]
-        if isinstance(p, dict)
-    ]
-    assert "Bay Area Door" in names
+    assert "Bay Area Door" in out
