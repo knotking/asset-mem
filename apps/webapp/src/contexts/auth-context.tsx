@@ -1,9 +1,18 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, type User, type Auth } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  getAuth,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  type User,
+  type Auth,
+} from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 
 const auth = getAuth(app);
 
@@ -11,8 +20,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   auth: Auth;
-  signUp: typeof createUserWithEmailAndPassword;
-  login: typeof signInWithEmailAndPassword;
+  signUp: (email: string, password: string) => ReturnType<typeof createUserWithEmailAndPassword>;
+  login: (email: string, password: string) => ReturnType<typeof signInWithEmailAndPassword>;
+  signInWithGoogle: () => ReturnType<typeof signInWithPopup>;
   logout: () => Promise<void>;
 }
 
@@ -21,24 +31,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-  
-  const logout = async () => {
-    await signOut(auth);
-  };
 
+  const signUp = useCallback(
+    (email: string, password: string) => createUserWithEmailAndPassword(auth, email, password),
+    []
+  );
+
+  const login = useCallback(
+    (email: string, password: string) => signInWithEmailAndPassword(auth, email, password),
+    []
+  );
+
+  const signInWithGoogle = useCallback(() => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return signInWithPopup(auth, provider);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await signOut(auth);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, auth, signUp: createUserWithEmailAndPassword.bind(null, auth), login: signInWithEmailAndPassword.bind(null, auth), logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, auth, signUp, login, signInWithGoogle, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

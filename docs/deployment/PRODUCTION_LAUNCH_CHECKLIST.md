@@ -37,7 +37,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | Landing footer + contact | §4.7 | `[x]` Code — verify on prod `[ ]` |
 | OG / `NEXT_PUBLIC_SITE_URL` | §9 docs | `[x]` Code — set env + verify `[ ]` |
 | Analytics / `NEXT_PUBLIC_GA_MEASUREMENT_ID` | — | `[x]` Code — add GA ID to prod yaml `[ ]` |
-| Google sign-in web + onboarding | §7.3–7.4 | `[ ]` Not started |
+| Google sign-in web + onboarding | §7.3–7.4 | `[x]` Code — verify Google provider in Firebase `[ ]` |
 | `maxInstances` / smoke / on-call | §6.1, PH doc §3–5 | `[ ]` Not started |
 
 ---

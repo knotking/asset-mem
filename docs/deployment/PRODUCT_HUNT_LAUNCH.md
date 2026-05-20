@@ -129,7 +129,8 @@ Requires `NEXT_PUBLIC_GA_MEASUREMENT_ID` (§2.1). Implementation: `apps/webapp/s
 |-------|------|
 | `page_view` | Automatic via gtag config on load |
 | `landing_cta_click` | “Get Started”, “Dashboard”, header CTAs (`trackLandingCta`) |
-| `sign_up` | Successful email signup (`signup/page.tsx`) |
+| `sign_up` | Successful signup — email or Google (`signup/page.tsx`, `method`: `email` \| `google`) |
+| `onboarding_step_click` | Onboarding checklist step buttons (`home-onboarding-checklist.tsx`) |
 | `first_property_created` | First property created via upload flow (`upload-documents-dialog.tsx`) |
 | `first_chat_message` | First user message sent in property chat |
 

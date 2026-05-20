@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { trackSignUp } from '@/lib/analytics';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { AuthDivider } from '@/components/auth/auth-divider';
+import { getAuthErrorMessage } from '@/lib/auth-errors';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -26,15 +29,21 @@ export default function SignupPage() {
       await signUp(email, password);
       trackSignUp('email');
       router.push('/home');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? String((error as { code: string }).code)
+          : '';
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message || 'An unknown error occurred.',
+        description: getAuthErrorMessage(code, error instanceof Error ? error.message : undefined),
       });
       setIsLoading(false);
     }
   };
+
+  const formDisabled = isLoading;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background w-full">
@@ -42,10 +51,12 @@ export default function SignupPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>
           <CardDescription>
-            Enter your information to create an account.
+            Create an account with Google or email to get started.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <GoogleSignInButton mode="signup" disabled={formDisabled} />
+          <AuthDivider />
           <form onSubmit={handleSignUp} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -56,22 +67,22 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+                disabled={formDisabled}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
+              <Input
+                id="password"
+                type="password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
+                disabled={formDisabled}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+            <Button type="submit" className="w-full" disabled={formDisabled}>
+              {isLoading ? 'Creating Account...' : 'Create Account with Email'}
             </Button>
           </form>
           <p className="mt-4 text-center text-xs text-muted-foreground">
