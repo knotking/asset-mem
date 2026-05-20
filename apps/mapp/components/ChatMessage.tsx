@@ -42,7 +42,12 @@ import type {
   Product,
   DiyCostEstimatesSummary,
 } from '@homeapp/common/types';
-import { flattenServiceProviderRawList } from '@homeapp/common/lib/service-providers';
+import {
+  flattenServiceProviderRawList,
+  isDisplayableServiceProvider,
+  isVertexGroundingRedirectUrl,
+  stripVertexGroundingUrls,
+} from '@homeapp/common/lib/service-providers';
 import {
   Accordion,
   AccordionItem,
@@ -120,9 +125,16 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
   const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
   if (!name.trim()) return null;
 
-  const website = p.website || p.url || p.link || undefined;
-  const link = p.link || p.url || p.website || undefined;
-  const directions = p.directions || p.directions_url || p.map_link || undefined;
+  const cleanUrl = (u: unknown): string | undefined => {
+    if (typeof u !== 'string') return undefined;
+    const t = u.trim();
+    if (!t || isVertexGroundingRedirectUrl(t)) return undefined;
+    return t;
+  };
+  const website = cleanUrl(p.website) || cleanUrl(p.url) || cleanUrl(p.link) || undefined;
+  const link = cleanUrl(p.link) || cleanUrl(p.url) || cleanUrl(p.website) || undefined;
+  const directions =
+    cleanUrl(p.directions) || cleanUrl(p.directions_url) || cleanUrl(p.map_link) || undefined;
   const contact_info =
     p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
   const location = p.location || p.address || p.address_line || undefined;
@@ -130,7 +142,11 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
   const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
   const distanceRaw = p.distance_miles ?? p._distance_miles ?? p.distance ?? undefined;
   const specialties = p.specialties || p.services || undefined;
-  const additional_information = p.additional_information || p.description || p.about || undefined;
+  const additionalRaw = p.additional_information || p.description || p.about;
+  const additional_information =
+    typeof additionalRaw === 'string'
+      ? stripVertexGroundingUrls(additionalRaw) || undefined
+      : undefined;
   const authorized = p.authorized || p.verified || undefined;
 
   return {
@@ -150,17 +166,7 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
   } as ServiceProvider;
 };
 
-const providerHasValidData = (provider: any): boolean => {
-  const nameCandidate =
-    provider?.name ||
-    provider?.business_name ||
-    provider?.businessName ||
-    provider?.title ||
-    provider?.company ||
-    provider?.provider ||
-    provider?.store;
-  return !!(nameCandidate && String(nameCandidate).trim() !== '');
-};
+const providerHasValidData = (provider: unknown): boolean => isDisplayableServiceProvider(provider);
 
 const getProvidersArray = (providers: any): ServiceProvider[] =>
   flattenServiceProviderRawList(providers) as ServiceProvider[];
@@ -174,7 +180,7 @@ const getYouTubeVideoId = (url: string): string | null => {
 const normalizeUrl = (u?: string): string | undefined => {
   if (!u || typeof u !== 'string') return undefined;
   const trimmed = u.trim();
-  if (trimmed === '') return undefined;
+  if (trimmed === '' || isVertexGroundingRedirectUrl(trimmed)) return undefined;
   const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
     const url = new URL(withProto);
@@ -477,6 +483,7 @@ const ServiceProviderCard = React.memo(
   const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
   const isDirectionsLinkValid =
     typeof provider.directions === 'string' &&
+    !isVertexGroundingRedirectUrl(provider.directions) &&
     (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
 
   // Extract rating number if available

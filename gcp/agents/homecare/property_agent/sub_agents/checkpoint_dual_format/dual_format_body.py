@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from google.adk.models.llm_response import LlmResponse
 
+from ...service_provider_records import normalize_service_results
 from ...state_delta_merge import merge_state_delta
 from .constants import (
     CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY,
@@ -710,8 +711,10 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
                 if not isinstance(pro, dict):
                     continue
                 name = str(pro.get("name") or "Provider").strip()
-                phone = str(pro.get("phone") or "").strip()
-                rating = pro.get("rating")
+                phone = str(
+                    pro.get("contact_info") or pro.get("phone") or ""
+                ).strip()
+                rating = pro.get("rating") if pro.get("rating") is not None else pro.get("ratings")
                 review_label = _format_review_count_label(pro.get("reviews"))
                 distance_label = _format_distance_label(
                     pro.get("distance_miles")
@@ -1032,6 +1035,9 @@ def _enrich_service_results_from_branch(
         merged = _overlay_branch_array(ex_local.get(key), branch_local.get(key))
         if merged:
             ex_local[key] = merged
+    existing["localPros"] = normalize_service_results({"localPros": ex_local}).get(
+        "localPros", ex_local
+    )
 
 
 def _enrich_diy_results_from_branch(
@@ -1125,7 +1131,7 @@ def _merge_service_into(analysis: Dict[str, Any], raw: str) -> None:
         return
     extracted = _extract_service_results_from_branch(text)
     if isinstance(extracted, dict):
-        analysis["serviceResults"] = extracted
+        analysis["serviceResults"] = normalize_service_results(extracted)
         return
     analysis["serviceResults"] = {
         "localPros": {"serpAPIResults": [], "googleSearchResults": []},
@@ -1285,6 +1291,7 @@ def merge_parallel_results_into_dual_format(
 
     branch_svc = branch_merged.get("serviceResults")
     if isinstance(branch_svc, dict):
+        branch_svc = normalize_service_results(branch_svc)
         if not isinstance(analysis.get("serviceResults"), dict):
             analysis["serviceResults"] = branch_svc
         else:

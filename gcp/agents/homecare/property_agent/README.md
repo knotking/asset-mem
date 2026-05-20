@@ -22,7 +22,7 @@ property_agent (root)
 ```
 
 - **DIY branch (`diy_agent`)**: Python orchestrator tool `run_diy_pipeline` (parallel fetch + single synthesis); see `sub_agents/diy_agent/orchestrator.py`.
-- **Service branch (`service_agent`)**: `serpapi_search` (Langchain) + **`google_search`** tool directly (no nested search sub-agent).
+- **Service branch (`service_agent`)**: `run_service_pipeline` (SerpAPI Google Maps → structured `serpAPIResults` objects; no grounding redirect URLs).
 - **Cost / coverage**: unchanged modules under `sub_agents/`.
 
 ## Routing (root)
@@ -55,7 +55,7 @@ See `doculink_agent_system_instruction()` in `prompts.py`: priority among `check
 | `sub_agents/checkpoint_agent/` | Retrieval + optional `checkpoint_analysis_agent` |
 | `sub_agents/checkpoint_analysis_agent/` | Parallel optional agents + synthesis |
 | `sub_agents/diy_agent/` | DIY orchestrator + thin `diy_agent` |
-| `sub_agents/service_agent/` | Local pros + `google_search` |
+| `sub_agents/service_agent/` | Local pros via `run_service_pipeline` |
 | `sub_agents/cost_agent/`, `coverage_agent/`, `shopping_agent/`, … | As named |
 
 ## Quick start

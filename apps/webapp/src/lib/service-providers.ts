@@ -5,9 +5,146 @@
  * and `SavedServiceProvider*` types in `lib/types.ts`.
  */
 
+const GENERIC_PROVIDER_NAMES = new Set([
+  'provider',
+  'search guidance',
+  'business',
+  'local business',
+  'unknown',
+]);
+
+const VERTEX_GROUNDING_REDIRECT_RE =
+  /vertexaisearch\.cloud\.google\.com\/grounding-api-redirect/i;
+
+const VERTEX_GROUNDING_URL_IN_TEXT_RE =
+  /https?:\/\/vertexaisearch\.cloud\.google\.com\/grounding-api-redirect\/\S+/gi;
+
+/** Google Search / Gemini grounding redirect URLs are not useful as provider links. */
+export function isVertexGroundingRedirectUrl(value: string): boolean {
+  return VERTEX_GROUNDING_REDIRECT_RE.test(value);
+}
+
+export function stripVertexGroundingUrls(text: string): string {
+  return text.replace(VERTEX_GROUNDING_URL_IN_TEXT_RE, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function pickString(...values: unknown[]): string | undefined {
+  for (const v of values) {
+    if (typeof v === 'string') {
+      const t = v.trim();
+      if (t) return t;
+    }
+  }
+  return undefined;
+}
+
+function hasUsefulField(value: unknown): boolean {
+  if (value == null) return false;
+  const s = String(value).trim();
+  if (!s) return false;
+  const lower = s.toLowerCase();
+  return (
+    lower !== 'n/a' &&
+    lower !== 'not available' &&
+    lower !== 'none' &&
+    lower !== 'null' &&
+    lower !== 'no additional information available.'
+  );
+}
+
+function sanitizeUrlField(value: unknown): string | undefined {
+  const s = pickString(value);
+  if (!s) return undefined;
+  if (isVertexGroundingRedirectUrl(s)) return undefined;
+  return s;
+}
+
+function cleanseTextField(value: unknown): string | undefined {
+  const s = pickString(value);
+  if (!s) return undefined;
+  const cleaned = stripVertexGroundingUrls(s);
+  if (!cleaned || isVertexGroundingRedirectUrl(cleaned)) return undefined;
+  return cleaned;
+}
+
+function isMeaninglessProviderName(name: string): boolean {
+  const t = name.trim();
+  if (!t) return true;
+  if (GENERIC_PROVIDER_NAMES.has(t.toLowerCase())) return true;
+  if (isVertexGroundingRedirectUrl(t)) return true;
+  if (/^https?:\/\//i.test(t)) return true;
+  return false;
+}
+
+function scrubRecordUrls(rec: Record<string, unknown>): void {
+  const textKeys = [
+    'website',
+    'link',
+    'url',
+    'directions',
+    'directions_url',
+    'map_link',
+    'additional_information',
+    'description',
+    'about',
+    'name',
+    'title',
+    'business_name',
+    'businessName',
+    'company',
+    'provider',
+    'store',
+  ] as const;
+  for (const key of textKeys) {
+    const val = rec[key];
+    if (typeof val !== 'string') continue;
+    const cleaned = cleanseTextField(val);
+    if (!cleaned) {
+      delete rec[key];
+    } else if (cleaned !== val) {
+      rec[key] = cleaned;
+    }
+  }
+}
+
+/**
+ * Whether a normalized/raw provider object is worth showing in the Service Recommendations UI.
+ */
+export function isDisplayableServiceProvider(provider: unknown): boolean {
+  if (!provider || typeof provider !== 'object' || Array.isArray(provider)) return false;
+  const p = provider as Record<string, unknown>;
+
+  const name = pickString(p.name, p.business_name, p.businessName, p.title, p.company, p.provider, p.store);
+  if (!name || isMeaninglessProviderName(name)) return false;
+
+  const contact = pickString(p.contact_info, p.phone, p.phoneNumber, p.contact, p.contactInfo);
+  const location = pickString(p.location, p.address, p.address_line);
+  const ratings = pickString(p.ratings, p.rating);
+  const reviews = pickString(p.reviews, p.review_count, p.reviewCount);
+  const distance = p.distance_miles ?? p._distance_miles ?? p.distance;
+  const specialties = pickString(p.specialties, p.services);
+  const additional = cleanseTextField(
+    pickString(p.additional_information, p.description, p.about)
+  );
+
+  const website = sanitizeUrlField(pickString(p.website, p.url, p.link));
+  const link = sanitizeUrlField(pickString(p.link, p.url, p.website));
+  const directions = sanitizeUrlField(pickString(p.directions, p.directions_url, p.map_link));
+
+  if (hasUsefulField(contact) || hasUsefulField(location) || hasUsefulField(ratings)) return true;
+  if (hasUsefulField(reviews) || hasUsefulField(specialties)) return true;
+  if (distance != null && String(distance).trim() !== '') return true;
+  if (website || link || directions) return true;
+  if (additional && additional.length <= 240) return true;
+
+  return name.length >= 3 && /[a-z]/i.test(name) && !GENERIC_PROVIDER_NAMES.has(name.toLowerCase());
+}
+
 function providerObjectFromFreeformLine(line: string): Record<string, string> | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
+  if (isVertexGroundingRedirectUrl(trimmed)) return null;
+  if (/^https?:\/\/\S+$/i.test(trimmed)) return null;
 
   const ratingMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*Rating\s*\((\d+)\s*reviews?\)/i);
   const mapsRatingMatch = trimmed.match(/\brating\s+(\d+(?:\.\d+)?)/i);
@@ -17,10 +154,7 @@ function providerObjectFromFreeformLine(line: string): Record<string, string> | 
   const looksLikeListing = !!(ratingMatch || mapsRatingMatch || phoneMatch || distanceMatch);
 
   if (!looksLikeListing && trimmed.length > 120) {
-    return {
-      name: 'Search guidance',
-      additional_information: trimmed,
-    };
+    return null;
   }
 
   let name = trimmed;
@@ -39,6 +173,9 @@ function providerObjectFromFreeformLine(line: string): Record<string, string> | 
     location = locationMatch[2].trim();
   }
 
+  name = stripVertexGroundingUrls(name);
+  if (!name || isMeaninglessProviderName(name)) return null;
+
   const out: Record<string, string> = { name };
   if (location) out.location = location;
   if (ratingMatch) {
@@ -54,7 +191,34 @@ function providerObjectFromFreeformLine(line: string): Record<string, string> | 
   if (phoneMatch) {
     out.contact_info = phoneMatch[1].trim();
   }
+
+  if (!isDisplayableServiceProvider(out)) return null;
   return out;
+}
+
+function sanitizeProviderObject(item: Record<string, unknown>): Record<string, unknown> | null {
+  const copy: Record<string, unknown> = { ...item };
+  scrubRecordUrls(copy);
+
+  const name = pickString(
+    copy.name,
+    copy.business_name,
+    copy.businessName,
+    copy.title,
+    copy.company,
+    copy.provider,
+    copy.store
+  );
+  if (!name) return null;
+
+  if (isMeaninglessProviderName(name)) {
+    const alt = cleanseTextField(pickString(copy.snippet, copy.summary));
+    if (!alt || isMeaninglessProviderName(alt)) return null;
+    copy.name = alt;
+  }
+
+  if (!isDisplayableServiceProvider(copy)) return null;
+  return copy;
 }
 
 /** Returns a flat list of provider-like objects (each a plain object, never raw strings). */
@@ -62,11 +226,16 @@ export function flattenServiceProviderRawList(providers: unknown): unknown[] {
   if (providers == null) return [];
 
   if (typeof providers === 'string') {
+    const trimmed = providers.trim();
+    if (isVertexGroundingRedirectUrl(trimmed) || /^https?:\/\/\S+$/i.test(trimmed)) {
+      return [];
+    }
     try {
       const parsed: unknown = JSON.parse(providers);
       return flattenServiceProviderRawList(parsed);
     } catch {
-      return [];
+      const o = providerObjectFromFreeformLine(providers);
+      return o ? [o] : [];
     }
   }
 
@@ -80,7 +249,8 @@ export function flattenServiceProviderRawList(providers: unknown): unknown[] {
         continue;
       }
       if (typeof item === 'object' && !Array.isArray(item)) {
-        out.push(item);
+        const cleaned = sanitizeProviderObject(item as Record<string, unknown>);
+        if (cleaned) out.push(cleaned);
       }
     }
     return out;

@@ -4,7 +4,12 @@ import { cn } from "@/lib/utils";
 import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary, SaveServiceProviderMeta } from "@/lib/types";
 import { useSavedServiceProviders } from "@/contexts/saved-service-providers-context";
 import { buildServiceProviderDedupeKey } from "@/lib/saved-service-provider-dedupe";
-import { flattenServiceProviderRawList } from "@/lib/service-providers";
+import {
+    flattenServiceProviderRawList,
+    isDisplayableServiceProvider,
+    isVertexGroundingRedirectUrl,
+    stripVertexGroundingUrls,
+} from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
 import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart } from "lucide-react";
@@ -270,7 +275,7 @@ const ServiceProviderCard = ({
     const normalizeUrl = (u?: string): string | undefined => {
         if (!u || typeof u !== 'string') return undefined;
         const trimmed = u.trim();
-        if (trimmed === '') return undefined;
+        if (trimmed === '' || isVertexGroundingRedirectUrl(trimmed)) return undefined;
         const withProto = (/^https?:\/\//i.test(trimmed)) ? trimmed : `https://${trimmed}`;
         try {
             const url = new URL(withProto);
@@ -284,7 +289,10 @@ const ServiceProviderCard = ({
     const primaryLinkLabel = 'Website';
 
     const isPrimaryLinkValid = typeof primaryLink === 'string' && /^https?:\/\//i.test(primaryLink);
-    const isDirectionsLinkValid = typeof provider.directions === 'string' && (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
+    const isDirectionsLinkValid =
+        typeof provider.directions === 'string' &&
+        !isVertexGroundingRedirectUrl(provider.directions) &&
+        (provider.directions.startsWith('http://') || provider.directions.startsWith('https://'));
 
     // Helper function to check if a value is meaningful (not empty, null, undefined, or "N/A")
     const hasValue = (val: any): boolean => {
@@ -589,9 +597,15 @@ const StructuredResponse = ({
         const name = typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate || '');
         if (!name.trim()) return null;
 
-        const website = p.website || p.url || p.link || undefined;
-        const link = p.link || p.url || p.website || undefined;
-        const directions = p.directions || p.directions_url || p.map_link || undefined;
+        const cleanUrl = (u: unknown): string | undefined => {
+            if (typeof u !== 'string') return undefined;
+            const t = u.trim();
+            if (!t || isVertexGroundingRedirectUrl(t)) return undefined;
+            return t;
+        };
+        const website = cleanUrl(p.website) || cleanUrl(p.url) || cleanUrl(p.link) || undefined;
+        const link = cleanUrl(p.link) || cleanUrl(p.url) || cleanUrl(p.website) || undefined;
+        const directions = cleanUrl(p.directions) || cleanUrl(p.directions_url) || cleanUrl(p.map_link) || undefined;
         const contact_info = p.contact_info || p.phone || p.phoneNumber || p.contact || p.contactInfo || undefined;
         const location = p.location || p.address || p.address_line || undefined;
         const ratings = p.ratings || p.rating || undefined;
@@ -599,7 +613,11 @@ const StructuredResponse = ({
         const distanceRaw =
             p.distance_miles ?? p._distance_miles ?? p.distance ?? undefined;
         const specialties = p.specialties || p.services || undefined;
-        const additional_information = p.additional_information || p.description || p.about || undefined;
+        const additionalRaw = p.additional_information || p.description || p.about;
+        const additional_information =
+            typeof additionalRaw === 'string'
+                ? stripVertexGroundingUrls(additionalRaw) || undefined
+                : undefined;
         const authorized = p.authorized || p.verified || undefined;
 
         return {
@@ -621,10 +639,8 @@ const StructuredResponse = ({
         } as ServiceProvider;
     };
 
-    const providerHasValidData = (provider: any): boolean => {
-        const nameCandidate = provider?.name || provider?.business_name || provider?.businessName || provider?.title || provider?.company || provider?.provider || provider?.store;
-        return !!(nameCandidate && String(nameCandidate).trim() !== '');
-    };
+    const providerHasValidData = (provider: unknown): boolean =>
+        isDisplayableServiceProvider(provider);
 
     // Get all providers (before filtering) to check if service section should show
     // Handle both array format and potential string/object formats
@@ -670,7 +686,7 @@ const StructuredResponse = ({
         (diy.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0) ||
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
-    const hasProviders = allProvidersRaw.length > 0; // Check raw providers count, not filtered
+    const hasProviders = allProviders.length > 0;
     const hasService = !needsClarification && hasProviders;
     const hasCostEstimates = !needsClarification && !!(cost && cost.costEstimates);
     
