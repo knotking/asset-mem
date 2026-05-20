@@ -546,6 +546,42 @@ def _join_display_list(items: Any, *, limit: int = 15) -> str:
     return ", ".join(parts[:limit])
 
 
+_PRODUCT_LINK_PLACEHOLDERS = frozenset(
+    {"n/a", "na", "none", "null", "not available", "-", "tbd"}
+)
+
+
+def _resolve_product_store_url(product: Dict[str, Any]) -> Optional[str]:
+    """http(s) store link for markdown / clients; ignores DIY placeholder values."""
+    for key in ("store_url", "url"):
+        raw = product.get(key)
+        if raw is None:
+            continue
+        trimmed = str(raw).strip()
+        if not trimmed or trimmed.lower() in _PRODUCT_LINK_PLACEHOLDERS:
+            continue
+        if not trimmed.lower().startswith(("http://", "https://")):
+            trimmed = f"https://{trimmed}"
+        return trimmed
+    return None
+
+
+def _format_recommended_product_markdown_line(product: Dict[str, Any]) -> str:
+    """Markdown bullet: name, optional vendor, optional price, optional store link."""
+    name = str(product.get("item_name") or product.get("name") or "Product").strip()
+    vendor = str(product.get("vendor") or "").strip()
+    label = name
+    if vendor:
+        label += f" ({vendor})"
+    price = product.get("item_price") or product.get("price")
+    if price is not None and str(price).strip():
+        label += f" — {str(price).strip()}"
+    store_url = _resolve_product_store_url(product)
+    if store_url:
+        return f"- [{label}]({store_url})"
+    return f"- {label}"
+
+
 def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
     """Build prompt-style rich markdown (## sections) from the analysis JSON object."""
     title = str(analysis.get("title") or "").strip() or "Checkpoint analysis"
@@ -618,10 +654,7 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
                 for p in prods[:10]:
                     if not isinstance(p, dict):
                         continue
-                    name = str(p.get("item_name") or p.get("name") or "Product").strip()
-                    vendor = str(p.get("vendor") or "").strip()
-                    line = f"- {name}" + (f" ({vendor})" if vendor else "")
-                    lines.append(line)
+                    lines.append(_format_recommended_product_markdown_line(p))
         diy_cost = diy.get("diyCostEstimates")
         if isinstance(diy_cost, dict):
             diy_band = diy_cost.get("DIY")

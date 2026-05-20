@@ -582,15 +582,18 @@ def _serp_shopping_products_list(
             return products
         for p in raw_list[:max_items]:
             if isinstance(p, dict):
-                products.append(
-                    {
-                        "item_name": p.get("item_name"),
-                        "image_url": p.get("image_url"),
-                        "vendor": p.get("vendor"),
-                        "reviews": p.get("reviews"),
-                        "store_url": p.get("store_url"),
-                    }
-                )
+                row: Dict[str, Any] = {
+                    "item_name": p.get("item_name"),
+                    "image_url": p.get("image_url"),
+                    "vendor": p.get("vendor"),
+                    "reviews": p.get("reviews"),
+                    "store_url": p.get("store_url"),
+                }
+                price = p.get("item_price") or p.get("price")
+                if price:
+                    row["item_price"] = price
+                    row["price"] = price
+                products.append(row)
     except Exception:
         logger.debug("Serp shopping product parse failed", exc_info=True)
     return products

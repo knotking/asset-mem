@@ -854,6 +854,72 @@ def test_merge_parallel_fills_empty_youtube_and_products_from_diy_branch():
     assert diy["diySteps"]["steps"][0]["description"] == "Sand"
 
 
+def test_render_analysis_markdown_includes_product_prices():
+    from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+        render_analysis_markdown,
+    )
+
+    md = render_analysis_markdown(
+        {
+            "title": "Checkpoint analysis",
+            "diyResults": {
+                "recommendedProducts": {
+                    "products": [
+                        {
+                            "item_name": "Scratch Doctor",
+                            "vendor": "Ace Hardware",
+                            "item_price": "$14.99",
+                        },
+                        {
+                            "item_name": "Paint kit",
+                            "vendor": "Dr. ColorChip",
+                        },
+                    ]
+                }
+            },
+        }
+    )
+    assert "**Recommended products:**" in md
+    assert "- Scratch Doctor (Ace Hardware) — $14.99" in md
+    assert "- Paint kit (Dr. ColorChip)" in md
+    assert "- Paint kit (Dr. ColorChip) —" not in md
+
+
+def test_render_analysis_markdown_product_store_url_is_link():
+    from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+        render_analysis_markdown,
+    )
+
+    md = render_analysis_markdown(
+        {
+            "title": "Checkpoint analysis",
+            "diyResults": {
+                "recommendedProducts": {
+                    "products": [
+                        {
+                            "item_name": "Scratch Doctor",
+                            "vendor": "Ace Hardware",
+                            "item_price": "$14.99",
+                            "store_url": "https://www.google.com/search?ibp=oshop&q=test",
+                        },
+                        {
+                            "item_name": "Paint kit",
+                            "vendor": "Dr. ColorChip",
+                            "store_url": "N/A",
+                        },
+                    ]
+                }
+            },
+        }
+    )
+    assert (
+        "- [Scratch Doctor (Ace Hardware) — $14.99]"
+        "(https://www.google.com/search?ibp=oshop&q=test)"
+    ) in md
+    assert "- Paint kit (Dr. ColorChip)" in md
+    assert "](https://www.google.com" not in md.split("Paint kit")[1].split("\n")[0]
+
+
 def test_merge_parallel_restores_trimmed_service_pros_from_branch():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 

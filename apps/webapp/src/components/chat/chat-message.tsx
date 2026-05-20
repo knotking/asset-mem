@@ -389,6 +389,17 @@ function resolveProductPageUrl(
     return undefined;
 }
 
+/** e.g. ``746`` → ``746 reviews``; pass through if label already present. */
+function formatReviewCountLabel(
+    reviews: string | number | null | undefined
+): string | null {
+    if (reviews == null || reviews === '') return null;
+    const text = String(reviews).trim();
+    if (!text) return null;
+    if (/review/i.test(text)) return text;
+    return `${text} reviews`;
+}
+
 const ProductCard = ({ product }: { product: Product }) => {
     // Use new fields first, fallback to legacy fields
     const itemName = product.item_name || product.product_name || product.description || 'Product';
@@ -425,17 +436,19 @@ const ProductCard = ({ product }: { product: Product }) => {
                         <span className="font-semibold text-primary">{product.price || product.item_price}</span>
                     </div>
                 )}
-                {product.reviews && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="text-xs">
-                            {product.reviews}
-                        </span>
-                    </div>
-                )}
-                {product.rating && (
-                    <div className="flex items-center gap-2 text-sm text-yellow-500">
-                        <Star className="h-4 w-4 fill-current" />
-                        <span>{product.rating}</span>
+                {(product.rating || product.reviews) && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                        {product.rating && (
+                            <span className="flex items-center gap-1 text-yellow-500">
+                                <Star className="h-4 w-4 fill-current" />
+                                <span>{product.rating}</span>
+                            </span>
+                        )}
+                        {product.reviews && (
+                            <span className="text-xs text-muted-foreground">
+                                {formatReviewCountLabel(product.reviews)}
+                            </span>
+                        )}
                     </div>
                 )}
             </div>

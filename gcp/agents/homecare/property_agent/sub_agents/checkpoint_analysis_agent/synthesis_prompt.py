@@ -92,7 +92,9 @@ diyResults (object):
         "image_url": <string|null>,
         "vendor": <string|null>,
         "reviews": <string|null>,
-        "store_url": <string|null>
+        "store_url": <string|null>,
+        "item_price": <string|null>,
+        "price": <string|null>
       }
     ]
   }
