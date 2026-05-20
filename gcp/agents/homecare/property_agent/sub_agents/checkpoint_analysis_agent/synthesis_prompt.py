@@ -102,24 +102,10 @@ diyResults (object):
 serviceResults (object):
 {
   "localPros": {
-    "serpAPIResults": [
-      {
-        "name": <string>,
-        "contact_info": <string> (optional),
-        "location": <string> (optional),
-        "ratings": <string> (optional),
-        "reviews": <string> (optional),
-        "distance_miles": <string> (optional),
-        "website": <string> (optional),
-        "link": <string> (optional),
-        "specialties": <string> (optional)
-      }
-    ],
-    "googleSearchResults": <array of same provider objects; usually []>
+    "serpAPIResults": <array>,
+    "googleSearchResults": <array>
   }
 }
-- NEVER put Vertex AI grounding redirect URLs (vertexaisearch.cloud.google.com/grounding-api-redirect) in provider fields.
-- NEVER use freeform strings or bare URLs as provider entries — only structured objects with a business name.
 
 costEstimationResults (object):
 {

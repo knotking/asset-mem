@@ -265,22 +265,3 @@ def test_format_google_maps_results():
     )
     assert "Joe's Plumbing" in text
     assert "1 Main St" in text
-
-
-def test_build_maps_provider_records():
-    records = sg.build_maps_provider_records(
-        {
-            "local_results": [
-                {
-                    "title": "Joe's Plumbing",
-                    "address": "1 Main St",
-                    "rating": 4.5,
-                    "reviews": 10,
-                    "phone": "555-0100",
-                }
-            ]
-        }
-    )
-    assert len(records) == 1
-    assert records[0]["name"] == "Joe's Plumbing"
-    assert records[0]["contact_info"] == "555-0100"

@@ -1,22 +1,138 @@
+import asyncio
+import logging
+import os
+from typing import Any, Dict, Optional
+
 from google.adk.agents import Agent
+from google.adk.tools import ToolContext, google_search
 from dotenv import load_dotenv
 from .prompts import service_agent_instructions
-from ...agent_inputs import DocsInput
+from ...agent_inputs import DocsInput, SearchLocation
 from ...model_config import GLOBAL_GEMINI_MODEL
-from .orchestrator import run_service_pipeline
+from ...serpapi_geo import (
+    enrich_search_location_label,
+    format_google_maps_results,
+    maps_lat_lon_params,
+    merge_search_location_sources,
+    strip_embedded_geo_from_query,
+)
 
+logger = logging.getLogger(__name__)
 load_dotenv()
+
+
+def _serpapi_api_key() -> Optional[str]:
+    return (os.environ.get("SERP_API_KEY") or "").strip() or None
+
+
+def _run_serpapi_maps_search(
+    query: str,
+    search_location_raw: Any,
+    property_address: Optional[str] = None,
+) -> str:
+    import serpapi
+
+    api_key = _serpapi_api_key()
+    if not api_key:
+        return "Service provider search not available (missing API key)."
+
+    if isinstance(search_location_raw, SearchLocation):
+        search_location = search_location_raw
+    else:
+        search_location = merge_search_location_sources(search_location_raw)
+
+    clean_q = strip_embedded_geo_from_query(query) or (query or "").strip()
+    if not clean_q:
+        clean_q = "home repair service"
+
+    if search_location is None:
+        logger.warning(
+            "serpapi_search: google_maps called without resolvable search_location"
+        )
+        return "Service provider search not available (missing location)."
+
+    search_location = enrich_search_location_label(search_location, property_address)
+    if search_location is None:
+        return "Service provider search not available (missing location)."
+
+    params: Dict[str, Any] = {
+        "engine": "google_maps",
+        "type": "search",
+        "q": clean_q,
+        "api_key": api_key,
+        "hl": "en",
+    }
+    params.update(maps_lat_lon_params(search_location))
+    logger.info(
+        "serpapi_search: google_maps q_len=%d lat=%.4f lon=%.4f z=%s nearby=true source=%s",
+        len(clean_q),
+        search_location.coordinates.lat,
+        search_location.coordinates.lng,
+        params.get("z"),
+        search_location.source,
+    )
+
+    data = serpapi.GoogleSearch(params).get_dict()
+    return format_google_maps_results(
+        data,
+        search_location=search_location,
+        property_address=property_address,
+    )
+
+
+def _run_serpapi_web_fallback(query: str) -> str:
+    """Generic Google web search when no coordinates are available."""
+    from langchain_community.utilities import SerpAPIWrapper
+
+    api_key = _serpapi_api_key()
+    if not api_key:
+        return "Service provider search not available (missing API key)."
+    wrapper = SerpAPIWrapper(serpapi_api_key=api_key)
+    return wrapper.run(query)
+
+
+async def serpapi_search(
+    query: str,
+    search_location: Optional[dict] = None,
+    tool_context: ToolContext = None,
+) -> str:
+    """Search local service providers via SerpAPI Google Maps (structured geo when available)."""
+    state_sl: Any = None
+    property_address: Optional[str] = None
+    if tool_context is not None:
+        state = getattr(tool_context, "state", None)
+        if state is not None and hasattr(state, "get"):
+            state_sl = state.get("search_location")
+            pa = state.get("property_address")
+            if isinstance(pa, str) and pa.strip():
+                property_address = pa.strip()
+
+    resolved = merge_search_location_sources(search_location, state_sl)
+    if resolved is not None:
+        return await asyncio.to_thread(
+            _run_serpapi_maps_search, query, resolved, property_address
+        )
+
+    q = (query or "").strip()
+    if not q:
+        return "Service provider search not available (empty query)."
+    logger.info("serpapi_search: web fallback q_len=%d (no coordinates)", len(q))
+    return await asyncio.to_thread(_run_serpapi_web_fallback, q)
+
 
 service_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
     name="service_agent",
-    description="Provides professional service recommendations and structured local provider listings.",
+    description="Provides professional service recommendations, cost estimates, and service provider information.",
     instruction=service_agent_instructions(),
-    tools=[run_service_pipeline],
+    tools=[
+        serpapi_search,
+        google_search,
+    ],
     input_schema=DocsInput,
 )
 
 # ADK AgentEvaluator expects ``root_agent`` on ``*.agent`` modules.
 root_agent = service_agent
 
-__all__ = ["service_agent", "root_agent", "run_service_pipeline"]
+__all__ = ["service_agent", "root_agent", "serpapi_search"]
