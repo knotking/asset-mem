@@ -12,8 +12,11 @@ function providerObjectFromFreeformLine(line: string): Record<string, string> | 
   if (!trimmed) return null;
 
   const ratingMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*Rating\s*\((\d+)\s*reviews?\)/i);
+  const mapsRatingMatch = trimmed.match(/\brating\s+(\d+(?:\.\d+)?)/i);
+  const mapsReviewsMatch = trimmed.match(/\breviews\s+(\d+)/i);
+  const distanceMatch = trimmed.match(/\b(\d+(?:\.\d+)?)\s*mi\b/i);
   const phoneMatch = trimmed.match(/(?:Phone:\s*)?(\(?\d{3}\)?[\s.-]*\d{3}[\s.-]*\d{4})\b/);
-  const looksLikeListing = !!(ratingMatch || phoneMatch);
+  const looksLikeListing = !!(ratingMatch || mapsRatingMatch || phoneMatch || distanceMatch);
 
   if (!looksLikeListing && trimmed.length > 120) {
     return {
@@ -43,6 +46,12 @@ function providerObjectFromFreeformLine(line: string): Record<string, string> | 
   if (ratingMatch) {
     out.ratings = ratingMatch[1];
     out.reviews = ratingMatch[2];
+  } else if (mapsRatingMatch) {
+    out.ratings = mapsRatingMatch[1];
+    if (mapsReviewsMatch) out.reviews = mapsReviewsMatch[1];
+  }
+  if (distanceMatch) {
+    out.distance_miles = distanceMatch[1];
   }
   if (phoneMatch) {
     out.contact_info = phoneMatch[1].trim();

@@ -566,6 +566,34 @@ def _resolve_product_store_url(product: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def _format_distance_label(miles: Any) -> Optional[str]:
+    """e.g. ``4.5`` → ``4.5 mi``; pass through if ``mi`` already present."""
+    if miles is None or miles == "":
+        return None
+    text = str(miles).strip()
+    if not text:
+        return None
+    if re.search(r"\bmi\b", text, re.IGNORECASE):
+        return text
+    try:
+        n = float(text)
+    except ValueError:
+        return None
+    return f"{n:g} mi"
+
+
+def _format_review_count_label(reviews: Any) -> Optional[str]:
+    """e.g. ``91`` → ``91 reviews``; pass through if label already present."""
+    if reviews is None or reviews == "":
+        return None
+    text = str(reviews).strip()
+    if not text:
+        return None
+    if re.search(r"review", text, re.IGNORECASE):
+        return text
+    return f"{text} reviews"
+
+
 def _format_recommended_product_markdown_line(product: Dict[str, Any]) -> str:
     """Markdown bullet: name, optional vendor, optional price, optional store link."""
     name = str(product.get("item_name") or product.get("name") or "Product").strip()
@@ -684,10 +712,23 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
                 name = str(pro.get("name") or "Provider").strip()
                 phone = str(pro.get("phone") or "").strip()
                 rating = pro.get("rating")
+                review_label = _format_review_count_label(pro.get("reviews"))
+                distance_label = _format_distance_label(
+                    pro.get("distance_miles")
+                    if pro.get("distance_miles") is not None
+                    else pro.get("_distance_miles")
+                )
                 notes = str(pro.get("notes") or "").strip()
                 entry = f"- **{name}**"
+                meta: list[str] = []
                 if rating is not None:
-                    entry += f" (rating {rating})"
+                    meta.append(f"rating {rating}")
+                if distance_label:
+                    meta.append(distance_label)
+                if review_label:
+                    meta.append(review_label)
+                if meta:
+                    entry += f" ({', '.join(meta)})"
                 if phone:
                     entry += f" — {phone}"
                 lines.append(entry)

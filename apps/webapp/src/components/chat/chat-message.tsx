@@ -266,6 +266,8 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
         : null;
     const hasRating = hasValue(ratingValue) && ratingValue !== 'N/A' && ratingValue !== '0';
     const hasReviews = hasValue(provider.reviews);
+    const distanceLabel = formatDistanceLabel(provider.distance_miles);
+    const hasDistance = !!distanceLabel;
     const hasContact = hasValue(provider.contact_info);
     const hasLocation = hasValue(provider.location);
     const hasAdditionalInfo = hasValue(provider.additional_information) && 
@@ -290,19 +292,20 @@ const ServiceProviderCard = ({ provider }: { provider: ServiceProvider }) => {
                     </Badge>
                 )}
             </CardTitle>
-            {(hasRating || hasReviews) && (
-                <CardDescription className="flex items-center gap-2 pt-1">
+            {(hasRating || hasReviews || hasDistance) && (
+                <CardDescription className="flex flex-wrap items-center gap-2 pt-1">
                     {hasRating && (
                         <div className="flex items-center gap-1 text-sm text-yellow-500">
                             <Star className="h-4 w-4 fill-current" />
                             <span>{ratingValue}</span>
                         </div>
                     )}
+                    {hasDistance && (
+                        <span className="text-muted-foreground text-xs">{distanceLabel}</span>
+                    )}
                     {hasReviews && (
                         <span className="text-muted-foreground text-xs">
-                            {provider.reviews && !provider.reviews.toLowerCase().includes('review') 
-                                ? provider.reviews 
-                                : `${provider.reviews} reviews`}
+                            {formatReviewCountLabel(provider.reviews)}
                         </span>
                     )}
                 </CardDescription>
@@ -398,6 +401,28 @@ function formatReviewCountLabel(
     if (!text) return null;
     if (/review/i.test(text)) return text;
     return `${text} reviews`;
+}
+
+function parseDistanceMiles(raw: unknown): string | undefined {
+    if (raw == null || raw === '') return undefined;
+    if (typeof raw === 'number' && !Number.isNaN(raw)) return String(raw);
+    const text = String(raw).trim();
+    if (!text) return undefined;
+    const mi = text.match(/^(\d+(?:\.\d+)?)\s*mi\b/i);
+    if (mi) return mi[1];
+    const n = Number.parseFloat(text);
+    if (!Number.isNaN(n)) return String(n);
+    return undefined;
+}
+
+/** e.g. ``4.5`` → ``4.5 mi``; pass through if ``mi`` already present. */
+function formatDistanceLabel(
+    miles: string | number | null | undefined
+): string | null {
+    const parsed = parseDistanceMiles(miles);
+    if (parsed == null) return null;
+    if (/mi\b/i.test(String(miles))) return String(miles).trim();
+    return `${parsed} mi`;
 }
 
 const ProductCard = ({ product }: { product: Product }) => {
@@ -511,6 +536,8 @@ const StructuredResponse = ({
         const location = p.location || p.address || p.address_line || undefined;
         const ratings = p.ratings || p.rating || undefined;
         const reviews = p.reviews || p.review_count || p.reviewCount || undefined;
+        const distanceRaw =
+            p.distance_miles ?? p._distance_miles ?? p.distance ?? undefined;
         const specialties = p.specialties || p.services || undefined;
         const additional_information = p.additional_information || p.description || p.about || undefined;
         const authorized = p.authorized || p.verified || undefined;
@@ -524,6 +551,10 @@ const StructuredResponse = ({
             location,
             ratings: ratings != null ? String(ratings) : undefined,
             reviews: reviews != null ? String(reviews) : undefined,
+            distance_miles:
+                distanceRaw != null && distanceRaw !== ''
+                    ? parseDistanceMiles(distanceRaw)
+                    : undefined,
             specialties: specialties != null ? String(specialties) : undefined,
             additional_information: additional_information != null ? String(additional_information) : undefined,
             authorized: authorized != null ? String(authorized) : undefined,
