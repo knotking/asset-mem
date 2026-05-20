@@ -15,6 +15,8 @@ import { SessionProvider } from '@/contexts/session-context';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
 import { createLogger } from '@/lib/logger';
+import { HomeOnboardingChecklist } from '@/components/onboarding/home-onboarding-checklist';
+import { ProductHuntWelcomeBanner } from '@/components/onboarding/product-hunt-welcome-banner';
 
 const propertiesLog = createLogger('properties');
 
@@ -126,8 +128,11 @@ function PropertiesDashboardContent() {
         <div className="max-w-7xl mx-auto">
             <header className="mb-8">
                 <h1 className="text-2xl font-bold text-foreground">Property AI Agent</h1>
-                <p className="text-muted-foreground">Upload property documents and chat with AI to get insights or diagnostics of your properties and assests</p>
+                <p className="text-muted-foreground">Upload property documents and chat with AI to get insights or diagnostics of your properties and assets</p>
             </header>
+
+            <ProductHuntWelcomeBanner />
+            <HomeOnboardingChecklist properties={properties} />
 
             {/* Search Bar */}
             <div className="mb-6">
@@ -155,11 +160,11 @@ function PropertiesDashboardContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AddPropertyCard />
-            {filteredProperties.length === 0 ? (
+            {filteredProperties.length === 0 && properties.length > 0 ? (
                 <div className="col-span-full py-8 text-center text-muted-foreground">
-                    {searchTerm.trim() ? 'No properties match your search.' : 'No properties found.'}
+                    No properties match your search.
                 </div>
-            ) : (
+            ) : filteredProperties.length === 0 && properties.length === 0 ? null : (
                 filteredProperties.map(prop => (
                     <PropertyCard key={prop.id} property={prop} />
                 ))

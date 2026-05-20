@@ -12,7 +12,7 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 
 | Phase | Goal | Target | Status |
 |-------|------|--------|--------|
-| **1** | Product Hunt readiness (web) | Weeks 1–2 | `[~]` In progress |
+| **1** | Product Hunt readiness (web) | Weeks 1–2 | `[~]` In progress (1.1–1.3 done) |
 | **2** | Security & API hardening | Weeks 2–4 | `[ ]` Not started |
 | **3** | Production GA (compliance, ops, CI) | Weeks 4–6 | `[ ]` Not started |
 
@@ -60,11 +60,17 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 
 | Task | Status | Artifacts / notes |
 |------|--------|-------------------|
-| Google sign-in on web | `[ ]` | Parity with `apps/mapp/app/auth/login.tsx` |
-| First-run onboarding on `/home` (empty properties) | `[ ]` | Add property → doc/photo → first chat |
-| Optional PH promo banner (`utm_source=producthunt`) | `[ ]` | Landing or `/home` |
+| Google sign-in on web | `[x]` | `auth-context.tsx` (`signInWithPopup`), `google-sign-in-button.tsx`, login + signup pages |
+| First-run onboarding on `/home` (empty properties) | `[x]` | `home-onboarding-checklist.tsx` — 3 steps; hides after first upload |
+| Optional PH promo banner (`utm_source=producthunt`) | `[x]` | `product-hunt-welcome-banner.tsx` on `/home` |
+| Auth error messages (popup blocked, etc.) | `[x]` | `lib/auth-errors.ts` |
 
-**Operational TODOs after 1.3:** Re-run PH smoke test §4 in [PRODUCT_HUNT_LAUNCH.md](./PRODUCT_HUNT_LAUNCH.md); confirm Google OAuth client IDs in Firebase console for web.
+**Operational TODOs after 1.3:**
+
+- [ ] Firebase Console → Authentication → Sign-in method → **Google** enabled for staging + prod projects.
+- [ ] Firebase Console → Authentication → Settings → **Authorized domains** includes prod/staging App Hosting domains and `localhost`.
+- [ ] Re-run PH smoke test §4 in [PRODUCT_HUNT_LAUNCH.md](./PRODUCT_HUNT_LAUNCH.md) including **Continue with Google** on signup.
+- [ ] Verify onboarding checklist on new account; PH banner with `?utm_source=producthunt` on `/home`.
 
 ---
 
