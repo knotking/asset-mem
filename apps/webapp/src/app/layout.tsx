@@ -5,13 +5,11 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { AppContextProvider } from '@/contexts/firebase-context';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
+import { GoogleAnalytics } from '@/components/analytics/google-analytics';
+import { AnalyticsClient } from '@/components/analytics/analytics-client';
+import { buildPageMetadata } from '@/lib/metadata-shared';
 
-export const metadata: Metadata = {
-  title: 'AssetMem AI',
-  description: 'An intelligent AI agent to care of your home',
-  // Next.js App Router automatically handles icon files in the app directory
-  // icon.svg, icon.png, apple-icon.png, and favicon.ico are automatically served
-};
+export const metadata: Metadata = buildPageMetadata();
 
 export default function RootLayout({
   children,
@@ -26,6 +24,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet"></link>
       </head>
       <body className="font-body antialiased">
+        <GoogleAnalytics />
+        <AnalyticsClient />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

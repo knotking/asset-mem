@@ -4,7 +4,7 @@ Operational checklist for launching **AssetMem AI** (web) on Product Hunt. This 
 
 **Primary audience:** Web app only for PH (mobile is not public on stores; see [Mobile Deployment](./MOBILE_DEPLOYMENT.md)).
 
-**Related docs:** [Environments](./ENVIRONMENTS.md) · [Webapp Deployment](./WEBAPP_DEPLOYMENT.md) · [Proxy Deployment](./PROXY_DEPLOYMENT.md) · [Client Logging](../CLIENT_LOGGING.md)
+**Related docs:** [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md) · [Environments](./ENVIRONMENTS.md) · [Webapp Deployment](./WEBAPP_DEPLOYMENT.md) · [Proxy Deployment](./PROXY_DEPLOYMENT.md) · [Client Logging](../CLIENT_LOGGING.md)
 
 ---
 
@@ -83,7 +83,35 @@ Use production origin + UTM parameters:
 https://homegeek.ai/?utm_source=producthunt&utm_medium=referral&utm_campaign=launch
 ```
 
-Adjust domain if production differs (see `apps/webapp/apphosting.prod.yaml` and DNS docs).
+Adjust domain if production differs (see `apps/webapp/apphosting.prod.yaml` and DNS docs). Must match `NEXT_PUBLIC_SITE_URL` (see §2.1).
+
+### 2.1 Environment variables (production web)
+
+Configure in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.prod.yaml) before the prod deploy used for Product Hunt. Full table and phase status: [LAUNCH_PLAN_PROGRESS.md — Production web env vars](./LAUNCH_PLAN_PROGRESS.md#production-web-env-vars-product-hunt).
+
+| Variable | Required for PH? | Action |
+|----------|------------------|--------|
+| `NEXT_PUBLIC_SITE_URL` | **Yes** | Set to canonical origin, e.g. `https://homegeek.ai` (no trailing slash) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | Monitored inbox, e.g. `support@homegeek.ai` |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | **Recommended** | GA4 ID `G-XXXXXXXX` — **add to yaml before PH**; if omitted, analytics is disabled |
+| `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Already in yaml — proxy base URL |
+| `NEXT_PUBLIC_ENV` | **Yes** | `prod` |
+| `NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS` | **Yes** | Align with proxy quota |
+
+**Deploy steps:**
+
+1. Update `apphosting.prod.yaml` (and `apphosting.staging.yaml` for pre-PH smoke on staging).
+2. Run GitHub Actions → **Deploy Webapp - AppHosting** → environment **prod**.
+3. Firebase Console → App Hosting → **prod** backend → confirm env vars on the active rollout.
+4. Local reference: [`apps/webapp/.env.example`](../../apps/webapp/.env.example).
+
+| Step | Owner | Done |
+|------|-------|------|
+| `NEXT_PUBLIC_SITE_URL` matches live DNS / App Hosting URL | Eng | [ ] |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` monitored | Ops | [ ] |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` added to prod yaml (if using GA) | Eng | [ ] |
+| Prod webapp redeployed after yaml change | Eng | [ ] |
+| Vars verified on active rollout in Firebase Console | Eng | [ ] |
 
 ### UTM convention
 
@@ -95,21 +123,26 @@ Adjust domain if production differs (see `apps/webapp/apphosting.prod.yaml` and 
 
 ### Analytics events to verify (before PH)
 
-Ensure these fire in production (gtag/GTM or equivalent):
+Requires `NEXT_PUBLIC_GA_MEASUREMENT_ID` (§2.1). Implementation: `apps/webapp/src/lib/analytics.ts`, `GoogleAnalytics` + `UtmCapture` in `apps/webapp/src/app/layout.tsx`.
 
 | Event | When |
 |-------|------|
-| `page_view` | Landing load |
-| CTA click | “Get Started” / “Sign In” (landing already has gtag hook when loaded) |
-| `sign_up` | Successful Firebase signup |
-| `first_property_created` | First property on `/home` |
-| `first_chat_message` | First user message in property chat |
+| `page_view` | Automatic via gtag config on load |
+| `landing_cta_click` | “Get Started”, “Dashboard”, header CTAs (`trackLandingCta`) |
+| `sign_up` | Successful email signup (`signup/page.tsx`) |
+| `first_property_created` | First property created via upload flow (`upload-documents-dialog.tsx`) |
+| `first_chat_message` | First user message sent in property chat |
 
-**Owner:** Eng — confirm script loaded in `apps/webapp/src/app/layout.tsx` before launch.
+UTM params (`utm_source`, etc.) are stored in `sessionStorage` and attached to custom events.
+
+| Verification | Done |
+|--------------|------|
+| GA4 DebugView shows events on staging/prod | [ ] |
+| PH URL with `?utm_source=producthunt` → events include UTM in DebugView | [ ] |
 
 ### Social preview (Open Graph)
 
-When hunters share the homepage on X/LinkedIn, verify preview shows title, description, and image. See Phase 1 landing work; test with [opengraph.xyz](https://www.opengraph.xyz) or similar.
+When hunters share the homepage on X/LinkedIn, verify preview shows title, description, and image (`apps/webapp/src/app/opengraph-image.tsx`, `lib/metadata-shared.ts`). Requires `NEXT_PUBLIC_SITE_URL` (§2.1). Test with [opengraph.xyz](https://www.opengraph.xyz) on prod URL.
 
 ---
 
@@ -127,6 +160,9 @@ These are **required before posting on PH** (full production hardening is in [PR
 | 6 | Token quota UX clear when limit hit | Lower test user limit or simulate | Eng | [ ] |
 | 7 | `maxInstances` / proxy scale reviewed for traffic spike | See `apphosting.prod.yaml`, Cloud Run console | Eng | [ ] |
 | 8 | On-call person named for launch day | See §5 | Ops | [ ] |
+| 9 | Production web env vars set and deployed (§2.1) | Firebase Console rollout + OG/analytics check | Eng | [ ] |
+
+**Phase 1 engineering status:** [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md) (§1.1–1.5 complete / pending).
 
 **Not required for PH day 1 (before GA):** Firebase ID token on proxy, API rate limiting, full alerting-as-code — see production checklist Phase 2.
 
@@ -272,5 +308,6 @@ Copy/adapt for quick replies.
 
 ## Related checklists
 
+- [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md) — phase tasks, completion status, env TODOs
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md) — security, compliance, ops for GA
 - [Environment Configuration](./ENVIRONMENTS.md) — env matrix and deploy triggers

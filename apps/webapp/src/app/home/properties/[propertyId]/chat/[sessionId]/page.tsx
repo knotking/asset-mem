@@ -52,6 +52,7 @@ import type { Checkpoint } from "@/lib/types";
 import { defaultSearchLocationInput } from "@/lib/search-location";
 import { streamAgentResponse } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
+import { trackFirstChatMessage } from "@/lib/analytics";
 
 const chatLog = createLogger("chat");
 
@@ -338,6 +339,7 @@ export default function PropertyChatSessionPage() {
       }
 
       setIsLoading(true);
+      trackFirstChatMessage();
       let activeSessionId = sessionId;
 
       // Claim draft session if it's a new one

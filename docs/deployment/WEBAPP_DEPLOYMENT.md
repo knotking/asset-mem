@@ -112,6 +112,27 @@ runConfig:
   minInstances: 0
 ```
 
+### Marketing & analytics environment variables
+
+Used for Open Graph URLs, contact/legal pages, and GA4 (Product Hunt / launch). Defined in `apphosting.*.yaml` and [`apps/webapp/.env.example`](../../apps/webapp/.env.example). Tracked in [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md).
+
+| Variable | Staging (example) | Production (example) | Notes |
+|----------|-------------------|----------------------|--------|
+| `NEXT_PUBLIC_SITE_URL` | Staging App Hosting URL | `https://homegeek.ai` | Canonical origin for OG metadata (no trailing slash) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `support@homegeek.ai` | `support@homegeek.ai` | Landing contact + legal pages |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional | **Add before PH** | GA4 `G-XXXXXXXX`; omit = analytics disabled |
+
+**Before Product Hunt:** Complete the checklist in [PRODUCT_HUNT_LAUNCH.md §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web).
+
+```yaml
+# Example — add to apphosting.prod.yaml when GA4 property exists:
+  - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
+    value: G-XXXXXXXXXX
+    availability:
+      - BUILD
+      - RUNTIME
+```
+
 ## Deployment Methods
 
 ### Method 1: GitHub Actions (Recommended)
@@ -227,6 +248,9 @@ const nextConfig = {
 - `GOOGLE_BUILDABLE=apps/webapp` - Tells Firebase where to build
 - `NEXT_PUBLIC_API_BASE_URL` - Backend API endpoint
 - `NEXT_PUBLIC_ENV` - Environment identifier
+- `NEXT_PUBLIC_SITE_URL` - Canonical site URL for metadata / Open Graph
+- `NEXT_PUBLIC_SUPPORT_EMAIL` - Support email on landing and legal pages
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` - Optional GA4 measurement ID
 
 ## Monitoring Deployments
 

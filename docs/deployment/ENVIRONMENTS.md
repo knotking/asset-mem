@@ -285,6 +285,9 @@ runConfig:
 |----------|-------------|---------|------------|
 | `NEXT_PUBLIC_API_BASE_URL` | http://localhost:8080 | staging proxy URL | prod proxy URL |
 | `NEXT_PUBLIC_ENV` | development | staging | prod |
+| `NEXT_PUBLIC_SITE_URL` | (optional local) | staging App Hosting URL | `https://homegeek.ai` |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | (optional) | `support@homegeek.ai` | `support@homegeek.ai` |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | (optional) | optional | add before PH — see [PH launch §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web) |
 | `GOOGLE_BUILDABLE` | apps/webapp | apps/webapp | apps/webapp |
 
 ### Mobile Application
@@ -459,7 +462,8 @@ RATE_LIMITS = {
 
 For launch sign-off (Product Hunt and production GA), use the dedicated checklists:
 
-- [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md) — listing assets, UTM, launch-day ops, smoke tests
+- [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md) — phase engineering status and operational TODOs after each phase
+- [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md) — listing assets, UTM, **§2.1 prod web env vars**, launch-day ops, smoke tests
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md) — security, compliance, ops, CI (full GA)
 
 The abbreviated lists below remain for quick reference during routine deploys.
@@ -490,6 +494,7 @@ The abbreviated lists below remain for quick reference during routine deploys.
 
 ## Related Documentation
 
+- [Launch Plan Progress](./LAUNCH_PLAN_PROGRESS.md)
 - [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Web Application Deployment](./WEBAPP_DEPLOYMENT.md)

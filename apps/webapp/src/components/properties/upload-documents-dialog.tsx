@@ -23,6 +23,7 @@ import { useDropzone } from "react-dropzone";
 import { CameraCaptureDialog } from "@/components/chat/camera-capture-dialog";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { trackFirstPropertyCreated } from "@/lib/analytics";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import {
@@ -220,8 +221,9 @@ export function UploadDocumentsDialog({
         propertyData
       );
       currentPropertyId = propRef.id;
+      trackFirstPropertyCreated();
 
-      // Eagerly create the draft session for the new propeπrty
+      // Eagerly create the draft session for the new property
       createPropertyDraftSession(user.uid, currentPropertyId).catch(() => {});
 
       router.replace(`/home/properties/${currentPropertyId}/details`);
