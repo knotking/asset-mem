@@ -55,7 +55,9 @@ def shopping_agent_instructions() -> str:
                   "image_url": "[product image URL]",
                   "vendor": "[vendor/manufacturer name]",
                   "reviews": "[number of reviews]",
-                  "store_url": "[store/product URL]"
+                  "store_url": "[store/product URL]",
+                  "item_price": "[price from SerpAPI, e.g. $12.99]",
+                  "price": "[same as item_price when present]"
                 }
               ],
               "description": "[description of the products]"
@@ -65,18 +67,19 @@ def shopping_agent_instructions() -> str:
         ```
         
         **Required Fields:**
-        Each product MUST include these 5 fields:
+        Each product MUST include these fields (use null when not available from the tool):
         1. `item_name`: The name/title of the product
         2. `image_url`: The URL to the product image
         3. `vendor`: The vendor/manufacturer/store name
         4. `reviews`: The number of reviews (if available)
         5. `store_url`: The URL to the product/store page
+        6. `item_price` / `price`: SerpAPI price when returned (omit or null if missing; never invent)
         
         **Important:**
         * Always call the `product_recommendations` tool.
         * Follow the specific instructions provided by the calling agent.
         * Extract and structure product information properly.
-        * Ensure ALL 5 required fields are included for each product (use null if a field is not available).
+        * Pass through tool output for prices; do not guess or fabricate amounts.
         * Return a properly formatted nested JSON structure.
         * Focus on relevant, high-quality products that match the needs.
     """

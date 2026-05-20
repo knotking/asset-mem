@@ -214,6 +214,17 @@ function resolveProductPageUrl(
   return undefined;
 }
 
+/** e.g. ``746`` → ``746 reviews``; pass through if label already present. */
+function formatReviewCountLabel(
+  reviews: string | number | null | undefined
+): string | null {
+  if (reviews == null || reviews === '') return null;
+  const text = String(reviews).trim();
+  if (!text) return null;
+  if (/review/i.test(text)) return text;
+  return `${text} reviews`;
+}
+
 const hasStructuredDataKeys = (parsed: any): boolean => {
   if (!parsed || typeof parsed !== 'object') return false;
   // Check for nested structure (analysis.*)
@@ -349,7 +360,9 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
               </>
             )}
             {product.reviews && (
-              <Text className="text-xs text-muted-foreground">({product.reviews})</Text>
+              <Text className="text-xs text-muted-foreground">
+                {formatReviewCountLabel(product.reviews)}
+              </Text>
             )}
           </View>
         )}

@@ -17,6 +17,25 @@ import logging
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+
+def _serp_shopping_product_link(result: dict) -> str:
+    """SerpAPI Google Shopping uses ``product_link``; older payloads may use ``link``."""
+    return str(result.get("product_link") or result.get("link") or "").strip()
+
+
+def _serp_shopping_price_display(result: dict) -> Optional[str]:
+    """Formatted price string from SerpAPI (e.g. ``$12.99``), or None when absent."""
+    raw = result.get("price")
+    if raw is not None and str(raw).strip():
+        text = str(raw).strip()
+        if text.lower() != "price not available":
+            return text
+    extracted = result.get("extracted_price")
+    if isinstance(extracted, (int, float)):
+        return f"${extracted:.2f}"
+    return None
+
+
 def product_recommendations(
     query: str,
     category: str = "DIY",
@@ -115,12 +134,12 @@ def product_recommendations(
             for result in products[:max_results]:
                 try:
                     title = result.get("title", "Unknown Product")
-                    link = result.get("link", "")
+                    link = _serp_shopping_product_link(result)
                     source = result.get("source", "Unknown Store")
                     reviews = result.get("reviews", "")
                     image_url = result.get("thumbnail", "")
-                    
-                    # Ensure we have all required fields
+                    price_display = _serp_shopping_price_display(result)
+
                     product_data = {
                         "item_name": title if title != "Unknown Product" else None,
                         "image_url": image_url if image_url else None,
@@ -128,6 +147,9 @@ def product_recommendations(
                         "reviews": reviews if reviews else None,
                         "store_url": link if link else None,
                     }
+                    if price_display:
+                        product_data["item_price"] = price_display
+                        product_data["price"] = price_display
                     processed.append(product_data)
                 except (KeyError, TypeError) as e:
                     logger.warning(

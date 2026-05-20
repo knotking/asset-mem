@@ -236,6 +236,30 @@ def test_apply_prefetched_diy_artifacts_overrides_model_hallucination() -> None:
     assert dr["recommendedProducts"]["products"][0]["item_name"] == "Real sealant"
 
 
+def test_serp_shopping_products_list_preserves_price() -> None:
+    products_json = json.dumps(
+        {
+            "recommendedProducts": {
+                "DIY": {
+                    "products": [
+                        {
+                            "item_name": "Primer",
+                            "vendor": "Lowe's",
+                            "item_price": "$24.98",
+                            "price": "$24.98",
+                            "store_url": "https://example.com/p",
+                        }
+                    ]
+                }
+            }
+        }
+    )
+    rows = diy_orch._serp_shopping_products_list(products_json)
+    assert len(rows) == 1
+    assert rows[0]["item_price"] == "$24.98"
+    assert rows[0]["price"] == "$24.98"
+
+
 def test_apply_prefetched_diy_artifacts_clears_hallucination_when_fetch_empty() -> None:
     """Empty YouTube / Serp lists must replace model placeholders (not leave invented rows)."""
     dr: dict = {
