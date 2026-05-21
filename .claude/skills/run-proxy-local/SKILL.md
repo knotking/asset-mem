@@ -52,6 +52,7 @@ From `gcp/proxy/api/core/config.py`:
 - `TELEGRAM_WEBHOOK_SECRET` — only if you're testing the bot
 - `USER_UPLOAD_TOPIC`, `USER_UPLOAD_RESULT_SUBSCRIPTION`, `GCS_BUCKET` — for upload + RAG flow
 - `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (optional) — global monthly cap
+- `PROXY_CORS_ORIGINS` (optional) — comma-separated browser origins; unset uses defaults in `core/cors.py` (`https://asset-mem.com`, `https://homegeek.ai`, App Hosting URLs, `http://localhost:9002`)
 
 You also need ADC: `gcloud auth application-default login` (Firestore + Vertex calls fail without it).
 
@@ -66,10 +67,10 @@ curl -X POST http://127.0.0.1:8080/token-quota-status \
   -H 'Content-Type: application/json' \
   -d '{"user_id":"<firebase-uid>"}'
 
-# Real agent stream — secret prefix required
-SECRET=$FIREBASE_WEBHOOK_SECRET
-curl -N -X POST "http://127.0.0.1:8080/$SECRET/firebase-agent-stream" \
+# Agent stream — Bearer token (or DISABLE_FIREBASE_AUTH + body user_id)
+curl -N -X POST "http://127.0.0.1:8080/firebase-agent-stream" \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TEST_FIREBASE_ID_TOKEN" \
   -d '{"user_id":"<uid>","session_id":"<sid>","user_query":"hello"}'
 ```
 

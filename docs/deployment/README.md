@@ -75,19 +75,22 @@ HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with
 The project supports three deployment environments:
 
 ### Development
+
 - **Purpose**: Local development and testing
 - **GCP Project**: `homegeekdemo`
 - **Webapp URL**: Local (http://localhost:3000)
 - **Proxy URL**: `homecare-agent-proxy-dev-*.run.app`
 
 ### Staging
+
 - **Purpose**: Pre-production testing and validation
 - **GCP Project**: `homegeekdemo`
-- **Webapp URL**: `https://staging--homegeekdemo.us-central1.hosted.app`
+- **Webapp URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
 - **Proxy URL**: `homecare-agent-proxy-staging-*.run.app`
 - **Auto-Deploy**: Triggered on push to `main` branch
 
 ### Production
+
 - **Purpose**: Live production environment
 - **GCP Project**: `homegeekdemo` (prod resources) / `homegeek-prod`
 - **Webapp URL**: `https://prod--homegeek-prod.us-central1.hosted.app`
@@ -97,20 +100,26 @@ The project supports three deployment environments:
 ## Deployment Methods
 
 ### 1. Automated CI/CD (Recommended)
+
 All components have GitHub Actions workflows for automated deployment:
+
 - Push to `main` → Auto-deploy to staging
 - Manual workflow dispatch → Deploy to production
 - See [CI/CD Documentation](./CICD.md) for details
 
 ### 2. Local Deployment Scripts
+
 Each component has deployment scripts for local execution:
+
 - `apps/webapp/deploy-apphosting.sh` - Web app deployment
 - `apps/mapp/deploy.sh` - Mobile app deployment
 - `gcp/agents/homecare/deployment/deploy.py` - Agent deployment
 - See individual component docs for usage
 
 ### 3. Manual CLI Commands
+
 Direct deployment using GCP CLI tools:
+
 - `gcloud` for Cloud Run and Cloud Functions
 - `firebase` for App Hosting
 - `eas` for mobile app builds
@@ -119,6 +128,7 @@ Direct deployment using GCP CLI tools:
 ## Prerequisites
 
 ### Required Tools
+
 - **Node.js** 20+ (for webapp and mobile app)
 - **Python** 3.9+ (for agents and workers)
 - **Google Cloud SDK** (gcloud CLI)
@@ -128,7 +138,9 @@ Direct deployment using GCP CLI tools:
 - **UV** (for Python dependency management)
 
 ### GCP Setup
+
 1. **Enable Required APIs**:
+
    ```bash
    gcloud services enable \
      artifactregistry.googleapis.com \
@@ -151,6 +163,7 @@ Direct deployment using GCP CLI tools:
    - See [CI/CD Documentation](./CICD.md)
 
 ### Authentication
+
 ```bash
 # GCP Authentication
 gcloud auth login
@@ -187,6 +200,7 @@ eas login
 ### Component-Specific Workflows
 
 #### Web Application
+
 ```bash
 # Local deployment
 cd apps/webapp
@@ -198,6 +212,7 @@ cd apps/webapp
 ```
 
 #### Mobile Application
+
 ```bash
 # Build for app stores
 cd apps/mapp
@@ -208,6 +223,7 @@ cd apps/mapp
 ```
 
 #### AI Agent
+
 ```bash
 # Deploy agent engine
 cd gcp/agents/homecare
@@ -215,6 +231,7 @@ uv run python deployment/deploy.py update staging
 ```
 
 #### Proxy API
+
 ```bash
 # Deploy via gcloud
 cd gcp/proxy/api
@@ -229,16 +246,19 @@ gcloud run deploy homecare-agent-proxy-staging \
 ### Monitoring Deployments
 
 **Firebase App Hosting**:
+
 ```bash
 firebase apphosting:rollouts:list staging --project homegeekdemo
 ```
 
 **Cloud Run**:
+
 ```bash
 gcloud run services describe homecare-agent-proxy-staging --region us-central1
 ```
 
 **Cloud Functions**:
+
 ```bash
 gcloud functions describe FUNCTION_NAME --region us-central1
 ```
@@ -246,6 +266,7 @@ gcloud functions describe FUNCTION_NAME --region us-central1
 ### Rollback Procedures
 
 **Web Application**:
+
 ```bash
 # List rollouts
 firebase apphosting:rollouts:list staging --project homegeekdemo
@@ -257,6 +278,7 @@ firebase apphosting:rollouts:create staging \
 ```
 
 **Cloud Run Services**:
+
 ```bash
 # List revisions
 gcloud run revisions list --service homecare-agent-proxy-staging
@@ -352,4 +374,3 @@ gcloud run services update-traffic homecare-agent-proxy-staging \
 - [Expo EAS Documentation](https://docs.expo.dev/eas/)
 - [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
-

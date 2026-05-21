@@ -24,7 +24,7 @@ env:
       - RUNTIME
   # Staging canonical URL for OG metadata (adjust if backend URL differs)
   - variable: NEXT_PUBLIC_SITE_URL
-    value: https://staging--homegeekdemo.us-central1.hosted.app
+    value: https://staging--homegeek-staging.us-central1.hosted.app
     availability:
       - BUILD
       - RUNTIME

@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 
+from core.cors import parse_cors_origins
+
 load_dotenv()
 
 
@@ -21,6 +23,8 @@ class Settings:
     DISABLE_FIREBASE_AUTH = _env_bool("DISABLE_FIREBASE_AUTH", default=False)
     # Mount user routes under /{FIREBASE_WEBHOOK_SECRET}/ as well as / (migration).
     ENABLE_LEGACY_SECRET_PREFIX = _env_bool("ENABLE_LEGACY_SECRET_PREFIX", default=False)
+    # Comma-separated browser origins; empty/unset → built-in allowlist (includes asset-mem.com).
+    CORS_ALLOW_ORIGINS: list[str] = parse_cors_origins()
 
 
 settings = Settings()

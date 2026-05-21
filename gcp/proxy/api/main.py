@@ -48,12 +48,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+logger.info("CORS allow_origins: %s", settings.CORS_ALLOW_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to your frontend URL in production
+    allow_origins=settings.CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 app.add_middleware(FirebaseAuthLoggingMiddleware)
 app.add_middleware(CorrelationIdMiddleware)

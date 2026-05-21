@@ -5,6 +5,7 @@ This guide covers the infrastructure setup, configuration, and management for Ho
 ## Overview
 
 HomeApp infrastructure is built on Google Cloud Platform (GCP) with:
+
 - Firebase App Hosting for web application
 - Cloud Run for API services
 - Cloud Functions for async processing
@@ -221,7 +222,7 @@ gsutil lifecycle set lifecycle.json gs://homegeek-user-data
 cat > cors.json << EOF
 [
   {
-    "origin": ["https://staging--homegeekdemo.us-central1.hosted.app", "https://prod--homegeek-prod.us-central1.hosted.app"],
+    "origin": ["https://staging--homegeek-staging.us-central1.hosted.app", "https://prod--homegeek-prod.us-central1.hosted.app"],
     "method": ["GET", "PUT", "POST"],
     "responseHeader": ["Content-Type"],
     "maxAgeSeconds": 3600
@@ -385,6 +386,7 @@ terraform destroy
 ### Managed Resources
 
 Terraform can manage:
+
 - Cloud Run services
 - Cloud Functions
 - Pub/Sub topics and subscriptions
@@ -427,6 +429,7 @@ gcloud alpha monitoring policies create \
 ### Dashboards
 
 Create custom dashboards in Cloud Console:
+
 1. Navigate to Monitoring → Dashboards
 2. Create dashboard
 3. Add charts for:
@@ -590,22 +593,26 @@ gsutil ls -a gs://homegeek-user-data/file.pdf
 ### Regular Tasks
 
 **Daily**:
+
 - Monitor error rates
 - Check deployment status
 - Review critical alerts
 
 **Weekly**:
+
 - Review logs for issues
 - Check resource utilization
 - Update dependencies
 
 **Monthly**:
+
 - Review IAM permissions
 - Rotate secrets
 - Review costs
 - Update documentation
 
 **Quarterly**:
+
 - Security audit
 - Performance review
 - Disaster recovery test
@@ -633,6 +640,7 @@ firebase deploy --only firestore:rules --project PROJECT_ID
 ### Common Issues
 
 #### Quota Exceeded
+
 ```bash
 # Check quotas
 gcloud compute project-info describe --project=PROJECT_ID
@@ -641,6 +649,7 @@ gcloud compute project-info describe --project=PROJECT_ID
 ```
 
 #### Permission Denied
+
 ```bash
 # Check service account permissions
 gcloud projects get-iam-policy PROJECT_ID \
@@ -654,6 +663,7 @@ gcloud projects add-iam-policy-binding PROJECT_ID \
 ```
 
 #### Resource Not Found
+
 ```bash
 # Verify resource exists
 gcloud run services list
@@ -672,4 +682,3 @@ gcloud pubsub topics list
 - [Proxy Deployment](./PROXY_DEPLOYMENT.md)
 - [CI/CD Pipeline Documentation](./CICD.md)
 - [Environment Configuration](./ENVIRONMENTS.md)
-

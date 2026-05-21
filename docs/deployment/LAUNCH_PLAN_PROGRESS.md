@@ -119,7 +119,7 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 | Firebase ID token on all proxy routes | `[x]` | `gcp/proxy/api/core/firebase_auth.py`, `firebase_auth_middleware.py` |
 | Client `proxyFetchWithAuth` (web + mapp) | `[x]` | `apps/common/src/lib/correlation-id.ts`, `proxy-auth.ts`, apphosting base URL without secret |
 | Dual-mode migration / secret rotation | `[ ]` | [PRODUCTION_LAUNCH_CHECKLIST §1](./PRODUCTION_LAUNCH_CHECKLIST.md#1-security-critical--high) |
-| CORS allowlist | `[ ]` | `main.py` |
+| CORS allowlist | `[x]` | `core/cors.py`, `PROXY_CORS_ORIGINS` env (defaults include `https://asset-mem.com`) |
 | Per-UID rate limiting | `[ ]` | |
 | Readiness health (503 if engine down) | `[ ]` | |
 | Proxy `initialize_observability()` | `[ ]` | |

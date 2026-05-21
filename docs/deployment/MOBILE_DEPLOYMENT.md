@@ -5,6 +5,7 @@ This guide covers deploying the React Native mobile application using Expo Appli
 ## Overview
 
 The mobile application is a React Native/Expo application with:
+
 - Cross-platform support (iOS and Android)
 - Over-the-Air (OTA) updates
 - Native modules integration
@@ -18,6 +19,7 @@ The mobile application is a React Native/Expo application with:
 ## Environments
 
 ### Development
+
 - **Purpose**: Local development and testing
 - **Channel**: `development`
 - **Bundle ID (iOS)**: `com.homegeekai.dev`
@@ -25,14 +27,16 @@ The mobile application is a React Native/Expo application with:
 - **Build Type**: Development client with simulator support
 
 ### Staging
+
 - **Purpose**: Internal testing and QA
 - **Channel**: `staging`
 - **Bundle ID (iOS)**: `com.homegeekai.staging`
 - **Package (Android)**: `com.homegeekai.staging`
 - **Build Type**: Internal distribution
-- **Webapp URL**: https://staging--homegeekdemo.us-central1.hosted.app
+- **Webapp URL**: https://staging--homegeek-staging.us-central1.hosted.app
 
 ### Production
+
 - **Purpose**: App Store/Play Store releases
 - **Channel**: `prod`
 - **Bundle ID (iOS)**: `com.homegeekai.prod`
@@ -43,6 +47,7 @@ The mobile application is a React Native/Expo application with:
 ## Prerequisites
 
 ### Required Tools
+
 ```bash
 # Install Node.js 20+
 # Download from https://nodejs.org/
@@ -56,6 +61,7 @@ node --version
 ```
 
 ### Authentication
+
 ```bash
 # Login to Expo
 eas login
@@ -65,6 +71,7 @@ eas whoami
 ```
 
 ### Required Accounts
+
 - **Expo Account**: For EAS builds and updates
 - **Apple Developer Account**: For iOS builds and App Store submission
 - **Google Play Console Account**: For Android builds and Play Store submission
@@ -72,6 +79,7 @@ eas whoami
 ### Platform-Specific Setup
 
 #### iOS Setup
+
 1. **Apple Developer Account**
    - Enroll in Apple Developer Program ($99/year)
    - Create App ID in Apple Developer Portal
@@ -83,6 +91,7 @@ eas whoami
    - Set up TestFlight for beta testing
 
 #### Android Setup
+
 1. **Google Play Console**
    - Create developer account ($25 one-time)
    - Create app in Play Console
@@ -112,7 +121,7 @@ Location: `apps/mapp/eas.json`
       "env": {
         "APP_ENV": "dev",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-dev-*.run.app",
-        "WEB_APP_URL": "https://staging--homegeekdemo.us-central1.hosted.app"
+        "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
       }
     },
     "staging": {
@@ -121,7 +130,7 @@ Location: `apps/mapp/eas.json`
       "env": {
         "APP_ENV": "staging",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-*.run.app",
-        "WEB_APP_URL": "https://staging--homegeekdemo.us-central1.hosted.app"
+        "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
       }
     },
     "prod": {
@@ -157,17 +166,17 @@ Dynamic configuration based on environment:
 
 ```javascript
 export default ({ config }) => {
-  const env = process.env.APP_ENV || 'dev';
-  
+  const env = process.env.APP_ENV || "dev";
+
   return {
     ...config,
-    name: env === 'prod' ? 'HomeGeek AI' : `HomeGeek AI (${env})`,
-    slug: process.env.APP_SLUG || 'homegeekai',
+    name: env === "prod" ? "HomeGeek AI" : `HomeGeek AI (${env})`,
+    slug: process.env.APP_SLUG || "homegeekai",
     ios: {
-      bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.homegeekai.dev',
+      bundleIdentifier: process.env.IOS_BUNDLE_ID || "com.homegeekai.dev",
     },
     android: {
-      package: process.env.ANDROID_PACKAGE || 'com.homegeekai.dev',
+      package: process.env.ANDROID_PACKAGE || "com.homegeekai.dev",
     },
     extra: {
       proxyBaseUrl: process.env.PROXY_BASE_URL,
@@ -187,6 +196,7 @@ export default ({ config }) => {
 **Script Location**: `apps/mapp/deploy.sh`
 
 #### Build for App Stores
+
 ```bash
 cd apps/mapp
 
@@ -204,6 +214,7 @@ cd apps/mapp
 ```
 
 #### Publish OTA Update
+
 ```bash
 # Update staging
 ./deploy.sh update --channel staging --message "Bug fixes and improvements"
@@ -213,6 +224,7 @@ cd apps/mapp
 ```
 
 #### Submit to App Stores
+
 ```bash
 # Submit to both stores
 ./deploy.sh submit --platform all
@@ -227,10 +239,12 @@ cd apps/mapp
 ### Method 2: GitHub Actions
 
 **Workflow Files**:
+
 - `.github/workflows/deploy-mapp-build.yaml` - Build native apps
 - `.github/workflows/deploy-mapp-update.yaml` - Publish OTA updates
 
 #### Trigger Build
+
 1. Go to GitHub → Actions
 2. Select "Deploy Mapp - Build" workflow
 3. Click "Run workflow"
@@ -241,6 +255,7 @@ cd apps/mapp
 5. Click "Run workflow"
 
 #### Trigger OTA Update
+
 1. Go to GitHub → Actions
 2. Select "Deploy Mapp - Update" workflow
 3. Click "Run workflow"
@@ -252,6 +267,7 @@ cd apps/mapp
 ### Method 3: Manual EAS Commands
 
 #### Build Commands
+
 ```bash
 cd apps/mapp
 
@@ -269,6 +285,7 @@ eas build --platform android --profile prod
 ```
 
 #### Update Commands
+
 ```bash
 # Publish OTA update
 eas update --channel staging --message "Bug fixes"
@@ -279,6 +296,7 @@ eas update --branch staging --message "Testing new feature"
 ```
 
 #### Submit Commands
+
 ```bash
 # Submit to App Store
 eas submit --platform ios --profile prod --latest
@@ -292,18 +310,21 @@ eas submit --platform android --profile prod --latest
 ### Build Types
 
 #### 1. Development Build
+
 - **Purpose**: Local development with Expo Dev Client
 - **Features**: Fast refresh, debugging, development tools
 - **Distribution**: Internal only
 - **Build Time**: ~15-20 minutes
 
 #### 2. Preview Build
+
 - **Purpose**: Internal testing and QA
 - **Features**: Production-like build without store submission
 - **Distribution**: Internal (TestFlight, Internal Testing)
 - **Build Time**: ~20-30 minutes
 
 #### 3. Production Build
+
 - **Purpose**: App Store/Play Store release
 - **Features**: Optimized, signed, ready for distribution
 - **Distribution**: Public stores
@@ -354,6 +375,7 @@ eas build:cancel BUILD_ID
 ### What are OTA Updates?
 
 OTA updates allow you to push JavaScript/asset changes without rebuilding the native app:
+
 - **Fast**: Updates deploy in seconds
 - **No Review**: Bypass app store review process
 - **Instant**: Users get updates immediately
@@ -362,6 +384,7 @@ OTA updates allow you to push JavaScript/asset changes without rebuilding the na
 ### When to Use OTA Updates
 
 **Use OTA for**:
+
 - Bug fixes in JavaScript code
 - UI/UX improvements
 - Content updates
@@ -369,6 +392,7 @@ OTA updates allow you to push JavaScript/asset changes without rebuilding the na
 - Non-native feature additions
 
 **Rebuild Native App for**:
+
 - Native dependency updates
 - Expo SDK version changes
 - Native module additions
@@ -416,6 +440,7 @@ eas update:rollback --channel prod
 ### iOS App Store
 
 #### Prerequisites
+
 1. App created in App Store Connect
 2. App metadata configured
 3. Screenshots prepared
@@ -424,6 +449,7 @@ eas update:rollback --channel prod
 #### Submission Process
 
 **Via EAS CLI**:
+
 ```bash
 cd apps/mapp
 
@@ -435,17 +461,20 @@ eas submit --platform ios --profile prod --id BUILD_ID
 ```
 
 **Via Script**:
+
 ```bash
 ./deploy.sh submit --platform ios
 ```
 
 **Manual Process**:
+
 1. Build app with production profile
 2. Download IPA from EAS
 3. Upload to App Store Connect via Transporter
 4. Submit for review in App Store Connect
 
 #### TestFlight Distribution
+
 ```bash
 # Build automatically uploads to TestFlight
 eas build --platform ios --profile prod
@@ -457,6 +486,7 @@ eas build --platform ios --profile prod
 ### Android Play Store
 
 #### Prerequisites
+
 1. App created in Play Console
 2. App metadata configured
 3. Screenshots prepared
@@ -466,6 +496,7 @@ eas build --platform ios --profile prod
 #### Submission Process
 
 **Via EAS CLI**:
+
 ```bash
 cd apps/mapp
 
@@ -477,17 +508,20 @@ eas submit --platform android --profile prod --latest --track internal
 ```
 
 **Via Script**:
+
 ```bash
 ./deploy.sh submit --platform android
 ```
 
 **Manual Process**:
+
 1. Build app with production profile
 2. Download AAB from EAS
 3. Upload to Play Console
 4. Submit for review
 
 #### Testing Tracks
+
 - **Internal**: Quick testing (up to 100 testers)
 - **Closed**: Closed beta testing
 - **Open**: Open beta testing
@@ -539,12 +573,14 @@ EAS can auto-increment build numbers:
 ### Build Monitoring
 
 **EAS Dashboard**:
+
 - View all builds: https://expo.dev/accounts/[account]/projects/homegeek-ai/builds
 - Monitor build status
 - Download build artifacts
 - View build logs
 
 **CLI Monitoring**:
+
 ```bash
 # List builds
 eas build:list --limit 10
@@ -556,11 +592,13 @@ eas build:view BUILD_ID --wait
 ### Update Monitoring
 
 **EAS Dashboard**:
+
 - View updates: https://expo.dev/accounts/[account]/projects/homegeek-ai/updates
 - Monitor update adoption
 - View update manifests
 
 **CLI Monitoring**:
+
 ```bash
 # List updates
 eas update:list --channel prod
@@ -572,6 +610,7 @@ eas update:view UPDATE_ID
 ### Runtime Monitoring
 
 Integrate analytics and error tracking:
+
 - **Sentry**: Error tracking and performance monitoring
 - **Firebase Analytics**: User behavior and events
 - **Custom logging**: Application-specific metrics
@@ -583,6 +622,7 @@ Integrate analytics and error tracking:
 #### Common Issues
 
 **1. Dependency Resolution Errors**
+
 ```bash
 # Clear cache and reinstall
 cd apps/mapp
@@ -594,6 +634,7 @@ npx expo start --clear
 ```
 
 **2. Native Module Errors**
+
 ```bash
 # Ensure all native dependencies are in dependencies, not devDependencies
 # Rebuild with clean cache
@@ -601,6 +642,7 @@ eas build --platform ios --profile prod --clear-cache
 ```
 
 **3. Signing Errors (iOS)**
+
 ```bash
 # Clear credentials and regenerate
 eas credentials --platform ios
@@ -610,6 +652,7 @@ eas credentials --platform ios
 ```
 
 **4. Keystore Errors (Android)**
+
 ```bash
 # Clear credentials and regenerate
 eas credentials --platform android
@@ -618,12 +661,14 @@ eas credentials --platform android
 ### OTA Update Issues
 
 **Updates Not Applying**:
+
 1. Check update channel matches build channel
 2. Verify app is connected to internet
 3. Force close and reopen app
 4. Check update compatibility
 
 **Rollback Update**:
+
 ```bash
 # Rollback to previous update
 eas update:rollback --channel prod
@@ -635,11 +680,13 @@ eas update --channel prod --message "Rollback to v1.2.2"
 ### Submission Issues
 
 **iOS Rejection**:
+
 - Review rejection reasons in App Store Connect
 - Address issues mentioned
 - Resubmit with fixes
 
 **Android Rejection**:
+
 - Review rejection reasons in Play Console
 - Fix issues
 - Upload new build
@@ -647,30 +694,35 @@ eas update --channel prod --message "Rollback to v1.2.2"
 ## Best Practices
 
 ### 1. Testing Strategy
+
 - Test on physical devices, not just simulators
 - Test on multiple device sizes and OS versions
 - Use TestFlight/Internal Testing before production
 - Perform regression testing
 
 ### 2. Version Control
+
 - Tag releases in Git
 - Maintain CHANGELOG
 - Use semantic versioning
 - Document breaking changes
 
 ### 3. Deployment Strategy
+
 - Always deploy to staging first
 - Test thoroughly before production
 - Use OTA updates for quick fixes
 - Rebuild native app for major updates
 
 ### 4. Monitoring
+
 - Monitor build success rates
 - Track update adoption
 - Monitor crash reports
 - Review user feedback
 
 ### 5. Security
+
 - Never commit credentials
 - Use environment variables for secrets
 - Rotate API keys regularly
@@ -681,19 +733,23 @@ eas update --channel prod --message "Rollback to v1.2.2"
 ### GitHub Actions Workflows
 
 **Build Workflow**: `.github/workflows/deploy-mapp-build.yaml`
+
 - Triggered manually
 - Builds native apps
 - Uploads to EAS
 
 **Update Workflow**: `.github/workflows/deploy-mapp-update.yaml`
+
 - Triggered manually or on push
 - Publishes OTA updates
 - Fast deployment
 
 ### Required GitHub Secrets
+
 - `EXPO_TOKEN`: Expo authentication token
 
 ### Required GitHub Variables
+
 - `EXPO_PROJECT_ID`: Expo project ID
 
 ## Local Development
@@ -737,4 +793,3 @@ npx expo start --dev-client
 - [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
 - [Play Store Policies](https://play.google.com/about/developer-content-policy/)
 - [CI/CD Pipeline Documentation](./CICD.md)
-
