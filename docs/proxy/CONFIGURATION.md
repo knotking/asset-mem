@@ -9,16 +9,18 @@ This document describes all configuration options and environment variables for 
 These variables must be set for the API to function:
 
 #### GCP_PROJECT_ID
+
 - **Description:** Google Cloud Project ID
-- **Example:** `homegeekdemo`
+- **Example:** `homegeek-staging`
 - **Required for:** All GCP service integrations
 - **Default:** None (must be set)
 
 ```bash
-GCP_PROJECT_ID=homegeekdemo
+GCP_PROJECT_ID=homegeek-staging
 ```
 
 #### FIREBASE_WEBHOOK_SECRET
+
 - **Description:** Secret token for Firebase/agent endpoints
 - **Example:** `92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376`
 - **Required for:** Agent, document, checkpoint, service broker endpoints
@@ -30,6 +32,7 @@ FIREBASE_WEBHOOK_SECRET=your-secret-here
 ```
 
 **Endpoint Pattern:**
+
 ```
 POST /{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query
 POST /{FIREBASE_WEBHOOK_SECRET}/extract-doc-info
@@ -41,6 +44,7 @@ POST /{FIREBASE_WEBHOOK_SECRET}/analyze-checkpoint
 ### Optional Variables
 
 #### GCP_LOCATION
+
 - **Description:** Google Cloud region for Vertex AI
 - **Example:** `us-central1`
 - **Required for:** Vertex AI Reasoning Engine, Gemini AI
@@ -51,6 +55,7 @@ GCP_LOCATION=us-central1
 ```
 
 **Supported Regions:**
+
 - `us-central1` (Iowa)
 - `us-east1` (South Carolina)
 - `us-west1` (Oregon)
@@ -58,6 +63,7 @@ GCP_LOCATION=us-central1
 - `asia-northeast1` (Tokyo)
 
 #### REASONING_ENGINE_ID
+
 - **Description:** Vertex AI Reasoning Engine resource ID
 - **Example:** `1582298387439419392`
 - **Required for:** Agent query and streaming endpoints
@@ -68,11 +74,13 @@ REASONING_ENGINE_ID=1582298387439419392
 ```
 
 **How to find:**
+
 ```bash
 gcloud ai reasoning-engines list --region=us-central1
 ```
 
 #### TELEGRAM_WEBHOOK_SECRET
+
 - **Description:** Secret token for Telegram webhook endpoint
 - **Example:** `92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376`
 - **Required for:** Telegram bot integration
@@ -84,6 +92,7 @@ TELEGRAM_WEBHOOK_SECRET=your-telegram-secret
 ```
 
 #### TELEGRAM_BOT_TOKEN
+
 - **Description:** Telegram Bot API token from BotFather
 - **Example:** `8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s`
 - **Required for:** Telegram bot functionality
@@ -94,11 +103,13 @@ TELEGRAM_BOT_TOKEN=your-bot-token
 ```
 
 **How to get:**
+
 1. Talk to [@BotFather](https://t.me/BotFather) on Telegram
 2. Use `/newbot` command
 3. Copy the provided token
 
 #### USER_UPLOAD_RESULT_SUBSCRIPTION
+
 - **Description:** Pub/Sub subscription name for checkpoint analysis results
 - **Example:** `user-upload-result-subscription`
 - **Required for:** Checkpoint analysis async processing
@@ -118,7 +129,7 @@ Create a `.env` file in `gcp/proxy/api/`:
 
 ```bash
 # GCP Configuration
-GCP_PROJECT_ID=homegeekdemo
+GCP_PROJECT_ID=homegeek-staging
 GCP_LOCATION=us-central1
 REASONING_ENGINE_ID=1582298387439419392
 
@@ -137,6 +148,7 @@ LOG_LEVEL=DEBUG
 ```
 
 **Usage:**
+
 ```bash
 # Load automatically with python-dotenv
 uvicorn main:app --reload
@@ -147,7 +159,7 @@ uvicorn main:app --reload
 Create `env.yaml` for Cloud Run deployment:
 
 ```yaml
-GCP_PROJECT_ID: "homegeekdemo"
+GCP_PROJECT_ID: "homegeek-staging"
 GCP_LOCATION: "us-central1"
 REASONING_ENGINE_ID: "1582298387439419392"
 FIREBASE_WEBHOOK_SECRET: "your-firebase-secret"
@@ -157,6 +169,7 @@ USER_UPLOAD_RESULT_SUBSCRIPTION: "user-upload-result-subscription"
 ```
 
 **Usage:**
+
 ```bash
 gcloud run deploy homecare-agent-proxy \
   --env-vars-file env.yaml
@@ -202,7 +215,7 @@ webhook_secret = settings.FIREBASE_WEBHOOK_SECRET
 
 ```bash
 # .env.development
-GCP_PROJECT_ID=homegeekdemo-dev
+GCP_PROJECT_ID=homegeek-staging-dev
 GCP_LOCATION=us-central1
 REASONING_ENGINE_ID=dev-reasoning-engine-id
 FIREBASE_WEBHOOK_SECRET=dev-secret
@@ -210,6 +223,7 @@ LOG_LEVEL=DEBUG
 ```
 
 **Load specific environment:**
+
 ```bash
 cp .env.development .env
 uvicorn main:app --reload
@@ -219,7 +233,7 @@ uvicorn main:app --reload
 
 ```bash
 # .env.staging
-GCP_PROJECT_ID=homegeekdemo-staging
+GCP_PROJECT_ID=homegeek-staging-staging
 GCP_LOCATION=us-central1
 REASONING_ENGINE_ID=staging-reasoning-engine-id
 FIREBASE_WEBHOOK_SECRET=staging-secret
@@ -227,6 +241,7 @@ LOG_LEVEL=INFO
 ```
 
 **Deploy to staging:**
+
 ```bash
 gcloud run deploy homecare-agent-proxy-staging \
   --env-vars-file .env.staging
@@ -236,7 +251,7 @@ gcloud run deploy homecare-agent-proxy-staging \
 
 ```bash
 # .env.production
-GCP_PROJECT_ID=homegeekdemo
+GCP_PROJECT_ID=homegeek-staging
 GCP_LOCATION=us-central1
 REASONING_ENGINE_ID=prod-reasoning-engine-id
 FIREBASE_WEBHOOK_SECRET=prod-secret
@@ -244,6 +259,7 @@ LOG_LEVEL=WARNING
 ```
 
 **Deploy to production:**
+
 ```bash
 gcloud run deploy homecare-agent-proxy \
   --env-vars-file .env.production
@@ -256,6 +272,7 @@ gcloud run deploy homecare-agent-proxy \
 ### Using Google Secret Manager (Recommended)
 
 **Create secrets:**
+
 ```bash
 # Create secret
 echo -n "your-secret-value" | \
@@ -269,6 +286,7 @@ gcloud secrets add-iam-policy-binding firebase-webhook-secret \
 ```
 
 **Deploy with secrets:**
+
 ```bash
 gcloud run deploy homecare-agent-proxy \
   --update-secrets=FIREBASE_WEBHOOK_SECRET=firebase-webhook-secret:latest \
@@ -276,6 +294,7 @@ gcloud run deploy homecare-agent-proxy \
 ```
 
 **Advantages:**
+
 - Centralized secret management
 - Automatic rotation support
 - Audit logging
@@ -294,24 +313,24 @@ class Settings:
     def __init__(self):
         self.GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
         self.FIREBASE_WEBHOOK_SECRET = os.environ.get("FIREBASE_WEBHOOK_SECRET")
-        
+
         # Validate required variables
         if not self.GCP_PROJECT_ID:
             raise ValueError("GCP_PROJECT_ID is required")
-    
+
     def validate(self):
         """Validate configuration"""
         errors = []
-        
+
         if not self.GCP_PROJECT_ID:
             errors.append("GCP_PROJECT_ID is required")
-        
+
         if not self.FIREBASE_WEBHOOK_SECRET:
             errors.append("FIREBASE_WEBHOOK_SECRET is required")
-        
+
         if errors:
             raise ValueError(f"Configuration errors: {', '.join(errors)}")
-        
+
         return True
 
 settings = Settings()
@@ -328,9 +347,9 @@ async def lifespan(app: FastAPI):
     logger.info("Validating configuration...")
     settings.validate()
     logger.info("Configuration valid")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down...")
 ```
@@ -483,7 +502,7 @@ uvicorn main:app \
 async def debug_config():
     if os.environ.get("ENVIRONMENT") != "development":
         raise HTTPException(status_code=404)
-    
+
     return {
         "GCP_PROJECT_ID": settings.GCP_PROJECT_ID,
         "GCP_LOCATION": os.environ.get("GCP_LOCATION", "us-central1"),
@@ -496,18 +515,21 @@ async def debug_config():
 ### Common Issues
 
 **1. Variable not loaded**
+
 ```
 Issue: Environment variable not recognized
 Solution: Check .env file exists and is in correct directory
 ```
 
 **2. Secret not found**
+
 ```
 Issue: Secret Manager secret not accessible
 Solution: Verify service account has secretAccessor role
 ```
 
 **3. Wrong environment**
+
 ```
 Issue: Using production secrets in development
 Solution: Use separate .env files per environment
@@ -564,4 +586,3 @@ Before deploying, verify:
 - [Development Guide](./DEVELOPMENT.md)
 - [Architecture](./ARCHITECTURE.md)
 - [API Overview](./API_OVERVIEW.md)
-

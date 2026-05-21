@@ -77,14 +77,14 @@ The project supports three deployment environments:
 ### Development
 
 - **Purpose**: Local development and testing
-- **GCP Project**: `homegeekdemo`
+- **GCP Project**: `homegeek-staging`
 - **Webapp URL**: Local (http://localhost:3000)
 - **Proxy URL**: `homecare-agent-proxy-dev-*.run.app`
 
 ### Staging
 
 - **Purpose**: Pre-production testing and validation
-- **GCP Project**: `homegeekdemo`
+- **GCP Project**: `homegeek-staging`
 - **Webapp URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
 - **Proxy URL**: `homecare-agent-proxy-staging-*.run.app`
 - **Auto-Deploy**: Triggered on push to `main` branch
@@ -92,7 +92,7 @@ The project supports three deployment environments:
 ### Production
 
 - **Purpose**: Live production environment
-- **GCP Project**: `homegeekdemo` (prod resources) / `homegeek-prod`
+- **GCP Project**: `homegeek-staging` (prod resources) / `homegeek-prod`
 - **Webapp URL**: `https://prod--homegeek-prod.us-central1.hosted.app`
 - **Proxy URL**: `homecare-agent-proxy-prod-*.run.app`
 - **Deploy**: Manual trigger via GitHub Actions workflow_dispatch
@@ -248,7 +248,7 @@ gcloud run deploy homecare-agent-proxy-staging \
 **Firebase App Hosting**:
 
 ```bash
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 ```
 
 **Cloud Run**:
@@ -269,11 +269,11 @@ gcloud functions describe FUNCTION_NAME --region us-central1
 
 ```bash
 # List rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # Create new rollout from previous version
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --rollout-id PREVIOUS_ROLLOUT_ID
 ```
 

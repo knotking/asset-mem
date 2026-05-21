@@ -64,7 +64,7 @@ cp .env.example .env
 # Or create new file
 cat > .env << EOF
 # GCP Configuration
-GCP_PROJECT_ID=homegeekdemo
+GCP_PROJECT_ID=homegeek-staging
 GCP_LOCATION=us-central1
 REASONING_ENGINE_ID=your-reasoning-engine-id
 
@@ -91,7 +91,7 @@ EOF
 gcloud auth login
 
 # Set project
-gcloud config set project homegeekdemo
+gcloud config set project homegeek-staging
 
 # Application default credentials (for local API calls)
 gcloud auth application-default login
@@ -130,6 +130,7 @@ uvicorn main:app --host=0.0.0.0 --port=8080 --reload --log-level debug
 ```
 
 **Server will be available at:**
+
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/docs`
 - ReDoc: `http://localhost:8080/redoc`
@@ -385,14 +386,7 @@ Create `.vscode/launch.json`:
       "type": "python",
       "request": "launch",
       "module": "uvicorn",
-      "args": [
-        "main:app",
-        "--reload",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8080"
-      ],
+      "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8080"],
       "jinja": true,
       "justMyCode": false,
       "env": {
@@ -416,11 +410,11 @@ logger.setLevel(logging.DEBUG)
 @router.post("/endpoint")
 async def handler(request_data: Schema):
     logger.debug(f"Received request: {request_data.model_dump_json()}")
-    
+
     result = process_data(request_data)
-    
+
     logger.debug(f"Processing result: {result}")
-    
+
     return result
 ```
 
@@ -575,12 +569,12 @@ repos:
     rev: 23.12.1
     hooks:
       - id: black
-  
+
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
-  
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
@@ -600,15 +594,15 @@ import pstats
 def profile_function():
     profiler = cProfile.Profile()
     profiler.enable()
-    
+
     # Your code here
     result = expensive_operation()
-    
+
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats('cumulative')
     stats.print_stats(10)  # Top 10 functions
-    
+
     return result
 ```
 
@@ -678,18 +672,21 @@ python scripts/migrate_firestore.py
 ### Common Issues
 
 **1. Import errors**
+
 ```
 Error: ModuleNotFoundError: No module named 'core'
 Solution: Ensure you're in the correct directory and PYTHONPATH is set
 ```
 
 **2. Authentication errors**
+
 ```
 Error: Could not automatically determine credentials
 Solution: Run `gcloud auth application-default login`
 ```
 
 **3. Port already in use**
+
 ```
 Error: Address already in use
 Solution: Kill process on port 8080 or use different port
@@ -707,6 +704,7 @@ uvicorn main:app --port 8081
 ```
 
 **4. Environment variables not loaded**
+
 ```
 Error: GCP_PROJECT_ID is required
 Solution: Check .env file exists and python-dotenv is installed
@@ -764,4 +762,3 @@ Solution: Check .env file exists and python-dotenv is installed
 - [Configuration](./CONFIGURATION.md)
 - [Deployment](./DEPLOYMENT.md)
 - [Adding Endpoints](./ADDING_ENDPOINTS.md)
-

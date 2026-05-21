@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_ID="homegeekdemo"
+PROJECT_ID="homegeek-staging"
 WEBAPP_DIR="/Users/prakashbaskaran/projects/HomeApp/apps/webapp"
 BACKEND_ID="staging"  # This matches your existing staging backend
 REGION="us-central1"
@@ -76,7 +76,7 @@ else
     echo -e "${BLUE}firebase apphosting:backends:create \\ ${NC}"
     echo -e "${BLUE}  --project ${PROJECT_ID} \\ ${NC}"
     echo -e "${BLUE}  --location ${REGION} \\ ${NC}"
-    echo -e "${BLUE}  --service-account=githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com${NC}"
+    echo -e "${BLUE}  --service-account=githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com${NC}"
     echo -e ""
     echo -e "${YELLOW}Or, if you want to link to your existing GitHub repo:${NC}"
     echo -e "${BLUE}firebase apphosting:backends:create ${BACKEND_ID} \\ ${NC}"

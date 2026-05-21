@@ -8,7 +8,7 @@
 # - Proper permissions on both projects
 #
 # Usage:
-#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeekdemo ./5-migrate-storage.sh [--dry-run]
+#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeek-staging ./5-migrate-storage.sh [--dry-run]
 #   or
 #   ./5-migrate-storage.sh [--dry-run]  # uses defaults
 #
@@ -19,7 +19,7 @@
 set -e
 
 SOURCE_PROJECT="${SOURCE_PROJECT:-goggle-gab}"
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 SOURCE_BUCKET="gs://${SOURCE_PROJECT}.firebasestorage.app"
 TARGET_BUCKET="gs://${TARGET_PROJECT}.firebasestorage.app"
 DRY_RUN=false

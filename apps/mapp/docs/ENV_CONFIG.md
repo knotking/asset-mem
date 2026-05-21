@@ -142,7 +142,7 @@ Each profile defines these environment variables:
 | `EXPO_PROJECT_ID` | Expo project ID                          | `cc06df81-5ad0-4fc3-ad59-6294c95e4614`     |
 | `PROXY_BASE_URL`  | Proxy base URL                           | `https://homecare-agent-proxy-staging-...` |
 | `PROXY_TOKEN`     | Proxy authentication token (placeholder) | `${PROXY_TOKEN}`                           |
-| `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeekdemo...`         |
+| `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeek-staging...`     |
 | `APP_ENV`         | App environment (production only)        | `prod`                                     |
 
 **Important**: `PROXY_TOKEN` uses placeholder syntax `${PROXY_TOKEN}` and must be provided at build time via EAS Secrets or CI/CD secrets.
@@ -493,7 +493,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 ### Production Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-prod-321433914812.us-central1.run.app`
-- **Web App URL**: `https://prod--homegeekdemo.us-central1.hosted.app`
+- **Web App URL**: `https://prod--homegeek-staging.us-central1.hosted.app`
 - **App Slug**: `homegeekai-prod`
 - **Bundle ID**: `com.homegeekai.prod`
 

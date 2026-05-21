@@ -28,7 +28,7 @@ Firebase App Hosting provides full Next.js support including:
 
 Deploy directly from the Firebase Console:
 
-1. Go to [Firebase Console - App Hosting](https://console.firebase.google.com/project/homegeekdemo/apphosting)
+1. Go to [Firebase Console - App Hosting](https://console.firebase.google.com/project/homegeek-staging/apphosting)
 2. Click on your backend (`staging` or `prod`)
 3. Click **"Create rollout"** or **"Deploy"** button
 4. Select the branch you want to deploy from
@@ -76,13 +76,13 @@ Deploy directly using Firebase CLI:
 cd apps/webapp
 
 # Set the project
-firebase use homegeekdemo
+firebase use homegeek-staging
 
 # Create a new rollout for staging
-firebase apphosting:rollouts:create staging --project homegeekdemo
+firebase apphosting:rollouts:create staging --project homegeek-staging
 
 # Or for production
-firebase apphosting:rollouts:create prod --project homegeekdemo
+firebase apphosting:rollouts:create prod --project homegeek-staging
 ```
 
 ## Configuration Files
@@ -112,7 +112,7 @@ Minimal configuration for Firestore rules. App Hosting doesn't require hosting c
 
 ## Backend Information
 
-- **Project ID:** homegeekdemo
+- **Project ID:** homegeek-staging
 - **Backend ID:** staging
 - **Region:** us-central1
 - **URL:** https://staging--homegeek-staging.us-central1.hosted.app
@@ -122,13 +122,13 @@ Minimal configuration for Firestore rules. App Hosting doesn't require hosting c
 ### Check Rollout Status
 
 ```bash
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 ```
 
 ### View Backend Details
 
 ```bash
-firebase apphosting:backends:get staging --project homegeekdemo
+firebase apphosting:backends:get staging --project homegeek-staging
 ```
 
 ### Check Logs
@@ -136,7 +136,7 @@ firebase apphosting:backends:get staging --project homegeekdemo
 ```bash
 # Via Google Cloud Console
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=staging" \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --limit 50 \
   --format json
 ```
@@ -149,7 +149,7 @@ If you see "Backend 'staging' not found", you need to create it first:
 
 ```bash
 firebase apphosting:backends:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --location us-central1
 ```
 
@@ -191,11 +191,11 @@ To rollback to a previous version:
 
 ```bash
 # List recent rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # Get specific rollout ID and create new rollout from it
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --rollout-id <PREVIOUS_ROLLOUT_ID>
 ```
 

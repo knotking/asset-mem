@@ -33,7 +33,7 @@ cd apps/webapp
 ./deploy-apphosting.sh
 
 # Manual CLI
-firebase apphosting:rollouts:create staging --project homegeekdemo
+firebase apphosting:rollouts:create staging --project homegeek-staging
 ```
 
 ### Mobile Application
@@ -107,7 +107,7 @@ gcloud logging read "resource.type=datastore_database" --limit 50
 
 ```bash
 # Web app rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # Cloud Run services
 gcloud run services list --region us-central1
@@ -138,11 +138,11 @@ gcloud functions describe pubsub-checkpoint-analysis-staging --region us-central
 
 ```bash
 # List rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # Rollback to previous
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --rollout-id PREVIOUS_ROLLOUT_ID
 ```
 
@@ -252,9 +252,9 @@ gh run view RUN_ID
 
 ### Firebase Console Links
 
-- **App Hosting**: https://console.firebase.google.com/project/homegeekdemo/apphosting
-- **Firestore**: https://console.firebase.google.com/project/homegeekdemo/firestore
-- **Storage**: https://console.firebase.google.com/project/homegeekdemo/storage
+- **App Hosting**: https://console.firebase.google.com/project/homegeek-staging/apphosting
+- **Firestore**: https://console.firebase.google.com/project/homegeek-staging/firestore
+- **Storage**: https://console.firebase.google.com/project/homegeek-staging/storage
 
 ## Common Issues and Quick Fixes
 
@@ -311,14 +311,14 @@ Add to your `.bashrc` or `.zshrc`:
 
 ```bash
 # GCP shortcuts
-alias gcp-staging='gcloud config set project homegeekdemo'
+alias gcp-staging='gcloud config set project homegeek-staging'
 alias gcp-logs='gcloud logging read --limit 50'
 alias gcp-services='gcloud run services list --region us-central1'
 
 # Firebase shortcuts
-alias fb-staging='firebase use homegeekdemo'
-alias fb-deploy='firebase apphosting:rollouts:create staging --project homegeekdemo'
-alias fb-logs='firebase apphosting:rollouts:list staging --project homegeekdemo'
+alias fb-staging='firebase use homegeek-staging'
+alias fb-deploy='firebase apphosting:rollouts:create staging --project homegeek-staging'
+alias fb-logs='firebase apphosting:rollouts:list staging --project homegeek-staging'
 
 # Deployment shortcuts
 alias deploy-webapp='cd ~/repos/HomeApp/apps/webapp && ./deploy-apphosting.sh'

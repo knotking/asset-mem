@@ -62,7 +62,7 @@ You can add multiple custom domains to Firebase App Hosting. For this setup, we'
 ### Adding Root Domain (homegeek.ai)
 
 1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project (e.g., `homegeekdemo`)
+2. Select your project (e.g., `homegeek-staging`)
 3. Navigate to **App Hosting** in the left sidebar
 4. Click on your **production backend** (e.g., `prod`)
 5. Go to the **Custom domains** tab

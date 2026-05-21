@@ -44,7 +44,7 @@ b. Create a Service Account for Cloud Run:
 c. Set Environment Variables:
 
 - Crucially, set these as environment variables in Cloud Run during deployment.
-- GCP_PROJECT_ID: Your Google Cloud project ID (e.g., homegeekdemo).
+- GCP_PROJECT_ID: Your Google Cloud project ID (e.g., homegeek-staging).
 - GCP_REGION: The region of your Reasoning Engine (e.g., us-central1).
 - REASONING_ENGINE_ID: The ID of your Reasoning Engine (e.g., 2361742180369825792).
 - TELEGRAM_BOT_TOKEN: Your bot's API token from BotFather.
@@ -60,7 +60,7 @@ d. Deploy to Cloud Run:
 
   ```
 
-  _Replace placeholders like `homegeekdemo`, `YOUR_TELEGRAM_BOT_TOKEN`, and `YOUR_RANDOM_WEBHOOK_SECRET` with your actual values._
+  _Replace placeholders like `homegeek-staging`, `YOUR_TELEGRAM_BOT_TOKEN`, and `YOUR_RANDOM_WEBHOOK_SECRET` with your actual values._
 
 - After deployment, Cloud Run will provide you with a **Service URL**. It will look something like `https://telegram-agent-proxy-xxxxxxxxxx-uc.a.run.app`.
   e. Set Telegram Webhook:
@@ -89,45 +89,45 @@ curl -F "url=https://g8f6cq7r-8080.inc1.devtunnels.ms/92be3f5be13328fe265af604b0
      "https://api.telegram.org/bot7294451462:AAGegfelJWmMk9tPWW5SHqUcHFpgakJVRVI/setWebhook"
 ```
 
-gcloud config set project homegeekdemo
+gcloud config set project homegeek-staging
 gcloud services enable \
  artifactregistry.googleapis.com \
  cloudbuild.googleapis.com \
  run.googleapis.com
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/run.developer"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/artifactregistry.writer"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/cloudbuild.builds.editor"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/serviceusage.serviceUsageConsumer"
 
-gcloud projects describe homegeekdemo --format="value(projectNumber)"
+gcloud projects describe homegeek-staging --format="value(projectNumber)"
 
 gcloud iam service-accounts add-iam-policy-binding \
  321433914812-compute@developer.gserviceaccount.com \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/iam.serviceAccountUser"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/artifactregistry.repoAdmin"
 
-gcloud projects get-iam-policy homegeekdemo \
+gcloud projects get-iam-policy homegeek-staging \
  --flatten="bindings[].members" \
  --format='table(bindings.role,bindings.members)' \
- --filter="bindings.members:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com"
+ --filter="bindings.members:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:321433914812@cloudbuild.gserviceaccount.com" \
  --role="roles/artifactregistry.repoAdmin"
 
@@ -136,30 +136,30 @@ gcloud artifacts repositories create cloud-run-source-deploy \
  --location=us-central1 \
  --description="Docker repository for Cloud Run source deployments"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/storage.admin"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:321433914812-compute@developer.gserviceaccount.com" \
  --role="roles/storage.objectViewer"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:321433914812-compute@developer.gserviceaccount.com" \
  --role="roles/logging.logWriter"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:321433914812-compute@developer.gserviceaccount.com" \
  --role="roles/artifactregistry.writer"
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:321433914812@cloudbuild.gserviceaccount.com" \
  --role="roles/artifactregistry.writer"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:service-321433914812@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
  --role="roles/aiplatform.user"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
  --member="serviceAccount:service-321433914812@gcp-sa-aiplatform-re.iam.gserviceaccount.com" \
  --role="roles/storage.admin"
 
@@ -189,7 +189,7 @@ $ curl -X POST -H "Content-Type: application/json" -d '{
 python local_test.py
 
 gcloud projects add-iam-policy-binding your-project-id \
- --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+ --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
  --role="roles/pubsub.editor"
 
 uvicorn main:app --host=0.0.0.0 --port=8080 --env-file=../.env --reload
@@ -199,8 +199,8 @@ gcloud run deploy homecare-agent-proxy-staging \
  --region us-central1 \
  --platform managed \
  --allow-unauthenticated \
- --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
- --set-env-vars="GCP_PROJECT_ID=homegeekdemo" \
+ --service-account githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com \
+ --set-env-vars="GCP_PROJECT_ID=homegeek-staging" \
  --set-env-vars="GCP_REGION=us-central1" \
  --set-env-vars="REASONING_ENGINE_ID=1582298387439419392" \
  --set-env-vars="TELEGRAM_BOT_TOKEN=8143678514:AAFPdoMF470JfQ9qmVEJOLSqBe4uaN5yx7s" \

@@ -3,7 +3,7 @@
 ##
 # Verify Firebase project setup and prerequisites
 #
-# This script checks if homegeekdemo project is properly configured
+# This script checks if homegeek-staging project is properly configured
 # before running the migration scripts.
 #
 # Usage:
@@ -12,7 +12,7 @@
 
 set -e
 
-TARGET_PROJECT="homegeekdemo"
+TARGET_PROJECT="homegeek-staging"
 SOURCE_PROJECT="goggle-gab"
 
 echo ""
@@ -121,7 +121,7 @@ else
 fi
 
 echo ""
-echo "4. Checking Firebase Services (homegeekdemo)..."
+echo "4. Checking Firebase Services (homegeek-staging)..."
 echo ""
 
 # Function to check if Firebase service is enabled

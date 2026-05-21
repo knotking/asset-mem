@@ -12,7 +12,7 @@
 # - Firebase Admin SDK access
 #
 # Usage:
-#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeekdemo ./7-update-storage-urls.sh [options]
+#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeek-staging ./7-update-storage-urls.sh [options]
 #   or
 #   ./7-update-storage-urls.sh [options]  # uses defaults
 #
@@ -28,7 +28,7 @@
 set -e
 
 SOURCE_PROJECT="${SOURCE_PROJECT:-goggle-gab}"
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 DRY_RUN=false
 COLLECTION=""
 
@@ -73,7 +73,7 @@ cat > "$SCRIPT_FILE" << 'EOFSCRIPT'
 const admin = require('firebase-admin');
 
 const SOURCE_PROJECT = process.env.SOURCE_PROJECT || 'goggle-gab';
-const TARGET_PROJECT = process.env.TARGET_PROJECT || 'homegeekdemo';
+const TARGET_PROJECT = process.env.TARGET_PROJECT || 'homegeek-staging';
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const COLLECTION = process.env.COLLECTION || '';
 

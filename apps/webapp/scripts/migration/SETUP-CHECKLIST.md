@@ -12,7 +12,7 @@ The migration scripts **cannot** automatically configure Firebase services. You 
 
 Open: [https://console.firebase.google.com/](https://console.firebase.google.com/)
 
-Select project: **homegeekdemo**
+Select project: **homegeek-staging**
 
 ---
 
@@ -52,8 +52,8 @@ Select project: **homegeekdemo**
 2. Scroll to **Authorized domains** section
 3. Add these domains:
    - [ ] `localhost`
-   - [ ] `homegeekdemo.firebaseapp.com` (should be there by default)
-   - [ ] `homegeekdemo.web.app` (should be there by default)
+   - [ ] `homegeek-staging.firebaseapp.com` (should be there by default)
+   - [ ] `homegeek-staging.web.app` (should be there by default)
    - [ ] Add any custom domains you use
 
 **Status:** [ ] Completed
@@ -98,7 +98,7 @@ Select project: **homegeekdemo**
 3. Wait for bucket creation
 
 **Status:** [ ] Completed
-**Bucket:** `homegeekdemo.firebasestorage.app`
+**Bucket:** `homegeek-staging.firebasestorage.app`
 
 ---
 
@@ -113,6 +113,7 @@ Select project: **homegeekdemo**
 ### 5.2 Register New Web App (if needed)
 
 If no web app exists:
+
 1. Click **Add app** button
 2. Click **Web** icon (`</>`)
 3. App nickname: `HomeApp Web`
@@ -130,7 +131,7 @@ If no web app exists:
 
 ### 6.1 Check Your Permissions
 
-Ensure you have these roles on the **homegeekdemo** project:
+Ensure you have these roles on the **homegeek-staging** project:
 
 - [ ] **Firebase Admin** or **Editor** or **Owner**
 - [ ] **Cloud Datastore Import Export Admin** (for Firestore migration)
@@ -142,15 +143,15 @@ If you're missing roles, have a project owner grant them:
 
 ```bash
 # Replace YOUR_EMAIL with your Google account email
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
   --member="user:YOUR_EMAIL@gmail.com" \
   --role="roles/firebase.admin"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
   --member="user:YOUR_EMAIL@gmail.com" \
   --role="roles/datastore.importExportAdmin"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
   --member="user:YOUR_EMAIL@gmail.com" \
   --role="roles/storage.admin"
 ```
@@ -169,6 +170,7 @@ cd scripts/migration
 ```
 
 This script checks:
+
 - ✅ CLI tools installed
 - ✅ Authentication configured
 - ✅ Project access
@@ -200,11 +202,11 @@ Before running migration scripts, verify:
 
 ## Quick Links
 
-- [Firebase Console - homegeekdemo](https://console.firebase.google.com/project/homegeekdemo)
-- [Authentication Setup](https://console.firebase.google.com/project/homegeekdemo/authentication)
-- [Firestore Database](https://console.firebase.google.com/project/homegeekdemo/firestore)
-- [Storage](https://console.firebase.google.com/project/homegeekdemo/storage)
-- [Project Settings](https://console.firebase.google.com/project/homegeekdemo/settings/general)
+- [Firebase Console - homegeek-staging](https://console.firebase.google.com/project/homegeek-staging)
+- [Authentication Setup](https://console.firebase.google.com/project/homegeek-staging/authentication)
+- [Firestore Database](https://console.firebase.google.com/project/homegeek-staging/firestore)
+- [Storage](https://console.firebase.google.com/project/homegeek-staging/storage)
+- [Project Settings](https://console.firebase.google.com/project/homegeek-staging/settings/general)
 
 ---
 

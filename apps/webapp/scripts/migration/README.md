@@ -1,6 +1,6 @@
 # Firebase Migration Scripts
 
-Automated scripts to migrate from `goggle-gab` to `homegeekdemo` Firebase project.
+Automated scripts to migrate from `goggle-gab` to `homegeek-staging` Firebase project.
 
 ## ⚠️ Important: Manual Setup Required First
 
@@ -61,7 +61,7 @@ gcloud projects list
 
 ### Configure Migration (Optional)
 
-The scripts use environment variables with sensible defaults (`goggle-gab` → `homegeekdemo`). To use different projects:
+The scripts use environment variables with sensible defaults (`goggle-gab` → `homegeek-staging`). To use different projects:
 
 **Option 1: Use environment variables directly**
 
@@ -105,23 +105,25 @@ Most scripts support two modes:
 - **`--force`**: Re-imports everything (may create duplicates!)
 
 **When to use resume mode:**
+
 - Migration script failed midway
 - Source data has changed and you want to import only new items
 - Want to verify nothing was missed
 
 **When to use force mode:**
+
 - Need to completely reimport data (accepts duplicates/overwrites)
 - Testing migration process
 - Source data structure changed
 
 ### Script-Specific Behavior
 
-| Script | Re-run Safe? | Resume Flag | Notes |
-|--------|-------------|-------------|-------|
-| 2-import-auth-firebase-cli.sh | ⚠️ Partial | `--resume` | Resume skips existing users |
-| 5-import-firestore.sh | ⚠️ Warning | N/A | Shows warning, requires confirmation |
-| 9-migrate-rag-corpus.sh | ✅ Yes | `--resume` | Resume checks import result files |
-| 10-delete-draft-chats.sh | ✅ Yes | N/A | Idempotent by nature |
+| Script                        | Re-run Safe? | Resume Flag | Notes                                |
+| ----------------------------- | ------------ | ----------- | ------------------------------------ |
+| 2-import-auth-firebase-cli.sh | ⚠️ Partial   | `--resume`  | Resume skips existing users          |
+| 5-import-firestore.sh         | ⚠️ Warning   | N/A         | Shows warning, requires confirmation |
+| 9-migrate-rag-corpus.sh       | ✅ Yes       | `--resume`  | Resume checks import result files    |
+| 10-delete-draft-chats.sh      | ✅ Yes       | N/A         | Idempotent by nature                 |
 
 See individual script sections below for detailed usage.
 
@@ -177,7 +179,7 @@ chmod +x 2-import-auth-firebase-cli.sh
 
 **What it does:**
 
-- Imports users to `homegeekdemo` Authentication using Firebase CLI
+- Imports users to `homegeek-staging` Authentication using Firebase CLI
 - Preserves exact same UIDs
 - **Migrates password hashes** (users can login with existing passwords immediately)
 - OAuth users will work seamlessly
@@ -203,6 +205,7 @@ If the import fails partway through or you need to add new users:
 ```
 
 **Resume mode behavior:**
+
 1. Exports existing users from target project
 2. Compares UIDs with export file
 3. Creates filtered export with only new users
@@ -210,6 +213,7 @@ If the import fails partway through or you need to add new users:
 5. Shows count of skipped vs new users
 
 **Use cases:**
+
 - ✅ Import failed midway → Use `--resume` to continue
 - ✅ New users added to source → Use `--resume` to import only new ones
 - ⚠️ Testing full reimport → Use `--force` (may fail on existing UIDs)
@@ -268,7 +272,7 @@ chmod +x 5-import-firestore.sh
 
 **What it does:**
 
-- Copies export from goggle-gab bucket to homegeekdemo bucket using `gsutil cp`
+- Copies export from goggle-gab bucket to homegeek-staging bucket using `gsutil cp`
 - Imports all Firestore data with exact same IDs
 - Monitors import progress
 - Verifies successful completion
@@ -288,17 +292,20 @@ You can also specify a custom export path:
 ⚠️ **Important:** Firestore import uses document ID matching to overwrite data.
 
 **Overwrite behavior:**
+
 - Documents with matching IDs: **OVERWRITTEN** with import data
 - New documents in import: **ADDED** to database
 - Existing documents not in import: **REMAIN UNCHANGED**
 
 **Safety features:**
+
 1. Script checks if target Firestore has existing data
 2. Shows warning with collection count and overwrite explanation
 3. Requires explicit confirmation before proceeding
 4. Any changes made in target since last import will be **LOST**
 
 **Use cases:**
+
 - ✅ Source data updated → Reimport to sync changes
 - ⚠️ Made changes in target → Backup first or changes will be lost
 - ⚠️ Testing → OK to overwrite, but understand data will reset
@@ -307,7 +314,7 @@ You can also specify a custom export path:
 
 ```bash
 # Backup current target data
-./4-export-firestore.sh  # Run with TARGET_PROJECT=homegeekdemo
+./4-export-firestore.sh  # Run with TARGET_PROJECT=homegeek-staging
 
 # Then reimport source data
 ./5-import-firestore.sh
@@ -329,7 +336,7 @@ chmod +x 6-migrate-storage.sh
 
 **What it does:**
 
-- Copies all files from goggle-gab Storage to homegeekdemo
+- Copies all files from goggle-gab Storage to homegeek-staging
 - Preserves exact file paths and names
 - Excludes Firestore backup folders
 - Uses single-process mode to avoid macOS issues
@@ -364,8 +371,8 @@ chmod +x 7-update-storage-urls.sh
 - Scans all Firestore collections (or specific collection) for storage URLs
 - Replaces old bucket URLs with new ones
 - Handles multiple URL formats:
-  - `gs://goggle-gab.firebasestorage.app` → `gs://homegeekdemo.firebasestorage.app`
-  - `https://firebasestorage.googleapis.com/v0/b/goggle-gab...` → `https://firebasestorage.googleapis.com/v0/b/homegeekdemo...`
+  - `gs://goggle-gab.firebasestorage.app` → `gs://homegeek-staging.firebasestorage.app`
+  - `https://firebasestorage.googleapis.com/v0/b/goggle-gab...` → `https://firebasestorage.googleapis.com/v0/b/homegeek-staging...`
 - Updates nested objects and arrays
 - Recursively processes subcollections (like `users/{userId}/chats`)
 - Shows summary of changed documents
@@ -410,7 +417,7 @@ chmod +x 8-migrate-indexes.sh
 **Alternative:** If you have `firestore.indexes.json` in your codebase, you can deploy directly:
 
 ```bash
-firebase deploy --only firestore:indexes --project homegeekdemo
+firebase deploy --only firestore:indexes --project homegeek-staging
 ```
 
 ---
@@ -434,7 +441,7 @@ firebase deploy --only firestore:indexes --project homegeekdemo
 chmod +x 9-migrate-rag-corpus.sh
 
 # Set the new corpus ID (get from Vertex AI Console)
-export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YOUR_CORPUS_ID"
+export NEW_RAG_CORPUS="projects/homegeek-staging/locations/us-central1/ragCorpora/YOUR_CORPUS_ID"
 
 # Preview what will be imported (recommended first)
 ./9-migrate-rag-corpus.sh --dry-run
@@ -446,7 +453,7 @@ export NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/YO
 **What it does:**
 
 - Uses Python with Vertex AI SDK to query Firestore `users/{userId}/docs` subcollections
-- Verifies each file exists in migrated storage (`gs://homegeekdemo.firebasestorage.app`)
+- Verifies each file exists in migrated storage (`gs://homegeek-staging.firebasestorage.app`)
 - Separates documents and media files (images, audio, video)
 - Batch imports files per user to new RAG corpus using `vertexai.rag.import_files()`
 - Generates new import result NDJSON files in `gs://homegeek-user-data/uploads/{userId}/import-results/`
@@ -467,12 +474,14 @@ The RAG migration script fully supports safe re-runs:
 ```
 
 **Resume mode behavior:**
+
 1. Checks GCS for import result files: `uploads/{userId}/import-results/*-migration*.ndjson`
 2. If migration files exist for a user → **Skip** that user
 3. Only imports users without migration files
 4. Shows count of skipped vs new users
 
 **Use cases:**
+
 - ✅ Migration failed midway → Use `--resume` to continue from where it stopped
 - ✅ New users added to source → Use `--resume` to import only new users
 - ✅ Specific user import failed → Delete that user's import-results files, then `--resume`
@@ -507,7 +516,7 @@ gsutil rm gs://homegeek-user-data/uploads/USER_ID/import-results/*-migration*.nd
 
    ```bash
    # In gcp/agents/homecare/.env
-   USER_UPLOAD_RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/NEW_ID
+   USER_UPLOAD_RAG_CORPUS=projects/homegeek-staging/locations/us-central1/ragCorpora/NEW_ID
 
    # In GitHub Actions secrets
    # In Cloud Function environment variables
@@ -578,7 +587,7 @@ After running all scripts, verify the migration:
 
 ```bash
 # List users in new project
-firebase --project homegeekdemo auth:export users.csv
+firebase --project homegeek-staging auth:export users.csv
 wc -l users.csv  # Should match original user count
 ```
 
@@ -586,11 +595,11 @@ wc -l users.csv  # Should match original user count
 
 ```bash
 # List collections
-gcloud firestore collections list --project=homegeekdemo
+gcloud firestore collections list --project=homegeek-staging
 
 # Compare document counts (example)
 gcloud firestore documents list --collection=users --project=goggle-gab | wc -l
-gcloud firestore documents list --collection=users --project=homegeekdemo | wc -l
+gcloud firestore documents list --collection=users --project=homegeek-staging | wc -l
 ```
 
 ### Check Storage
@@ -598,17 +607,17 @@ gcloud firestore documents list --collection=users --project=homegeekdemo | wc -
 ```bash
 # Compare sizes
 gsutil du -s gs://goggle-gab.firebasestorage.app
-gsutil du -s gs://homegeekdemo.firebasestorage.app
+gsutil du -s gs://homegeek-staging.firebasestorage.app
 
 # List files
-gsutil ls -r gs://homegeekdemo.firebasestorage.app | head -20
+gsutil ls -r gs://homegeek-staging.firebasestorage.app | head -20
 ```
 
 ### Check Vertex AI RAG Corpus
 
 ```bash
 # List files in new RAG corpus
-gcloud ai indexes list --project=homegeekdemo --region=us-central1
+gcloud ai indexes list --project=homegeek-staging --region=us-central1
 
 # Check import results exist
 gsutil ls gs://homegeek-user-data/uploads/*/import-results/*-migration*.ndjson
@@ -617,7 +626,7 @@ gsutil ls gs://homegeek-user-data/uploads/*/import-results/*-migration*.ndjson
 python3 -c "
 from vertexai import rag
 import vertexai
-vertexai.init(project='homegeekdemo', location='us-central1')
+vertexai.init(project='homegeek-staging', location='us-central1')
 files = list(rag.list_files(corpus_name='YOUR_CORPUS_ID'))
 print(f'Total files in corpus: {len(files)}')
 "
@@ -633,7 +642,7 @@ This is expected when running with `--resume` and all users are already in the t
 
 ```bash
 # Check which users exist
-firebase auth:export /tmp/check-users.json --project homegeekdemo
+firebase auth:export /tmp/check-users.json --project homegeek-staging
 cat /tmp/check-users.json | jq '.users | length'
 
 # To reimport (will fail on duplicate UIDs, but adds new users)
@@ -658,7 +667,7 @@ This is by design when target has existing data. To auto-confirm (use carefully)
 
 ```bash
 # Option 1: Delete target data first
-gcloud firestore databases delete --database="(default)" --project=homegeekdemo
+gcloud firestore databases delete --database="(default)" --project=homegeek-staging
 
 # Option 2: Answer 'y' to the prompt
 echo "y" | ./5-import-firestore.sh
@@ -668,18 +677,18 @@ echo "y" | ./5-import-firestore.sh
 
 ```bash
 # 1. Delete authentication users
-firebase auth:export /tmp/users.json --project homegeekdemo
+firebase auth:export /tmp/users.json --project homegeek-staging
 # Manually delete users in Firebase Console (no bulk delete in CLI)
 
 # 2. Delete Firestore data
-gcloud firestore databases delete --database="(default)" --project=homegeekdemo
+gcloud firestore databases delete --database="(default)" --project=homegeek-staging
 # Then recreate database in Console
 
 # 3. Delete Storage files
-gsutil rm -r gs://homegeekdemo.firebasestorage.app/**
+gsutil rm -r gs://homegeek-staging.firebasestorage.app/**
 
 # 4. Delete RAG corpus
-gcloud ai indexes delete YOUR_CORPUS_ID --region=us-central1 --project=homegeekdemo
+gcloud ai indexes delete YOUR_CORPUS_ID --region=us-central1 --project=homegeek-staging
 # Then recreate corpus in Console
 
 # 5. Reset migration state
@@ -704,7 +713,7 @@ gcloud projects add-iam-policy-binding goggle-gab \
   --member="user:your-email@gmail.com" \
   --role="roles/datastore.importExportAdmin"
 
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
   --member="user:your-email@gmail.com" \
   --role="roles/datastore.importExportAdmin"
 ```
@@ -725,10 +734,10 @@ Check operation status manually:
 
 ```bash
 # List operations
-gcloud firestore operations list --project=homegeekdemo
+gcloud firestore operations list --project=homegeek-staging
 
 # Check specific operation
-gcloud firestore operations describe [OPERATION_NAME] --project=homegeekdemo
+gcloud firestore operations describe [OPERATION_NAME] --project=homegeek-staging
 ```
 
 ### Storage Copy Fails
@@ -739,7 +748,7 @@ For large files, increase timeout:
 # Set longer timeout
 gsutil -o "GSUtil:http_socket_timeout=300" -m cp -r \
   gs://goggle-gab.firebasestorage.app/* \
-  gs://homegeekdemo.firebasestorage.app/
+  gs://homegeek-staging.firebasestorage.app/
 ```
 
 ### RAG Corpus Migration Issues
@@ -777,10 +786,10 @@ gcloud auth application-default print-access-token
 
 ```bash
 # Check if you have read access to Firestore
-gcloud projects get-iam-policy homegeekdemo --flatten="bindings[].members" --filter="bindings.members:user:YOUR_EMAIL"
+gcloud projects get-iam-policy homegeek-staging --flatten="bindings[].members" --filter="bindings.members:user:YOUR_EMAIL"
 
 # Grant Firestore access if needed
-gcloud projects add-iam-policy-binding homegeekdemo \
+gcloud projects add-iam-policy-binding homegeek-staging \
   --member="user:YOUR_EMAIL" \
   --role="roles/datastore.viewer"
 ```
@@ -789,10 +798,10 @@ gcloud projects add-iam-policy-binding homegeekdemo \
 
 ```bash
 # List available RAG corpora
-gcloud ai indexes list --project=homegeekdemo --region=us-central1
+gcloud ai indexes list --project=homegeek-staging --region=us-central1
 
 # Verify corpus ID format (should be full resource name)
-# Correct: projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890
+# Correct: projects/homegeek-staging/locations/us-central1/ragCorpora/1234567890
 # Wrong: 1234567890
 ```
 

@@ -97,10 +97,10 @@ The import script will offer this option if `FIREBASE_SCRYPT_KEY` is not set:
 
 Keep both Firebase projects active temporarily:
 
-1. Import users without passwords to `homegeekdemo`
-2. Configure your app to try authentication on `homegeekdemo` first
+1. Import users without passwords to `homegeek-staging`
+2. Configure your app to try authentication on `homegeek-staging` first
 3. On failure, try `goggle-gab`
-4. On `goggle-gab` success, update password in `homegeekdemo` using:
+4. On `goggle-gab` success, update password in `homegeek-staging` using:
    ```javascript
    await updatePassword(auth.currentUser, password);
    ```
@@ -128,7 +128,7 @@ If you prefer to run the Firebase CLI command directly:
 export SIGNER_KEY="<base64_signer_key_from_console>"
 
 firebase auth:import auth-users-export.json \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --hash-algo SCRYPT \
   --hash-key "$SIGNER_KEY" \
   --salt-separator "Bw==" \

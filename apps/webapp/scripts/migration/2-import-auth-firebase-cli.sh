@@ -12,9 +12,9 @@
 #
 # Usage:
 #   export FIREBASE_SCRYPT_KEY="your_base64_signer_key_here"
-#   TARGET_PROJECT=homegeekdemo ./2-import-auth-firebase-cli.sh
+#   TARGET_PROJECT=homegeek-staging ./2-import-auth-firebase-cli.sh
 #   or
-#   ./2-import-auth-firebase-cli.sh  # uses default: homegeekdemo
+#   ./2-import-auth-firebase-cli.sh  # uses default: homegeek-staging
 #
 # Resume mode (skip already-imported users):
 #   ./2-import-auth-firebase-cli.sh --resume
@@ -29,7 +29,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 SOURCE_PROJECT="${SOURCE_PROJECT:-goggle-gab}"
 INPUT_FILE="auth-users-export.json"
 RESUME_MODE=false

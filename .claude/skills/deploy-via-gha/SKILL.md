@@ -5,25 +5,25 @@ description: Map of which GitHub Actions workflow deploys which HomeApp surface 
 
 # Deploying HomeApp via GitHub Actions
 
-The canonical deployment path for **everything** in this repo is the workflows under `.github/workflows/`. They use `gcloud` directly (not Terraform — `gcp/terraform/` exists but is not the live source of truth) and are wired up to Workload Identity Federation with the `githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com` service account.
+The canonical deployment path for **everything** in this repo is the workflows under `.github/workflows/`. They use `gcloud` directly (not Terraform — `gcp/terraform/` exists but is not the live source of truth) and are wired up to Workload Identity Federation with the `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com` service account.
 
 There is also `.github/workflows/README.md` and `.github/GITHUB_VARIABLES_SETUP.md` for environment + variable plumbing.
 
 ## Workflow → surface map
 
-| Surface | Workflow | What it does |
-|---|---|---|
-| Vertex AI Agent Engine (homecare ADK agent) | `deploy-homecare-agent.yaml` | `uv run python deployment/deploy.py create/update` from `gcp/agents/homecare/`. Updates `AGENT_ENGINE_ID` env var on the proxy. |
-| FastAPI proxy → Cloud Run | `deploy-homecare-agent-proxy.yaml` | Stages `gcp/common` into `gcp/proxy/api/common`, then `gcloud run deploy --source=gcp/proxy/api`. Image is built from `gcp/proxy/api/Dockerfile`. |
-| Checkpoint analysis Cloud Function | `deploy-checkpoint-analysis.yaml` | Deploys `gcp/proxy/workers/function/checkpoint_analysis/` (Pub/Sub trigger). |
-| Document analysis Cloud Function | `deploy-document-analysis.yaml` | Deploys `gcp/proxy/workers/function/document_analysis/` (Pub/Sub trigger for async doc extraction). |
-| Checkpoint metrics Cloud Function | `deploy-checkpoint-metrics.yaml` | Deploys `gcp/proxy/workers/function/checkpoint_metrics/`. |
-| User docs RAG Cloud Function | `deploy-pubsub-user-docs.yaml` | Deploys `gcp/proxy/workers/function/user_docs/` (uploads → RAG corpus). |
-| Webapp → Firebase App Hosting | `deploy-webapp-apphosting.yaml` | Builds and ships `apps/webapp` via App Hosting (`apphosting.yaml` / `apphosting.staging.yaml` / `apphosting.prod.yaml`). |
-| Mobile native build | `deploy-mapp-build.yaml` | EAS build of `apps/mapp` (iOS / Android binaries). |
-| Mobile OTA update | `deploy-mapp-update.yaml` | EAS Update — pushes a JS-only update to existing builds. Faster, no app-store roundtrip. |
-| Provision a new GCP env | `create-environment.yaml` | Project, IAM, WIF, buckets, Pub/Sub, RAG corpora, GitHub env vars. |
-| Tear down a GCP env | `destroy-environment.yaml` | Inverse of the above. |
+| Surface                                     | Workflow                           | What it does                                                                                                                                      |
+| ------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vertex AI Agent Engine (homecare ADK agent) | `deploy-homecare-agent.yaml`       | `uv run python deployment/deploy.py create/update` from `gcp/agents/homecare/`. Updates `AGENT_ENGINE_ID` env var on the proxy.                   |
+| FastAPI proxy → Cloud Run                   | `deploy-homecare-agent-proxy.yaml` | Stages `gcp/common` into `gcp/proxy/api/common`, then `gcloud run deploy --source=gcp/proxy/api`. Image is built from `gcp/proxy/api/Dockerfile`. |
+| Checkpoint analysis Cloud Function          | `deploy-checkpoint-analysis.yaml`  | Deploys `gcp/proxy/workers/function/checkpoint_analysis/` (Pub/Sub trigger).                                                                      |
+| Document analysis Cloud Function            | `deploy-document-analysis.yaml`    | Deploys `gcp/proxy/workers/function/document_analysis/` (Pub/Sub trigger for async doc extraction).                                               |
+| Checkpoint metrics Cloud Function           | `deploy-checkpoint-metrics.yaml`   | Deploys `gcp/proxy/workers/function/checkpoint_metrics/`.                                                                                         |
+| User docs RAG Cloud Function                | `deploy-pubsub-user-docs.yaml`     | Deploys `gcp/proxy/workers/function/user_docs/` (uploads → RAG corpus).                                                                           |
+| Webapp → Firebase App Hosting               | `deploy-webapp-apphosting.yaml`    | Builds and ships `apps/webapp` via App Hosting (`apphosting.yaml` / `apphosting.staging.yaml` / `apphosting.prod.yaml`).                          |
+| Mobile native build                         | `deploy-mapp-build.yaml`           | EAS build of `apps/mapp` (iOS / Android binaries).                                                                                                |
+| Mobile OTA update                           | `deploy-mapp-update.yaml`          | EAS Update — pushes a JS-only update to existing builds. Faster, no app-store roundtrip.                                                          |
+| Provision a new GCP env                     | `create-environment.yaml`          | Project, IAM, WIF, buckets, Pub/Sub, RAG corpora, GitHub env vars.                                                                                |
+| Tear down a GCP env                         | `destroy-environment.yaml`         | Inverse of the above.                                                                                                                             |
 
 Each workflow has a companion README in `.github/workflows/README-<workflow>.md` with inputs, secrets, and gotchas.
 
@@ -43,6 +43,7 @@ Use `gh run watch` after to follow logs.
 ## Order of operations for a coordinated release
 
 If a change touches both the agent and the proxy:
+
 1. **Agent first** — `deploy-homecare-agent.yaml`. Note the new `AGENT_ENGINE_ID` from the run logs.
 2. **Update GitHub env var** for the target environment so the proxy picks up the new engine ID.
 3. **Proxy** — `deploy-homecare-agent-proxy.yaml`.
@@ -72,6 +73,7 @@ gh run list --workflow=deploy-homecare-agent-proxy.yaml --limit 5
 ```
 
 ## Common gotchas
+
 - **Proxy 500 after a redeploy** — check the run logs. If the staged `gcp/common` copy was missing files, the workflow's `cp -R gcp/common gcp/proxy/api/common` step needs review (or `.gcloudignore` was changed and is now excluding `common/`).
 - **Mapp OTA pushes nothing** — `deploy-mapp-update.yaml` only updates existing native builds with a matching `runtimeVersion`. If you bumped native deps or `expo` SDK, you need a fresh build via `deploy-mapp-build.yaml` first.
 - **App Hosting build fails on `fix-firebase-standalone.js`** — that script is required; don't remove it from `apps/webapp/package.json` `build`.

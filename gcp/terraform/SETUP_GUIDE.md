@@ -5,6 +5,7 @@ This guide walks you through setting up and using Terraform to manage your GCP i
 ## Prerequisites
 
 1. **Install Terraform**
+
    ```bash
    # macOS
    brew tap hashicorp/tap
@@ -20,6 +21,7 @@ This guide walks you through setting up and using Terraform to manage your GCP i
    ```
 
 2. **Install Google Cloud SDK**
+
    ```bash
    # macOS
    brew install --cask google-cloud-sdk
@@ -33,6 +35,7 @@ This guide walks you through setting up and using Terraform to manage your GCP i
    ```
 
 3. **Authenticate with GCP**
+
    ```bash
    gcloud auth login
    gcloud auth application-default login
@@ -40,7 +43,7 @@ This guide walks you through setting up and using Terraform to manage your GCP i
 
 4. **Set Default Project**
    ```bash
-   gcloud config set project homegeekdemo-staging  # or homegeekdemo for prod
+   gcloud config set project homegeek-staging-staging  # or homegeek-staging for prod
    ```
 
 ## Initial Setup
@@ -51,7 +54,7 @@ Before running Terraform, enable the essential APIs:
 
 ```bash
 # Set your project
-export PROJECT_ID=homegeekdemo-staging  # or homegeekdemo for prod
+export PROJECT_ID=homegeek-staging-staging  # or homegeek-staging for prod
 
 # Enable APIs
 gcloud services enable \
@@ -66,18 +69,21 @@ gcloud services enable \
 ### Step 2: Create Terraform Variables File
 
 For **Staging**:
+
 ```bash
 cd terraform/environments/staging
 cp terraform.tfvars.example terraform.tfvars
 ```
 
 For **Production**:
+
 ```bash
 cd terraform/environments/prod
 cp terraform.tfvars.example terraform.tfvars
 ```
 
 Edit `terraform.tfvars` with your actual values:
+
 ```hcl
 project_id        = "your-project-id"
 environment       = "staging"  # or "prod"
@@ -125,6 +131,7 @@ terraform init
 ```
 
 This will:
+
 - Download required providers
 - Initialize the backend
 - Prepare the working directory
@@ -136,6 +143,7 @@ terraform plan
 ```
 
 Review the plan carefully to ensure:
+
 - Resources to be created are correct
 - No unexpected changes
 - All variables are properly set
@@ -149,6 +157,7 @@ terraform apply
 Type `yes` when prompted to confirm.
 
 This will create:
+
 - ✅ Service accounts
 - ✅ Workload Identity Federation for GitHub Actions
 - ✅ GCS buckets
@@ -165,6 +174,7 @@ terraform output
 ```
 
 Important outputs:
+
 - `workload_identity_provider` - Use in GitHub Actions workflows
 - `deployment_service_account` - Service account email
 - `cloud_run_url` - URL of deployed service
@@ -175,7 +185,7 @@ Terraform creates the Secret Manager structure, but you must add the actual secr
 
 ```bash
 # Set environment
-export PROJECT_ID=homegeekdemo-staging
+export PROJECT_ID=homegeek-staging-staging
 export ENV=staging
 
 # Add secret values
@@ -194,24 +204,24 @@ If you already have resources created manually, you can import them into Terrafo
 
 ```bash
 terraform import module.cloud_run.google_cloud_run_service.proxy \
-  projects/homegeekdemo-staging/locations/us-central1/services/homecare-agent-proxy-staging
+  projects/homegeek-staging-staging/locations/us-central1/services/homecare-agent-proxy-staging
 ```
 
 ### Import Cloud Function
 
 ```bash
 terraform import module.cloud_function.google_cloudfunctions2_function.worker \
-  projects/homegeekdemo-staging/locations/us-central1/functions/pubsub_to_user_docs-staging
+  projects/homegeek-staging-staging/locations/us-central1/functions/pubsub_to_user_docs-staging
 ```
 
 ### Import Pub/Sub Topics
 
 ```bash
 terraform import module.pubsub.google_pubsub_topic.user_upload \
-  projects/homegeekdemo-staging/topics/user-upload-topic-staging
+  projects/homegeek-staging-staging/topics/user-upload-topic-staging
 
 terraform import module.pubsub.google_pubsub_topic.user_upload_result \
-  projects/homegeekdemo-staging/topics/user-upload-result-topic-staging
+  projects/homegeek-staging-staging/topics/user-upload-result-topic-staging
 ```
 
 ## Using Remote State (Recommended)
@@ -219,15 +229,17 @@ terraform import module.pubsub.google_pubsub_topic.user_upload_result \
 For team collaboration, use GCS backend for state storage:
 
 1. Create state bucket:
+
    ```bash
    gsutil mb gs://${PROJECT_ID}-terraform-state
    gsutil versioning set on gs://${PROJECT_ID}-terraform-state
    ```
 
 2. Uncomment backend configuration in `main.tf`:
+
    ```hcl
    backend "gcs" {
-     bucket = "homegeekdemo-staging-terraform-state"
+     bucket = "homegeek-staging-staging-terraform-state"
      prefix = "terraform/staging/state"
    }
    ```
@@ -253,6 +265,7 @@ terraform destroy
 ```
 
 For selective destruction:
+
 ```bash
 terraform destroy -target=module.cloud_function
 ```
@@ -262,6 +275,7 @@ terraform destroy -target=module.cloud_function
 After Terraform creates the Workload Identity Provider, update your GitHub Actions workflows:
 
 1. Get the workload identity provider:
+
    ```bash
    terraform output workload_identity_provider
    ```
@@ -286,6 +300,7 @@ gcloud services enable <api-name> --project=$PROJECT_ID
 ### Permission Denied
 
 Ensure you have the required roles:
+
 ```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="user:your-email@domain.com" \
@@ -295,6 +310,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ### State Lock
 
 If Terraform state is locked:
+
 ```bash
 terraform force-unlock <lock-id>
 ```
@@ -302,6 +318,7 @@ terraform force-unlock <lock-id>
 ### Resource Already Exists
 
 Import the existing resource:
+
 ```bash
 terraform import <resource-type>.<resource-name> <resource-id>
 ```
@@ -359,6 +376,7 @@ terraform state list
 ## Support
 
 For issues or questions:
+
 - Check Terraform documentation: https://registry.terraform.io/providers/hashicorp/google/latest/docs
 - Review GCP documentation: https://cloud.google.com/docs
 - Check project README files in `gcp/` folder

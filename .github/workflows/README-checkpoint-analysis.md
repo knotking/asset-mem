@@ -13,9 +13,9 @@ This workflow can be triggered in two ways:
 
 Before using this action, ensure you have:
 
-1. **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeekdemo`) and `prod` (e.g., `homegeek-prod`).
+1. **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeek-staging`) and `prod` (e.g., `homegeek-prod`).
 2. **Service Accounts**: Dedicated service accounts for each environment with the necessary permissions to deploy Cloud Functions and manage other GCP resources (e.g., Pub/Sub, Firestore, Vertex AI).
-   - Staging: `githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com`
+   - Staging: `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com`
    - Production: `githubworkflowdeployment@homegeek-prod.iam.gserviceaccount.com`
 3. **Workload Identity Federation**: Set up Workload Identity Federation between your GitHub repository and your GCP projects for both staging and production.
 4. **Pub/Sub Topic**: Ensure the `checkpoint-analysis-topic` exists in both your staging and production projects, with appropriate environment suffixes (e.g., `checkpoint-analysis-topic-prod`).
@@ -38,10 +38,10 @@ Set these variables in your GitHub repository settings (Settings → Secrets and
 ### Required Variables
 
 - `GCP_REGION`: The GCP region where the function is deployed (e.g., `us-central1`)
-- `GCP_PROJECT_ID`: Your Google Cloud Project ID (e.g., `homegeekdemo`)
+- `GCP_PROJECT_ID`: Your Google Cloud Project ID (e.g., `homegeek-staging`)
 - `CHECKPOINT_ANALYSIS_TOPIC`: The Pub/Sub topic name for checkpoint analysis (e.g., `checkpoint-analysis-topic`)
 - `WORKLOAD_IDENTITY_PROVIDER`: Your Workload Identity Provider ID
-- `GCP_SERVICE_ACCOUNT_EMAIL`: The service account email for deployment (e.g., `githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com`)
+- `GCP_SERVICE_ACCOUNT_EMAIL`: The service account email for deployment (e.g., `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com`)
 
 ## Function Configuration
 

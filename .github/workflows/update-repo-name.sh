@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-PROJECT_ID="homegeekdemo"
+PROJECT_ID="homegeek-staging"
 OLD_REPO="HomeGeekAI/HomeApp"
 NEW_REPO="BuildGeekAI/HomeApp"
 FIREBASE_SA_EMAIL="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -116,7 +116,7 @@ echo "=========================================="
 echo ""
 echo "You also need to update the repository connection in Firebase Console:"
 echo ""
-echo "1. Go to: https://console.firebase.google.com/project/homegeekdemo/apphosting"
+echo "1. Go to: https://console.firebase.google.com/project/homegeek-staging/apphosting"
 echo "2. For each backend (staging, prod, etc.):"
 echo "   - Click on the backend"
 echo "   - Go to Settings/Configuration"

@@ -16,7 +16,7 @@ terraform {
 
   # Uncomment to use GCS backend for state storage
   # backend "gcs" {
-  #   bucket = "homegeekdemo-terraform-state"
+  #   bucket = "homegeek-staging-terraform-state"
   #   prefix = "terraform/staging/state"
   # }
 }
