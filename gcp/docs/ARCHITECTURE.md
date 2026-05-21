@@ -330,50 +330,17 @@ Multiple specialized Gemini integration modules:
 - Message handling
 - Context management
 
-### 4. Infrastructure (`gcp/terraform/`)
+### 4. Infrastructure (GitHub Actions + gcloud)
 
-Infrastructure as Code using Terraform for managing GCP resources.
+GCP resources are provisioned and deployed via workflows under `.github/workflows/`:
 
-#### 4.1 Modules
+- **`create-environment.yaml`** — new environment bootstrap (project, IAM, WIF, Pub/Sub, buckets, RAG corpora, GitHub env vars)
+- **`deploy-homecare-agent-proxy.yaml`** — Cloud Run (FastAPI proxy)
+- **`deploy-checkpoint-analysis.yaml`**, **`deploy-pubsub-user-docs.yaml`**, **`deploy-document-analysis.yaml`**, **`deploy-checkpoint-metrics.yaml`** — Gen2 Cloud Functions
+- **`deploy-homecare-agent.yaml`** — Vertex AI Agent Engine
+- **`deploy-webapp-apphosting.yaml`**, **`deploy-mapp-*.yaml`** — clients
 
-1. **Cloud Function Module** (`modules/cloud-function/`)
-   - Cloud Functions deployment
-   - Environment variables
-   - IAM permissions
-
-2. **Cloud Run Module** (`modules/cloud-run/`)
-   - Cloud Run service deployment
-   - Container configuration
-   - Scaling settings
-
-3. **Pub/Sub Module** (`modules/pubsub/`)
-   - Topic creation
-   - Subscription management
-   - IAM policies
-
-4. **Storage Module** (`modules/storage/`)
-   - GCS bucket creation
-   - Lifecycle policies
-   - IAM permissions
-
-5. **IAM Module** (`modules/iam/`)
-   - Service account creation
-   - Role bindings
-   - Custom roles
-
-6. **Secrets Module** (`modules/secrets/`)
-   - Secret Manager integration
-   - Secret versioning
-
-#### 4.2 Environments
-
-- **Production** (`environments/prod/`)
-- **Staging** (`environments/staging/`)
-
-**Configuration:**
-- Environment-specific variables
-- Resource naming conventions
-- Scaling configurations
+Supplemental ops (DLQ, alert policies) use `gcloud` or workflow steps documented in [`docs/deployment/INFRASTRUCTURE.md`](../../docs/deployment/INFRASTRUCTURE.md) and [`docs/deployment/WORKERS_DEPLOYMENT.md`](../../docs/deployment/WORKERS_DEPLOYMENT.md).
 
 ## Data Flow
 
@@ -504,7 +471,7 @@ Infrastructure as Code using Terraform for managing GCP resources.
 - **Secret Manager** - Secrets management
 
 ### Infrastructure
-- **Terraform** - Infrastructure as Code
+- **GitHub Actions + gcloud** - Environment provisioning and deploys
 - **Docker** - Containerization
 - **UV** - Fast Python package manager
 
@@ -600,12 +567,12 @@ make grant-permissions  # Grant RAG access
 
 ### Infrastructure Deployment
 
-**Platform:** Terraform
+**Platform:** GitHub Actions (`gcloud`)
 
 **Deployment Process:**
-1. Initialize Terraform backend
-2. Configure environment-specific variables
-3. Plan and apply infrastructure changes
+1. Run **Create Environment** (`create-environment.yaml`) for a new GCP project / env
+2. Configure GitHub environment variables (see `.github/GITHUB_VARIABLES_SETUP.md`)
+3. Run component `deploy-*.yaml` workflows to staging, then production
 
 **Environments:**
 - Staging
@@ -762,4 +729,5 @@ gcloud functions deploy pubsub_to_user_docs --gen2 --runtime python313
 - **[Proxy Architecture](../proxy/docs/ARCHITECTURE.md)** - Detailed proxy service architecture
 - **[Setup and Deployment](./SETUP_AND_DEPLOYMENT.md)** - Comprehensive setup guide
 - **[Agents README](../agents/homecare/README.md)** - Agent system documentation
-- **[Terraform README](../terraform/README.md)** - Infrastructure documentation
+- **[Deployment docs](../../docs/deployment/README.md)** - Launch checklists, infra, CI/CD
+- **[GitHub Actions README](../../.github/workflows/README.md)** - Workflow map (gcloud only)
