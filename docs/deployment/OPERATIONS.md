@@ -80,6 +80,12 @@ Script: [`.github/scripts/apply-monitoring-alerts.sh`](../../.github/scripts/app
 
 On Cloud Run scale-in or deploy, the proxy [`lifespan`](../../gcp/proxy/api/core/events.py) cancels the streaming pull and joins the listener thread (10s timeout) so in-flight callbacks are not left dangling.
 
+## Shared chat links (Phase 3.4)
+
+- New shares set `expiresAt` (**30 days**, extended on update) via [`@homeapp/common/lib/shared-chat`](../../apps/common/src/lib/shared-chat.ts).
+- Public page: [`apps/webapp/src/app/share/[shareId]/page.tsx`](../../apps/webapp/src/app/share/[shareId]/page.tsx) rejects expired links; [`share/layout.tsx`](../../apps/webapp/src/app/share/layout.tsx) sets `robots: noindex`.
+- Firestore rules deny read when `expiresAt` is in the past. **Deploy rules** after merge: `firebase deploy --only firestore:rules`.
+
 ## Related
 
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md) §3

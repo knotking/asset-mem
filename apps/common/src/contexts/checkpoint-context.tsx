@@ -4,21 +4,26 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import {
   collection,
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
+  getDocs,
+  startAfter,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
   serverTimestamp,
   Timestamp,
+  type DocumentData,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Checkpoint, CheckpointMedia } from "../types";
@@ -28,6 +33,43 @@ import { useFirebase } from "./firebase-context";
 import { createLogger, truncateId } from "../lib/logger";
 
 const checkpointLog = createLogger("checkpoint");
+
+/** Live listener window + each "load more" page size. */
+export const CHECKPOINT_PAGE_SIZE = 20;
+
+function mapCheckpointDoc(
+  docSnap: QueryDocumentSnapshot<DocumentData>
+): Checkpoint {
+  const data = docSnap.data();
+  const {
+    embedding,
+    embeddingModel,
+    embeddingGeneratedAt,
+    ...checkpointFields
+  } = data;
+  return {
+    id: docSnap.id,
+    ...checkpointFields,
+  } as Checkpoint;
+}
+
+function sortCheckpointsNewestFirst(list: Checkpoint[]): Checkpoint[] {
+  return [...list].sort((a, b) => {
+    const aMs =
+      a.createdAt instanceof Timestamp
+        ? a.createdAt.toMillis()
+        : a.createdAt
+          ? new Date(a.createdAt as Date).getTime()
+          : 0;
+    const bMs =
+      b.createdAt instanceof Timestamp
+        ? b.createdAt.toMillis()
+        : b.createdAt
+          ? new Date(b.createdAt as Date).getTime()
+          : 0;
+    return bMs - aMs;
+  });
+}
 
 interface CheckpointContextType {
   checkpoints: Checkpoint[];
@@ -54,73 +96,122 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
   const { db, storage } = useFirebase();
   const { user } = useAuth();
   const { property } = useProperty();
-  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+  const [liveCheckpoints, setLiveCheckpoints] = useState<Checkpoint[]>([]);
+  const [olderCheckpoints, setOlderCheckpoints] = useState<Checkpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
-  const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(true);
-  const [checkpointsLimit, setCheckpointsLimit] = useState(20); // Start with 20 checkpoints
+  const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] =
     useState<Checkpoint | null>(null);
 
-  // Function to load more checkpoints (pagination)
+  const liveTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const olderTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const olderPageFullRef = useRef(false);
+  const livePageFullRef = useRef(false);
+
+  const checkpoints = useMemo(() => {
+    const byId = new Map<string, Checkpoint>();
+    for (const cp of liveCheckpoints) {
+      byId.set(cp.id, cp);
+    }
+    for (const cp of olderCheckpoints) {
+      if (!byId.has(cp.id)) {
+        byId.set(cp.id, cp);
+      }
+    }
+    return sortCheckpointsNewestFirst(Array.from(byId.values()));
+  }, [liveCheckpoints, olderCheckpoints]);
+
+  const resetPagination = useCallback(() => {
+    setLiveCheckpoints([]);
+    setOlderCheckpoints([]);
+    liveTailRef.current = null;
+    olderTailRef.current = null;
+    olderPageFullRef.current = false;
+    livePageFullRef.current = false;
+    setHasMoreCheckpoints(false);
+  }, []);
+
   const loadMoreCheckpoints = useCallback(async () => {
     if (!user || !property || isLoadingEarlier || !hasMoreCheckpoints) {
       return;
     }
 
+    const tail = olderTailRef.current ?? liveTailRef.current;
+    if (!tail) {
+      return;
+    }
+
     setIsLoadingEarlier(true);
     try {
-      // Increase the limit to fetch more checkpoints
-      const newLimit = checkpointsLimit + 20;
-      setCheckpointsLimit(newLimit);
+      const q = query(
+        collection(
+          db,
+          `users/${user.uid}/properties/${property.id}/checkpoints`
+        ),
+        orderBy("createdAt", "desc"),
+        startAfter(tail),
+        limit(CHECKPOINT_PAGE_SIZE)
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        olderPageFullRef.current = false;
+        setHasMoreCheckpoints(livePageFullRef.current);
+        return;
+      }
+
+      const page = snapshot.docs.map(mapCheckpointDoc);
+      setOlderCheckpoints((prev) => {
+        const ids = new Set(prev.map((c) => c.id));
+        const merged = [...prev];
+        for (const cp of page) {
+          if (!ids.has(cp.id)) {
+            merged.push(cp);
+          }
+        }
+        return merged;
+      });
+      olderTailRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+      olderPageFullRef.current =
+        snapshot.docs.length >= CHECKPOINT_PAGE_SIZE;
+      setHasMoreCheckpoints(
+        olderPageFullRef.current || livePageFullRef.current
+      );
     } catch (err) {
       checkpointLog.error("checkpoints.loadMore.failed", undefined, err);
     } finally {
       setIsLoadingEarlier(false);
     }
-  }, [user, property, isLoadingEarlier, hasMoreCheckpoints, checkpointsLimit]);
+  }, [user, property, isLoadingEarlier, hasMoreCheckpoints, db]);
 
   useEffect(() => {
     if (!user || !property) {
-      setCheckpoints([]);
+      resetPagination();
       setLoading(false);
-      setHasMoreCheckpoints(true);
       return;
     }
 
+    resetPagination();
     setLoading(true);
+
     const q = query(
       collection(db, `users/${user.uid}/properties/${property.id}/checkpoints`),
       orderBy("createdAt", "desc"),
-      limit(checkpointsLimit) // Add limit to query
+      limit(CHECKPOINT_PAGE_SIZE)
     );
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        // Explicitly exclude embedding fields to reduce memory usage
-        // Note: Firestore select() doesn't work with onSnapshot(), so we filter client-side
-        const checkpointsData = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          // Remove embedding-related fields that are only needed for server-side vector search
-          const {
-            embedding,
-            embeddingModel,
-            embeddingGeneratedAt,
-            ...checkpointFields
-          } = data;
-          return {
-            id: doc.id,
-            ...checkpointFields,
-          } as Checkpoint;
-        });
-
-        setCheckpoints(checkpointsData);
+        const page = snapshot.docs.map(mapCheckpointDoc);
+        setLiveCheckpoints(page);
+        liveTailRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+        livePageFullRef.current =
+          snapshot.docs.length >= CHECKPOINT_PAGE_SIZE;
+        setHasMoreCheckpoints(
+          livePageFullRef.current || olderPageFullRef.current
+        );
         setLoading(false);
-
-        // Check if there are more checkpoints available
-        // If we got exactly the limit, there might be more
-        setHasMoreCheckpoints(snapshot.docs.length >= checkpointsLimit);
       },
       (error) => {
         checkpointLog.error("checkpoints.fetch.failed", undefined, error);
@@ -129,7 +220,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [user, property, db, checkpointsLimit]);
+  }, [db, user, property?.id, resetPagination]);
 
   const createCheckpoint = async (
     data: Partial<Checkpoint>,
@@ -138,7 +229,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     if (!user || !property) throw new Error("No user or property selected");
 
     try {
-      // 1. Upload media files
       const mediaPromises = mediaFiles.map(async (file, index) => {
         const extension = file.type === "video" ? "mp4" : "jpg";
         const fileName = `checkpoint_${Date.now()}_${index}.${extension}`;
@@ -151,9 +241,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         await uploadBytes(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
 
-        // For videos, generate + upload a thumbnail image so list items can display a preview.
-        // We do a dynamic import so other platforms/builds that don't include this module
-        // won't fail at import time.
         let thumbnailUrl: string | undefined;
         if (file.type === "video") {
           try {
@@ -189,7 +276,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
 
       const uploadedMedia = await Promise.all(mediaPromises);
 
-      // 2. Create checkpoint document
       const checkpointData: Partial<Checkpoint> = {
         ...data,
         userId: user.uid,
@@ -205,11 +291,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         ),
         checkpointData
       );
-
-      // Update property checkpoint count (optional, can be done via cloud function trigger)
-      // await updateDoc(doc(db, 'properties', property.id), {
-      //   checkpointsCount: increment(1)
-      // });
 
       return { id: docRef.id, media: uploadedMedia };
     } catch (error) {
@@ -236,13 +317,15 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       id
     );
     await deleteDoc(docRef);
+    setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
+    setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
   };
 
   const compareCheckpoints = async (id1: string, id2: string) => {
-    // This will be implemented in Phase 8 (Cloud Function trigger)
-    checkpointLog.debug("checkpoint.compare", { id1: truncateId(id1), id2: truncateId(id2) });
-    // For now, we just log. In future, this might call a cloud function directly
-    // or update a document to trigger a background job.
+    checkpointLog.debug("checkpoint.compare", {
+      id1: truncateId(id1),
+      id2: truncateId(id2),
+    });
   };
 
   return (
