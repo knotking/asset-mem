@@ -26,6 +26,7 @@ import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { CheckpointComparisonSettings } from '@/components/settings/CheckpointComparisonSettings';
 import { AiUsageSettings } from '@/components/settings/AiUsageSettings';
+import { PlanBillingSettings } from '@/components/settings/PlanBillingSettings';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -78,6 +79,11 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Plan & billing (Stripe via proxy + web checkout) */}
+        <View className="mb-4">
+          <PlanBillingSettings />
         </View>
 
         {/* AI usage (shared @homeapp/common + Firestore llm_token_usage) */}
