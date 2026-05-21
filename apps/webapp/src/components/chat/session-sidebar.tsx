@@ -44,7 +44,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, writeBatch, Timestamp, limit } from 'firebase/firestore';
-import { deleteAgentSessionAction } from '@/app/actions';
+import { deleteAgentSession } from '@/lib/api-agent';
 import { createLogger } from '@/lib/logger';
 
 const sessionLog = createLogger('session');
@@ -216,7 +216,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
         if (sessionItem.agentSessionId) {
           try {
-            await deleteAgentSessionAction(user.uid, sessionItem.agentSessionId);
+            await deleteAgentSession(user.uid, sessionItem.agentSessionId);
           } catch (error) {
             sessionLog.error('session.agentDelete.failed', undefined, error);
           }
@@ -306,7 +306,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionToDeleteCache.id, 'messages');
 
         if (sessionToDeleteCache.agentSessionId) {
-            deleteAgentSessionAction(user.uid, sessionToDeleteCache.agentSessionId).catch(error => {
+            deleteAgentSession(user.uid, sessionToDeleteCache.agentSessionId).catch(error => {
                 sessionLog.error('session.agentDelete.failed', undefined, error);
             });
         }
