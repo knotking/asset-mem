@@ -7,7 +7,8 @@ from google.cloud import firestore
 from fastapi import APIRouter, Depends
 
 from common.token import get_token_quota_status
-from core.firebase_auth import apply_uid_to_agent_request, require_firebase_uid
+from core.auth_deps import RATE_BUCKET_QUOTA, authenticated_user
+from core.firebase_auth import apply_uid_to_agent_request
 from schemas.token_quota import TokenQuotaStatusRequest
 
 router = APIRouter(tags=["Token quota"])
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 )
 async def token_quota_status(
     request_data: TokenQuotaStatusRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_QUOTA))],
 ):
     apply_uid_to_agent_request(request_data, uid)
     db = firestore.Client()

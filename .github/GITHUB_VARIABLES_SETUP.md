@@ -64,6 +64,9 @@ Configure these in the **staging** environment:
 | `USER_UPLOAD_RESULT_SUBSCRIPTION` | `user-upload-result-subscription` | Pub/Sub subscription |
 | `TOKEN_QUOTA_PERIOD_MAX_TOKENS` | `1000000` | Optional. **Default** monthly total-token cap per user (UTC month) for proxy + checkpoint worker when Firestore does not override. Omit or `0` = unlimited. Same value in both deploy workflows. **Per-user cap:** set `monthlyTokenLimit` on `users/{userId}/preferences/user` in Firestore (overrides this variable). |
 | `PROXY_CORS_ORIGINS` | *(omit)* | Optional. Comma-separated browser origins for proxy CORS. **Unset** = built-in list in `gcp/proxy/api/core/cors.py` (`https://asset-mem.com`, `https://homegeek.ai`, App Hosting URLs, `http://localhost:9002`). Set only to **replace** the entire list. |
+| `PROXY_RATE_LIMIT_AGENT_PER_WINDOW` | `30` | Per-UID agent routes per 60s window (`PROXY_RATE_LIMIT_WINDOW_SECONDS`). |
+| `PROXY_RATE_LIMIT_CHECKPOINT_PER_WINDOW` | `20` | Per-UID checkpoint routes per window. |
+| `PROXY_OBSERVABILITY_TRACING` | `false` | Set `true` when OTel GCP trace exporter packages are on the Cloud Run image. |
 
 ### Production Environment Variables
 

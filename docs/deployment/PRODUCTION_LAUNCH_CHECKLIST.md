@@ -26,6 +26,7 @@ Phases align with the repo launch plan:
 | **1** | Product Hunt / web conversion (partial overlap below) |
 | **2** | Security & API hardening (Firebase ID token, limits, observability) |
 | **3** | Compliance, ops, CI, scalability |
+| **4** | Future infrastructure (API Gateway, etc.) — **post-GA, not blocking** |
 
 ### Phase 1 items (Product Hunt) — cross-reference
 
@@ -203,6 +204,21 @@ Manual `workflow_dispatch` to **prod** (recommended order):
 | 9.2 | `docs/analysis/ANALYSIS_AGENT_API_INTEGRATION.md` claims verified or removed | [ ] | Eng |
 | 9.3 | `docs/deployment/ENVIRONMENTS.md` aspirational monitoring flags updated | [ ] | Eng |
 | 9.4 | GitHub env vars in `.github/GITHUB_VARIABLES_SETUP.md` — no prod placeholders | [ ] | Eng |
+
+---
+
+## 11. Future infrastructure (post-GA — deferred)
+
+**Does not block Product Hunt or GA.** Track engineering detail in [LAUNCH_PLAN_PROGRESS.md § Phase 4](./LAUNCH_PLAN_PROGRESS.md#phase-4--future-infrastructure-post-ga).
+
+| # | Priority | Item | When to do | Notes |
+|---|----------|------|------------|-------|
+| 11.1 | **Low** | **Google Cloud API Gateway** in front of Cloud Run proxy | Post-GA / scale | New public API hostname; update `NEXT_PUBLIC_API_BASE_URL` + mapp `PROXY_BASE_URL`; paths can stay `/firebase-agent-stream`, etc. |
+| 11.2 | **Low** | Custom API domain on gateway (`api.homegeek.ai`, `api.asset-mem.com`) | With 11.1 | DNS + TLS on gateway; add origin to proxy CORS |
+| 11.3 | **Low** | Optional Cloud Run ingress = gateway-only | After 11.1 verified | Retire direct `*.run.app` client access |
+| 11.4 | **Low** | Distributed rate limits (Memorystore Redis or Firestore) | If multi-instance abuse | Complements proxy `PROXY_RATE_LIMIT_*`; not required for PH |
+
+**Clarification:** “API gateway” in repo docs often means the **FastAPI proxy** ([`gcp/proxy/`](../../gcp/proxy/)). Section 11.1 is the **GCP managed API Gateway** product in front of that service.
 
 ---
 

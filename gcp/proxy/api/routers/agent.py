@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 import logging
 
-from core.firebase_auth import apply_uid_to_agent_request, require_firebase_uid
+from core.auth_deps import RATE_BUCKET_AGENT, authenticated_user
+from core.firebase_auth import apply_uid_to_agent_request
 from schemas.agent import AgentRequest, SessionRequest
 from services.agent_service import handle_firebase_agent_query, stream_firebase_agent_answers
 from services.vertex_service import create_reasoning_engine_session, delete_reasoning_engine_session
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 @router.post("/firebase-agent-query", summary="Handle Agent Query", description="Process a query from the agent and return a response.")
 async def firebase_webhook(
     request_data: AgentRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_AGENT))],
 ):
     apply_uid_to_agent_request(request_data, uid)
     logger.info(f"Firebase query webhook data: {request_data.model_dump_json()}")
@@ -29,7 +30,7 @@ async def firebase_webhook(
 @router.post("/firebase-agent-stream", summary="Stream Agent Response", description="Process a query from the agent and stream the response.")
 async def firebase_streaming_webhook(
     request_data: AgentRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_AGENT))],
 ):
     apply_uid_to_agent_request(request_data, uid)
     try:
@@ -41,7 +42,7 @@ async def firebase_streaming_webhook(
 @router.post("/agent-session", summary="Create Agent Session", description="Create a new session for the agent.")
 async def firebase_agent_session_create(
     request_data: AgentRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_AGENT))],
 ):
     apply_uid_to_agent_request(request_data, uid)
     logger.info(f"Received session create request from user: {request_data.user_id}")
@@ -63,7 +64,7 @@ async def firebase_agent_session_create(
 @router.delete("/agent-session", summary="Delete Agent Session", description="Delete an existing agent session.")
 async def firebase_agent_session_delete(
     request_data: SessionRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_AGENT))],
 ):
     request_data.user_id = uid
     logger.info(f"Received session delete request from user: {request_data.user_id}, {request_data.session_id}")
