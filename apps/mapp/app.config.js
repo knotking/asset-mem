@@ -92,6 +92,8 @@ module.exports = {
       billingB2cCheckoutUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/checkout-session'),
       billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),
       webAppUrl: process.env.WEB_APP_URL,
+      supportEmail:
+        process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@homegeek.ai',
     },
     runtimeVersion: {
       policy: 'appVersion',

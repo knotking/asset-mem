@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
+import { SupportSettings } from '@/components/settings/support-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -158,6 +159,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+            <SupportSettings />
           </TabsContent>
 
           <TabsContent value="billing" className="mt-0 focus-visible:outline-none">
