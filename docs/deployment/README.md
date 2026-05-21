@@ -11,7 +11,7 @@ HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with
 3. **AI Agent Engine** - Vertex AI Reasoning Engine for property management intelligence
 4. **Proxy API** - FastAPI service on Cloud Run for API orchestration
 5. **Worker Functions** - Cloud Functions for async processing
-6. **Infrastructure** - Terraform-managed GCP resources
+6. **Infrastructure** - GCP resources provisioned via GitHub Actions (`create-environment.yaml`) and `gcloud`
 
 ## Quick Links
 
@@ -24,6 +24,7 @@ HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with
 - [Proxy API Deployment](./PROXY_DEPLOYMENT.md)
 - [Worker Functions Deployment](./WORKERS_DEPLOYMENT.md)
 - [Infrastructure Setup](./INFRASTRUCTURE.md)
+- [Operations (DLQ, alerts, runbooks)](./OPERATIONS.md) — scripts in [`.github/scripts/`](../../.github/scripts/)
 - [CI/CD Pipelines](./CICD.md)
 - [Environment Configuration](./ENVIRONMENTS.md)
 
@@ -134,8 +135,9 @@ Direct deployment using GCP CLI tools:
 - **Google Cloud SDK** (gcloud CLI)
 - **Firebase CLI** 13+ (for webapp deployment)
 - **EAS CLI** (for mobile app deployment)
-- **Terraform** (for infrastructure management)
 - **UV** (for Python dependency management)
+
+Infrastructure is provisioned via [Create Environment](../../.github/workflows/create-environment.yaml) and [`.github/workflows/README.md`](../../.github/workflows/README.md).
 
 ### GCP Setup
 

@@ -407,9 +407,9 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │   └──────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
 │   ┌──────────────────────────────────────────────────────────────────────────┐  │
-│   │                         INFRASTRUCTURE (Terraform)                        │  │
+│   │                    INFRASTRUCTURE (GitHub Actions + gcloud)                 │  │
 │   │                                                                           │  │
-│   │   Modules:  cloud-run │ cloud-function │ pubsub │ storage │ iam │ secrets │  │
+│   │   Workflows: create-environment │ deploy-proxy │ deploy-workers │ agent  │  │
 │   │                                                                           │  │
 │   │   Environments:       staging          │        prod                      │  │
 │   │                                                                           │  │
@@ -488,10 +488,10 @@ HomeApp/
     │   └── workers/              # Pub/Sub workers
     │       └── function/         # RAG import function
     │
-    └── terraform/                  # Infrastructure as Code
-        ├── modules/               # Reusable Terraform modules
-        └── environments/          # Staging & prod configs
+    └── common/                    # Shared Python (token, pubsub, storage, gemini helpers)
 ```
+
+**Infrastructure** lives in [`.github/workflows/`](../.github/workflows/) (`create-environment.yaml`, `deploy-*.yaml`), not under `gcp/`.
 
 ---
 
@@ -513,11 +513,11 @@ HomeApp/
 
 ## Environment Configuration
 
-| Environment | API Endpoint | Firebase Project | Terraform Workspace |
-|-------------|--------------|------------------|---------------------|
-| Development | localhost:8000 | dev-project | - |
-| Staging | staging.api.example.com | staging-project | staging |
-| Production | api.example.com | prod-project | prod |
+| Environment | API Endpoint | Firebase Project | GitHub environment |
+|-------------|--------------|------------------|------------------|
+| Development | localhost:8080 | dev-project | — |
+| Staging | Cloud Run proxy URL | staging-project | `staging` |
+| Production | Cloud Run proxy URL | prod-project | `prod` |
 
 ---
 
@@ -526,5 +526,6 @@ HomeApp/
 - **Backend Architecture**: See [`gcp/docs/ARCHITECTURE.md`](./gcp/docs/ARCHITECTURE.md)
 - **Technology Stack**: See [`TECH_STACK.md`](./TECH_STACK.md)
 - **Setup Guide**: See [`gcp/docs/SETUP_AND_DEPLOYMENT.md`](./gcp/docs/SETUP_AND_DEPLOYMENT.md)
-- **Terraform Guide**: See [`gcp/terraform/README.md`](./gcp/terraform/README.md)
+- **GitHub Actions / deploy map**: See [`.github/workflows/README.md`](../.github/workflows/README.md)
+- **Deployment docs**: See [`docs/deployment/README.md`](./deployment/README.md)
 

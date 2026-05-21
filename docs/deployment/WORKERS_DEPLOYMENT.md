@@ -558,15 +558,14 @@ gcloud functions deploy pubsub-checkpoint-analysis-staging \
 - Use message deduplication logic
 
 #### Dead Letter Queue
-```bash
-# Create dead letter topic
-gcloud pubsub topics create user-upload-dlq
 
-# Update subscription with DLQ
-gcloud pubsub subscriptions update user-upload-topic-subscription \
-  --dead-letter-topic=user-upload-dlq \
-  --max-delivery-attempts=5
+Use the repo script (wired into `create-environment.yaml` and re-run after worker deploy):
+
+```bash
+./.github/scripts/apply-pubsub-dlq.sh PROJECT_ID ENV
 ```
+
+Creates `worker-dlq-{ENV}` and applies dead-letter policy to manual subscriptions and all subscriptions on worker topics. See [OPERATIONS.md](./OPERATIONS.md).
 
 ## Scaling Configuration
 

@@ -69,6 +69,7 @@ Configure these in the **staging** environment:
 | `PROXY_RATE_LIMIT_AGENT_PER_WINDOW`      | `30`                                                                                                 | Per-UID agent routes per 60s window (`PROXY_RATE_LIMIT_WINDOW_SECONDS`).                                                                                                                                                                                                                                                |
 | `PROXY_RATE_LIMIT_CHECKPOINT_PER_WINDOW` | `20`                                                                                                 | Per-UID checkpoint routes per window.                                                                                                                                                                                                                                                                                   |
 | `PROXY_OBSERVABILITY_TRACING`            | `false`                                                                                              | Set `true` when OTel GCP trace exporter packages are on the Cloud Run image.                                                                                                                                                                                                                                            |
+| `MONITORING_NOTIFICATION_CHANNEL_IDS`    | _(omit until channels exist)_                                                                        | Optional. Comma-separated Monitoring notification channel resource names for [apply-operations-config.yaml](workflows/apply-operations-config.yaml) / [.github/scripts/apply-monitoring-alerts.sh](scripts/apply-monitoring-alerts.sh). Create in Cloud Console → Monitoring → Alerting → Notification channels. |
 
 ### Production Environment Variables
 
@@ -92,6 +93,7 @@ Configure these in the **prod** environment:
 | `USER_UPLOAD_RESULT_SUBSCRIPTION` | `user-upload-result-subscription-prod`                                                               | Pub/Sub subscription                                                                                                                   |
 | `TOKEN_QUOTA_PERIOD_MAX_TOKENS`   | `1000000`                                                                                            | Same as staging; set per environment if caps differ. Per-user override: Firestore `users/{userId}/preferences/user.monthlyTokenLimit`. |
 | `PROXY_CORS_ORIGINS`              | _(omit)_                                                                                             | Same as staging; optional full override of CORS allowlist on Cloud Run proxy.                                                          |
+| `MONITORING_NOTIFICATION_CHANNEL_IDS` | _(omit until channels exist)_                                                                     | Same as staging; used by operations alert workflow.                                                                                    |
 
 ## Webapp marketing variables (App Hosting, not GitHub)
 

@@ -244,9 +244,9 @@ The common package provides:
   - Artifact Registry: Container image storage
   - Cloud Build: CI/CD
 
-### Deployment & Infrastructure as Code
+### Deployment & infrastructure
 
-- **Terraform**: Infrastructure provisioning and management
+- **GitHub Actions + gcloud**: Environment provisioning (`create-environment.yaml`) and component deploys (`deploy-*.yaml`)
 - **Docker**: Containerization
 - **GCloud CLI**: Google Cloud command-line tools
 - **EAS Build**: Expo Application Services for mobile builds

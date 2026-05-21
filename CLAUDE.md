@@ -15,8 +15,7 @@ gcp/
 ├── agents/homecare/ Vertex AI ADK multi-agent system (Python, uv)
 ├── proxy/api/       FastAPI gateway → Cloud Run
 ├── proxy/workers/   Cloud Functions (Gen2) Pub/Sub workers
-├── common/          Shared Python modules imported as `common.*` (token quota, pubsub, storage, gemini helpers)
-└── terraform/       IaC (note: deployment is primarily GitHub Actions + gcloud, not Terraform)
+└── common/          Shared Python modules imported as `common.*` (token quota, pubsub, storage, gemini helpers)
 ```
 
 ## Common commands
@@ -119,7 +118,7 @@ React contexts are the main state-management mechanism in both clients (auth, se
 Imported as `common.*` from both `gcp/proxy/api/` and `gcp/proxy/workers/function/*`. Includes: `token/` (quota + Firestore counters), `pubsub/`, `storage/`, `geocoding/`, `observability/`, and several `gemini_*` helpers (`gemini_file_search`, `gemini_google_search`, `gemini_maps_grounding`, `gemini_robotics`, `gemini_url_context`), plus `cpaas/` and `conv_ai/`. The same code is shipped into worker deployments and into the proxy Docker image — keep it import-clean (no top-level side effects that depend on FastAPI / functions runtime).
 
 ### Deployment
-GitHub Actions in `.github/workflows/` deploys everything via `gcloud` (Terraform exists in `gcp/terraform/` but the canonical path is gcloud-based workflows):
+GitHub Actions in `.github/workflows/` deploys everything via `gcloud`:
 - `deploy-homecare-agent.yaml` — Vertex AI Agent Engine
 - `deploy-homecare-agent-proxy.yaml` — Cloud Run for `gcp/proxy/api`
 - `deploy-checkpoint-analysis.yaml`, `deploy-checkpoint-metrics.yaml`, `deploy-pubsub-user-docs.yaml` — Cloud Functions workers

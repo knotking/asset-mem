@@ -1,3 +1,8 @@
+"""FastAPI lifespan: proxy observability startup and Pub/Sub result listener.
+
+On shutdown, cancels the streaming pull and joins the listener thread (bounded wait)
+so Cloud Run scale-in/deploy does not leave dangling pull callbacks.
+"""
 import asyncio
 import json
 import logging

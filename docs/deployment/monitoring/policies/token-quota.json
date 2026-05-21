@@ -1,0 +1,32 @@
+{
+  "displayName": "HomeApp token quota exceeded (__ENV__)",
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "Users are hitting TOKEN_QUOTA_EXCEEDED on proxy `__PROXY_SERVICE__`. Review Firestore `llm_token_usage` and `TOKEN_QUOTA_PERIOD_MAX_TOKENS`. Not an outage — tune limits or UX.",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "TOKEN_QUOTA_EXCEEDED log rate > 5/min (15m)",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/__TOKEN_METRIC__\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "60s",
+            "perSeriesAligner": "ALIGN_RATE"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.08,
+        "duration": "900s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "3600s"
+  }
+}

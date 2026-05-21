@@ -2,7 +2,7 @@
 
 Unified sign-off checklist for **production GA** (general availability), consolidating security, reliability, compliance, operations, and testing gaps identified in architecture review. Use after or in parallel with [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md); PH can ship with a subset of Phase 1 items — **GA requires all Critical and High items signed off**.
 
-**Canonical deploy path:** GitHub Actions (not raw `gcloud` snippets). See [CI/CD](./CICD.md), [SETUP_AND_DEPLOYMENT](../../gcp/docs/SETUP_AND_DEPLOYMENT.md).
+**Canonical deploy path:** GitHub Actions + `gcloud` (prefer workflows over ad-hoc snippets). Environment bootstrap: [`create-environment.yaml`](../../.github/workflows/create-environment.yaml). See [CI/CD](./CICD.md), [SETUP_AND_DEPLOYMENT](../../gcp/docs/SETUP_AND_DEPLOYMENT.md), [`.github/workflows/README.md`](../../.github/workflows/README.md).
 
 **Phase tracker (engineering tasks + per-phase operational TODOs):** [LAUNCH_PLAN_PROGRESS.md](./LAUNCH_PLAN_PROGRESS.md)
 
@@ -80,18 +80,19 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | # | Priority | Item | Verification | Staging | Prod | Owner | Notes |
 |---|----------|------|--------------|---------|------|-------|-------|
 | 3.1 | **High** | `initialize_observability()` on proxy startup | Metrics/traces in Cloud Monitoring | [ ] | [ ] | Eng | Workers already use `gcp/common/observability` |
-| 3.2 | **High** | Alert policies: proxy 5xx, latency, quota exceeded | Alert fires on synthetic test | [ ] | [ ] | Ops | |
-| 3.3 | **High** | Alert policies: Pub/Sub backlog, function errors | | [ ] | [ ] | Ops | |
+| 3.2 | **High** | Alert policies: proxy 5xx, latency, quota exceeded | Alert fires on synthetic test | [ ] | [ ] | Ops | Document + apply via `docs/deployment/` and/or checked-in gcloud scripts; GHA optional |
+| 3.3 | **High** | Alert policies: Pub/Sub backlog, function errors | | [ ] | [ ] | Ops | Same as 3.2 |
 | 3.4 | **High** | Uptime check on prod web + proxy `/health` | | [ ] | [ ] | Ops | |
 | 3.5 | **High** | Incident runbooks published | Proxy down, Vertex outage, worker backlog | [ ] | [ ] | Ops | Link runbook URLs below |
 | 3.6 | **Medium** | Correlation IDs verified in logs (`X-Request-ID`) | Sample request traceable | [ ] | [ ] | Eng | Already implemented |
 | 3.7 | **Medium** | Billing alerts on GCP project | | [ ] | [ ] | Ops | |
 
-**Runbook links (fill in):**
+**Runbook links:**
 
-- Proxy / API: _______________
-- Vertex / Agent: _______________
-- Workers / Pub/Sub: _______________
+- Proxy / API: [runbooks/proxy-down.md](./runbooks/proxy-down.md)
+- Vertex / Agent: [runbooks/vertex-outage.md](./runbooks/vertex-outage.md)
+- Workers / Pub/Sub: [runbooks/worker-backlog.md](./runbooks/worker-backlog.md)
+- Ops index: [OPERATIONS.md](./OPERATIONS.md) · Apply script/workflow: [apply-operations-config.yaml](../../.github/workflows/apply-operations-config.yaml)
 
 ---
 

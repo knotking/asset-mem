@@ -138,12 +138,15 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 
 ## Phase 3 — Production GA
 
+**Infra:** GCP provisioning and deploys via **GitHub Actions + `gcloud`** ([`create-environment.yaml`](../../.github/workflows/create-environment.yaml), `deploy-*.yaml`). Alert policies and DLQ: workflows or [`docs/deployment/`](./) scripts.
+
 | Task | Status | Notes |
 |------|--------|-------|
 | Account deletion + data export | `[ ]` | Settings UI |
 | Data retention policy + automation | `[ ]` | |
-| Alert policies + runbooks | `[ ]` | |
-| Pub/Sub DLQ | `[ ]` | `create-environment.yaml` |
+| Alert policies + runbooks | `[x]` | [OPERATIONS.md](./OPERATIONS.md), `.github/scripts/apply-monitoring-alerts.sh`, [apply-operations-config.yaml](../../.github/workflows/apply-operations-config.yaml) |
+| Pub/Sub DLQ | `[x]` | `create-environment.yaml` + `.github/scripts/apply-pubsub-dlq.sh` |
+| Graceful Pub/Sub shutdown (proxy) | `[x]` | `gcp/proxy/api/core/events.py` |
 | Webapp lint/typecheck + E2E in CI | `[ ]` | |
 | Checkpoint pagination / shared chat hardening | `[ ]` | |
 | Agent production disclaimer resolved | `[ ]` | `gcp/agents/homecare/README.md` |
@@ -232,6 +235,7 @@ Details: [WEBAPP_DEPLOYMENT.md — Marketing & analytics env vars](./WEBAPP_DEPL
 
 ## Related documents
 
+- **Canonical infra:** [`.github/workflows/README.md`](../../.github/workflows/README.md)
 - [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Webapp Deployment](./WEBAPP_DEPLOYMENT.md)

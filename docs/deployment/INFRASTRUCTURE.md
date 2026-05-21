@@ -68,12 +68,8 @@ HomeApp infrastructure is built on Google Cloud Platform (GCP) with:
 # Install Google Cloud SDK
 # Download from https://cloud.google.com/sdk/docs/install
 
-# Install Terraform (optional, for IaC)
-# Download from https://www.terraform.io/downloads
-
-# Verify installations
+# Verify installation
 gcloud --version
-terraform --version  # if using Terraform
 ```
 
 ### GCP Project Setup
@@ -260,11 +256,9 @@ gcloud pubsub subscriptions create checkpoint-metrics-subscription \
   --topic=checkpoint-metrics-topic \
   --ack-deadline=60
 
-# Configure dead letter queues (optional)
-gcloud pubsub topics create user-upload-dlq
-gcloud pubsub subscriptions update user-upload-topic-subscription \
-  --dead-letter-topic=user-upload-dlq \
-  --max-delivery-attempts=5
+# Dead letter queues (canonical script)
+./.github/scripts/apply-pubsub-dlq.sh PROJECT_ID ENV
+# See docs/deployment/OPERATIONS.md
 ```
 
 ### 3. Firestore Database
@@ -351,48 +345,13 @@ gcloud artifacts repositories add-iam-policy-binding cloud-run-source-deploy \
   --role="roles/artifactregistry.writer"
 ```
 
-## Terraform Infrastructure (Optional)
+## Infrastructure provisioning (GitHub Actions)
 
-### Setup Terraform
+New environments and shared GCP resources are provisioned by the [**Create Environment**](../../.github/workflows/create-environment.yaml) workflow (`workflow_dispatch`): project, IAM, Workload Identity Federation, Pub/Sub topics/subscriptions, buckets, RAG corpora, GitHub environment variables, and related setup.
 
-```bash
-cd gcp/terraform
+Per-surface deploys use the `deploy-*.yaml` workflows (Cloud Run proxy, Cloud Functions workers, Vertex agent, App Hosting, EAS). See [CI/CD](./CICD.md) and [`.github/workflows/README.md`](../../.github/workflows/README.md).
 
-# Initialize Terraform
-terraform init
-
-# Create terraform.tfvars
-cat > environments/staging/terraform.tfvars << EOF
-project_id     = "homegeek-staging"
-project_number = "PROJECT_NUMBER"
-region         = "us-central1"
-environment    = "staging"
-EOF
-```
-
-### Deploy Infrastructure
-
-```bash
-# Plan changes
-terraform plan
-
-# Apply changes
-terraform apply
-
-# Destroy (if needed)
-terraform destroy
-```
-
-### Managed Resources
-
-Terraform can manage:
-
-- Cloud Run services
-- Cloud Functions
-- Pub/Sub topics and subscriptions
-- Cloud Storage buckets
-- IAM service accounts and bindings
-- Secret Manager secrets (references only)
+For one-off or supplemental resources (e.g. Pub/Sub DLQ, alert policies), use `gcloud` commands documented in this file and [WORKERS_DEPLOYMENT.md](./WORKERS_DEPLOYMENT.md), or add steps to `create-environment.yaml`.
 
 ## Monitoring and Logging
 
@@ -579,7 +538,7 @@ gsutil ls -a gs://homegeek-user-data/file.pdf
 
 2. **Recovery Procedures**:
    - Document all infrastructure setup
-   - Maintain Terraform configurations
+   - Keep `create-environment.yaml` and deploy workflows accurate
    - Keep deployment scripts updated
    - Test recovery procedures quarterly
 
@@ -676,7 +635,7 @@ gcloud pubsub topics list
 ## Related Documentation
 
 - [GCP Documentation](https://cloud.google.com/docs)
-- [Terraform GCP Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
+- [GitHub Actions workflows](../../.github/workflows/README.md)
 - [Web Application Deployment](./WEBAPP_DEPLOYMENT.md)
 - [Agent Deployment](./AGENT_DEPLOYMENT.md)
 - [Proxy Deployment](./PROXY_DEPLOYMENT.md)
