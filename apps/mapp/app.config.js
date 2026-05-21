@@ -89,6 +89,8 @@ module.exports = {
       checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, 'analyze-checkpoint'),
       checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, 'compare-checkpoints'),
       tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, 'token-quota-status'),
+      billingB2cCheckoutUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/checkout-session'),
+      billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),
       webAppUrl: process.env.WEB_APP_URL,
     },
     runtimeVersion: {

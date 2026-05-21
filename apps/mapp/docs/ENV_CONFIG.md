@@ -41,8 +41,11 @@ The following endpoints are constructed from the proxy base URL:
 | `firebase-agent-stream` | Agent SSE streaming    |
 | `rag-file-upload`       | RAG file upload        |
 | `extract-doc-info`      | Document analysis      |
+| `token-quota-status`    | Monthly quota for AI usage bar |
+| `billing/b2c/checkout-session` | Stripe Checkout (used by web; optional on mobile) |
+| `billing/b2c/portal-session`   | Stripe Customer Portal (in-app **Manage subscription**) |
 
-These are exposed in [app.config.js:76-79](apps/mapp/app.config.js#L76-L79) via `expo.extra`.
+These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. Plan management in the app also uses `WEB_APP_URL` → `/home/settings` for subscribe on web.
 
 ## Setup for Local Development
 
