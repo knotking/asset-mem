@@ -7,7 +7,8 @@ import type {
   PrimaryAgent,
   SearchLocationInput,
 } from '@homeapp/common/types';
-import { createCorrelationId, proxyFetch } from '@/lib/correlation-id';
+import { proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
 const log = createLogger('agent');
@@ -34,7 +35,7 @@ export async function createAgentSession(
       throw new Error('AGENT_SESSION_URL not set.');
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify({
         user_id: userId,
@@ -76,7 +77,7 @@ export async function deleteAgentSession(
       return { success: true };
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'DELETE',
       body: JSON.stringify({ user_id: userId, session_id: agentSessionId }),
     });
@@ -187,7 +188,7 @@ export async function streamAgentResponse({
       requestBody.search_location = resolvedSearchLocation;
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       correlationId,
       body: JSON.stringify(requestBody),
@@ -400,7 +401,7 @@ export async function queueExtractDocInfo(
     throw new Error('DOCUMENT_ANALYSIS_URL not set.');
   }
 
-  const response = await proxyFetch(url, {
+  const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -426,7 +427,7 @@ export async function postFileToAgent(
       throw new Error('RAG_FILE_UPLOAD_URL not set.');
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify({
         user_id: userId,
@@ -478,7 +479,7 @@ export async function analyzeCheckpoint(
       throw new Error('CHECKPOINT_ANALYSIS_URL not set.');
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify(input),
     });
@@ -531,7 +532,7 @@ export async function compareCheckpoints(
       throw new Error('CHECKPOINT_COMPARISON_URL not set.');
     }
 
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify(input),
     });

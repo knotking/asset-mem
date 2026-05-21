@@ -116,8 +116,8 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Firebase ID token on all proxy routes | `[ ]` | `gcp/proxy/api/core/firebase_auth.py` (new) |
-| Client `proxyFetchWithAuth` (web + mapp) | `[ ]` | Strip secret from `NEXT_PUBLIC_API_BASE_URL` |
+| Firebase ID token on all proxy routes | `[x]` | `gcp/proxy/api/core/firebase_auth.py`, `firebase_auth_middleware.py` |
+| Client `proxyFetchWithAuth` (web + mapp) | `[x]` | `apps/common/src/lib/correlation-id.ts`, `proxy-auth.ts`, apphosting base URL without secret |
 | Dual-mode migration / secret rotation | `[ ]` | [PRODUCTION_LAUNCH_CHECKLIST §1](./PRODUCTION_LAUNCH_CHECKLIST.md#1-security-critical--high) |
 | CORS allowlist | `[ ]` | `main.py` |
 | Per-UID rate limiting | `[ ]` | |

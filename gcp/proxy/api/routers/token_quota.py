@@ -1,10 +1,13 @@
 """Token quota status for UI (same resolution as enforcement)."""
 
 import logging
+from typing import Annotated
+
 from google.cloud import firestore
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from common.token import get_token_quota_status
+from core.firebase_auth import apply_uid_to_agent_request, require_firebase_uid
 from schemas.token_quota import TokenQuotaStatusRequest
 
 router = APIRouter(tags=["Token quota"])
@@ -19,7 +22,11 @@ logger = logging.getLogger(__name__)
         "Same rules as enforcement: preferences override, then TOKEN_QUOTA_PERIOD_MAX_TOKENS."
     ),
 )
-async def token_quota_status(request_data: TokenQuotaStatusRequest):
+async def token_quota_status(
+    request_data: TokenQuotaStatusRequest,
+    uid: Annotated[str, Depends(require_firebase_uid)],
+):
+    apply_uid_to_agent_request(request_data, uid)
     db = firestore.Client()
     used, cap, period_key = get_token_quota_status(db, request_data.user_id)
     unlimited = cap <= 0

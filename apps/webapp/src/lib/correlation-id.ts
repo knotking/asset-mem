@@ -35,3 +35,21 @@ export async function proxyFetch(
     headers: proxyJsonHeaders(correlationId, headers),
   });
 }
+
+export type GetFirebaseIdToken = () => Promise<string | null | undefined>;
+
+/** Proxy request with `Authorization: Bearer <Firebase ID token>`. */
+export async function proxyFetchWithAuth(
+  input: RequestInfo | URL,
+  getIdToken: GetFirebaseIdToken,
+  init: RequestInit & { correlationId?: string } = {}
+): Promise<Response> {
+  const token = await getIdToken();
+  if (!token) {
+    throw new Error('Not signed in — Firebase ID token required for proxy API');
+  }
+  const { correlationId: _omit, headers, ...rest } = init;
+  const extra = new Headers(headers);
+  extra.set('Authorization', `Bearer ${token}`);
+  return proxyFetch(input, { ...rest, headers: extra });
+}

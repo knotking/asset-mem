@@ -3,7 +3,8 @@
  */
 
 import { apiUrls } from "./utils";
-import { proxyFetch } from "./correlation-id";
+import { proxyFetchWithAuth } from "./correlation-id";
+import { getFirebaseIdTokenForProxy } from "./proxy-auth";
 import { createLogger, truncateId } from "./logger";
 
 const log = createLogger("checkpoint");
@@ -26,7 +27,7 @@ export async function analyzeCheckpoint(input: AnalyzeCheckpointInput) {
     propertyId: truncateId(input.propertyId),
   });
 
-  const response = await proxyFetch(apiUrls.analyzeCheckpoint(), {
+  const response = await proxyFetchWithAuth(apiUrls.analyzeCheckpoint(), getFirebaseIdTokenForProxy, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -55,7 +56,7 @@ export interface CompareCheckpointsInput {
 export async function compareCheckpoints(input: CompareCheckpointsInput) {
   log.info("comparison.request");
 
-  const response = await proxyFetch(apiUrls.compareCheckpoints(), {
+  const response = await proxyFetchWithAuth(apiUrls.compareCheckpoints(), getFirebaseIdTokenForProxy, {
     method: "POST",
     body: JSON.stringify(input),
   });

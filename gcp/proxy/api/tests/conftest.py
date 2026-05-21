@@ -7,14 +7,16 @@ from unittest.mock import MagicMock
 # Add the parent directory to sys.path to import main
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Set before importing main so core.config.Settings picks them up.
+os.environ["FIREBASE_WEBHOOK_SECRET"] = "test_secret"
+os.environ["TELEGRAM_WEBHOOK_SECRET"] = "test_telegram_secret"
+os.environ["DISABLE_FIREBASE_AUTH"] = "true"
+
 from main import app
+
 
 @pytest.fixture(scope="module")
 def client():
-    # Mock environment variables if needed
-    os.environ["FIREBASE_WEBHOOK_SECRET"] = "test_secret"
-    os.environ["TELEGRAM_WEBHOOK_SECRET"] = "test_telegram_secret"
-    
     with TestClient(app) as c:
         yield c
 

@@ -96,15 +96,28 @@ export function htmlToWhatsapp(html: string): string {
  * Gets the base API URL from environment variables
  * Falls back to NEXT_PUBLIC_API_BASE_URL or legacy individual URL variables for backward compatibility
  */
+/**
+ * Proxy base URL without the legacy FIREBASE_WEBHOOK_SECRET path segment.
+ * Clients send Firebase ID tokens instead of embedding the secret in the URL.
+ */
+export function normalizeProxyBaseUrl(baseUrl: string): string {
+  const clean = baseUrl.replace(/\/$/, "");
+  const secret = process.env.NEXT_PUBLIC_PROXY_PATH_SECRET?.trim();
+  if (secret && clean.endsWith(`/${secret}`)) {
+    return clean.slice(0, -(secret.length + 1));
+  }
+  return clean;
+}
+
 function getBaseApiUrl(): string {
   // Prefer the new unified API base URL
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+    return normalizeProxyBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
   }
 
   // Backward compatibility: also check NEXT_PUBLIC_API_URL
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+    return normalizeProxyBaseUrl(process.env.NEXT_PUBLIC_API_URL);
   }
 
   // Fallback: extract base URL from existing variables for backward compatibility

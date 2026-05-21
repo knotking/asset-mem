@@ -3,7 +3,8 @@
  */
 
 import { apiUrls } from '@/lib/utils';
-import { createCorrelationId, proxyFetch } from '@/lib/correlation-id';
+import { createCorrelationId, proxyFetchWithAuth } from '@/lib/correlation-id';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import {
   createLogger,
   parseAgentErrorCode,
@@ -19,7 +20,7 @@ export async function createAgentSession(
 ): Promise<{ agentSessionId?: string; error?: string }> {
   try {
     const url = apiUrls.agentSession();
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     });
@@ -53,7 +54,7 @@ export async function deleteAgentSession(
 ): Promise<{ success?: boolean; error?: string }> {
   try {
     const url = apiUrls.agentSession();
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'DELETE',
       body: JSON.stringify({ user_id: userId, session_id: agentSessionId }),
     });
@@ -85,7 +86,7 @@ export async function postFileToAgent(
 ): Promise<{ success: boolean; summary?: string; error?: string }> {
   try {
     const url = apiUrls.ragFileUpload();
-    const response = await proxyFetch(url, {
+    const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId, context_doc_uris: [gsURI] }),
     });
@@ -188,7 +189,7 @@ export async function streamAgentResponse({
       requestBody.search_location = resolvedSearchLocation;
     }
 
-    const response = await proxyFetch(apiUrls.agentSse(), {
+    const response = await proxyFetchWithAuth(apiUrls.agentSse(), getFirebaseIdTokenForProxy, {
       method: 'POST',
       correlationId,
       body: JSON.stringify(requestBody),
