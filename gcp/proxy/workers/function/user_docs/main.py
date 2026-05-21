@@ -58,12 +58,13 @@ def pubsub_to_user_docs(request, context):
             logger.exception("user_docs unexpected error: %s", e)
             result_msg = f"Unexpected error: {str(e)}"
 
+        result_preview = str(result_msg) if result_msg is not None else ""
         logger.info(
             "user_docs import outcome success=%s result_len=%d",
             success,
-            len(result_msg or ""),
+            len(result_preview),
         )
-        logger.debug("user_docs result_preview=%r", (result_msg or "")[:800])
+        logger.debug("user_docs result_preview=%r", result_preview[:800])
 
         data = {
             "gcs_urls": gcs_urls,
