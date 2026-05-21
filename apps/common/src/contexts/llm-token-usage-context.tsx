@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import { createLogger } from "../lib/logger";
-import { proxyFetch } from "../lib/correlation-id";
+import { proxyFetchWithAuth, type GetFirebaseIdToken } from "../lib/correlation-id";
 
 const quotaLog = createLogger("quota");
 
@@ -62,6 +62,7 @@ export type LlmTokenUsageProviderProps = {
   db: Firestore;
   uid: string | undefined;
   tokenQuotaStatusUrl: string;
+  getIdToken: GetFirebaseIdToken;
   publicDefaultMonthlyTokenLimit?: number | null;
 };
 
@@ -69,6 +70,7 @@ function useLlmTokenUsageSubscription(
   userId: string | undefined,
   db: Firestore | undefined,
   tokenQuotaStatusUrl: string,
+  getIdToken: GetFirebaseIdToken,
   envDefault: number | null
 ): LlmTokenUsageSnapshot {
   const [loading, setLoading] = useState(true);
@@ -180,7 +182,7 @@ function useLlmTokenUsageSubscription(
 
     (async () => {
       try {
-        const res = await proxyFetch(tokenQuotaStatusUrl, {
+        const res = await proxyFetchWithAuth(tokenQuotaStatusUrl, getIdToken, {
           method: "POST",
           body: JSON.stringify({ user_id: userId }),
         });
@@ -206,7 +208,7 @@ function useLlmTokenUsageSubscription(
     return () => {
       cancelled = true;
     };
-  }, [userId, prefsLoaded, monthlyLimit, tokenQuotaStatusUrl]);
+  }, [userId, prefsLoaded, monthlyLimit, tokenQuotaStatusUrl, getIdToken]);
 
   const effectiveMonthlyLimit = useMemo(() => {
     if (monthlyLimit != null) {
@@ -238,12 +240,14 @@ export function LlmTokenUsageProvider({
   db,
   uid,
   tokenQuotaStatusUrl,
+  getIdToken,
   publicDefaultMonthlyTokenLimit = null,
 }: LlmTokenUsageProviderProps) {
   const value = useLlmTokenUsageSubscription(
     uid,
     db,
     tokenQuotaStatusUrl,
+    getIdToken,
     publicDefaultMonthlyTokenLimit ?? null
   );
 

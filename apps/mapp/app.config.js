@@ -1,14 +1,17 @@
 // Load environment variables from .env file for local development
 require('dotenv').config();
 
-// Helper function to build proxy URLs
-const buildProxyUrl = (baseUrl, token, endpoint) => {
-  if (!baseUrl || !token) return undefined;
-  return `${baseUrl}/${token}/${endpoint}`;
+// Proxy URLs: base origin only; clients send Firebase ID token (Phase 2.1).
+const buildProxyUrl = (baseUrl, endpoint) => {
+  if (!baseUrl) return undefined;
+  const clean = baseUrl.replace(/\/$/, '');
+  const secret = process.env.PROXY_PATH_SECRET?.trim();
+  const origin =
+    secret && clean.endsWith(`/${secret}`) ? clean.slice(0, -(secret.length + 1)) : clean;
+  return `${origin}/${endpoint}`;
 };
 
 const proxyBaseUrl = process.env.PROXY_BASE_URL;
-const proxyToken = process.env.PROXY_TOKEN;
 
 module.exports = {
   expo: {
@@ -79,13 +82,13 @@ module.exports = {
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
       // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json
-      agentSessionUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'agent-session'),
-      agentSseUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'firebase-agent-stream'),
-      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'rag-file-upload'),
-      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'extract-doc-info'),
-      checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'analyze-checkpoint'),
-      checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'compare-checkpoints'),
-      tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, proxyToken, 'token-quota-status'),
+      agentSessionUrl: buildProxyUrl(proxyBaseUrl, 'agent-session'),
+      agentSseUrl: buildProxyUrl(proxyBaseUrl, 'firebase-agent-stream'),
+      ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, 'rag-file-upload'),
+      documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, 'extract-doc-info'),
+      checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, 'analyze-checkpoint'),
+      checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, 'compare-checkpoints'),
+      tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, 'token-quota-status'),
       /** Optional UI fallback if proxy /token-quota-status fails (align with TOKEN_QUOTA_PERIOD_MAX_TOKENS) */
       tokenQuotaPeriodMaxTokens: process.env.TOKEN_QUOTA_PERIOD_MAX_TOKENS,
       webAppUrl: process.env.WEB_APP_URL,

@@ -20,7 +20,8 @@ export interface QueueExtractDocInfoResult {
 }
 
 export async function queueExtractDocInfo(
-  input: QueueExtractDocInfoInput
+  input: QueueExtractDocInfoInput,
+  idToken: string
 ): Promise<QueueExtractDocInfoResult> {
   if (!input.docId?.trim()) {
     throw new Error(
@@ -34,8 +35,8 @@ export async function queueExtractDocInfo(
     throw new Error('Extract doc info API URL not configured');
   }
 
-  const { proxyFetch } = await import('@/lib/correlation-id');
-  const response = await proxyFetch(url, {
+  const { proxyFetchWithAuth } = await import('@/lib/correlation-id');
+  const response = await proxyFetchWithAuth(url, async () => idToken, {
     method: 'POST',
     body: JSON.stringify(input),
   });

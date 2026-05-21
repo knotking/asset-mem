@@ -37,7 +37,7 @@ import {
 } from "firebase/firestore";
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
 import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
-import { postFileToAgent } from "@/app/actions";
+import { postFileToAgent } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
 
 const uploadLog = createLogger("upload");
@@ -285,15 +285,19 @@ export function UploadDocumentsDialog({
           status: "analyzing",
         });
 
+        const idToken = await user.getIdToken();
         await Promise.all([
           postFileToAgent(gsURI, user.uid),
           (async () => {
-            const queued = await queueExtractDocInfo({
-              docId,
-              docUrl: gsURI,
-              contentType: file.type,
-              userId: user.uid,
-            });
+            const queued = await queueExtractDocInfo(
+              {
+                docId,
+                docUrl: gsURI,
+                contentType: file.type,
+                userId: user.uid,
+              },
+              idToken
+            );
             if (queued.status !== "accepted") {
               throw new Error(queued.message || "Document analysis was not accepted");
             }

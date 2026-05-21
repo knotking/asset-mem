@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 import logging
 import time
 
+from core.firebase_auth import apply_uid_to_camel_user_id, require_firebase_uid
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
@@ -12,7 +15,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.post("/analyze-checkpoint")
-async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
+async def analyze_checkpoint_endpoint(
+    request_data: AnalyzeCheckpointRequest,
+    uid: Annotated[str, Depends(require_firebase_uid)],
+):
+    apply_uid_to_camel_user_id(request_data, uid)
     """
     Analyze a property checkpoint image using Gemini AI.
     
@@ -63,7 +70,10 @@ async def analyze_checkpoint_endpoint(request_data: AnalyzeCheckpointRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/compare-checkpoints")
-async def compare_checkpoints_endpoint(request_data: CompareCheckpointsRequest):
+async def compare_checkpoints_endpoint(
+    request_data: CompareCheckpointsRequest,
+    _uid: Annotated[str, Depends(require_firebase_uid)],
+):
     """
     Compare two checkpoint images (previous vs current) using Gemini AI.
     Returns structured comparison data including similarity score, semantic changes, and specific regions of interest.

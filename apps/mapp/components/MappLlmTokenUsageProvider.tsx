@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { LlmTokenUsageProvider } from '@homeapp/common/contexts/llm-token-usage-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 
 function parsePositiveInt(raw: unknown): number | null {
   if (raw == null || String(raw).trim() === '') return null;
@@ -23,6 +24,7 @@ export function MappLlmTokenUsageProvider({ children }: { children: React.ReactN
       db={db}
       uid={user?.uid}
       tokenQuotaStatusUrl={tokenQuotaStatusUrl}
+      getIdToken={getFirebaseIdTokenForProxy}
       publicDefaultMonthlyTokenLimit={publicDefaultMonthlyTokenLimit}
     >
       {children}

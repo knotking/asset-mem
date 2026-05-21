@@ -6,7 +6,7 @@ are persisted to Firestore (llm_token_usage/{userId}).
 Prerequisites
 -------------
 - Proxy running locally (e.g. uvicorn from gcp/proxy/api) or a reachable Cloud Run URL.
-- Same env as the app: FIREBASE_WEBHOOK_SECRET, and for local runs GCP credentials
+- TEST_FIREBASE_ID_TOKEN (Bearer) for the test user; for local runs GCP credentials
   with Firestore write access (Application Default Credentials).
 - REASONING_ENGINE_ID and Vertex config must be valid or the stream will fail before
   usage is recorded.
@@ -83,17 +83,20 @@ def main() -> int:
     args = parser.parse_args()
 
     base = os.environ.get("PROXY_BASE_URL", "http://127.0.0.1:8080").rstrip("/")
-    secret = os.environ.get("FIREBASE_WEBHOOK_SECRET", "").strip()
     user_id = os.environ.get("TEST_USER_ID", "").strip()
+    id_token = os.environ.get("TEST_FIREBASE_ID_TOKEN", "").strip()
 
-    if not secret:
-        print("Set FIREBASE_WEBHOOK_SECRET (e.g. from gcp/proxy/.env.staging)", file=sys.stderr)
-        return 1
     if not user_id:
         print("Set TEST_USER_ID to a real Firebase user uid", file=sys.stderr)
         return 1
+    if not id_token:
+        print(
+            "Set TEST_FIREBASE_ID_TOKEN to a Firebase ID token (Bearer) for the test user",
+            file=sys.stderr,
+        )
+        return 1
 
-    url = f"{base}/{secret}/firebase-agent-stream"
+    url = f"{base}/firebase-agent-stream"
     payload = {
         "user_id": user_id,
         "user_query": args.query,
@@ -110,11 +113,12 @@ def main() -> int:
     else:
         print("Mode: buffered POST (wait for full response body)...", flush=True)
 
+    headers = {"Authorization": f"Bearer {id_token}"}
     timeout = httpx.Timeout(300.0, connect=30.0)
     try:
         with httpx.Client(timeout=timeout) as client:
             if args.stream_chunks:
-                with client.stream("POST", url, json=payload) as response:
+                with client.stream("POST", url, json=payload, headers=headers) as response:
                     print(f"HTTP {response.status_code}", flush=True)
                     response.raise_for_status()
                     print("--- response body ---", flush=True)
@@ -126,7 +130,7 @@ def main() -> int:
                             n += len(chunk)
                     print(f"\n--- response complete ({n} bytes) ---", flush=True)
             else:
-                response = client.post(url, json=payload)
+                response = client.post(url, json=payload, headers=headers)
                 print(f"HTTP {response.status_code}", flush=True)
                 response.raise_for_status()
                 print("--- response body ---", flush=True)

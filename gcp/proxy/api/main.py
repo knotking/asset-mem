@@ -29,7 +29,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from common.observability.logging_context import install_auth_uid_logging
-from core.auth_uid_middleware import AuthUidLoggingMiddleware
+from core.firebase_auth_middleware import FirebaseAuthLoggingMiddleware
 from core.correlation_middleware import CorrelationIdMiddleware
 from core.config import settings
 from core.events import lifespan
@@ -55,7 +55,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
-app.add_middleware(AuthUidLoggingMiddleware)
+app.add_middleware(FirebaseAuthLoggingMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 
 @app.get("/health", summary="Health Check", description="Check the health status of the API and Reasoning Engine connection.")
@@ -65,24 +65,37 @@ async def health_check():
         status_msg += " (Reasoning Engine not initialized)"
     return {"status": status_msg}
 
-# Token quota UI: always at POST /token-quota-status (works when FIREBASE_WEBHOOK_SECRET is unset for local dev).
-app.include_router(token_quota.router)
-logger.info("Mounted token_quota at /token-quota-status")
-
-# Mount routers
-# Firebase / Agent endpoints
-if settings.FIREBASE_WEBHOOK_SECRET:
-    prefix = f"/{settings.FIREBASE_WEBHOOK_SECRET}"
+def _mount_user_routers(prefix: str = "") -> None:
+    """User-facing routes protected by Firebase ID token (see require_firebase_uid)."""
     app.include_router(agent.router, prefix=prefix)
     app.include_router(documents.router, prefix=prefix)
-    app.include_router(service_broker.router, prefix=prefix)
     app.include_router(checkpoint.router, prefix=prefix)
     app.include_router(token_quota.router, prefix=prefix)
+    label = prefix or "/"
     logger.info(
-        f"Mounted agent, documents, service_broker, checkpoint, and token_quota routers at {prefix}"
+        "Mounted agent, documents, checkpoint, token_quota at %s (Firebase auth%s)",
+        label,
+        " disabled" if settings.DISABLE_FIREBASE_AUTH else "",
+    )
+
+
+_mount_user_routers()
+
+if settings.FIREBASE_WEBHOOK_SECRET and settings.ENABLE_LEGACY_SECRET_PREFIX:
+    legacy = f"/{settings.FIREBASE_WEBHOOK_SECRET}"
+    _mount_user_routers(prefix=legacy)
+    app.include_router(service_broker.router, prefix=legacy)
+    logger.info("Mounted service_broker at %s (legacy prefix)", legacy)
+elif settings.FIREBASE_WEBHOOK_SECRET:
+    logger.info(
+        "FIREBASE_WEBHOOK_SECRET set but ENABLE_LEGACY_SECRET_PREFIX=false; "
+        "service_broker not mounted (stub — enable when broker is live)"
     )
 else:
-    logger.warning("FIREBASE_WEBHOOK_SECRET not set, agent endpoints not mounted.")
+    logger.warning(
+        "FIREBASE_WEBHOOK_SECRET not set; user routes only at /. "
+        "Set DISABLE_FIREBASE_AUTH=true for local dev without Bearer tokens."
+    )
 
 # Telegram endpoint
 if settings.TELEGRAM_WEBHOOK_SECRET:

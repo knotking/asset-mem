@@ -35,26 +35,26 @@ async def test_firebase_webhook_no_user_id(client):
             # user_id missing
         }
     )
-    # Validation error from Pydantic
-    assert response.status_code == 422 
+    # Missing uid: 422 from Pydantic when auth off, or 401 from auth dependency
+    assert response.status_code in (401, 422)
 
 @pytest.mark.asyncio
 async def test_firebase_streaming_webhook_success(client):
-    # Mock the streaming service
-    async def mock_stream_generator(data):
+    async def mock_stream_generator(_data):
         yield "Mocked stream part 1"
         yield "Mocked stream part 2"
 
-    with patch("services.agent_service.stream_firebase_agent_answers") as mock_stream:
-        mock_stream.side_effect = mock_stream_generator
-        
+    with patch(
+        "routers.agent.stream_firebase_agent_answers",
+        side_effect=mock_stream_generator,
+    ):
         response = client.post(
             f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-stream",
             json={
                 "user_id": "test_user_id",
                 "user_query": "Test stream",
-                "session_id": ""
-            }
+                "session_id": "",
+            },
         )
         assert response.status_code == 200
         assert "Mocked stream part 1" in response.text

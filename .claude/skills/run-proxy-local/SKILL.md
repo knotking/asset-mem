@@ -24,21 +24,22 @@ If you see `ModuleNotFoundError: No module named 'common'`:
 - You probably ran uvicorn from the repo root or from `gcp/proxy/`. Run it from `gcp/proxy/api/`.
 - Or you copied `common/` somewhere weird. The two layouts above are the only ones supported.
 
-## Routing — the secret prefix
+## Routing — Firebase ID token (Phase 2.1)
 
-In `main.py`, agent / documents / service_broker / checkpoint / token_quota routers are **only mounted** when `FIREBASE_WEBHOOK_SECRET` is set, and they're mounted under `/{FIREBASE_WEBHOOK_SECRET}`. So a route like `/firebase-agent-stream` is actually at:
+User-facing routes are mounted at the **root** (no path secret):
 
 ```
-POST http://127.0.0.1:8080/<FIREBASE_WEBHOOK_SECRET>/firebase-agent-stream
+POST http://127.0.0.1:8080/firebase-agent-stream
+Authorization: Bearer <Firebase ID token>
 ```
 
-The same pattern applies to Telegram (`TELEGRAM_WEBHOOK_SECRET`).
+Legacy prefix `/{FIREBASE_WEBHOOK_SECRET}/...` is still mounted when `ENABLE_LEGACY_SECRET_PREFIX=true` (default); clients should use the root URLs + Bearer.
 
-Two endpoints are exempt from the secret:
-- `GET /health`
-- `POST /token-quota-status` (also re-mounted under the secret prefix)
+`GET /health` is unauthenticated.
 
-If a curl to a known endpoint returns 404, double-check you included the secret prefix.
+**Local dev without tokens:** set `DISABLE_FIREBASE_AUTH=true` in `gcp/proxy/.env` and send `user_id` / `userId` in the JSON body (pytest uses this).
+
+Telegram still uses `/{TELEGRAM_WEBHOOK_SECRET}/...`.
 
 ## Env vars you need set (minimum)
 
@@ -46,7 +47,8 @@ From `gcp/proxy/api/core/config.py`:
 - `GCP_PROJECT_ID`
 - `GCP_REGION`
 - `REASONING_ENGINE_ID` — must be a real, reachable Agent Engine or `stream_query` calls fail
-- `FIREBASE_WEBHOOK_SECRET` — gates router mounting
+- `FIREBASE_WEBHOOK_SECRET` — optional legacy path prefix (not a substitute for auth)
+- `DISABLE_FIREBASE_AUTH=true` — local/tests only; trust body `user_id`
 - `TELEGRAM_WEBHOOK_SECRET` — only if you're testing the bot
 - `USER_UPLOAD_TOPIC`, `USER_UPLOAD_RESULT_SUBSCRIPTION`, `GCS_BUCKET` — for upload + RAG flow
 - `TOKEN_QUOTA_PERIOD_MAX_TOKENS` (optional) — global monthly cap

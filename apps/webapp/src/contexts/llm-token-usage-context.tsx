@@ -159,11 +159,16 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
 
     (async () => {
       try {
-        const { proxyFetch } = await import('@/lib/correlation-id');
-        const res = await proxyFetch(apiUrls.tokenQuotaStatus(), {
-          method: 'POST',
-          body: JSON.stringify({ user_id: userId }),
-        });
+        const { proxyFetchWithAuth } = await import('@/lib/correlation-id');
+        const { getFirebaseIdTokenForProxy } = await import('@/lib/proxy-auth');
+        const res = await proxyFetchWithAuth(
+          apiUrls.tokenQuotaStatus(),
+          getFirebaseIdTokenForProxy,
+          {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId }),
+          }
+        );
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }

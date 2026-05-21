@@ -1,8 +1,10 @@
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
+from core.firebase_auth import apply_uid_to_agent_request, apply_uid_to_camel_user_id, require_firebase_uid
 from schemas.agent import AgentRequest
 from schemas.document import ExtractDocInfoRequest
 from services.agent_service import handle_firebase_file_upload
@@ -13,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/rag-file-upload", summary="Upload RAG File", description="Upload a file for RAG (Retrieval-Augmented Generation) processing.")
-async def firebase_webhook_file_upload(request_data: AgentRequest):
+async def firebase_webhook_file_upload(
+    request_data: AgentRequest,
+    uid: Annotated[str, Depends(require_firebase_uid)],
+):
+    apply_uid_to_agent_request(request_data, uid)
     logger.info(f"Firebase webhook file upload data: {request_data.model_dump_json()}")
     try:
         return handle_firebase_file_upload(request_data)
@@ -30,7 +36,11 @@ async def firebase_webhook_file_upload(request_data: AgentRequest):
         "(`users/{userId}/docs/{docId}`) when complete. Clients should listen on that document."
     ),
 )
-async def extract_document_info_endpoint(request_data: ExtractDocInfoRequest):
+async def extract_document_info_endpoint(
+    request_data: ExtractDocInfoRequest,
+    uid: Annotated[str, Depends(require_firebase_uid)],
+):
+    apply_uid_to_camel_user_id(request_data, uid)
     logger.info(
         "Queue document analysis: docId=%s userId=%s",
         request_data.docId,
