@@ -6,21 +6,26 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import {
   collection,
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
+  getDocs,
+  startAfter,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
   serverTimestamp,
   Timestamp,
+  type DocumentData,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Checkpoint, CheckpointMedia } from "@/lib/types";
@@ -30,6 +35,37 @@ import { useFirebase } from "@/contexts/firebase-context";
 import { createLogger, truncateId } from "@/lib/logger";
 
 const checkpointLog = createLogger("checkpoint");
+
+export const CHECKPOINT_PAGE_SIZE = 20;
+
+function mapCheckpointDoc(
+  docSnap: QueryDocumentSnapshot<DocumentData>
+): Checkpoint {
+  const data = docSnap.data();
+  const { embedding, ...rest } = data;
+  return {
+    id: docSnap.id,
+    ...rest,
+  } as Checkpoint;
+}
+
+function sortCheckpointsNewestFirst(list: Checkpoint[]): Checkpoint[] {
+  return [...list].sort((a, b) => {
+    const aMs =
+      a.createdAt instanceof Timestamp
+        ? a.createdAt.toMillis()
+        : a.createdAt
+          ? new Date(a.createdAt as Date).getTime()
+          : 0;
+    const bMs =
+      b.createdAt instanceof Timestamp
+        ? b.createdAt.toMillis()
+        : b.createdAt
+          ? new Date(b.createdAt as Date).getTime()
+          : 0;
+    return bMs - aMs;
+  });
+}
 
 interface CheckpointContextType {
   checkpoints: Checkpoint[];
@@ -56,60 +92,120 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
   const { db, storage } = useFirebase();
   const { user } = useAuth();
   const { property } = useProperty();
-  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
+  const [liveCheckpoints, setLiveCheckpoints] = useState<Checkpoint[]>([]);
+  const [olderCheckpoints, setOlderCheckpoints] = useState<Checkpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
-  const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(true);
-  const [checkpointsLimit, setCheckpointsLimit] = useState(20);
+  const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] =
     useState<Checkpoint | null>(null);
+
+  const liveTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const olderTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const olderPageFullRef = useRef(false);
+  const livePageFullRef = useRef(false);
+
+  const checkpoints = useMemo(() => {
+    const byId = new Map<string, Checkpoint>();
+    for (const cp of liveCheckpoints) {
+      byId.set(cp.id, cp);
+    }
+    for (const cp of olderCheckpoints) {
+      if (!byId.has(cp.id)) {
+        byId.set(cp.id, cp);
+      }
+    }
+    return sortCheckpointsNewestFirst(Array.from(byId.values()));
+  }, [liveCheckpoints, olderCheckpoints]);
+
+  const resetPagination = useCallback(() => {
+    setLiveCheckpoints([]);
+    setOlderCheckpoints([]);
+    liveTailRef.current = null;
+    olderTailRef.current = null;
+    olderPageFullRef.current = false;
+    livePageFullRef.current = false;
+    setHasMoreCheckpoints(false);
+  }, []);
 
   const loadMoreCheckpoints = useCallback(async () => {
     if (!user || !property || isLoadingEarlier || !hasMoreCheckpoints) {
       return;
     }
 
+    const tail = olderTailRef.current ?? liveTailRef.current;
+    if (!tail) {
+      return;
+    }
+
     setIsLoadingEarlier(true);
     try {
-      const newLimit = checkpointsLimit + 20;
-      setCheckpointsLimit(newLimit);
+      const q = query(
+        collection(
+          db,
+          `users/${user.uid}/properties/${property.id}/checkpoints`
+        ),
+        orderBy("createdAt", "desc"),
+        startAfter(tail),
+        limit(CHECKPOINT_PAGE_SIZE)
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        olderPageFullRef.current = false;
+        setHasMoreCheckpoints(livePageFullRef.current);
+        return;
+      }
+
+      const page = snapshot.docs.map(mapCheckpointDoc);
+      setOlderCheckpoints((prev) => {
+        const ids = new Set(prev.map((c) => c.id));
+        const merged = [...prev];
+        for (const cp of page) {
+          if (!ids.has(cp.id)) {
+            merged.push(cp);
+          }
+        }
+        return merged;
+      });
+      olderTailRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+      olderPageFullRef.current =
+        snapshot.docs.length >= CHECKPOINT_PAGE_SIZE;
+      setHasMoreCheckpoints(
+        olderPageFullRef.current || livePageFullRef.current
+      );
     } catch (err) {
       checkpointLog.error("checkpoints.loadMore.failed", undefined, err);
     } finally {
       setIsLoadingEarlier(false);
     }
-  }, [user, property, isLoadingEarlier, hasMoreCheckpoints, checkpointsLimit]);
+  }, [user, property, isLoadingEarlier, hasMoreCheckpoints, db]);
 
   useEffect(() => {
     if (!user || !property) {
-      setCheckpoints([]);
+      resetPagination();
       setLoading(false);
-      setHasMoreCheckpoints(true);
       return;
     }
 
+    resetPagination();
     setLoading(true);
+
     const q = query(
       collection(db, `users/${user.uid}/properties/${property.id}/checkpoints`),
       orderBy("createdAt", "desc"),
-      limit(checkpointsLimit)
+      limit(CHECKPOINT_PAGE_SIZE)
     );
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const checkpointsData = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          // Exclude embedding field for performance
-          const { embedding, ...rest } = data;
-          return {
-            id: doc.id,
-            ...rest,
-          } as Checkpoint;
-        });
-
-        setCheckpoints(checkpointsData);
-        setHasMoreCheckpoints(checkpointsData.length >= checkpointsLimit);
+        setLiveCheckpoints(snapshot.docs.map(mapCheckpointDoc));
+        liveTailRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+        livePageFullRef.current =
+          snapshot.docs.length >= CHECKPOINT_PAGE_SIZE;
+        setHasMoreCheckpoints(
+          livePageFullRef.current || olderPageFullRef.current
+        );
         setLoading(false);
       },
       (error) => {
@@ -119,7 +215,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [db, user, property, checkpointsLimit]);
+  }, [db, user, property?.id, resetPagination]);
 
   const createCheckpoint = useCallback(
     async (
@@ -133,7 +229,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       try {
         const uploadedMedia: CheckpointMedia[] = [];
 
-        // Upload media files
         for (let i = 0; i < mediaFiles.length; i++) {
           const mediaFile = mediaFiles[i];
           const timestamp = Date.now();
@@ -143,11 +238,9 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           const storagePath = `uploads/${user.uid}/properties/${property.id}/checkpoints/${fileName}`;
           const storageRef = ref(storage, storagePath);
 
-          // Convert data URL to blob for web
           const response = await fetch(mediaFile.uri);
           const blob = await response.blob();
 
-          // Upload to Firebase Storage
           await uploadBytes(storageRef, blob);
           const downloadURL = await getDownloadURL(storageRef);
 
@@ -160,11 +253,10 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           });
         }
 
-        // Create checkpoint document
         const checkpointData = {
           userId: user.uid,
           propertyId: property.id,
-          name: data.name, // No fallback needed - always provided
+          name: data.name,
           description: data.description || "",
           assetType: data.assetType || "real_estate",
           location: data.location || "",
@@ -228,6 +320,8 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           id
         );
         await deleteDoc(docRef);
+        setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
+        setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
       } catch (error) {
         checkpointLog.error("checkpoint.delete.failed", undefined, error);
         throw error;
@@ -237,8 +331,10 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const compareCheckpoints = useCallback(async (id1: string, id2: string) => {
-    // Comparison is handled by the comparison dialog component
-    checkpointLog.debug("checkpoint.compare", { id1: truncateId(id1), id2: truncateId(id2) });
+    checkpointLog.debug("checkpoint.compare", {
+      id1: truncateId(id1),
+      id2: truncateId(id2),
+    });
   }, []);
 
   return (

@@ -55,7 +55,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | 1.6 | **High** | Per-UID API rate limiting (agent, checkpoint, documents) | Abuse test cannot exhaust Vertex in minutes | [ ] | [ ] | Eng | See `docs/checkpoint/CHECKPOINT_SCALABILITY_RECOMMENDATIONS.md` |
 | 1.7 | **High** | Stable API errors (no raw `str(e)` to clients) | 4xx/5xx use codes; details in logs only | [ ] | [ ] | Eng | |
 | 1.8 | **Medium** | GCS bucket CORS not `*` in prod | `create-environment.yaml` / bucket config | [ ] | [ ] | Eng | |
-| 1.9 | **Medium** | Shared chat links reviewed (`sharedChats` public read) | Policy documented; optional expiry / noindex | [ ] | [ ] | Product | `apps/webapp/firestore.rules` |
+| 1.9 | **Medium** | Shared chat links reviewed (`sharedChats` public read) | Policy documented; expiry / noindex | [x] | [ ] | Product | `expiresAt`, `share/layout.tsx` robots, `firestore.rules` |
 | 1.10 | **Medium** | Cloud Run IAM reviewed (not only path-secret security) | Document threat model | [ ] | [ ] | Eng | |
 
 **References:** [API Overview](../proxy/API_OVERVIEW.md) · [add-proxy-endpoint skill](../../.claude/skills/add-proxy-endpoint/SKILL.md) · [check-token-quota skill](../../.claude/skills/check-token-quota/SKILL.md)
@@ -130,7 +130,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | 6.1 | **High** | Webapp `maxInstances` sized for expected load | Load test or PH spike plan | [ ] | [ ] | Eng | `apphosting.prod.yaml` |
 | 6.2 | **High** | Proxy Cloud Run min/max instances appropriate | | [ ] | [ ] | Eng | |
 | 6.3 | **High** | Token quota configured for prod | `TOKEN_QUOTA_PERIOD_MAX_TOKENS` | [ ] | [ ] | Eng | `gcp/common/token/README.md` |
-| 6.4 | **Medium** | Checkpoint list pagination | No unbounded Firestore listener | [ ] | [ ] | Eng | Scalability doc |
+| 6.4 | **Medium** | Checkpoint list pagination | No unbounded Firestore listener | [x] | [ ] | Eng | `CHECKPOINT_PAGE_SIZE=20`, cursor `loadMore` in `@homeapp/common` + webapp |
 | 6.5 | **Medium** | Load test: concurrent signups + chats | Document p95 latency | [ ] | [ ] | Eng | |
 
 ---

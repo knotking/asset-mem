@@ -6,6 +6,10 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, MoreVertical, Share2, Trash2, Copy, Loader2, Pencil } from 'lucide-react-native';
 import type { Session, Message } from '@homeapp/common/types';
+import {
+  SHARED_CHAT_TTL_DAYS,
+  sharedChatExpiresAtFromNow,
+} from '@homeapp/common/lib/shared-chat';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -403,7 +407,10 @@ export default function SessionsList({
         await batch.commit();
 
         // Update the updatedAt timestamp on the parent doc
-        await updateDoc(sharedChatRef, { updatedAt: serverTimestamp() });
+        await updateDoc(sharedChatRef, {
+          updatedAt: serverTimestamp(),
+          expiresAt: sharedChatExpiresAtFromNow(),
+        });
       } else {
         const sessionData = sessionSnap.data();
         const sharedChatsRef = collection(db, 'sharedChats');
@@ -414,6 +421,7 @@ export default function SessionsList({
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           propertyId: sessionData.propertyId || null,
+          expiresAt: sharedChatExpiresAtFromNow(),
         });
         shareId = newSharedChatRef.id;
 
@@ -709,7 +717,7 @@ export default function SessionsList({
             <DialogTitle>Share Chat Session</DialogTitle>
             <DialogDescription>
               {shareState === 'done'
-                ? 'Anyone with this link can view a read-only version of this chat.'
+                ? `Anyone with this link can view a read-only version of this chat. Links expire after ${SHARED_CHAT_TTL_DAYS} days (extended when you update the share).`
                 : shareState === 'prompt_update'
                   ? 'A shared link already exists for this chat. You can update it with the latest messages.'
                   : `Create a public, read-only link for "${sessionToShare?.name}"?`}

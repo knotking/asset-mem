@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Search, ArrowRightLeft, X, Trash2, Loader2 } from 'lucide-react';
+import { CHECKPOINT_PAGE_SIZE } from '@/contexts/checkpoint-context';
 import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
@@ -38,7 +39,12 @@ export function CheckpointList({
   onCheckpointClick,
   onCompare,
 }: CheckpointListProps) {
-  const { deleteCheckpoint } = useCheckpoint();
+  const {
+    deleteCheckpoint,
+    loadMoreCheckpoints,
+    hasMoreCheckpoints,
+    isLoadingEarlier,
+  } = useCheckpoint();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState<string>('all');
@@ -286,6 +292,27 @@ export function CheckpointList({
               onSelect={(selected) => handleSelect(checkpoint.id, selected)}
             />
           ))}
+          {!selectionMode && hasMoreCheckpoints && (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                onClick={() => void loadMoreCheckpoints()}
+                disabled={isLoadingEarlier}
+              >
+                {isLoadingEarlier && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Load more checkpoints
+              </Button>
+            </div>
+          )}
+          {!selectionMode &&
+            !hasMoreCheckpoints &&
+            checkpoints.length > CHECKPOINT_PAGE_SIZE && (
+              <p className="pt-4 text-center text-sm text-muted-foreground">
+                No more checkpoints to load
+              </p>
+            )}
         </div>
       )}
     </div>

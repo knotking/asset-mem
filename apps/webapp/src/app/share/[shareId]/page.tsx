@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, orderBy, query, Timestamp } from 'firebase/firestore';
 import type { Message, Session } from '@/lib/types';
+import { isSharedChatExpired } from '@/lib/shared-chat';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { Button } from '@/components/ui/button';
@@ -76,7 +77,13 @@ export default function SharedChatPage() {
                 if (!sessionSnap.exists()) {
                     throw new Error("This shared chat session does not exist or has been removed.");
                 }
-                setSession({ id: sessionSnap.id, ...sessionSnap.data() } as Session);
+
+                const sessionData = sessionSnap.data();
+                if (isSharedChatExpired(sessionData.expiresAt)) {
+                    throw new Error("This shared link has expired. Ask the owner to create a new share from the app.");
+                }
+
+                setSession({ id: sessionSnap.id, ...sessionData } as Session);
 
                 const messagesRef = collection(sessionRef, 'messages');
                 const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
@@ -84,7 +91,6 @@ export default function SharedChatPage() {
 
                 const fetchedMessages = messagesSnap.docs.map(doc => {
                     const data = doc.data();
-                    // Timestamps from server action might be ISO strings
                     const createdAt = data.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt) : (data.createdAt as Timestamp).toDate()) : new Date();
                     return {
                         id: doc.id,
@@ -94,10 +100,11 @@ export default function SharedChatPage() {
                 });
                 setMessages(fetchedMessages);
 
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : "Could not load the shared chat.";
                 shareLog.error('chat.fetch.failed', undefined, err);
-                setError(err.message || "Could not load the shared chat.");
-                toast({ variant: 'destructive', title: 'Error', description: err.message || 'Could not load shared chat.' });
+                setError(message);
+                toast({ variant: 'destructive', title: 'Error', description: message });
             } finally {
                 setIsLoading(false);
             }
@@ -118,7 +125,7 @@ export default function SharedChatPage() {
     if (error) {
         return (
             <div className="h-screen w-full flex flex-col items-center justify-center text-center p-4 bg-background">
-                <SharedChatHeader sessionName={"Error"} />
+                <SharedChatHeader sessionName={"Unavailable"} />
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <h2 className="text-xl font-semibold mb-2 text-destructive">Could not load chat</h2>
                     <p className="text-muted-foreground mb-6 max-w-sm">{error}</p>
@@ -135,7 +142,7 @@ export default function SharedChatPage() {
                 <ChatList messages={messages} isMessagesLoading={false} />
             </main>
             <footer className="p-3 text-center text-sm text-muted-foreground border-t bg-background">
-                This is a read-only shared chat session.
+                Read-only shared chat. Do not share this link publicly if it contains sensitive property details.
             </footer>
         </div>
     );

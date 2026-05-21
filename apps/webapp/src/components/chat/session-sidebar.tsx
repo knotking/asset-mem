@@ -32,6 +32,10 @@ import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal, Pencil, CheckSquare2, Square } from 'lucide-react';
 import type { Session, Message } from '@/lib/types';
+import {
+  SHARED_CHAT_TTL_DAYS,
+  sharedChatExpiresAtFromNow,
+} from '@/lib/shared-chat';
 import { deleteCollection, cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Skeleton } from '../ui/skeleton';
@@ -415,7 +419,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
               await batch.commit();
 
               // Update the updatedAt timestamp on the parent doc
-              await updateDoc(sharedChatRef, { updatedAt: serverTimestamp() });
+              await updateDoc(sharedChatRef, {
+                updatedAt: serverTimestamp(),
+                expiresAt: sharedChatExpiresAtFromNow(),
+              });
 
           } else {
               const sessionData = sessionSnap.data();
@@ -427,6 +434,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                   createdAt: serverTimestamp(),
                   updatedAt: serverTimestamp(),
                   propertyId: sessionData.propertyId || null,
+                  expiresAt: sharedChatExpiresAtFromNow(),
               });
               shareId = newSharedChatRef.id;
               
@@ -858,7 +866,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           <DialogHeader>
             <DialogTitle>Share Chat Session</DialogTitle>
              <DialogDescription>
-                {shareState === 'done' ? 'Anyone with this link can view a read-only version of this chat.' :
+                {shareState === 'done' ? `Anyone with this link can view a read-only version of this chat. Links expire after ${SHARED_CHAT_TTL_DAYS} days (extended when you update the share).` :
                  (shareState === 'prompt_update' ? 'A shared link already exists for this chat. You can update it with the latest messages.' : 
                  `Create a public, read-only link for "${sessionToShare?.name}"?`)}
             </DialogDescription>

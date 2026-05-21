@@ -7,6 +7,12 @@ service cloud.firestore {
     function isSharedChatOwner(shareId) {
       return get(/databases/$(database)/documents/sharedChats/$(shareId)).data.originalUserId == request.auth.uid;
     }
+
+    // Public share links expire when expiresAt is set and in the past (legacy docs without expiresAt stay readable).
+    function isSharedChatActive(shareId) {
+      let chat = get(/databases/$(database)/documents/sharedChats/$(shareId)).data;
+      return !('expiresAt' in chat) || chat.expiresAt > request.time;
+    }
   
     // Users can only read/write their own data
     match /users/{userId}/{document=**} {
@@ -27,7 +33,7 @@ service cloud.firestore {
 
     // Rules for publicly shared chat sessions
     match /sharedChats/{shareId} {
-      allow read: if true;
+      allow read: if isSharedChatActive(shareId);
       allow create: if request.auth != null && request.resource.data.originalUserId == request.auth.uid;
       allow update: if request.auth != null && resource.data.originalUserId == request.auth.uid;
       allow delete: if false;
@@ -35,7 +41,7 @@ service cloud.firestore {
       // Messages in a shared chat are publicly readable.
       // They can only be written (created/updated/deleted in a batch) by the original owner of the share.
       match /messages/{messageId} {
-        allow read: if true;
+        allow read: if isSharedChatActive(shareId);
         allow write: if request.auth != null && isSharedChatOwner(shareId);
       }
     }

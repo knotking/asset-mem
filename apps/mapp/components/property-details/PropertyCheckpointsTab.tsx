@@ -24,7 +24,10 @@ import {
   TrendingDown,
   Minus,
 } from 'lucide-react-native';
-import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
+import {
+  CHECKPOINT_PAGE_SIZE,
+  useCheckpoint,
+} from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
 import { Checkpoint } from '@homeapp/common/types';
@@ -991,7 +994,7 @@ export function PropertyCheckpointsTab({
                     </Text>
                   </Button>
                 </View>
-              ) : checkpoints.length > 20 ? (
+              ) : checkpoints.length > CHECKPOINT_PAGE_SIZE ? (
                 <View className="py-4">
                   <Text className="text-center text-sm text-muted-foreground">
                     No more checkpoints to load
