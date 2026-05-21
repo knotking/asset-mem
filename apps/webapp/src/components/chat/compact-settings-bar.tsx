@@ -92,10 +92,11 @@ export function CompactSettingsBar({
       {/* Settings */}
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="h-8 w-8 ml-auto"
+        className="h-8 w-8"
         onClick={onOpenSettings}
+        aria-label="Open chat settings"
       >
         <Settings className="h-4 w-4" />
       </Button>
