@@ -10,10 +10,10 @@ import { NAV_THEME, THEME } from '@/lib/theme';
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
 
-  const activeColor = NAV_THEME[colorScheme ?? 'light'].colors.primary;
-  const inactiveColor = THEME[colorScheme ?? 'light'].mutedForeground;
-  const tabBarBg = NAV_THEME[colorScheme ?? 'light'].colors.card;
-  const borderTopColor = NAV_THEME[colorScheme ?? 'light'].colors.border;
+  const activeColor = NAV_THEME[colorScheme ?? 'dark'].colors.primary;
+  const inactiveColor = THEME[colorScheme ?? 'dark'].mutedForeground;
+  const tabBarBg = NAV_THEME[colorScheme ?? 'dark'].colors.card;
+  const borderTopColor = NAV_THEME[colorScheme ?? 'dark'].colors.border;
 
   return (
     <Tabs

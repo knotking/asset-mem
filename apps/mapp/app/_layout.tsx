@@ -17,6 +17,7 @@ import { PreferencesProvider } from '@homeapp/common/contexts/preferences-contex
 import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
 import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvider';
+import { ThemePreferenceSync } from '@/components/ThemePreferenceSync';
 import { createLogger } from '@/lib/logger';
 
 const routesLog = createLogger('routes');
@@ -30,11 +31,12 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
 
   return (
-    <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+    <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
         <AuthProvider>
           <PreferencesProvider>
+            <ThemePreferenceSync />
             <MappLlmTokenUsageProvider>
               <SessionProvider createAgentSession={createAgentSession}>
                 <PropertiesListProvider>

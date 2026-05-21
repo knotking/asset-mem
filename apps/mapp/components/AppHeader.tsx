@@ -6,15 +6,27 @@ import { Button } from '@//components/ui/button';
 import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
+import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { User } from 'firebase/auth';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
+import { ThemePreference } from '@homeapp/common/types';
 
 function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const { user } = useAuth();
+  const { updatePreferences } = usePreferences();
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  const handleToggle = () => {
+    const next: ThemePreference = colorScheme === 'dark' ? 'light' : 'dark';
+    setColorScheme(next);
+    if (user) {
+      void updatePreferences({ theme: next });
+    }
+  };
 
   return (
     <Button
-      onPressIn={toggleColorScheme}
+      onPressIn={handleToggle}
       size="icon"
       variant="ghost"
       className="h-8 w-8 min-w-8 rounded-full p-0 web:mx-2">
