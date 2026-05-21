@@ -28,8 +28,7 @@ export default function RootLayout({
         <AnalyticsClient />
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
           disableTransitionOnChange
         >
           <AuthProvider>

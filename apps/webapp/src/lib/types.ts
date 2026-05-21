@@ -422,8 +422,18 @@ export type CheckpointComparisonPreferences = {
   minAssetConfidence: number; // Minimum asset detection confidence to perform comparison (default: 0.3)
 };
 
+/** UI color scheme stored in Firestore (`users/{uid}/preferences/user`). */
+export type ThemePreference = "light" | "dark";
+
+export function parseThemePreference(
+  value: unknown,
+): ThemePreference | null {
+  return value === "light" || value === "dark" ? value : null;
+}
+
 export type UserPreferences = {
   checkpointComparison?: CheckpointComparisonPreferences;
+  theme?: ThemePreference;
   /** Optional per-user monthly token cap (server-enforced; overrides free tier / Stripe defaults). */
   monthlyTokenLimit?: number;
   updatedAt?: Timestamp;
