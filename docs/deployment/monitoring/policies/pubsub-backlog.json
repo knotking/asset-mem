@@ -1,0 +1,32 @@
+{
+  "displayName": "HomeApp Pub/Sub backlog (__ENV__)",
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "Undelivered Pub/Sub messages are backing up for __ENV__. Inspect worker Cloud Functions and DLQ topic `worker-dlq-__ENV__`. Runbook: docs/deployment/runbooks/worker-backlog.md",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "Undelivered messages > 100 (10m)",
+      "conditionThreshold": {
+        "filter": "resource.type=\"pubsub_subscription\" AND metric.type=\"pubsub.googleapis.com/subscription/num_undelivered_messages\" AND resource.labels.subscription_id=~\".*__ENV__.*\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "60s",
+            "perSeriesAligner": "ALIGN_MAX"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 100,
+        "duration": "600s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "3600s"
+  }
+}

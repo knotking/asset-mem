@@ -903,6 +903,13 @@ jobs:
           echo "checkpoint_metrics_topic=$CHECKPOINT_METRICS_TOPIC" >> $GITHUB_OUTPUT
           echo "document_analysis_topic=$DOCUMENT_ANALYSIS_TOPIC" >> $GITHUB_OUTPUT
 
+      - name: Configure Pub/Sub dead letter queues
+        run: |
+          PROJECT_ID="${{ needs.resolve-inputs.outputs.gcp_project_id }}"
+          ENV="${{ inputs.environment_name }}"
+          chmod +x .github/scripts/apply-pubsub-dlq.sh
+          .github/scripts/apply-pubsub-dlq.sh "${PROJECT_ID}" "${ENV}"
+
       - name: Enable Firebase Services
         id: firebase_enable
         run: |

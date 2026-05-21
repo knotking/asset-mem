@@ -372,9 +372,9 @@ HomeApp addresses these challenges through an integrated AI platform that:
   - Property metrics
   - User preferences
 
-**Infrastructure as Code**
+**Deployment & infrastructure**
 
-- Terraform
+- GitHub Actions + gcloud (`create-environment.yaml`, `deploy-*.yaml`)
 - Docker
 - Artifact Registry
 
@@ -794,16 +794,16 @@ Mobile/Web App → API Endpoint → Pub/Sub Topic → Cloud Function → Gemini 
 - Composite index on checkpoints: `location` (ASC), `createdAt` (DESC)
 - Enables efficient location-based queries for comparison
 
-### Infrastructure as Code
+### Infrastructure (GitHub Actions)
 
-**Terraform Modules**:
+**Provisioned via `create-environment.yaml`** (and component `deploy-*.yaml` workflows):
 
-- Cloud Run deployment
-- Cloud Functions deployment
+- Cloud Run (proxy API)
+- Cloud Functions (workers)
 - Pub/Sub topics and subscriptions
 - Storage buckets
 - IAM roles and service accounts
-- Secret Manager integration
+- GitHub environment variables
 
 **Environments**:
 
@@ -857,12 +857,11 @@ gcloud functions deploy pubsub_checkpoint_metrics_aggregate \
   --entry-point pubsub_checkpoint_metrics_aggregate
 ```
 
-**Infrastructure**:
+**New environment / shared infra** (workflow dispatch in GitHub):
 
 ```bash
-cd gcp/terraform/environments/staging
-terraform plan
-terraform apply
+# .github/workflows/create-environment.yaml
+# Creates project resources, Pub/Sub, buckets, WIF, env vars — see .github/workflows/README.md
 ```
 
 ### Scalability

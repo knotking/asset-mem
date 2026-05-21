@@ -1,0 +1,32 @@
+{
+  "displayName": "HomeApp proxy 5xx rate (__ENV__)",
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "Cloud Run proxy `__PROXY_SERVICE__` is returning elevated 5xx. See docs/deployment/runbooks/proxy-down.md",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "Proxy 5xx request rate > 1/min (5m)",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"__PROXY_SERVICE__\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "60s",
+            "perSeriesAligner": "ALIGN_RATE"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 1,
+        "duration": "300s",
+        "trigger": {
+          "count": 1
+        }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "1800s"
+  }
+}

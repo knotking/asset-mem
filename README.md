@@ -30,7 +30,7 @@ The monorepo is organized into two main areas:
 -   **Backend Services (`gcp/`)**:
     -   `agents`: Vertex AI Agents for property diagnostics, document analysis, and checkpoint analysis.
     -   `proxy`: FastAPI Gateway managing communication between clients and agents.
-    -   `terraform`: Infrastructure as Code for GCP resources.
+    -   `common`: Shared Python modules (token quota, Pub/Sub, storage, Gemini helpers).
 
 ## Key Features
 
@@ -65,8 +65,7 @@ Before you begin, ensure you have the following installed:
 ### Backend Tools
 -   **Python 3.9+**: Required for GCP agents and proxy services.
 -   **UV**: Fast Python package installer (`pip install uv`).
--   **Google Cloud SDK**: For deploying and managing GCP resources.
--   **Terraform**: For infrastructure provisioning.
+-   **Google Cloud SDK**: For deploying and managing GCP resources (local debugging; production deploys use GitHub Actions).
 
 ## Monorepo Setup
 
@@ -161,4 +160,4 @@ For detailed setup, local development, and deployment instructions for the backe
 
 ## Deployment
 
-For deployment workflows, including Github Actions and manual deployment steps, refer to the `gcp/docs/SETUP_AND_DEPLOYMENT.md` guide.
+Infrastructure and releases are managed via **GitHub Actions** (`create-environment.yaml`, `deploy-*.yaml`) using `gcloud`. See [`.github/workflows/README.md`](./.github/workflows/README.md), [`docs/deployment/README.md`](./docs/deployment/README.md), and [`gcp/docs/SETUP_AND_DEPLOYMENT.md`](./gcp/docs/SETUP_AND_DEPLOYMENT.md).

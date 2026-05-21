@@ -305,7 +305,7 @@ add_content_slide(slide, "Technology Stack",
     [
         "AI / ML — Vertex AI Reasoning Engine · RAG Engine · Gemini 2.5 Flash · ADK",
         "CLOUD — Cloud Run · Cloud Functions Gen2 · Cloud Storage · Pub/Sub",
-        "DATA — Firebase Auth · Firestore · Cloud Storage · Terraform · Docker",
+        "DATA — Firebase Auth · Firestore · Cloud Storage · GitHub Actions · Docker",
         "INTEGRATIONS — SerpAPI · SerpAPI · YouTube API · Google Maps · Google Search",
     ])
 

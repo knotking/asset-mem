@@ -1,0 +1,86 @@
+name: Apply operations config (DLQ + alerts)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment name (staging, prod, or custom env suffix)"
+        required: true
+        type: string
+      gcp_project_id:
+        description: "GCP project ID (defaults to GitHub environment var)"
+        required: false
+        type: string
+      region:
+        description: "GCP region"
+        required: false
+        default: "us-central1"
+        type: string
+      apply_dlq:
+        description: "Configure Pub/Sub dead letter queues"
+        required: false
+        default: true
+        type: boolean
+      apply_alerts:
+        description: "Create/update Cloud Monitoring alert policies"
+        required: false
+        default: true
+        type: boolean
+      proxy_health_host:
+        description: "Proxy host for uptime check (https://...run.app, no path)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment == 'prod' && 'prod' || 'staging' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve project
+        id: project
+        run: |
+          PROJECT_ID="${{ inputs.gcp_project_id }}"
+          if [ -z "$PROJECT_ID" ]; then
+            PROJECT_ID="${{ vars.GCP_PROJECT_ID }}"
+          fi
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error::Set gcp_project_id input or GCP_PROJECT_ID on the GitHub environment"
+            exit 1
+          fi
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+
+      - name: Apply Pub/Sub DLQ
+        if: inputs.apply_dlq
+        run: |
+          chmod +x .github/scripts/apply-pubsub-dlq.sh
+          .github/scripts/apply-pubsub-dlq.sh \
+            "${{ steps.project.outputs.project_id }}" \
+            "${{ inputs.environment }}"
+
+      - name: Apply monitoring alerts
+        if: inputs.apply_alerts
+        env:
+          MONITORING_NOTIFICATION_CHANNEL_IDS: ${{ vars.MONITORING_NOTIFICATION_CHANNEL_IDS }}
+          PROXY_HEALTH_HOST: ${{ inputs.proxy_health_host }}
+        run: |
+          chmod +x .github/scripts/apply-monitoring-alerts.sh
+          .github/scripts/apply-monitoring-alerts.sh \
+            "${{ steps.project.outputs.project_id }}" \
+            "${{ inputs.environment }}" \
+            "${{ inputs.region }}"

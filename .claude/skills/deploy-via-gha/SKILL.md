@@ -1,11 +1,11 @@
 ---
 name: deploy-via-gha
-description: Map of which GitHub Actions workflow deploys which HomeApp surface (webapp, mapp, proxy, agent, workers, environments) and how to invoke them. Use whenever the user asks how to deploy, ship, release, or roll out anything in this repo. Reinforces that GitHub Actions is the canonical path — not raw gcloud snippets and not Terraform.
+description: Map of which GitHub Actions workflow deploys which HomeApp surface (webapp, mapp, proxy, agent, workers, environments) and how to invoke them. Use whenever the user asks how to deploy, ship, release, or roll out anything in this repo. Reinforces that GitHub Actions is the canonical path — not ad-hoc one-off gcloud from docs.
 ---
 
 # Deploying HomeApp via GitHub Actions
 
-The canonical deployment path for **everything** in this repo is the workflows under `.github/workflows/`. They use `gcloud` directly (not Terraform — `gcp/terraform/` exists but is not the live source of truth) and are wired up to Workload Identity Federation with the `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com` service account.
+The canonical deployment path for **everything** in this repo is the workflows under `.github/workflows/`. They use `gcloud` directly and are wired up to Workload Identity Federation with the `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com` service account.
 
 There is also `.github/workflows/README.md` and `.github/GITHUB_VARIABLES_SETUP.md` for environment + variable plumbing.
 

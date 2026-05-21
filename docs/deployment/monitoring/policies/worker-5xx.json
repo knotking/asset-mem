@@ -1,0 +1,58 @@
+{
+  "displayName": "HomeApp worker 5xx (__ENV__)",
+  "combiner": "OR",
+  "enabled": true,
+  "documentation": {
+    "content": "A Pub/Sub worker (Gen2 function on Cloud Run) is returning 5xx. Runbook: docs/deployment/runbooks/worker-backlog.md",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "user-docs worker 5xx",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"pubsub-to-user-docs-__ENV__\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+        "aggregations": [{ "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE" }],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.1,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    },
+    {
+      "displayName": "checkpoint-analysis worker 5xx",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"pubsub-checkpoint-analysis-__ENV__\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+        "aggregations": [{ "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE" }],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.1,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    },
+    {
+      "displayName": "document-analysis worker 5xx",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"pubsub-document-analysis-__ENV__\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+        "aggregations": [{ "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE" }],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.1,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    },
+    {
+      "displayName": "checkpoint-metrics worker 5xx",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"pubsub-checkpoint-metrics-__ENV__\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+        "aggregations": [{ "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE" }],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.1,
+        "duration": "300s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "alertStrategy": {
+    "autoClose": "1800s"
+  }
+}

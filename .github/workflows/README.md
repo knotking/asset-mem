@@ -4,7 +4,7 @@ This directory contains GitHub Actions workflows for managing GCP infrastructure
 
 ## Overview
 
-All infrastructure and application management is done through GitHub Actions using **gcloud commands only**. No Terraform required.
+All infrastructure and application management is done through GitHub Actions using **gcloud commands only**.
 
 ## Workflows
 
@@ -23,8 +23,20 @@ Creates a new environment with all required GCP infrastructure.
 - Workload Identity Federation
 - Storage Buckets (with versioning, lifecycle, CORS)
 - Pub/Sub Topics and Subscriptions
+- Pub/Sub dead letter topic `worker-dlq-{ENV}` (via `apply-pubsub-dlq.sh`)
 - RAG Corpora (2 separate: user-upload and knowledge-base)
 - GitHub Environment with all variables
+
+#### [apply-operations-config.yaml](apply-operations-config.yaml)
+Applies **operations** config to an existing environment (no full reprovision).
+
+**Triggers:** Manual (`workflow_dispatch`)
+
+**Options:**
+- Pub/Sub DLQ (`apply-pubsub-dlq.sh`) — re-run after worker deploys so Eventarc subscriptions get policies
+- Cloud Monitoring alert policies (`apply-monitoring-alerts.sh`) — optional `MONITORING_NOTIFICATION_CHANNEL_IDS` on the GitHub environment
+
+Scripts: [`.github/scripts/`](../scripts/README.md). Docs: [docs/deployment/OPERATIONS.md](../docs/deployment/OPERATIONS.md).
 
 **Usage:**
 ```bash
@@ -140,14 +152,12 @@ gcloud pubsub topics create topic-name ...
 curl -X POST https://.../ragCorpora ...
 ```
 
-### Why gcloud instead of Terraform?
+### Infrastructure approach
 
-**Simpler for this use case:**
 - Long-lived environments with infrequent infrastructure changes
-- Consistent tooling (gcloud for everything)
-- No Terraform state to manage
-- Easier to understand and modify
-- Direct integration with GitHub Actions
+- Single toolchain: `gcloud` in GitHub Actions workflows
+- Environment bootstrap: `create-environment.yaml`; releases: `deploy-*.yaml`
+- GitHub environment variables and secrets wired via WIF (see `GITHUB_VARIABLES_SETUP.md`)
 
 ## Workflow Flow
 
