@@ -3,12 +3,14 @@
 ## Common Commands
 
 ### Initial Setup
+
 ```bash
 cd terraform/environments/staging  # or prod
 terraform init
 ```
 
 ### Daily Operations
+
 ```bash
 terraform plan                    # Preview changes
 terraform apply                   # Apply changes
@@ -17,6 +19,7 @@ terraform output                  # Show outputs
 ```
 
 ### Using Makefile
+
 ```bash
 make init-staging                 # Initialize staging
 make plan-staging                 # Plan staging changes
@@ -38,14 +41,14 @@ make output-staging               # Show staging outputs
 
 ## Resources Created
 
-| Resource | Naming Pattern |
-|----------|----------------|
+| Resource        | Naming Pattern                                               |
+| --------------- | ------------------------------------------------------------ |
 | Service Account | `githubworkflowdeployment@{project}.iam.gserviceaccount.com` |
-| Cloud Run | `homecare-agent-proxy-{env}` |
-| Cloud Function | `pubsub_to_user_docs-{env}` |
-| Storage Bucket | `homegeek-user-data-{env}` |
-| Pub/Sub Topic | `user-upload-topic-{env}` |
-| Secrets | `{SECRET_NAME}-{env}` |
+| Cloud Run       | `homecare-agent-proxy-{env}`                                 |
+| Cloud Function  | `pubsub_to_user_docs-{env}`                                  |
+| Storage Bucket  | `homegeek-user-data-{env}`                                   |
+| Pub/Sub Topic   | `user-upload-topic-{env}`                                    |
+| Secrets         | `{SECRET_NAME}-{env}`                                        |
 
 ## Key Outputs
 
@@ -61,7 +64,7 @@ terraform output user_data_bucket               # Storage bucket name
 ```bash
 # Set environment
 export ENV=staging  # or prod
-export PROJECT_ID=homegeekdemo-staging
+export PROJECT_ID=homegeek-staging-staging
 
 # Add secrets
 echo -n "your-value" | gcloud secrets versions add TELEGRAM_BOT_TOKEN-$ENV \
@@ -96,26 +99,31 @@ terraform state rm RESOURCE       # Remove from state (doesn't delete resource)
 ## Troubleshooting
 
 ### Force unlock state
+
 ```bash
 terraform force-unlock LOCK_ID
 ```
 
 ### Refresh state
+
 ```bash
 terraform refresh
 ```
 
 ### Validate configuration
+
 ```bash
 terraform validate
 ```
 
 ### Format code
+
 ```bash
 terraform fmt -recursive
 ```
 
 ### Debug mode
+
 ```bash
 TF_LOG=DEBUG terraform apply
 ```
@@ -133,6 +141,7 @@ After Terraform creates resources, update GitHub Actions workflows:
 ```
 
 Get these values:
+
 ```bash
 terraform output workload_identity_provider
 terraform output deployment_service_account
@@ -141,6 +150,7 @@ terraform output deployment_service_account
 ## Variables Reference
 
 ### Required Variables
+
 - `project_id` - GCP project ID
 - `environment` - staging or prod
 - `github_repository` - GitHub repo (owner/repo)
@@ -149,6 +159,7 @@ terraform output deployment_service_account
 - `knowledge_base_rag_corpus` - Knowledge base corpus
 
 ### Optional Variables (have defaults)
+
 - `region` - Default: us-central1
 - `bucket_name` - Default: homegeek-user-data
 - `service_name` - Default: homecare-agent-proxy
@@ -174,6 +185,7 @@ terraform output deployment_service_account
 ## Safety Checklist
 
 Before `terraform apply`:
+
 - [ ] Run `terraform plan` and review changes
 - [ ] Check you're in the correct environment directory
 - [ ] Verify variables in `terraform.tfvars`
@@ -181,6 +193,7 @@ Before `terraform apply`:
 - [ ] Have rollback plan ready
 
 Before `terraform destroy`:
+
 - [ ] Double-check you're in the correct environment
 - [ ] Back up any data from storage buckets
 - [ ] Export any important configurations

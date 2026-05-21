@@ -11,3 +11,4 @@ Project-level skills for common dev tasks. Each subdirectory has a `SKILL.md` wi
 | [run-frontends](run-frontends/SKILL.md) | Dev / build / lint / typecheck for `apps/mapp` and `apps/webapp` |
 | [check-token-quota](check-token-quota/SKILL.md) | Inspecting or smoke-testing the LLM token-quota system end-to-end |
 | [deploy-via-gha](deploy-via-gha/SKILL.md) | Deploying any surface — which workflow ships what, in what order |
+| [gcp-logs-homeapp](gcp-logs-homeapp/SKILL.md) | Pulling GCP logs (MCP `gcp-cloud-logging` or `gcloud`) for proxy, workers, agent, webapp |

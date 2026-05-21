@@ -11,7 +11,7 @@ Firebase App Hosting uses **Developer Connect** to link to your GitHub repositor
 ### Option 1: Update Existing Backend Connection (Recommended)
 
 1. **Go to Firebase Console**
-   - Navigate to: https://console.firebase.google.com/project/homegeekdemo/apphosting
+   - Navigate to: https://console.firebase.google.com/project/homegeek-staging/apphosting
 
 2. **For Each Backend (staging, prod, etc.)**
    - Click on your backend (e.g., `staging` or `prod`)
@@ -26,7 +26,7 @@ Firebase App Hosting uses **Developer Connect** to link to your GitHub repositor
 If the above doesn't work, you may need to update the Developer Connect Git repository link:
 
 1. **Go to Google Cloud Console**
-   - Navigate to: https://console.cloud.google.com/cloud-build/developer-connect?project=homegeekdemo
+   - Navigate to: https://console.cloud.google.com/cloud-build/developer-connect?project=homegeek-staging
 
 2. **Check Git Repository Links**
    - Look for any links pointing to `HomeGeekAI/HomeApp`
@@ -35,14 +35,15 @@ If the above doesn't work, you may need to update the Developer Connect Git repo
      - Create a new link pointing to `BuildGeekAI/HomeApp`
 
 3. **Or use gcloud CLI to check:**
+
    ```bash
-   export PROJECT_ID="homegeekdemo"
-   
+   export PROJECT_ID="homegeek-staging"
+
    # List all Git repository links
    gcloud developer-connect git-repository-links list \
      --project=$PROJECT_ID \
      --location=global
-   
+
    # Check specific connection (if you know the connection name)
    gcloud developer-connect git-repository-links describe LINK_NAME \
      --project=$PROJECT_ID \
@@ -55,19 +56,21 @@ If the above doesn't work, you may need to update the Developer Connect Git repo
 If updating doesn't work, you may need to recreate the backend:
 
 1. **Delete the old backend** (if safe to do so):
+
    ```bash
    firebase apphosting:backends:delete BACKEND_ID \
-     --project=homegeekdemo
+     --project=homegeek-staging
    ```
 
 2. **Create a new backend** with the new repository:
+
    ```bash
    firebase apphosting:backends:create BACKEND_ID \
-     --project=homegeekdemo \
+     --project=homegeek-staging \
      --location=us-central1 \
      --root-dir=apps/webapp
    ```
-   
+
    When prompted, select `BuildGeekAI/HomeApp` as the repository.
 
 ## Verification
@@ -79,22 +82,24 @@ After updating, verify the connection:
    - Verify the repository shows `BuildGeekAI/HomeApp`
 
 2. **Test a deployment:**
+
    ```bash
    firebase apphosting:rollouts:create BACKEND_ID \
-     --project=homegeekdemo \
+     --project=homegeek-staging \
      --git-branch=main
    ```
 
 3. **Check Developer Connect:**
+
    ```bash
    # List connections
    gcloud developer-connect connections list \
-     --project=homegeekdemo \
+     --project=homegeek-staging \
      --location=global
-   
+
    # List repository links for a connection
    gcloud developer-connect git-repository-links list \
-     --project=homegeekdemo \
+     --project=homegeek-staging \
      --location=global \
      --connection=CONNECTION_NAME
    ```
@@ -109,6 +114,7 @@ After updating, verify the connection:
 ## If You Encounter Issues
 
 If you see errors like:
+
 - "Repository not found"
 - "Permission denied to access repository"
 - "Git repository link not found"
@@ -121,13 +127,12 @@ If you see errors like:
    - The service account needs `roles/developerconnect.admin` role
    - Verify with:
      ```bash
-     gcloud projects get-iam-policy homegeekdemo \
+     gcloud projects get-iam-policy homegeek-staging \
        --flatten="bindings[].members" \
-       --filter="bindings.members:serviceAccount:firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com"
+       --filter="bindings.members:serviceAccount:firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com"
      ```
 
 3. **Re-authenticate GitHub:**
    - In Firebase Console → Project Settings → Integrations
    - Disconnect and reconnect GitHub
    - Select the new repository `BuildGeekAI/HomeApp`
-

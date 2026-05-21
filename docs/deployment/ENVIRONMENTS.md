@@ -12,16 +12,16 @@ HomeApp supports three deployment environments:
 
 ## Environment Comparison
 
-| Aspect            | Development       | Staging                | Production                   |
-| ----------------- | ----------------- | ---------------------- | ---------------------------- |
-| **Purpose**       | Local development | Pre-production testing | Live users                   |
-| **GCP Project**   | homegeekdemo      | homegeekdemo           | homegeekdemo / homegeek-prod |
-| **Auto-Deploy**   | No                | Yes (on push to main)  | No (manual only)             |
-| **Min Instances** | 0                 | 0                      | 1                            |
-| **Max Instances** | 1                 | 5-10                   | 10-20                        |
-| **Scaling**       | Scale to zero     | Scale to zero          | Always-on                    |
-| **Monitoring**    | Basic             | Enhanced               | Full monitoring              |
-| **Costs**         | Minimal           | Low                    | Production costs             |
+| Aspect            | Development       | Staging                | Production                       |
+| ----------------- | ----------------- | ---------------------- | -------------------------------- |
+| **Purpose**       | Local development | Pre-production testing | Live users                       |
+| **GCP Project**   | homegeek-staging  | homegeek-staging       | homegeek-staging / homegeek-prod |
+| **Auto-Deploy**   | No                | Yes (on push to main)  | No (manual only)                 |
+| **Min Instances** | 0                 | 0                      | 1                                |
+| **Max Instances** | 1                 | 5-10                   | 10-20                            |
+| **Scaling**       | Scale to zero     | Scale to zero          | Always-on                        |
+| **Monitoring**    | Basic             | Enhanced               | Full monitoring                  |
+| **Costs**         | Minimal           | Low                    | Production costs                 |
 
 ## Development Environment
 
@@ -76,7 +76,7 @@ cd gcp/proxy/api
 uvicorn main:app --reload --port 8080
 
 # Environment variables (.env)
-GCP_PROJECT_ID=homegeekdemo
+GCP_PROJECT_ID=homegeek-staging
 GCP_REGION=us-central1
 REASONING_ENGINE_ID=dev-engine-id
 ```
@@ -180,7 +180,7 @@ runConfig:
 
 - Internal team access
 - Test user accounts
-- Service account: `githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com`
+- Service account: `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com`
 
 ### Data
 
@@ -334,13 +334,13 @@ runConfig:
 
 ### Backend Services
 
-| Variable              | Development   | Staging            | Production                   |
-| --------------------- | ------------- | ------------------ | ---------------------------- |
-| `GCP_PROJECT_ID`      | homegeekdemo  | homegeekdemo       | homegeekdemo / homegeek-prod |
-| `GCP_REGION`          | us-central1   | us-central1        | us-central1                  |
-| `REASONING_ENGINE_ID` | dev-engine-id | staging-engine-id  | prod-engine-id               |
-| `GCS_BUCKET`          | dev bucket    | homegeek-user-data | homegeek-user-data           |
-| `USER_UPLOAD_TOPIC`   | dev-topic     | user-upload-topic  | user-upload-topic            |
+| Variable              | Development      | Staging            | Production                       |
+| --------------------- | ---------------- | ------------------ | -------------------------------- |
+| `GCP_PROJECT_ID`      | homegeek-staging | homegeek-staging   | homegeek-staging / homegeek-prod |
+| `GCP_REGION`          | us-central1      | us-central1        | us-central1                      |
+| `REASONING_ENGINE_ID` | dev-engine-id    | staging-engine-id  | prod-engine-id                   |
+| `GCS_BUCKET`          | dev bucket       | homegeek-user-data | homegeek-user-data               |
+| `USER_UPLOAD_TOPIC`   | dev-topic        | user-upload-topic  | user-upload-topic                |
 
 ## Environment Promotion
 

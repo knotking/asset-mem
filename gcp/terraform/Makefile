@@ -82,16 +82,16 @@ import-staging-resources:
 	@echo "Importing existing staging resources..."
 	@echo "Note: Update PROJECT_ID and resource names as needed"
 	@cd environments/staging && \
-	terraform import module.pubsub.google_pubsub_topic.user_upload projects/homegeekdemo-staging/topics/user-upload-topic-staging || true && \
-	terraform import module.pubsub.google_pubsub_topic.user_upload_result projects/homegeekdemo-staging/topics/user-upload-result-topic-staging || true && \
+	terraform import module.pubsub.google_pubsub_topic.user_upload projects/homegeek-staging-staging/topics/user-upload-topic-staging || true && \
+	terraform import module.pubsub.google_pubsub_topic.user_upload_result projects/homegeek-staging-staging/topics/user-upload-result-topic-staging || true && \
 	terraform import module.storage.google_storage_bucket.user_data homegeek-user-data-staging || true
 
 import-prod-resources:
 	@echo "Importing existing production resources..."
 	@echo "Note: Update PROJECT_ID and resource names as needed"
 	@cd environments/prod && \
-	terraform import module.pubsub.google_pubsub_topic.user_upload projects/homegeekdemo/topics/user-upload-topic-prod || true && \
-	terraform import module.pubsub.google_pubsub_topic.user_upload_result projects/homegeekdemo/topics/user-upload-result-topic-prod || true && \
+	terraform import module.pubsub.google_pubsub_topic.user_upload projects/homegeek-staging/topics/user-upload-topic-prod || true && \
+	terraform import module.pubsub.google_pubsub_topic.user_upload_result projects/homegeek-staging/topics/user-upload-result-topic-prod || true && \
 	terraform import module.storage.google_storage_bucket.user_data homegeek-user-data-prod || true
 
 # Output values

@@ -11,7 +11,7 @@
 # - Authenticated with firebase login
 #
 # Usage:
-#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeekdemo ./8-migrate-indexes.sh
+#   SOURCE_PROJECT=goggle-gab TARGET_PROJECT=homegeek-staging ./8-migrate-indexes.sh
 #   or
 #   ./8-migrate-indexes.sh  # uses defaults
 ##
@@ -19,7 +19,7 @@
 set -e
 
 SOURCE_PROJECT="${SOURCE_PROJECT:-goggle-gab}"
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 INDEX_FILE="firestore.indexes.json"
 BACKUP_FILE="firestore.indexes.backup.json"
 

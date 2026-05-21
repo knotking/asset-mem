@@ -22,12 +22,14 @@ When you delete a user, the script will remove:
 Before running the script, ensure you have:
 
 1. **Firebase CLI** installed:
+
    ```bash
    npm install -g firebase-tools
    firebase login
    ```
 
 2. **gcloud CLI** installed and authenticated:
+
    ```bash
    gcloud auth login
    gcloud auth application-default login
@@ -64,6 +66,7 @@ Always run with `--dry-run` first to preview what will be deleted:
 ```
 
 This will:
+
 - List all matching users
 - Show what data would be deleted
 - **Not actually delete anything**
@@ -95,12 +98,13 @@ The `--pattern` argument supports wildcard patterns:
 
 ```bash
 ./delete-users-by-pattern.sh \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --pattern "test-*" \
   --dry-run
 ```
 
 Review the output carefully:
+
 - Check the list of users that will be deleted
 - Verify the Firestore collections
 - Review the Storage files
@@ -111,7 +115,7 @@ If the dry run looks correct, run without `--dry-run`:
 
 ```bash
 ./delete-users-by-pattern.sh \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --pattern "test-*"
 ```
 
@@ -126,7 +130,7 @@ You will be prompted to type `DELETE` (in capitals) to confirm.
 🔍 DRY RUN MODE - No deletions will be performed
 
 📋 Configuration:
-   Project: homegeekdemo
+   Project: homegeek-staging
    Pattern: test-*
 
 🔧 Checking prerequisites...
@@ -211,6 +215,7 @@ gcloud config set project your-project
 ### Permission Errors
 
 If you see permission errors, ensure your account has:
+
 - Firebase Admin role
 - Cloud Datastore Owner role
 - Storage Admin role
@@ -220,6 +225,7 @@ Add these in the [Google Cloud Console](https://console.cloud.google.com/iam-adm
 ### Storage Bucket Not Found
 
 If the storage bucket is not accessible:
+
 1. Check the bucket exists in Firebase Console → Storage
 2. Verify the bucket name matches: `{project-id}.firebasestorage.app`
 3. Ensure you have Storage Admin permissions
@@ -259,11 +265,13 @@ python apps/webapp/scripts/migration/delete-users-by-pattern.py \
 ## Important Notes
 
 ⚠️ **This operation is irreversible!**
+
 - Deleted users cannot be recovered
 - Deleted Firestore documents cannot be recovered
 - Deleted Storage files cannot be recovered
 
 📝 **Best Practices:**
+
 1. Always run with `--dry-run` first
 2. Review the output carefully
 3. Test on a non-production project first
@@ -279,6 +287,7 @@ python apps/webapp/scripts/migration/delete-users-by-pattern.py \
 ## Support
 
 If you encounter issues:
+
 1. Check the troubleshooting section above
 2. Verify all prerequisites are installed
 3. Ensure you have the correct permissions

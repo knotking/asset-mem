@@ -9,14 +9,14 @@
 # - In the apps/webapp directory
 #
 # Usage:
-#   TARGET_PROJECT=homegeekdemo ./6-deploy-rules.sh
+#   TARGET_PROJECT=homegeek-staging ./6-deploy-rules.sh
 #   or
-#   ./6-deploy-rules.sh  # uses default: homegeekdemo
+#   ./6-deploy-rules.sh  # uses default: homegeek-staging
 ##
 
 set -e
 
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 WEBAPP_DIR="../../"
 
 echo ""

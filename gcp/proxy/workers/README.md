@@ -230,15 +230,15 @@ Each worker subfolder contains its own configuration and utility files:
 
 The Cloud Function requires the following environment variables:
 
-| Variable                   | Description                           | Example                                                                      | Required For        |
-| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------- | ------------------- |
-| `GCP_PROJECT_ID`           | Google Cloud Project ID               | `homegeekdemo`                                                               | All workers         |
-| `GCP_REGION`               | GCP region for Vertex AI              | `us-central1`                                                                | All workers         |
-| `GCP_LOCATION`             | GCP location for Vertex AI            | `us-central1`                                                                | Checkpoint analysis |
-| `GCS_BUCKET`               | Cloud Storage bucket for user uploads | `homegeek-user-data`                                                         | RAG import          |
-| `RAG_CORPUS`               | Vertex AI RAG Corpus resource name    | `projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856` | RAG import          |
-| `USER_UPLOAD_RESULT_TOPIC` | Pub/Sub topic for publishing results  | `projects/homegeekdemo/topics/user-upload-result-topic`                      | RAG import          |
-| `USER_UPLOAD_FOLDER`       | Folder prefix for uploads             | `uploads-prod`                                                               | RAG import          |
+| Variable                   | Description                           | Example                                                                          | Required For        |
+| -------------------------- | ------------------------------------- | -------------------------------------------------------------------------------- | ------------------- |
+| `GCP_PROJECT_ID`           | Google Cloud Project ID               | `homegeek-staging`                                                               | All workers         |
+| `GCP_REGION`               | GCP region for Vertex AI              | `us-central1`                                                                    | All workers         |
+| `GCP_LOCATION`             | GCP location for Vertex AI            | `us-central1`                                                                    | Checkpoint analysis |
+| `GCS_BUCKET`               | Cloud Storage bucket for user uploads | `homegeek-user-data`                                                             | RAG import          |
+| `RAG_CORPUS`               | Vertex AI RAG Corpus resource name    | `projects/homegeek-staging/locations/us-central1/ragCorpora/6917529027641081856` | RAG import          |
+| `USER_UPLOAD_RESULT_TOPIC` | Pub/Sub topic for publishing results  | `projects/homegeek-staging/topics/user-upload-result-topic`                      | RAG import          |
+| `USER_UPLOAD_FOLDER`       | Folder prefix for uploads             | `uploads-prod`                                                                   | RAG import          |
 
 ## Deployment
 
@@ -273,13 +273,13 @@ gcloud functions deploy pubsub_to_user_docs \
   --memory=512MB \
   --source function \
   --allow-unauthenticated \
-  --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+  --service-account githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com \
   --entry-point pubsub_to_user_docs \
-  --set-env-vars GCP_PROJECT_ID=homegeekdemo \
+  --set-env-vars GCP_PROJECT_ID=homegeek-staging \
   --set-env-vars GCP_REGION=us-central1 \
   --set-env-vars GCS_BUCKET=homegeek-user-data \
-  --set-env-vars USER_UPLOAD_RESULT_TOPIC=projects/homegeekdemo/topics/user-upload-result-topic \
-  --set-env-vars RAG_CORPUS=projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856
+  --set-env-vars USER_UPLOAD_RESULT_TOPIC=projects/homegeek-staging/topics/user-upload-result-topic \
+  --set-env-vars RAG_CORPUS=projects/homegeek-staging/locations/us-central1/ragCorpora/6917529027641081856
 ```
 
 #### Deploy Checkpoint Analysis Worker
@@ -295,9 +295,9 @@ gcloud functions deploy pubsub_checkpoint_analysis \
   --memory=512MB \
   --source function \
   --allow-unauthenticated \
-  --service-account githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com \
+  --service-account githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com \
   --entry-point pubsub_checkpoint_analysis \
-  --set-env-vars GCP_PROJECT_ID=homegeekdemo \
+  --set-env-vars GCP_PROJECT_ID=homegeek-staging \
   --set-env-vars GCP_LOCATION=us-central1
 ```
 

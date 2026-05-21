@@ -13,9 +13,9 @@ This workflow can be triggered in two ways:
 
 Before using this action, ensure you have:
 
-1.  **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeekdemo`) and `prod` (e.g., `homegeek-prod`).
+1.  **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeek-staging`) and `prod` (e.g., `homegeek-prod`).
 2.  **Service Accounts**: Dedicated service accounts for each environment with the necessary permissions to deploy to Cloud Run and manage other GCP resources (e.g., Pub/Sub, Cloud Storage).
-    - Staging: `githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com`
+    - Staging: `githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com`
     - Production: `githubworkflowdeployment@homegeek-prod.iam.gserviceaccount.com`
 3.  **Workload Identity Federation**: Set up Workload Identity Federation between your GitHub repository and your GCP projects for both staging and production. You will need to replace the placeholder `workload_identity_provider` value in the workflow with your actual provider ID.
 4.  **GitHub Secrets**: The following secrets must be configured in your GitHub repository:

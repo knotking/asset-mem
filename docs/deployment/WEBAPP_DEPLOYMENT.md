@@ -55,7 +55,7 @@ node --version      # Should be 20.0.0 or higher
 firebase login
 
 # Set project
-firebase use homegeekdemo
+firebase use homegeek-staging
 ```
 
 ### Required Permissions
@@ -190,14 +190,14 @@ cd apps/webapp
 Edit these variables in the script if needed:
 
 ```bash
-PROJECT_ID="homegeekdemo"
+PROJECT_ID="homegeek-staging"
 BACKEND_ID="staging"
 REGION="us-central1"
 ```
 
 ### Method 3: Firebase Console
 
-1. Navigate to [Firebase Console - App Hosting](https://console.firebase.google.com/project/homegeekdemo/apphosting)
+1. Navigate to [Firebase Console - App Hosting](https://console.firebase.google.com/project/homegeek-staging/apphosting)
 2. Select your backend (`staging` or `prod`)
 3. Click "Create rollout" or "Deploy" button
 4. Select the branch to deploy from
@@ -217,15 +217,15 @@ cd apps/webapp
 
 # Deploy to staging
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo
+  --project homegeek-staging
 
 # Deploy to production
 firebase apphosting:rollouts:create prod \
-  --project homegeekdemo
+  --project homegeek-staging
 
 # Deploy from specific branch
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --git-branch feature-branch
 ```
 
@@ -277,16 +277,16 @@ const nextConfig = {
 
 ```bash
 # List all rollouts
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # Get specific rollout details
-firebase apphosting:rollouts:get staging ROLLOUT_ID --project homegeekdemo
+firebase apphosting:rollouts:get staging ROLLOUT_ID --project homegeek-staging
 ```
 
 ### View Backend Details
 
 ```bash
-firebase apphosting:backends:get staging --project homegeekdemo
+firebase apphosting:backends:get staging --project homegeek-staging
 ```
 
 ### Check Logs
@@ -294,7 +294,7 @@ firebase apphosting:backends:get staging --project homegeekdemo
 ```bash
 # Via gcloud (App Hosting uses Cloud Run)
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=staging" \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --limit 50 \
   --format json
 
@@ -315,13 +315,13 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 ```bash
 # 1. List recent rollouts to find the previous working version
-firebase apphosting:rollouts:list staging --project homegeekdemo
+firebase apphosting:rollouts:list staging --project homegeek-staging
 
 # 2. Note the ROLLOUT_ID of the previous working version
 
 # 3. Create new rollout from previous version
 firebase apphosting:rollouts:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --rollout-id PREVIOUS_ROLLOUT_ID
 ```
 
@@ -343,7 +343,7 @@ firebase apphosting:rollouts:create staging \
 
 ```bash
 firebase apphosting:backends:create staging \
-  --project homegeekdemo \
+  --project homegeek-staging \
   --location us-central1
 ```
 
@@ -424,8 +424,8 @@ env:
 
 ```bash
 # Ensure service account has Firestore Admin role
-gcloud projects add-iam-policy-binding homegeekdemo \
-  --member="serviceAccount:githubworkflowdeployment@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+  --member="serviceAccount:githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com" \
   --role="roles/datastore.owner"
 ```
 

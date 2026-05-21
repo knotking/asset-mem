@@ -14,9 +14,10 @@ This document provides comprehensive instructions for deploying the GCP Proxy AP
 
 1. **Google Cloud Project**
    - Active GCP project with billing enabled
-   - Project ID (e.g., `homegeekdemo`)
+   - Project ID (e.g., `homegeek-staging`)
 
 2. **Required APIs**
+
    ```bash
    gcloud services enable \
      artifactregistry.googleapis.com \
@@ -132,13 +133,14 @@ gcloud storage buckets update gs://homegeek-user-data \
 ```
 
 **lifecycle.json:**
+
 ```json
 {
   "lifecycle": {
     "rule": [
       {
-        "action": {"type": "Delete"},
-        "condition": {"age": 90}
+        "action": { "type": "Delete" },
+        "condition": { "age": 90 }
       }
     ]
   }
@@ -178,6 +180,7 @@ openssl rand -hex 32  # For TELEGRAM_WEBHOOK_SECRET
 ### Method 1: Deploy from Source (Recommended)
 
 **Advantages:**
+
 - Simplest method
 - Cloud Build handles containerization
 - Automatic dependency installation
@@ -204,6 +207,7 @@ gcloud run deploy homecare-agent-proxy \
 ### Method 2: Deploy from Container Image
 
 **Advantages:**
+
 - More control over build process
 - Can test container locally
 - Faster deployments (pre-built image)
@@ -211,9 +215,10 @@ gcloud run deploy homecare-agent-proxy \
 **Steps:**
 
 1. **Build Container:**
+
    ```bash
    cd gcp/proxy/api
-   
+
    # Build and push to Artifact Registry
    gcloud builds submit \
      --tag us-central1-docker.pkg.dev/YOUR_PROJECT_ID/cloud-run-source-deploy/homecare-proxy:latest
@@ -238,6 +243,7 @@ gcloud run deploy homecare-agent-proxy \
 ### Method 3: Deploy with GitHub Actions (CI/CD)
 
 **Advantages:**
+
 - Automated deployments
 - Consistent deployment process
 - Integration with version control
@@ -252,6 +258,7 @@ gcloud run deploy homecare-agent-proxy \
 2. **GitHub Actions Workflow:**
 
 `.github/workflows/deploy-proxy.yml`:
+
 ```yaml
 name: Deploy Proxy API
 
@@ -260,19 +267,19 @@ on:
     branches:
       - main
     paths:
-      - 'gcp/proxy/api/**'
+      - "gcp/proxy/api/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy homecare-agent-proxy \
@@ -292,21 +299,25 @@ jobs:
 ### Resource Allocation
 
 **Memory:**
+
 - Minimum: 512MB
 - Recommended: 1GB
 - Maximum: 2GB (for large document processing)
 
 **CPU:**
+
 - Recommended: 1 vCPU
 - For high load: 2 vCPUs
 
 **Timeout:**
+
 - Default: 300s (5 minutes)
 - Adjust based on longest operation
 
 ### Scaling Configuration
 
 **Auto-scaling:**
+
 ```bash
 --min-instances 0        # Scale to zero when idle
 --max-instances 10       # Maximum concurrent instances
@@ -314,6 +325,7 @@ jobs:
 ```
 
 **Cold Start Optimization:**
+
 ```bash
 --min-instances 1        # Keep 1 instance warm
 ```
@@ -321,11 +333,13 @@ jobs:
 ### Networking
 
 **Allow Unauthenticated:**
+
 ```bash
 --allow-unauthenticated  # Public access (protected by webhook secrets)
 ```
 
 **VPC Connector (Optional):**
+
 ```bash
 --vpc-connector your-vpc-connector
 --vpc-egress all-traffic
@@ -344,6 +358,7 @@ gcloud run services describe homecare-agent-proxy \
 ```
 
 Example output:
+
 ```
 https://homecare-agent-proxy-321433914812.us-central1.run.app
 ```
@@ -365,13 +380,16 @@ curl -F "url=${SERVICE_URL}/${TELEGRAM_WEBHOOK_SECRET}" \
 Update the API base URL in your client applications:
 
 **mapp (React Native):**
+
 ```typescript
 // apps/mapp/lib/config.ts
-export const API_BASE_URL = "https://homecare-agent-proxy-xxx.us-central1.run.app";
+export const API_BASE_URL =
+  "https://homecare-agent-proxy-xxx.us-central1.run.app";
 export const FIREBASE_WEBHOOK_SECRET = "your-secret";
 ```
 
 **webapp (Next.js):**
+
 ```typescript
 // apps/webapp/src/lib/config.ts
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -389,8 +407,9 @@ curl ${SERVICE_URL}/health
 ```
 
 Expected response:
+
 ```json
-{"status": "ok"}
+{ "status": "ok" }
 ```
 
 ### Test Agent Endpoint
@@ -441,6 +460,7 @@ gcloud run services logs read homecare-agent-proxy \
 ### Cloud Logging
 
 **View logs:**
+
 ```bash
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=homecare-agent-proxy" \
   --limit 50 \
@@ -448,6 +468,7 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 ```
 
 **Create log-based metric:**
+
 ```bash
 gcloud logging metrics create proxy_errors \
   --description="Count of proxy API errors" \
@@ -459,6 +480,7 @@ gcloud logging metrics create proxy_errors \
 ### Alerting
 
 **Create alert policy:**
+
 ```bash
 gcloud alpha monitoring policies create \
   --notification-channels=CHANNEL_ID \
@@ -493,24 +515,28 @@ gcloud run services update-traffic homecare-agent-proxy \
 ### Common Issues
 
 **1. Service Account Permissions**
+
 ```
 Error: Permission denied
 Solution: Verify service account has required roles
 ```
 
 **2. Environment Variables**
+
 ```
 Error: FIREBASE_WEBHOOK_SECRET not set
 Solution: Check env.yaml or --set-env-vars
 ```
 
 **3. Cold Start Timeout**
+
 ```
 Error: Request timeout
 Solution: Increase --timeout or set --min-instances 1
 ```
 
 **4. Memory Exceeded**
+
 ```
 Error: Memory limit exceeded
 Solution: Increase --memory to 1Gi or 2Gi
@@ -535,6 +561,7 @@ gcloud run deploy homecare-agent-proxy --env-vars-file env.yaml
 ### Secrets Management
 
 **Use Secret Manager (Recommended):**
+
 ```bash
 # Create secret
 echo -n "your-secret-value" | gcloud secrets create firebase-webhook-secret --data-file=-
@@ -552,10 +579,12 @@ gcloud run deploy homecare-agent-proxy \
 ### Network Security
 
 **HTTPS Only:**
+
 - Cloud Run enforces HTTPS by default
 - No HTTP access allowed
 
 **CORS Configuration:**
+
 - Restrict origins in production
 - Update `main.py` CORS settings
 
@@ -598,4 +627,3 @@ gcloud run deploy homecare-agent-proxy --source .
 - [Configuration](./CONFIGURATION.md)
 - [Development Guide](./DEVELOPMENT.md)
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)
-

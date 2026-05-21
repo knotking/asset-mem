@@ -7,8 +7,9 @@ The error `"The given credential is rejected by the attribute condition"` occurs
 ## Current Configuration
 
 The Workload Identity Provider is currently configured with:
+
 - **Attribute Condition**: `attribute.repository=='BuildGeekAI/HomeApp'`
-- **Service Account**: `firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com`
+- **Service Account**: `firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com`
 
 ## Solution
 
@@ -19,6 +20,7 @@ You need to update the attribute condition to match your actual GitHub repositor
 Your repository name should be in the format: `OWNER/REPO_NAME`
 
 You can find it by:
+
 - Checking the GitHub Actions workflow logs (look for `github.repository`)
 - Or running this in your workflow to see the value:
   ```yaml
@@ -29,7 +31,7 @@ You can find it by:
 ### Step 2: Check Current Provider Configuration
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 
 # Check current attribute condition
 gcloud iam workload-identity-pools providers describe github-provider \
@@ -44,7 +46,7 @@ gcloud iam workload-identity-pools providers describe github-provider \
 Replace `YOUR_ORG/YOUR_REPO` with your actual repository name (e.g., `prakashbaskaran/HomeApp`):
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export GITHUB_REPO="YOUR_ORG/YOUR_REPO"  # e.g., "prakashbaskaran/HomeApp"
 
 # Update the provider with the correct repository name
@@ -60,10 +62,10 @@ gcloud iam workload-identity-pools providers update-oidc github-provider \
 You also need to update the IAM binding to allow your repository to impersonate the service account:
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 export GITHUB_REPO="YOUR_ORG/YOUR_REPO"  # e.g., "prakashbaskaran/HomeApp"
-export SA_EMAIL="firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com"
+export SA_EMAIL="firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com"
 
 # Remove old binding (if it exists for HomeGeekAI/HomeApp)
 gcloud iam service-accounts remove-iam-policy-binding $SA_EMAIL \
@@ -128,6 +130,7 @@ If you're changing the repository from `HomeGeekAI/HomeApp` to `BuildGeekAI/Home
 ```
 
 This script:
+
 - Updates the provider attribute condition
 - Removes the old repository binding
 - Adds the new repository binding
@@ -143,7 +146,7 @@ If you need to update to a different repository, use the manual commands in [Ste
 After updating, trigger your workflow again. The authentication should now succeed.
 
 If you still see errors, check:
+
 1. The repository name matches exactly (case-sensitive)
 2. The service account email is correct
 3. The Workload Identity Provider path is correct in your GitHub variables
-

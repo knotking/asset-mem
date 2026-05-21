@@ -51,7 +51,7 @@ except ImportError as e:
     sys.exit(1)
 
 # Configuration from environment
-PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "homegeekdemo")
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "homegeek-staging")
 REGION = os.environ.get("GCP_REGION", "us-central1")
 NEW_RAG_CORPUS = os.environ.get("NEW_RAG_CORPUS")
 GCS_BUCKET = os.environ.get("GCS_BUCKET", "homegeek-user-data")

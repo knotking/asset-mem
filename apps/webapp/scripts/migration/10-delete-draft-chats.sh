@@ -21,7 +21,7 @@ fi
 echo ""
 echo "📋 Configuration:"
 echo "   Old Project: goggle-gab"
-echo "   New Project: homegeekdemo"
+echo "   New Project: homegeek-staging"
 echo "   Target Collection: users/<user-id>/chats (where name = 'draft')"
 echo ""
 

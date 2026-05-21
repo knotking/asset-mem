@@ -13,7 +13,7 @@ This workflow can be triggered in two ways:
 
 Before using this action, ensure you have:
 
-1.  **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeekdemo`) and `prod` (e.g., `homegeek-prod`).
+1.  **Google Cloud Projects**: Separate GCP projects for `staging` (e.g., `homegeek-staging`) and `prod` (e.g., `homegeek-prod`).
 2.  **Service Account**: A service account with the necessary permissions to deploy and manage Vertex AI Agent Engines and other GCP resources (e.g., Cloud Storage, Pub/Sub, Vertex AI RAG). The service account email will be dynamically set based on the environment.
 3.  **Workload Identity Federation**: Set up Workload Identity Federation between your GitHub repository and your GCP projects for both staging and production. You will need to replace the placeholder `workload_identity_provider` value in the workflow with your actual provider ID.
 4.  **Google Cloud Storage Buckets**: Ensure the necessary staging buckets for the agent engine and user data buckets exist in both your staging and production projects, with appropriate environment suffixes.

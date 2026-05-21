@@ -22,9 +22,9 @@
 #   --force      Reimport all users (creates duplicates!)
 #
 # Example:
-#   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh
-#   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --dry-run
-#   NEW_RAG_CORPUS="projects/homegeekdemo/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --resume
+#   NEW_RAG_CORPUS="projects/homegeek-staging/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh
+#   NEW_RAG_CORPUS="projects/homegeek-staging/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --dry-run
+#   NEW_RAG_CORPUS="projects/homegeek-staging/locations/us-central1/ragCorpora/1234567890" ./9-migrate-rag-corpus.sh --resume
 ##
 
 set -e
@@ -33,7 +33,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configuration
-GCP_PROJECT_ID="${GCP_PROJECT_ID:-homegeekdemo}"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-homegeek-staging}"
 GCP_REGION="${GCP_REGION:-us-central1}"
 GCS_BUCKET="${GCS_BUCKET:-homegeek-user-data}"
 NEW_RAG_CORPUS="${NEW_RAG_CORPUS:-}"
@@ -70,7 +70,7 @@ if [ -z "$NEW_RAG_CORPUS" ]; then
     echo "❌ Error: NEW_RAG_CORPUS environment variable not set"
     echo ""
     echo "Please set the new RAG corpus ID:"
-    echo "  export NEW_RAG_CORPUS='projects/homegeekdemo/locations/us-central1/ragCorpora/YOUR_CORPUS_ID'"
+    echo "  export NEW_RAG_CORPUS='projects/homegeek-staging/locations/us-central1/ragCorpora/YOUR_CORPUS_ID'"
     echo ""
     echo "To create a new corpus:"
     echo "  1. Go to Vertex AI Console → RAG"

@@ -15,7 +15,7 @@ This GitHub Actions workflow automates the deployment of the webapp to Firebase 
 ### Step 1: Create Service Account
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export SA_NAME="firebase-apphosting-deployer"
 export SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -74,7 +74,7 @@ gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
 Set `FIREBASE_SERVICE_ACCOUNT_EMAIL` in both staging and production environments:
 
 ```
-FIREBASE_SERVICE_ACCOUNT_EMAIL=firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com
+FIREBASE_SERVICE_ACCOUNT_EMAIL=firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com
 ```
 
 For detailed setup instructions, see the [Prerequisites](#prerequisites) section below.
@@ -84,7 +84,9 @@ For detailed setup instructions, see the [Prerequisites](#prerequisites) section
 ## Triggers
 
 ### Automatic Deployment
+
 The workflow runs automatically when changes are pushed to:
+
 - Branches: `main` or `firebase_project_migration`
 - Paths:
   - `apps/webapp/**`
@@ -94,7 +96,9 @@ The workflow runs automatically when changes are pushed to:
 **Default Environment**: `staging`
 
 ### Manual Deployment
+
 You can manually trigger deployments via GitHub Actions UI:
+
 1. Go to **Actions** → **Deploy Webapp - AppHosting**
 2. Click **Run workflow**
 3. Select environment: `staging` or `production`
@@ -108,6 +112,7 @@ Create two environments in your GitHub repository:
 **Settings → Environments → New environment**
 
 Create:
+
 - `staging`
 - `production`
 
@@ -115,14 +120,15 @@ Create:
 
 For **each environment** (staging and production), configure these variables:
 
-| Variable Name | Description | Example |
-|--------------|-------------|---------|
-| `GCP_PROJECT_ID` | Google Cloud Project ID | `homegeekdemo` |
-| `GCP_REGION` | GCP region for deployment | `us-central1` |
-| `WORKLOAD_IDENTITY_PROVIDER` | Workload Identity Provider resource name | `projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
-| `FIREBASE_SERVICE_ACCOUNT_EMAIL` | Service account email for authentication | `firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com` |
+| Variable Name                    | Description                              | Example                                                                                           |
+| -------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `GCP_PROJECT_ID`                 | Google Cloud Project ID                  | `homegeek-staging`                                                                                |
+| `GCP_REGION`                     | GCP region for deployment                | `us-central1`                                                                                     |
+| `WORKLOAD_IDENTITY_PROVIDER`     | Workload Identity Provider resource name | `projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
+| `FIREBASE_SERVICE_ACCOUNT_EMAIL` | Service account email for authentication | `firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com`                           |
 
 **How to set these:**
+
 1. Go to **Settings → Environments → [staging/production]**
 2. Under **Environment variables**, click **Add variable**
 3. Add each variable with its value
@@ -138,7 +144,7 @@ Create a dedicated service account specifically for Firebase App Hosting deploym
 **Create the service account:**
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export SA_NAME="firebase-apphosting-deployer"
 export SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -185,6 +191,7 @@ gcloud iam service-accounts add-iam-policy-binding $COMPUTE_SA \
 ```
 
 **Summary of required roles:**
+
 - ✅ **Firebase App Hosting Admin** - Create and manage rollouts
 - ✅ **Developer Connect Admin** - Access Git repository connections and fetch refs
 - ✅ **Developer Connect Read Token Accessor (Beta)** - Fetch read tokens for repository access
@@ -192,14 +199,14 @@ gcloud iam service-accounts add-iam-policy-binding $COMPUTE_SA \
 - ✅ **Storage Object Viewer** - Read build artifacts (optional but recommended)
 - ✅ **Service Account User** (on compute SA) - Allows deployer to impersonate the compute service account during builds
 
-Then set `FIREBASE_SERVICE_ACCOUNT_EMAIL=firebase-apphosting-deployer@homegeekdemo.iam.gserviceaccount.com` in your GitHub Environment variables.
+Then set `FIREBASE_SERVICE_ACCOUNT_EMAIL=firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com` in your GitHub Environment variables.
 
 #### Option B: Use Firebase App Hosting's Default Compute Service Account
 
 You can use the existing `firebase-app-hosting-compute@{PROJECT_ID}.iam.gserviceaccount.com` service account, but you'll need to add additional roles:
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export SERVICE_ACCOUNT_EMAIL="firebase-app-hosting-compute@${PROJECT_ID}.iam.gserviceaccount.com"
 
 # Grant Firebase App Hosting Admin role (required for creating rollouts)
@@ -222,7 +229,7 @@ If you haven't set up Workload Identity Federation yet, follow these steps to al
 #### Step 1: Get Your Project Number
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 echo "Project Number: $PROJECT_NUMBER"
 ```
@@ -294,6 +301,7 @@ gcloud iam workload-identity-pools providers describe github-provider \
 Save this output - it's your `WORKLOAD_IDENTITY_PROVIDER` value for GitHub Environment variables.
 
 **Example output:**
+
 ```
 projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider
 ```
@@ -313,16 +321,17 @@ apps/webapp/
 
 ### Backend ID Mapping
 
-| Environment | Backend ID | Config File |
-|------------|-----------|-------------|
-| staging | `staging` | `apphosting.staging.yaml` |
-| production | `prod` | `apphosting.prod.yaml` |
+| Environment | Backend ID | Config File               |
+| ----------- | ---------- | ------------------------- |
+| staging     | `staging`  | `apphosting.staging.yaml` |
+| production  | `prod`     | `apphosting.prod.yaml`    |
 
 Firebase automatically merges the base `apphosting.yaml` with the environment-specific file.
 
 ### Example Configuration Files
 
 **apphosting.yaml** (Base):
+
 ```yaml
 runConfig:
   minInstances: 0
@@ -332,6 +341,7 @@ runConfig:
 ```
 
 **apphosting.staging.yaml**:
+
 ```yaml
 runConfig:
   minInstances: 0
@@ -343,6 +353,7 @@ env:
 ```
 
 **apphosting.prod.yaml**:
+
 ```yaml
 runConfig:
   minInstances: 1
@@ -381,8 +392,8 @@ After successful deployment, access your app at:
 **Solution**: Grant the `roles/serviceusage.serviceUsageConsumer` role:
 
 ```bash
-gcloud projects add-iam-policy-binding homegeekdemo \
-  --member="serviceAccount:firebase-app-hosting-compute@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+  --member="serviceAccount:firebase-app-hosting-compute@homegeek-staging.iam.gserviceaccount.com" \
   --role="roles/serviceusage.serviceUsageConsumer"
 ```
 
@@ -401,8 +412,8 @@ This permission allows the service account to check if Firebase App Hosting API 
 **Solution**: Grant the `roles/developerconnect.admin` role to your service account:
 
 ```bash
-gcloud projects add-iam-policy-binding homegeekdemo \
-  --member="serviceAccount:firebase-app-hosting-compute@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+  --member="serviceAccount:firebase-app-hosting-compute@homegeek-staging.iam.gserviceaccount.com" \
   --role="roles/developerconnect.admin"
 ```
 
@@ -415,12 +426,13 @@ This permission is required because Firebase App Hosting uses Developer Connect 
 **Solution**: The "Developer Connect Read Token Accessor (Beta)" role is insufficient. Grant the full `roles/developerconnect.admin` role:
 
 ```bash
-gcloud projects add-iam-policy-binding homegeekdemo \
-  --member="serviceAccount:firebase-app-hosting-compute@homegeekdemo.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding homegeek-staging \
+  --member="serviceAccount:firebase-app-hosting-compute@homegeek-staging.iam.gserviceaccount.com" \
   --role="roles/developerconnect.admin"
 ```
 
 This role includes permissions for:
+
 - `developerconnect.gitRepositoryLinks.get`
 - `developerconnect.gitRepositoryLinks.fetchReadToken`
 - `developerconnect.gitRepositoryLinks.fetchGitRefs`
@@ -432,8 +444,9 @@ This role includes permissions for:
 **Solution**: This should be covered by the `roles/developerconnect.admin` role. If you're still getting this error after adding that role:
 
 1. **Verify the role was applied**:
+
    ```bash
-   gcloud projects get-iam-policy homegeekdemo \
+   gcloud projects get-iam-policy homegeek-staging \
      --flatten="bindings[].members" \
      --filter="bindings.members:serviceAccount:YOUR_SERVICE_ACCOUNT_EMAIL"
    ```
@@ -443,19 +456,20 @@ This role includes permissions for:
 3. **Re-run the workflow** after permissions have propagated
 
 4. **Alternative: Use a custom role** with only the required permissions:
+
    ```bash
    # Create custom role with minimal permissions
    gcloud iam roles create FirebaseAppHostingDeployer \
-     --project=homegeekdemo \
+     --project=homegeek-staging \
      --title="Firebase App Hosting Deployer" \
      --description="Minimal permissions for App Hosting deployment" \
      --permissions=firebaseapphosting.backends.get,firebaseapphosting.backends.list,firebaseapphosting.rollouts.create,developerconnect.gitRepositoryLinks.get,developerconnect.gitRepositoryLinks.fetchReadToken \
      --stage=GA
 
    # Assign the custom role
-   gcloud projects add-iam-policy-binding homegeekdemo \
+   gcloud projects add-iam-policy-binding homegeek-staging \
      --member="serviceAccount:YOUR_SERVICE_ACCOUNT_EMAIL" \
-     --role="projects/homegeekdemo/roles/FirebaseAppHostingDeployer"
+     --role="projects/homegeek-staging/roles/FirebaseAppHostingDeployer"
    ```
 
 ### Error: Permission "iam.serviceAccounts.actAs" denied
@@ -467,7 +481,7 @@ This role includes permissions for:
 **Solution**: Grant the Service Account User role on the compute service account:
 
 ```bash
-export PROJECT_ID="homegeekdemo"
+export PROJECT_ID="homegeek-staging"
 export DEPLOYER_SA="firebase-apphosting-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
 export COMPUTE_SA="firebase-app-hosting-compute@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -483,6 +497,7 @@ This is required because Firebase App Hosting uses the compute service account t
 **Cause**: Environment variables not configured or configured at wrong level.
 
 **Solution**:
+
 - Ensure variables are set in **Settings → Environments → [staging/production] → Variables**
 - NOT in repository-level variables or secrets
 - Variables must exist for both `staging` and `production` environments
@@ -492,6 +507,7 @@ This is required because Firebase App Hosting uses the compute service account t
 **Cause**: Workload Identity Federation not properly configured.
 
 **Solution**:
+
 - Verify the `WORKLOAD_IDENTITY_PROVIDER` value is correct
 - Ensure the service account has `roles/iam.workloadIdentityUser` for your GitHub repository
 - Check the attribute mapping includes `attribute.repository`
@@ -501,16 +517,17 @@ This is required because Firebase App Hosting uses the compute service account t
 **Cause**: Backend doesn't exist in Firebase App Hosting.
 
 **Solution**: Create the backend first:
+
 ```bash
 firebase apphosting:backends:create staging \
-  --project=homegeekdemo \
+  --project=homegeek-staging \
   --location=us-central1
 ```
 
 ## Monitoring
 
 - **GitHub Actions**: View workflow runs in the Actions tab
-- **Firebase Console**: Monitor deployments at [Firebase App Hosting Console](https://console.firebase.google.com/project/homegeekdemo/apphosting)
+- **Firebase Console**: Monitor deployments at [Firebase App Hosting Console](https://console.firebase.google.com/project/homegeek-staging/apphosting)
 - **Logs**: Access deployment logs via Cloud Logging in GCP Console
 
 ## Additional Resources

@@ -84,7 +84,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ✅ **Personalized Guidance** - Recommendations based on your documents and location  
 ✅ **Cost Transparency** - Compare DIY vs. professional service costs  
 ✅ **Trusted Providers** - Find authorized and highly-rated local service providers  
-✅ **Document Intelligence** - Your documents become searchable knowledge  
+✅ **Document Intelligence** - Your documents become searchable knowledge
 
 ---
 
@@ -165,12 +165,14 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 1. Property Checkpoints & Condition Tracking
 
 **Visual Timeline**
+
 - Capture photos/videos of property areas over time
 - Track condition changes with before/after comparisons
 - AI-powered analysis of each checkpoint
 - Automatic room/area detection
 
 **AI-Powered Analysis**
+
 - Condition scoring (0-100 scale)
 - Damage detection and severity assessment
 - Detected items and features identification
@@ -178,18 +180,21 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Cost estimates for repairs and maintenance
 
 **Automatic Comparison**
+
 - Intelligent comparison with previous checkpoints
 - Visual diff analysis with similarity scoring
 - Change detection and semantic understanding
 - Configurable comparison preferences
 
 **Property Health Metrics**
+
 - Overall condition score with trend analysis
 - Issues summary by severity
 - Deterioration rate tracking
 - Predictive maintenance insights
 
 **Async Processing Architecture**
+
 - Non-blocking checkpoint creation
 - Pub/Sub-based background processing
 - Real-time UI updates via Firestore
@@ -198,11 +203,13 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 2. Multimodal Diagnostics
 
 **Visual Analysis**
+
 - Upload photos or videos of property issues
 - AI analyzes visual content using Gemini 2.5 Flash
 - Provides initial triage and diagnosis
 
 **Document Analysis**
+
 - Extract key information from documents
 - Property address extraction
 - Entity recognition (warranties, policies, receipts)
@@ -210,11 +217,13 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 3. Intelligent Triage
 
 **Problem Assessment**
+
 - Clear diagnosis or clarification questions
 - Severity assessment
 - Urgency recommendations
 
 **Iterative Refinement**
+
 - Follow-up questions to gather more context
 - Progressive diagnosis refinement
 - Structured JSON responses
@@ -222,11 +231,13 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 4. Coverage Analysis
 
 **Warranty & Insurance**
+
 - Retrieves warranty information from user documents
 - Insurance coverage analysis
 - Policy recommendations
 
 **Document Intelligence**
+
 - Searches user-uploaded documents
 - Extracts relevant coverage details
 - Provides citations and sources
@@ -234,16 +245,19 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 5. DIY Recommendations
 
 **Step-by-Step Guidance**
+
 - Detailed repair instructions
 - Embedded YouTube video tutorials
 - Safety considerations
 
 **Product Recommendations**
+
 - Curated product suggestions
 - Pricing and vendor information
 - Direct purchase links
 
 **Cost Estimates**
+
 - DIY cost breakdown
 - Complexity ratings
 - Time estimates
@@ -251,17 +265,20 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 6. Service Provider Discovery
 
 **Local Search**
+
 - Finds nearby service providers
 - Authorized service centers
 - Highly-rated businesses
 
 **Provider Details**
+
 - Business information and contact
 - Star ratings and review counts
 - Google Maps integration
 - SerpAPI reviews
 
 **AI-Powered Cost Estimates** ⭐ NEW
+
 - Real-time pricing using Gemini with Google Search grounding
 - Location-aware cost adjustments (San Francisco vs rural areas)
 - Service provider calibration with real market data
@@ -273,16 +290,19 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### 7. Document Management & RAG
 
 **Document Upload**
+
 - Support for PDFs, images, videos
 - Automatic indexing to RAG corpus
 - User-specific document corpus
 
 **Knowledge Retrieval**
+
 - Q&A from user documents
 - General knowledge base access
 - Citation support
 
 **Search Capabilities**
+
 - Semantic search across documents
 - Context-aware retrieval
 - Multi-document synthesis
@@ -294,6 +314,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### Frontend Technologies
 
 **Mobile App (Expo/React Native)**
+
 - React Native 0.81.5
 - Expo SDK 54
 - Expo Router 6.13
@@ -302,6 +323,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Firebase SDK
 
 **Web App (Next.js)**
+
 - Next.js 15.3.3
 - React 19.1.0
 - Tailwind CSS
@@ -310,6 +332,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Genkit (AI integration)
 
 **Shared Package**
+
 - TypeScript 5.4.5
 - Shared React contexts
 - Common Firebase configuration
@@ -318,12 +341,14 @@ HomeApp addresses these challenges through an integrated AI platform that:
 ### Backend Technologies
 
 **API Service**
+
 - FastAPI 0.116.1
 - Python 3.11
 - Uvicorn ASGI server
 - Pydantic validation
 
 **AI/ML Platform**
+
 - Google Vertex AI Reasoning Engine
 - Vertex AI RAG Engine
 - Gemini 2.5 Flash
@@ -331,6 +356,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - LangChain & LlamaIndex
 
 **Cloud Infrastructure**
+
 - Google Cloud Run (API)
 - Cloud Functions Gen2 (Workers)
   - RAG document import
@@ -347,6 +373,7 @@ HomeApp addresses these challenges through an integrated AI platform that:
   - User preferences
 
 **Infrastructure as Code**
+
 - Terraform
 - Docker
 - Artifact Registry
@@ -394,6 +421,7 @@ AGENT  AGENT   AGENT                   │              │
 ### Agent Responsibilities
 
 #### Root Property Agent
+
 - **Role**: Main orchestrator
 - **Responsibilities**:
   - Routes requests based on input parameters
@@ -401,6 +429,7 @@ AGENT  AGENT   AGENT                   │              │
   - Handles casual queries directly
 
 #### Analysis Agent
+
 - **Triage Agent**: Multimodal analysis, initial diagnosis
 - **Coverage Agent**: Warranty/insurance retrieval
 - **DIY Agent**: Step-by-step instructions, videos, products
@@ -409,6 +438,7 @@ AGENT  AGENT   AGENT                   │              │
 - **Cost Agent**: AI-powered cost estimates with location-aware pricing
 
 #### DocuLink Agent
+
 - **User Docs Agent**: Retrieves from user-uploaded documents
 - **Knowledge Base Agent**: Accesses general knowledge corpus
 
@@ -442,6 +472,7 @@ AGENT  AGENT   AGENT                   │              │
 **Platforms**: iOS, Android, Web (via Expo)
 
 **Key Features**:
+
 - 📸 Camera integration for photo/video capture
 - 📎 Document picker for file uploads
 - 💬 Real-time chat interface with Gifted Chat
@@ -459,6 +490,7 @@ AGENT  AGENT   AGENT                   │              │
   - Configurable comparison settings
 
 **Tech Stack**:
+
 - Expo SDK 54
 - React Native 0.81.5
 - NativeWind (Tailwind CSS)
@@ -470,6 +502,7 @@ AGENT  AGENT   AGENT                   │              │
 **Platform**: Desktop browsers
 
 **Key Features**:
+
 - 🖥️ Responsive design
 - ⚡ Server-side rendering (SSR)
 - 🔄 Real-time updates
@@ -486,6 +519,7 @@ AGENT  AGENT   AGENT                   │              │
   - Checkpoint preferences settings
 
 **Tech Stack**:
+
 - Next.js 15.3.3
 - React 19.1.0
 - Tailwind CSS
@@ -497,6 +531,7 @@ AGENT  AGENT   AGENT                   │              │
 **Purpose**: Code sharing between mobile and web
 
 **Contents**:
+
 - Shared React contexts (Auth, Session, Property)
 - Common Firebase configuration
 - Shared TypeScript types
@@ -511,6 +546,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: Homeowner wants to monitor basement condition over winter months
 
 **Flow**:
+
 1. User creates checkpoint in basement with photo
 2. AI analyzes image automatically (async processing)
 3. Detects room type: "Basement" with 92% confidence
@@ -523,7 +559,8 @@ AGENT  AGENT   AGENT                   │              │
 10. Property metrics updated: overall condition 82 → 78, 1 moderate issue added
 11. User receives real-time notification of deterioration
 
-**Output**: 
+**Output**:
+
 - Visual timeline of basement condition
 - Before/after comparison with similarity score
 - Detected changes with severity levels
@@ -535,6 +572,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User notices their AC isn't cooling properly
 
 **Flow**:
+
 1. User uploads photo of AC unit and thermostat
 2. Triage Agent analyzes images
 3. Coverage Agent checks warranty documents
@@ -549,6 +587,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: Storm damage requires insurance claim with proof of condition changes
 
 **Flow**:
+
 1. User had created checkpoint of roof exterior 2 months ago
 2. After storm, user creates new checkpoint of same area
 3. AI automatically compares before/after images
@@ -558,7 +597,8 @@ AGENT  AGENT   AGENT                   │              │
 7. User exports checkpoint timeline as PDF for insurance claim
 8. Report includes: before/after photos, AI analysis, damage assessment, timestamps
 
-**Output**: 
+**Output**:
+
 - Professional documentation with visual evidence
 - AI-verified damage assessment
 - Timeline proving condition before and after event
@@ -569,6 +609,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User wants to know what their home warranty covers
 
 **Flow**:
+
 1. User asks: "What does my home warranty cover?"
 2. DocuLink Agent routes to User Docs Agent
 3. RAG retrieval searches user's uploaded warranty documents
@@ -581,6 +622,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User discovers a water leak under the sink
 
 **Flow**:
+
 1. User uploads video of leak
 2. Triage Agent analyzes video and provides diagnosis
 3. DIY Agent provides step-by-step repair instructions
@@ -595,6 +637,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User wants to understand property maintenance needs
 
 **Flow**:
+
 1. User has been creating monthly checkpoints for 6 months
 2. Opens property health metrics dashboard
 3. Views overall condition trend: 85 → 82 (slight decline)
@@ -606,6 +649,7 @@ AGENT  AGENT   AGENT                   │              │
 9. User creates reminder and shares timeline with contractor
 
 **Output**:
+
 - Data-driven maintenance planning
 - Trend analysis preventing major issues
 - Cost-effective preventive action
@@ -616,6 +660,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User needs to know how to reset their dishwasher
 
 **Flow**:
+
 1. User asks: "How do I reset my dishwasher?"
 2. DocuLink Agent searches user's uploaded manuals
 3. Knowledge Base Agent searches general appliance database
@@ -628,6 +673,7 @@ AGENT  AGENT   AGENT                   │              │
 **Scenario**: User in San Francisco needs plumbing repair and wants accurate local pricing
 
 **Flow**:
+
 1. User uploads photo of leaking pipe under kitchen sink
 2. Triage Agent diagnoses: "Loose connection at P-trap, minor leak"
 3. Cost Agent (AI-powered) activates:
@@ -646,7 +692,8 @@ AGENT  AGENT   AGENT                   │              │
 6. Validates cost ranges and confidence score (0.85)
 7. Returns comprehensive estimate
 
-**Output**: 
+**Output**:
+
 - **DIY Cost**: $25-120 (materials: pipe clamp, fittings, sealant)
   - Includes: San Francisco hardware store pricing
   - Time: 1-3 hours
@@ -661,6 +708,7 @@ AGENT  AGENT   AGENT                   │              │
 - **Confidence**: 85% (location + calibration + valid extraction)
 
 **Benefits**:
+
 - Accurate regional pricing (SF 40% higher than national average)
 - Real-time 2026 pricing (not outdated hardcoded values)
 - Validated against actual local market data
@@ -674,6 +722,7 @@ AGENT  AGENT   AGENT                   │              │
 ### Cloud Architecture
 
 **Google Cloud Platform**
+
 - **Cloud Run**: API service (auto-scaling)
 - **Cloud Functions**: Background workers (Pub/Sub triggered)
   - `pubsub_to_user_docs`: RAG document import worker
@@ -687,6 +736,7 @@ AGENT  AGENT   AGENT                   │              │
 - **Vertex AI**: Agent engine, RAG, and Gemini models
 
 **Firebase**
+
 - **Authentication**: User management
 - **Firestore**: Real-time database
   - Properties, sessions, messages, checkpoints
@@ -697,6 +747,7 @@ AGENT  AGENT   AGENT                   │              │
 ### Checkpoint Infrastructure
 
 **Async Processing Pipeline**:
+
 ```
 Mobile/Web App → API Endpoint → Pub/Sub Topic → Cloud Function → Gemini AI → Firestore → Real-time Updates
 ```
@@ -727,22 +778,26 @@ Mobile/Web App → API Endpoint → Pub/Sub Topic → Cloud Function → Gemini 
    - Runtime: Python 3.13
 
 **Pub/Sub Topics**:
+
 - `checkpoint-analysis-topic`: Queues checkpoint analysis requests
 - `checkpoint-metrics-topic`: Triggers metrics aggregation
 - `user-upload-topic`: Handles document uploads
 
 **Firestore Collections**:
+
 - `users/{userId}/properties/{propertyId}/checkpoints`: Checkpoint documents
 - `users/{userId}/properties/{propertyId}/metrics/summary`: Aggregated metrics
 - `users/{userId}/preferences/user`: User preferences (comparison settings)
 
 **Firestore Indexes**:
+
 - Composite index on checkpoints: `location` (ASC), `createdAt` (DESC)
 - Enables efficient location-based queries for comparison
 
 ### Infrastructure as Code
 
 **Terraform Modules**:
+
 - Cloud Run deployment
 - Cloud Functions deployment
 - Pub/Sub topics and subscriptions
@@ -751,12 +806,14 @@ Mobile/Web App → API Endpoint → Pub/Sub Topic → Cloud Function → Gemini 
 - Secret Manager integration
 
 **Environments**:
+
 - Staging
 - Production
 
 ### Deployment Process
 
 **Agents**:
+
 ```bash
 cd gcp/agents/homecare
 make deploy
@@ -764,11 +821,13 @@ make grant-permissions
 ```
 
 **API**:
+
 ```bash
 gcloud run deploy homecare-agent-proxy --source api
 ```
 
 **Checkpoint Analysis Worker**:
+
 ```bash
 gcloud functions deploy pubsub_checkpoint_analysis \
   --gen2 \
@@ -780,11 +839,12 @@ gcloud functions deploy pubsub_checkpoint_analysis \
   --memory=512MB \
   --source gcp/proxy/workers/function \
   --entry-point pubsub_checkpoint_analysis \
-  --set-env-vars GCP_PROJECT_ID=homegeekdemo \
+  --set-env-vars GCP_PROJECT_ID=homegeek-staging \
   --set-env-vars GCP_LOCATION=us-central1
 ```
 
 **Checkpoint Metrics Worker**:
+
 ```bash
 gcloud functions deploy pubsub_checkpoint_metrics_aggregate \
   --gen2 \
@@ -798,6 +858,7 @@ gcloud functions deploy pubsub_checkpoint_metrics_aggregate \
 ```
 
 **Infrastructure**:
+
 ```bash
 cd gcp/terraform/environments/staging
 terraform plan
@@ -808,7 +869,7 @@ terraform apply
 
 - **Horizontal Scaling**: Cloud Run auto-scales based on traffic
 - **Streaming Responses**: Server-Sent Events (SSE) for real-time updates
-- **Async Processing**: 
+- **Async Processing**:
   - File uploads processed via Pub/Sub
   - Checkpoint analysis non-blocking (202 Accepted)
   - Metrics aggregation triggered asynchronously
@@ -823,11 +884,13 @@ terraform apply
 ### Observability
 
 **Shared Observability Module** (`gcp/common/observability/`):
+
 - Unified logging, metrics, and tracing
 - Feature-specific helpers (checkpoint, agent, document, RAG, platform)
 - OpenTelemetry integration with GCP exporters
 
 **Checkpoint Observability**:
+
 - Analysis completion/failure logging with structured data
 - Duration metrics (histograms)
 - Condition and damage score tracking
@@ -836,6 +899,7 @@ terraform apply
 - Deterioration rate tracking for trend analysis
 
 **Monitoring Dashboards**:
+
 - Checkpoint analysis queue depth
 - Average processing time
 - Error rates by worker
@@ -942,6 +1006,7 @@ terraform apply
 ## Key Metrics & Success Indicators
 
 ### Technical Metrics
+
 - **Response Time**: < 5 seconds for triage
 - **Checkpoint Analysis**: < 10 seconds for AI analysis (async)
 - **Accuracy**: High-quality diagnoses and recommendations
@@ -950,28 +1015,31 @@ terraform apply
 - **Processing Capacity**: 1,000+ checkpoints/minute
 
 ### User Metrics
+
 - **User Satisfaction**: High ratings for diagnostic accuracy
 - **Engagement**: Daily active users
 - **Retention**: Monthly active users
 - **Feature Adoption**: Usage of different agent capabilities
-- **Checkpoint Usage**: 
+- **Checkpoint Usage**:
   - Average checkpoints per property
   - Checkpoint creation frequency
   - Comparison feature usage
   - Metrics dashboard views
 
 ### Business Metrics
+
 - **Cost Savings**: Average cost reduction through DIY recommendations
 - **Service Discovery**: Conversion rate to service providers
 - **Document Utilization**: Active use of document Q&A features
-- **Property Monitoring**: 
+- **Property Monitoring**:
   - Properties with active checkpoint tracking
   - Average condition score improvements
   - Early issue detection rate
   - Insurance claim documentation usage
 
 ### Checkpoint-Specific Metrics
-- **Analysis Accuracy**: 
+
+- **Analysis Accuracy**:
   - Room detection confidence (avg 92%+)
   - Condition scoring consistency
   - Issue detection precision
@@ -992,6 +1060,7 @@ terraform apply
 ### ✅ Completed Features
 
 **Core Functionality**:
+
 - ✅ Checkpoint creation with photo/video capture
 - ✅ Timeline view with real-time updates
 - ✅ AI-powered image analysis using Gemini 2.5 Flash
@@ -1002,6 +1071,7 @@ terraform apply
 - ✅ Cost estimates for repairs
 
 **Advanced Features**:
+
 - ✅ Async processing architecture (Pub/Sub + Cloud Functions)
 - ✅ Automatic comparison with previous checkpoints
 - ✅ Visual diff analysis with similarity scoring
@@ -1012,6 +1082,7 @@ terraform apply
 - ✅ Observability and monitoring (OpenTelemetry)
 
 **Infrastructure**:
+
 - ✅ Cloud Function: `pubsub_checkpoint_analysis` (max 10 instances)
 - ✅ Cloud Function: `pubsub_checkpoint_metrics_aggregate` (max 5 instances)
 - ✅ Pub/Sub topics: `checkpoint-analysis-topic`, `checkpoint-metrics-topic`
@@ -1019,6 +1090,7 @@ terraform apply
 - ✅ Shared observability module
 
 **Applications**:
+
 - ✅ Mobile app (iOS, Android, Web via Expo)
 - ✅ Web app (Next.js with full feature parity)
 - ✅ Shared contexts and types (`@homeapp/common`)
@@ -1026,12 +1098,14 @@ terraform apply
 ### 🚧 In Progress / Planned
 
 **Near-Term Enhancements**:
+
 - ⏳ Firestore vector search for semantic checkpoint queries
 - ⏳ Chat integration for conversational checkpoint creation
 - ⏳ Deep links between chat and checkpoints
 - ⏳ Proactive AI notifications
 
 **Future Enhancements**:
+
 - 📋 Property mind map visualization (web)
 - 📋 Professional PDF/Word report generation
 - 📋 Collaborative checkpoints (family & contractors)
@@ -1041,12 +1115,14 @@ terraform apply
 ### Performance & Scalability
 
 **Current Capacity**:
+
 - Supports 10,000+ concurrent users
 - Processes 1,000+ checkpoints/minute
 - Non-blocking checkpoint creation (202 Accepted)
 - Real-time UI updates via Firestore
 
 **Optimizations**:
+
 - Pagination (20 checkpoints per page)
 - Thumbnail generation for faster loading
 - Automatic comparison respects user preferences
@@ -1054,6 +1130,7 @@ terraform apply
 - Caching strategy for analysis results
 
 **Cost Efficiency**:
+
 - ~60% cost reduction vs. synchronous processing
 - Intelligent comparison triggering
 - Storage tier optimization planned
@@ -1070,7 +1147,7 @@ HomeApp represents a comprehensive solution to modern home care challenges, leve
 ✅ **Comprehensive Support** from triage to service discovery  
 ✅ **Cost Transparency** with detailed estimates and comparisons  
 ✅ **Seamless Experience** across mobile and web platforms  
-✅ **Scalable Infrastructure** with async processing and real-time updates  
+✅ **Scalable Infrastructure** with async processing and real-time updates
 
 Built on a robust, scalable cloud architecture with a sophisticated multi-agent AI system and advanced property monitoring capabilities, HomeApp is positioned to transform how homeowners manage and maintain their properties.
 
@@ -1079,6 +1156,7 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 ## Additional Resources
 
 ### General Documentation
+
 - **Architecture Diagrams**: [`ARCHITECTURE_DIAGRAM.md`](./ARCHITECTURE_DIAGRAM.md)
 - **Technology Stack**: [`TECH_STACK.md`](./TECH_STACK.md)
 - **Backend Architecture**: [`../gcp/docs/ARCHITECTURE.md`](../gcp/docs/ARCHITECTURE.md)
@@ -1086,6 +1164,7 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Frontend Guide**: [`../apps/README.md`](../apps/README.md)
 
 ### Checkpoint Feature Documentation
+
 - **Mobile Implementation**: [`../apps/mapp/docs/CHECKPOINT_IMPLEMENTATION_SUMMARY.md`](../apps/mapp/docs/CHECKPOINT_IMPLEMENTATION_SUMMARY.md)
 - **Web Implementation**: [`../apps/webapp/docs/CHECKPOINT_IMPLEMENTATION.md`](../apps/webapp/docs/CHECKPOINT_IMPLEMENTATION.md)
 - **Feature Plan**: [`../apps/mapp/docs/CHECKPOINT_FEATURE_PLAN.md`](../apps/mapp/docs/CHECKPOINT_FEATURE_PLAN.md)
@@ -1094,6 +1173,7 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 - **Workers Documentation**: [`../gcp/proxy/workers/README.md`](../gcp/proxy/workers/README.md)
 
 ### Cost Estimation Feature Documentation ⭐ NEW
+
 - **Overview & Architecture**: [`./costing/OVERVIEW.md`](./costing/OVERVIEW.md)
 - **AI Cost Estimation**: [`./costing/AI_COST_ESTIMATION.md`](./costing/AI_COST_ESTIMATION.md)
 - **Configuration Guide**: [`./costing/CONFIGURATION.md`](./costing/CONFIGURATION.md)
@@ -1107,4 +1187,3 @@ Built on a robust, scalable cloud architecture with a sophisticated multi-agent 
 ---
 
 **For questions or more information, please refer to the documentation or contact the HomeApp platform team.**
-

@@ -5,9 +5,9 @@ import unittest
 import sys
 
 # Set environment variables BEFORE importing main to ensure Config picks them up
-os.environ["RAG_CORPUS"] = "projects/homegeekdemo/locations/us-central1/ragCorpora/6917529027641081856"
-os.environ["GCP_PROJECT_ID"] = "homegeekdemo"
-os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeekdemo/topics/user-upload-result-topic"
+os.environ["RAG_CORPUS"] = "projects/homegeek-staging/locations/us-central1/ragCorpora/6917529027641081856"
+os.environ["GCP_PROJECT_ID"] = "homegeek-staging"
+os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeek-staging/topics/user-upload-result-topic"
 os.environ["GCS_BUCKET"] = "homegeek-user-data"
 
 # Add the parent directory (../function) to sys.path before importing main

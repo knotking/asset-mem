@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "homegeekdemo",
+    "default": "homegeek-staging",
     "prod": "homegeek-prod"
   }
 }

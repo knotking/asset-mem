@@ -86,14 +86,14 @@ terraform destroy
 ### Staging Environment
 
 - Location: `terraform/environments/staging/`
-- GCP Project: `homegeekdemo-staging`
+- GCP Project: `homegeek-staging-staging`
 - Region: `us-central1`
 - Branch: `deploy`
 
 ### Production Environment
 
 - Location: `terraform/environments/prod/`
-- GCP Project: `homegeekdemo`
+- GCP Project: `homegeek-staging`
 - Region: `us-central1`
 - Branch: `main`
 

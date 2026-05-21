@@ -363,7 +363,7 @@ terraform init
 
 # Create terraform.tfvars
 cat > environments/staging/terraform.tfvars << EOF
-project_id     = "homegeekdemo"
+project_id     = "homegeek-staging"
 project_number = "PROJECT_NUMBER"
 region         = "us-central1"
 environment    = "staging"

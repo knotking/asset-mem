@@ -9,7 +9,7 @@
 # - Proper permissions on target project
 #
 # Usage:
-#   TARGET_PROJECT=homegeekdemo SOURCE_PROJECT=goggle-gab ./4-import-firestore.sh [EXPORT_PATH]
+#   TARGET_PROJECT=homegeek-staging SOURCE_PROJECT=goggle-gab ./4-import-firestore.sh [EXPORT_PATH]
 #   or
 #   ./4-import-firestore.sh  # uses defaults
 #
@@ -19,7 +19,7 @@
 
 set -e
 
-TARGET_PROJECT="${TARGET_PROJECT:-homegeekdemo}"
+TARGET_PROJECT="${TARGET_PROJECT:-homegeek-staging}"
 SOURCE_PROJECT="${SOURCE_PROJECT:-goggle-gab}"
 TARGET_BUCKET="gs://${TARGET_PROJECT}.firebasestorage.app"
 SOURCE_BUCKET="gs://${SOURCE_PROJECT}.firebasestorage.app"
@@ -50,7 +50,7 @@ echo "🔄 Starting Firestore import to $TARGET_PROJECT..."
 echo ""
 
 # Copy export from source bucket to target bucket
-echo "📤 Copying export to homegeekdemo bucket..."
+echo "📤 Copying export to homegeek-staging bucket..."
 echo "   Source: $EXPORT_PATH"
 echo "   Destination: $TARGET_BUCKET/$IMPORT_PREFIX/$EXPORT_NAME"
 echo ""
