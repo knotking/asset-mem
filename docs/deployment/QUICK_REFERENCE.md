@@ -212,10 +212,12 @@ curl https://homecare-agent-proxy-staging-*.run.app/health
 ## Environment URLs
 
 ### Staging
-- **Web App**: https://staging--homegeekdemo.us-central1.hosted.app
+
+- **Web App**: https://staging--homegeek-staging.us-central1.hosted.app
 - **Proxy API**: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app
 
 ### Production
+
 - **Web App**: https://prod--homegeek-prod.us-central1.hosted.app
 - **Proxy API**: https://homecare-agent-proxy-prod-686746113874.us-central1.run.app
 
@@ -241,6 +243,7 @@ gh run view RUN_ID
 ## Emergency Contacts
 
 ### GCP Console Links
+
 - **Cloud Run**: https://console.cloud.google.com/run
 - **Cloud Functions**: https://console.cloud.google.com/functions
 - **Logs**: https://console.cloud.google.com/logs
@@ -248,6 +251,7 @@ gh run view RUN_ID
 - **IAM**: https://console.cloud.google.com/iam-admin
 
 ### Firebase Console Links
+
 - **App Hosting**: https://console.firebase.google.com/project/homegeekdemo/apphosting
 - **Firestore**: https://console.firebase.google.com/project/homegeekdemo/firestore
 - **Storage**: https://console.firebase.google.com/project/homegeekdemo/storage
@@ -345,8 +349,8 @@ alias deploy-mapp='cd ~/repos/HomeApp/apps/mapp && ./deploy.sh'
 ## Support
 
 For detailed information, see the full documentation:
+
 - [Main README](./README.md)
 - Component-specific guides
 - [CI/CD Documentation](./CICD.md)
 - [Infrastructure Setup](./INFRASTRUCTURE.md)
-

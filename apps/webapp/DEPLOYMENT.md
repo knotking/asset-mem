@@ -5,7 +5,7 @@ This guide explains how to deploy the Next.js webapp to Firebase App Hosting.
 ## Overview
 
 The webapp is deployed to Firebase App Hosting at:
-**https://staging--homegeekdemo.us-central1.hosted.app**
+**https://staging--homegeek-staging.us-central1.hosted.app**
 
 Firebase App Hosting provides full Next.js support including:
 
@@ -115,7 +115,7 @@ Minimal configuration for Firestore rules. App Hosting doesn't require hosting c
 - **Project ID:** homegeekdemo
 - **Backend ID:** staging
 - **Region:** us-central1
-- **URL:** https://staging--homegeekdemo.us-central1.hosted.app
+- **URL:** https://staging--homegeek-staging.us-central1.hosted.app
 
 ## Monitoring Deployment
 

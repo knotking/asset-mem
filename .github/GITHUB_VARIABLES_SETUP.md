@@ -63,6 +63,7 @@ Configure these in the **staging** environment:
 | `USER_UPLOAD_RESULT_TOPIC` | `user-upload-result-topic` | Pub/Sub topic for upload results |
 | `USER_UPLOAD_RESULT_SUBSCRIPTION` | `user-upload-result-subscription` | Pub/Sub subscription |
 | `TOKEN_QUOTA_PERIOD_MAX_TOKENS` | `1000000` | Optional. **Default** monthly total-token cap per user (UTC month) for proxy + checkpoint worker when Firestore does not override. Omit or `0` = unlimited. Same value in both deploy workflows. **Per-user cap:** set `monthlyTokenLimit` on `users/{userId}/preferences/user` in Firestore (overrides this variable). |
+| `PROXY_CORS_ORIGINS` | *(omit)* | Optional. Comma-separated browser origins for proxy CORS. **Unset** = built-in list in `gcp/proxy/api/core/cors.py` (`https://asset-mem.com`, `https://homegeek.ai`, App Hosting URLs, `http://localhost:9002`). Set only to **replace** the entire list. |
 
 ### Production Environment Variables
 
@@ -85,6 +86,7 @@ Configure these in the **prod** environment:
 | `USER_UPLOAD_RESULT_TOPIC` | `user-upload-result-topic-prod` | Pub/Sub topic for upload results |
 | `USER_UPLOAD_RESULT_SUBSCRIPTION` | `user-upload-result-subscription-prod` | Pub/Sub subscription |
 | `TOKEN_QUOTA_PERIOD_MAX_TOKENS` | `1000000` | Same as staging; set per environment if caps differ. Per-user override: Firestore `users/{userId}/preferences/user.monthlyTokenLimit`. |
+| `PROXY_CORS_ORIGINS` | *(omit)* | Same as staging; optional full override of CORS allowlist on Cloud Run proxy. |
 
 ## Webapp marketing variables (App Hosting, not GitHub)
 

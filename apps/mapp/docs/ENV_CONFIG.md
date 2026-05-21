@@ -63,7 +63,7 @@ PROXY_BASE_URL=https://homecare-agent-proxy-dev-321433914812.us-central1.run.app
 PROXY_TOKEN=your-dev-proxy-token
 
 # Web App URL
-WEB_APP_URL=https://staging--homegeekdemo.us-central1.hosted.app
+WEB_APP_URL=https://staging--homegeek-staging.us-central1.hosted.app
 
 # Optional: App identification (defaults set in app.config.js)
 APP_SLUG=homegeekai-staging
@@ -479,14 +479,14 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 ### Development Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-dev-321433914812.us-central1.run.app`
-- **Web App URL**: `https://staging--homegeekdemo.us-central1.hosted.app`
+- **Web App URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
 - **App Slug**: `homegeekai-development`
 - **Bundle ID**: `com.homegeekai.dev`
 
 ### Staging Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-staging-321433914812.us-central1.run.app`
-- **Web App URL**: `https://staging--homegeekdemo.us-central1.hosted.app`
+- **Web App URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
 - **App Slug**: `homegeekai-staging`
 - **Bundle ID**: `com.homegeekai.staging`
 
