@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { Session } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { createAgentSessionAction } from '@/app/actions';
+import { createAgentSession } from '@/lib/api-agent';
 import { createLogger } from '@/lib/logger';
 
 const sessionLog = createLogger('session');
@@ -31,8 +31,8 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   const [globalDraft, setGlobalDraft] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const createAgentSession = useCallback(async (userId: string): Promise<string | null> => {
-    const { agentSessionId, error } = await createAgentSessionAction(userId);
+  const createAgentSessionForUser = useCallback(async (userId: string): Promise<string | null> => {
+    const { agentSessionId, error } = await createAgentSession(userId);
     if (error || !agentSessionId) {
       throw new Error(error || 'Failed to create agent session ID.');
     }
@@ -41,7 +41,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
 
   const createGlobalDraftSession = useCallback(async (userId: string) => {
     try {
-      const agentSessionId = await createAgentSession(userId);
+      const agentSessionId = await createAgentSessionForUser(userId);
       if (!agentSessionId) return null;
       
       const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
@@ -56,11 +56,11 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       // Don't show a toast for this background task
       return null;
     }
-  }, [createAgentSession]);
+  }, [createAgentSessionForUser]);
   
   const createPropertyDraftSession = useCallback(async (userId: string, propertyId: string) => {
     try {
-      const agentSessionId = await createAgentSession(userId);
+      const agentSessionId = await createAgentSessionForUser(userId);
       if (!agentSessionId) return null;
       
       const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
@@ -74,7 +74,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       sessionLog.error('draft.property.failed', { propertyId }, err);
       return null;
     }
-  }, [createAgentSession]);
+  }, [createAgentSessionForUser]);
 
   useEffect(() => {
     if (!user) {
