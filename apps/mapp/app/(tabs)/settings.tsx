@@ -27,6 +27,7 @@ import Constants from 'expo-constants';
 import { CheckpointComparisonSettings } from '@/components/settings/CheckpointComparisonSettings';
 import { AiUsageSettings } from '@/components/settings/AiUsageSettings';
 import { PlanBillingSettings } from '@/components/settings/PlanBillingSettings';
+import { SupportSettings } from '@/components/settings/SupportSettings';
 
 const getUserInitials = (user: User | null) => {
   if (!user) return 'NA';
@@ -94,6 +95,10 @@ export default function SettingsScreen() {
         {/* Checkpoint Comparison Settings */}
         <View className="mb-4">
           <CheckpointComparisonSettings />
+        </View>
+
+        <View className="mb-4">
+          <SupportSettings />
         </View>
 
         {/* Sign Out Button */}

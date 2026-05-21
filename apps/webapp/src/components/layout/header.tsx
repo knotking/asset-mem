@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Bell, Settings, LogOut } from 'lucide-react';
+import { Bot, Bell, Settings, LogOut, LifeBuoy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -20,11 +20,13 @@ import {
 import { Skeleton } from '../ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
 import { TokenUsageToolbar } from './token-usage-toolbar';
+import { SupportDialog } from '@/components/support/support-dialog';
 
 export function Header() {
   const { user, auth, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [supportOpen, setSupportOpen] = React.useState(false);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -93,7 +95,10 @@ export function Header() {
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Support</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSupportOpen(true)}>
+                        <LifeBuoy className="mr-2 h-4 w-4" />
+                        <span>Support</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
@@ -101,6 +106,7 @@ export function Header() {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
                 </DropdownMenu>
+                <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
             </>
          ) : (
              <Button onClick={() => router.push('/login')}>Sign In</Button>
