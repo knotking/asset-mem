@@ -699,6 +699,35 @@ curl -X POST http://localhost:8080/chat \
   -d '{"query": "test", "userId": "test-user"}'
 ```
 
+## Future: Google Cloud API Gateway
+
+**Status:** Planned post-GA ([LAUNCH_PLAN_PROGRESS.md § Phase 4](./LAUNCH_PLAN_PROGRESS.md#phase-4--future-infrastructure-post-ga)). **Not** part of current deploy workflows.
+
+Today clients call **Cloud Run directly**:
+
+```text
+https://homecare-agent-proxy-{env}-….run.app/firebase-agent-stream
+```
+
+With **Google Cloud API Gateway** (managed product, distinct from this FastAPI service):
+
+```text
+https://<gateway-host-or-api.homegeek.ai>/firebase-agent-stream
+        → API Gateway → same Cloud Run backend
+```
+
+| Topic | Impact |
+|-------|--------|
+| **Client URLs** | Change when you cut over — update `NEXT_PUBLIC_API_BASE_URL` (web) and mapp `PROXY_BASE_URL` |
+| **Paths** | Can stay the same on the OpenAPI spec / gateway config |
+| **Phase 2 auth** | Firebase Bearer on proxy remains unless you add gateway-level auth |
+| **CORS** | Add the gateway public origin to `PROXY_CORS_ORIGINS` / `core/cors.py` defaults |
+| **Cloud Run URL** | Keeps working until you restrict ingress to gateway-only |
+
+See also [PRODUCTION_LAUNCH_CHECKLIST.md §11](./PRODUCTION_LAUNCH_CHECKLIST.md#11-future-infrastructure-post-ga--deferred).
+
+---
+
 ## Related Documentation
 
 - [Cloud Run Documentation](https://cloud.google.com/run/docs)

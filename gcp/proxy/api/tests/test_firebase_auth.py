@@ -36,11 +36,12 @@ def test_agent_session_uses_verified_uid(client, monkeypatch):
     assert response.json().get("id") == "sess-1"
 
 
-def test_legacy_secret_prefix_still_works(client):
+def test_agent_query_at_root_path(client):
+    """User routes are mounted at / (legacy /{secret}/ requires ENABLE_LEGACY_SECRET_PREFIX + redeploy)."""
     with patch("services.agent_service.handle_firebase_agent_query") as mock_handler:
         mock_handler.return_value = {"status": "success"}
         response = client.post(
-            f"/{FIREBASE_WEBHOOK_SECRET}/firebase-agent-query",
+            "/firebase-agent-query",
             json={
                 "user_id": "test_user_id",
                 "user_query": "Test query",

@@ -55,12 +55,15 @@ def publish_event(project_id, topic_id, gcs_urls, user_id, user_query, source):
     future = publisher.publish(topic_path, data)
     logger.info(f"Published message ID: {future.result()}")
 
-def listen_to_event(project_id, subscription_id, callback):
+def subscribe_to_event(project_id: str, subscription_id: str, callback):
+    """
+    Start a Pub/Sub streaming pull subscription.
+
+    Returns the streaming pull future (call `.result()` in a worker thread, `.cancel()` on shutdown).
+    The callback receives decoded message data (str).
+    """
     from google.cloud import pubsub_v1
-    """
-    Listen to a Pub/Sub subscription and call the callback for each message.
-    The callback should accept one argument: the message data (decoded as string).
-    """
+
     subscriber = pubsub_v1.SubscriberClient()
     subscription_path = subscriber.subscription_path(project_id, subscription_id)
 
@@ -69,7 +72,13 @@ def listen_to_event(project_id, subscription_id, callback):
         message.ack()
 
     streaming_pull_future = subscriber.subscribe(subscription_path, callback=_callback)
-    logger.info(f"Listening for messages on {subscription_path}...")
+    logger.info("Listening for messages on %s...", subscription_path)
+    return streaming_pull_future
+
+
+def listen_to_event(project_id, subscription_id, callback):
+    """Blocking listen loop (legacy). Prefer subscribe_to_event + cancel on shutdown."""
+    streaming_pull_future = subscribe_to_event(project_id, subscription_id, callback)
     try:
         streaming_pull_future.result()
     except KeyboardInterrupt:

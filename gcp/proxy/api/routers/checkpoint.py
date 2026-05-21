@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 import logging
 import time
 
-from core.firebase_auth import apply_uid_to_camel_user_id, require_firebase_uid
+from core.auth_deps import RATE_BUCKET_CHECKPOINT, authenticated_user
+from core.firebase_auth import apply_uid_to_camel_user_id
 from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 @router.post("/analyze-checkpoint")
 async def analyze_checkpoint_endpoint(
     request_data: AnalyzeCheckpointRequest,
-    uid: Annotated[str, Depends(require_firebase_uid)],
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_CHECKPOINT))],
 ):
     apply_uid_to_camel_user_id(request_data, uid)
     """
@@ -72,7 +73,7 @@ async def analyze_checkpoint_endpoint(
 @router.post("/compare-checkpoints")
 async def compare_checkpoints_endpoint(
     request_data: CompareCheckpointsRequest,
-    _uid: Annotated[str, Depends(require_firebase_uid)],
+    _uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_CHECKPOINT))],
 ):
     """
     Compare two checkpoint images (previous vs current) using Gemini AI.

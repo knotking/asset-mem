@@ -27,6 +27,7 @@ for root in (_here.parent.parent, _here):
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from common.observability.logging_context import install_auth_uid_logging
 from core.firebase_auth_middleware import FirebaseAuthLoggingMiddleware
@@ -59,12 +60,25 @@ app.add_middleware(
 app.add_middleware(FirebaseAuthLoggingMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 
-@app.get("/health", summary="Health Check", description="Check the health status of the API and Reasoning Engine connection.")
+@app.get(
+    "/health",
+    summary="Health / readiness",
+    description=(
+        "Liveness and readiness. Returns 503 when the Reasoning Engine client is not "
+        "initialized (Cloud Run / load balancers should not send traffic)."
+    ),
+)
 async def health_check():
-    status_msg = "ok"
     if not reasoning_engine_resource:
-        status_msg += " (Reasoning Engine not initialized)"
-    return {"status": status_msg}
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unavailable",
+                "reason": "reasoning_engine_not_initialized",
+                "message": "Vertex AI Reasoning Engine is not available",
+            },
+        )
+    return {"status": "ok", "reasoning_engine": "ready"}
 
 def _mount_user_routers(prefix: str = "") -> None:
     """User-facing routes protected by Firebase ID token (see require_firebase_uid)."""

@@ -411,10 +411,16 @@ Cloud Functions that process asynchronous tasks triggered by Pub/Sub.
 
 ## Future Enhancements
 
+### Shipped (launch plan Phase 2)
+- Firebase ID token auth, CORS allowlist, per-UID in-memory rate limits, readiness `/health` 503, optional observability init, graceful Pub/Sub shutdown — see [LAUNCH_PLAN_PROGRESS.md](../../../docs/deployment/LAUNCH_PLAN_PROGRESS.md).
+
+### Planned post-GA (Phase 4)
+1. **Google Cloud API Gateway** — optional managed front door in front of this Cloud Run service; new public hostname, client env URL cutover ([PROXY_DEPLOYMENT.md](../../../docs/deployment/PROXY_DEPLOYMENT.md#future-google-cloud-api-gateway)).
+
 ### Potential Improvements
 1. **Caching Layer** - Redis/Memcached for session and response caching
-2. **Rate Limiting** - Per-user rate limiting to prevent abuse
-3. **Metrics & Tracing** - Cloud Monitoring and Cloud Trace integration
+2. **Distributed rate limiting** - Memorystore Redis or Firestore counters across Cloud Run instances
+3. **Metrics & Tracing** - Enable `PROXY_OBSERVABILITY_TRACING` / `METRICS` on proxy
 4. **WebSocket Support** - Real-time bidirectional communication
 5. **Batch Processing** - Batch document analysis for multiple files
 6. **Retry Logic** - Automatic retries for transient failures

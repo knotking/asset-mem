@@ -4,7 +4,7 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 
 **Status:** `[ ]` Not started · `[~]` In progress · `[x]` Done
 
-**Last updated:** 2026-05-19
+**Last updated:** 2026-05-21
 
 ---
 
@@ -13,8 +13,9 @@ Tracks **engineering phases** for Product Hunt → production GA. Operational ch
 | Phase | Goal | Target | Status |
 |-------|------|--------|--------|
 | **1** | Product Hunt readiness (web) | Weeks 1–2 | `[~]` In progress (1.1–1.3 done; ~~1.4 cancelled~~) |
-| **2** | Security & API hardening | Weeks 2–4 | `[ ]` Not started |
+| **2** | Security & API hardening | Weeks 2–4 | `[~]` In progress (2.1–2.3 done; CI + secret rotation pending) |
 | **3** | Production GA (compliance, ops, CI) | Weeks 4–6 | `[ ]` Not started |
+| **4** | Future infrastructure (post-GA) | After GA | `[ ]` Planned — see [§ Phase 4](#phase-4--future-infrastructure-post-ga) |
 
 ---
 
@@ -120,9 +121,10 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 | Client `proxyFetchWithAuth` (web + mapp) | `[x]` | `apps/common/src/lib/correlation-id.ts`, `proxy-auth.ts`, apphosting base URL without secret |
 | Dual-mode migration / secret rotation | `[ ]` | [PRODUCTION_LAUNCH_CHECKLIST §1](./PRODUCTION_LAUNCH_CHECKLIST.md#1-security-critical--high) |
 | CORS allowlist | `[x]` | `core/cors.py`, `PROXY_CORS_ORIGINS` env (defaults include `https://asset-mem.com`) |
-| Per-UID rate limiting | `[ ]` | |
-| Readiness health (503 if engine down) | `[ ]` | |
-| Proxy `initialize_observability()` | `[ ]` | |
+| Per-UID rate limiting | `[x]` | `core/rate_limit.py`, `core/auth_deps.py`, `PROXY_RATE_LIMIT_*` env |
+| Readiness health (503 if engine down) | `[x]` | `GET /health` returns 503 when Reasoning Engine unavailable |
+| Proxy `initialize_observability()` | `[x]` | `core/observability_startup.py` (opt-in via `PROXY_OBSERVABILITY_*`) |
+| Graceful Pub/Sub shutdown | `[x]` | `core/events.py` cancels streaming pull on shutdown |
 | Proxy tests in PR CI | `[ ]` | `run_tests.sh` workflow |
 
 **Operational TODOs after Phase 2:**
@@ -153,13 +155,58 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 
 ---
 
+## Phase 4 — Future infrastructure (post-GA)
+
+**Not required for Product Hunt or initial GA.** The FastAPI proxy on Cloud Run remains the public API surface until this phase.
+
+### 4.1 Google Cloud API Gateway (optional front door)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Provision API Gateway + API config (OpenAPI) per environment | `[ ]` | Staging first, then prod |
+| Backend: existing `homecare-agent-proxy-{env}` Cloud Run service | `[ ]` | Same route paths (`/firebase-agent-stream`, etc.) |
+| Public hostname (gateway default or custom domain, e.g. `api.homegeek.ai`) | `[ ]` | **Client URLs change** at cutover — update env below |
+| Update `NEXT_PUBLIC_API_BASE_URL` (web) | `[ ]` | [`apphosting.*.yaml`](../../apps/webapp/apphosting.prod.yaml) — gateway origin, no path secret |
+| Update `PROXY_BASE_URL` (mapp / EAS) | `[ ]` | [`apps/mapp/app.config.js`](../../apps/mapp/app.config.js), `eas.json` |
+| Extend proxy CORS allowlist if gateway host differs | `[ ]` | `PROXY_CORS_ORIGINS` or `gcp/proxy/api/core/cors.py` defaults |
+| Firebase Auth authorized domains (if using custom API domain) | `[ ]` | Firebase Console — only if browser calls that host |
+| Optional: restrict Cloud Run ingress to gateway only | `[ ]` | Hides raw `*.run.app` URL after migration verified |
+| Smoke test + rollback plan (keep `*.run.app` until stable) | `[ ]` | [PRODUCT_HUNT_LAUNCH.md §4](./PRODUCT_HUNT_LAUNCH.md#4-smoke-test-script-staging-then-prod) |
+
+**What stays the same when gateway is added:**
+
+- Firebase **ID token** auth on the proxy (`Authorization: Bearer`) — gateway does not replace Phase 2.1 unless you add separate edge policies.
+- Per-UID **rate limits** and **token quota** on the proxy — still enforced in `gcp/proxy/api`.
+- **Vertex / Pub/Sub / Firestore** — unchanged.
+
+**What API Gateway can add later (why consider it):**
+
+- Stable **custom API domain** instead of exposing `*.run.app`.
+- Edge **quotas / API keys** for partners or abuse at the front door.
+- Central place for **WAF / Cloud Armor** integration (with additional setup).
+
+**What it does not solve alone:**
+
+- **Global per-UID rate limits** across many Cloud Run instances — still in-memory today; use Firestore counters, Memorystore (Redis), or gateway + Redis if needed later.
+- Replacing the FastAPI “gateway” in docs — today that term means this proxy service ([`gcp/proxy/README.md`](../../gcp/proxy/README.md)), not the GCP product.
+
+**References:** [Cloud API Gateway overview](https://cloud.google.com/api-gateway/docs/about-api-gateway) · [PROXY_DEPLOYMENT.md — Future API Gateway](./PROXY_DEPLOYMENT.md#future-google-cloud-api-gateway) · [PRODUCTION_LAUNCH_CHECKLIST §11](./PRODUCTION_LAUNCH_CHECKLIST.md#11-future-infrastructure-post-ga--deferred)
+
+**Operational TODOs when starting Phase 4:**
+
+- [ ] Decide hostname: `*.gateway.dev` vs `api.homegeek.ai` / `api.asset-mem.com`.
+- [ ] Document cutover: dual-run (Cloud Run + gateway) vs hard switch.
+- [ ] Update [ENVIRONMENTS.md](./ENVIRONMENTS.md) proxy URL table after gateway is live.
+
+---
+
 ## Production web env vars (Product Hunt)
 
 Set in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.prod.yaml) (BUILD + RUNTIME). Local dev: [`apps/webapp/.env.example`](../../apps/webapp/.env.example).
 
 | Variable | Required for PH? | Prod value (default in repo) | Purpose |
 |----------|------------------|------------------------------|---------|
-| `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Proxy URL + path prefix | API calls |
+| `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Cloud Run proxy origin (no path secret) | API calls; Phase 4 may switch to API Gateway host |
 | `NEXT_PUBLIC_ENV` | **Yes** | `prod` | Environment flag |
 | `NEXT_PUBLIC_TOKEN_QUOTA_PERIOD_MAX_TOKENS` | **Yes** | `1000000` | AI usage UI fallback |
 | `NEXT_PUBLIC_SITE_URL` | **Yes** | `https://homegeek.ai` | OG canonical URLs, metadata |
@@ -188,4 +235,5 @@ Details: [WEBAPP_DEPLOYMENT.md — Marketing & analytics env vars](./WEBAPP_DEPL
 - [Product Hunt Launch](./PRODUCT_HUNT_LAUNCH.md)
 - [Production Launch Checklist](./PRODUCTION_LAUNCH_CHECKLIST.md)
 - [Webapp Deployment](./WEBAPP_DEPLOYMENT.md)
+- [Proxy Deployment — Future API Gateway](./PROXY_DEPLOYMENT.md#future-google-cloud-api-gateway)
 - [Environments](./ENVIRONMENTS.md)
