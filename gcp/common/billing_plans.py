@@ -30,6 +30,8 @@ Legacy: top-level key is a Stripe Price id (``price_…``) or integer token cap 
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import logging
 import os
@@ -54,7 +56,29 @@ class B2CPricePlan:
 
 
 def plans_json_from_env() -> str:
-    return os.environ.get("STRIPE_B2C_PRICE_TOKEN_CAPS_JSON", "").strip()
+    """Read plan limits JSON from env.
+
+    Cloud Run deploy workflows base64-encode the value (no commas/newlines for gcloud).
+    Local ``.env`` may use plain JSON starting with ``{``.
+    """
+    raw = os.environ.get("STRIPE_B2C_PRICE_TOKEN_CAPS_JSON", "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("{") or raw.startswith("["):
+        return raw
+    try:
+        decoded = base64.b64decode(raw, validate=True).decode("utf-8").strip()
+    except (binascii.Error, UnicodeDecodeError) as e:
+        logger.warning(
+            "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON is not JSON or valid base64: %s", e
+        )
+        return raw
+    if decoded.startswith("{") or decoded.startswith("["):
+        return decoded
+    logger.warning(
+        "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON base64 decoded to non-JSON; using raw env value"
+    )
+    return raw
 
 
 def _coerce_limit(value: Any, *, field: str, plan_key: str) -> int:
