@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { collection, onSnapshot, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
@@ -207,7 +207,9 @@ function PropertiesDashboardContent() {
 export default function PropertiesDashboardPage() {
     return (
         <SessionProvider>
-            <PropertiesDashboardContent />
+            <Suspense fallback={<PropertiesDashboardSkeleton />}>
+                <PropertiesDashboardContent />
+            </Suspense>
         </SessionProvider>
     )
 }

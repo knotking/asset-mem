@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { getSupportEmail } from '@/lib/site';
-import { buildSupportMailtoUrl } from '@homeapp/common/lib/support';
+import { buildSupportMailtoUrl } from '@/lib/support';
 
 type SupportDialogProps = {
   open: boolean;
