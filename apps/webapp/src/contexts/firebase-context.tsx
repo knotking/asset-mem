@@ -6,6 +6,7 @@ import type { Firestore } from "firebase/firestore";
 import type { FirebaseStorage } from "firebase/storage";
 import type { FirebaseApp } from "firebase/app";
 import { PreferencesProvider } from "./preferences-context";
+import { ThemePreferenceSync } from "@/components/theme-preference-sync";
 import { app, auth, db, storage } from "@/lib/firebase";
 
 // Local Firebase context implementation (copied from @homeapp/common for App Hosting compatibility)
@@ -62,7 +63,10 @@ export const AppContextProvider = ({
 }) => {
   return (
     <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
-      <PreferencesProvider>{children}</PreferencesProvider>
+      <PreferencesProvider>
+        <ThemePreferenceSync />
+        {children}
+      </PreferencesProvider>
     </FirebaseProvider>
   );
 };

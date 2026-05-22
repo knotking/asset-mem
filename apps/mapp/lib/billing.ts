@@ -5,7 +5,6 @@
 import Constants from 'expo-constants';
 import { proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
-import { WEB_SETTINGS_BILLING_PATH } from '@/lib/api';
 
 const extra = Constants.expoConfig?.extra ?? {};
 
@@ -48,9 +47,7 @@ export async function createCheckoutRedirectUrl(
   return data.url;
 }
 
-export async function createPortalRedirectUrl(
-  returnPath = WEB_SETTINGS_BILLING_PATH,
-): Promise<string> {
+export async function createPortalRedirectUrl(returnPath: string): Promise<string> {
   if (!BILLING_B2C_PORTAL_URL) {
     throw new Error('Billing portal URL is not configured');
   }

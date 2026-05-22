@@ -91,6 +91,7 @@ module.exports = {
       tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, 'token-quota-status'),
       billingB2cCheckoutUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/checkout-session'),
       billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),
+      mobileWebHandoffUrl: buildProxyUrl(proxyBaseUrl, 'auth/mobile-web-handoff'),
       webAppUrl: process.env.WEB_APP_URL,
       supportEmail:
         process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@homegeek.ai',

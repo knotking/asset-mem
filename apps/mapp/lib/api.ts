@@ -26,13 +26,11 @@ const CHECKPOINT_COMPARISON_URL = extra.checkpointComparisonUrl || '';
 // Web app URL for sharing links
 export const WEB_APP_URL = extra.webAppUrl || '';
 
-/** Webapp settings deep link — opens the Plan & billing tab. */
+/** Webapp settings deep link — opens the Plan & billing tab (after auth handoff). */
 export const WEB_SETTINGS_BILLING_PATH = '/home/settings?tab=billing';
 
-export function webBillingSettingsUrl(): string {
-  const base = (WEB_APP_URL || '').replace(/\/$/, '');
-  return base ? `${base}${WEB_SETTINGS_BILLING_PATH}` : '';
-}
+/** After handoff, opens billing tab and launches Stripe Customer Portal. */
+export const WEB_SETTINGS_BILLING_PORTAL_PATH = '/home/settings?tab=billing&portal=1';
 
 export async function createAgentSession(
   userId: string

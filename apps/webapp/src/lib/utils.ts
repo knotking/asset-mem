@@ -168,4 +168,6 @@ export const apiUrls = {
   billingB2cCheckout: () => getApiUrl("/billing/b2c/checkout-session"),
   /** B2C Stripe Customer Portal */
   billingB2cPortal: () => getApiUrl("/billing/b2c/portal-session"),
+  /** Exchange mobile one-time handoff code for Firebase custom token */
+  mobileWebHandoffConsume: () => getApiUrl("/auth/mobile-web-handoff/consume"),
 };
