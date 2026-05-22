@@ -57,10 +57,7 @@ function portalButtonVariant(
     return "outline";
   }
   const current = currentTier ?? "free";
-  if (
-    targetTier === "pro" &&
-    (current === "free" || current === "plus")
-  ) {
+  if (targetTier === "pro" && (current === "free" || current === "plus")) {
     return "default";
   }
   return "outline";
@@ -149,7 +146,9 @@ function PlanCardActions({
             variant === "settings" ? "text-muted-foreground" : "",
           )}
           style={
-            variant === "landing" && c ? { color: c.mutedForeground } : undefined
+            variant === "landing" && c
+              ? { color: c.mutedForeground }
+              : undefined
           }
         >
           {variant === "settings"
@@ -323,7 +322,9 @@ export function PlanPricingCards({
           const isLanding = variant === "landing" && c;
           const isCurrent = currentTier === tier;
           const usePortalFooter = Boolean(isPaid && onOpenPortal);
-          const actionSlotMinH = usePortalFooter ? "min-h-[5.5rem]" : "min-h-10";
+          const actionSlotMinH = usePortalFooter
+            ? "min-h-[5.5rem]"
+            : "min-h-10";
 
           return (
             <div
@@ -483,24 +484,6 @@ export function PlanPricingCards({
           );
         })}
       </div>
-
-      {!(variant === "settings" && isPaid) && (
-        <p
-          className={cn(
-            "text-sm max-w-2xl font-light",
-            variant === "settings"
-              ? "text-muted-foreground"
-              : "text-center mx-auto",
-          )}
-          style={
-            variant === "landing" && c ? { color: c.mutedForeground } : undefined
-          }
-        >
-          Property managers and teams: shared workspaces and pooled usage are on
-          the roadmap—reach out from your account once you&apos;re signed in for
-          workspace billing options.
-        </p>
-      )}
     </div>
   );
 }
