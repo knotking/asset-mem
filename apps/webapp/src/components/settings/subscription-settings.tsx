@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -144,76 +145,117 @@ export function SubscriptionSettings({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {summaryLoading ? (
-          <Skeleton className="h-16 w-full" />
-        ) : (
-          <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-muted-foreground">Current plan</span>
-              <Badge variant="default" className="text-sm">
-                {activePlanLabel}
-              </Badge>
-            </div>
-            {isPaid && (
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-muted-foreground">Billing status</span>
-                <span className="text-sm font-medium capitalize">{status || 'active'}</span>
+        <div
+          className={cn(
+            'relative min-h-[8.5rem] rounded-md border bg-muted/30 px-3 py-2.5 text-sm transition-opacity duration-300',
+            summaryLoading ? 'opacity-90' : 'opacity-100',
+          )}
+        >
+          {summaryLoading ? (
+            <div className="space-y-2.5" aria-busy="true" aria-label="Loading subscription status">
+              <div className="flex items-center justify-between gap-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-20 rounded-full" />
               </div>
-            )}
-            {isPaid && summary?.monthlyTokenLimit != null && summary.monthlyTokenLimit > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Included AI tokens (per UTC month):{' '}
-                <span className="font-mono">{summary.monthlyTokenLimit.toLocaleString('en-US')}</span>
-              </p>
-            )}
-            {isPaid && summary?.monthlyDocumentLimit != null && summary.monthlyDocumentLimit > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Document analyses / month:{' '}
-                <span className="font-mono">{summary.monthlyDocumentLimit.toLocaleString('en-US')}</span>
-              </p>
-            )}
-            {isPaid && summary?.monthlyCheckpointLimit != null && summary.monthlyCheckpointLimit > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Checkpoint AI runs / month:{' '}
-                <span className="font-mono">{summary.monthlyCheckpointLimit.toLocaleString('en-US')}</span>
-              </p>
-            )}
-          </div>
-        )}
+              <div className="flex items-center justify-between gap-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <Skeleton className="h-3 w-full max-w-sm" />
+              <Skeleton className="h-3 w-full max-w-xs" />
+              <Skeleton className="h-3 w-full max-w-md" />
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-muted-foreground">Current plan</span>
+                <Badge variant="default" className="text-sm">
+                  {activePlanLabel}
+                </Badge>
+              </div>
+              {isPaid && (
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Billing status</span>
+                  <span className="text-sm font-medium capitalize">{status || 'active'}</span>
+                </div>
+              )}
+              {isPaid && summary?.monthlyTokenLimit != null && summary.monthlyTokenLimit > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Included AI tokens (per UTC month):{' '}
+                  <span className="font-mono">{summary.monthlyTokenLimit.toLocaleString('en-US')}</span>
+                </p>
+              )}
+              {isPaid && summary?.monthlyDocumentLimit != null && summary.monthlyDocumentLimit > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Document analyses / month:{' '}
+                  <span className="font-mono">{summary.monthlyDocumentLimit.toLocaleString('en-US')}</span>
+                </p>
+              )}
+              {isPaid && summary?.monthlyCheckpointLimit != null && summary.monthlyCheckpointLimit > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Checkpoint AI runs / month:{' '}
+                  <span className="font-mono">{summary.monthlyCheckpointLimit.toLocaleString('en-US')}</span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
-        {hasStripeCustomer && (
-          <div>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={portalBusy || checkoutRedirectTier != null}
-              onClick={() => void openPortal()}
-            >
-              {portalBusy && portalActionTier == null
-                ? 'Opening billing…'
-                : 'Manage billing'}
-            </Button>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Update payment method, view invoices, cancel, or switch plans in the Stripe customer
-              portal.
-            </p>
+        <div
+          className={cn(
+            'grid transition-[grid-template-rows] duration-300 ease-out',
+            summaryLoading || hasStripeCustomer ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+          )}
+        >
+          <div className="overflow-hidden">
+            {summaryLoading ? (
+              <div className="space-y-2" aria-hidden>
+                <Skeleton className="h-10 w-36" />
+                <Skeleton className="h-4 w-full max-w-lg" />
+              </div>
+            ) : hasStripeCustomer ? (
+              <div className="animate-in fade-in duration-300">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={portalBusy || checkoutRedirectTier != null}
+                  onClick={() => void openPortal()}
+                >
+                  {portalBusy && portalActionTier == null
+                    ? 'Opening billing…'
+                    : 'Manage billing'}
+                </Button>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Update payment method, view invoices, cancel, or switch plans in the Stripe customer
+                  portal.
+                </p>
+              </div>
+            ) : null}
           </div>
-        )}
+        </div>
 
-        <PlanPricingCards
-          variant="settings"
-          currentTier={currentTier}
-          isPaid={isPaid}
-          checkoutRedirectTier={checkoutRedirectTier}
-          checkoutError={actionError}
-          onCheckout={startCheckout}
-          portalActionTier={portalActionTier}
-          portalBusy={portalBusy}
-          onOpenPortal={
-            isPaid && hasStripeCustomer ? (tier) => void openPortal(tier) : undefined
-          }
-          showPaidCheckout={!isPaid}
-        />
+        <div
+          className={cn(
+            'transition-opacity duration-300',
+            summaryLoading ? 'opacity-60' : 'opacity-100',
+          )}
+        >
+          <PlanPricingCards
+            variant="settings"
+            billingLoading={summaryLoading}
+            currentTier={currentTier}
+            isPaid={isPaid}
+            checkoutRedirectTier={checkoutRedirectTier}
+            checkoutError={actionError}
+            onCheckout={startCheckout}
+            portalActionTier={portalActionTier}
+            portalBusy={portalBusy}
+            onOpenPortal={
+              isPaid && hasStripeCustomer ? (tier) => void openPortal(tier) : undefined
+            }
+            showPaidCheckout={!isPaid}
+          />
+        </div>
       </CardContent>
     </Card>
   );

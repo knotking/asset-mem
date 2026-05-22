@@ -7,6 +7,7 @@ import { authPathForCheckoutTier } from "@/lib/pending-checkout";
 import { formatPlanPriceUsd } from "@/lib/plan-limits-public";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   PLAN_CARDS,
@@ -34,6 +35,8 @@ const STRIPE_PORTAL_HELPER =
 
 type PlanPricingCardsProps = {
   variant: "landing" | "settings";
+  /** Settings: billing summary still loading — reserve action slot height and show skeletons. */
+  billingLoading?: boolean;
   landingColors?: LandingPricingPalette;
   currentTier?: PlanTierKey | null;
   isPaid?: boolean;
@@ -66,6 +69,7 @@ function portalButtonVariant(
 function PlanCardActions({
   tier,
   variant,
+  billingLoading,
   landingColors: c,
   currentTier,
   isPaid,
@@ -79,6 +83,7 @@ function PlanCardActions({
 }: {
   tier: PlanTierKey;
   variant: "landing" | "settings";
+  billingLoading?: boolean;
   landingColors?: LandingPricingPalette;
   currentTier?: PlanTierKey | null;
   isPaid?: boolean;
@@ -90,6 +95,10 @@ function PlanCardActions({
   showPaidCheckout?: boolean;
   showSignupOnFree?: boolean;
 }) {
+  if (variant === "settings" && billingLoading) {
+    return <Skeleton className="min-h-10 w-full rounded-md" />;
+  }
+
   const isCurrent = currentTier === tier;
   const card = PLAN_CARDS[tier];
   const checkoutInProgress = checkoutRedirectTier != null;
@@ -276,6 +285,7 @@ function PlanCardActions({
 
 export function PlanPricingCards({
   variant,
+  billingLoading = false,
   landingColors: c,
   currentTier = null,
   isPaid = false,
@@ -322,9 +332,12 @@ export function PlanPricingCards({
           const isLanding = variant === "landing" && c;
           const isCurrent = currentTier === tier;
           const usePortalFooter = Boolean(isPaid && onOpenPortal);
-          const actionSlotMinH = usePortalFooter
-            ? "min-h-[5.5rem]"
-            : "min-h-10";
+          const actionSlotMinH =
+            variant === "settings" && (billingLoading || usePortalFooter)
+              ? "min-h-[5.5rem]"
+              : usePortalFooter
+                ? "min-h-[5.5rem]"
+                : "min-h-10";
 
           return (
             <div
@@ -446,6 +459,7 @@ export function PlanPricingCards({
                     <PlanCardActions
                       tier={tier}
                       variant={variant}
+                      billingLoading={billingLoading}
                       landingColors={c}
                       currentTier={currentTier}
                       isPaid={isPaid}
