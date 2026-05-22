@@ -35,14 +35,18 @@ type BillingSummary = {
 type SubscriptionSettingsProps = {
   /** After sign-in from landing pricing (?subscribe=plus|pro), start Checkout once. */
   resumeCheckoutTier?: BillingCheckoutTier | null;
+  /** After mobile handoff (?portal=1), open Stripe Customer Portal once. */
+  resumePortalOpen?: boolean;
 };
 
 export function SubscriptionSettings({
   resumeCheckoutTier = null,
+  resumePortalOpen = false,
 }: SubscriptionSettingsProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const resumeCheckoutStarted = useRef(false);
+  const resumePortalStarted = useRef(false);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -129,6 +133,22 @@ export function SubscriptionSettings({
     if (isPaid) return;
     void startCheckout(resumeCheckoutTier);
   }, [user, resumeCheckoutTier, isPaid, router, startCheckout]);
+
+  useEffect(() => {
+    if (!user || !resumePortalOpen || resumePortalStarted.current || summaryLoading) return;
+    if (!isPaid || !hasStripeCustomer) return;
+    resumePortalStarted.current = true;
+    router.replace('/home/settings');
+    void openPortal();
+  }, [
+    user,
+    resumePortalOpen,
+    summaryLoading,
+    isPaid,
+    hasStripeCustomer,
+    router,
+    openPortal,
+  ]);
 
   if (authLoading || !user) {
     return null;

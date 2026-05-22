@@ -43,9 +43,9 @@ The following endpoints are constructed from the proxy base URL:
 | `extract-doc-info`      | Document analysis      |
 | `token-quota-status`    | Monthly quota for AI usage bar |
 | `billing/b2c/checkout-session` | Stripe Checkout (used by web; optional on mobile) |
-| `billing/b2c/portal-session`   | Stripe Customer Portal (in-app **Manage subscription**) |
+| `billing/b2c/portal-session`   | Stripe Customer Portal (opened from web after mobile handoff) |
 
-These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. Plan management in the app also uses `WEB_APP_URL` → `/home/settings?tab=billing` for subscribe on web.
+These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. **Upgrade** and **Manage subscription** open `WEB_APP_URL/auth/handoff` (one-time code from `mobileWebHandoffUrl`) so the mobile browser signs in as the same Firebase user. Upgrade lands on `/home/settings?tab=billing`; Manage subscription lands there with `portal=1`, which auto-opens the Stripe portal. Returning from Stripe goes back to `/home/settings` while still signed in.
 
 ## Setup for Local Development
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Linking, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { CreditCard } from 'lucide-react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -11,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { createPortalRedirectUrl } from '@/lib/billing';
 import {
   inferPlanTierFromLimits,
   PLAN_NAMES,
@@ -20,7 +20,8 @@ import {
   planPriceLabel,
   type PlanTierKey,
 } from '@/lib/plan-limits';
-import { webBillingSettingsUrl } from '@/lib/api';
+import { WEB_SETTINGS_BILLING_PATH } from '@/lib/api';
+import { createWebBillingHandoffUrl, createWebBillingPortalHandoffUrl } from '@/lib/auth-handoff';
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -58,6 +59,7 @@ function PlanOptionRow({
 
 export function PlanBillingSettings() {
   const { user } = useAuth();
+  const { colorScheme } = useColorScheme();
   const [summary, setSummary] = React.useState<BillingSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState<'portal' | 'web' | null>(null);
@@ -94,14 +96,15 @@ export function PlanBillingSettings() {
     currentTier != null ? planPriceLabel(currentTier) : isPaid ? null : planPriceLabel('free');
 
   const openWebBilling = async () => {
-    const url = webBillingSettingsUrl();
-    if (!url) {
-      setError('Web app URL is not configured for this build.');
-      return;
-    }
     setError(null);
     setBusy('web');
     try {
+      const theme = colorScheme === 'light' ? 'light' : 'dark';
+      const url = await createWebBillingHandoffUrl(WEB_SETTINGS_BILLING_PATH, theme);
+      if (!url) {
+        setError('Web app URL is not configured for this build.');
+        return;
+      }
       await Linking.openURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not open browser');
@@ -114,7 +117,12 @@ export function PlanBillingSettings() {
     setError(null);
     setBusy('portal');
     try {
-      const url = await createPortalRedirectUrl();
+      const theme = colorScheme === 'light' ? 'light' : 'dark';
+      const url = await createWebBillingPortalHandoffUrl(theme);
+      if (!url) {
+        setError('Web app URL is not configured for this build.');
+        return;
+      }
       await Linking.openURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not open billing portal');

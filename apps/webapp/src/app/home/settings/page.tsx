@@ -36,6 +36,7 @@ function SettingsPageContent() {
   const billingParam = searchParams.get('billing');
   const subscribeParam = searchParams.get('subscribe');
   const tabParam = searchParams.get('tab');
+  const portalParam = searchParams.get('portal');
 
   const loginPath = useMemo(
     () =>
@@ -53,11 +54,15 @@ function SettingsPageContent() {
     if (isSettingsTabId(tabParam)) {
       return tabParam;
     }
+    if (portalParam === '1') {
+      return 'billing';
+    }
     return 'account';
-  }, [billingParam, subscribeParam, tabParam]);
+  }, [billingParam, subscribeParam, tabParam, portalParam]);
 
   const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
   const [billingNotice, setBillingNotice] = useState<'canceled' | null>(null);
+  const [resumePortalOpen, setResumePortalOpen] = useState(() => portalParam === '1');
 
   useEffect(() => {
     if (billingParam === 'canceled') {
@@ -69,10 +74,19 @@ function SettingsPageContent() {
     }
     if (isSettingsTabId(tabParam)) {
       setActiveTab(tabParam);
-      // Drop ?tab= so browser Back does not re-open a deep-linked tab.
+      if (portalParam === '1') {
+        setResumePortalOpen(true);
+      }
+      // Drop query params so browser Back does not replay mobile deep links.
+      router.replace('/home/settings');
+      return;
+    }
+    if (portalParam === '1') {
+      setActiveTab('billing');
+      setResumePortalOpen(true);
       router.replace('/home/settings');
     }
-  }, [billingParam, tabParam, router]);
+  }, [billingParam, tabParam, portalParam, router]);
 
   if (authPending || !user) {
     return null;
@@ -142,6 +156,7 @@ function SettingsPageContent() {
               resumeCheckoutTier={
                 isBillingCheckoutTier(subscribeParam) ? subscribeParam : null
               }
+              resumePortalOpen={resumePortalOpen}
             />
           </TabsContent>
 
