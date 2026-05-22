@@ -120,6 +120,8 @@ export function SubscriptionSettings({
     return isPaid ? 'Paid plan' : PLAN_CARDS.free.name;
   }, [currentTier, isPaid]);
 
+  const showPaidStatusDetails = !summaryLoading && isPaid;
+
   useEffect(() => {
     if (!user || !resumeCheckoutTier || resumeCheckoutStarted.current) return;
     resumeCheckoutStarted.current = true;
@@ -147,23 +149,19 @@ export function SubscriptionSettings({
       <CardContent className="space-y-6">
         <div
           className={cn(
-            'relative min-h-[8.5rem] rounded-md border bg-muted/30 px-3 py-2.5 text-sm transition-opacity duration-300',
+            'relative rounded-md border bg-muted/30 px-3 py-2.5 text-sm transition-all duration-300',
             summaryLoading ? 'opacity-90' : 'opacity-100',
+            showPaidStatusDetails && 'min-h-[8.5rem]',
           )}
         >
           {summaryLoading ? (
-            <div className="space-y-2.5" aria-busy="true" aria-label="Loading subscription status">
-              <div className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-6 w-20 rounded-full" />
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-              <Skeleton className="h-3 w-full max-w-sm" />
-              <Skeleton className="h-3 w-full max-w-xs" />
-              <Skeleton className="h-3 w-full max-w-md" />
+            <div
+              className="flex items-center justify-between gap-2"
+              aria-busy="true"
+              aria-label="Loading subscription status"
+            >
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-6 w-20 rounded-full" />
             </div>
           ) : (
             <div className="animate-in fade-in duration-300">
@@ -173,29 +171,37 @@ export function SubscriptionSettings({
                   {activePlanLabel}
                 </Badge>
               </div>
-              {isPaid && (
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Billing status</span>
-                  <span className="text-sm font-medium capitalize">{status || 'active'}</span>
-                </div>
-              )}
-              {isPaid && summary?.monthlyTokenLimit != null && summary.monthlyTokenLimit > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Included AI tokens (per UTC month):{' '}
-                  <span className="font-mono">{summary.monthlyTokenLimit.toLocaleString('en-US')}</span>
-                </p>
-              )}
-              {isPaid && summary?.monthlyDocumentLimit != null && summary.monthlyDocumentLimit > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Document analyses / month:{' '}
-                  <span className="font-mono">{summary.monthlyDocumentLimit.toLocaleString('en-US')}</span>
-                </p>
-              )}
-              {isPaid && summary?.monthlyCheckpointLimit != null && summary.monthlyCheckpointLimit > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Checkpoint AI runs / month:{' '}
-                  <span className="font-mono">{summary.monthlyCheckpointLimit.toLocaleString('en-US')}</span>
-                </p>
+              {showPaidStatusDetails && (
+                <>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Billing status</span>
+                    <span className="text-sm font-medium capitalize">{status || 'active'}</span>
+                  </div>
+                  {summary?.monthlyTokenLimit != null && summary.monthlyTokenLimit > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Included AI tokens (per UTC month):{' '}
+                      <span className="font-mono">
+                        {summary.monthlyTokenLimit.toLocaleString('en-US')}
+                      </span>
+                    </p>
+                  )}
+                  {summary?.monthlyDocumentLimit != null && summary.monthlyDocumentLimit > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Document analyses / month:{' '}
+                      <span className="font-mono">
+                        {summary.monthlyDocumentLimit.toLocaleString('en-US')}
+                      </span>
+                    </p>
+                  )}
+                  {summary?.monthlyCheckpointLimit != null && summary.monthlyCheckpointLimit > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Checkpoint AI runs / month:{' '}
+                      <span className="font-mono">
+                        {summary.monthlyCheckpointLimit.toLocaleString('en-US')}
+                      </span>
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
