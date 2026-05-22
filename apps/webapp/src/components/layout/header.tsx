@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Bell, Settings, LogOut, LifeBuoy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,15 +39,6 @@ export function Header() {
     }
   }, [logout, toast]);
   
-  const getUserInitials = () => {
-      if (!user?.email) return '..';
-      const parts = user.email.split('@')[0].split(/[._-]/);
-      if (parts.length > 1) {
-          return (parts[0][0] + parts[1][0]).toUpperCase();
-      }
-      return user.email.substring(0,2).toUpperCase();
-  }
-
   return (
     <header className="sticky top-0 z-30 flex h-14 min-h-14 items-center justify-between gap-3 border-b bg-background px-3 sm:gap-4 sm:px-6">
       <div className="flex min-w-0 shrink items-center gap-2">
@@ -78,11 +69,7 @@ export function Header() {
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2 h-9">
-                        <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                                {getUserInitials()}
-                            </AvatarFallback>
-                        </Avatar>
+                        <UserProfileAvatar user={user} className="h-6 w-6" />
                         <span className="hidden sm:inline-block">{user.displayName || user.email}</span>
                     </Button>
                 </DropdownMenuTrigger>
