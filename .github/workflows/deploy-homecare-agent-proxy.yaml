@@ -147,6 +147,26 @@ jobs:
       - name: Stage gcp/common for Docker build
         run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
 
+      # deploy-cloudrun env_vars is newline-separated KEY=VALUE; multiline/pretty JSON in the
+      # GitHub variable would expand to extra lines and be parsed as bogus env keys.
+      - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
+        env:
+          STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+        run: |
+          if [ -z "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" ]; then
+            {
+              echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+              echo 'EOF'
+            } >> "$GITHUB_ENV"
+            exit 0
+          fi
+          compact=$(printf '%s' "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" | jq -c '.')
+          {
+            echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+            printf '%s\n' "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: "google-github-actions/deploy-cloudrun@v2"
@@ -172,7 +192,7 @@ jobs:
             DOCUMENT_ANALYSIS_TOPIC=${{ vars.DOCUMENT_ANALYSIS_TOPIC }}
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
             STRIPE_WEBHOOK_SIGNING_SECRET=${{ secrets.STRIPE_WEBHOOK_SIGNING_SECRET }}
-            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ env.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
             BILLING_PUBLIC_APP_BASE_URL=${{ vars.BILLING_PUBLIC_APP_BASE_URL }}
 
       # Firestore: Cloud Run uses vars.GCP_SERVICE_ACCOUNT_EMAIL at runtime. That SA needs
