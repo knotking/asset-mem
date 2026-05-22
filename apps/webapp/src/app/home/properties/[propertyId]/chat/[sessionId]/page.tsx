@@ -18,7 +18,7 @@ import { ChatList } from "@/components/chat/chat-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { CheckpointAnalysisProgressFooter } from "@/components/chat/checkpoint-analysis-progress-footer";
 import { getInFlightCheckpointProgressFromMessages } from "@/lib/checkpoint-branch-progress";
-import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useRouter, useParams } from "next/navigation";
 import { db, storage } from "@/lib/firebase";
 import {
@@ -66,7 +66,7 @@ export default function PropertyChatSessionPage() {
   );
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, authPending } = useRequireAuth();
   const router = useRouter();
   const params = useParams();
   const propertyId = params.propertyId as string;
@@ -95,13 +95,6 @@ export default function PropertyChatSessionPage() {
   const [searchLocation, setSearchLocation] = useState<SearchLocationInput | undefined>(
     undefined
   );
-
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
 
   // Fetch messages for the session
   useEffect(() => {
@@ -494,7 +487,7 @@ export default function PropertyChatSessionPage() {
     [messages]
   );
 
-  if (authLoading || isMessagesLoading || isDocsLoading) {
+  if (authPending || !user || isMessagesLoading || isDocsLoading) {
     return <ChatPageSkeleton />;
   }
 

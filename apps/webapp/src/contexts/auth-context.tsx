@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   getAuth,
   onAuthStateChanged,
@@ -19,6 +20,8 @@ const auth = getAuth(app);
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  /** True from logout() until navigation away from /home completes. */
+  signingOut: boolean;
   auth: Auth;
   signUp: (email: string, password: string) => ReturnType<typeof createUserWithEmailAndPassword>;
   login: (email: string, password: string) => ReturnType<typeof signInWithEmailAndPassword>;
@@ -29,8 +32,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
@@ -40,6 +46,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (signingOut && pathname === '/') {
+      setSigningOut(false);
+    }
+  }, [pathname, signingOut]);
 
   const signUp = useCallback(
     (email: string, password: string) => createUserWithEmailAndPassword(auth, email, password),
@@ -58,12 +70,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const logout = useCallback(async () => {
-    await signOut(auth);
-  }, []);
+    setSigningOut(true);
+    try {
+      await signOut(auth);
+      router.replace('/');
+    } catch (error) {
+      setSigningOut(false);
+      throw error;
+    }
+  }, [router]);
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, auth, signUp, login, signInWithGoogle, logout }}
+      value={{ user, loading, signingOut, auth, signUp, login, signInWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

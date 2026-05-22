@@ -9,6 +9,7 @@ import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
 import { SupportSettings } from '@/components/settings/support-settings';
 import { useAuth } from '@/contexts/auth-context';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,12 +30,19 @@ function isSettingsTabId(value: string | null): value is SettingsTabId {
 }
 
 function SettingsPageContent() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const billingParam = searchParams.get('billing');
   const subscribeParam = searchParams.get('subscribe');
+
+  const loginPath = useMemo(
+    () =>
+      isBillingCheckoutTier(subscribeParam) ? `/login?checkout=${subscribeParam}` : '/login',
+    [subscribeParam]
+  );
+  const { authPending } = useRequireAuth(loginPath);
   const initialTab = useMemo((): SettingsTabId => {
     if (billingParam === 'canceled') {
       return 'billing';
@@ -57,15 +65,6 @@ function SettingsPageContent() {
     }
   }, [billingParam, router]);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      const loginPath = isBillingCheckoutTier(subscribeParam)
-        ? `/login?checkout=${subscribeParam}`
-        : '/login';
-      router.push(loginPath);
-    }
-  }, [user, authLoading, router, subscribeParam]);
-
   const getUserInitials = () => {
     if (!user?.email) return 'NA';
     const parts = user.email.split('@')[0].split(/[._-]/);
@@ -75,12 +74,8 @@ function SettingsPageContent() {
     return user.email.substring(0, 2).toUpperCase();
   };
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex-1 p-4 md:p-8 pt-6">
-        <p className="text-muted-foreground text-sm">Loading settings…</p>
-      </div>
-    );
+  if (authPending || !user) {
+    return null;
   }
 
   return (
