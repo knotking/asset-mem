@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Activity, ArrowLeft, Camera, CreditCard, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +28,7 @@ function isSettingsTabId(value: string | null): value is SettingsTabId {
   return SETTINGS_TABS.some((t) => t.id === value);
 }
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -180,5 +180,19 @@ export default function SettingsPage() {
         </div>
       </Tabs>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 p-4 md:p-8 pt-6">
+          <p className="text-muted-foreground text-sm">Loading settings…</p>
+        </div>
+      }
+    >
+      <SettingsPageContent />
+    </Suspense>
   );
 }
