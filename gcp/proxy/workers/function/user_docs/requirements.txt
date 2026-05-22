@@ -1,5 +1,6 @@
 google-cloud-aiplatform==1.107.0
 google-cloud-pubsub==2.31.1
+firebase-admin>=6.0.0
 requests==2.32.4
 vertexai==1.43.0
 
