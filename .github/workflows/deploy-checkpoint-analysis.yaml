@@ -92,7 +92,7 @@ jobs:
           set -euo pipefail
 
           # Cloud Functions deploys only the function source directory.
-          # Sync shared packages so `common.observability` and `common.token` imports work at runtime.
+          # Sync shared packages so `common.observability`, `common.token`, and `common.billing_plans` imports work at runtime.
           DST_COMMON_DIR="${{ env.SOURCE_DIRECTORY }}/common"
           mkdir -p "${DST_COMMON_DIR}"
 
@@ -113,6 +113,9 @@ jobs:
           mkdir -p "${DST_TOKEN_DIR}"
           rsync -a --delete "${SRC_TOKEN_DIR}/" "${DST_TOKEN_DIR}/"
           echo "✓ Synced ${SRC_TOKEN_DIR} -> ${DST_TOKEN_DIR}"
+
+          cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
+          echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"
 
       - name: Deploy Cloud Function
         id: deploy

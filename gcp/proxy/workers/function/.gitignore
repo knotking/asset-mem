@@ -1,0 +1,2 @@
+# Staged copy of gcp/common at deploy time (see .github/workflows/deploy-*-*.yaml)
+**/common/

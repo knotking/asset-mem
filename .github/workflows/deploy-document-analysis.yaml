@@ -102,6 +102,9 @@ jobs:
           rsync -a --delete "${SRC_TOKEN_DIR}/" "${DST_TOKEN_DIR}/"
           echo "✓ Synced ${SRC_TOKEN_DIR} -> ${DST_TOKEN_DIR}"
 
+          cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
+          echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"
+
           cp gcp/common/gemini_document_extract.py "${DST_COMMON_DIR}/gemini_document_extract.py"
           echo "✓ Copied gemini_document_extract.py -> ${DST_COMMON_DIR}/"
 
