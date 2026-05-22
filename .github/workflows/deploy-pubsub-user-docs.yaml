@@ -5,7 +5,12 @@ on:
     branches:
       - main
     paths:
-      - "gcp/proxy/workers/function/**"
+      - "gcp/proxy/workers/function/user_docs/**"
+      - "gcp/common/observability/**"
+      - "gcp/common/token/**"
+      - "gcp/common/billing_plans.py"
+      - "gcp/common/plan_limits.py"
+      - ".github/workflows/deploy-pubsub-user-docs.yaml"
   workflow_dispatch:
     inputs:
       environment:

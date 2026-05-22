@@ -8,6 +8,9 @@ on:
       - "gcp/proxy/workers/function/document_analysis/**"
       - "gcp/common/gemini_document_extract.py"
       - "gcp/common/token/**"
+      - "gcp/common/billing_plans.py"
+      - "gcp/common/observability/**"
+      - ".github/workflows/deploy-document-analysis.yaml"
   workflow_dispatch:
     inputs:
       environment:
