@@ -5,7 +5,11 @@ on:
     branches:
       - main
     paths:
-      - "gcp/proxy/workers/function/**"
+      - "gcp/proxy/workers/function/checkpoint_analysis/**"
+      - "gcp/common/observability/**"
+      - "gcp/common/token/**"
+      - "gcp/common/billing_plans.py"
+      - ".github/workflows/deploy-checkpoint-analysis.yaml"
   workflow_dispatch:
     inputs:
       environment:

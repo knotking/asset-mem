@@ -7,6 +7,7 @@ on:
     paths:
       - "gcp/agents/homecare/deployment/**"
       - "gcp/agents/homecare/property_agent/**"
+      - ".github/workflows/deploy-homecare-agent.yaml"
   workflow_dispatch:
     inputs:
       environment:

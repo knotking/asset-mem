@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "gcp/proxy/workers/function/checkpoint_metrics/**"
+      - "gcp/common/observability/**"
+      - ".github/workflows/deploy-checkpoint-metrics.yaml"
   workflow_dispatch:
     inputs:
       environment:
