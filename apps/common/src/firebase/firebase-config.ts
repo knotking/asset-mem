@@ -12,8 +12,11 @@ const firebaseLog = createLogger("firebase");
 
 type Environment = "dev" | "staging" | "prod";
 
+/** Native Google OAuth IDs: see apps/mapp/docs/GOOGLE_SIGN_IN.md */
 interface FirebaseConfigWithClient extends FirebaseOptions {
   webClientId?: string;
+  iosClientId?: string;
+  androidClientId?: string;
 }
 
 const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
@@ -27,6 +30,10 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     measurementId: "G-M3VECYV1FM",
     webClientId:
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
+    iosClientId:
+      "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+    androidClientId:
+      "291418967332-9h3ksf5no0havdt5tngpe9raaqdj8gs9.apps.googleusercontent.com",
   },
   staging: {
     apiKey: "AIzaSyD5LbNLSj8sudtwlJnpPkY0Qjtuv7T6rss",
@@ -38,6 +45,10 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     measurementId: "G-M3VECYV1FM",
     webClientId:
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
+    iosClientId:
+      "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+    androidClientId:
+      "291418967332-9h3ksf5no0havdt5tngpe9raaqdj8gs9.apps.googleusercontent.com",
   },
   prod: {
     apiKey: "AIzaSyCDVN02byPassK2gasba6IH6_2dXkFUywI",
@@ -47,6 +58,10 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     messagingSenderId: "686746113874",
     appId: "1:686746113874:web:2e470647c709a56f4a4c8b",
     webClientId:
+      "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
+    iosClientId:
+      "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
+    androidClientId:
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
   },
 };

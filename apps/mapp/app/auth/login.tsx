@@ -1,16 +1,10 @@
 import React, { useReducer } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { auth, firebaseConfig } from '@homeapp/common/firebase';
-import {
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth';
-import GoogleSvg from '../assets/images/google-icon.svg';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { View, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { auth } from '@homeapp/common/firebase';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { Link, useRouter } from 'expo-router';
+import { AuthDivider } from '@/components/auth/AuthDivider';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Home, Eye, EyeOff, Loader2 } from 'lucide-react-native';
 
 import { Button } from '../../components/ui/button';
@@ -40,11 +34,10 @@ const getErrorMessage = (errorCode: string) => {
   return errorMessages[errorCode] || 'An unexpected error occurred. Please try again later.';
 };
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
+  const [authExtrasReady, setAuthExtrasReady] = React.useState(false);
   const [state, dispatch] = useReducer(
     (
       prevState: {
@@ -74,20 +67,20 @@ export default function LoginScreen() {
     { email: '', password: '', error: null, success: null, loading: false }
   );
 
-  const [requestGoogle, responseGoogle, promptAsyncGoogle] = Google.useAuthRequest({
-    clientId: firebaseConfig.webClientId,
-  });
-
   React.useEffect(() => {
-    if (responseGoogle?.type === 'success') {
-      const { id_token } = responseGoogle.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential).then(() => {
-        authLog.debug('login.google.success');
-        router.replace('/(tabs)/home');
-      });
-    }
-  }, [responseGoogle, router]);
+    setAuthExtrasReady(true);
+  }, []);
+
+  const handleGoogleSuccess = React.useCallback(() => {
+    router.replace('/(tabs)/home');
+  }, [router]);
+
+  const handleGoogleError = React.useCallback(
+    (message: string) => {
+      dispatch({ type: 'SET_ERROR', payload: message });
+    },
+    [dispatch]
+  );
 
   const handleSignIn = async () => {
     dispatch({ type: 'SET_ERROR', payload: null });
@@ -137,6 +130,18 @@ export default function LoginScreen() {
           <Icon as={Home} size={48} className="mb-6 text-foreground" />
           <Text className="mb-2 text-2xl font-bold">Welcome Back</Text>
           <Text className="mb-8 text-base text-gray-500">Sign in to manage your properties</Text>
+
+          {authExtrasReady ? (
+            <GoogleSignInButton
+              disabled={state.loading}
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+            />
+          ) : (
+            <View className="mb-2 h-12 w-full max-w-sm" />
+          )}
+          <AuthDivider />
+
           <Text className="self-start text-base font-medium text-foreground">Email</Text>
           <Input
             placeholder="Enter your email"
