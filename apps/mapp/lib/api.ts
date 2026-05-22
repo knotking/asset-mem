@@ -26,6 +26,14 @@ const CHECKPOINT_COMPARISON_URL = extra.checkpointComparisonUrl || '';
 // Web app URL for sharing links
 export const WEB_APP_URL = extra.webAppUrl || '';
 
+/** Webapp settings deep link — opens the Plan & billing tab. */
+export const WEB_SETTINGS_BILLING_PATH = '/home/settings?tab=billing';
+
+export function webBillingSettingsUrl(): string {
+  const base = (WEB_APP_URL || '').replace(/\/$/, '');
+  return base ? `${base}${WEB_SETTINGS_BILLING_PATH}` : '';
+}
+
 export async function createAgentSession(
   userId: string
 ): Promise<{ agentSessionId?: string; error?: string }> {

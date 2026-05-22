@@ -35,6 +35,7 @@ function SettingsPageContent() {
 
   const billingParam = searchParams.get('billing');
   const subscribeParam = searchParams.get('subscribe');
+  const tabParam = searchParams.get('tab');
 
   const loginPath = useMemo(
     () =>
@@ -49,8 +50,11 @@ function SettingsPageContent() {
     if (isBillingCheckoutTier(subscribeParam)) {
       return 'billing';
     }
+    if (isSettingsTabId(tabParam)) {
+      return tabParam;
+    }
     return 'account';
-  }, [billingParam, subscribeParam]);
+  }, [billingParam, subscribeParam, tabParam]);
 
   const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
   const [billingNotice, setBillingNotice] = useState<'canceled' | null>(null);
@@ -61,8 +65,14 @@ function SettingsPageContent() {
       setBillingNotice('canceled');
       // Drop ?billing= from the URL so browser Back does not replay Stripe return params.
       router.replace('/home/settings');
+      return;
     }
-  }, [billingParam, router]);
+    if (isSettingsTabId(tabParam)) {
+      setActiveTab(tabParam);
+      // Drop ?tab= so browser Back does not re-open a deep-linked tab.
+      router.replace('/home/settings');
+    }
+  }, [billingParam, tabParam, router]);
 
   if (authPending || !user) {
     return null;

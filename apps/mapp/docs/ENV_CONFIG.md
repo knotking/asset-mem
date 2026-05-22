@@ -45,7 +45,7 @@ The following endpoints are constructed from the proxy base URL:
 | `billing/b2c/checkout-session` | Stripe Checkout (used by web; optional on mobile) |
 | `billing/b2c/portal-session`   | Stripe Customer Portal (in-app **Manage subscription**) |
 
-These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. Plan management in the app also uses `WEB_APP_URL` → `/home/settings` for subscribe on web.
+These are exposed in [app.config.js](apps/mapp/app.config.js) via `expo.extra`. Plan management in the app also uses `WEB_APP_URL` → `/home/settings?tab=billing` for subscribe on web.
 
 ## Setup for Local Development
 
