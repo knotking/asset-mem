@@ -20,7 +20,7 @@ import {
   planPriceLabel,
   type PlanTierKey,
 } from '@/lib/plan-limits';
-import { WEB_APP_URL } from '@/lib/api';
+import { webBillingSettingsUrl } from '@/lib/api';
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -29,11 +29,6 @@ type BillingSummary = {
   monthlyCheckpointLimit?: number | null;
   stripeCustomerId?: string | null;
 };
-
-function webBillingSettingsUrl(): string {
-  const base = (WEB_APP_URL || '').replace(/\/$/, '');
-  return base ? `${base}/home/settings` : '';
-}
 
 function PlanOptionRow({
   tier,
@@ -119,7 +114,7 @@ export function PlanBillingSettings() {
     setError(null);
     setBusy('portal');
     try {
-      const url = await createPortalRedirectUrl('/home/settings');
+      const url = await createPortalRedirectUrl();
       await Linking.openURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not open billing portal');
