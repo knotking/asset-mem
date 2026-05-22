@@ -7,7 +7,7 @@ import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
-import { User } from 'firebase/auth';
+import { UserProfileAvatar } from '@/components/UserProfileAvatar';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
 import { ThemePreference } from '@homeapp/common/types';
 
@@ -36,23 +36,7 @@ function ThemeToggle() {
 }
 
 export default function AppHeader() {
-  const { user, loading } = useAuth();
-
-  const getUserInitials = (user: User | null) => {
-    if (!user) return 'NA';
-    if (user.displayName) {
-      const names = user.displayName.split(' ');
-      return names
-        .map((n: string) => n[0])
-        .join('')
-        .toUpperCase();
-    } else if (user.email) {
-      return user.email[0].toUpperCase();
-    }
-    return 'NA';
-  };
-
-  const userInitials = getUserInitials(user);
+  const { user } = useAuth();
 
   return (
     <View className="flex-row items-center justify-between bg-card px-3 py-3 pt-12 shadow-sm">
@@ -68,11 +52,15 @@ export default function AppHeader() {
         <Button variant="ghost" size="icon" className="h-8 w-8 min-w-8 p-0">
           <Icon as={Bell} size={20} className="text-muted-foreground" />
         </Button>
-        <View className="ml-0.5 h-8 w-8 items-center justify-center rounded-full bg-secondary">
-          <Text className="text-xs font-semibold text-secondary-foreground">
-            {loading ? '' : userInitials}
-          </Text>
-        </View>
+        {user ? (
+          <UserProfileAvatar
+            user={user}
+            className="ml-0.5 size-8"
+            fallbackTextClassName="text-xs"
+          />
+        ) : (
+          <View className="ml-0.5 size-8 rounded-full bg-secondary" />
+        )}
       </View>
     </View>
   );

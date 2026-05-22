@@ -3,14 +3,13 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Activity, ArrowLeft, Camera, CreditCard, User } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
+import { ProfileSettings } from '@/components/settings/profile-settings';
 import { SupportSettings } from '@/components/settings/support-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -64,15 +63,6 @@ function SettingsPageContent() {
       router.replace('/home/settings');
     }
   }, [billingParam, router]);
-
-  const getUserInitials = () => {
-    if (!user?.email) return 'NA';
-    const parts = user.email.split('@')[0].split(/[._-]/);
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return user.email.substring(0, 2).toUpperCase();
-  };
 
   if (authPending || !user) {
     return null;
@@ -133,27 +123,7 @@ function SettingsPageContent() {
           )}
 
           <TabsContent value="account" className="mt-0 space-y-4 focus-visible:outline-none">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>Your account information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarFallback className="text-lg">{getUserInitials()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-lg font-medium">
-                      {user.displayName || 'Property Owner'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {user.email || 'owner@assetmem.ai'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ProfileSettings />
             <SupportSettings />
           </TabsContent>
 
