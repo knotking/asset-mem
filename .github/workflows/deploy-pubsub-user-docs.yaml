@@ -116,6 +116,18 @@ jobs:
           rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
           echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
 
+          SRC_TOKEN_DIR="gcp/common/token"
+          DST_TOKEN_DIR="${DST_COMMON_DIR}/token"
+          mkdir -p "${DST_TOKEN_DIR}"
+          rsync -a --delete "${SRC_TOKEN_DIR}/" "${DST_TOKEN_DIR}/"
+          echo "✓ Synced ${SRC_TOKEN_DIR} -> ${DST_TOKEN_DIR}"
+
+          cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
+          echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"
+
+          cp gcp/common/plan_limits.py "${DST_COMMON_DIR}/plan_limits.py"
+          echo "✓ Copied plan_limits.py -> ${DST_COMMON_DIR}/"
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
@@ -139,3 +151,4 @@ jobs:
             USER_UPLOAD_RESULT_TOPIC=${{ env.USER_UPLOAD_RESULT_TOPIC_PATH }}
             RAG_CORPUS=${{ vars.USER_UPLOAD_RAG_CORPUS }}
             USER_UPLOAD_FOLDER=${{ vars.USER_UPLOAD_FOLDER }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
