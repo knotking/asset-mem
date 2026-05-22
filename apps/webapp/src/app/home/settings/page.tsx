@@ -132,7 +132,7 @@ function SettingsPageContent() {
             </div>
           )}
 
-          <TabsContent value="account" className="mt-0 focus-visible:outline-none">
+          <TabsContent value="account" className="mt-0 space-y-4 focus-visible:outline-none">
             <Card>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
