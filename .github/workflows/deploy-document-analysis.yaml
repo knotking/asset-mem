@@ -117,6 +117,24 @@ jobs:
           rsync -a --delete "${SRC_OBS_DIR}/" "${DST_OBS_DIR}/"
           echo "✓ Synced ${SRC_OBS_DIR} -> ${DST_OBS_DIR}"
 
+      - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
+        env:
+          STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+        run: |
+          if [ -z "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" ]; then
+            {
+              echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+              echo 'EOF'
+            } >> "$GITHUB_ENV"
+            exit 0
+          fi
+          compact=$(printf '%s' "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" | jq -c '.')
+          {
+            echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+            printf '%s\n' "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
@@ -136,4 +154,4 @@ jobs:
           environment_variables: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_LOCATION=${{ vars.GCP_REGION }}
-            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ env.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}

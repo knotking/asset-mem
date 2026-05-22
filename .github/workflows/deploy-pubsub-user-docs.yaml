@@ -133,6 +133,24 @@ jobs:
           cp gcp/common/plan_limits.py "${DST_COMMON_DIR}/plan_limits.py"
           echo "✓ Copied plan_limits.py -> ${DST_COMMON_DIR}/"
 
+      - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
+        env:
+          STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+        run: |
+          if [ -z "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" ]; then
+            {
+              echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+              echo 'EOF'
+            } >> "$GITHUB_ENV"
+            exit 0
+          fi
+          compact=$(printf '%s' "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" | jq -c '.')
+          {
+            echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
+            printf '%s\n' "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
@@ -156,4 +174,4 @@ jobs:
             USER_UPLOAD_RESULT_TOPIC=${{ env.USER_UPLOAD_RESULT_TOPIC_PATH }}
             RAG_CORPUS=${{ vars.USER_UPLOAD_RAG_CORPUS }}
             USER_UPLOAD_FOLDER=${{ vars.USER_UPLOAD_FOLDER }}
-            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
+            STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ env.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
