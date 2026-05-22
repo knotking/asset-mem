@@ -535,8 +535,13 @@ eas secret:list
 eas secret:delete --name PROXY_TOKEN
 ```
 
+## Google Sign-In (native OAuth client IDs)
+
+Mapp **Continue with Google** needs `webClientId`, `iosClientId`, and `androidClientId` (Firebase / Google Cloud), plus Android **SHA-1** fingerprints in Firebase. See **[GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md)** for setup, EAS credentials / `npx eas-cli`, and `firebase-config.ts` wiring.
+
 ## Additional Resources
 
+- [GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md) — iOS/Android OAuth client IDs and SHA-1
 - [Expo Environment Variables](https://docs.expo.dev/guides/environment-variables/)
 - [EAS Build Configuration](https://docs.expo.dev/build/eas-json/)
 - [EAS Update](https://docs.expo.dev/eas-update/introduction/)

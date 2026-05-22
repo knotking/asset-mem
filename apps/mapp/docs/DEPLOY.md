@@ -13,6 +13,7 @@ Complete guide for deploying the React Native + Expo mobile application using Gi
 - [Build Profiles](#build-profiles)
 - [Deployment Workflows](#deployment-workflows)
 - [Troubleshooting](#troubleshooting)
+- [Google Sign-In setup](./GOOGLE_SIGN_IN.md) (OAuth client IDs, SHA-1)
 
 ## Overview
 
@@ -54,7 +55,7 @@ The mapp deployment system supports two types of deployments:
 4. **Local Development Tools**
    - Node.js 20+ ([nodejs.org](https://nodejs.org))
    - npm (comes with Node.js)
-   - EAS CLI: `npm install -g eas-cli`
+   - EAS CLI: `npm install -g eas-cli` or `npx eas-cli` (see [GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md) if `eas` is not on PATH)
    - Git
 
 ## Initial Setup
@@ -642,11 +643,18 @@ Users receive updates based on the channel their build was configured with:
 ```bash
 # Run credentials setup locally
 cd apps/mapp
-eas credentials
+npx eas-cli credentials
+# or: eas credentials  (if eas-cli is installed globally)
 
 # Follow prompts to configure iOS/Android credentials
 # Then retry build
 ```
+
+#### Issue 2b: Google Sign-In fails on iOS/Android
+
+**Symptom**: `iosClientId` / `androidClientId` required, or Android `DEVELOPER_ERROR`
+
+**Solution**: See **[GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md)** — Firebase OAuth clients, `firebase-config.ts`, SHA-1 in Firebase, and `Google.useAuthRequest` wiring.
 
 #### Issue 3: "Update not appearing on device"
 
@@ -838,6 +846,7 @@ eas build:configure --check
 
 ## Additional Resources
 
+- **Google Sign-In**: [GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md) — `iosClientId`, `androidClientId`, SHA-1, EAS credentials
 - **Project Configuration**: [app.json](./app.json)
 - **Build Configuration**: [eas.json](./eas.json)
 - **Package Dependencies**: [package.json](./package.json)

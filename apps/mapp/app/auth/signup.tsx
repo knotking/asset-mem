@@ -3,6 +3,8 @@ import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@homeapp/common/firebase';
 import { Link, useRouter } from 'expo-router';
+import { AuthDivider } from '@/components/auth/AuthDivider';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
@@ -30,6 +32,7 @@ export default function SignupScreen() {
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = React.useState(false);
+  const [authExtrasReady, setAuthExtrasReady] = React.useState(false);
 
   interface SignupState {
     email: string;
@@ -76,6 +79,21 @@ export default function SignupScreen() {
     loading: false,
   });
 
+  React.useEffect(() => {
+    setAuthExtrasReady(true);
+  }, []);
+
+  const handleGoogleSuccess = React.useCallback(() => {
+    router.replace('/(tabs)/home');
+  }, [router]);
+
+  const handleGoogleError = React.useCallback(
+    (message: string) => {
+      dispatch({ type: 'SET_ERROR', payload: message });
+    },
+    [dispatch]
+  );
+
   const handleSignUp = async () => {
     if (state.password !== state.confirmPassword) {
       dispatch({ type: 'SET_ERROR', payload: 'Passwords do not match.' });
@@ -108,6 +126,17 @@ export default function SignupScreen() {
           <Icon as={Home} size={48} className="mb-6 text-foreground" />
           <Text className="mb-2 text-2xl font-bold">Create Account</Text>
           <Text className="mb-8 text-base text-gray-500">Sign up to get started</Text>
+
+          {authExtrasReady ? (
+            <GoogleSignInButton
+              disabled={state.loading}
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+            />
+          ) : (
+            <View className="mb-2 h-12 w-full max-w-sm" />
+          )}
+          <AuthDivider />
 
           <Text className="self-start text-base font-medium text-foreground">Email</Text>
           <Input
