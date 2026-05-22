@@ -147,25 +147,11 @@ jobs:
       - name: Stage gcp/common for Docker build
         run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
 
-      # deploy-cloudrun env_vars is newline-separated KEY=VALUE; multiline/pretty JSON in the
-      # GitHub variable would expand to extra lines and be parsed as bogus env keys.
+      # STRIPE_B2C_PRICE_TOKEN_CAPS_JSON is base64 in env_vars (deploy-cloudrun uses comma delimiters).
       - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
         env:
           STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
-        run: |
-          if [ -z "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" ]; then
-            {
-              echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
-              echo 'EOF'
-            } >> "$GITHUB_ENV"
-            exit 0
-          fi
-          compact=$(printf '%s' "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" | jq -c '.')
-          {
-            echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
-            printf '%s\n' "$compact"
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
+        run: bash gcp/proxy/scripts/prepare-stripe-b2c-caps-github-env.sh
 
       - name: Deploy to Cloud Run
         id: deploy

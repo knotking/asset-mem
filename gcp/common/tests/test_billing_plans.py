@@ -1,3 +1,6 @@
+import base64
+import os
+
 from common.billing_plans import (
     FREE_PLAN_KEY,
     free_tier_plan,
@@ -6,6 +9,7 @@ from common.billing_plans import (
     parse_stripe_b2c_price_plans_json,
     plan_for_price,
     plan_for_tier,
+    plans_json_from_env,
     stripe_price_id_for_tier,
 )
 
@@ -53,6 +57,18 @@ def test_plan_for_price_by_stripe_id():
     pro = plan_for_price(TIER_JSON, "price_pro_stripe")
     assert pro is not None
     assert pro.monthly_token_limit == 25_000_000
+
+
+def test_plans_json_from_env_plain_json(monkeypatch):
+    monkeypatch.setenv("STRIPE_B2C_PRICE_TOKEN_CAPS_JSON", TIER_JSON)
+    assert plans_json_from_env() == TIER_JSON
+
+
+def test_plans_json_from_env_base64(monkeypatch):
+    encoded = base64.b64encode(TIER_JSON.encode("utf-8")).decode("ascii")
+    monkeypatch.setenv("STRIPE_B2C_PRICE_TOKEN_CAPS_JSON", encoded)
+    assert plans_json_from_env() == TIER_JSON
+    assert free_tier_plan(plans_json_from_env()) is not None
 
 
 def test_legacy_price_key():

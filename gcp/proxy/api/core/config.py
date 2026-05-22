@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 
+from common.billing_plans import plans_json_from_env
 from core.cors import parse_cors_origins
 
 load_dotenv()
@@ -43,8 +44,8 @@ class Settings:
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
     # Stripe Dashboard → Webhooks → Signing secret (whsec_…); not the Firebase webhook path secret.
     STRIPE_WEBHOOK_SIGNING_SECRET = os.environ.get("STRIPE_WEBHOOK_SIGNING_SECRET", "").strip()
-    # JSON object: { "price_xxx": 8000000, "price_yyy": 25000000 } — monthly token caps per Stripe Price id.
-    STRIPE_B2C_PRICE_TOKEN_CAPS_JSON = os.environ.get("STRIPE_B2C_PRICE_TOKEN_CAPS_JSON", "").strip()
+    # JSON object (plain locally; base64 on Cloud Run from deploy workflows).
+    STRIPE_B2C_PRICE_TOKEN_CAPS_JSON = plans_json_from_env()
     # Public web origin for Checkout / Portal return URLs, e.g. https://app.example.com (no trailing slash).
     BILLING_PUBLIC_APP_BASE_URL = os.environ.get("BILLING_PUBLIC_APP_BASE_URL", "").strip().rstrip("/")
 

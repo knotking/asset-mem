@@ -124,20 +124,7 @@ jobs:
       - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
         env:
           STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
-        run: |
-          if [ -z "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" ]; then
-            {
-              echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
-              echo 'EOF'
-            } >> "$GITHUB_ENV"
-            exit 0
-          fi
-          compact=$(printf '%s' "$STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW" | jq -c '.')
-          {
-            echo 'STRIPE_B2C_PRICE_TOKEN_CAPS_JSON<<EOF'
-            printf '%s\n' "$compact"
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
+        run: bash gcp/proxy/scripts/prepare-stripe-b2c-caps-github-env.sh
 
       - name: Deploy Cloud Function
         id: deploy
