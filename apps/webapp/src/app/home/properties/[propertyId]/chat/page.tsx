@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSession } from '@/contexts/session-context';
-import { useAuth } from '@/contexts/auth-context';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useToast } from '@/hooks/use-toast';
 import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { AlertTriangle } from 'lucide-react';
 // This page acts as an entry point to find the existing draft chat session
 // for the current property and then redirects to it.
 export default function NewChatRedirectPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, authPending } = useRequireAuth();
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
@@ -22,13 +22,6 @@ export default function NewChatRedirectPage() {
 
     const propertyId = params.propertyId as string;
 
-    // Redirect if not logged in
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push("/login");
-        }
-    }, [user, authLoading, router]);
-    
     const tryCreateAndRedirect = async () => {
         if (!user || !propertyId) {
             if(!propertyId) router.replace('/home');
@@ -54,8 +47,13 @@ export default function NewChatRedirectPage() {
     }
 
     useEffect(() => {
+        if (authPending || !user) return;
         tryCreateAndRedirect();
-    }, [user, propertyId, draftsByProperty]);
+    }, [user, propertyId, draftsByProperty, authPending]);
+
+    if (authPending || !user) {
+        return <ChatPageSkeleton />;
+    }
 
     if (creationError) {
         return (

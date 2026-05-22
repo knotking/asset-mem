@@ -5,7 +5,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProperty } from "@/contexts/property-context";
-import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useToast } from "@/hooks/use-toast";
 import type { Document as DocumentType } from '@/lib/types';
 import { db, storage } from '@/lib/firebase';
@@ -13,7 +13,7 @@ import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles } from "lucide-react";
@@ -101,18 +101,11 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
 
 function PropertyDetailsContent() {
     const { property, documents, isLoading: isPropertyLoading } = useProperty();
-    const { user, loading: authLoading } = useAuth();
+    const { user, authPending } = useRequireAuth();
     const router = useRouter();
     const { toast } = useToast();
     const { onOpen: openUploadDialog } = useUploadDialog();
     const [docToDelete, setDocToDelete] = useState<{id: string, name: string} | null>(null);
-
-    // Redirect if not logged in
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push("/login");
-        }
-    }, [user, authLoading, router]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(property?.name || '');
@@ -203,7 +196,7 @@ function PropertyDetailsContent() {
     };
 
 
-    if (isPropertyLoading) {
+    if (authPending || !user || isPropertyLoading) {
         return (
             <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto">
                 <Skeleton className="h-48 w-full" />

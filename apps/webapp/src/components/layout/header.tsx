@@ -4,9 +4,8 @@
 import React, { useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Bell, Settings, LogOut, LifeBuoy } from 'lucide-react';
+import { Bot, Bell, Settings, LogOut, LifeBuoy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -23,23 +22,22 @@ import { TokenUsageToolbar } from './token-usage-toolbar';
 import { SupportDialog } from '@/components/support/support-dialog';
 
 export function Header() {
-  const { user, auth, loading } = useAuth();
+  const { user, loading, signingOut, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [supportOpen, setSupportOpen] = React.useState(false);
 
   const handleLogout = useCallback(async () => {
     try {
-      await signOut(auth);
-      router.push('/');
-    } catch (error) {
+      await logout();
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Logout Failed',
         description: 'An error occurred while signing out.',
       });
     }
-  }, [auth, router, toast]);
+  }, [logout, toast]);
   
   const getUserInitials = () => {
       if (!user?.email) return '..';
@@ -57,7 +55,7 @@ export function Header() {
         <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">AssetMem AI</h1>
       </div>
       <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
-         {loading ? (
+         {loading || signingOut ? (
             <Skeleton className='h-8 w-32' />
          ) : user ? (
             <>
@@ -100,9 +98,13 @@ export function Header() {
                         <span>Support</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
+                    <DropdownMenuItem onClick={handleLogout} disabled={signingOut}>
+                        {signingOut ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogOut className="mr-2 h-4 w-4" />
+                        )}
+                        <span>{signingOut ? 'Signing out…' : 'Log out'}</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
                 </DropdownMenu>

@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 import { collection, onSnapshot, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Property, Document as DocumentType } from '@/lib/types';
@@ -39,7 +39,7 @@ function PropertiesDashboardSkeleton() {
 }
 
 function PropertiesDashboardContent() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, authPending } = useRequireAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -60,13 +60,6 @@ function PropertiesDashboardContent() {
                 property.cityStateZip?.toLowerCase().includes(normalizedTerm)
         );
     }, [properties, searchTerm]);
-
-    // Redirect if not logged in
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push("/login");
-        }
-    }, [user, authLoading, router]);
 
     useEffect(() => {
         if (searchParams.get('billing') !== 'success') {
@@ -129,7 +122,7 @@ function PropertiesDashboardContent() {
     }, [user, toast]);
 
 
-    if (authLoading || isPropertiesLoading) {
+    if (authPending || !user || isPropertiesLoading) {
         return <PropertiesDashboardSkeleton />;
     }
     
