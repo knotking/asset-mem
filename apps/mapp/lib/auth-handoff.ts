@@ -2,18 +2,13 @@
  * One-time auth handoff so the mobile browser opens the web app as the same Firebase user.
  */
 
-import Constants from 'expo-constants';
 import { proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
-import {
-  WEB_APP_URL,
-  WEB_SETTINGS_BILLING_PATH,
-  WEB_SETTINGS_BILLING_PORTAL_PATH,
-} from '@/lib/api';
+import { getMobileWebHandoffUrl, getWebAppUrl } from '@/lib/expo-extra';
+import { createLogger } from '@/lib/logger';
+import { WEB_SETTINGS_BILLING_PATH, WEB_SETTINGS_BILLING_PORTAL_PATH } from '@/lib/api';
 
-const extra = Constants.expoConfig?.extra ?? {};
-const MOBILE_WEB_HANDOFF_URL =
-  (extra.mobileWebHandoffUrl as string | undefined) ?? '';
+const billingLog = createLogger('billing');
 
 const HANDOFF_WEB_PATH = '/auth/handoff';
 
@@ -49,14 +44,12 @@ async function postHandoffJson(
 export async function createMobileWebHandoffCode(
   returnPath: string = WEB_SETTINGS_BILLING_PATH,
 ): Promise<string> {
-  if (!MOBILE_WEB_HANDOFF_URL) {
+  const handoffUrl = getMobileWebHandoffUrl();
+  if (!handoffUrl) {
     throw new Error('Mobile web handoff URL is not configured');
   }
-  const data = await postHandoffJson(
-    MOBILE_WEB_HANDOFF_URL,
-    { returnPath },
-    true,
-  );
+  billingLog.debug('handoff.create', { handoffUrl, returnPath });
+  const data = await postHandoffJson(handoffUrl, { returnPath }, true);
   if (!data.code) {
     throw new Error('Handoff did not return a code');
   }
@@ -91,11 +84,13 @@ export async function createWebBillingHandoffUrl(
   destinationPath: string = WEB_SETTINGS_BILLING_PATH,
   theme?: 'light' | 'dark',
 ): Promise<string> {
-  const base = (WEB_APP_URL || '').replace(/\/$/, '');
+  const base = getWebAppUrl().replace(/\/$/, '');
   if (!base) {
     return '';
   }
   const code = await createMobileWebHandoffCode(appendThemeQuery(destinationPath, theme));
   const handoffTheme = theme ? `&theme=${theme}` : '';
-  return `${base}${HANDOFF_WEB_PATH}?code=${encodeURIComponent(code)}${handoffTheme}`;
+  const url = `${base}${HANDOFF_WEB_PATH}?code=${encodeURIComponent(code)}${handoffTheme}`;
+  billingLog.debug('handoff.openUrl', { webOrigin: base, returnPath: destinationPath });
+  return url;
 }

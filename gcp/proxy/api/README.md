@@ -94,6 +94,27 @@ The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) use
 
 **Webapp UI:** `POST /token-quota-status` returns `{ period, used, max_tokens, unlimited, documents, checkpoints }`. Same resolution as enforcement.
 
+### Mobile web auth handoff
+
+Mapp opens the webapp via `POST /auth/mobile-web-handoff` (create code) and `POST /auth/mobile-web-handoff/consume` (exchange for Firebase custom token).
+
+The consume step calls `auth.create_custom_token`, which requires **`iam.serviceAccounts.signBlob`** on the **Cloud Run runtime service account** (`vars.GCP_SERVICE_ACCOUNT_EMAIL`, usually `githubworkflowdeployment@PROJECT.iam.gserviceaccount.com`).
+
+**One-time grant per project** (existing envs):
+
+```bash
+bash gcp/proxy/scripts/grant-auth-handoff-iam.sh homegeek-staging
+```
+
+New environments created via `create-environment.yaml` receive this binding automatically.
+
+**Local proxy:** `gcloud auth application-default login` user credentials cannot sign custom tokens. Use one of:
+
+- `gcloud auth application-default login --impersonate-service-account=githubworkflowdeployment@PROJECT.iam.gserviceaccount.com` (after the grant script), or
+- `export GOOGLE_APPLICATION_CREDENTIALS=/path/to/runtime-sa-key.json`
+
+Without this, consume returns **503** and logs `Permission 'iam.serviceAccounts.signBlob' denied`.
+
 ## Available Documentation
 
 ### API Features

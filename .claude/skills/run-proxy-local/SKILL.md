@@ -59,6 +59,19 @@ From `gcp/proxy/api/core/config.py`:
 
 You also need ADC: `gcloud auth application-default login` (Firestore + Vertex calls fail without it).
 
+**Mobile web handoff** (`/auth/mobile-web-handoff/consume` → Firebase custom token) needs **`iam.serviceAccounts.signBlob`** on the runtime SA. For **Cloud Run**, run once per project:
+
+```bash
+bash gcp/proxy/scripts/grant-auth-handoff-iam.sh YOUR_PROJECT_ID
+```
+
+For **local uvicorn**, user ADC cannot sign tokens — impersonate the runtime SA after that grant:
+
+```bash
+gcloud auth application-default login \
+  --impersonate-service-account=githubworkflowdeployment@YOUR_PROJECT_ID.iam.gserviceaccount.com
+```
+
 ## Hitting it
 
 ```bash
