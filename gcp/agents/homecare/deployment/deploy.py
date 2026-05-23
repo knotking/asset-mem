@@ -108,6 +108,29 @@ app = HomecareAdkApp(
     enable_tracing=True,
 )
 
+def _agent_deploy_kwargs() -> dict:
+    """Optional Agent Engine scaling/resource kwargs from environment (hardware tier)."""
+    kwargs: dict = {}
+    min_inst = os.getenv("AGENT_MIN_INSTANCES")
+    max_inst = os.getenv("AGENT_MAX_INSTANCES")
+    if min_inst is not None and min_inst != "":
+        kwargs["min_instances"] = int(min_inst)
+    if max_inst is not None and max_inst != "":
+        kwargs["max_instances"] = int(max_inst)
+    resource_limits: dict[str, str] = {}
+    cpu = os.getenv("AGENT_RESOURCE_CPU")
+    memory = os.getenv("AGENT_RESOURCE_MEMORY")
+    if cpu:
+        resource_limits["cpu"] = cpu
+    if memory:
+        resource_limits["memory"] = memory
+    if resource_limits:
+        kwargs["resource_limits"] = resource_limits
+    concurrency = os.getenv("AGENT_CONTAINER_CONCURRENCY")
+    if concurrency is not None and concurrency != "":
+        kwargs["container_concurrency"] = int(concurrency)
+    return kwargs
+
 
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "update"
@@ -151,6 +174,10 @@ def main():
         logger.error(f"Missing required environment variables: {missing_env_vars}")
         raise ValueError(f"Missing required environment variables: {missing_env_vars}")
 
+    agent_kwargs = _agent_deploy_kwargs()
+    if agent_kwargs:
+        logger.info("Agent Engine hardware kwargs: %s", agent_kwargs)
+
     staging_dir, extra_packages = stage_extra_packages()
     logger.info(
         "Staged Agent Engine extra packages in %s: %s",
@@ -167,6 +194,7 @@ def main():
                     extra_packages=extra_packages,
                     display_name=display_name,
                     env_vars=common_env_vars,
+                    **agent_kwargs,
                 )
                 logging.info(
                     "Deployed agent to Vertex AI Agent Engine successfully, "
@@ -181,6 +209,7 @@ def main():
                     env_vars=common_env_vars,
                     requirements=common_requirements,
                     extra_packages=extra_packages,
+                    **agent_kwargs,
                 )
                 logging.info(
                     "Updated agent on Vertex AI Agent Engine successfully, "
@@ -194,7 +223,6 @@ def main():
         import shutil
 
         shutil.rmtree(staging_dir, ignore_errors=True)
-
 
 if __name__ == "__main__":
     main()

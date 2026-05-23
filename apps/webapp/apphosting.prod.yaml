@@ -36,6 +36,7 @@ env:
       - BUILD
       - RUNTIME
 runConfig:
-  # Production can scale higher
-  maxInstances: 1
+  # Default prod tier: idle (see docs/deployment/PRODUCTION_HARDWARE_ALLOCATIONS.md).
+  # Bump via Actions → Apply production hardware (traffic_tier: ph | scale_10x | scale_100x).
   minInstances: 0
+  maxInstances: 1

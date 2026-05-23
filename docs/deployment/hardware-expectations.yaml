@@ -1,0 +1,288 @@
+# Machine-readable hardware allocations by environment and traffic tier.
+# Used by .github/scripts/hardware_tier.py (audit, apply, deploy resolve).
+#
+# Tiers: idle | ph | scale_10x | scale_100x
+
+tier_meta:
+  idle:
+    description: Default prod; scale-to-zero; minimal cost
+    traffic:
+      peak_concurrent_web: 10
+      peak_concurrent_chats: 5
+      checkpoint_analyses_per_hour: 10
+      doc_uploads_per_hour: 5
+  ph:
+    description: Product Hunt / marketing spike
+    traffic:
+      peak_concurrent_web: 2000
+      peak_concurrent_chats: 200
+      checkpoint_analyses_per_hour: 500
+      doc_uploads_per_hour: 150
+  scale_10x:
+    description: Sustained growth ~10x PH peak
+    traffic:
+      peak_concurrent_web: 20000
+      peak_concurrent_chats: 2000
+      checkpoint_analyses_per_hour: 5000
+      doc_uploads_per_hour: 1500
+  scale_100x:
+    description: Major scale; requires GCP quota review
+    traffic:
+      peak_concurrent_web: 200000
+      peak_concurrent_chats: 20000
+      checkpoint_analyses_per_hour: 50000
+      doc_uploads_per_hour: 15000
+
+staging:
+  default_tier: idle
+  tiers:
+    idle:
+      apphosting:
+        cpu: null
+        memory_mib: 512
+        min_instances: 0
+        max_instances: 1
+        concurrency: 80
+      proxy:
+        memory: 512Mi
+        cpu: "1"
+        min_instances: 0
+        max_instances: 2
+        concurrency: 80
+        timeout_seconds: 300
+      agent:
+        min_instances: null
+        max_instances: null
+        resource_cpu: null
+        resource_memory: null
+        container_concurrency: null
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+    ph:
+      apphosting:
+        cpu: 1
+        memory_mib: 1024
+        min_instances: 0
+        max_instances: 2
+        concurrency: 80
+      proxy:
+        memory: 1Gi
+        cpu: "1"
+        min_instances: 0
+        max_instances: 5
+        concurrency: 80
+        timeout_seconds: 300
+      agent:
+        min_instances: null
+        max_instances: null
+        resource_cpu: null
+        resource_memory: null
+        container_concurrency: null
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 512Mi
+          max_instances: 10
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 10
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 5
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+
+prod:
+  default_tier: idle
+  tiers:
+    idle:
+      apphosting:
+        cpu: null
+        memory_mib: 512
+        min_instances: 0
+        max_instances: 1
+        concurrency: 80
+      proxy:
+        memory: 1Gi
+        cpu: "1"
+        min_instances: 0
+        max_instances: 2
+        concurrency: 80
+        timeout_seconds: 300
+      agent:
+        min_instances: 0
+        max_instances: 2
+        resource_cpu: null
+        resource_memory: null
+        container_concurrency: null
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 1
+          concurrency: 1
+          timeout_seconds: 540
+    ph:
+      apphosting:
+        cpu: 1
+        memory_mib: 1024
+        min_instances: 1
+        max_instances: 10
+        concurrency: 80
+      proxy:
+        memory: 2Gi
+        cpu: "2"
+        min_instances: 1
+        max_instances: 10
+        concurrency: 40
+        timeout_seconds: 300
+      agent:
+        min_instances: 1
+        max_instances: 5
+        resource_cpu: "4"
+        resource_memory: 8Gi
+        container_concurrency: 10
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 1Gi
+          max_instances: 15
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 10
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 5
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 3
+          concurrency: 1
+          timeout_seconds: 540
+    scale_10x:
+      apphosting:
+        cpu: 2
+        memory_mib: 2048
+        min_instances: 2
+        max_instances: 20
+        concurrency: 80
+      proxy:
+        memory: 4Gi
+        cpu: "4"
+        min_instances: 2
+        max_instances: 30
+        concurrency: 30
+        timeout_seconds: 300
+      agent:
+        min_instances: 2
+        max_instances: 15
+        resource_cpu: "4"
+        resource_memory: 8Gi
+        container_concurrency: 10
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 1Gi
+          max_instances: 50
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 40
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 20
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 10
+          concurrency: 1
+          timeout_seconds: 540
+    scale_100x:
+      apphosting:
+        cpu: 4
+        memory_mib: 4096
+        min_instances: 5
+        max_instances: 100
+        concurrency: 80
+      proxy:
+        memory: 8Gi
+        cpu: "8"
+        min_instances: 5
+        max_instances: 100
+        concurrency: 20
+        timeout_seconds: 300
+      agent:
+        min_instances: 5
+        max_instances: 50
+        resource_cpu: "8"
+        resource_memory: 16Gi
+        container_concurrency: 8
+      workers:
+        pubsub-checkpoint-analysis:
+          memory: 1Gi
+          max_instances: 200
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-document-analysis:
+          memory: 512Mi
+          max_instances: 150
+          concurrency: 1
+          timeout_seconds: 300
+        pubsub-checkpoint-metrics:
+          memory: 256Mi
+          max_instances: 50
+          concurrency: 1
+          timeout_seconds: 60
+        pubsub-to-user-docs:
+          memory: 512Mi
+          max_instances: 30
+          concurrency: 1
+          timeout_seconds: 540

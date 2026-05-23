@@ -28,6 +28,16 @@ on:
         options:
           - create
           - update
+      traffic_tier:
+        description: "Hardware traffic tier"
+        required: false
+        default: "idle"
+        type: choice
+        options:
+          - idle
+          - ph
+          - scale_10x
+          - scale_100x
 
 env:
   GOOGLE_GENAI_USE_VERTEXAI: 1
@@ -180,6 +190,14 @@ jobs:
         run: |
           uv sync --frozen
         working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Resolve hardware tier
+        run: |
+          TIER="${{ github.event.inputs.traffic_tier }}"
+          if [ -z "$TIER" ]; then TIER="${{ vars.HARDWARE_TIER }}"; fi
+          if [ -z "$TIER" ]; then TIER="idle"; fi
+          ENV_NAME="${{ github.event.inputs.environment || 'staging' }}"
+          bash .github/scripts/resolve-hardware-env.sh "$ENV_NAME" "$TIER"
 
       - name: Run deployment script
         run: uv run python ${{ env.DEPLOY_SCRIPT_PATH }} ${{ env.DEPLOY_ACTION }} ${{ env.CURRENT_ENVIRONMENT }}

@@ -1,0 +1,7 @@
+# App Hosting runConfig overlay — ~10x PH traffic tier.
+runConfig:
+  cpu: 2
+  memoryMiB: 2048
+  minInstances: 2
+  maxInstances: 20
+  concurrency: 80
