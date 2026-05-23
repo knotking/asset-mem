@@ -24,6 +24,7 @@
     "./contexts/preferences-context": "./src/contexts/preferences-context.tsx",
     "./contexts/llm-token-usage-context": "./src/contexts/llm-token-usage-context.tsx",
     "./lib/format-tokens": "./src/lib/format-tokens.ts",
+    "./lib/plan-defaults": "./src/lib/plan-defaults.ts",
     "./lib/user-display": "./src/lib/user-display.ts",
     "./lib/support": "./src/lib/support.ts",
     "./lib/service-providers": "./src/lib/service-providers.ts",

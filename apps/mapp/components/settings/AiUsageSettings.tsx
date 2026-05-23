@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { formatTokensCompact, formatTokensFull } from '@homeapp/common/lib/format-tokens';
+import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
 import { cn } from '@/lib/utils';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -50,7 +51,9 @@ export function AiUsageSettings() {
             <Icon as={Activity} className="size-5 text-foreground" />
             <CardTitle>AI usage</CardTitle>
           </View>
-          <CardDescription>Aggregated token usage from chat and background features</CardDescription>
+          <CardDescription>
+            Aggregated token usage from chat and background features
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-28 w-full rounded-md" />
@@ -75,10 +78,9 @@ export function AiUsageSettings() {
     );
   }
 
+  const monthlyCap = effectiveMonthlyLimit ?? FREE_PLAN_TOKENS_PER_MONTH;
   const pctUsed =
-    effectiveMonthlyLimit != null && effectiveMonthlyLimit > 0
-      ? Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit))
-      : null;
+    monthlyCap > 0 ? Math.min(100, Math.round((100 * periodTotalTokens) / monthlyCap)) : null;
 
   return (
     <Card>
@@ -92,12 +94,12 @@ export function AiUsageSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-4">
-        {effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit ? (
+        {periodTotalTokens >= monthlyCap ? (
           <Text className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             You are at or over your monthly token limit. AI features may be blocked until the next
             month or your limit is raised.
           </Text>
-        ) : effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit * 0.9 ? (
+        ) : monthlyCap > 0 && periodTotalTokens >= monthlyCap * 0.9 ? (
           <Text className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
             You have used about {pctUsed}% of your monthly token allowance.
           </Text>
@@ -113,23 +115,16 @@ export function AiUsageSettings() {
                 'mt-1 text-4xl font-bold tabular-nums leading-none',
                 pctUsed >= 100 && 'text-destructive',
                 pctUsed >= 90 && pctUsed < 100 && 'text-amber-600 dark:text-amber-400',
-                pctUsed < 90 && 'text-emerald-700 dark:text-emerald-400',
+                pctUsed < 90 && 'text-emerald-700 dark:text-emerald-400'
               )}>
               {pctUsed}%
             </Text>
             <Text className="mt-2 text-center text-xs text-muted-foreground">
-              {formatTokensCompact(periodTotalTokens)} of {formatTokensCompact(effectiveMonthlyLimit)}{' '}
-              tokens this month
+              {formatTokensCompact(periodTotalTokens)} of {formatTokensCompact(monthlyCap)} tokens
+              this month
             </Text>
           </View>
-        ) : (
-          <View className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3">
-            <Text className="text-center text-sm text-muted-foreground">
-              No monthly token cap is set, so usage isn’t shown as a percentage. See limits below if
-              your org configures one via Firestore or the proxy.
-            </Text>
-          </View>
-        )}
+        ) : null}
 
         <Text className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           This month — quota
@@ -152,15 +147,11 @@ export function AiUsageSettings() {
         />
         <StatRow
           label="Your monthly limit"
-          value={
-            effectiveMonthlyLimit != null ? formatTokensCompact(effectiveMonthlyLimit) : 'Unlimited'
-          }
+          value={formatTokensCompact(monthlyCap)}
           hint={
             monthlyLimit != null
-              ? `From Firestore preferences (monthlyTokenLimit).${effectiveMonthlyLimit != null ? ` Exact: ${formatTokensFull(effectiveMonthlyLimit)}.` : ''}`
-              : effectiveMonthlyLimit != null
-                ? `From proxy / token-quota-status.${proxyDefaultLimit === 'pending' ? ' (Showing env fallback until proxy responds.)' : ''} Exact: ${formatTokensFull(effectiveMonthlyLimit)}.`
-                : 'Unlimited: no preference or proxy default cap.'
+              ? `Exact: ${formatTokensFull(monthlyCap)}.`
+              : `${proxyDefaultLimit === 'pending' ? ' Waiting for proxy response.' : ''} Exact: ${formatTokensFull(monthlyCap)}.`
           }
         />
 

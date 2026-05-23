@@ -4,8 +4,13 @@
  */
 
 import { formatTokensCompact } from '@homeapp/common/lib/format-tokens';
+import {
+  FREE_PLAN_CHECKPOINTS_PER_MONTH,
+  FREE_PLAN_DOCUMENTS_PER_MONTH,
+  FREE_PLAN_TOKENS_PER_MONTH,
+} from '@homeapp/common/lib/plan-defaults';
 
-export const FREE_TOKENS_PER_MONTH = 1_000_000;
+export { FREE_PLAN_TOKENS_PER_MONTH as FREE_TOKENS_PER_MONTH };
 export const PLUS_TOKENS_PER_MONTH = 10_000_000;
 export const PRO_TOKENS_PER_MONTH = 25_000_000;
 
@@ -23,9 +28,9 @@ export const PLAN_MARKETING: Record<PlanTierKey, PlanMarketing> = {
   free: {
     name: 'Free',
     pricePerMonthUsd: 0,
-    tokensPerMonth: FREE_TOKENS_PER_MONTH,
-    documentsPerMonth: 2,
-    checkpointsPerMonth: 5,
+    tokensPerMonth: FREE_PLAN_TOKENS_PER_MONTH,
+    documentsPerMonth: FREE_PLAN_DOCUMENTS_PER_MONTH,
+    checkpointsPerMonth: FREE_PLAN_CHECKPOINTS_PER_MONTH,
   },
   plus: {
     name: 'Plus',
