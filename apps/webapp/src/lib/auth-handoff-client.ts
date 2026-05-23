@@ -1,4 +1,5 @@
 import { apiUrls } from "./utils";
+import { parseProxyErrorMessage } from "./auth-handoff-errors";
 
 export type MobileWebHandoffConsumeResult = {
   customToken: string;
@@ -15,7 +16,7 @@ export async function consumeMobileWebHandoff(
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(text || res.statusText);
+    throw new Error(parseProxyErrorMessage(text, res.status));
   }
   const data = JSON.parse(text) as MobileWebHandoffConsumeResult;
   if (!data.customToken || !data.returnPath) {
