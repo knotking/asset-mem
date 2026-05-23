@@ -39,6 +39,25 @@ service cloud.firestore {
       }
     }
 
+    // Support requests (client creates messages; parent doc holds latest contact metadata)
+    match /support_requests/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.status == 'open'
+          && request.resource.data.message is string
+          && request.resource.data.message.size() > 0
+          && request.resource.data.message.size() <= 5000
+          && request.resource.data.app in ['web', 'mobile'];
+        allow update, delete: if false;
+      }
+    }
+
     // Rules for publicly shared chat sessions
     match /sharedChats/{shareId} {
       allow read: if isSharedChatActive(shareId);
