@@ -403,6 +403,24 @@ jobs:
             echo "✓ IAM roles granted"
           fi
 
+          # Mobile web auth handoff: Firebase Admin create_custom_token uses IAM signBlob on the
+          # Cloud Run runtime service account (vars.GCP_SERVICE_ACCOUNT_EMAIL).
+          echo ""
+          echo "Ensuring Service Account Token Creator (self) for mobile web auth handoff…"
+          if gcloud iam service-accounts get-iam-policy "$SA_EMAIL" --project="$PROJECT_ID" --format=json \
+            | jq -e --arg member "serviceAccount:${SA_EMAIL}" \
+              '.bindings[] | select(.role=="roles/iam.serviceAccountTokenCreator") | .members[] | select(. == $member)' \
+            >/dev/null 2>&1; then
+            echo "✓ roles/iam.serviceAccountTokenCreator already granted to ${SA_EMAIL} (self)"
+          else
+            gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+              --member="serviceAccount:${SA_EMAIL}" \
+              --role="roles/iam.serviceAccountTokenCreator" \
+              --project="$PROJECT_ID" \
+              --quiet
+            echo "✓ Granted roles/iam.serviceAccountTokenCreator to ${SA_EMAIL} (self)"
+          fi
+
           # Refresh policy after GitHub workflow SA bindings (needed for idempotent checks below).
           CURRENT_POLICY=$(gcloud projects get-iam-policy $PROJECT_ID --format=json)
 

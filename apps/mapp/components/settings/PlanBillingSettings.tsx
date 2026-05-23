@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Linking, View } from 'react-native';
+import { View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { CreditCard } from 'lucide-react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -21,7 +21,12 @@ import {
   type PlanTierKey,
 } from '@/lib/plan-limits';
 import { WEB_SETTINGS_BILLING_PATH } from '@/lib/api';
+import { validateBillingWebConfig } from '@/lib/expo-extra';
 import { createWebBillingHandoffUrl, createWebBillingPortalHandoffUrl } from '@/lib/auth-handoff';
+import { openExternalWebUrl } from '@/lib/open-external-url';
+import { createLogger } from '@/lib/logger';
+
+const billingLog = createLogger('billing');
 
 type BillingSummary = {
   subscriptionStatus?: string | null;
@@ -99,14 +104,23 @@ export function PlanBillingSettings() {
     setError(null);
     setBusy('web');
     try {
+      const configError = validateBillingWebConfig();
+      if (configError) {
+        setError(configError);
+        return;
+      }
       const theme = colorScheme === 'light' ? 'light' : 'dark';
       const url = await createWebBillingHandoffUrl(WEB_SETTINGS_BILLING_PATH, theme);
       if (!url) {
         setError('Web app URL is not configured for this build.');
         return;
       }
-      await Linking.openURL(url);
+      billingLog.debug('openWebBilling', { urlPrefix: url.slice(0, 80) });
+      await openExternalWebUrl(url);
     } catch (e) {
+      billingLog.warn('openWebBilling.failed', {
+        cause: e instanceof Error ? e.message : String(e),
+      });
       setError(e instanceof Error ? e.message : 'Could not open browser');
     } finally {
       setBusy(null);
@@ -117,14 +131,23 @@ export function PlanBillingSettings() {
     setError(null);
     setBusy('portal');
     try {
+      const configError = validateBillingWebConfig();
+      if (configError) {
+        setError(configError);
+        return;
+      }
       const theme = colorScheme === 'light' ? 'light' : 'dark';
       const url = await createWebBillingPortalHandoffUrl(theme);
       if (!url) {
         setError('Web app URL is not configured for this build.');
         return;
       }
-      await Linking.openURL(url);
+      billingLog.debug('openPortal', { urlPrefix: url.slice(0, 80) });
+      await openExternalWebUrl(url);
     } catch (e) {
+      billingLog.warn('openPortal.failed', {
+        cause: e instanceof Error ? e.message : String(e),
+      });
       setError(e instanceof Error ? e.message : 'Could not open billing portal');
     } finally {
       setBusy(null);
