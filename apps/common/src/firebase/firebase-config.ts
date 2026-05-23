@@ -12,7 +12,7 @@ const firebaseLog = createLogger("firebase");
 
 type Environment = "dev" | "staging" | "prod";
 
-/** Native Google OAuth IDs: see apps/mapp/docs/GOOGLE_SIGN_IN.md */
+/** Native Google OAuth IDs for com.assetmem.* — see apps/mapp/docs/GOOGLE_SIGN_IN.md */
 interface FirebaseConfigWithClient extends FirebaseOptions {
   webClientId?: string;
   iosClientId?: string;
@@ -32,6 +32,7 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
     iosClientId:
       "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+    // com.assetmem.dev — update after registering Android app + SHA-1 in Firebase
     androidClientId:
       "291418967332-9h3ksf5no0havdt5tngpe9raaqdj8gs9.apps.googleusercontent.com",
   },
@@ -47,8 +48,9 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
     iosClientId:
       "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+    // com.assetmem.staging
     androidClientId:
-      "291418967332-9h3ksf5no0havdt5tngpe9raaqdj8gs9.apps.googleusercontent.com",
+      "291418967332-jfqrfe03kg1rquj2h5audmv17un3n2do.apps.googleusercontent.com",
   },
   prod: {
     apiKey: "AIzaSyCDVN02byPassK2gasba6IH6_2dXkFUywI",
@@ -61,13 +63,16 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
     iosClientId:
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
+    // com.assetmem.app — update after registering Android app + SHA-1 in Firebase (do not reuse webClientId)
     androidClientId:
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
   },
 };
 
 const getFirebaseConfig = (): FirebaseConfigWithClient => {
-  const env = (Constants.expoConfig?.extra?.appEnv as Environment) || "dev";
+  const env =
+    (Constants.expoConfig?.extra as { appEnv?: Environment } | undefined)
+      ?.appEnv || "dev";
 
   const config = firebaseConfigs[env];
 

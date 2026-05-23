@@ -100,7 +100,7 @@ Navigate to: **Settings → Environments → [staging/prod] → Environment vari
 
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
-| `EXPO_PROJECT_ID` | `cc06df81-5ad0-4fc3-ad59-6294c95e4614` | From app.config.js extra.eas.projectId |
+| `EXPO_PROJECT_ID` | Dev: `e2917915-c5a2-4e7f-a3ae-d854e3a2d244` · Staging: `66c0400f-d590-4459-88a7-21ed4367854e` · Prod: `254ed80d-b24b-444c-829d-0012fa7d0ae0` | Per-environment; must match `eas.json` for that profile |
 | `EXPO_ACCOUNT` | Your Expo username | From `eas whoami` |
 
 ### Step 3: Configure App Store Credentials (Production Only)
@@ -379,9 +379,9 @@ Each environment uses a unique bundle identifier, allowing multiple versions to 
 
 | Environment | iOS Bundle ID | Android Package | Purpose |
 |-------------|--------------|-----------------|---------|
-| Development | `com.homegeekai.dev` | `com.homegeekai.dev` | Local dev builds |
-| Staging | `com.homegeekai.staging` | `com.homegeekai.staging` | Internal testing |
-| Production | `com.homegeekai.prod` | `com.homegeekai.prod` | App store releases |
+| Development | `com.assetmem.dev` | `com.assetmem.dev` | Local dev builds |
+| Staging | `com.assetmem.staging` | `com.assetmem.staging` | Internal APK (sideload) |
+| Production | `com.assetmem.app` | `com.assetmem.app` | Play Store |
 
 **Benefits:**
 - Test production and staging builds on the same device
@@ -407,6 +407,13 @@ Defined in [eas.json](./eas.json)
 ./deploy.sh build --platform ios --profile development
 ```
 
+**Environment Variables** (from eas.json):
+- `APP_SLUG=assetmem-dev`
+- `IOS_BUNDLE_ID=com.assetmem.dev`
+- `ANDROID_PACKAGE=com.assetmem.dev`
+- `EXPO_PROJECT_ID=e2917915-c5a2-4e7f-a3ae-d854e3a2d244`
+- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
+
 ### Preview
 
 **Note**: The preview profile is not currently configured in [eas.json](./eas.json). For internal testing, use the `development` or `staging` profiles instead.
@@ -418,8 +425,8 @@ Defined in [eas.json](./eas.json)
 **Configuration**:
 - Internal distribution
 - Separate bundle IDs:
-  - iOS: `com.homegeekai.staging`
-  - Android: `com.homegeekai.staging`
+  - iOS: `com.assetmem.staging`
+  - Android: `com.assetmem.staging`
 - Staging update channel
 - Release build with staging environment variables
 
@@ -429,10 +436,10 @@ Defined in [eas.json](./eas.json)
 ```
 
 **Environment Variables** (from eas.json):
-- `APP_SLUG=homegeekai-staging`
-- `IOS_BUNDLE_ID=com.homegeekai.staging`
-- `ANDROID_PACKAGE=com.homegeekai.staging`
-- `EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614`
+- `APP_SLUG=assetmem-staging`
+- `IOS_BUNDLE_ID=com.assetmem.staging`
+- `ANDROID_PACKAGE=com.assetmem.staging`
+- `EXPO_PROJECT_ID=66c0400f-d590-4459-88a7-21ed4367854e`
 - `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
 
 ### Production
@@ -442,8 +449,8 @@ Defined in [eas.json](./eas.json)
 **Configuration**:
 - Store distribution
 - Production bundle IDs:
-  - iOS: `com.homegeekai.prod`
-  - Android: `com.homegeekai.prod`
+  - iOS: `com.assetmem.app`
+  - Android: `com.assetmem.app`
 - Production update channel
 - Auto-increment build numbers
 - AAB for Android (required by Google Play)
@@ -455,11 +462,13 @@ Defined in [eas.json](./eas.json)
 
 **Environment Variables** (from eas.json):
 - `APP_ENV=prod`
-- `APP_SLUG=homegeekai-prod`
-- `IOS_BUNDLE_ID=com.homegeekai.prod`
-- `ANDROID_PACKAGE=com.homegeekai.prod`
-- `EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614`
+- `APP_SLUG=assetmem-app`
+- `IOS_BUNDLE_ID=com.assetmem.app`
+- `ANDROID_PACKAGE=com.assetmem.app`
+- `EXPO_PROJECT_ID=254ed80d-b24b-444c-829d-0012fa7d0ae0`
 - `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
+
+**Staging APK on device (no Play account):** see [STAGING_DEVICE_TEST.md](./STAGING_DEVICE_TEST.md).
 
 ## Deployment Workflows
 

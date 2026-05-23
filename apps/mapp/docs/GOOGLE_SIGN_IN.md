@@ -25,12 +25,17 @@ Environment selection follows `expo.extra.appEnv` (`dev` \| `staging` \| `prod`)
 
 ### App identifiers (must match Firebase)
 
-| Platform | Config key | Default (staging / local) |
-| -------- | ---------- | ------------------------- |
-| iOS | `ios.bundleIdentifier` | `com.homegeekai.staging` (`IOS_BUNDLE_ID`) |
-| Android | `android.package` | `com.homegeekai.staging` (`ANDROID_PACKAGE`) |
+| Platform | Config key | Staging / local | Production |
+| -------- | ---------- | --------------- | ------------ |
+| iOS | `ios.bundleIdentifier` | `com.assetmem.staging` | `com.assetmem.app` |
+| Android | `android.package` | `com.assetmem.staging` | `com.assetmem.app` |
+| Dev | either | `com.assetmem.dev` | — |
 
-Prod builds use the bundle/package values from the matching EAS profile in [eas.json](../eas.json).
+Values come from `IOS_BUNDLE_ID` / `ANDROID_PACKAGE` in [eas.json](../eas.json). Deep link scheme: **`assetmem`** (`assetmem://`).
+
+**Note:** `APP_SLUG` (e.g. `assetmem-staging`) is only the Expo dashboard URL name and must match your project on [expo.dev](https://expo.dev). It is independent of the Android package (`com.assetmem.staging`).
+
+OAuth client IDs (`webClientId`, `iosClientId`, `androidClientId`) are defined only in [firebase-config.ts](../../common/src/firebase/firebase-config.ts) per environment. Update that file after registering each `com.assetmem.*` app in Firebase.
 
 ---
 
@@ -57,22 +62,22 @@ This is the same style of ID already stored for staging web: `291418967332-….a
 ### 1.3 iOS client ID (`iosClientId`)
 
 1. Firebase **Project settings** → **Your apps** → **Add app** → **iOS** (if missing).
-2. **iOS bundle ID** must match [app.config.js](../app.config.js) exactly (e.g. `com.homegeekai.staging`).
+2. **iOS bundle ID** must match [app.config.js](../app.config.js) exactly (e.g. `com.assetmem.staging`).
 3. Register the app. Firebase creates an **iOS** OAuth client in Google Cloud.
 4. Copy the **iOS** OAuth 2.0 client ID (not the web client).
    - From **GoogleService-Info.plist** (`CLIENT_ID`), or  
    - Google Cloud → **Credentials** → client type **iOS**.
 5. Set `iosClientId` in `firebase-config.ts` for `dev` / `staging` / `prod` as needed.
 
-**iOS URL scheme (if redirect fails):** Expo may require a custom URL scheme derived from the iOS client ID (reversed form). See [Expo: Google authentication](https://docs.expo.dev/guides/google-authentication/). Scheme in this app: `homegeekai` in [app.config.js](../app.config.js).
+**iOS URL scheme (if redirect fails):** Expo may require a custom URL scheme derived from the iOS client ID (reversed form). See [Expo: Google authentication](https://docs.expo.dev/guides/google-authentication/). Scheme in this app: `assetmem` in [app.config.js](../app.config.js).
 
 ### 1.4 Android client ID (`androidClientId`)
 
 1. Firebase **Project settings** → **Your apps** → **Add app** → **Android** (if missing).
-2. **Android package name** must match `android.package` in [app.config.js](../app.config.js) (e.g. `com.homegeekai.staging`).
+2. **Android package name** must match `android.package` in [app.config.js](../app.config.js) (e.g. `com.assetmem.staging`).
 3. Add **SHA-1 certificate fingerprints** (required for Google Sign-In on device builds). See [§2 SHA-1 fingerprints](#2-sha-1-fingerprints-android).
 4. Register the app. Copy the **Android** OAuth 2.0 client ID from Firebase or Google Cloud (**Credentials** → type **Android**).
-5. Set `androidClientId` in `firebase-config.ts` for each environment.
+5. Set `androidClientId` in `firebase-config.ts` for that environment (`dev`, `staging`, or `prod`).
 
 Add **every** SHA-1 you use (debug, EAS build keystore, Play App Signing). Missing SHA-1 often causes `DEVELOPER_ERROR` or sign-in failure on Android.
 
@@ -182,8 +187,8 @@ Google shows **“doesn't comply with Google's OAuth 2.0 policy”** (or `redire
 | Runtime | Redirect | Google Sign-In |
 | ------- | -------- | -------------- |
 | **Expo Go** | `exp://192.168.x.x:8081` | **Not supported** — Google rejects non-HTTPS / `exp://` URIs |
-| **Dev build** (`npx expo run:ios` / `run:android`) | `homegeekai://` (app scheme) | Supported with correct OAuth clients + bundle ID |
-| **EAS build** (TestFlight / internal APK) | `homegeekai://` | Supported |
+| **Dev build** (`npx expo run:ios` / `run:android`) | `assetmem://` (app scheme) | Supported with correct OAuth clients + bundle ID |
+| **EAS build** (TestFlight / internal APK) | `assetmem://` | Supported |
 
 Expo’s own guidance: [Authentication](https://docs.expo.dev/guides/authentication/) — use a **development build**, not Expo Go, for OAuth.
 
@@ -194,7 +199,7 @@ cd apps/mapp
 npx expo run:ios
 ```
 
-First run installs the native app with scheme `homegeekai` (see [app.config.js](../app.config.js)). Open that app (not Expo Go), then try **Continue with Google**.
+First run installs the native app with scheme `assetmem` (see [app.config.js](../app.config.js)). Open that app (not Expo Go), then try **Continue with Google**.
 
 The in-app button is disabled in Expo Go and shows an error if tapped, pointing here.
 

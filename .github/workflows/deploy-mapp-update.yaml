@@ -224,4 +224,4 @@ jobs:
           echo "**Version:** ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Message:** ${{ needs.validate.outputs.message }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check update status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/homegeekai-${{needs.validate.outputs.environment}}/updates" >> $GITHUB_STEP_SUMMARY
+          echo "Check update status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/${{ env.APP_SLUG }}/updates" >> $GITHUB_STEP_SUMMARY
