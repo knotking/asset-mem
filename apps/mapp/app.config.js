@@ -1,5 +1,7 @@
-// Load environment variables from .env file for local development
-require('dotenv').config();
+// Local dev only — EAS Build sets env from eas.json (avoid .env vs EAS APP_VERSION mismatch).
+if (process.env.EAS_BUILD !== 'true') {
+  require('dotenv').config();
+}
 
 // Proxy URLs: Cloud Run origin + route; auth is Firebase Bearer (not path secret).
 /** Legacy: strip /{secret} from PROXY_BASE_URL when migrating from path-token URLs. */
@@ -17,15 +19,18 @@ const buildProxyUrl = (baseUrl, endpoint) => {
 };
 
 const proxyBaseUrl = process.env.PROXY_BASE_URL;
+const appEnv = process.env.APP_ENV || 'dev';
 
 module.exports = {
   expo: {
-    name: 'AssetMem AI',
-    slug: process.env.APP_SLUG || 'homegeekai-staging',
+    name: appEnv === 'prod' ? 'AssetMem AI' : `AssetMem AI (${appEnv})`,
+    // Slug must match the Expo project on expo.dev (see extra.eas.projectId). Store package uses ANDROID_PACKAGE.
+    slug: process.env.APP_SLUG || 'assetmem-staging',
+    // Drives expo.version and runtimeVersion (policy: appVersion). Set APP_VERSION in eas.json per profile.
     version: process.env.APP_VERSION || '0.0.1',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
-    scheme: 'homegeekai',
+    scheme: process.env.APP_SCHEME || 'assetmem',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     privacy: 'hidden',
@@ -37,7 +42,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.homegeekai.staging',
+      bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.assetmem.staging',
       infoPlist: {
         NSCameraUsageDescription: 'This app needs access to your camera to take photos and record videos for property documentation.',
         NSMicrophoneUsageDescription: 'This app needs access to your microphone to record videos with audio.',
@@ -51,7 +56,7 @@ module.exports = {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#1a2332',
       },
-      package: process.env.ANDROID_PACKAGE || 'com.homegeekai.staging',
+      package: process.env.ANDROID_PACKAGE || 'com.assetmem.staging',
     },
     web: {
       bundler: 'metro',
@@ -69,6 +74,13 @@ module.exports = {
           cameraPermission: 'This app needs access to your camera to take photos and record videos for property documentation.',
         },
       ],
+      [
+        'expo-location',
+        {
+          locationWhenInUsePermission:
+            'This app uses your location to attach property address context to your home records.',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
@@ -76,17 +88,13 @@ module.exports = {
     extra: {
       router: {},
       eas: {
-        projectId: process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614',
+        projectId: process.env.EXPO_PROJECT_ID || '66c0400f-d590-4459-88a7-21ed4367854e',
       },
-      // Environment
-      appEnv: process.env.APP_ENV || 'dev',
+      appEnv,
       /** When true, emit debug/info logs in release builds (see lib/logger.ts). */
       debugLogs:
         process.env.EXPO_PUBLIC_DEBUG_LOGS === 'true' ||
         process.env.EXPO_PUBLIC_DEBUG_LOGS === '1',
-      // Environment-specific URLs
-      // Local dev: Loaded from .env file (via dotenv)
-      // EAS builds: PROXY_BASE_URL from eas.json; PROXY_PATH_SECRET or PROXY_TOKEN strips legacy path suffix
       agentSessionUrl: buildProxyUrl(proxyBaseUrl, 'agent-session'),
       agentSseUrl: buildProxyUrl(proxyBaseUrl, 'firebase-agent-stream'),
       ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, 'rag-file-upload'),
@@ -105,7 +113,7 @@ module.exports = {
       policy: 'appVersion',
     },
     updates: {
-      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || 'cc06df81-5ad0-4fc3-ad59-6294c95e4614'}`,
+      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || '66c0400f-d590-4459-88a7-21ed4367854e'}`,
     },
   },
 };

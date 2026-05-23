@@ -10,11 +10,12 @@
       "channel": "development",
       "env": {
         "APP_ENV": "dev",
+        "APP_VERSION": "0.0.1",
         "EXPO_PUBLIC_DEBUG_LOGS": "true",
-        "APP_SLUG": "homegeekai-development",
-        "IOS_BUNDLE_ID": "com.homegeekai.dev",
-        "ANDROID_PACKAGE": "com.homegeekai.dev",
-        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
+        "APP_SLUG": "assetmem-dev",
+        "IOS_BUNDLE_ID": "com.assetmem.dev",
+        "ANDROID_PACKAGE": "com.assetmem.dev",
+        "EXPO_PROJECT_ID": "e2917915-c5a2-4e7f-a3ae-d854e3a2d244",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-291418967332.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
@@ -33,11 +34,12 @@
       "channel": "staging",
       "env": {
         "APP_ENV": "staging",
+        "APP_VERSION": "0.0.1",
         "EXPO_PUBLIC_DEBUG_LOGS": "true",
-        "APP_SLUG": "homegeekai-staging",
-        "IOS_BUNDLE_ID": "com.homegeekai.staging",
-        "ANDROID_PACKAGE": "com.homegeekai.staging",
-        "EXPO_PROJECT_ID": "cc06df81-5ad0-4fc3-ad59-6294c95e4614",
+        "APP_SLUG": "assetmem-staging",
+        "IOS_BUNDLE_ID": "com.assetmem.staging",
+        "ANDROID_PACKAGE": "com.assetmem.staging",
+        "EXPO_PROJECT_ID": "66c0400f-d590-4459-88a7-21ed4367854e",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-291418967332.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
@@ -56,13 +58,14 @@
       "channel": "prod",
       "env": {
         "APP_ENV": "prod",
-        "APP_SLUG": "homegeekai-prod",
-        "IOS_BUNDLE_ID": "com.homegeekai.prod",
-        "ANDROID_PACKAGE": "com.homegeekai.prod",
-        "EXPO_PROJECT_ID": "ba834da7-3ae6-4381-b641-f2674b54a97a",
+        "APP_VERSION": "1.0.0",
+        "APP_SLUG": "assetmem-app",
+        "IOS_BUNDLE_ID": "com.assetmem.app",
+        "ANDROID_PACKAGE": "com.assetmem.app",
+        "EXPO_PROJECT_ID": "254ed80d-b24b-444c-829d-0012fa7d0ae0",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-686746113874.us-central1.run.app",
         "PROXY_TOKEN": "${PROXY_TOKEN}",
-        "WEB_APP_URL": "https://prod--homegeek-prod.us-central1.hosted.app"
+        "WEB_APP_URL": "https://asset-mem.com"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -81,7 +84,7 @@
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal"
+        "track": "closed"
       }
     }
   }

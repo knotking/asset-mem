@@ -88,7 +88,7 @@ export function GoogleSignInButton({ disabled, onSuccess, onError }: GoogleSignI
       iosClientId: firebaseConfig.iosClientId,
       androidClientId: firebaseConfig.androidClientId,
     },
-    { scheme: 'homegeekai' }
+    { scheme: (Constants.expoConfig?.scheme as string) || 'assetmem' }
   );
 
   React.useEffect(() => {

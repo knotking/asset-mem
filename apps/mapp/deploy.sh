@@ -174,12 +174,12 @@ submit_app() {
 
     if [ "$platform" = "all" ]; then
         print_info "Submitting to App Store..."
-        eas submit --platform ios --latest
+        eas submit --platform ios --profile prod --latest
 
         print_info "Submitting to Google Play..."
-        eas submit --platform android --latest
+        eas submit --platform android --profile prod --latest
     else
-        eas submit --platform "$platform" --latest
+        eas submit --platform "$platform" --profile prod --latest
     fi
 
     print_success "Submission completed!"

@@ -69,8 +69,8 @@ PROXY_BASE_URL=https://homecare-agent-proxy-staging-291418967332.us-central1.run
 WEB_APP_URL=https://staging--homegeek-staging.us-central1.hosted.app
 
 # Optional: App identification (defaults set in app.config.js)
-APP_SLUG=homegeekai-staging
-EXPO_PROJECT_ID=cc06df81-5ad0-4fc3-ad59-6294c95e4614
+APP_SLUG=assetmem-staging
+EXPO_PROJECT_ID=66c0400f-d590-4459-88a7-21ed4367854e
 ```
 
 ### 3. Start the development server
@@ -97,8 +97,9 @@ eas build --profile development --platform ios
 
 **Configuration** ([eas.json:7-28](../eas.json#L7-L28)):
 
-- App Slug: `homegeekai-development`
-- Bundle ID: `com.homegeekai.dev`
+- App Slug: `assetmem-dev`
+- Bundle ID: `com.assetmem.dev`
+- Expo Project ID: `e2917915-c5a2-4e7f-a3ae-d854e3a2d244`
 - Proxy: Development environment
 - Channel: `development`
 - Development client enabled
@@ -112,7 +113,7 @@ eas build --profile staging --platform ios
 
 **Configuration** ([eas.json:29-48](../eas.json#L29-L48)):
 
-- App Slug: `homegeekai-staging`
+- App Slug: `assetmem-staging`
 - Bundle ID: `com.homegeekai.staging`
 - Proxy: Staging environment
 - Channel: `staging`
@@ -126,8 +127,9 @@ eas build --profile prod --platform ios
 
 **Configuration** ([eas.json:49-69](../eas.json#L49-L69)):
 
-- App Slug: `homegeekai-prod`
-- Bundle ID: `com.homegeekai.prod`
+- App Slug: `assetmem-app`
+- Bundle ID: `com.assetmem.app`
+- Expo Project ID: `254ed80d-b24b-444c-829d-0012fa7d0ae0`
 - Proxy: Production environment
 - Channel: `prod`
 - Store distribution
@@ -139,10 +141,10 @@ Each profile defines these environment variables:
 
 | Variable          | Description                              | Example                                    |
 | ----------------- | ---------------------------------------- | ------------------------------------------ |
-| `APP_SLUG`        | Expo app slug for the environment        | `homegeekai-staging`                       |
+| `APP_SLUG`        | Expo app slug for the environment        | `assetmem-staging`                       |
 | `IOS_BUNDLE_ID`   | iOS bundle identifier                    | `com.homegeekai.staging`                   |
 | `ANDROID_PACKAGE` | Android package name                     | `com.homegeekai.staging`                   |
-| `EXPO_PROJECT_ID` | Expo project ID                          | `cc06df81-5ad0-4fc3-ad59-6294c95e4614`     |
+| `EXPO_PROJECT_ID` | Expo project ID                          | `66c0400f-d590-4459-88a7-21ed4367854e`     |
 | `PROXY_BASE_URL`  | Proxy Cloud Run origin (no path secret)  | `https://homecare-agent-proxy-staging-...` |
 | `PROXY_PATH_SECRET` | Optional: strip legacy `/secret` suffix from `PROXY_BASE_URL` | Same value as `FIREBASE_WEBHOOK_SECRET` |
 | `PROXY_TOKEN`     | Alias for `PROXY_PATH_SECRET` (EAS/CI legacy name) | `${PROXY_TOKEN}` in eas.json |
@@ -341,7 +343,7 @@ OTA bundle published with URLs
 
 | Variable          | Description      | Default                  | Source                  |
 | ----------------- | ---------------- | ------------------------ | ----------------------- |
-| `APP_SLUG`        | Expo app slug    | `homegeekai-staging`     | `eas.json`              |
+| `APP_SLUG`        | Expo app slug    | `assetmem-staging`     | `eas.json`              |
 | `APP_VERSION`     | App version      | `0.0.1`                  | Auto-generated in CI    |
 | `IOS_BUNDLE_ID`   | iOS bundle ID    | `com.homegeekai.staging` | `eas.json`              |
 | `ANDROID_PACKAGE` | Android package  | `com.homegeekai.staging` | `eas.json`              |
@@ -492,22 +494,24 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-dev-321433914812.us-central1.run.app`
 - **Web App URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
-- **App Slug**: `homegeekai-development`
-- **Bundle ID**: `com.homegeekai.dev`
+- **App Slug**: `assetmem-dev`
+- **Expo Project ID**: `e2917915-c5a2-4e7f-a3ae-d854e3a2d244`
+- **Bundle ID**: `com.assetmem.dev`
 
 ### Staging Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-staging-321433914812.us-central1.run.app`
 - **Web App URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
-- **App Slug**: `homegeekai-staging`
+- **App Slug**: `assetmem-staging`
 - **Bundle ID**: `com.homegeekai.staging`
 
 ### Production Environment
 
 - **Proxy Base URL**: `https://homecare-agent-proxy-prod-321433914812.us-central1.run.app`
 - **Web App URL**: `https://prod--homegeek-staging.us-central1.hosted.app`
-- **App Slug**: `homegeekai-prod`
-- **Bundle ID**: `com.homegeekai.prod`
+- **App Slug**: `assetmem-app`
+- **Expo Project ID**: `254ed80d-b24b-444c-829d-0012fa7d0ae0`
+- **Bundle ID**: `com.assetmem.app`
 
 ## Quick Reference
 

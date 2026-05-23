@@ -198,6 +198,12 @@ jobs:
           APP_VERSION: ${{ env.APP_VERSION }}
           EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
 
+      - name: Load Expo slug from eas.json
+        working-directory: apps/mapp
+        run: |
+          PROFILE="${{ needs.validate.outputs.profile }}"
+          echo "APP_SLUG=$(node -pe "require('./eas.json').build['$PROFILE'].env.APP_SLUG")" >> $GITHUB_ENV
+
       - name: Summary
         run: |
           echo "### Build Triggered Successfully! :rocket:" >> $GITHUB_STEP_SUMMARY
@@ -207,4 +213,4 @@ jobs:
           echo "**Platform:** ${{ needs.validate.outputs.platform }}" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ env.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check build status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/homegeekai-$${{ needs.validate.outputs.environment }}/builds" >> $GITHUB_STEP_SUMMARY
+          echo "Check build status: https://expo.dev/accounts/${{ vars.EXPO_ACCOUNT }}/projects/${{ env.APP_SLUG }}/builds" >> $GITHUB_STEP_SUMMARY
