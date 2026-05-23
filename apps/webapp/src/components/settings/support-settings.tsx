@@ -7,16 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useFirebase } from '@/contexts/firebase-context';
 import { useToast } from '@/hooks/use-toast';
-import { getSupportEmail } from '@/lib/site';
-import { buildSupportMailtoUrl } from '@/lib/support';
+import { submitSupportRequest } from '@/lib/support';
 
 export function SupportSettings() {
   const { user } = useAuth();
+  const { db } = useFirebase();
   const { toast } = useToast();
   const [message, setMessage] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
       toast({
@@ -27,19 +29,37 @@ export function SupportSettings() {
       return;
     }
 
-    const mailto = buildSupportMailtoUrl(getSupportEmail(), trimmed, {
-      userId: user?.uid,
-      userEmail: user?.email,
-      app: 'web',
-      appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? process.env.NODE_ENV,
-    });
+    if (!user?.uid) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign in required',
+        description: 'Please sign in to send a support message.',
+      });
+      return;
+    }
 
-    window.location.href = mailto;
-    toast({
-      title: 'Opening your email app',
-      description: `Send the message to ${getSupportEmail()} from your mail client.`,
-    });
-    setMessage('');
+    setIsSubmitting(true);
+    try {
+      await submitSupportRequest(db, user.uid, {
+        message: trimmed,
+        userEmail: user.email,
+        app: 'web',
+        appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? process.env.NODE_ENV,
+      });
+      toast({
+        title: 'Message sent',
+        description: 'Our team will get back to you as soon as we can.',
+      });
+      setMessage('');
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not send message',
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,7 +70,7 @@ export function SupportSettings() {
           Support
         </CardTitle>
         <CardDescription>
-          Email us at {getSupportEmail()}. Your account details are included automatically.
+          Send us a message below. Your account details are included automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -63,10 +83,11 @@ export function SupportSettings() {
             onChange={(e) => setMessage(e.target.value)}
             rows={4}
             className="resize-y"
+            disabled={isSubmitting}
           />
         </div>
-        <Button type="button" onClick={handleSend}>
-          Send email
+        <Button type="button" onClick={handleSend} disabled={isSubmitting}>
+          {isSubmitting ? 'Sending…' : 'Send message'}
         </Button>
       </CardContent>
     </Card>

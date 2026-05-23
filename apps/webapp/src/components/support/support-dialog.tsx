@@ -14,9 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useFirebase } from '@/contexts/firebase-context';
 import { useToast } from '@/hooks/use-toast';
-import { getSupportEmail } from '@/lib/site';
-import { buildSupportMailtoUrl } from '@/lib/support';
+import { submitSupportRequest } from '@/lib/support';
 
 type SupportDialogProps = {
   open: boolean;
@@ -25,14 +25,16 @@ type SupportDialogProps = {
 
 export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
   const { user } = useAuth();
+  const { db } = useFirebase();
   const { toast } = useToast();
   const [message, setMessage] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) setMessage('');
   }, [open]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
       toast({
@@ -43,19 +45,37 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
       return;
     }
 
-    const mailto = buildSupportMailtoUrl(getSupportEmail(), trimmed, {
-      userId: user?.uid,
-      userEmail: user?.email,
-      app: 'web',
-      appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? process.env.NODE_ENV,
-    });
+    if (!user?.uid) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign in required',
+        description: 'Please sign in to send a support message.',
+      });
+      return;
+    }
 
-    window.location.href = mailto;
-    toast({
-      title: 'Opening your email app',
-      description: `Send the message to ${getSupportEmail()} from your mail client.`,
-    });
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      await submitSupportRequest(db, user.uid, {
+        message: trimmed,
+        userEmail: user.email,
+        app: 'web',
+        appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? process.env.NODE_ENV,
+      });
+      toast({
+        title: 'Message sent',
+        description: 'Our team will get back to you as soon as we can.',
+      });
+      onOpenChange(false);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not send message',
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,8 +87,8 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
             Contact support
           </DialogTitle>
           <DialogDescription>
-            Describe your issue. We&apos;ll open your email app with a pre-filled message to{' '}
-            <span className="font-medium text-foreground">{getSupportEmail()}</span>.
+            Describe your issue and we&apos;ll get back to you. Your account details are included
+            automatically.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -80,14 +100,20 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
             className="resize-y"
+            disabled={isSubmitting}
           />
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button type="button" onClick={handleSend}>
-            Send email
+          <Button type="button" onClick={handleSend} disabled={isSubmitting}>
+            {isSubmitting ? 'Sending…' : 'Send message'}
           </Button>
         </DialogFooter>
       </DialogContent>

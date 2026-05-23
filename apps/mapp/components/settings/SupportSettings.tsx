@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Linking, View } from 'react-native';
+import { View } from 'react-native';
 import Constants from 'expo-constants';
 import { LifeBuoy } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
@@ -8,51 +8,54 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
-import {
-  buildSupportMailtoUrl,
-  DEFAULT_SUPPORT_EMAIL,
-} from '@homeapp/common/lib/support';
+import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { submitSupportRequest } from '@homeapp/common/lib/support';
 import { createLogger } from '@/lib/logger';
 
 const supportLog = createLogger('support');
 
-function getSupportEmail(): string {
-  const fromExtra = Constants.expoConfig?.extra?.supportEmail as string | undefined;
-  return fromExtra?.trim() || DEFAULT_SUPPORT_EMAIL;
-}
-
 export function SupportSettings() {
   const { user } = useAuth();
+  const { db } = useFirebase();
   const [message, setMessage] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
-  const supportEmail = getSupportEmail();
+  const [success, setSuccess] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSend = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
       setError('Please describe your issue or question before sending.');
+      setSuccess(false);
       return;
     }
-    setError(null);
 
-    const mailto = buildSupportMailtoUrl(supportEmail, trimmed, {
-      userId: user?.uid,
-      userEmail: user?.email,
-      app: 'mobile',
-      appEnv: Constants.expoConfig?.extra?.appEnv as string | undefined,
-    });
+    if (!user?.uid) {
+      setError('Please sign in to send a support message.');
+      setSuccess(false);
+      return;
+    }
+
+    setError(null);
+    setSuccess(false);
+    setIsSubmitting(true);
 
     try {
-      const canOpen = await Linking.canOpenURL(mailto);
-      if (!canOpen) {
-        setError('Unable to open your email app. Email us directly at ' + supportEmail);
-        return;
-      }
-      await Linking.openURL(mailto);
+      await submitSupportRequest(db, user.uid, {
+        message: trimmed,
+        userEmail: user.email,
+        app: 'mobile',
+        appEnv: Constants.expoConfig?.extra?.appEnv as string | undefined,
+      });
       setMessage('');
+      setSuccess(true);
     } catch (err) {
-      supportLog.error('support.mailto.failed', undefined, err);
-      setError('Could not open your email app. Try ' + supportEmail);
+      supportLog.error('support.submit.failed', undefined, err);
+      setError(
+        err instanceof Error ? err.message : 'Could not send your message. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -64,20 +67,32 @@ export function SupportSettings() {
           <CardTitle>Support</CardTitle>
         </View>
         <CardDescription>
-          Email {supportEmail}. Your account details are included automatically.
+          Send us a message below. Your account details are included automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-3">
         <Textarea
           placeholder="What can we help you with?"
           value={message}
-          onChangeText={setMessage}
+          onChangeText={(text) => {
+            setMessage(text);
+            if (error) setError(null);
+            if (success) setSuccess(false);
+          }}
           numberOfLines={5}
           className="min-h-[120px]"
+          editable={!isSubmitting}
         />
         {error ? <Text className="text-sm text-destructive">{error}</Text> : null}
-        <Button onPress={handleSend}>
-          <Text className="font-semibold text-primary-foreground">Send email</Text>
+        {success ? (
+          <Text className="text-sm text-muted-foreground">
+            Message sent. Our team will get back to you as soon as we can.
+          </Text>
+        ) : null}
+        <Button onPress={handleSend} disabled={isSubmitting}>
+          <Text className="font-semibold text-primary-foreground">
+            {isSubmitting ? 'Sending…' : 'Send message'}
+          </Text>
         </Button>
       </CardContent>
     </Card>
