@@ -1,11 +1,16 @@
 // Load environment variables from .env file for local development
 require('dotenv').config();
 
-// Proxy URLs: base origin only; clients send Firebase ID token (Phase 2.1).
+// Proxy URLs: Cloud Run origin + route; auth is Firebase Bearer (not path secret).
+/** Legacy: strip /{secret} from PROXY_BASE_URL when migrating from path-token URLs. */
+function proxyPathSecret() {
+  return (process.env.PROXY_PATH_SECRET || process.env.PROXY_TOKEN || '').trim();
+}
+
 const buildProxyUrl = (baseUrl, endpoint) => {
   if (!baseUrl) return undefined;
   const clean = baseUrl.replace(/\/$/, '');
-  const secret = process.env.PROXY_PATH_SECRET?.trim();
+  const secret = proxyPathSecret();
   const origin =
     secret && clean.endsWith(`/${secret}`) ? clean.slice(0, -(secret.length + 1)) : clean;
   return `${origin}/${endpoint}`;
@@ -81,7 +86,7 @@ module.exports = {
         process.env.EXPO_PUBLIC_DEBUG_LOGS === '1',
       // Environment-specific URLs
       // Local dev: Loaded from .env file (via dotenv)
-      // EAS builds: Built from PROXY_BASE_URL + PROXY_TOKEN from eas.json
+      // EAS builds: PROXY_BASE_URL from eas.json; PROXY_PATH_SECRET or PROXY_TOKEN strips legacy path suffix
       agentSessionUrl: buildProxyUrl(proxyBaseUrl, 'agent-session'),
       agentSseUrl: buildProxyUrl(proxyBaseUrl, 'firebase-agent-stream'),
       ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, 'rag-file-upload'),

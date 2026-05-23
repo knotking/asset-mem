@@ -4,9 +4,9 @@ This document explains how environment-specific configuration is managed for dif
 
 ## Overview
 
-The app uses a **proxy-based architecture** where all API endpoints are constructed from a base URL and token:
+The app uses a **proxy-based architecture** where API endpoints are built from the Cloud Run **origin** plus a route name. Authentication uses **Firebase ID tokens** (`Authorization: Bearer`), not a secret in the URL path.
 
-- **Local Development**: Uses `.env` file with `PROXY_BASE_URL` and `PROXY_TOKEN`
+- **Local Development**: Uses `.env` with `PROXY_BASE_URL` (and optionally `PROXY_PATH_SECRET` when migrating legacy URLs)
 - **EAS Builds**: Uses `eas.json` configuration for each build profile
 - **CI/CD Deployment**: Uses GitHub Actions with environment-level secrets
 
@@ -14,22 +14,20 @@ The app uses a **proxy-based architecture** where all API endpoints are construc
 
 ### Proxy URL Construction
 
-Instead of managing individual endpoint URLs, the app uses a proxy pattern:
+Clients call `{PROXY_BASE_URL}/{endpoint}` with a Firebase Bearer token. Do **not** embed `FIREBASE_WEBHOOK_SECRET` in the path unless you are migrating an old base URL — then set `PROXY_PATH_SECRET` (or `PROXY_TOKEN`) so [app.config.js](apps/mapp/app.config.js) strips the suffix.
+
+**Example (current):**
 
 ```
-{PROXY_BASE_URL}/{PROXY_TOKEN}/{endpoint}
+Base: https://homecare-agent-proxy-staging-291418967332.us-central1.run.app
+Endpoint: token-quota-status
+Result: https://homecare-agent-proxy-staging-291418967332.us-central1.run.app/token-quota-status
+Auth: Authorization: Bearer <Firebase ID token>
 ```
 
-**Example:**
+**Legacy:** If `PROXY_BASE_URL` is `https://...run.app/my-secret`, set `PROXY_PATH_SECRET=my-secret` so URLs resolve to `https://...run.app/token-quota-status`.
 
-```
-Base: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app
-Token: abc123xyz
-Endpoint: agent-session
-Result: https://homecare-agent-proxy-staging-321433914812.us-central1.run.app/abc123xyz/agent-session
-```
-
-The [app.config.js:5-8](apps/mapp/app.config.js#L5-L8) `buildProxyUrl()` helper constructs these URLs automatically.
+The [app.config.js](apps/mapp/app.config.js) `buildProxyUrl()` helper constructs these URLs automatically.
 
 ### API Endpoints
 
@@ -61,9 +59,11 @@ cp .env.example .env
 Edit `.env` with your development proxy configuration:
 
 ```env
-# Proxy Configuration
-PROXY_BASE_URL=https://homecare-agent-proxy-dev-321433914812.us-central1.run.app
-PROXY_TOKEN=your-dev-proxy-token
+# Proxy — Cloud Run origin only (see .env.example)
+PROXY_BASE_URL=https://homecare-agent-proxy-staging-291418967332.us-central1.run.app
+
+# Only if PROXY_BASE_URL still ends with /your-secret (legacy migration):
+# PROXY_PATH_SECRET=your-firebase-webhook-secret
 
 # Web App URL
 WEB_APP_URL=https://staging--homegeek-staging.us-central1.hosted.app
@@ -143,8 +143,9 @@ Each profile defines these environment variables:
 | `IOS_BUNDLE_ID`   | iOS bundle identifier                    | `com.homegeekai.staging`                   |
 | `ANDROID_PACKAGE` | Android package name                     | `com.homegeekai.staging`                   |
 | `EXPO_PROJECT_ID` | Expo project ID                          | `cc06df81-5ad0-4fc3-ad59-6294c95e4614`     |
-| `PROXY_BASE_URL`  | Proxy base URL                           | `https://homecare-agent-proxy-staging-...` |
-| `PROXY_TOKEN`     | Proxy authentication token (placeholder) | `${PROXY_TOKEN}`                           |
+| `PROXY_BASE_URL`  | Proxy Cloud Run origin (no path secret)  | `https://homecare-agent-proxy-staging-...` |
+| `PROXY_PATH_SECRET` | Optional: strip legacy `/secret` suffix from `PROXY_BASE_URL` | Same value as `FIREBASE_WEBHOOK_SECRET` |
+| `PROXY_TOKEN`     | Alias for `PROXY_PATH_SECRET` (EAS/CI legacy name) | `${PROXY_TOKEN}` in eas.json |
 | `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeek-staging...`     |
 | `APP_ENV`         | App environment (production only)        | `prod`                                     |
 
@@ -333,8 +334,7 @@ OTA bundle published with URLs
 
 | Variable         | Description                    | Source                       |
 | ---------------- | ------------------------------ | ---------------------------- |
-| `PROXY_BASE_URL` | Base URL for proxy endpoints   | `.env` or `eas.json`         |
-| `PROXY_TOKEN`    | Authentication token for proxy | `.env` or GitHub/EAS Secrets |
+| `PROXY_BASE_URL` | Cloud Run origin (no `/secret` path) | `.env` or `eas.json`   |
 | `WEB_APP_URL`    | Web application URL            | `.env` or `eas.json`         |
 
 ### Optional Variables
@@ -350,14 +350,14 @@ OTA bundle published with URLs
 
 ### Constructed URLs (in expo.extra)
 
-These are built automatically by [app.config.js:76-79](apps/mapp/app.config.js#L76-L79):
+These are built automatically by [app.config.js](apps/mapp/app.config.js):
 
-| Property              | Constructed From                                       | Example        |
-| --------------------- | ------------------------------------------------------ | -------------- |
-| `agentSessionUrl`     | `{PROXY_BASE_URL}/{PROXY_TOKEN}/agent-session`         | Full proxy URL |
-| `agentSseUrl`         | `{PROXY_BASE_URL}/{PROXY_TOKEN}/firebase-agent-stream` | Full proxy URL |
-| `ragFileUploadUrl`    | `{PROXY_BASE_URL}/{PROXY_TOKEN}/rag-file-upload`       | Full proxy URL |
-| `documentAnalysisUrl` | `{PROXY_BASE_URL}/{PROXY_TOKEN}/extract-doc-info`      | Full proxy URL |
+| Property              | Constructed From                    | Example        |
+| --------------------- | ----------------------------------- | -------------- |
+| `agentSessionUrl`     | `{PROXY_BASE_URL}/agent-session`    | Full proxy URL |
+| `agentSseUrl`         | `{PROXY_BASE_URL}/firebase-agent-stream` | Full proxy URL |
+| `tokenQuotaStatusUrl` | `{PROXY_BASE_URL}/token-quota-status` | Full proxy URL |
+| `mobileWebHandoffUrl` | `{PROXY_BASE_URL}/auth/mobile-web-handoff` | Full proxy URL |
 | `webAppUrl`           | `WEB_APP_URL`                                          | Direct value   |
 
 ## Security Best Practices
@@ -412,24 +412,33 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 
 ### Error: "agentSessionUrl not set" or undefined URLs
 
-**Cause**: Missing `PROXY_BASE_URL` or `PROXY_TOKEN`.
+**Cause**: Missing `PROXY_BASE_URL`.
 
 **Solution**:
 
-1. Check `.env` file exists and contains both variables
-2. Verify no typos in variable names
-3. Restart Expo dev server: `npm run dev`
-4. Check that `buildProxyUrl()` is being called (see [app.config.js:76](apps/mapp/app.config.js#L76))
+1. Copy `.env.example` to `.env` and set `PROXY_BASE_URL` to your Cloud Run origin (no path secret)
+2. Restart Expo dev server: `npm run dev`
+3. Verify `Constants.expoConfig.extra.tokenQuotaStatusUrl` ends with `/token-quota-status` (not `/secret/token-quota-status`)
+
+### WARN `[quota] tokenQuotaStatus.fetch.failed` HTTP 404
+
+**Cause**: Proxy URL still includes the legacy `/{secret}/` path segment, or `PROXY_BASE_URL` points at the wrong host.
+
+**Solution**:
+
+1. Set `PROXY_BASE_URL=https://your-proxy.run.app` (origin only)
+2. If the base URL must keep a secret suffix, set `PROXY_PATH_SECRET` or `PROXY_TOKEN` to that secret so `buildProxyUrl()` strips it
+3. Restart Expo after changing `.env`
 
 ### EAS Build: API calls failing with 401/403
 
-**Cause**: `PROXY_TOKEN` not set or incorrect during build.
+**Cause**: Signed-out user, invalid Firebase token, or proxy auth misconfiguration (not a missing path secret).
 
 **Solution**:
 
-1. Check `PROXY_TOKEN` in your `.env` file (for local builds)
-2. For CI/CD builds, verify GitHub Environment secret is set correctly
-3. Rebuild: `eas build --profile staging --platform ios`
+1. Ensure you are signed in on the device/simulator
+2. For CI/CD builds, verify Firebase project matches the proxy environment
+3. Rebuild if `PROXY_BASE_URL` in `eas.json` is wrong
 
 ### GitHub Actions: Workflow failing validation
 
