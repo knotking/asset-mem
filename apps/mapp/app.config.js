@@ -21,6 +21,22 @@ const buildProxyUrl = (baseUrl, endpoint) => {
 const proxyBaseUrl = process.env.PROXY_BASE_URL;
 const appEnv = process.env.APP_ENV || 'dev';
 
+/** iOS URL scheme for @react-native-google-signin/google-signin — keep in sync with firebase-config iosClientId per env. */
+const GOOGLE_IOS_CLIENT_ID_BY_ENV = {
+  dev: '291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com',
+  staging: '291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com',
+  prod: '686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com',
+};
+
+function googleIosUrlScheme(iosClientId) {
+  const suffix = '.apps.googleusercontent.com';
+  if (!iosClientId?.endsWith(suffix)) return undefined;
+  return `com.googleusercontent.apps.${iosClientId.slice(0, -suffix.length)}`;
+}
+
+const googleIosUrlSchemeForBuild =
+  googleIosUrlScheme(GOOGLE_IOS_CLIENT_ID_BY_ENV[appEnv] ?? GOOGLE_IOS_CLIENT_ID_BY_ENV.staging);
+
 module.exports = {
   expo: {
     name: appEnv === 'prod' ? 'AssetMem AI' : `AssetMem AI (${appEnv})`,
@@ -81,6 +97,12 @@ module.exports = {
             'This app uses your location to attach property address context to your home records.',
         },
       ],
+      googleIosUrlSchemeForBuild
+        ? [
+            '@react-native-google-signin/google-signin',
+            { iosUrlScheme: googleIosUrlSchemeForBuild },
+          ]
+        : '@react-native-google-signin/google-signin',
     ],
     experiments: {
       typedRoutes: true,
