@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAuth } from '@/contexts/auth-context';
 import { consumeMobileWebHandoff } from '@/lib/auth-handoff-client';
+import { getHandoffErrorMessage } from '@/lib/auth-handoff-errors';
+import { MobileHandoffShell } from '@/components/auth/mobile-handoff-shell';
 
 function HandoffPageContent() {
   const { auth } = useAuth();
@@ -31,9 +33,7 @@ function HandoffPageContent() {
         router.replace(path);
       } catch (e) {
         if (!cancelled) {
-          setError(
-            e instanceof Error ? e.message : 'Could not sign in from the mobile app',
-          );
+          setError(getHandoffErrorMessage(e));
         }
       }
     })();
@@ -43,37 +43,27 @@ function HandoffPageContent() {
     };
   }, [auth, code, router]);
 
+  if (error) {
+    return (
+      <MobileHandoffShell
+        variant="error"
+        errorMessage={error}
+        onRetryLogin={() => router.replace('/login')}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6">
-      {error ? (
-        <>
-          <p className="text-center text-sm text-destructive" role="alert">
-            {error}
-          </p>
-          <button
-            type="button"
-            className="text-sm text-primary underline"
-            onClick={() => router.replace('/login')}
-          >
-            Go to login
-          </button>
-        </>
-      ) : (
-        <p className="text-muted-foreground text-sm">Signing you in…</p>
-      )}
-    </div>
+    <MobileHandoffShell
+      variant="loading"
+      description="Taking you to Plan & billing with the same account you use in the mobile app."
+    />
   );
 }
 
 export default function MobileAuthHandoffPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center p-6">
-          <p className="text-muted-foreground text-sm">Signing you in…</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<MobileHandoffShell variant="loading" />}>
       <HandoffPageContent />
     </Suspense>
   );
