@@ -22,6 +22,16 @@ on:
         options:
           - staging
           - prod
+      traffic_tier:
+        description: "Hardware traffic tier"
+        required: false
+        default: "idle"
+        type: choice
+        options:
+          - idle
+          - ph
+          - scale_10x
+          - scale_100x
 
 jobs:
   deploy:
@@ -126,6 +136,20 @@ jobs:
           STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
         run: bash gcp/proxy/scripts/prepare-stripe-b2c-caps-github-env.sh
 
+      - name: Resolve hardware tier
+        run: |
+          TIER="${{ github.event.inputs.traffic_tier }}"
+          if [ -z "$TIER" ]; then TIER="${{ vars.HARDWARE_TIER }}"; fi
+          if [ -z "$TIER" ]; then TIER="idle"; fi
+          ENV_NAME="${{ github.event.inputs.environment || 'staging' }}"
+          bash .github/scripts/resolve-hardware-env.sh "$ENV_NAME" "$TIER"
+
+      - name: Map worker hardware env
+        run: |
+          echo "MAX_INSTANCES=${WORKER_DOCUMENT_ANALYSIS_MAX_INSTANCES}" >> $GITHUB_ENV
+          echo "MEMORY=${WORKER_DOCUMENT_ANALYSIS_MEMORY}" >> $GITHUB_ENV
+          echo "FUNCTION_TIMEOUT=${WORKER_DOCUMENT_ANALYSIS_TIMEOUT}s" >> $GITHUB_ENV
+
       - name: Deploy Cloud Function
         id: deploy
         uses: "google-github-actions/deploy-cloud-functions@v3"
@@ -139,6 +163,7 @@ jobs:
           max_instance_count: ${{ env.MAX_INSTANCES }}
           max_instance_request_concurrency: ${{ env.CONCURRENCY }}
           memory: ${{ env.MEMORY }}
+          timeout: ${{ env.FUNCTION_TIMEOUT }}
           event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
           event_trigger_pubsub_topic: ${{ env.TRIGGER_TOPIC }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}

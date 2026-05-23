@@ -18,6 +18,16 @@ on:
         options:
           - staging
           - prod
+      traffic_tier:
+        description: "Hardware traffic tier"
+        required: false
+        default: "idle"
+        type: choice
+        options:
+          - idle
+          - ph
+          - scale_10x
+          - scale_100x
 
 env:
   WORKING_DIRECTORY: apps/webapp
@@ -164,8 +174,33 @@ jobs:
             echo "   You can deploy storage rules manually later if needed"
           fi
 
+      - name: Resolve hardware tier (App Hosting runConfig)
+        env:
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ""
+          GOOGLE_APPLICATION_CREDENTIALS: ""
+          GOOGLE_GHA_CREDS_PATH: ""
+        run: |
+          TIER="${{ github.event.inputs.traffic_tier }}"
+          if [ -z "$TIER" ]; then TIER="${{ vars.HARDWARE_TIER }}"; fi
+          if [ -z "$TIER" ]; then TIER="idle"; fi
+          ENV_NAME="${{ steps.set-env.outputs.environment }}"
+          bash .github/scripts/resolve-hardware-env.sh "$ENV_NAME" "$TIER"
+
+      - name: Auth for App Hosting Cloud Run scaling
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
+
+      - name: Apply App Hosting hardware tier
+        run: |
+          TIER="${{ github.event.inputs.traffic_tier }}"
+          if [ -z "$TIER" ]; then TIER="${{ vars.HARDWARE_TIER }}"; fi
+          if [ -z "$TIER" ]; then TIER="idle"; fi
+          bash .github/scripts/apply-apphosting-hardware.sh "${{ steps.set-env.outputs.environment }}" "$TIER" || true
+
       - name: Re-authenticate for App Hosting Deployment
-        id: auth-apphosting
+        id: auth-apphosting-rollout
         uses: "google-github-actions/auth@v2"
         with:
           workload_identity_provider: "${{ vars.WORKLOAD_IDENTITY_PROVIDER }}"

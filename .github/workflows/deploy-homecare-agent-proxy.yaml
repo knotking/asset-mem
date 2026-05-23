@@ -20,6 +20,16 @@ on:
         options:
           - staging
           - prod
+      traffic_tier:
+        description: "Hardware traffic tier (idle, ph, scale_10x, scale_100x)"
+        required: false
+        default: "idle"
+        type: choice
+        options:
+          - idle
+          - ph
+          - scale_10x
+          - scale_100x
 
 env:
   REGION: ${{ vars.GCP_REGION }}
@@ -161,6 +171,14 @@ jobs:
           STRIPE_B2C_PRICE_TOKEN_CAPS_JSON_RAW: ${{ vars.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}
         run: bash gcp/proxy/scripts/prepare-stripe-b2c-caps-github-env.sh
 
+      - name: Resolve hardware tier
+        run: |
+          TIER="${{ github.event.inputs.traffic_tier }}"
+          if [ -z "$TIER" ]; then TIER="${{ vars.HARDWARE_TIER }}"; fi
+          if [ -z "$TIER" ]; then TIER="idle"; fi
+          ENV_NAME="${{ github.event.inputs.environment || 'staging' }}"
+          bash .github/scripts/resolve-hardware-env.sh "$ENV_NAME" "$TIER"
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: "google-github-actions/deploy-cloudrun@v2"
@@ -169,7 +187,15 @@ jobs:
           region: ${{ env.REGION }}
           project_id: ${{ vars.GCP_PROJECT_ID }}
           source: gcp/proxy/api
-          flags: "--allow-unauthenticated --service-account=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}"
+          flags: >-
+            --allow-unauthenticated
+            --service-account=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+            --memory=${{ env.PROXY_MEMORY }}
+            --cpu=${{ env.PROXY_CPU }}
+            --timeout=${{ env.PROXY_TIMEOUT }}
+            --min-instances=${{ env.PROXY_MIN_INSTANCES }}
+            --max-instances=${{ env.PROXY_MAX_INSTANCES }}
+            --concurrency=${{ env.PROXY_CONCURRENCY }}
           gcloud_version: latest
           env_vars: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}

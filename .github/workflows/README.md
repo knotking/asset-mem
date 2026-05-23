@@ -27,6 +27,16 @@ Creates a new environment with all required GCP infrastructure.
 - RAG Corpus (user-upload)
 - GitHub Environment with all variables
 
+**Usage:**
+```bash
+# Navigate to Actions → Create New Environment
+# Fill in:
+#   - environment_name: qa-team-1
+#   - gcp_project_id: your-project-id
+#   - create_project: true/false
+#   - region: us-central1
+```
+
 #### [apply-operations-config.yaml](apply-operations-config.yaml)
 Applies **operations** config to an existing environment (no full reprovision).
 
@@ -38,24 +48,18 @@ Applies **operations** config to an existing environment (no full reprovision).
 
 Scripts: [`.github/scripts/`](../scripts/README.md). Docs: [docs/deployment/OPERATIONS.md](../docs/deployment/OPERATIONS.md).
 
+#### [apply-production-hardware.yaml](apply-production-hardware.yaml)
+
+**Triggers:** Manual (`workflow_dispatch`)
+
+**Purpose:** Audit or apply traffic-tier hardware (`idle`, `ph`, `scale_10x`, `scale_100x`) for proxy, workers, agent, and App Hosting. See [README-apply-production-hardware.md](README-apply-production-hardware.md).
+
 **Usage:**
 ```bash
-# Navigate to Actions → Create New Environment
-# Fill in:
-#   - environment_name: qa-team-1
-#   - gcp_project_id: your-project-id
-#   - create_project: true/false
-#   - region: us-central1
-#   - folder_id: (optional, if organizing by folders)
-
-# Note: BILLING_ACCOUNT_ID and ORGANIZATION_ID come from GitHub secrets
-# Note: GitHub repository is automatically detected
+# Actions → Apply production hardware
+# T-3 PH: environment=prod, traffic_tier=ph, mode=apply
+# Confirm: mode=audit, same tier
 ```
-
-**Outputs:**
-- All GitHub environment variables set automatically
-- Configuration file in workflow artifacts
-- Environment ready for application deployment
 
 #### [destroy-environment.yaml](destroy-environment.yaml)
 Destroys an environment and optionally deletes the GCP project.

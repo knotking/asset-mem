@@ -1,0 +1,6 @@
+# App Hosting runConfig overlay — idle tier (scale-to-zero friendly).
+# Merged by deploy-webapp via apply-apphosting-hardware.sh / gcloud run update.
+runConfig:
+  minInstances: 0
+  maxInstances: 1
+  concurrency: 80
