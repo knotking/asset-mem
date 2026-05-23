@@ -1,7 +1,9 @@
+import { FREE_PLAN_LIMITS } from '@/lib/plan-limits-public';
+
 /**
- * @deprecated Free-tier token cap comes from proxy POST /token-quota-status (resolved limit).
- * Landing page uses {@link FREE_PLAN_LIMITS} in plan-limits-public.ts for marketing copy.
+ * Free-tier token cap for UI fallbacks when proxy returns unlimited (0) or is unreachable.
+ * Webapp-local — does not use `@homeapp/common`. Prefer {@link FREE_PLAN_LIMITS} for new code.
  */
-export function getPublicDefaultMonthlyTokenLimit(): number | null {
-  return null;
+export function getPublicDefaultMonthlyTokenLimit(): number {
+  return FREE_PLAN_LIMITS.tokensPerMonth ?? 1_000_000;
 }

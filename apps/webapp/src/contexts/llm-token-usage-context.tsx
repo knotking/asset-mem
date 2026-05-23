@@ -12,6 +12,7 @@ import { db } from '@/lib/firebase';
 import { apiUrls } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { createLogger } from '@/lib/logger';
+import { FREE_PLAN_LIMITS } from '@/lib/plan-limits-public';
 
 const quotaLog = createLogger('quota');
 
@@ -51,7 +52,7 @@ export type LlmTokenUsageSnapshot = {
   monthlyLimit: number | null;
   /** Resolved cap for UI: Firestore prefs, else proxy /token-quota-status */
   effectiveMonthlyLimit: number | null;
-  /** pending = still fetching proxy; null = unlimited from proxy; number = cap from proxy */
+  /** pending = still fetching proxy; null = proxy returned unlimited (0); number = cap from proxy */
   proxyDefaultLimit: 'pending' | number | null;
   /** True until prefs and proxy quota (when no Firestore override) have settled. */
   limitsLoading: boolean;
@@ -68,6 +69,7 @@ const empty: Omit<
   | 'proxyDefaultLimit'
   | 'documentsLimit'
   | 'checkpointsLimit'
+  | 'limitsLoading'
 > = {
   inputTokens: 0,
   outputTokens: 0,
@@ -82,6 +84,21 @@ const empty: Omit<
   periodDocumentCreations: 0,
   periodCheckpointCreations: 0,
 };
+
+function toDisplayPlanLimit(
+  raw: { used?: number; limit?: number; unlimited?: boolean } | undefined,
+  freeDefault: number,
+): PlanLimitSlice | null {
+  if (!raw || typeof raw.used !== 'number') {
+    return null;
+  }
+  const unlimited = Boolean(raw.unlimited) || (typeof raw.limit === 'number' && raw.limit <= 0);
+  const limit =
+    unlimited || typeof raw.limit !== 'number'
+      ? freeDefault
+      : raw.limit;
+  return { used: raw.used, limit, unlimited: false };
+}
 
 function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsageSnapshot {
   const [loading, setLoading] = useState(true);
@@ -214,26 +231,10 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
         }
 
         const doc = data.documents;
-        if (doc && typeof doc.used === 'number' && typeof doc.limit === 'number') {
-          setDocumentsLimit({
-            used: doc.used,
-            limit: doc.limit,
-            unlimited: Boolean(doc.unlimited),
-          });
-        } else {
-          setDocumentsLimit(null);
-        }
+        setDocumentsLimit(toDisplayPlanLimit(doc, FREE_PLAN_LIMITS.documentsPerMonth));
 
         const cp = data.checkpoints;
-        if (cp && typeof cp.used === 'number' && typeof cp.limit === 'number') {
-          setCheckpointsLimit({
-            used: cp.used,
-            limit: cp.limit,
-            unlimited: Boolean(cp.unlimited),
-          });
-        } else {
-          setCheckpointsLimit(null);
-        }
+        setCheckpointsLimit(toDisplayPlanLimit(cp, FREE_PLAN_LIMITS.checkpointsPerMonth));
       } catch (err) {
         if (!cancelled) {
           quotaLog.warn('tokenQuotaStatus.fetch.failed', {
@@ -253,18 +254,20 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     };
   }, [userId, prefsLoaded, monthlyLimit]);
 
+  const freeTokenLimit = FREE_PLAN_LIMITS.tokensPerMonth ?? 1_000_000;
+
   const effectiveMonthlyLimit = useMemo(() => {
-    if (monthlyLimit != null) {
+    if (monthlyLimit != null && monthlyLimit > 0) {
       return monthlyLimit;
     }
     if (proxyDefaultLimit !== 'pending') {
       if (proxyDefaultLimit != null && proxyDefaultLimit > 0) {
         return proxyDefaultLimit;
       }
-      return null;
+      return freeTokenLimit;
     }
-    return null;
-  }, [monthlyLimit, proxyDefaultLimit]);
+    return freeTokenLimit;
+  }, [monthlyLimit, proxyDefaultLimit, freeTokenLimit]);
 
   const limitsLoading =
     Boolean(userId) &&

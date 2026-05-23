@@ -1,18 +1,25 @@
-'use client';
+"use client";
 
-import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Activity } from 'lucide-react';
+import { useLlmTokenUsage } from "@/contexts/llm-token-usage-context";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Activity } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { formatTokensCompact, formatTokensFull } from '@/lib/format-tokens';
+} from "@/components/ui/tooltip";
+import { formatTokensCompact, formatTokensFull } from "@/lib/format-tokens";
+import { FREE_PLAN_LIMITS } from "@/lib/plan-limits-public";
 
-const nf = new Intl.NumberFormat('en-US');
+const nf = new Intl.NumberFormat("en-US");
 
 function StatRow({
   label,
@@ -28,7 +35,9 @@ function StatRow({
       <TooltipTrigger asChild>
         <div className="flex flex-col gap-0.5 rounded-md border bg-muted/30 px-3 py-2.5 text-left sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">{label}</span>
-          <span className="font-mono text-sm font-medium tabular-nums">{value}</span>
+          <span className="font-mono text-sm font-medium tabular-nums">
+            {value}
+          </span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs">
@@ -62,9 +71,11 @@ export function AiUsageSettings() {
     limitsLoading,
   } = useLlmTokenUsage();
 
+  const monthlyCap =
+    effectiveMonthlyLimit ?? FREE_PLAN_LIMITS.tokensPerMonth ?? 1_000_000;
   const pctUsed =
-    effectiveMonthlyLimit != null && effectiveMonthlyLimit > 0
-      ? Math.min(100, Math.round((100 * periodTotalTokens) / effectiveMonthlyLimit))
+    monthlyCap > 0
+      ? Math.min(100, Math.round((100 * periodTotalTokens) / monthlyCap))
       : null;
 
   if (loading || limitsLoading) {
@@ -113,17 +124,17 @@ export function AiUsageSettings() {
           AI usage
         </CardTitle>
         <CardDescription>
-          Monthly quotas use calendar months. All-time totals are shown below. Limits are enforced on
-          the server.
+          Monthly quotas use calendar months. All-time totals are shown below.
+          Limits are enforced on the server.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit ? (
+        {periodTotalTokens >= monthlyCap ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            You are at or over your monthly token limit. AI features may be blocked until the next
-            month or your limit is raised.
+            You are at or over your monthly token limit. AI features may be
+            blocked until the next month or your limit is raised.
           </p>
-        ) : effectiveMonthlyLimit != null && periodTotalTokens >= effectiveMonthlyLimit * 0.9 ? (
+        ) : monthlyCap > 0 && periodTotalTokens >= monthlyCap * 0.9 ? (
           <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
             You have used about {pctUsed}% of your monthly token allowance.
           </p>
@@ -137,32 +148,20 @@ export function AiUsageSettings() {
             <span
               className={
                 pctUsed >= 100
-                  ? 'mt-1 text-4xl font-bold tabular-nums leading-none text-destructive'
+                  ? "mt-1 text-4xl font-bold tabular-nums leading-none text-destructive"
                   : pctUsed >= 90
-                    ? 'mt-1 text-4xl font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400'
-                    : 'mt-1 text-4xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400'
+                    ? "mt-1 text-4xl font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400"
+                    : "mt-1 text-4xl font-bold tabular-nums leading-none text-emerald-700 dark:text-emerald-400"
               }
             >
               {pctUsed}%
             </span>
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              {formatTokensCompact(periodTotalTokens)} of {formatTokensCompact(effectiveMonthlyLimit)}{' '}
-              tokens this month
+              {formatTokensCompact(periodTotalTokens)} of{" "}
+              {formatTokensCompact(monthlyCap)} tokens
             </p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center rounded-xl border border-border bg-muted/40 px-4 py-4">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Tokens this month
-            </span>
-            <span className="mt-1 text-4xl font-bold tabular-nums leading-none">
-              {formatTokensCompact(periodTotalTokens)}
-            </span>
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              Usage total; see Plan &amp; billing for your monthly allowance.
-            </p>
-          </div>
-        )}
+        ) : null}
 
         <TooltipProvider delayDuration={300}>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -172,7 +171,7 @@ export function AiUsageSettings() {
             <StatRow
               label="Billing period"
               hint="Year-month label. Counters reset when the server records the first usage in a new month."
-              value={quotaPeriodKey ?? '—'}
+              value={quotaPeriodKey ?? "—"}
             />
             <StatRow
               label="Tokens this month"
@@ -198,17 +197,13 @@ export function AiUsageSettings() {
               label="Document limit"
               hint={
                 documentsLimit
-                  ? documentsLimit.unlimited
-                    ? 'No monthly document cap on your plan.'
-                    : `Enforced when queuing analysis or RAG import. ${documentsLimit.used} of ${documentsLimit.limit} used.`
-                  : 'Could not load from proxy; see Plan & billing for subscription caps.'
+                  ? `Enforced when queuing analysis or RAG import. ${documentsLimit.used} of ${documentsLimit.limit} used.`
+                  : "Could not load from proxy; see Plan & billing for subscription caps."
               }
               value={
                 documentsLimit
-                  ? documentsLimit.unlimited
-                    ? 'Unlimited'
-                    : `${nf.format(documentsLimit.used)} / ${nf.format(documentsLimit.limit)}`
-                  : '—'
+                  ? `${nf.format(documentsLimit.used)} / ${nf.format(documentsLimit.limit)}`
+                  : "—"
               }
             />
             <StatRow
@@ -220,33 +215,23 @@ export function AiUsageSettings() {
               label="Checkpoint limit"
               hint={
                 checkpointsLimit
-                  ? checkpointsLimit.unlimited
-                    ? 'No monthly checkpoint AI cap on your plan.'
-                    : `Enforced when starting checkpoint analysis. ${checkpointsLimit.used} of ${checkpointsLimit.limit} used.`
-                  : 'Could not load from proxy; see Plan & billing for subscription caps.'
+                  ? `Enforced when starting checkpoint analysis. ${checkpointsLimit.used} of ${checkpointsLimit.limit} used.`
+                  : "Could not load from proxy; see Plan & billing for subscription caps."
               }
               value={
                 checkpointsLimit
-                  ? checkpointsLimit.unlimited
-                    ? 'Unlimited'
-                    : `${nf.format(checkpointsLimit.used)} / ${nf.format(checkpointsLimit.limit)}`
-                  : '—'
+                  ? `${nf.format(checkpointsLimit.used)} / ${nf.format(checkpointsLimit.limit)}`
+                  : "—"
               }
             />
             <StatRow
               label="Your monthly limit"
               hint={
                 monthlyLimit != null
-                  ? `From Firestore preferences (monthlyTokenLimit).${effectiveMonthlyLimit != null ? ` Exact: ${formatTokensFull(effectiveMonthlyLimit)}.` : ''}`
-                  : effectiveMonthlyLimit != null
-                    ? `Resolved from the proxy via POST /token-quota-status (includes free tier from STRIPE_B2C_PRICE_TOKEN_CAPS_JSON).${proxyDefaultLimit === 'pending' ? ' Waiting for proxy response.' : ''} Exact: ${formatTokensFull(effectiveMonthlyLimit)}.`
-                    : 'Unlimited: no preference or no cap from proxy (free plan missing or zero in STRIPE_B2C_PRICE_TOKEN_CAPS_JSON).'
+                  ? `Exact: ${formatTokensFull(monthlyCap)}.`
+                  : `${proxyDefaultLimit === "pending" ? " Checking..." : ""} Exact: ${formatTokensFull(monthlyCap)}.`
               }
-              value={
-                effectiveMonthlyLimit != null
-                  ? formatTokensCompact(effectiveMonthlyLimit)
-                  : 'Unlimited'
-              }
+              value={formatTokensCompact(monthlyCap)}
             />
             <div className="sm:col-span-2 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               All time
@@ -279,10 +264,15 @@ export function AiUsageSettings() {
           </div>
         </TooltipProvider>
         {updatedAt ? (
-          <p className="text-xs text-muted-foreground">Last updated: {updatedAt}</p>
-        ) : totalTokens === 0 && agentStreamCount === 0 && workerLlmCallCount === 0 ? (
           <p className="text-xs text-muted-foreground">
-            No usage recorded yet. Numbers appear after you use the assistant or checkpoint AI.
+            Last updated: {updatedAt}
+          </p>
+        ) : totalTokens === 0 &&
+          agentStreamCount === 0 &&
+          workerLlmCallCount === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No usage recorded yet. Numbers appear after you use the assistant or
+            checkpoint AI.
           </p>
         ) : null}
       </CardContent>

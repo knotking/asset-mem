@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import { createLogger } from "../lib/logger";
+import { FREE_PLAN_TOKENS_PER_MONTH } from "../lib/plan-defaults";
 import { proxyFetchWithAuth, type GetFirebaseIdToken } from "../lib/correlation-id";
 
 const quotaLog = createLogger("quota");
@@ -200,7 +201,7 @@ function useLlmTokenUsageSubscription(
           quotaLog.warn("tokenQuotaStatus.fetch.failed", {
             cause: err instanceof Error ? err.message : String(err),
           });
-          setProxyDefaultLimit("pending");
+          setProxyDefaultLimit(null);
         }
       }
     })();
@@ -211,16 +212,16 @@ function useLlmTokenUsageSubscription(
   }, [userId, prefsLoaded, monthlyLimit, tokenQuotaStatusUrl, getIdToken]);
 
   const effectiveMonthlyLimit = useMemo(() => {
-    if (monthlyLimit != null) {
+    if (monthlyLimit != null && monthlyLimit > 0) {
       return monthlyLimit;
     }
     if (proxyDefaultLimit !== "pending") {
       if (proxyDefaultLimit != null && proxyDefaultLimit > 0) {
         return proxyDefaultLimit;
       }
-      return null;
+      return envDefault ?? FREE_PLAN_TOKENS_PER_MONTH;
     }
-    return envDefault;
+    return envDefault ?? FREE_PLAN_TOKENS_PER_MONTH;
   }, [monthlyLimit, proxyDefaultLimit, envDefault]);
 
   return {
@@ -241,7 +242,7 @@ export function LlmTokenUsageProvider({
   uid,
   tokenQuotaStatusUrl,
   getIdToken,
-  publicDefaultMonthlyTokenLimit = null,
+  publicDefaultMonthlyTokenLimit = FREE_PLAN_TOKENS_PER_MONTH,
 }: LlmTokenUsageProviderProps) {
   const value = useLlmTokenUsageSubscription(
     uid,
