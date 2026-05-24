@@ -89,8 +89,8 @@ export function AgentStatus({ steps, messageContent }: Props) {
   if (!steps || steps.length === 0) return null;
 
   return (
-    <View className="self-start max-w-full flex-row items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 shadow-sm">
-      <View className="shrink-0">
+    <View className="self-start max-w-full flex-row items-start gap-2 rounded-lg border border-border bg-background/50 px-4 py-3 shadow-sm">
+      <View className="mt-0.5 shrink-0">
         <SparkleAnimation />
       </View>
       <View className="min-w-0 flex-shrink flex-row items-center gap-1">

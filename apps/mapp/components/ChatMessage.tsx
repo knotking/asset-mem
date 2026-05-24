@@ -746,7 +746,7 @@ const StructuredResponse = React.memo(
           <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
         </View>
       )}
-      <Accordion type="single" collapsible defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"}>
+      <Accordion type="single" collapsible className="w-full" defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"}>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
@@ -1483,7 +1483,7 @@ const MessageContent = React.memo(
   if (structuredData) {
     // console.log('STRUCTURED DATA:', structuredData);
     return (
-      <View className="w-full min-w-full">
+      <View className="w-full">
         {/* {plainContent && (
           <Markdown style={markdownStyles} rules={markdownRules}>
             {plainContent}
@@ -1628,6 +1628,11 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
   }, [message.content, isUser]);
 
   const showEarlyLoading = !isUser && !message.content;
+  const showThinkingStrip =
+    showEarlyLoading && !!message.agentSteps && message.agentSteps.length > 0;
+  const showTypingIndicator = showEarlyLoading && !showThinkingStrip;
+  const isStructuredAssistant = !isUser && !!extractedParts.structuredData;
+  const isFullWidthAssistant = isStructuredAssistant;
 
   const handleLongPress = useCallback(() => {
     if (!isLoading && message.content) {
@@ -1704,13 +1709,24 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
   }, []);
 
   return (
-    <View className={`mb-4 flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <View className={`mb-4 w-full flex-row gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       <View className="hidden md:flex">
         <MessageAvatar role={message.role} />
       </View>
-      <View className={`flex-1 ${isUser ? 'items-end' : 'items-start'}`}>
-        <Pressable onLongPress={handleLongPress} delayLongPress={500}>
-          <View className={`overflow-hidden rounded-lg ${isUser ? 'bg-muted' : 'bg-secondary'}`}>
+      <View
+        className={`flex-1 ${isUser ? 'max-w-full items-end' : 'w-full items-start'}`}>
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={500}
+          className={isFullWidthAssistant ? 'w-full self-stretch' : 'max-w-full'}>
+          <View
+            className={`overflow-hidden rounded-lg ${isFullWidthAssistant ? 'w-full' : 'max-w-full'} ${
+              isUser
+                ? 'bg-muted'
+                : showThinkingStrip || showTypingIndicator
+                  ? 'border-0 bg-transparent shadow-none'
+                  : 'bg-secondary'
+            }`}>
             {message.file && (
               <FilePreview
                 file={message.file}
@@ -1718,24 +1734,19 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
                 onPress={() => setShowMediaDetail(true)}
               />
             )}
-            {showEarlyLoading ? (
-              <>
-                {message.agentSteps && message.agentSteps.length > 0 ? (
-                  <View className="p-3">
-                    <AgentStatus
-                      steps={message.agentSteps}
-                      messageContent={message.content}
-                    />
-                  </View>
-                ) : (
-                  <View className="p-3">
-                    <TypingIndicator />
-                  </View>
-                )}
-              </>
+            {showThinkingStrip ? (
+              <AgentStatus
+                steps={message.agentSteps!}
+                messageContent={message.content}
+              />
+            ) : null}
+            {showTypingIndicator ? (
+              <View className="p-2">
+                <TypingIndicator />
+              </View>
             ) : null}
             {message.content ? (
-              <View className="flex flex-col gap-3 p-3">
+              <View className={`flex flex-col gap-3 ${isStructuredAssistant ? 'p-0' : 'p-3'}`}>
                 <MessageContent
                   content={message.content}
                   isUser={isUser}
