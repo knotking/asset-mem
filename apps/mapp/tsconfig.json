@@ -1,6 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "types": ["jest"],
     "strict": true,
     "target": "es2020",
     "jsx": "react-native",
