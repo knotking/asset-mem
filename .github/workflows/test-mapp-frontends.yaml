@@ -1,0 +1,41 @@
+name: Test Mapp Frontends
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/mapp/**"
+      - "apps/common/**"
+      - ".github/workflows/test-mapp-frontends.yaml"
+  pull_request:
+    paths:
+      - "apps/mapp/**"
+      - "apps/common/**"
+      - ".github/workflows/test-mapp-frontends.yaml"
+
+jobs:
+  test:
+    name: Jest (common + mapp)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build shared package
+        run: npm run build --workspace=@homeapp/common
+
+      - name: Test @homeapp/common
+        run: npm test --workspace=@homeapp/common
+
+      - name: Test mapp
+        run: npm test --workspace=mapp
