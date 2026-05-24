@@ -90,10 +90,6 @@ Navigate to your GitHub repository: **Settings → Secrets and variables → Act
 
 Navigate to: **Settings → Environments → [staging/prod] → Environment secrets**
 
-| Secret Name | Description | Environment |
-|-------------|-------------|-------------|
-| `PROXY_TOKEN` | API proxy authentication token | staging, prod |
-
 #### Required Variables (Environment Level)
 
 Navigate to: **Settings → Environments → [staging/prod] → Environment variables**
@@ -336,7 +332,7 @@ Set in: [eas.json](./eas.json) under each profile's `env` section
 GitHub **build** and **OTA update** workflows load these from `eas.json` for the selected profile/environment:
 - `APP_ENV`, `APP_SLUG`, `EXPO_PROJECT_ID`
 - `IOS_BUNDLE_ID`, `ANDROID_PACKAGE`
-- `PROXY_BASE_URL`, `WEB_APP_URL` (and `PROXY_TOKEN` from GitHub secrets)
+- `PROXY_BASE_URL`, `WEB_APP_URL`
 
 #### 3. App Configuration (app.config.js)
 Reads from: `process.env.*` with fallback values
@@ -350,7 +346,7 @@ The app config reads environment variables set by either:
 ```
 eas.json profile env (EXPO_PROJECT_ID, PROXY_BASE_URL, …)
   ↓ (workflow loads via node)
-Workflow passes env + PROXY_TOKEN secret to eas build
+Workflow passes env from eas.json to eas build
   ↓
 app.config.js reads process.env.*
   ↓
@@ -407,7 +403,7 @@ Defined in [eas.json](./eas.json)
 - `IOS_BUNDLE_ID=com.assetmem.dev`
 - `ANDROID_PACKAGE=com.assetmem.dev`
 - `EXPO_PROJECT_ID=e2917915-c5a2-4e7f-a3ae-d854e3a2d244`
-- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
+- `PROXY_BASE_URL`, `WEB_APP_URL`
 
 ### Preview
 
@@ -435,7 +431,7 @@ Defined in [eas.json](./eas.json)
 - `IOS_BUNDLE_ID=com.assetmem.staging`
 - `ANDROID_PACKAGE=com.assetmem.staging`
 - `EXPO_PROJECT_ID=66c0400f-d590-4459-88a7-21ed4367854e`
-- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
+- `PROXY_BASE_URL`, `WEB_APP_URL`
 
 ### Production
 
@@ -461,7 +457,7 @@ Defined in [eas.json](./eas.json)
 - `IOS_BUNDLE_ID=com.assetmem.app`
 - `ANDROID_PACKAGE=com.assetmem.app`
 - `EXPO_PROJECT_ID=254ed80d-b24b-444c-829d-0012fa7d0ae0`
-- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL`
+- `PROXY_BASE_URL`, `WEB_APP_URL`
 
 **Staging APK on device (no Play account):** see [STAGING_DEVICE_TEST.md](./STAGING_DEVICE_TEST.md).
 
@@ -722,24 +718,8 @@ npm install
 # Repository-level secrets (Settings → Secrets and variables → Actions):
 # - EXPO_TOKEN
 
-# Environment-level secrets (Settings → Environments → [staging/production] → Environment secrets):
-# - PROXY_TOKEN
-
 # Environment-level variables (Settings → Environments → [staging/production] → Environment variables):
 # - EXPO_ACCOUNT
-```
-
-#### Issue 7: "PROXY_TOKEN not found"
-
-**Symptom**: Workflow fails with "PROXY_TOKEN secret is not set" error
-
-**Solution**:
-```bash
-# PROXY_TOKEN is environment-specific
-# 1. Go to Settings → Environments
-# 2. Select the environment (staging or production)
-# 3. Add PROXY_TOKEN to Environment secrets
-# 4. Repeat for each environment you use
 ```
 
 ### Getting Help

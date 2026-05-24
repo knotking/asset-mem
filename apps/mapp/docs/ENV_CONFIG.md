@@ -6,7 +6,7 @@ This document explains how environment-specific configuration is managed for dif
 
 The app uses a **proxy-based architecture** where API endpoints are built from the Cloud Run **origin** plus a route name. Authentication uses **Firebase ID tokens** (`Authorization: Bearer`), not a secret in the URL path.
 
-- **Local Development**: Uses `.env` with `PROXY_BASE_URL` (and optionally `PROXY_PATH_SECRET` when migrating legacy URLs)
+- **Local Development**: Uses `.env` with `PROXY_BASE_URL`
 - **EAS Builds**: Uses `eas.json` configuration for each build profile
 - **CI/CD Deployment**: Uses GitHub Actions with environment-level secrets
 
@@ -14,9 +14,9 @@ The app uses a **proxy-based architecture** where API endpoints are built from t
 
 ### Proxy URL Construction
 
-Clients call `{PROXY_BASE_URL}/{endpoint}` with a Firebase Bearer token. Do **not** embed `FIREBASE_WEBHOOK_SECRET` in the path unless you are migrating an old base URL — then set `PROXY_PATH_SECRET` (or `PROXY_TOKEN`) so [app.config.js](apps/mapp/app.config.js) strips the suffix.
+Clients call `{PROXY_BASE_URL}/{endpoint}` with a Firebase Bearer token. Use the Cloud Run origin only (no path secret).
 
-**Example (current):**
+**Example:**
 
 ```
 Base: https://homecare-agent-proxy-staging-291418967332.us-central1.run.app
@@ -24,8 +24,6 @@ Endpoint: token-quota-status
 Result: https://homecare-agent-proxy-staging-291418967332.us-central1.run.app/token-quota-status
 Auth: Authorization: Bearer <Firebase ID token>
 ```
-
-**Legacy:** If `PROXY_BASE_URL` is `https://...run.app/my-secret`, set `PROXY_PATH_SECRET=my-secret` so URLs resolve to `https://...run.app/token-quota-status`.
 
 The [app.config.js](apps/mapp/app.config.js) `buildProxyUrl()` helper constructs these URLs automatically.
 
@@ -61,9 +59,6 @@ Edit `.env` with your development proxy configuration:
 ```env
 # Proxy — Cloud Run origin only (see .env.example)
 PROXY_BASE_URL=https://homecare-agent-proxy-staging-291418967332.us-central1.run.app
-
-# Only if PROXY_BASE_URL still ends with /your-secret (legacy migration):
-# PROXY_PATH_SECRET=your-firebase-webhook-secret
 
 # Web App URL
 WEB_APP_URL=https://staging--homegeek-staging.us-central1.hosted.app
@@ -146,12 +141,8 @@ Each profile defines these environment variables:
 | `ANDROID_PACKAGE` | Android package name                     | `com.homegeekai.staging`                   |
 | `EXPO_PROJECT_ID` | Expo project ID                          | `66c0400f-d590-4459-88a7-21ed4367854e`     |
 | `PROXY_BASE_URL`  | Proxy Cloud Run origin (no path secret)  | `https://homecare-agent-proxy-staging-...` |
-| `PROXY_PATH_SECRET` | Optional: strip legacy `/secret` suffix from `PROXY_BASE_URL` | Same value as `FIREBASE_WEBHOOK_SECRET` |
-| `PROXY_TOKEN`     | Alias for `PROXY_PATH_SECRET` (EAS/CI legacy name) | `${PROXY_TOKEN}` in eas.json |
 | `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeek-staging...`     |
 | `APP_ENV`         | App environment (production only)        | `prod`                                     |
-
-**Important**: `PROXY_TOKEN` uses placeholder syntax `${PROXY_TOKEN}` and must be provided at build time via EAS Secrets or CI/CD secrets.
 
 ## CI/CD Deployment with GitHub Actions
 
@@ -199,11 +190,6 @@ Set in **Settings → Secrets and variables → Actions**:
 #### Environment-Level Configuration
 
 Set in **Settings → Environments → [staging/production]**:
-
-**Secrets**:
-| Secret | Description |
-|--------|-------------|
-| `PROXY_TOKEN` | Proxy authentication token for the environment |
 
 **Variables**:
 | Variable | Description | Example |
@@ -272,7 +258,7 @@ If you need to publish manually from your local machine:
 eas login
 
 # Configure environment variables in .env
-# Make sure PROXY_BASE_URL, PROXY_TOKEN, etc. are set
+# Make sure PROXY_BASE_URL, WEB_APP_URL, etc. are set
 
 # Publish to staging
 eas update --channel staging --message "Your update message"
@@ -319,7 +305,6 @@ Bundled into app binary
 
 ```
 eas.json → Extract env vars (deploy-mapp-update.yaml:164-172)
-GitHub Environment Secrets → PROXY_TOKEN
   ↓
 Set as process.env in workflow (deploy-mapp-update.yaml:203-210)
   ↓
@@ -368,47 +353,24 @@ These are built automatically by [app.config.js](apps/mapp/app.config.js):
 
 - ✅ `.env` is in `.gitignore` - never commit it
 - ✅ `.env.example` is safe to commit (contains no secrets)
-- ✅ Use development/staging proxy tokens, never production
+- ✅ Use staging proxy URLs for local dev, not production hosts unless intentional
 
 ### EAS Builds
 
-- ✅ `eas.json` can be committed (uses `${PROXY_TOKEN}` placeholder)
-- ✅ Real tokens provided via EAS Secrets or CI/CD secrets
-- ⚠️ Never hardcode `PROXY_TOKEN` in `eas.json`
+- ✅ `eas.json` can be committed (`PROXY_BASE_URL` and `WEB_APP_URL` per profile)
+- ✅ Proxy auth at runtime uses Firebase ID tokens (signed-in user)
 
 ### GitHub Actions
 
-- ✅ Use GitHub Environment-level secrets for `PROXY_TOKEN`
 - ✅ Use repository secret for `EXPO_TOKEN`
 - ✅ Separate staging and production environments
 - ✅ Use environment protection rules for production
 
 ### Managing Secrets
 
-**For local development:**
+**For local development:** set `PROXY_BASE_URL` and `WEB_APP_URL` in `.env` (never commit).
 
-```bash
-# Add to your .env file (never commit)
-echo "PROXY_TOKEN=your-token-here" >> .env
-```
-
-**For GitHub Actions:**
-
-1. Go to **Settings → Environments**
-2. Create/edit `staging` and `production` environments
-3. Add `PROXY_TOKEN` secret for each environment
-4. Add `EXPO_ACCOUNT` variable for each environment
-
-**For manual EAS builds:**
-
-```bash
-# Option 1: Use .env file
-echo "PROXY_TOKEN=your-token" >> .env
-eas build --profile staging --platform ios
-
-# Option 2: Use EAS Secrets (recommended for shared projects)
-eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type string
-```
+**For GitHub Actions:** configure `EXPO_TOKEN` (repository secret) and `EXPO_ACCOUNT` (environment variable) per environment.
 
 ## Troubleshooting
 
@@ -428,9 +390,8 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 
 **Solution**:
 
-1. Set `PROXY_BASE_URL=https://your-proxy.run.app` (origin only)
-2. If the base URL must keep a secret suffix, set `PROXY_PATH_SECRET` or `PROXY_TOKEN` to that secret so `buildProxyUrl()` strips it
-3. Restart Expo after changing `.env`
+1. Set `PROXY_BASE_URL=https://your-proxy.run.app` (origin only, no `/{secret}` suffix)
+2. Restart Expo after changing `.env`
 
 ### EAS Build: API calls failing with 401/403
 
@@ -451,7 +412,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 1. Check error message for which secret/variable is missing
 2. Go to **Settings → Environments → [environment-name]**
 3. Ensure these exist:
-   - Secret: `PROXY_TOKEN`
+   - Secret: `EXPO_TOKEN` (repository)
    - Variable: `EXPO_ACCOUNT`
 4. Check repository-level secret: `EXPO_TOKEN`
 
@@ -519,7 +480,7 @@ eas secret:create --scope project --name PROXY_TOKEN --value "your-token" --type
 # Local development
 cd apps/mapp
 cp .env.example .env          # First time setup
-# Edit .env with your PROXY_BASE_URL and PROXY_TOKEN
+# Edit .env with your PROXY_BASE_URL and WEB_APP_URL
 npm run dev                   # Start dev server
 
 # EAS builds
@@ -541,11 +502,8 @@ git push origin main          # Auto-deploys to staging
 # Or use GitHub UI: Actions → Deploy Mapp - EAS Update (OTA) → Run workflow
 
 # Managing secrets
-# For GitHub: Use UI (Settings → Environments)
-# For EAS: Use CLI
-eas secret:create --scope project --name PROXY_TOKEN --value "token"
-eas secret:list
-eas secret:delete --name PROXY_TOKEN
+# For GitHub: Settings → Secrets and variables → Actions (EXPO_TOKEN)
+# For EAS: eas secret:list
 ```
 
 ## Google Sign-In (native OAuth client IDs)

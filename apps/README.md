@@ -62,7 +62,7 @@ apps/
      - `apps/common/.env` *(only needed for Firebase emulator helpers or storybook previews)*
    - At minimum you will need:
      - Firebase project keys (`NEXT_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_FIREBASE_*`)
-     - Proxy base URL and token for the AI agent (`PROXY_BASE_URL`, `PROXY_TOKEN`)
+     - Proxy base URL for the AI agent (`PROXY_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL`)
      - Gemini / Vertex configuration where applicable (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`)
 
 3. **Start supporting services**
@@ -127,8 +127,7 @@ npm run web     # Expo dev server + React DOM preview
 
 ### 5.2 Environment notes
 
-- Expo reads config from `app.config.js`, which merges `.env` variables. Confirm `PROXY_BASE_URL` and
-  `PROXY_TOKEN` resolve to a reachable backend; otherwise triage and session creation will fail.
+- Expo reads config from `app.config.js`, which merges `.env` variables. Confirm `PROXY_BASE_URL` resolves to a reachable backend; otherwise triage and session creation will fail.
 - To override the default Firebase project for local testing, set `EXPO_PUBLIC_FIREBASE_PROJECT_ID` and friends in
   `.env`.
 - The mobile app assumes the shared `@homeapp/common` package is built in place. Reinstall or re-run

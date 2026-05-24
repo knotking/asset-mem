@@ -68,7 +68,7 @@ npx tsc --noEmit     # type check (no separate lint script)
 | `extra.*` key | env source | endpoint |
 |---|---|---|
 | `appEnv` | `APP_ENV` | selects Firebase config (`dev`/`staging`/`prod`) |
-| `agentSessionUrl` | `PROXY_BASE_URL` + `PROXY_TOKEN` | `/agent-session` |
+| `agentSessionUrl` | `PROXY_BASE_URL` | `/agent-session` |
 | `agentSseUrl` | same | `/firebase-agent-stream` |
 | `ragFileUploadUrl` | same | `/rag-file-upload` |
 | `documentAnalysisUrl` | same | `/extract-doc-info` |
@@ -77,9 +77,9 @@ npx tsc --noEmit     # type check (no separate lint script)
 | `tokenQuotaStatusUrl` | same | `/token-quota-status` |
 | `webAppUrl` | `WEB_APP_URL` | for share links |
 
-`buildProxyUrl` in `app.config.js` already inserts `PROXY_TOKEN` (= `FIREBASE_WEBHOOK_SECRET`) as the path prefix. **Don't add the secret to the URL again from `lib/api.ts`.**
+`buildProxyUrl` in `app.config.js` appends the route to `PROXY_BASE_URL` (origin only). Proxy auth uses Firebase Bearer tokens from `lib/proxy-auth.ts` — do not add a path secret in `lib/api.ts`.
 
-For local dev, create `apps/mapp/.env` with `PROXY_BASE_URL`, `PROXY_TOKEN`, `APP_ENV`, optionally `WEB_APP_URL`. For EAS builds, the same vars come from `eas.json` build profiles.
+For local dev, create `apps/mapp/.env` with `PROXY_BASE_URL`, `APP_ENV`, optionally `WEB_APP_URL`. For EAS builds, `PROXY_BASE_URL` and `WEB_APP_URL` come from `eas.json` build profiles.
 
 ## Working with both apps simultaneously
 
@@ -92,6 +92,6 @@ Typical chain when changing shared code:
 ## Common gotchas
 - **`Cannot find module '@homeapp/common/...'`** — you forgot to build common, or the new export isn't in `apps/common/package.json` `exports`. See the **add-shared-context** skill.
 - **Webapp listening on 3000** — that's not this repo. It's 9002.
-- **Mapp can't reach the proxy** — `Constants.expoConfig.extra.agentSessionUrl` is `undefined`. Check `PROXY_BASE_URL` and `PROXY_TOKEN` are set in `apps/mapp/.env` (or the EAS profile).
+- **Mapp can't reach the proxy** — `Constants.expoConfig.extra.agentSessionUrl` is `undefined`. Check `PROXY_BASE_URL` is set in `apps/mapp/.env` (or the EAS profile).
 - **Stale dist after a rebase** — `cd apps/common && rm -rf dist && npm run build`.
 - **Firebase config wrong** — `Constants.expoConfig.extra.appEnv` is selecting the wrong env. Set `APP_ENV` in `.env`.

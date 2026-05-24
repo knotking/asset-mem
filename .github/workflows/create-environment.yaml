@@ -1660,7 +1660,6 @@ jobs:
           echo ""
           echo "ℹ️  The following secrets need to be configured manually:"
           echo "   - FIREBASE_WEBHOOK_SECRET"
-          echo "   - PROXY_TOKEN"
           echo "   - SERP_API_KEY"
           echo "   - TELEGRAM_BOT_TOKEN"
           echo "   - TELEGRAM_WEBHOOK_SECRET"
@@ -1716,7 +1715,6 @@ jobs:
           The following secrets need to be configured manually in Settings → Environments → ${{ inputs.environment_name }} → Secrets:
 
           - \`FIREBASE_WEBHOOK_SECRET\`
-          - \`PROXY_TOKEN\`
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`
@@ -1810,7 +1808,6 @@ jobs:
 
           Configure these in Settings → Environments → \`${{ inputs.environment_name }}\` → Secrets:
           - \`FIREBASE_WEBHOOK_SECRET\`
-          - \`PROXY_TOKEN\`
           - \`SERP_API_KEY\`
           - \`TELEGRAM_BOT_TOKEN\`
           - \`TELEGRAM_WEBHOOK_SECRET\`

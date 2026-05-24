@@ -747,7 +747,6 @@ eas update --channel prod --message "Rollback to v1.2.2"
 ### Required GitHub Secrets (per environment)
 
 - `EXPO_TOKEN`: Expo authentication token
-- `PROXY_TOKEN`: Proxy API bearer token (substituted in `eas.json` as `${PROXY_TOKEN}`)
 
 ### Required GitHub Variables (per environment)
 

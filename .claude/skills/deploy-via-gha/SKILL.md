@@ -55,7 +55,7 @@ If a change touches `gcp/common/`, **every consumer** (proxy + all three workers
 
 Per-environment values come from GitHub Environments (created by `create-environment.yaml` or by hand per `.github/GITHUB_VARIABLES_SETUP.md`). Pulled into workflows via `${{ vars.* }}` and `${{ secrets.* }}`. Do **not** hardcode env-specific values in workflow files.
 
-The two webhook secrets — `FIREBASE_WEBHOOK_SECRET` and `TELEGRAM_WEBHOOK_SECRET` — must be the same value baked into the proxy and into the clients (mapp `PROXY_TOKEN`, webapp App Hosting yaml). If they drift, the proxy returns 404 because the URL prefix won't match the mounted routers.
+`FIREBASE_WEBHOOK_SECRET` and `TELEGRAM_WEBHOOK_SECRET` are proxy-only (legacy path prefix and Telegram webhooks). Clients call `{PROXY_BASE_URL}/{endpoint}` with Firebase Bearer tokens — they do not embed the webhook secret in URLs.
 
 ## When NOT to use the workflows
 

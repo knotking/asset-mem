@@ -7,7 +7,7 @@ No Google Play Developer account required. Android package: **`com.assetmem.stag
 - [Expo account](https://expo.dev) and `eas login`
 - **`APP_VERSION` in [eas.json](../eas.json) staging** must match any `APP_VERSION` in local `apps/mapp/.env` (both use `0.0.1`). A mismatch breaks the **Configure expo-updates** step (`runtimeVersion` policy is `appVersion`).
 - `EXPO_TOKEN` for CI, or local login for `eas build`
-- `PROXY_TOKEN` for staging (GitHub environment secret or local `apps/mapp/.env`)
+- `PROXY_BASE_URL` for staging (in `eas.json` or local `apps/mapp/.env`)
 - **Firebase (for Google Sign-In):** register Android app `com.assetmem.staging` in project **homegeek-staging**, add EAS keystore SHA-1, set `androidClientId` in [firebase-config.ts](../../common/src/firebase/firebase-config.ts) — see [GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md). Email/password works without this step.
 
 ## Build
