@@ -16,6 +16,7 @@ from services.token_usage_service import (
     accumulate_usage_from_stream_event,
     persist_user_token_usage,
 )
+from services.stream_persist_throttle import StreamPersistThrottle
 from common.observability.logging_context import (
     get_correlation_id,
     pubsub_payload_with_correlation,
@@ -1109,6 +1110,8 @@ async def stream_agent_answers(
                 }
             )
 
+    persist_throttle = StreamPersistThrottle(interval_ms=200)
+
     try:
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
@@ -1156,7 +1159,8 @@ async def stream_agent_answers(
                 )
 
             if event_text or step_updates:
-                persist_chat_message_state()
+                if persist_throttle.should_persist():
+                    persist_chat_message_state()
             accumulate_usage_from_stream_event(
                 usage_running, event, event_index=stream_event_count
             )

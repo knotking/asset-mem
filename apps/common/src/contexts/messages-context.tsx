@@ -1,9 +1,18 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import type { Message } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
 import { createLogger } from '../lib/logger';
+import { mergeMessagesFromSnapshot } from '../lib/merge-messages-snapshot';
 
 const messagesLog = createLogger('messages');
 
@@ -34,13 +43,18 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [messagesLimit, setMessagesLimit] = useState(50); // Start with 50 messages
+  const prevMessagesRef = useRef<Message[]>([]);
 
   // Function to update a message locally (in memory only, not in Firestore)
-  const updateMessageLocally = (messageId: string, updates: Partial<Message>) => {
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
-    );
-  };
+  const updateMessageLocally = useCallback((messageId: string, updates: Partial<Message>) => {
+    setMessages((prevMessages) => {
+      const next = prevMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, ...updates } : msg
+      );
+      prevMessagesRef.current = next;
+      return next;
+    });
+  }, []);
 
   // Function to load earlier messages (pagination)
   const loadEarlierMessages = useCallback(async () => {
@@ -66,6 +80,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
 
   useEffect(() => {
     if (!user || !sessionId) {
+      prevMessagesRef.current = [];
       setMessages([]);
       setIsLoading(false);
       setError(null);
@@ -73,11 +88,13 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
       return;
     }
 
+    prevMessagesRef.current = [];
+    setMessages([]);
     setIsLoading(true);
     setError(null);
 
-    const messagesRef = collection(db, 'users', user.uid, 'chats', sessionId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(messagesLimit));
+    const messagesCollection = collection(db, 'users', user.uid, 'chats', sessionId, 'messages');
+    const q = query(messagesCollection, orderBy('createdAt', 'desc'), limit(messagesLimit));
 
     const unsubscribe = onSnapshot(
       q,
@@ -86,7 +103,10 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
           (doc) => ({ id: doc.id, ...doc.data() } as Message)
         );
         // Reverse to show oldest first (GiftedChat will reverse again to show newest at bottom)
-        setMessages(loadedMessages.reverse());
+        const ordered = loadedMessages.reverse();
+        const merged = mergeMessagesFromSnapshot(prevMessagesRef.current, ordered);
+        prevMessagesRef.current = merged;
+        setMessages(merged);
         setIsLoading(false);
 
         // Check if there are more messages
@@ -105,21 +125,28 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
     return () => unsubscribe();
   }, [user, sessionId, db, onError, messagesLimit]);
 
-  return (
-    <MessagesContext.Provider
-      value={{
-        messages,
-        isLoading,
-        isLoadingEarlier,
-        hasMoreMessages,
-        error,
-        updateMessageLocally,
-        loadEarlierMessages
-      }}
-    >
-      {children}
-    </MessagesContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      messages,
+      isLoading,
+      isLoadingEarlier,
+      hasMoreMessages,
+      error,
+      updateMessageLocally,
+      loadEarlierMessages,
+    }),
+    [
+      messages,
+      isLoading,
+      isLoadingEarlier,
+      hasMoreMessages,
+      error,
+      updateMessageLocally,
+      loadEarlierMessages,
+    ]
   );
+
+  return <MessagesContext.Provider value={contextValue}>{children}</MessagesContext.Provider>;
 };
 
 export const useMessages = () => {

@@ -11,7 +11,10 @@ import {
 } from 'react-native-gifted-chat';
 import { MessageSquare, ChevronDown } from 'lucide-react-native';
 import { useMessages } from '@homeapp/common/contexts/messages-context';
-import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
+import {
+  transformMessagesToGiftedChatCached,
+  type GiftedChatMessageCache,
+} from '@/lib/gifted-chat-utils';
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
@@ -94,10 +97,21 @@ function PropertyChatTab({
     return () => unsubscribe();
   }, []);
 
-  const giftedMessages = React.useMemo(
-    () => transformMessagesToGiftedChat(messages, userId),
-    [messages, userId]
-  );
+  const giftedChatCacheRef = React.useRef<GiftedChatMessageCache>(new Map());
+
+  React.useEffect(() => {
+    giftedChatCacheRef.current = new Map();
+  }, [sessionId]);
+
+  const giftedMessages = React.useMemo(() => {
+    const { giftedMessages: next, cache } = transformMessagesToGiftedChatCached(
+      giftedChatCacheRef.current,
+      messages,
+      userId
+    );
+    giftedChatCacheRef.current = cache;
+    return next;
+  }, [messages, userId]);
 
   const branchProgress = React.useMemo(
     () => getInFlightCheckpointProgressFromMessages(messages),
