@@ -23,7 +23,9 @@ function Accordion({
       <AccordionPrimitive.Root
         {...(props as AccordionPrimitive.RootProps)}
         asChild={Platform.OS !== 'web'}>
-        <Animated.View layout={LinearTransition.duration(200)}>{children}</Animated.View>
+        <Animated.View layout={LinearTransition.duration(200)} className="w-full">
+          {children}
+        </Animated.View>
       </AccordionPrimitive.Root>
     </LayoutAnimationConfig>
   );
@@ -46,7 +48,7 @@ function AccordionItem({
       asChild
       {...props}>
       <Animated.View
-        className="native:overflow-hidden"
+        className="native:overflow-hidden w-full"
         layout={Platform.select({ native: LinearTransition.duration(200) })}>
         {children}
       </Animated.View>
@@ -86,7 +88,7 @@ function AccordionTrigger({
         <AccordionPrimitive.Trigger {...props} asChild>
           <Trigger
             className={cn(
-              'flex-row items-start justify-between gap-4 rounded-md py-4 disabled:opacity-50',
+              'w-full flex-row items-start justify-between gap-4 rounded-md py-4 disabled:opacity-50',
               Platform.select({
                 web: 'focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 outline-none transition-all hover:underline focus-visible:ring-[3px] disabled:pointer-events-none [&[data-state=open]>svg]:rotate-180',
               }),
