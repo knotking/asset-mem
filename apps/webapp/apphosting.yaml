@@ -8,11 +8,6 @@ env:
   # Base API URL - all endpoint URLs are constructed from this in code
   - variable: NEXT_PUBLIC_API_BASE_URL
     value: https://homecare-agent-proxy-321433914812.us-central1.run.app
-  - variable: NEXT_PUBLIC_PROXY_PATH_SECRET
-    value: 92be3f5be13328fe265af604b0bde2061e18662203a83b5b5692119215be0376
-    availability:
-      - BUILD
-      - RUNTIME
   # Add this for monorepo support
   - variable: GOOGLE_BUILDABLE
     value: apps/webapp

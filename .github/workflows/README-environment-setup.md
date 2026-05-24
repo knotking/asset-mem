@@ -132,8 +132,7 @@ The workflow automatically creates these environment variables in your GitHub en
 
 After the workflow completes, configure these secrets manually in **Settings → Environments → {environment_name} → Secrets**:
 
-- `FIREBASE_WEBHOOK_SECRET`: Secret for Firebase webhook authentication
-- `PROXY_TOKEN`: Authentication token for proxy service
+- `FIREBASE_WEBHOOK_SECRET`: Secret for Firebase webhook authentication (proxy only)
 - `SERP_API_KEY`: API key for SERP (search) services
 - `TELEGRAM_BOT_TOKEN`: Telegram bot authentication token
 - `TELEGRAM_WEBHOOK_SECRET`: Secret for Telegram webhook verification

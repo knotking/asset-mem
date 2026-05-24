@@ -4,17 +4,9 @@ if (process.env.EAS_BUILD !== 'true') {
 }
 
 // Proxy URLs: Cloud Run origin + route; auth is Firebase Bearer (not path secret).
-/** Legacy: strip /{secret} from PROXY_BASE_URL when migrating from path-token URLs. */
-function proxyPathSecret() {
-  return (process.env.PROXY_PATH_SECRET || process.env.PROXY_TOKEN || '').trim();
-}
-
 const buildProxyUrl = (baseUrl, endpoint) => {
   if (!baseUrl) return undefined;
-  const clean = baseUrl.replace(/\/$/, '');
-  const secret = proxyPathSecret();
-  const origin =
-    secret && clean.endsWith(`/${secret}`) ? clean.slice(0, -(secret.length + 1)) : clean;
+  const origin = baseUrl.replace(/\/$/, '');
   return `${origin}/${endpoint}`;
 };
 

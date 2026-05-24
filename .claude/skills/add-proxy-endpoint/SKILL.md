@@ -75,7 +75,7 @@ Quota errors should bubble out as HTTP responses with `code: TOKEN_QUOTA_EXCEEDE
 
 ### 6. Surface the URL to clients
 
-**Mobile (`apps/mapp/app.config.js` `extra:`)** — add a new URL key built via `buildProxyUrl(proxyBaseUrl, proxyToken, 'do-foo')`. Then read it in `apps/mapp/lib/api.ts` via `Constants.expoConfig?.extra?.doFooUrl`. Don't hardcode the secret prefix on the client side — `buildProxyUrl` already inserts `proxyToken`.
+**Mobile (`apps/mapp/app.config.js` `extra:`)** — add a new URL key built via `buildProxyUrl(proxyBaseUrl, 'do-foo')`. Then read it in `apps/mapp/lib/api.ts` via `Constants.expoConfig?.extra?.doFooUrl`. Use `proxyFetchWithAuth` with Firebase Bearer tokens — no path secret in the URL.
 
 **Web (`apps/webapp`)** — typically calls go through `apps/webapp/src/lib/api-checkpoint.ts` (or a sibling file). Add a function there that builds the URL from the same env var family the rest of the file uses (the App Hosting yamls inject these).
 

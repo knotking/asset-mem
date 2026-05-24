@@ -95,7 +95,6 @@ jobs:
           fi
 
           echo "All required secrets are present"
-          echo "Note: PROXY_TOKEN will be validated at the environment level in the update job"
 
   update:
     name: Publish OTA Update - ${{ needs.validate.outputs.channel }}
@@ -114,10 +113,6 @@ jobs:
           # Check environment secrets
           if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
             MISSING_ITEMS+=("EXPO_TOKEN (secret)")
-          fi
-
-          if [ -z "${{ secrets.PROXY_TOKEN }}" ]; then
-            MISSING_ITEMS+=("PROXY_TOKEN (secret)")
           fi
 
           # Check environment variables
@@ -209,7 +204,6 @@ jobs:
           APP_ENV: ${{ env.APP_ENV }}
           APP_SLUG: ${{ env.APP_SLUG }}
           PROXY_BASE_URL: ${{ env.PROXY_BASE_URL }}
-          PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
           WEB_APP_URL: ${{ env.WEB_APP_URL }}
           APP_VERSION: ${{ env.APP_VERSION }}
           EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}

@@ -17,7 +17,6 @@
         "ANDROID_PACKAGE": "com.assetmem.dev",
         "EXPO_PROJECT_ID": "e2917915-c5a2-4e7f-a3ae-d854e3a2d244",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-291418967332.us-central1.run.app",
-        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
       },
       "ios": {
@@ -41,7 +40,6 @@
         "ANDROID_PACKAGE": "com.assetmem.staging",
         "EXPO_PROJECT_ID": "66c0400f-d590-4459-88a7-21ed4367854e",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-291418967332.us-central1.run.app",
-        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://staging--homegeek-staging.us-central1.hosted.app"
       },
       "ios": {
@@ -64,7 +62,6 @@
         "ANDROID_PACKAGE": "com.assetmem.app",
         "EXPO_PROJECT_ID": "254ed80d-b24b-444c-829d-0012fa7d0ae0",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-686746113874.us-central1.run.app",
-        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://asset-mem.com"
       },
       "ios": {
@@ -86,7 +83,6 @@
         "ANDROID_PACKAGE": "com.assetmem.app",
         "EXPO_PROJECT_ID": "254ed80d-b24b-444c-829d-0012fa7d0ae0",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-686746113874.us-central1.run.app",
-        "PROXY_TOKEN": "${PROXY_TOKEN}",
         "WEB_APP_URL": "https://asset-mem.com"
       },
       "ios": {

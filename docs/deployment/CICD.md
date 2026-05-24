@@ -106,8 +106,7 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 7. Generate build summary
 
 **Required Secrets** (per GitHub environment: `staging`, `prod`):
-- `EXPO_TOKEN`
-- `PROXY_TOKEN`
+- `EXPO_TOKEN` (repository secret)
 
 **Required Variables** (per environment):
 - `EXPO_ACCOUNT`
