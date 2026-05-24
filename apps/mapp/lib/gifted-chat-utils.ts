@@ -81,7 +81,41 @@ export function transformMessagesToGiftedChat(
   messages: Message[],
   currentUserId: string
 ): IMessage[] {
-  return messages
-    .map((msg) => transformToGiftedChat(msg, currentUserId))
-    .reverse(); // Reverse to show newest first
+  return transformMessagesToGiftedChatCached(new Map(), messages, currentUserId).giftedMessages;
+}
+
+export type GiftedChatMessageCacheEntry = {
+  source: Message;
+  imessage: IMessage;
+};
+
+export type GiftedChatMessageCache = Map<string, GiftedChatMessageCacheEntry>;
+
+/**
+ * Incremental GiftedChat transform. Reuses IMessage instances when the Firestore
+ * message object reference is unchanged (see mergeMessagesFromSnapshot).
+ */
+export function transformMessagesToGiftedChatCached(
+  cache: GiftedChatMessageCache,
+  messages: Message[],
+  currentUserId: string
+): { giftedMessages: IMessage[]; cache: GiftedChatMessageCache } {
+  const nextCache: GiftedChatMessageCache = new Map();
+  const giftedMessages: IMessage[] = new Array(messages.length);
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[messages.length - 1 - i];
+    const cached = cache.get(msg.id);
+    if (cached && cached.source === msg) {
+      nextCache.set(msg.id, cached);
+      giftedMessages[i] = cached.imessage;
+    } else {
+      const imessage = transformToGiftedChat(msg, currentUserId);
+      const entry: GiftedChatMessageCacheEntry = { source: msg, imessage };
+      nextCache.set(msg.id, entry);
+      giftedMessages[i] = imessage;
+    }
+  }
+
+  return { giftedMessages, cache: nextCache };
 }
