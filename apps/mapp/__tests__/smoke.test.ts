@@ -12,6 +12,7 @@ describe('mapp test harness', () => {
     expect(gifted._id).toBe('msg-user-1');
     expect(gifted.user._id).toBe(userId);
     expect(gifted.customData?.originalContent).toBe(messageFixtures.userTextMessage.content);
+    expect(gifted.customData?.firestoreMessage).toBe(messageFixtures.userTextMessage);
 
     const batch = transformMessagesToGiftedChat(
       [messageFixtures.userTextMessage, messageFixtures.partialAssistantMessage],

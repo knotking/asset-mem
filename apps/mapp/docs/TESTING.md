@@ -21,7 +21,9 @@ npm run test:watch
 | [`jest.config.js`](../jest.config.js) | `jest-expo` preset, `@/` alias, transform ignore patterns |
 | [`jest.setup.js`](../jest.setup.js) | Reanimated mock, NetInfo default |
 | [`__mocks__/`](../__mocks__/) | GiftedChat, YouTube, expo-image/video, markdown, clipboard, haptics |
-| [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures |
+| [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures (incl. `garageDoorDualFormatMessage`) |
+| [`lib/gifted-chat-bubble-equal.ts`](../lib/gifted-chat-bubble-equal.ts) | Bubble memo comparator (`areGiftedChatBubblePropsEqual`) |
+| [`lib/property-chat-list-props.ts`](../lib/property-chat-list-props.ts) | Android GiftedChat `listViewProps` tuning |
 | [`__tests__/test-utils.tsx`](../__tests__/test-utils.tsx) | `renderWithProviders()` helper |
 
 ## Adding tests

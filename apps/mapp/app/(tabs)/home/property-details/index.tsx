@@ -40,6 +40,7 @@ import type {
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
 import { streamAgentResponse } from '@/lib/api';
+import type { IMessage } from 'react-native-gifted-chat';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -466,6 +467,16 @@ export default function PropertyDetailsScreen() {
     ]
   );
 
+  const handleGiftedChatSend = React.useCallback(
+    (giftedMessages: IMessage[]) => {
+      if (giftedMessages.length === 0) return;
+      const text = giftedMessages[0].text;
+      setMessage(text);
+      void handleSendMessage(text);
+    },
+    [handleSendMessage]
+  );
+
   const toggleDocumentSelection = (document: Document) => {
     setHasManuallyInteracted(true);
     setSelectedDocuments((prev) => {
@@ -552,6 +563,7 @@ export default function PropertyDetailsScreen() {
         errorMessage={errorMessage}
         setErrorMessage={setErrorMessage}
         handleSendMessage={handleSendMessage}
+        handleGiftedChatSend={handleGiftedChatSend}
         handleVideoRecorded={handleVideoRecorded}
         removeFileAttachment={removeFileAttachment}
         toggleOptionalAgent={toggleOptionalAgent}
@@ -617,6 +629,7 @@ function PropertyDetailsScreenContent({
   errorMessage,
   setErrorMessage,
   handleSendMessage,
+  handleGiftedChatSend,
   handleVideoRecorded,
   removeFileAttachment,
   toggleOptionalAgent,
@@ -981,13 +994,7 @@ function PropertyDetailsScreenContent({
         searchLocation={searchLocation}
         onSearchLocationChange={setSearchLocation}
                         propertyAddress={property?.address}
-                        onSend={(messages) => {
-                          if (messages.length > 0) {
-                            const text = messages[0].text;
-                            setMessage(text);
-                            handleSendMessage(text);
-                          }
-                        }}
+                        onSend={handleGiftedChatSend}
                       />
                     </MessagesProvider>
                   ) : activeTab === 'timeline' ? (

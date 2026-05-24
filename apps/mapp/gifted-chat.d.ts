@@ -1,5 +1,5 @@
 import 'react-native-gifted-chat';
-import type { AgentStep, PrimaryAgent } from '@homeapp/common/types';
+import type { AgentStep, Message, PrimaryAgent } from '@homeapp/common/types';
 
 declare module 'react-native-gifted-chat' {
   export interface IMessage {
@@ -16,6 +16,8 @@ declare module 'react-native-gifted-chat' {
       agentSteps?: AgentStep[];
       originalContent?: string;
       primaryAgent?: PrimaryAgent;
+      /** Original Firestore message — avoids rebuilding Message in GiftedChatBubble. */
+      firestoreMessage?: Message;
     };
   }
 }

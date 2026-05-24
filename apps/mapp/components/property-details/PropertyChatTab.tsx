@@ -1,9 +1,14 @@
 import * as React from 'react';
-import { View, Platform, useColorScheme } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import NetInfo from '@react-native-community/netinfo';
-import { GiftedChat, IMessage } from 'react-native-gifted-chat';
+import {
+  GiftedChat,
+  IMessage,
+  type BubbleProps,
+  type InputToolbarProps,
+} from 'react-native-gifted-chat';
 import { MessageSquare, ChevronDown } from 'lucide-react-native';
 import { useMessages } from '@homeapp/common/contexts/messages-context';
 import { transformMessagesToGiftedChat } from '@/lib/gifted-chat-utils';
@@ -11,11 +16,11 @@ import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
 import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
+import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import type {
   FileAttachment,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
-  LocationData,
   PrimaryAgent,
 } from '@homeapp/common/types';
 
@@ -47,7 +52,7 @@ interface PropertyChatTabProps {
   propertyAddress?: string;
 }
 
-export function PropertyChatTab({
+function PropertyChatTab({
   sessionId,
   userId,
   fileAttachment,
@@ -74,17 +79,11 @@ export function PropertyChatTab({
 }: PropertyChatTabProps) {
   const {
     messages,
-    isLoading,
     isLoadingEarlier,
     hasMoreMessages,
     loadEarlierMessages,
   } = useMessages();
 
-  // Theme
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
-  // Network state
   const [isOnline, setIsOnline] = React.useState(true);
 
   React.useEffect(() => {
@@ -95,7 +94,6 @@ export function PropertyChatTab({
     return () => unsubscribe();
   }, []);
 
-  // Transform messages to GiftedChat format
   const giftedMessages = React.useMemo(
     () => transformMessagesToGiftedChat(messages, userId),
     [messages, userId]
@@ -105,6 +103,114 @@ export function PropertyChatTab({
     () => getInFlightCheckpointProgressFromMessages(messages),
     [messages]
   );
+
+  const giftedChatUser = React.useMemo(() => ({ _id: userId }), [userId]);
+
+  const sessionIdRef = React.useRef(sessionId);
+  sessionIdRef.current = sessionId;
+
+  const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
+
+  const renderBubble = React.useCallback((props: BubbleProps<IMessage>) => {
+    return <GiftedChatBubble {...props} sessionId={sessionIdRef.current ?? undefined} />;
+  }, []);
+
+  const renderChatEmpty = React.useCallback(
+    () => (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          paddingBottom: '50%',
+          transform:
+            Platform.OS === 'ios'
+              ? [{ rotate: '180deg' }, { scaleX: -1 }]
+              : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
+        }}>
+        <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+          </View>
+          <Text className="mb-2 text-center text-xl font-semibold text-foreground">
+            Start a Conversation
+          </Text>
+          <Text className="text-center text-sm text-muted-foreground">
+            Ask questions about this property's{'\n'}documents, services, and history
+          </Text>
+        </View>
+      </View>
+    ),
+    []
+  );
+
+  const renderFooter = React.useCallback(
+    () =>
+      branchProgress ? <CheckpointAnalysisProgressFooter progress={branchProgress} /> : null,
+    [branchProgress]
+  );
+
+  const renderInputToolbar = React.useCallback(
+    (props: InputToolbarProps<IMessage>) => (
+      <GiftedChatInputToolbar
+        {...props}
+        fileAttachment={fileAttachment}
+        onAttachmentPress={onAttachmentPress}
+        onRemoveAttachment={onRemoveAttachment}
+        primaryAgent={primaryAgent}
+        onPrimaryAgentChange={onPrimaryAgentChange}
+        selectedOptionalAgents={selectedOptionalAgents}
+        onToggleOptionalAgent={onToggleOptionalAgent}
+        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+        onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
+        isSending={isSending}
+        onStop={onStop}
+        attachmentOptionsVisible={attachmentOptionsVisible}
+        onCloseAttachmentOptions={onCloseAttachmentOptions}
+        onTakePhoto={onTakePhoto}
+        onRecordVideo={onRecordVideo}
+        onSelectFromLibrary={onSelectFromLibrary}
+        onSelectFiles={onSelectFiles}
+        searchLocation={searchLocation}
+        onSearchLocationChange={onSearchLocationChange}
+        propertyAddress={propertyAddress}
+      />
+    ),
+    [
+      fileAttachment,
+      onAttachmentPress,
+      onRemoveAttachment,
+      primaryAgent,
+      onPrimaryAgentChange,
+      selectedOptionalAgents,
+      onToggleOptionalAgent,
+      selectedCheckpointOptionalAgents,
+      onToggleCheckpointOptionalAgent,
+      isSending,
+      onStop,
+      attachmentOptionsVisible,
+      onCloseAttachmentOptions,
+      onTakePhoto,
+      onRecordVideo,
+      onSelectFromLibrary,
+      onSelectFiles,
+      searchLocation,
+      onSearchLocationChange,
+      propertyAddress,
+    ]
+  );
+
+  const scrollToBottomComponent = React.useCallback(
+    () => (
+      <View className="h-11 w-11 items-center justify-center rounded-full bg-primary shadow-lg">
+        <Icon as={ChevronDown} size={22} className="text-primary-foreground" />
+      </View>
+    ),
+    []
+  );
+
+  const renderActions = React.useCallback(() => null, []);
+  const renderAvatar = React.useCallback(() => null, []);
 
   if (!sessionId) {
     return (
@@ -118,7 +224,6 @@ export function PropertyChatTab({
 
   return (
     <>
-      {/* Offline Banner */}
       {!isOnline && (
         <View className="bg-warning px-4 py-2">
           <Text className="text-center text-sm font-medium text-warning-foreground">
@@ -130,70 +235,12 @@ export function PropertyChatTab({
       <GiftedChat
         messages={giftedMessages}
         onSend={onSend}
-        user={{
-          _id: userId,
-        }}
-        renderBubble={(props) => <GiftedChatBubble {...props} sessionId={sessionId ?? undefined} />}
-        renderChatEmpty={() => (
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              paddingBottom: '50%',
-              transform:
-                Platform.OS === 'ios'
-                  ? [{ rotate: '180deg' }, { scaleX: -1 }]
-                  : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
-            }}>
-            <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
-              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
-                <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
-              </View>
-              <Text className="mb-2 text-center text-xl font-semibold text-foreground">
-                Start a Conversation
-              </Text>
-              <Text className="text-center text-sm text-muted-foreground">
-                Ask questions about this property's{'\n'}documents, services, and history
-              </Text>
-            </View>
-          </View>
-        )}
-        renderFooter={() =>
-          branchProgress ? (
-            <CheckpointAnalysisProgressFooter progress={branchProgress} />
-          ) : null
-        }
-        renderInputToolbar={(props) => (
-          <GiftedChatInputToolbar
-            {...props}
-            fileAttachment={fileAttachment}
-            onAttachmentPress={onAttachmentPress}
-            onRemoveAttachment={onRemoveAttachment}
-            primaryAgent={primaryAgent}
-            onPrimaryAgentChange={onPrimaryAgentChange}
-            selectedOptionalAgents={selectedOptionalAgents}
-            onToggleOptionalAgent={onToggleOptionalAgent}
-            selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-            onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
-            isSending={isSending}
-            onStop={onStop}
-            attachmentOptionsVisible={attachmentOptionsVisible}
-            onCloseAttachmentOptions={onCloseAttachmentOptions}
-            onTakePhoto={onTakePhoto}
-            onRecordVideo={onRecordVideo}
-            onSelectFromLibrary={onSelectFromLibrary}
-            onSelectFiles={onSelectFiles}
-            searchLocation={searchLocation}
-            onSearchLocationChange={onSearchLocationChange}
-            propertyAddress={propertyAddress}
-          />
-        )}
-        scrollToBottomComponent={() => (
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-primary shadow-lg">
-            <Icon as={ChevronDown} size={22} className="text-primary-foreground" />
-          </View>
-        )}
+        user={giftedChatUser}
+        renderBubble={renderBubble}
+        renderChatEmpty={renderChatEmpty}
+        renderFooter={renderFooter}
+        renderInputToolbar={renderInputToolbar}
+        scrollToBottomComponent={scrollToBottomComponent}
         scrollToBottomStyle={{
           bottom: 10,
           right: 16,
@@ -201,8 +248,9 @@ export function PropertyChatTab({
         }}
         scrollToBottomOffset={200}
         isScrollToBottomEnabled={true}
-        renderActions={() => null}
-        renderAvatar={null}
+        renderActions={renderActions}
+        renderAvatar={renderAvatar}
+        listViewProps={listViewProps}
         isLoadingEarlier={isLoadingEarlier}
         loadEarlier={hasMoreMessages}
         onLoadEarlier={loadEarlierMessages}
@@ -222,3 +270,6 @@ export function PropertyChatTab({
     </>
   );
 }
+
+const MemoizedPropertyChatTab = React.memo(PropertyChatTab);
+export { MemoizedPropertyChatTab as PropertyChatTab };
