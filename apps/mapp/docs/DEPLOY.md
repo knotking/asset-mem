@@ -100,8 +100,9 @@ Navigate to: **Settings → Environments → [staging/prod] → Environment vari
 
 | Variable Name | Value | Description |
 |---------------|-------|-------------|
-| `EXPO_PROJECT_ID` | Dev: `e2917915-c5a2-4e7f-a3ae-d854e3a2d244` · Staging: `66c0400f-d590-4459-88a7-21ed4367854e` · Prod: `254ed80d-b24b-444c-829d-0012fa7d0ae0` | Per-environment; must match `eas.json` for that profile |
-| `EXPO_ACCOUNT` | Your Expo username | From `eas whoami` |
+| `EXPO_ACCOUNT` | Your Expo username | From `eas whoami`; used in workflow summary links |
+
+`EXPO_PROJECT_ID` and other build env values come from [eas.json](./eas.json) per profile (same as the OTA update workflow).
 
 ### Step 3: Configure App Store Credentials (Production Only)
 
@@ -327,19 +328,15 @@ The deployment system uses a layered approach for environment configuration:
 #### 1. GitHub Environment Variables (Workflow Level)
 Set in: **Settings → Environments → [staging/production] → Environment variables**
 
-These override values during GitHub Actions workflows:
-- `EXPO_PROJECT_ID` - Passed to EAS commands
-- `EXPO_ACCOUNT` - Used in workflow summaries
+- `EXPO_ACCOUNT` - Used in workflow summary links (build + OTA)
 
 #### 2. EAS Build Profile (eas.json)
 Set in: [eas.json](./eas.json) under each profile's `env` section
 
-These are used during EAS builds (both GitHub and local):
-- `APP_SLUG` - App identifier/slug
-- `IOS_BUNDLE_ID` - iOS bundle identifier
-- `ANDROID_PACKAGE` - Android package name
-- `EXPO_PROJECT_ID` - Expo project ID (fallback)
-- `PROXY_BASE_URL`, `PROXY_TOKEN`, `WEB_APP_URL` - API endpoints
+GitHub **build** and **OTA update** workflows load these from `eas.json` for the selected profile/environment:
+- `APP_ENV`, `APP_SLUG`, `EXPO_PROJECT_ID`
+- `IOS_BUNDLE_ID`, `ANDROID_PACKAGE`
+- `PROXY_BASE_URL`, `WEB_APP_URL` (and `PROXY_TOKEN` from GitHub secrets)
 
 #### 3. App Configuration (app.config.js)
 Reads from: `process.env.*` with fallback values
@@ -351,14 +348,12 @@ The app config reads environment variables set by either:
 
 **Example Flow for GitHub Workflow Build:**
 ```
-GitHub Env Var (EXPO_PROJECT_ID)
-  ↓ (passed to workflow)
-Workflow sets environment
-  ↓ (passed to EAS command)
-EAS build runs with env vars from both GitHub + eas.json
-  ↓ (environment variables available)
-app.config.js reads process.env.EXPO_PROJECT_ID
-  ↓ (configuration applied)
+eas.json profile env (EXPO_PROJECT_ID, PROXY_BASE_URL, …)
+  ↓ (workflow loads via node)
+Workflow passes env + PROXY_TOKEN secret to eas build
+  ↓
+app.config.js reads process.env.*
+  ↓
 App builds with correct settings
 ```
 
@@ -731,7 +726,6 @@ npm install
 # - PROXY_TOKEN
 
 # Environment-level variables (Settings → Environments → [staging/production] → Environment variables):
-# - EXPO_PROJECT_ID
 # - EXPO_ACCOUNT
 ```
 
