@@ -102,8 +102,7 @@
         "appleTeamId": "your-apple-team-id"
       },
       "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "closed"
+        "track": "internal"
       }
     }
   }
