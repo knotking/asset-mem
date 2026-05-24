@@ -744,13 +744,16 @@ eas update --channel prod --message "Rollback to v1.2.2"
 - Publishes OTA updates
 - Fast deployment
 
-### Required GitHub Secrets
+### Required GitHub Secrets (per environment)
 
 - `EXPO_TOKEN`: Expo authentication token
+- `PROXY_TOKEN`: Proxy API bearer token (substituted in `eas.json` as `${PROXY_TOKEN}`)
 
-### Required GitHub Variables
+### Required GitHub Variables (per environment)
 
-- `EXPO_PROJECT_ID`: Expo project ID
+- `EXPO_ACCOUNT`: Expo account slug (used in build summary links)
+
+`EXPO_PROJECT_ID` and other app env values live in `apps/mapp/eas.json` per build profile.
 
 ## Local Development
 

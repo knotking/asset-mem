@@ -30,7 +30,7 @@ on:
         required: false
         type: string
       version:
-        description: "App version (e.g., 1.0.0). Leave empty to auto-increment."
+        description: "App version override (e.g., 1.0.0). Leave empty to use eas.json profile APP_VERSION."
         required: false
         type: string
 
@@ -77,6 +77,22 @@ jobs:
             echo "profile=${{ steps.set-env.outputs.environment }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Validate eas.json profile
+        working-directory: apps/mapp
+        env:
+          PROFILE: ${{ steps.set-profile.outputs.profile }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const profile = process.env.PROFILE;
+            const eas = JSON.parse(fs.readFileSync('eas.json', 'utf8'));
+            if (!eas.build?.[profile]) {
+              console.error('Unknown EAS build profile:', profile);
+              console.error('Valid profiles:', Object.keys(eas.build || {}).join(', '));
+              process.exit(1);
+            }
+          "
+
       - name: Validate GitHub Secrets
         run: |
           echo "Validating required GitHub secrets..."
@@ -119,11 +135,6 @@ jobs:
             MISSING_ITEMS+=("PROXY_TOKEN (secret)")
           fi
 
-          # Check environment variables
-          if [ -z "${{ vars.EXPO_PROJECT_ID }}" ]; then
-            MISSING_ITEMS+=("EXPO_PROJECT_ID (variable)")
-          fi
-
           if [ -z "${{ vars.EXPO_ACCOUNT }}" ]; then
             MISSING_ITEMS+=("EXPO_ACCOUNT (variable)")
           fi
@@ -156,53 +167,91 @@ jobs:
           cd apps/mapp
           npm ci
 
-      - name: Generate app version
+      - name: Build shared package
+        run: npm run build --workspace=@homeapp/common
+
+      - name: Load environment variables from eas.json
+        id: eas-env
+        working-directory: apps/mapp
+        run: |
+          PROFILE="${{ needs.validate.outputs.profile }}"
+          echo "Loading environment variables from eas.json for profile: $PROFILE"
+
+          APP_ENV=$(node -pe "require('./eas.json').build['$PROFILE'].env.APP_ENV")
+          PROXY_BASE_URL=$(node -pe "require('./eas.json').build['$PROFILE'].env.PROXY_BASE_URL")
+          WEB_APP_URL=$(node -pe "require('./eas.json').build['$PROFILE'].env.WEB_APP_URL")
+          APP_SLUG=$(node -pe "require('./eas.json').build['$PROFILE'].env.APP_SLUG")
+          EXPO_PROJECT_ID=$(node -pe "require('./eas.json').build['$PROFILE'].env.EXPO_PROJECT_ID")
+          APP_VERSION=$(node -pe "require('./eas.json').build['$PROFILE'].env.APP_VERSION || '0.0.1'")
+
+          echo "APP_ENV=$APP_ENV" >> $GITHUB_ENV
+          echo "PROXY_BASE_URL=$PROXY_BASE_URL" >> $GITHUB_ENV
+          echo "WEB_APP_URL=$WEB_APP_URL" >> $GITHUB_ENV
+          echo "APP_SLUG=$APP_SLUG" >> $GITHUB_ENV
+          echo "EXPO_PROJECT_ID=$EXPO_PROJECT_ID" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+
+          echo "Loaded environment variables:"
+          echo "  APP_ENV: $APP_ENV"
+          echo "  PROXY_BASE_URL: $PROXY_BASE_URL"
+          echo "  WEB_APP_URL: $WEB_APP_URL"
+          echo "  APP_SLUG: $APP_SLUG"
+          echo "  EXPO_PROJECT_ID: $EXPO_PROJECT_ID"
+          echo "  APP_VERSION: $APP_VERSION"
+
+      - name: Set app version
         id: version
         run: |
-          # Use manual version input if provided, otherwise auto-increment
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
-            echo "Using manual version: $VERSION"
+            echo "Using manual version from workflow input: $VERSION"
+            echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           else
-            VERSION="0.0.${{ github.run_number }}"
-            echo "Using auto-incremented version: $VERSION"
+            echo "Using APP_VERSION from eas.json profile: $APP_VERSION"
           fi
-          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$APP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build for iOS
         if: ${{ needs.validate.outputs.platform == 'ios' || needs.validate.outputs.platform == 'all' }}
         working-directory: apps/mapp
         run: |
           echo "Building iOS app for ${{ needs.validate.outputs.profile }} profile..."
+          echo "Environment: $APP_ENV"
           echo "App version: $APP_VERSION"
+          echo "App slug: $APP_SLUG"
           echo "Expo Project ID: $EXPO_PROJECT_ID"
+          echo "Proxy Base URL: $PROXY_BASE_URL"
           eas build --platform ios --profile ${{ needs.validate.outputs.profile }} --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: ${{ env.APP_ENV }}
+          APP_SLUG: ${{ env.APP_SLUG }}
+          PROXY_BASE_URL: ${{ env.PROXY_BASE_URL }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
+          WEB_APP_URL: ${{ env.WEB_APP_URL }}
           APP_VERSION: ${{ env.APP_VERSION }}
-          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
+          EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}
 
       - name: Build for Android
         if: ${{ needs.validate.outputs.platform == 'android' || needs.validate.outputs.platform == 'all' }}
         working-directory: apps/mapp
         run: |
           echo "Building Android app for ${{ needs.validate.outputs.profile }} profile..."
+          echo "Environment: $APP_ENV"
           echo "App version: $APP_VERSION"
+          echo "App slug: $APP_SLUG"
           echo "Expo Project ID: $EXPO_PROJECT_ID"
+          echo "Proxy Base URL: $PROXY_BASE_URL"
           eas build --platform android --profile ${{ needs.validate.outputs.profile }} --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_ENV: ${{ env.APP_ENV }}
+          APP_SLUG: ${{ env.APP_SLUG }}
+          PROXY_BASE_URL: ${{ env.PROXY_BASE_URL }}
           PROXY_TOKEN: ${{ secrets.PROXY_TOKEN }}
+          WEB_APP_URL: ${{ env.WEB_APP_URL }}
           APP_VERSION: ${{ env.APP_VERSION }}
-          EXPO_PROJECT_ID: ${{ vars.EXPO_PROJECT_ID }}
-
-      - name: Load Expo slug from eas.json
-        working-directory: apps/mapp
-        run: |
-          PROFILE="${{ needs.validate.outputs.profile }}"
-          echo "APP_SLUG=$(node -pe "require('./eas.json').build['$PROFILE'].env.APP_SLUG")" >> $GITHUB_ENV
+          EXPO_PROJECT_ID: ${{ env.EXPO_PROJECT_ID }}
 
       - name: Summary
         run: |

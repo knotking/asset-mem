@@ -105,11 +105,14 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 6. Build for selected platform(s)
 7. Generate build summary
 
-**Required Secrets**:
+**Required Secrets** (per GitHub environment: `staging`, `prod`):
 - `EXPO_TOKEN`
+- `PROXY_TOKEN`
 
-**Required Variables**:
-- `EXPO_PROJECT_ID`
+**Required Variables** (per environment):
+- `EXPO_ACCOUNT`
+
+**Configuration**: `EXPO_PROJECT_ID`, `APP_VERSION`, proxy URLs, and slugs are read from `apps/mapp/eas.json` for the selected build profile (not GitHub variables).
 
 **Build Profiles**:
 - `development` - Development builds with dev client
@@ -370,7 +373,8 @@ Set these in GitHub repository → Settings → Secrets and variables → Action
 
 **External APIs**:
 - `` - SerpAPI endpoint
-- `EXPO_PROJECT_ID` - Expo project ID
+
+**Mobile (mapp)**: Expo project IDs and app env are in `apps/mapp/eas.json`, not GitHub variables.
 
 ### Environment Configuration
 
