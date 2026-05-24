@@ -7,7 +7,7 @@ import type {
   PrimaryAgent,
   SearchLocationInput,
 } from '@homeapp/common/types';
-import { proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
+import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
