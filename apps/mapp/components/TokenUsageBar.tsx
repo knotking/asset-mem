@@ -106,7 +106,7 @@ export function TokenUsageBar({ matchActionIconSize = false }: TokenUsageBarProp
     return null;
   }
 
-  const goSettings = () => router.push('/(tabs)/settings');
+  const goSettings = () => router.push('/(tabs)/settings/usage');
 
   if (effectiveMonthlyLimit == null) {
     return (
