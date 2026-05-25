@@ -9,7 +9,7 @@ export const metadata: Metadata = buildPageMetadata({
   path: '/privacy',
 });
 
-const LAST_UPDATED = 'May 19, 2026';
+const LAST_UPDATED = 'May 25, 2026';
 
 export default function PrivacyPage() {
   const supportEmail = getSupportEmail();
@@ -67,11 +67,24 @@ export default function PrivacyPage() {
         anyone with the link.
       </p>
 
+      <h2>Account deletion</h2>
+      <p>
+        You can start deletion in the AssetMem AI mobile app under <strong>Settings → Delete
+        account</strong>, or on the web under <strong>Settings → Account → Delete account</strong>.
+        Deleting your account removes sign-in access immediately. Property photos, documents, chat
+        history, and related records may be retained for a limited period for security, legal
+        compliance, and operational reasons. Paid subscriptions are managed separately through
+        Stripe — cancel in Plan &amp; billing before deleting if applicable. For complete erasure of
+        stored property data, contact{' '}
+        <a href={`mailto:${supportEmail}`}>{supportEmail}</a>. See also our{' '}
+        <a href="/account-deletion">account deletion help page</a>.
+      </p>
+
       <h2>Retention</h2>
       <p>
         We retain your data while your account is active and as needed to provide the Service,
-        comply with law, and resolve disputes. You may request deletion of your account and
-        associated data by contacting us (self-service deletion may be added in a future release).
+        comply with law, and resolve disputes. After you delete your account, we may retain certain
+        records as described above until they are no longer needed or you request full erasure.
       </p>
 
       <h2>Security</h2>

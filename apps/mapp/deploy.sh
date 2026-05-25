@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# HomeGeekAI Mapp Deployment Script
+# AssetMem AI (mapp) Deployment Script
 # This script helps deploy the React Native/Expo app locally
 
 set -e
@@ -43,7 +43,7 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Deploy HomeGeekAI Mapp (React Native/Expo App)
+Deploy AssetMem AI mapp (React Native/Expo App)
 
 OPTIONS:
     build           Build the app using EAS Build
@@ -142,7 +142,7 @@ build_app() {
     fi
 
     print_success "Build completed!"
-    print_info "Check build status: https://expo.dev/accounts/[your-account]/projects/homegeek-ai/builds"
+    print_info "Check build status on expo.dev (project slug from APP_SLUG in eas.json, e.g. assetmem-staging)"
 }
 
 # Update function (OTA)
@@ -160,7 +160,7 @@ publish_update() {
     eas update --channel "$channel" --message "$message"
 
     print_success "Update published!"
-    print_info "Check update status: https://expo.dev/accounts/[your-account]/projects/homegeek-ai/updates"
+    print_info "Check update status on expo.dev (project slug from eas.json channel)"
 }
 
 # Submit function

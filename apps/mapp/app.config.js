@@ -50,12 +50,14 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
+      usesAppleSignIn: true,
       bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.assetmem.staging',
       infoPlist: {
         NSCameraUsageDescription: 'This app needs access to your camera to take photos and record videos for property documentation.',
         NSMicrophoneUsageDescription: 'This app needs access to your microphone to record videos with audio.',
         NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select photos and videos for property documentation.',
         NSPhotoLibraryAddUsageDescription: 'This app needs access to save photos and videos to your photo library.',
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
@@ -73,6 +75,7 @@ module.exports = {
     },
     plugins: [
       'expo-router',
+      'expo-apple-authentication',
       'expo-web-browser',
       'expo-video',
       [
@@ -121,7 +124,7 @@ module.exports = {
       mobileWebHandoffUrl: buildProxyUrl(proxyBaseUrl, 'auth/mobile-web-handoff'),
       webAppUrl: process.env.WEB_APP_URL,
       supportEmail:
-        process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@homegeek.ai',
+        process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com',
     },
     runtimeVersion: {
       policy: 'appVersion',

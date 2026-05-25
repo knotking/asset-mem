@@ -31,7 +31,7 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     webClientId:
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
     iosClientId:
-      "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+      "291418967332-42nd4f964tf4fn418ujhpm8sts2ca5kq.apps.googleusercontent.com",
     // com.assetmem.dev — update after registering Android app + SHA-1 in Firebase
     androidClientId:
       "291418967332-9h3ksf5no0havdt5tngpe9raaqdj8gs9.apps.googleusercontent.com",
@@ -47,7 +47,7 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     webClientId:
       "291418967332-9lvvv4mtig8kmav1r2d9dr3u60tq04e7.apps.googleusercontent.com",
     iosClientId:
-      "291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com",
+      "291418967332-42nd4f964tf4fn418ujhpm8sts2ca5kq.apps.googleusercontent.com",
     // com.assetmem.staging
     androidClientId:
       "291418967332-jfqrfe03kg1rquj2h5audmv17un3n2do.apps.googleusercontent.com",
@@ -62,10 +62,10 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     webClientId:
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
     iosClientId:
-      "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
+      "686746113874-st7gl80b5c0tdderi1165iajp870ac2s.apps.googleusercontent.com",
     // com.assetmem.app — update after registering Android app + SHA-1 in Firebase (do not reuse webClientId)
     androidClientId:
-      "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
+      "686746113874-b30qavgoodi22v703qh57ngdtra531g6.apps.googleusercontent.com",
   },
 };
 

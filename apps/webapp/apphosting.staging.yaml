@@ -24,7 +24,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_SUPPORT_EMAIL
-    value: support@homegeek.ai
+    value: test@asset-mem.com
     availability:
       - BUILD
       - RUNTIME

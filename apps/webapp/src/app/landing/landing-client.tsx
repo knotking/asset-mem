@@ -1879,6 +1879,21 @@ export default function LandingPageClient() {
                     Terms of Service
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/account-deletion"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Delete account
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

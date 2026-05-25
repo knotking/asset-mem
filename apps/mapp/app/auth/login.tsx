@@ -4,6 +4,7 @@ import { auth } from '@homeapp/common/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { Link, useRouter } from 'expo-router';
 import { AuthDivider } from '@/components/auth/AuthDivider';
+import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Home, Eye, EyeOff, Loader2 } from 'lucide-react-native';
 
@@ -132,11 +133,18 @@ export default function LoginScreen() {
           <Text className="mb-8 text-base text-gray-500">Sign in to manage your properties</Text>
 
           {authExtrasReady ? (
-            <GoogleSignInButton
-              disabled={state.loading}
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-            />
+            <>
+              <GoogleSignInButton
+                disabled={state.loading}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+              <AppleSignInButton
+                disabled={state.loading}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+            </>
           ) : (
             <View className="mb-2 h-12 w-full max-w-sm" />
           )}

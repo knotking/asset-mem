@@ -14,6 +14,8 @@ import { CheckpointComparisonSettings } from '@/components/settings/CheckpointCo
 import { AiUsageSettings } from '@/components/settings/AiUsageSettings';
 import { PlanBillingSettings } from '@/components/settings/PlanBillingSettings';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
+import { AccountDeletionSettings } from '@/components/settings/AccountDeletionSettings';
+import { LegalSettings } from '@/components/settings/LegalSettings';
 import { SupportSettings } from '@/components/settings/SupportSettings';
 
 export default function SettingsScreen() {
@@ -49,6 +51,10 @@ export default function SettingsScreen() {
         <View className="mb-4">
           <SupportSettings />
         </View>
+
+        <LegalSettings />
+
+        <AccountDeletionSettings />
 
         <Button
           className="mb-4 border border-destructive bg-card text-destructive-foreground hover:bg-destructive/90"

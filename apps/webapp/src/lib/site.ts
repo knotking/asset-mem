@@ -29,5 +29,5 @@ export function getSiteUrl(): string {
 }
 
 export function getSupportEmail(): string {
-  return process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@homegeek.ai';
+  return process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com';
 }
