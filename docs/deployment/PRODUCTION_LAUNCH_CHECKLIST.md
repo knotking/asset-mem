@@ -102,7 +102,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 |---|----------|------|--------------|---------|------|-------|-------|
 | 4.1 | **Critical** | Privacy Policy published and linked | Footer + signup flow | [ ] | [ ] | Legal | |
 | 4.2 | **Critical** | Terms of Service published and linked | Footer + signup flow | [ ] | [ ] | Legal | |
-| 4.3 | **High** | Self-service account deletion | User can delete account in settings | [ ] | [ ] | Eng | |
+| 4.3 | **High** | Self-service account deletion | User can delete account in settings | [x] | [ ] | Eng | mapp + web Settings; help URL `/account-deletion` |
 | 4.4 | **High** | Data export (GDPR/CCPA-style) | User can request/export their data | [ ] | [ ] | Eng | |
 | 4.5 | **High** | Data retention policy documented | Firestore, Storage, RAG, logs | [ ] | [ ] | Legal | |
 | 4.6 | **High** | Privacy docs match actual data (addresses, photos, docs) | No inaccurate “no PII” claims | [ ] | [ ] | Legal | `docs/costing/OVERVIEW.md` |

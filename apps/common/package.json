@@ -27,6 +27,7 @@
     "./lib/plan-defaults": "./src/lib/plan-defaults.ts",
     "./lib/user-display": "./src/lib/user-display.ts",
     "./lib/support": "./src/lib/support.ts",
+    "./lib/account-deletion": "./src/lib/account-deletion.ts",
     "./lib/service-providers": "./src/lib/service-providers.ts",
     "./lib/agent-display": "./src/lib/agent-display.ts",
     "./hooks/use-debounced-thinking-status": "./src/hooks/use-debounced-thinking-status.ts",

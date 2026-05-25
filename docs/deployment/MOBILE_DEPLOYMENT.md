@@ -22,27 +22,31 @@ The mobile application is a React Native/Expo application with:
 
 - **Purpose**: Local development and testing
 - **Channel**: `development`
-- **Bundle ID (iOS)**: `com.homegeekai.dev`
-- **Package (Android)**: `com.homegeekai.dev`
+- **Bundle ID (iOS)**: `com.assetmem.dev`
+- **Package (Android)**: `com.assetmem.dev`
+- **Expo slug**: `assetmem-dev`
 - **Build Type**: Development client with simulator support
 
 ### Staging
 
 - **Purpose**: Internal testing and QA
 - **Channel**: `staging`
-- **Bundle ID (iOS)**: `com.homegeekai.staging`
-- **Package (Android)**: `com.homegeekai.staging`
-- **Build Type**: Internal distribution
+- **Bundle ID (iOS)**: `com.assetmem.staging`
+- **Package (Android)**: `com.assetmem.staging`
+- **Expo slug**: `assetmem-staging`
+- **Build Type**: Internal distribution (iOS ad hoc / Android APK)
 - **Webapp URL**: https://staging--homegeek-staging.us-central1.hosted.app
+- **Device test**: [STAGING_DEVICE_TEST.md](../../apps/mapp/docs/STAGING_DEVICE_TEST.md) (Android) · [STAGING_DEVICE_TEST_IOS.md](../../apps/mapp/docs/STAGING_DEVICE_TEST_IOS.md) (iPhone)
 
 ### Production
 
 - **Purpose**: App Store/Play Store releases
 - **Channel**: `prod`
-- **Bundle ID (iOS)**: `com.homegeekai.prod`
-- **Package (Android)**: `com.homegeekai.prod`
+- **Bundle ID (iOS)**: `com.assetmem.app`
+- **Package (Android)**: `com.assetmem.app`
+- **Expo slug**: `assetmem-app` (see `APP_SLUG` in eas.json)
 - **Build Type**: Store distribution
-- **Webapp URL**: https://prod--homegeek-prod.us-central1.hosted.app
+- **Webapp URL**: https://asset-mem.com
 
 ## Prerequisites
 
@@ -173,10 +177,10 @@ export default ({ config }) => {
     name: env === "prod" ? "HomeGeek AI" : `HomeGeek AI (${env})`,
     slug: process.env.APP_SLUG || "homegeekai",
     ios: {
-      bundleIdentifier: process.env.IOS_BUNDLE_ID || "com.homegeekai.dev",
+      bundleIdentifier: process.env.IOS_BUNDLE_ID || "com.assetmem.staging",
     },
     android: {
-      package: process.env.ANDROID_PACKAGE || "com.homegeekai.dev",
+      package: process.env.ANDROID_PACKAGE || "com.assetmem.staging",
     },
     extra: {
       proxyBaseUrl: process.env.PROXY_BASE_URL,

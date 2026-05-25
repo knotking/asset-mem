@@ -1,5 +1,7 @@
 # Staging APK — install on your phone (Phase 3)
 
+**iOS (iPhone):** [STAGING_DEVICE_TEST_IOS.md](./STAGING_DEVICE_TEST_IOS.md) — requires Apple Developer Program.
+
 No Google Play Developer account required. Android package: **`com.assetmem.staging`**. Expo project slug on [expo.dev](https://expo.dev) is **`assetmem-staging`** (must match `APP_SLUG` in [eas.json](../eas.json)); project ID **`66c0400f-d590-4459-88a7-21ed4367854e`**.
 
 ## Prerequisites

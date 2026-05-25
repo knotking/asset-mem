@@ -7,6 +7,8 @@ import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
 import { ProfileSettings } from '@/components/settings/profile-settings';
+import { AccountDeletionSettings } from '@/components/settings/account-deletion-settings';
+import { LegalSettings } from '@/components/settings/legal-settings';
 import { SupportSettings } from '@/components/settings/support-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -149,6 +151,8 @@ function SettingsPageContent() {
           <TabsContent value="account" className="mt-0 space-y-4 focus-visible:outline-none">
             <ProfileSettings />
             <SupportSettings />
+            <LegalSettings />
+            <AccountDeletionSettings />
           </TabsContent>
 
           <TabsContent value="billing" className="mt-0 focus-visible:outline-none">

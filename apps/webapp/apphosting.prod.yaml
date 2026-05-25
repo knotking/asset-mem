@@ -19,13 +19,13 @@ env:
       - RUNTIME
   # Canonical origin for Open Graph / metadata (no trailing slash)
   - variable: NEXT_PUBLIC_SITE_URL
-    value: https://homegeek.ai
+    value: https://asset-mem.com
     availability:
       - BUILD
       - RUNTIME
   # Landing contact section and legal pages
   - variable: NEXT_PUBLIC_SUPPORT_EMAIL
-    value: support@homegeek.ai
+    value: support@asset-mem.com
     availability:
       - BUILD
       - RUNTIME

@@ -109,7 +109,7 @@ eas build --profile staging --platform ios
 **Configuration** ([eas.json:29-48](../eas.json#L29-L48)):
 
 - App Slug: `assetmem-staging`
-- Bundle ID: `com.homegeekai.staging`
+- Bundle ID: `com.assetmem.staging`
 - Proxy: Staging environment
 - Channel: `staging`
 - Internal distribution
@@ -137,8 +137,8 @@ Each profile defines these environment variables:
 | Variable          | Description                              | Example                                    |
 | ----------------- | ---------------------------------------- | ------------------------------------------ |
 | `APP_SLUG`        | Expo app slug for the environment        | `assetmem-staging`                       |
-| `IOS_BUNDLE_ID`   | iOS bundle identifier                    | `com.homegeekai.staging`                   |
-| `ANDROID_PACKAGE` | Android package name                     | `com.homegeekai.staging`                   |
+| `IOS_BUNDLE_ID`   | iOS bundle identifier                    | `com.assetmem.staging`                   |
+| `ANDROID_PACKAGE` | Android package name                     | `com.assetmem.staging`                   |
 | `EXPO_PROJECT_ID` | Expo project ID                          | `66c0400f-d590-4459-88a7-21ed4367854e`     |
 | `PROXY_BASE_URL`  | Proxy Cloud Run origin (no path secret)  | `https://homecare-agent-proxy-staging-...` |
 | `WEB_APP_URL`     | Web app URL                              | `https://staging--homegeek-staging...`     |
@@ -330,8 +330,8 @@ OTA bundle published with URLs
 | ----------------- | ---------------- | ------------------------ | ----------------------- |
 | `APP_SLUG`        | Expo app slug    | `assetmem-staging`     | `eas.json`              |
 | `APP_VERSION`     | App version      | `0.0.1`                  | Auto-generated in CI    |
-| `IOS_BUNDLE_ID`   | iOS bundle ID    | `com.homegeekai.staging` | `eas.json`              |
-| `ANDROID_PACKAGE` | Android package  | `com.homegeekai.staging` | `eas.json`              |
+| `IOS_BUNDLE_ID`   | iOS bundle ID    | `com.assetmem.staging` | `eas.json`              |
+| `ANDROID_PACKAGE` | Android package  | `com.assetmem.staging` | `eas.json`              |
 | `EXPO_PROJECT_ID` | Expo project ID  | (set in eas.json)        | `eas.json`              |
 | `APP_ENV`         | Environment name | (not set)                | `eas.json` (production) |
 
@@ -464,7 +464,7 @@ These are built automatically by [app.config.js](apps/mapp/app.config.js):
 - **Proxy Base URL**: `https://homecare-agent-proxy-staging-321433914812.us-central1.run.app`
 - **Web App URL**: `https://staging--homegeek-staging.us-central1.hosted.app`
 - **App Slug**: `assetmem-staging`
-- **Bundle ID**: `com.homegeekai.staging`
+- **Bundle ID**: `com.assetmem.staging`
 
 ### Production Environment
 
