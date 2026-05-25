@@ -1,5 +1,13 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Linking, Pressable, Share, Modal, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Linking,
+  Pressable,
+  Share,
+  Modal,
+  TouchableOpacity,
+  useColorScheme,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -56,11 +64,17 @@ import {
 } from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
+import { getCachedExtractContentParts } from '@/lib/chat-content-cache';
+import {
+  assistantMessageHasDisplayableContent,
+  structuredDataHasVisibleSections,
+} from '@/lib/chat-content-parse';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
+import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -259,30 +273,6 @@ function formatDistanceLabel(miles: string | number | null | undefined): string 
   return `${parsed} mi`;
 }
 
-const hasStructuredDataKeys = (parsed: any): boolean => {
-  if (!parsed || typeof parsed !== 'object') return false;
-  // Check for nested structure (analysis.*)
-  if (parsed.analysis && typeof parsed.analysis === 'object') {
-    return !!(
-      parsed.analysis.triageResult ||
-      parsed.analysis.coverageResult ||
-      parsed.analysis.diyResults ||
-      parsed.analysis.serviceResults ||
-      parsed.analysis.checkpointSummary ||
-      parsed.analysis.checkpointDetails
-    );
-  }
-  // Check for flat structure
-  return !!(
-    parsed.triageResult ||
-    parsed.diyResults ||
-    parsed.serviceResults ||
-    parsed.coverageResult ||
-    parsed.checkpointSummary ||
-    parsed.checkpointDetails
-  );
-};
-
 const getPreviewText = (value?: string, max = 240): string | undefined => {
   if (!value) return undefined;
   const plain = value
@@ -316,6 +306,11 @@ const MessageAvatar = React.memo(({ role }: { role: 'user' | 'assistant' }) => {
 });
 
 const ProductCard = React.memo(({ product }: { product: Product }) => {
+  const colorScheme = useColorScheme();
+  const nativeStyles = useMemo(
+    () => createChatMessageNativeStyles(colorScheme),
+    [colorScheme]
+  );
   // Determine an image source: prefer explicit image_url
   const imageSrc = product.image_url || null;
   const [imageLoading, setImageLoading] = useState(true);
@@ -348,7 +343,7 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
       {imageSrc && (
         <View className="mb-2 h-32 w-full overflow-hidden rounded-md">
           {imageLoading && !imageError && (
-            <View className="absolute inset-0 z-10 flex-col gap-2 bg-muted/30 p-2">
+            <View cssInterop={false} style={nativeStyles.productSkeletonOverlay}>
               <Skeleton className="h-6 w-full rounded" />
               <Skeleton className="h-6 w-[90%] rounded" />
               <Skeleton className="h-6 w-full rounded" />
@@ -440,6 +435,11 @@ const ServiceProviderCard = React.memo(
     provider: ServiceProvider;
     saveMeta?: SaveServiceProviderMeta;
   }) => {
+  const colorScheme = useColorScheme();
+  const nativeStyles = useMemo(
+    () => createChatMessageNativeStyles(colorScheme),
+    [colorScheme]
+  );
   const { isSaved, saveProvider, removeProvider, savedProviders } = useSavedServiceProviders();
   const [savePending, setSavePending] = useState(false);
   const saved = isSaved(provider);
@@ -538,7 +538,7 @@ const ServiceProviderCard = React.memo(
             />
           </Pressable>
           {provider.authorized === 'True' && (
-            <View className="flex-row items-center gap-1 rounded-full bg-info/10 px-2 py-1">
+            <View cssInterop={false} style={nativeStyles.authorizedBadge}>
               <Icon as={CheckCircle} size={16} className="text-info" />
               <Text className="text-xs text-info">Authorized</Text>
             </View>
@@ -621,6 +621,11 @@ const StructuredResponse = React.memo(
     data: StructuredResponseData;
     saveMeta?: SaveServiceProviderMeta;
   }) => {
+  const colorScheme = useColorScheme();
+  const nativeStyles = useMemo(
+    () => createChatMessageNativeStyles(colorScheme),
+    [colorScheme]
+  );
   const markdownStyles = useMarkdownStyles(false);
 
   // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -742,7 +747,7 @@ const StructuredResponse = React.memo(
   return (
     <View className="w-full space-y-3">
       {displayTitle && (
-        <View className="rounded-lg border border-border bg-muted/40 px-4 py-3">
+        <View cssInterop={false} style={nativeStyles.structuredTitleCard}>
           <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
         </View>
       )}
@@ -884,7 +889,7 @@ const StructuredResponse = React.memo(
             <AccordionContent className="border-t border-border bg-background p-4">
               <View className="space-y-4">
                 {(analysis as any).checkpointDetails.map((checkpoint: any, idx: number) => (
-                  <View key={idx} className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
+                  <View key={idx} cssInterop={false} style={nativeStyles.structuredSectionCard}>
                     <Text className="text-sm font-semibold text-foreground">
                       {checkpoint.name || `Checkpoint ${idx + 1}`}
                     </Text>
@@ -1048,7 +1053,7 @@ const StructuredResponse = React.memo(
                 </Alert>
               )}
               {diyCostBlock && diyCostBlockHasContent(diyCostBlock) && (
-                <View className="mb-3 rounded-md border border-amber-800/30 bg-amber-950/20 p-3">
+                <View cssInterop={false} style={nativeStyles.diyCostCallout}>
                   <View className="mb-2 flex-row items-center gap-2">
                     <Icon as={DollarSign} size={16} className="text-amber-600" />
                     <Text className="text-sm font-semibold text-foreground">Estimated DIY cost</Text>
@@ -1362,104 +1367,6 @@ const StructuredResponse = React.memo(
   );
 });
 
-// Helper to extract markdown and JSON from content
-const extractContentParts = (
-  content: string,
-  isUser: boolean
-): { structuredData: StructuredResponseData | null; markdownContent: string } => {
-  if (isUser || !content) {
-    return { structuredData: null, markdownContent: content };
-  }
-
-  try {
-    const contentToParse = content.trim();
-
-    // First, look for markdown code block followed by a JSON code block
-    // This handles: **Agent**: ```markdown ... ``` ```json ... ```
-    // Try multiple patterns to handle different newline variations
-
-    let combinedMatch = contentToParse.match(
-      /```markdown\s*\n([\s\S]*?)\n```\s*\n?```json\s*\n([\s\S]*?)\n```/
-    );
-
-    if (!combinedMatch) {
-      // Try without requiring newline after closing markdown backticks
-      combinedMatch = contentToParse.match(
-        /```markdown\s*\n([\s\S]*?)```\s*\n?```json\s*\n([\s\S]*?)```/
-      );
-    }
-
-    if (combinedMatch) {
-      const markdownText = combinedMatch[1].trim();
-      const jsonStr = combinedMatch[2].trim();
-
-      try {
-        const parsed = JSON.parse(jsonStr);
-        if (hasStructuredDataKeys(parsed)) {
-          // Extract any text before the markdown block (like "**Analysis Agent**:")
-          const preMarkdownText = contentToParse
-            .substring(0, contentToParse.indexOf(combinedMatch[0]))
-            .trim();
-          // Don't include the markdown code block wrapper, just the content
-          const fullMarkdownContent = preMarkdownText
-            ? `${preMarkdownText}\n\n${markdownText}`
-            : markdownText;
-          return { structuredData: parsed, markdownContent: fullMarkdownContent };
-        }
-      } catch (e) {
-        // Failed to parse JSON from combined blocks
-      }
-    }
-
-    // Second, try to find just a JSON code block (no markdown wrapper)
-    const jsonMatch = contentToParse.match(/```json\s*\n?([\s\S]*?)```/);
-
-    if (jsonMatch) {
-      const jsonStr = jsonMatch[1].trim();
-      try {
-        const parsed = JSON.parse(jsonStr);
-        if (hasStructuredDataKeys(parsed)) {
-          // Remove the JSON code block from content to get markdown
-          const markdownContent = contentToParse.replace(jsonMatch[0], '').trim();
-          return { structuredData: parsed, markdownContent };
-        }
-      } catch (e) {
-        // Failed to parse JSON from code block
-      }
-    }
-
-    // Third, try to find any code block and see if it contains JSON
-    const anyCodeBlockMatch = contentToParse.match(/```\s*\n?([\s\S]*?)```/);
-
-    if (anyCodeBlockMatch) {
-      const codeBlockContent = anyCodeBlockMatch[1].trim();
-      try {
-        const parsed = JSON.parse(codeBlockContent);
-        if (hasStructuredDataKeys(parsed)) {
-          const markdownContent = contentToParse.replace(anyCodeBlockMatch[0], '').trim();
-          return { structuredData: parsed, markdownContent };
-        }
-      } catch (e) {
-        // Not JSON, continue
-      }
-    }
-
-    // Finally, try parsing the entire content as JSON (fallback for non-markdown wrapped JSON)
-    try {
-      const parsed = JSON.parse(contentToParse);
-      if (hasStructuredDataKeys(parsed)) {
-        return { structuredData: parsed, markdownContent: '' };
-      }
-    } catch (e) {
-      // Not valid JSON, treat as plain markdown
-    }
-  } catch (e) {
-    // Error in content parsing
-  }
-
-  return { structuredData: null, markdownContent: content };
-};
-
 const MessageContent = React.memo(
   ({
     content,
@@ -1476,19 +1383,17 @@ const MessageContent = React.memo(
 
   // Memoize structured data and markdown content parsing
   const { structuredData, plainContent } = useMemo(() => {
-    const { structuredData, markdownContent } = extractContentParts(content, isUser);
+    const { structuredData, markdownContent } = getCachedExtractContentParts(
+      messageId,
+      content,
+      isUser
+    );
     return { structuredData, plainContent: markdownContent };
-  }, [content, isUser]);
+  }, [content, isUser, messageId]);
 
-  if (structuredData) {
-    // console.log('STRUCTURED DATA:', structuredData);
+  if (structuredData && structuredDataHasVisibleSections(structuredData)) {
     return (
       <View className="w-full">
-        {/* {plainContent && (
-          <Markdown style={markdownStyles} rules={markdownRules}>
-            {plainContent}
-          </Markdown>
-        )} */}
         <StructuredResponse
           data={structuredData}
           saveMeta={{
@@ -1614,7 +1519,11 @@ const FilePreview = React.memo(
 
 function ChatMessage({ message, sessionId }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  const isLoading = message.role === 'assistant' && !message.content;
+  const colorScheme = useColorScheme();
+  const nativeStyles = useMemo(
+    () => createChatMessageNativeStyles(colorScheme),
+    [colorScheme]
+  );
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [showMediaDetail, setShowMediaDetail] = useState(false);
   const [copyStatus, setCopyStatus] = useState<{
@@ -1624,22 +1533,31 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
 
   // Extract content parts once and memoize for both display and copy operations
   const extractedParts = useMemo(() => {
-    return extractContentParts(message.content, isUser);
-  }, [message.content, isUser]);
+    return getCachedExtractContentParts(message.id, message.content, isUser);
+  }, [message.id, message.content, isUser]);
 
-  const showEarlyLoading = !isUser && !message.content;
+  const hasDisplayableContent = useMemo(() => {
+    if (isUser) return !!message.content?.trim();
+    return assistantMessageHasDisplayableContent(extractedParts);
+  }, [isUser, extractedParts, message.content]);
+
+  const showEarlyLoading = !isUser && !hasDisplayableContent;
   const showThinkingStrip =
     showEarlyLoading && !!message.agentSteps && message.agentSteps.length > 0;
   const showTypingIndicator = showEarlyLoading && !showThinkingStrip;
-  const isStructuredAssistant = !isUser && !!extractedParts.structuredData;
+  const isStructuredAssistant =
+    !isUser &&
+    !!extractedParts.structuredData &&
+    structuredDataHasVisibleSections(extractedParts.structuredData);
   const isFullWidthAssistant = isStructuredAssistant;
+  const isLoading = showEarlyLoading;
 
   const handleLongPress = useCallback(() => {
-    if (!isLoading && message.content) {
+    if (!isLoading && hasDisplayableContent) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setShowContextMenu(true);
     }
-  }, [isLoading, message.content]);
+  }, [isLoading, hasDisplayableContent]);
 
   const formatMessageContent = useCallback((content: string): string => {
     // Since we now extract markdown content separately,
@@ -1720,13 +1638,16 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
           delayLongPress={500}
           className={isFullWidthAssistant ? 'w-full self-stretch' : 'max-w-full'}>
           <View
-            className={`overflow-hidden rounded-lg ${isFullWidthAssistant ? 'w-full' : 'max-w-full'} ${
-              isUser
-                ? 'bg-muted'
-                : showThinkingStrip || showTypingIndicator
-                  ? 'border-0 bg-transparent shadow-none'
-                  : 'bg-secondary'
-            }`}>
+            cssInterop={false}
+            style={[
+              isUser ? nativeStyles.userBubble : nativeStyles.assistantBubble,
+              isFullWidthAssistant && nativeStyles.bubbleFullWidth,
+              !isUser &&
+                (showEarlyLoading
+                  ? nativeStyles.assistantBubbleThinking
+                  : nativeStyles.assistantBubbleFilled),
+              showTypingIndicator && nativeStyles.typingBubble,
+            ]}>
             {message.file && (
               <FilePreview
                 file={message.file}
@@ -1745,7 +1666,7 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
                 <TypingIndicator />
               </View>
             ) : null}
-            {message.content ? (
+            {hasDisplayableContent ? (
               <View className={`flex flex-col gap-3 ${isStructuredAssistant ? 'p-0' : 'p-3'}`}>
                 <MessageContent
                   content={message.content}
@@ -1790,8 +1711,9 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
         <TouchableOpacity
           activeOpacity={1}
           onPress={handleCloseContextMenu}
-          className="flex-1 items-center justify-center bg-black/50">
-          <View className="w-64 overflow-hidden rounded-lg bg-background shadow-lg">
+          cssInterop={false}
+          style={nativeStyles.contextMenuOverlay}>
+          <View cssInterop={false} style={nativeStyles.contextMenuPanel}>
             <TouchableOpacity
               onPress={handleCopyMessage}
               className="flex-row items-center gap-3 border-b border-border p-4 active:bg-secondary">

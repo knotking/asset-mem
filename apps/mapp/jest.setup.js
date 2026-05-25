@@ -1,8 +1,16 @@
 // Extend matchers from @testing-library/react-native (built-in in v12.4+).
 // @testing-library/jest-native is deprecated; use RNTL matchers only.
 
-// Silence NativeWind / Reanimated warnings in unit tests
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+// Silence NativeWind / Reanimated warnings; shim LayoutAnimationConfig for accordion tests
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  return {
+    ...Reanimated,
+    LayoutAnimationConfig: ({ children }) => children,
+    LinearTransition: { duration: () => ({}) },
+    FadeOutUp: { duration: () => ({}) },
+  };
+});
 
 // Default NetInfo online
 jest.mock('@react-native-community/netinfo', () => ({
