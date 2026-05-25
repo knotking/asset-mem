@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository overview
 
-HomeApp is a monorepo for an AI-powered property care platform. It contains three TypeScript clients (mobile, web, shared library) and a Python backend (FastAPI proxy + Vertex AI agent + Pub/Sub workers) deployed to Google Cloud Platform.
+HomeApp is a monorepo for **AssetMem AI**, an AI-powered property care platform. It contains three TypeScript clients (mobile, web, shared library) and a Python backend (FastAPI proxy + Vertex AI agent + Pub/Sub workers) deployed to Google Cloud Platform.
+
+**Naming:** User-facing brand is AssetMem AI (`asset-mem.com`). GCP/Firebase project IDs remain `homegeek-staging` / `homegeek-prod` and buckets `homegeek-user-data-*` by design — do not rename those in code without an infra migration plan. See [docs/deployment/ENVIRONMENTS.md](docs/deployment/ENVIRONMENTS.md#brand-vs-infrastructure-naming).
 
 ```
 apps/                Frontend (npm workspaces, root package.json declares workspaces: apps/*)

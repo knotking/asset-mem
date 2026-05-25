@@ -128,8 +128,8 @@ Used for Open Graph URLs, contact/legal pages, and GA4 (Product Hunt / launch). 
 
 | Variable                        | Staging (example)       | Production (example)  | Notes                                                |
 | ------------------------------- | ----------------------- | --------------------- | ---------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`          | Staging App Hosting URL | `https://homegeek.ai` | Canonical origin for OG metadata (no trailing slash) |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `support@homegeek.ai`   | `support@homegeek.ai` | Landing contact + legal pages                        |
+| `NEXT_PUBLIC_SITE_URL`          | Staging App Hosting URL | `https://asset-mem.com` | Canonical origin for OG metadata (no trailing slash) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`     | `support@asset-mem.com` | `support@asset-mem.com` | Landing contact + legal pages                    |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Optional                | **Add before PH**     | GA4 `G-XXXXXXXX`; omit = analytics disabled          |
 
 **Before Product Hunt:** Complete the checklist in [PRODUCT_HUNT_LAUNCH.md §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web).

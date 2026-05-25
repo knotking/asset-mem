@@ -13,7 +13,7 @@ export const SUPPORT_REQUESTS_COLLECTION = "support_requests";
 /** Per-user support messages (`support_requests/{userId}/messages/{messageId}`). */
 export const SUPPORT_REQUESTS_MESSAGES_SUBCOLLECTION = "messages";
 
-export const DEFAULT_SUPPORT_EMAIL = "support@homegeek.ai";
+export const DEFAULT_SUPPORT_EMAIL = "support@asset-mem.com";
 
 export const SUPPORT_MESSAGE_MAX_LENGTH = 5000;
 

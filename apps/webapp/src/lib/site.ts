@@ -25,7 +25,7 @@ export function getSiteUrl(): string {
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  return 'https://homegeek.ai';
+  return 'https://asset-mem.com';
 }
 
 export function getSupportEmail(): string {

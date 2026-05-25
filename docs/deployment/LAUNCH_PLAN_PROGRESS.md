@@ -168,7 +168,7 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 |------|--------|-------|
 | Provision API Gateway + API config (OpenAPI) per environment | `[ ]` | Staging first, then prod |
 | Backend: existing `homecare-agent-proxy-{env}` Cloud Run service | `[ ]` | Same route paths (`/firebase-agent-stream`, etc.) |
-| Public hostname (gateway default or custom domain, e.g. `api.homegeek.ai`) | `[ ]` | **Client URLs change** at cutover — update env below |
+| Public hostname (gateway default or custom domain, e.g. `api.asset-mem.com`) | `[ ]` | **Client URLs change** at cutover — update env below |
 | Update `NEXT_PUBLIC_API_BASE_URL` (web) | `[ ]` | [`apphosting.*.yaml`](../../apps/webapp/apphosting.prod.yaml) — gateway origin, no path secret |
 | Update `PROXY_BASE_URL` (mapp / EAS) | `[ ]` | [`apps/mapp/app.config.js`](../../apps/mapp/app.config.js), `eas.json` |
 | Extend proxy CORS allowlist if gateway host differs | `[ ]` | `PROXY_CORS_ORIGINS` or `gcp/proxy/api/core/cors.py` defaults |
@@ -197,7 +197,7 @@ See [PRODUCT_HUNT_LAUNCH.md §1](./PRODUCT_HUNT_LAUNCH.md#1-product-hunt-listing
 
 **Operational TODOs when starting Phase 4:**
 
-- [ ] Decide hostname: `*.gateway.dev` vs `api.homegeek.ai` / `api.asset-mem.com`.
+- [ ] Decide hostname: `*.gateway.dev` vs `api.asset-mem.com` / `api.asset-mem.com`.
 - [ ] Document cutover: dual-run (Cloud Run + gateway) vs hard switch.
 - [ ] Update [ENVIRONMENTS.md](./ENVIRONMENTS.md) proxy URL table after gateway is live.
 
@@ -212,8 +212,8 @@ Set in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.prod.ya
 | `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Cloud Run proxy origin (no path secret) | API calls; Phase 4 may switch to API Gateway host |
 | `NEXT_PUBLIC_ENV` | **Yes** | `prod` | Environment flag |
 | `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (proxy GH var) | **Yes** | includes `free` | Token/doc/checkpoint limits |
-| `NEXT_PUBLIC_SITE_URL` | **Yes** | `https://homegeek.ai` | OG canonical URLs, metadata |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | `support@homegeek.ai` | Contact section, legal pages |
+| `NEXT_PUBLIC_SITE_URL` | **Yes** | `https://asset-mem.com` | OG canonical URLs, metadata |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | `support@asset-mem.com` | Contact section, legal pages |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | **Recommended** | *Not in yaml — add before PH* | GA4; omit = analytics off |
 | `GOOGLE_BUILDABLE` | **Yes** | `apps/webapp` | Monorepo App Hosting build |
 

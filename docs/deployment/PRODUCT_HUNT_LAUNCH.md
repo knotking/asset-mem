@@ -80,7 +80,7 @@ Prepare 2–3 authentic comments from team (not copy-paste spam). PH rewards gen
 Use production origin + UTM parameters:
 
 ```text
-https://homegeek.ai/?utm_source=producthunt&utm_medium=referral&utm_campaign=launch
+https://asset-mem.com/?utm_source=producthunt&utm_medium=referral&utm_campaign=launch
 ```
 
 Adjust domain if production differs (see `apps/webapp/apphosting.prod.yaml` and DNS docs). Must match `NEXT_PUBLIC_SITE_URL` (see §2.1).
@@ -91,8 +91,8 @@ Configure in [`apps/webapp/apphosting.prod.yaml`](../../apps/webapp/apphosting.p
 
 | Variable | Required for PH? | Action |
 |----------|------------------|--------|
-| `NEXT_PUBLIC_SITE_URL` | **Yes** | Set to canonical origin, e.g. `https://homegeek.ai` (no trailing slash) |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | Monitored inbox, e.g. `support@homegeek.ai` |
+| `NEXT_PUBLIC_SITE_URL` | **Yes** | Set to canonical origin, e.g. `https://asset-mem.com` (no trailing slash) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | **Yes** | Monitored inbox, e.g. `support@asset-mem.com` |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | **Recommended** | GA4 ID `G-XXXXXXXX` — **add to yaml before PH**; if omitted, analytics is disabled |
 | `NEXT_PUBLIC_API_BASE_URL` | **Yes** | Already in yaml — proxy base URL |
 | `NEXT_PUBLIC_ENV` | **Yes** | `prod` |

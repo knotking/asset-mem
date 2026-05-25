@@ -19,6 +19,8 @@ description: >-
 
 ## GCP projects and region
 
+Product brand is **AssetMem AI**; GCP project IDs below are legacy `homegeek-*` (unchanged by design).
+
 | Environment | GCP project (typical)                                                                | Region        |
 | ----------- | ------------------------------------------------------------------------------------ | ------------- |
 | Staging     | `homegeek-staging`                                                                   | `us-central1` |

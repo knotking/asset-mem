@@ -2,7 +2,7 @@
 
 ## Problem
 
-The `create-environment.yaml` workflow uses an organization-level Workload Identity Provider (`ORG_WIF_PROVIDER`) to authenticate and create GCP projects. If this provider is configured for the old repository name (`HomeGeekAI/HomeApp`), it will fail with the same attribute condition error.
+The `create-environment.yaml` workflow uses an organization-level Workload Identity Provider (`ORG_WIF_PROVIDER`) to authenticate and create GCP projects. If this provider is configured for the old repository name (`AssetMem/HomeApp`), it will fail with the same attribute condition error.
 
 ## Solution
 
@@ -27,7 +27,7 @@ Run these commands to update the organization-level provider:
 # Set your organization project ID (extract from ORG_WIF_PROVIDER path)
 export ORG_PROJECT_ID="your-org-project-id"  # e.g., "homegeek-org-admin"
 export NEW_REPO="BuildGeekAI/HomeApp"
-export OLD_REPO="HomeGeekAI/HomeApp"
+export OLD_REPO="AssetMem/HomeApp"
 
 # Get project number
 export ORG_PROJECT_NUMBER=$(gcloud projects describe $ORG_PROJECT_ID --format="value(projectNumber)")
@@ -94,7 +94,7 @@ fi
 
 ORG_PROJECT_ID="$1"
 ORG_ADMIN_SA="$2"
-OLD_REPO="HomeGeekAI/HomeApp"
+OLD_REPO="AssetMem/HomeApp"
 NEW_REPO="BuildGeekAI/HomeApp"
 
 echo "=========================================="

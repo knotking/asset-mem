@@ -67,11 +67,11 @@ export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(pro
 export GITHUB_REPO="YOUR_ORG/YOUR_REPO"  # e.g., "prakashbaskaran/HomeApp"
 export SA_EMAIL="firebase-apphosting-deployer@homegeek-staging.iam.gserviceaccount.com"
 
-# Remove old binding (if it exists for HomeGeekAI/HomeApp)
+# Remove old binding (if it exists for AssetMem/HomeApp)
 gcloud iam service-accounts remove-iam-policy-binding $SA_EMAIL \
   --project=$PROJECT_ID \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/HomeGeekAI/HomeApp" \
+  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/AssetMem/HomeApp" \
   2>/dev/null || echo "Old binding not found, continuing..."
 
 # Add new binding for your repository
@@ -121,9 +121,9 @@ gcloud iam workload-identity-pools providers update-oidc github-provider \
 
 ## Quick Fix Scripts
 
-### For Repository Name Change (HomeGeekAI → BuildGeekAI)
+### For Repository Name Change (AssetMem → BuildGeekAI)
 
-If you're changing the repository from `HomeGeekAI/HomeApp` to `BuildGeekAI/HomeApp`, use the dedicated script:
+If you're changing the repository from `AssetMem/HomeApp` to `BuildGeekAI/HomeApp`, use the dedicated script:
 
 ```bash
 ./.github/workflows/update-repo-name.sh

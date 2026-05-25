@@ -1,6 +1,6 @@
-# Favicon Setup for HomeGeek AI
+# Favicon Setup for AssetMem AI
 
-The favicon has been updated to match the HomeGeek AI branding.
+The favicon has been updated to match the AssetMem AI branding.
 
 ## Current Setup
 

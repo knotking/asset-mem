@@ -1,6 +1,6 @@
-# Cursor MCP — HomeApp
+# Cursor MCP — HomeApp (AssetMem AI)
 
-Project MCP config for **GCP Cloud Logging** and **Firebase / Firestore** (token usage, billing, user data).
+Project MCP config for **GCP Cloud Logging** and **Firebase / Firestore** (token usage, billing, user data). Firebase/GCP project IDs use legacy `homegeek-*` names; see [docs/deployment/ENVIRONMENTS.md](../docs/deployment/ENVIRONMENTS.md#brand-vs-infrastructure-naming).
 
 | Server | Purpose |
 | ------ | ------- |

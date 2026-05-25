@@ -6,6 +6,10 @@ This guide covers the different deployment environments and their configurations
 
 HomeApp supports three deployment environments:
 
+### Brand vs infrastructure naming
+
+The product is branded **AssetMem AI** (`asset-mem.com`, `support@asset-mem.com`). GCP and Firebase **project IDs** (`homegeek-staging`, `homegeek-prod`), GCS buckets (`homegeek-user-data`, etc.), and default App Hosting URLs (`staging--homegeek-staging…`) intentionally keep the legacy `homegeek-*` prefix — renaming them would require a full GCP migration. Client code and docs should use AssetMem for user-facing strings only.
+
 - **Development**: Local development and testing
 - **Staging**: Pre-production testing and validation
 - **Production**: Live production environment
@@ -138,8 +142,8 @@ runConfig:
       "channel": "staging",
       "env": {
         "APP_ENV": "staging",
-        "IOS_BUNDLE_ID": "com.homegeekai.staging",
-        "ANDROID_PACKAGE": "com.homegeekai.staging",
+        "IOS_BUNDLE_ID": "com.assetmem.staging",
+        "ANDROID_PACKAGE": "com.assetmem.staging",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-staging-*.run.app"
       }
     }
@@ -240,8 +244,8 @@ runConfig:
       "channel": "prod",
       "env": {
         "APP_ENV": "prod",
-        "IOS_BUNDLE_ID": "com.homegeekai.prod",
-        "ANDROID_PACKAGE": "com.homegeekai.prod",
+        "IOS_BUNDLE_ID": "com.assetmem.prod",
+        "ANDROID_PACKAGE": "com.assetmem.prod",
         "PROXY_BASE_URL": "https://homecare-agent-proxy-prod-*.run.app"
       }
     }
@@ -317,8 +321,8 @@ runConfig:
 | ------------------------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
 | `NEXT_PUBLIC_API_BASE_URL`      | http://localhost:8080 | staging proxy URL       | prod proxy URL                                                                                         |
 | `NEXT_PUBLIC_ENV`               | development           | staging                 | prod                                                                                                   |
-| `NEXT_PUBLIC_SITE_URL`          | (optional local)      | staging App Hosting URL | `https://homegeek.ai`                                                                                  |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`     | (optional)            | `support@homegeek.ai`   | `support@homegeek.ai`                                                                                  |
+| `NEXT_PUBLIC_SITE_URL`          | (optional local)      | staging App Hosting URL | `https://asset-mem.com`                                                                                  |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`     | (optional)            | `support@asset-mem.com` | `support@asset-mem.com`                                                                        |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | (optional)            | optional                | add before PH — see [PH launch §2.1](./PRODUCT_HUNT_LAUNCH.md#21-environment-variables-production-web) |
 | `GOOGLE_BUILDABLE`              | apps/webapp           | apps/webapp             | apps/webapp                                                                                            |
 
@@ -329,8 +333,8 @@ runConfig:
 | `APP_ENV`         | dev                | staging                | prod                |
 | `PROXY_BASE_URL`  | dev proxy URL      | staging proxy URL      | prod proxy URL      |
 | `WEB_APP_URL`     | localhost:3000     | staging webapp URL     | prod webapp URL     |
-| `IOS_BUNDLE_ID`   | com.homegeekai.dev | com.homegeekai.staging | com.homegeekai.prod |
-| `ANDROID_PACKAGE` | com.homegeekai.dev | com.homegeekai.staging | com.homegeekai.prod |
+| `IOS_BUNDLE_ID`   | com.assetmem.dev | com.assetmem.staging | com.assetmem.prod |
+| `ANDROID_PACKAGE` | com.assetmem.dev | com.assetmem.staging | com.assetmem.prod |
 
 ### Backend Services
 

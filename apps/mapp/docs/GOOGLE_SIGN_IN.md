@@ -157,7 +157,7 @@ Add test users under Google Cloud → **OAuth consent screen** → **Test users*
 | Android `DEVELOPER_ERROR` | Wrong package in Firebase, or missing SHA-1 for the keystore that signed the APK |
 | `androidClientId` / config error in app | Set Android OAuth client ID in `firebase-config.ts` |
 | Sign-in works on web, not mapp | `webClientId` must be the **Web** client; Android verified via package + SHA-1 |
-| Stale package (`com.homegeekai.*`) | `npx expo prebuild --clean` so `applicationId` matches `ANDROID_PACKAGE` |
+| Stale package (`com.assetmem.*`) | `npx expo prebuild --clean` so `applicationId` matches `ANDROID_PACKAGE` |
 | Expo Go | Use dev build, not Expo Go |
 | iOS redirect / scheme errors | Sync `iosClientId` in `firebase-config.ts` and `GOOGLE_IOS_CLIENT_ID_BY_ENV` in `app.config.js`, then prebuild |
 

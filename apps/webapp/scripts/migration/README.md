@@ -1,5 +1,7 @@
 # Firebase Migration Scripts
 
+> **Historical:** One-off migration from `goggle-gab` to `homegeek-staging`. GCP project IDs (`homegeek-*`) are unchanged; the live product brand is **AssetMem AI** (`asset-mem.com`).
+
 Automated scripts to migrate from `goggle-gab` to `homegeek-staging` Firebase project.
 
 ## ⚠️ Important: Manual Setup Required First

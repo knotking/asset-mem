@@ -14,15 +14,11 @@ DEFAULT_CORS_ORIGINS: tuple[str, ...] = (
     "http://localhost:9002",
     "http://127.0.0.1:9002",
     # Production / marketing domains
-    "https://homegeek.ai",
-    "https://www.homegeek.ai",
     "https://asset-mem.com",
     "https://www.asset-mem.com",
-    # Firebase App Hosting default URLs
+    # Firebase App Hosting default URLs (GCP project IDs remain homegeek-*)
     "https://staging--homegeek-staging.us-central1.hosted.app",
     "https://prod--homegeek-prod.us-central1.hosted.app",
-    # Optional custom App Hosting / DNS aliases
-    "https://staging.homegeek.ai",
 )
 
 

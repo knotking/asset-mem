@@ -215,7 +215,7 @@ Manual `workflow_dispatch` to **prod** (recommended order):
 | # | Priority | Item | When to do | Notes |
 |---|----------|------|------------|-------|
 | 11.1 | **Low** | **Google Cloud API Gateway** in front of Cloud Run proxy | Post-GA / scale | New public API hostname; update `NEXT_PUBLIC_API_BASE_URL` + mapp `PROXY_BASE_URL`; paths can stay `/firebase-agent-stream`, etc. |
-| 11.2 | **Low** | Custom API domain on gateway (`api.homegeek.ai`, `api.asset-mem.com`) | With 11.1 | DNS + TLS on gateway; add origin to proxy CORS |
+| 11.2 | **Low** | Custom API domain on gateway (`api.asset-mem.com`, `api.asset-mem.com`) | With 11.1 | DNS + TLS on gateway; add origin to proxy CORS |
 | 11.3 | **Low** | Optional Cloud Run ingress = gateway-only | After 11.1 verified | Retire direct `*.run.app` client access |
 | 11.4 | **Low** | Distributed rate limits (Memorystore Redis or Firestore) | If multi-instance abuse | Complements proxy `PROXY_RATE_LIMIT_*`; not required for PH |
 
