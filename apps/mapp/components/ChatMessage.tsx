@@ -994,7 +994,7 @@ const StructuredResponse = React.memo(
         {hasCoverage && (
           <AccordionItem value="coverage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="w-full flex-row items-center gap-2">
+              <View className="min-w-0 flex-1 flex-row items-center gap-2">
                 <Icon as={ShieldCheck} size={16} className="text-success" />
                 <Text className="flex-1 font-medium text-foreground">Coverage Analysis</Text>
                 <CheckpointAccordionBranchBadge
@@ -1032,7 +1032,7 @@ const StructuredResponse = React.memo(
         {hasDIY && (
           <AccordionItem value="diy" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="w-full flex-row items-center gap-2">
+              <View className="min-w-0 flex-1 flex-row items-center gap-2">
                 <Icon as={Wrench} size={16} className="text-warning" />
                 <Text className="flex-1 font-medium text-foreground">DIY Recommendations</Text>
                 <CheckpointAccordionBranchBadge
@@ -1163,7 +1163,7 @@ const StructuredResponse = React.memo(
         {hasService && (
           <AccordionItem value="service" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="w-full flex-row items-center gap-2">
+              <View className="min-w-0 flex-1 flex-row items-center gap-2">
                 <Icon as={Users} size={16} className="text-indigo-600" />
                 <Text className="flex-1 font-medium text-foreground">Service Recommendations</Text>
                 <CheckpointAccordionBranchBadge
@@ -1193,7 +1193,7 @@ const StructuredResponse = React.memo(
         {hasCostEstimates && (
           <AccordionItem value="cost-estimates" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="w-full flex-row items-center gap-2">
+              <View className="min-w-0 flex-1 flex-row items-center gap-2">
                 <Icon as={DollarSign} size={16} className="text-purple-600" />
                 <Text className="flex-1 font-medium text-foreground">Cost Estimates</Text>
                 <CheckpointAccordionBranchBadge
