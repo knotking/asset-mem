@@ -1,0 +1,106 @@
+{
+  "greeting": [
+    "hi",
+    "hello",
+    "hey",
+    "howdy",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "what's up",
+    "whats up",
+    "hi there",
+    "hello there"
+  ],
+  "social": [
+    "how are you",
+    "how are you doing",
+    "hope you are well",
+    "hope you're well",
+    "nice to meet you"
+  ],
+  "thanks": [
+    "thanks",
+    "thank you",
+    "thx",
+    "ty",
+    "appreciate it",
+    "much appreciated",
+    "thanks a lot",
+    "thank you so much"
+  ],
+  "positive_reaction": [
+    "great",
+    "awesome",
+    "perfect",
+    "nice",
+    "cool",
+    "love it",
+    "wonderful",
+    "excellent",
+    "amazing",
+    "fantastic"
+  ],
+  "understanding": [
+    "got it",
+    "makes sense",
+    "i understand",
+    "understood",
+    "clear",
+    "sounds good",
+    "that makes sense",
+    "i see"
+  ],
+  "affirmation": [
+    "ok",
+    "okay",
+    "sure",
+    "yep",
+    "yes",
+    "alright",
+    "fine",
+    "k",
+    "kk"
+  ],
+  "closure": [
+    "that's all",
+    "thats all",
+    "i'm good",
+    "im good",
+    "all set",
+    "no more questions",
+    "we're done",
+    "were done",
+    "that's helpful",
+    "thats helpful",
+    "i'm good for now",
+    "im good for now",
+    "nothing else",
+    "no further questions"
+  ],
+  "app_reaction": [
+    "looks good",
+    "that works",
+    "i'll use that",
+    "ill use that",
+    "i'll call them",
+    "ill call them",
+    "i'll try that",
+    "ill try that",
+    "i'll try the diy",
+    "ill try the diy",
+    "good to know",
+    "helpful",
+    "that's helpful",
+    "thats helpful"
+  ],
+  "off_topic": [
+    "tell me a joke",
+    "who won the game",
+    "stock market"
+  ],
+  "ultra_short": [
+    "👍",
+    "+1"
+  ]
+}

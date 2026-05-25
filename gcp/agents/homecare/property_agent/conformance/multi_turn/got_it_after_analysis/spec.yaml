@@ -1,0 +1,9 @@
+description: >
+  Turn 1 analysis request; turn 2 got it closure with optional agents still in payload.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "analyse my checkpoints and recommend DIY steps", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+  - text: |
+      {"user_query": "got it, I'll try that", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["diy"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}

@@ -1,0 +1,14 @@
+{
+  "rubrics": [
+    {
+      "name": "no_repeat_structured_analysis",
+      "description": "On a casual follow-up turn (thanks, looks good, got it, closure), the agent must NOT run a second full checkpoint optional-agent analysis or emit a duplicate large structured report with new serviceResults/diyResults/coverage sections.",
+      "criteria": "Pass if the response is a brief plain-text acknowledgment OR a very short reply without a new ```json analysis block duplicating prior sections. Fail if the agent re-runs full analysis (providers, DIY, coverage, cost blocks) as if the user asked a new substantive question."
+    },
+    {
+      "name": "plain_conversational_greeting",
+      "description": "Casual greetings in checkpoint mode should get a property-scoped welcome without tool calls.",
+      "criteria": "Pass if the reply is short plain text welcoming the user and offering help, without checkpoint retrieval or dual-format JSON. Fail if the agent transfers to doculink and runs checkpoint_agent for hello/thanks-only messages."
+    }
+  ]
+}

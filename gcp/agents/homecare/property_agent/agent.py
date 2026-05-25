@@ -29,6 +29,11 @@ from .logging_context import (
     unbind_correlation_id,
 )
 from .model_config import GLOBAL_GEMINI_MODEL
+from .conversational_callbacks import (
+    apply_conversational_state_for_turn,
+    conversational_before_tool,
+    mark_checkpoint_response_kind,
+)
 from .prompts import doculink_agent_system_instruction, root_agent_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
 from .sub_agents.checkpoint_analysis_agent.agent import checkpoint_progress_agent
@@ -64,6 +69,24 @@ def _correlation_from_context(ctx: Context) -> Optional[str]:
             if cid:
                 return cid
     return None
+
+
+def root_before_model_combined(
+    callback_context: Context, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    before_model_auth_uid(callback_context, llm_request)
+    return apply_conversational_state_for_turn(
+        callback_context, agent_name="property_agent"
+    )
+
+
+def doculink_before_model_combined(
+    callback_context: Context, llm_request: LlmRequest
+) -> Optional[LlmResponse]:
+    before_model_auth_uid(callback_context, llm_request)
+    return apply_conversational_state_for_turn(
+        callback_context, agent_name="doculink_agent"
+    )
 
 
 def before_model_auth_uid(
@@ -102,8 +125,14 @@ def doculink_after_model_combined(
         callback_context, llm_response
     )
     if streamed is not None:
+        mark_checkpoint_response_kind(callback_context, kind="analysis")
         return streamed
-    return doculink_after_model_callback(callback_context, llm_response)
+    result = doculink_after_model_callback(callback_context, llm_response)
+    if callback_context.state.get("checkpoint_parallel_results") or callback_context.state.get(
+        "checkpoint_analysis_dual_format"
+    ):
+        mark_checkpoint_response_kind(callback_context, kind="analysis")
+    return result
 
 
 def after_tool_auth_uid(
@@ -185,7 +214,11 @@ def doculink_after_tool_combined(
 
 def before_tool_callback(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, **kwargs
-):
+) -> Optional[dict]:
+    blocked = conversational_before_tool(tool, args, tool_context, **kwargs)
+    if blocked is not None:
+        return blocked
+
     bind_auth_uid(tool_context._invocation_context.session.user_id)
     tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
     cid = extract_correlation_id_from_json_dict(tool_context.state)
@@ -231,7 +264,7 @@ doculink_agent = Agent(
     input_schema=DocsInput,
     tools=_doculink_tools(),
     disallow_transfer_to_parent=True,
-    before_model_callback=before_model_auth_uid,
+    before_model_callback=doculink_before_model_combined,
     after_model_callback=doculink_after_model_combined,
     before_tool_callback=before_tool_callback,
     after_tool_callback=doculink_after_tool_combined,
@@ -254,7 +287,7 @@ root_agent = Agent(
     input_schema=DiagnosisInput,
     tools=_root_tools(),
     sub_agents=[doculink_agent],
-    before_model_callback=before_model_auth_uid,
+    before_model_callback=root_before_model_combined,
     after_model_callback=after_model_auth_uid,
     after_agent_callback=property_agent_after_agent_memory,
 )

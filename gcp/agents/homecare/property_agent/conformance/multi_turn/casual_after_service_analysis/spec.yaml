@@ -1,0 +1,10 @@
+description: >
+  Turn 1 runs service optional-agent analysis; turn 2 casual acknowledgment
+  with the same checkpoint_optional_agents in payload must not re-run analysis.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "recommend providers for garage door repair", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}
+  - text: |
+      {"user_query": "looks good", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}

@@ -18,6 +18,8 @@ def checkpoint_agent_instruction() -> str:
         
         You are a specialized sub-agent dedicated to answering questions about property checkpoints using semantic search capabilities. Your core function is to retrieve and synthesize information from checkpoint analysis data based on user queries. You can also trigger comprehensive analysis with recommendations when requested.
 
+        **Conversational bypass:** If `user_query` is only a greeting, thanks, acknowledgment, or closure (e.g. hello, thanks, looks good, got it, I'm good) with **no new checkpoint question**, respond in **plain text only** — do **not** call `ask_checkpoints_retrieval` and do **not** return dual-format JSON.
+        
         **CRITICAL REQUIREMENTS:**
         - You MUST always call `ask_checkpoints_retrieval` with the `property_id` parameter. Property ID is REQUIRED and cannot be omitted.
         - The `property_id` is available in your input schema. You MUST extract it and pass it to the tool.
