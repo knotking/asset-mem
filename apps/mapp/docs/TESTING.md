@@ -31,6 +31,8 @@ npm run test:watch
 | [`lib/chat-content-parse.ts`](../lib/chat-content-parse.ts) | Markdown + JSON extraction, visible-section gate (used by cache) |
 | [`lib/css-theme-tokens.ts`](../lib/css-theme-tokens.ts) | HSL tokens aligned with `global.css` for native chat styles |
 | [`lib/chat-message-native-styles.ts`](../lib/chat-message-native-styles.ts) | StyleSheet bypass for NativeWind opacity/shadow interop issues |
+| [`lib/lazy-youtube-player.tsx`](../lib/lazy-youtube-player.tsx) | Defers Youtube WebView until accordion expanded + layout |
+| [`__tests__/ChatMessage.youtube.test.tsx`](../__tests__/ChatMessage.youtube.test.tsx) | Lazy YouTube mount gated by `AccordionMountContext` |
 | [`__tests__/css-theme-tokens.test.ts`](../__tests__/css-theme-tokens.test.ts) | Light/dark token mapping regression |
 | [`__tests__/ChatMessage.structured.navigation.test.tsx`](../__tests__/ChatMessage.structured.navigation.test.tsx) | Real accordion + `NavigationContainer` (no nav-context crash) |
 | [`__tests__/test-utils.tsx`](../__tests__/test-utils.tsx) | `renderWithProviders()` helper |

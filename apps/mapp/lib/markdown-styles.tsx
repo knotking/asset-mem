@@ -1,26 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { LazyYouTubePlayer } from './lazy-youtube-player';
 import { getYouTubeVideoId, findChild } from './youtube-utils';
-
-// Responsive YouTube Player Component
-const ResponsiveYouTubePlayer = ({ videoId }: { videoId: string }) => {
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  const handleLayout = (event: any) => {
-    const { width } = event.nativeEvent.layout;
-    setContainerWidth(width);
-  };
-
-  const playerHeight = containerWidth > 0 ? (containerWidth * 9) / 16 : 200;
-
-  return (
-    <View style={{ width: '100%', marginVertical: 12 }} onLayout={handleLayout}>
-      {containerWidth > 0 && <YoutubePlayer height={playerHeight} videoId={videoId} play={false} />}
-    </View>
-  );
-};
 
 // Helper to convert HSL to RGB for React Native
 const hslToRgb = (h: number, s: number, l: number): string => {
@@ -283,7 +265,7 @@ export const markdownRules = {
       if (isStandaloneYouTubeLink) {
         return (
           <View key={node.key}>
-            <ResponsiveYouTubePlayer videoId={videoId} />
+            <LazyYouTubePlayer videoId={videoId} />
           </View>
         );
       }
@@ -304,7 +286,7 @@ export const markdownRules = {
       if (videoId) {
         return (
           <View key={node.key}>
-            <ResponsiveYouTubePlayer videoId={videoId} />
+            <LazyYouTubePlayer videoId={videoId} />
           </View>
         );
       }
@@ -341,7 +323,7 @@ export const markdownRules = {
       if (videoId && hasOnlyLink) {
         return (
           <View key={node.key}>
-            <ResponsiveYouTubePlayer videoId={videoId} />
+            <LazyYouTubePlayer videoId={videoId} />
           </View>
         );
       }
