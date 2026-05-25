@@ -4,7 +4,7 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { collection, onSnapshot, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Property, Document as DocumentType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -90,19 +90,17 @@ function PropertiesDashboardContent() {
                 const docsQuery = query(docsRef, where('propertyId', '==', prop.id));
                 const docsSnapshot = await getDocs(docsQuery);
                 const documents = docsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DocumentType));
-                
-                // Fetch services and checks counts from the property document itself
-                const propDocRef = doc(db, 'users', user.uid, 'properties', prop.id);
-                const propDocSnap = await getDoc(propDocRef);
-                const propData = propDocSnap.data();
-                
+
+                const checkpointsRef = collection(db, 'users', user.uid, 'properties', prop.id, 'checkpoints');
+                const checkpointsSnapshot = await getDocs(checkpointsRef);
+
                 return {
                     ...prop,
                     documents,
                     docIds: documents.map(d => d.id),
                     docGsURIs: documents.map(d => d.gsURI).filter((uri): uri is string => !!uri),
-                    servicesCount: propData?.servicesCount || 0,
-                    checksCount: propData?.checksCount || 0,
+                    servicesCount: prop.servicesCount || prop.services || 0,
+                    checksCount: checkpointsSnapshot.size,
                 };
             }));
             

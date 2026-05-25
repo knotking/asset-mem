@@ -38,6 +38,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
     const q = query(propertiesRef, orderBy('createdAt', 'desc'));
 
     const docUnsubscribes: { [key: string]: () => void } = {};
+    const checkpointUnsubscribes: { [key: string]: () => void } = {};
 
     const unsubscribeProperties = onSnapshot(
       q,
@@ -55,7 +56,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
             address: propertyData.address,
             cityStateZip: propertyData.address.split(', ')[1] || '',
             services: propertyData.services || 0,
-            checks: propertyData.checks || 0,
+            checks: 0,
             name: propertyData.name,
             propertyType: propertyData.propertyType,
             propertySubType: propertyData.propertySubType,
@@ -81,6 +82,24 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
             });
             docUnsubscribes[propertyId] = unsubscribeDocs;
           }
+
+          // Set up or update checkpoints listener for this property
+          if (!checkpointUnsubscribes[propertyId]) {
+            const checkpointsRef = collection(
+              db,
+              `users/${user.uid}/properties/${propertyId}/checkpoints`
+            );
+
+            const unsubscribeCheckpoints = onSnapshot(checkpointsRef, (checkpointsSnapshot) => {
+              const checksCount = checkpointsSnapshot.size;
+              setProperties((prevProperties) =>
+                prevProperties.map((prop) =>
+                  prop.id === propertyId ? { ...prop, checks: checksCount } : prop
+                )
+              );
+            });
+            checkpointUnsubscribes[propertyId] = unsubscribeCheckpoints;
+          }
         });
 
         // Clean up docs listeners for properties that are no longer in the snapshot
@@ -88,6 +107,14 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
           if (!currentPropertyIds.has(propertyId)) {
             docUnsubscribes[propertyId](); // Unsubscribe
             delete docUnsubscribes[propertyId];
+          }
+        });
+
+        // Clean up checkpoint listeners for properties that are no longer in the snapshot
+        Object.keys(checkpointUnsubscribes).forEach((propertyId) => {
+          if (!currentPropertyIds.has(propertyId)) {
+            checkpointUnsubscribes[propertyId]();
+            delete checkpointUnsubscribes[propertyId];
           }
         });
 
@@ -106,6 +133,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
       unsubscribeProperties();
       // Unsubscribe all docs listeners on cleanup
       Object.values(docUnsubscribes).forEach((unsubscribe) => unsubscribe());
+      Object.values(checkpointUnsubscribes).forEach((unsubscribe) => unsubscribe());
     };
   }, [user, isAuthLoading, db]);
 

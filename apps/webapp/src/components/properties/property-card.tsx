@@ -5,7 +5,7 @@ import React from 'react';
 import type { Property } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building, Home, MapPin, Trash2, FileText, Wrench, CheckCircle2 } from "lucide-react";
+import { Building, Home, MapPin, Trash2, FileText, Wrench, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -149,7 +149,7 @@ export function PropertyCard({ property }: { property: Property }) {
                     <div className="grid grid-cols-3 gap-2 mt-auto">
                         <StatItem icon={FileText} value={docCount} label="Docs" />
                         <StatItem icon={Wrench} value={servicesCount} label="Services" />
-                        <StatItem icon={CheckCircle2} value={checksCount} label="Checks" />
+                        <StatItem icon={Clock} value={checksCount} label="Checks" />
                     </div>
 
                 </CardContent>
