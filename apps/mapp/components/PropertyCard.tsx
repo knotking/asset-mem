@@ -26,7 +26,7 @@ import {
   Home,
   FileText,
   Wrench,
-  CheckCircle2,
+  Clock,
   Trash2,
   MoreVertical,
   AlertCircle,
@@ -274,7 +274,7 @@ export default function PropertyCard({
               </View>
               <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
                 <View className="h-5 w-5 items-center justify-center">
-                  <Icon as={CheckCircle2} size={20} className="text-success" />
+                  <Icon as={Clock} size={20} className="text-success" />
                 </View>
                 <Text className="text-sm font-semibold text-foreground">{checksCount}</Text>
                 <Text className="text-xs text-muted-foreground">Checks</Text>
