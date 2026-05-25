@@ -1,6 +1,6 @@
 description: >
-  Legacy: substantive checkpoint routing (not casual hello).
-  For casual greetings use conformance/routing/hello_plain_welcome/ instead.
+  Root property_agent receives a casual greeting in checkpoint mode.
+  Should NOT transfer to doculink_agent; plain property-scoped welcome only.
 agent: property_agent
 initial_state: {}
 user_messages:

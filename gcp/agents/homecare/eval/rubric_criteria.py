@@ -109,6 +109,23 @@ def config_checkpoint() -> EvalConfig:
     )
 
 
+def config_conversational() -> EvalConfig:
+    """Casual / multi-turn follow-up bypass (no tool trajectory on conversational turns)."""
+    return EvalConfig.model_validate(
+        {
+            "criteria": {
+                "rubric_based_final_response_quality_v1": _rubric_final_response_criterion(
+                    ["conversational_followup"]
+                ),
+                "rubric_based_tool_use_quality_v1": _rubric_tool_use_criterion(
+                    ["routing_tool_use"],
+                    threshold=1.0,
+                ),
+            }
+        }
+    )
+
+
 def config_simulation() -> EvalConfig:
     """User-simulator scenarios (multi-turn; no golden final_response)."""
     return EvalConfig.model_validate(

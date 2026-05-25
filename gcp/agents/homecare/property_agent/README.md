@@ -32,6 +32,7 @@ See `prompts.py` → `root_agent_instructions()`:
 - **`primary_agent`** (highest priority): `"checkpoint"` or `"docs"` → always delegate to `doculink_agent` with the right downstream behavior.
 - **Legacy**: non-empty `checkpoint_ids` → `doculink_agent` (checkpoint path).
 - **Otherwise**: property-related queries → `doculink_agent`; casual / non-property → short direct reply, no tools.
+- **Conversational intent**: `conversational_intent.py` + `conversational_phrases.json` classify greetings, thanks, closure, and post-analysis acknowledgments so UI routing flags do not re-run optional agents. Unit tests: `tests/test_conversational_intent.py`.
 
 ## DocuLink tool selection
 

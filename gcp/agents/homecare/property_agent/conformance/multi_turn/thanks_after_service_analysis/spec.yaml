@@ -1,0 +1,9 @@
+description: >
+  Turn 1 substantive service request; turn 2 thanks with same optional-agent flags.
+agent: property_agent
+initial_state: {}
+user_messages:
+  - text: |
+      {"user_query": "recommend providers for garage door repair", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}
+  - text: |
+      {"user_query": "thank you, that's helpful", "primary_agent": "checkpoint", "checkpoint_optional_agents": ["service"], "property_id": "nY3XQ92eUa02Qs14QWEn", "property_address": "1982 Helena Way, Brentwood, CA 94513"}

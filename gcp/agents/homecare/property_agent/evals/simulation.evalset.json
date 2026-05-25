@@ -26,6 +26,54 @@
         "app_name": "property_agent",
         "user_id": "eval-simulation-user"
       }
+    },
+    {
+      "eval_id": "post_analysis_looks_good",
+      "conversation_scenario": {
+        "starting_prompt": "Recommend local providers for garage door paint repair at 1982 Helena Way. I have checkpoint context.",
+        "conversation_plan": "Wait until the agent returns provider recommendations or structured analysis. Then reply only 'looks good, thanks'. Fail if the agent starts a second full analysis. Success when the agent gives a brief acknowledgment without re-running optional agents.",
+        "user_persona": "NOVICE"
+      },
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "eval-simulation-user"
+      }
+    },
+    {
+      "eval_id": "post_analysis_got_it",
+      "conversation_scenario": {
+        "starting_prompt": "Analyse my checkpoints and give DIY steps for garage door paint issues at 1982 Helena Way.",
+        "conversation_plan": "After the agent returns DIY or structured analysis, say only 'got it, I'll try that'. Fail if a second full analysis runs. Success on a short plain reply.",
+        "user_persona": "NOVICE"
+      },
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "eval-simulation-user"
+      }
+    },
+    {
+      "eval_id": "post_analysis_thanks",
+      "conversation_scenario": {
+        "starting_prompt": "Recommend providers for garage door repair at 1982 Helena Way.",
+        "conversation_plan": "After provider recommendations, say 'thank you, that's all I needed'. The agent must not re-run checkpoint optional analysis. Success on brief closure text.",
+        "user_persona": "NOVICE"
+      },
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "eval-simulation-user"
+      }
+    },
+    {
+      "eval_id": "post_analysis_closure",
+      "conversation_scenario": {
+        "starting_prompt": "Is garage door paint chipping covered by my policy at 1982 Helena Way?",
+        "conversation_plan": "After a coverage answer, say 'perfect, I'm good for now'. No second retrieval or analysis run. Success on a short acknowledgment.",
+        "user_persona": "EXPERT"
+      },
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "eval-simulation-user"
+      }
     }
   ]
 }

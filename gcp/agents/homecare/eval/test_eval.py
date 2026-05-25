@@ -18,6 +18,7 @@ from google.adk.evaluation.eval_config import EvalConfig
 from eval.rubric_criteria import (
     config_checkpoint,
     config_checkpoint_branch,
+    config_conversational,
     config_default,
     config_routing,
 )
@@ -81,6 +82,39 @@ async def test_eval_doculink_routing():
             "2. Send a property-related question (no checkpoint_ids / primary_agent)\n"
             "3. Eval tab → create eval set → save as doculink_routing.evalset.json\n"
             "4. Expect trajectory: transfer_to_agent(agent_name=doculink_agent)"
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_eval_conversational_bypass():
+    """Single-turn casual phrases with optional-agent flags present (no analysis run)."""
+    await _run_eval(
+        agent_module="property_agent",
+        evalset_file="conversational_bypass.evalset.json",
+        eval_config=config_conversational(),
+        recording_hint=(
+            "1. uv run adk web → property_agent\n"
+            "2. Record cases: hello, thanks, looks good with primary_agent=checkpoint "
+            "and checkpoint_optional_agents in payload\n"
+            "3. Save as conversational_bypass.evalset.json\n"
+            "4. Expect: plain text, no checkpoint_progress_agent"
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_eval_multi_turn_conversational():
+    """Turn 1 substantive analysis; turn 2 casual acknowledgment (same flags)."""
+    await _run_eval(
+        agent_module="property_agent",
+        evalset_file="multi_turn_conversational.evalset.json",
+        eval_config=config_conversational(),
+        recording_hint=(
+            "1. uv run adk web → property_agent\n"
+            "2. Turn 1: recommend providers + checkpoint_optional_agents [service]\n"
+            "3. Turn 2: looks good / thanks / got it (same flags)\n"
+            "4. Save as multi_turn_conversational.evalset.json"
         ),
     )
 

@@ -37,7 +37,9 @@ Pass thresholds depend on the eval (see `eval/rubric_criteria.py`):
 
 | File | What to record |
 |------|----------------|
-| `doculink_routing.evalset.json` | Root → `doculink_agent` (e.g. `primary_agent: "checkpoint"`, simple greeting; expect `transfer_to_agent` then `checkpoint_agent`) |
+| `doculink_routing.evalset.json` | Root → `doculink_agent` for **substantive** checkpoint queries (not casual hello) |
+| `conversational_bypass.evalset.json` | Casual phrases (hello, thanks, looks good, …) with `checkpoint_optional_agents` in payload — plain text, **no** analysis tools |
+| `multi_turn_conversational.evalset.json` | Turn 1: recommend providers / analysis; turn 2: thanks / got it / closure — no second analysis run |
 | `doculink_docs.evalset.json` | `primary_agent: "docs"` and/or `context_doc_uris`; user-docs query |
 | `checkpoint_optional_agents.evalset.json` | `checkpoint_ids` + `checkpoint_optional_agents: ["coverage","diy","service","cost"]` |
 | `cost_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["cost"]` → cost in checkpoint analysis |
@@ -53,6 +55,7 @@ All evalsets are recorded against **`property_agent`** (full session). Cost/shop
 ```bash
 make test-eval              # all six eval tests (~3 min, live Vertex)
 make test-eval-routing      # one file
+make test-eval-conversational  # conversational_bypass + multi_turn (after recording)
 
 uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.json \
   --config_file_path=property_agent/evals/test_config.json \
@@ -78,9 +81,24 @@ uv run adk eval property_agent property_agent/evals/simulation.evalset.json \
   --print_detailed_results
 ```
 
+## Conversational intent (unit tests)
+
+Phrase taxonomy and classifier (no Vertex):
+
+```bash
+uv run pytest tests/test_conversational_intent.py -v
+```
+
+Fixtures: `property_agent/conversational_phrases.json` (greetings, thanks, closure, app reactions, etc.).
+
 ## Conformance (replay)
 
-Deterministic replay tests live under **`property_agent/conformance/`** (`spec.yaml` per case). Record fixtures with ADK web running, then replay:
+Deterministic replay tests live under **`property_agent/conformance/`** (`spec.yaml` per case). Includes:
+
+- `routing/hello_plain_welcome/` — hello in checkpoint mode → no `transfer_to_agent`
+- `multi_turn/casual_after_service_analysis/`, `thanks_after_service_analysis/`, `got_it_after_analysis/` — turn 2 casual with same optional-agent flags
+
+Record fixtures with ADK web running, then replay:
 
 ```bash
 uv run adk web          # terminal 1 (default http://127.0.0.1:8000)
