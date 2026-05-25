@@ -35,6 +35,8 @@ npm run test:watch
 | [`__tests__/ChatMessage.youtube.test.tsx`](../__tests__/ChatMessage.youtube.test.tsx) | Lazy YouTube mount gated by `AccordionMountContext` |
 | [`lib/structured-accordion-defaults.ts`](../lib/structured-accordion-defaults.ts) | Android: only summary/clarification open; no triage default |
 | [`__tests__/structured-accordion-defaults.test.ts`](../__tests__/structured-accordion-defaults.test.ts) | Accordion `defaultValue` by platform and visible sections |
+| [`lib/chat-message-equal.ts`](../lib/chat-message-equal.ts) | `ChatMessage` memo comparator (content, steps, file, createdAt) |
+| [`__tests__/chat-message.equal.test.ts`](../__tests__/chat-message.equal.test.ts) | `areChatMessagePropsEqual` mirrors bubble comparator |
 | [`__tests__/css-theme-tokens.test.ts`](../__tests__/css-theme-tokens.test.ts) | Light/dark token mapping regression |
 | [`__tests__/ChatMessage.structured.navigation.test.tsx`](../__tests__/ChatMessage.structured.navigation.test.tsx) | Real accordion + `NavigationContainer` (no nav-context crash) |
 | [`__tests__/test-utils.tsx`](../__tests__/test-utils.tsx) | `renderWithProviders()` helper |

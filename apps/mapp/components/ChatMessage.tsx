@@ -76,6 +76,7 @@ import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
 import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
+import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -1780,4 +1781,5 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
   );
 }
 
-export default React.memo(ChatMessage);
+export { areChatMessagePropsEqual };
+export default React.memo(ChatMessage, areChatMessagePropsEqual);
