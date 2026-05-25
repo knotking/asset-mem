@@ -1,4 +1,5 @@
 import { Icon } from '@/components/ui/icon';
+import { AccordionMountContext } from '@/lib/accordion-mount-context';
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import * as AccordionPrimitive from '@rn-primitives/accordion';
@@ -130,11 +131,13 @@ function AccordionContent({
           })
         )}
         {...props}>
-        <Animated.View
-          exiting={Platform.select({ native: FadeOutUp.duration(200) })}
-          className={cn('pb-4', className)}>
-          {children}
-        </Animated.View>
+        <AccordionMountContext.Provider value={isExpanded}>
+          <Animated.View
+            exiting={Platform.select({ native: FadeOutUp.duration(200) })}
+            className={cn('pb-4', className)}>
+            {children}
+          </Animated.View>
+        </AccordionMountContext.Provider>
       </AccordionPrimitive.Content>
     </TextClassContext.Provider>
   );

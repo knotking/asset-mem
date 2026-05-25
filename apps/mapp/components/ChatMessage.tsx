@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import YoutubePlayer from 'react-native-youtube-iframe';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Icon } from '@/components/ui/icon';
@@ -65,6 +64,7 @@ import {
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
 import { getCachedExtractContentParts } from '@/lib/chat-content-cache';
+import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import {
   assistantMessageHasDisplayableContent,
   structuredDataHasVisibleSections,
@@ -407,22 +407,9 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
 });
 
 const YouTubeEmbed = React.memo(({ videoUrl }: { videoUrl: string }) => {
-  const videoId = useMemo(() => getYouTubeVideoId(videoUrl), [videoUrl]);
-
-  if (!videoId) {
-    return null;
-  }
-
   return (
     <View className="mb-2 w-full overflow-hidden rounded-md">
-      <YoutubePlayer
-        height={192}
-        videoId={videoId}
-        play={false}
-        webViewProps={{
-          androidLayerType: 'hardware',
-        }}
-      />
+      <LazyYouTubePlayer videoUrl={videoUrl} />
     </View>
   );
 });
