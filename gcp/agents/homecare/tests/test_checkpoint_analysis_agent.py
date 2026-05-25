@@ -1331,6 +1331,46 @@ def test_ensure_checkpoint_analysis_pending_stashed_from_fields():
     assert "leak" in data["checkpoint_results"]
 
 
+def test_ensure_pending_stashed_from_checkpoint_result_singular():
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    state = {
+        "checkpoint_optional_agents": ["cost"],
+        "checkpoint_result": "Checkpoint Name: Garage\nIssues: paint chip",
+        "user_query": "how about cost?",
+        "checkpoint_retrieval_search_query": "garage door paint",
+    }
+    assert dfg.ensure_checkpoint_analysis_pending_stashed(state) is True
+    data = json.loads(state[dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY])
+    assert data["checkpoint_optional_agents"] == ["cost"]
+    assert "paint chip" in data["checkpoint_results"]
+
+
+def test_optional_agents_and_stash_from_resolved_turn():
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    state = {
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": (
+                "What might repairs cost for the garage door at 1982 Helena Way?"
+            ),
+            "retrieval_only": False,
+            "run_optional_agents": ["cost"],
+            "resolve_source": "llm",
+        },
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: chip",
+        "user_query": "ok. how about cost?",
+    }
+    assert dfg.optional_agents_for_progress_from_state(state) == ["cost"]
+    assert dfg.should_stash_checkpoint_optional_analysis(
+        state, "What might repairs cost for the garage door?"
+    )
+    assert dfg.ensure_checkpoint_analysis_pending_stashed(state) is True
+
+
 def test_format_checkpoints_for_analysis_blob():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 

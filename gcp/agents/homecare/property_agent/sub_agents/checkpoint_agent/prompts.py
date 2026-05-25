@@ -53,6 +53,7 @@ def checkpoint_agent_instruction() -> str:
            - Identify patterns across checkpoints (e.g., "What issues were found?")
            - Provide timeline information (e.g., "When was the last time I checked the roof?")
            - Analyze trends (e.g., "How has my property condition changed over time?")
+        *   **Selected `checkpoint_ids` vs query:** When specific checkpoint IDs were provided, you only have data for those inspections. If the user asks about a room or topic (e.g. kitchen) that does not match the selected checkpoint locations (e.g. garage), say so clearly and summarize what the selected checkpoints actually contain — do not invent kitchen data.
         
         **MANDATORY Output Format for Simple Query Mode:**
         

@@ -107,9 +107,16 @@ def _stash_pending_checkpoint_analysis(
     user_query: str,
 ) -> None:
     """Stash structured analysis input for doculink → checkpoint_progress_agent transfer."""
-    requested = normalize_checkpoint_optional_agents(
-        tool_context.state.get("checkpoint_optional_agents")
+    from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+        optional_agents_for_progress_from_state,
+        should_stash_checkpoint_optional_analysis,
     )
+
+    if not should_stash_checkpoint_optional_analysis(
+        tool_context.state, user_query
+    ):
+        return
+    requested = optional_agents_for_progress_from_state(tool_context.state)
     if not requested or not formatted_results:
         return
 
@@ -517,9 +524,19 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                 tool_result = stashed
 
             ret_len = len(tool_result) if isinstance(tool_result, str) else None
-            if wrapped == "checkpoint_agent" and isinstance(tool_result, str):
-                set_return_chars(tool_context.state, len(tool_result))
-                begin_doculink_phase(tool_context.state)
+            if wrapped == "checkpoint_agent":
+                from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+                    checkpoint_results_text_from_state,
+                    ensure_checkpoint_analysis_pending_stashed,
+                )
+
+                blob = checkpoint_results_text_from_state(tool_context.state)
+                if blob and not tool_context.state.get("checkpoint_results"):
+                    tool_context.state["checkpoint_results"] = blob
+                ensure_checkpoint_analysis_pending_stashed(tool_context.state)
+                if isinstance(tool_result, str):
+                    set_return_chars(tool_context.state, len(tool_result))
+                    begin_doculink_phase(tool_context.state)
             logger.debug(
                 "_LastNonEmptyTextAgentTool.run_async end wrapped=%r "
                 "return_type=%s return_len=%s",
