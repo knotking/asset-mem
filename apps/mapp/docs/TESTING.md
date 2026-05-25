@@ -52,4 +52,17 @@ npm run test:watch
 
 Pull requests that touch `apps/mapp/**` or `apps/common/**` run [`.github/workflows/test-mapp-frontends.yaml`](../../../.github/workflows/test-mapp-frontends.yaml).
 
-See also [docs/CLIENT_LOGGING.md](../../../docs/CLIENT_LOGGING.md) for logger gating expectations exercised in `__tests__/logger.test.ts`.
+| [`__tests__/logger.test.ts`](../__tests__/logger.test.ts) | Runtime logger gating (`debug`/`info` vs `warn`/`error`) |
+| [`__tests__/babel.prod-console.test.js`](../__tests__/babel.prod-console.test.js) | Prod Babel strips `console.log`/`info`/`debug`; keeps `warn`/`error` |
+| [`babel.config.js`](../babel.config.js) | `transform-remove-console` when `NODE_ENV=production` and debug flag off |
+
+See also [docs/CLIENT_LOGGING.md](../../../docs/CLIENT_LOGGING.md) for logging policy.
+
+## Manual release check (Phase 4.2)
+
+After `eas build --profile prod-apk` (or internal prod APK), on a mid-range Android device:
+
+- Scroll a long chat (50+ messages) — no severe jank
+- Stream a long assistant reply — UI stays responsive
+- Expand structured accordions (coverage, DIY) — first expand acceptable; YouTube loads only when section is open
+- Cold start → open property chat — time to interactive reasonable

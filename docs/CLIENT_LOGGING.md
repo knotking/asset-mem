@@ -97,6 +97,12 @@ Local dev: verbose always on via `NODE_ENV=development` (no env var required).
 
 `app.config.js` exposes `extra.debugLogs` for the mapp logger.
 
+### Mapp: build-time stripping
+
+For **production** Babel transforms when `EXPO_PUBLIC_DEBUG_LOGS` is **not** `true`, `apps/mapp/babel.config.js` applies `babel-plugin-transform-remove-console` with `{ exclude: ['error', 'warn'] }` (same policy as webapp `removeConsole`).
+
+So `console.log`, `console.info`, and `console.debug` are removed from release bundles in addition to the runtime gate in `logger.ts`. EAS profiles `prod` and `prod-apk` omit `EXPO_PUBLIC_DEBUG_LOGS`; `staging` keeps verbose logs for QA.
+
 Local dev: `.env` may set `EXPO_PUBLIC_DEBUG_LOGS=true`; `__DEV__` already enables verbose logs.
 
 ## Enabling verbose logs temporarily in production
