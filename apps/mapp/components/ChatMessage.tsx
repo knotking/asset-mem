@@ -75,6 +75,7 @@ import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
+import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -731,6 +732,45 @@ const StructuredResponse = React.memo(
     [needsClarification, costEstimation]
   );
 
+  const hasCheckpointDetails = useMemo(
+    () =>
+      Array.isArray((analysis as { checkpointDetails?: unknown })?.checkpointDetails) &&
+      ((analysis as { checkpointDetails: unknown[] }).checkpointDetails.length > 0),
+    [analysis]
+  );
+
+  const hasCheckpointInsights = useMemo(
+    () => {
+      const insights = (analysis as { insights?: Record<string, unknown> })?.insights;
+      return !!insights && typeof insights === 'object' && Object.keys(insights).length > 0;
+    },
+    [analysis]
+  );
+
+  const accordionDefaultValue = useMemo(
+    () =>
+      getStructuredAccordionDefaultValue({
+        needsClarification,
+        hasCheckpointSummary,
+        hasCheckpointDetails,
+        hasCheckpointInsights,
+        hasCoverage,
+        hasDIY,
+        hasService,
+        hasCostEstimates,
+      }),
+    [
+      needsClarification,
+      hasCheckpointSummary,
+      hasCheckpointDetails,
+      hasCheckpointInsights,
+      hasCoverage,
+      hasDIY,
+      hasService,
+      hasCostEstimates,
+    ]
+  );
+
   return (
     <View className="w-full space-y-3">
       {displayTitle && (
@@ -738,7 +778,11 @@ const StructuredResponse = React.memo(
           <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
         </View>
       )}
-      <Accordion type="single" collapsible className="w-full" defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"}>
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        defaultValue={accordionDefaultValue}>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
