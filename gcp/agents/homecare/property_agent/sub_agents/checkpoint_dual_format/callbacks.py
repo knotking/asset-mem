@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
@@ -261,6 +261,18 @@ def doculink_progressive_streaming_callback(
     return llm_response.model_copy(update={"content": new_content, "partial": True})
 
 
+def _skip_checkpoint_dual_format_echo(state: Any) -> bool:
+    """Do not replace user_docs / knowledge_base answers with stale checkpoint stash."""
+    if str(state.get("primary_agent") or "").strip().lower() == "docs":
+        return True
+    raw = state.get("resolved_turn")
+    if isinstance(raw, dict):
+        route = raw.get("route")
+        if route in ("user_docs", "knowledge_base"):
+            return True
+    return False
+
+
 def doculink_after_model_callback(
     callback_context: CallbackContext,
     llm_response: LlmResponse,
@@ -273,6 +285,8 @@ def doculink_after_model_callback(
     Only act on the final model chunk; during streaming this callback fires once per
     partial and would otherwise emit the full stash as a duplicate event each time.
     """
+    if _skip_checkpoint_dual_format_echo(callback_context.state):
+        return None
     if llm_response_declares_tool_use(llm_response):
         return None
     if llm_response_is_streaming_partial(llm_response):

@@ -37,6 +37,53 @@ def normalize_checkpoint_optional_agents(
     return [str(x) for x in value if str(x) in _VALID_OPTIONAL_BRANCHES]
 
 
+def checkpoint_results_text_from_state(state: Any) -> Optional[str]:
+    """Pluggable checkpoint retrieval blob (``checkpoint_results`` or ADK ``checkpoint_result``)."""
+    if not hasattr(state, "get"):
+        return None
+    for key in ("checkpoint_results", "checkpoint_result"):
+        raw = state.get(key)
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+    return None
+
+
+def optional_agents_for_progress_from_state(state: Any) -> List[str]:
+    """Optional branches from [RESOLVED_TURN] first, then session ``checkpoint_optional_agents``."""
+    if not hasattr(state, "get"):
+        return []
+    from property_agent.resolve_turn import resolved_turn_from_state
+
+    resolved = resolved_turn_from_state(state)
+    if resolved is not None and resolved.run_optional_agents and not resolved.retrieval_only:
+        return [
+            b
+            for b in resolved.run_optional_agents
+            if b in _VALID_OPTIONAL_BRANCHES
+        ]
+    return normalize_checkpoint_optional_agents(state.get("checkpoint_optional_agents"))
+
+
+def should_stash_checkpoint_optional_analysis(
+    state: Any,
+    user_query: str,
+) -> bool:
+    """True when optional analysis should run after retrieval (resolve plan or query regex)."""
+    agents = optional_agents_for_progress_from_state(state)
+    if not agents:
+        return False
+    from property_agent.resolve_turn import resolved_turn_from_state
+
+    resolved = resolved_turn_from_state(state)
+    if resolved is not None:
+        return not resolved.retrieval_only and bool(resolved.run_optional_agents)
+    from property_agent.conversational_intent import (
+        requests_checkpoint_optional_analysis,
+    )
+
+    return requests_checkpoint_optional_analysis(user_query, state)
+
+
 def sync_checkpoint_tool_args_to_state(state: Any, args: Dict[str, Any]) -> None:
     """Persist checkpoint tool args on session state for nested runners and transfer."""
     if not hasattr(state, "__setitem__") or not isinstance(args, dict):
@@ -50,13 +97,11 @@ def build_checkpoint_analysis_pending_payload(state: Any) -> Optional[Dict[str, 
     """Build CheckpointAnalysisInput dict from session fields when JSON stash is absent."""
     if not hasattr(state, "get"):
         return None
-    requested = normalize_checkpoint_optional_agents(
-        state.get("checkpoint_optional_agents")
-    )
+    requested = optional_agents_for_progress_from_state(state)
     if not requested:
         return None
-    checkpoint_results = state.get("checkpoint_results")
-    if not isinstance(checkpoint_results, str) or not checkpoint_results.strip():
+    checkpoint_results = checkpoint_results_text_from_state(state)
+    if not checkpoint_results:
         return None
     user_query = state.get("user_query")
     if not isinstance(user_query, str):

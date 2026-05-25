@@ -7,12 +7,13 @@ info:
     orchestrates multiple specialized sub-agents for comprehensive property care.
     
     **Property Agent Scope:**
-    The Property Agent handles a wide range of property-related queries:
-    - **Repairs and Maintenance**: Plumbing, electrical, HVAC, appliances, vehicle issues, structural problems
-    - **Pest Control**: Insect infestations, rodent problems, wildlife issues, pest prevention and treatment
-    - **Service Recommendations**: Finding and recommending local service providers, contractors, professionals
-    - **Product Requests**: Product recommendations, shopping queries, purchase advice for property-related items
-    - **General Property Care**: Home improvement, maintenance tips, property management, preventive care
+    The Property Agent helps with property care through DocuLink and checkpoint analysis:
+    - **Maintenance Checkpoints**: Property inspections and condition over time
+    - **Property Documents**: Answers from uploaded lease, policy, and insurance documents
+    - **Coverage**: Warranty and insurance guidance from user documents
+    - **DIY**: Steps, videos, and product suggestions for do-it-yourself repairs
+    - **Service**: Local service provider recommendations
+    - **Cost**: Repair cost estimates (DIY vs professional)
     
     **Sub-Agents (via DocuLink and checkpoint analysis):**
     - Checkpoint Agent: Property checkpoint retrieval (Firestore vector search)

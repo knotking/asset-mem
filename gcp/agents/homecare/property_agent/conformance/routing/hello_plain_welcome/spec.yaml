@@ -1,6 +1,6 @@
 description: >
   Root property_agent receives a casual greeting in checkpoint mode.
-  Should NOT transfer to doculink_agent; plain property-scoped welcome only.
+  Should NOT call checkpoint or doc tools; plain property-scoped welcome only.
 agent: property_agent
 initial_state: {}
 user_messages:

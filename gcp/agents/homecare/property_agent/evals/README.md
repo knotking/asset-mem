@@ -37,7 +37,7 @@ Pass thresholds depend on the eval (see `eval/rubric_criteria.py`):
 
 | File | What to record |
 |------|----------------|
-| `doculink_routing.evalset.json` | Root → `doculink_agent` for **substantive** checkpoint queries (not casual hello) |
+| `doculink_routing.evalset.json` | Legacy trajectories (doculink transfer); re-record for single-hop `property_agent` executor |
 | `conversational_bypass.evalset.json` | Casual phrases (hello, thanks, looks good, …) with `checkpoint_optional_agents` in payload — plain text, **no** analysis tools |
 | `multi_turn_conversational.evalset.json` | Turn 1: recommend providers / analysis; turn 2: thanks / got it / closure — no second analysis run |
 | `doculink_docs.evalset.json` | `primary_agent: "docs"` and/or `context_doc_uris`; user-docs query |

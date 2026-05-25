@@ -218,6 +218,25 @@ def normalize_checkpoint_analysis_tool_args(
     return merged
 
 
+def _checkpoint_analysis_input_from_session_state(
+    ctx: InvocationContext,
+) -> Optional[CheckpointAnalysisInput]:
+    """Build workflow input from session when transfer carries no JSON body."""
+    tool_ctx = _tool_context(ctx)
+    ensure_checkpoint_analysis_pending_stashed(tool_ctx.state)
+    data = build_checkpoint_analysis_pending_payload(tool_ctx.state)
+    if data is None:
+        return None
+    try:
+        return CheckpointAnalysisInput.model_validate(data)
+    except Exception as exc:
+        logger.warning(
+            "checkpoint optional parallel: session input validation failed: %s",
+            exc,
+        )
+        return None
+
+
 def _pending_checkpoint_analysis_input_from_state(
     ctx: InvocationContext,
 ) -> Optional[CheckpointAnalysisInput]:
@@ -313,6 +332,15 @@ def _parse_checkpoint_analysis_input(
         logger.info(
             "checkpoint optional parallel: using pending analysis input from session state"
         )
-    elif text:
+        return pending
+
+    session_inp = _checkpoint_analysis_input_from_session_state(ctx)
+    if session_inp is not None:
+        logger.info(
+            "checkpoint optional parallel: built analysis input from session fields"
+        )
+        return session_inp
+
+    if text:
         logger.warning("checkpoint optional parallel: missing workflow input text")
-    return pending
+    return None

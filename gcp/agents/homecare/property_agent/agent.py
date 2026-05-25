@@ -11,12 +11,10 @@ from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.preload_memory_tool import preload_memory_tool
 
-from .agent_inputs import DiagnosisInput, DocsInput
+from .agent_inputs import DiagnosisInput
 from .memory_bank import (
-    DOCULINK_AGENT_NAME,
     PROPERTY_AGENT_NAME,
     ingest_invocation_to_memory_bank,
-    invocation_used_doculink,
     memory_preload_enabled,
     resolve_property_id,
 )
@@ -30,18 +28,23 @@ from .logging_context import (
 )
 from .model_config import GLOBAL_GEMINI_MODEL
 from .conversational_callbacks import (
-    apply_conversational_state_for_turn,
     conversational_before_tool,
     mark_checkpoint_response_kind,
 )
-from .prompts import doculink_agent_system_instruction, root_agent_instructions
+from .conversational_intent import resolve_user_query_from_state
+from .resolve_turn import (
+    USER_DOCS_PASSTHROUGH_STATE_KEY,
+    prepare_before_model_turn,
+    requests_optional_analysis_from_resolved,
+)
+from .prompts import property_agent_executor_instructions
 from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
 from .sub_agents.checkpoint_analysis_agent.agent import checkpoint_progress_agent
 from .sub_agents.checkpoint_dual_format_guard import (
     doculink_after_model_callback,
     doculink_progressive_streaming_callback,
     ensure_checkpoint_analysis_pending_stashed,
-    sync_checkpoint_tool_args_to_state,
+    sync_checkpoint_tool_args_to_state as _sync_checkpoint_args,
 )
 from .sub_agents.knowledge_base_agent import knowledge_base_agent
 from .sub_agents.user_docs_agent import user_docs_agent
@@ -75,18 +78,19 @@ def root_before_model_combined(
     callback_context: Context, llm_request: LlmRequest
 ) -> Optional[LlmResponse]:
     before_model_auth_uid(callback_context, llm_request)
-    return apply_conversational_state_for_turn(
-        callback_context, agent_name="property_agent"
-    )
+    try:
+        return prepare_before_model_turn(
+            callback_context, llm_request=llm_request
+        )
+    except Exception:
+        logger.exception("prepare_before_model_turn failed")
+        from .conversational_callbacks import apply_conversational_state_for_turn
 
-
-def doculink_before_model_combined(
-    callback_context: Context, llm_request: LlmRequest
-) -> Optional[LlmResponse]:
-    before_model_auth_uid(callback_context, llm_request)
-    return apply_conversational_state_for_turn(
-        callback_context, agent_name="doculink_agent"
-    )
+        return apply_conversational_state_for_turn(
+            callback_context,
+            agent_name="property_agent",
+            llm_request=llm_request,
+        )
 
 
 def before_model_auth_uid(
@@ -117,7 +121,7 @@ def after_model_auth_uid(
     unbind_auth_uid()
 
 
-def doculink_after_model_combined(
+def executor_after_model_combined(
     callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
     after_model_auth_uid(callback_context, llm_response)
@@ -147,32 +151,17 @@ def after_tool_auth_uid(
     return None
 
 
-async def doculink_after_agent_memory(
+async def property_agent_after_agent_memory(
     callback_context: CallbackContext,
 ) -> None:
     await ingest_invocation_to_memory_bank(
         callback_context,
-        agent_name=DOCULINK_AGENT_NAME,
+        agent_name=PROPERTY_AGENT_NAME,
         include_checkpoint_facts=True,
     )
 
 
-async def property_agent_after_agent_memory(
-    callback_context: CallbackContext,
-) -> None:
-    invocation = callback_context._invocation_context
-    if invocation_used_doculink(
-        invocation.session.events, invocation.invocation_id
-    ):
-        return
-    await ingest_invocation_to_memory_bank(
-        callback_context,
-        agent_name=PROPERTY_AGENT_NAME,
-        include_checkpoint_facts=False,
-    )
-
-
-def _doculink_tools() -> list:
+def _executor_tools() -> list:
     tools = [
         AgentTool(user_docs_agent),
         AgentTool(knowledge_base_agent),
@@ -187,7 +176,7 @@ def _doculink_tools() -> list:
     return tools
 
 
-def doculink_after_tool_combined(
+def executor_after_tool_combined(
     tool: BaseTool,
     args: Dict[str, Any],
     tool_context: ToolContext,
@@ -195,19 +184,34 @@ def doculink_after_tool_combined(
 ) -> Optional[dict]:
     result = after_tool_auth_uid(tool, args, tool_context, tool_response)
     tool_name = getattr(tool, "name", None) or type(tool).__name__
+    if tool_name == "ask_user_docs_agent":
+        resolved = tool_context.state.get("resolved_turn")
+        route = resolved.get("route") if isinstance(resolved, dict) else None
+        if route == "user_docs" or str(
+            tool_context.state.get("primary_agent") or ""
+        ).strip().lower() == "docs":
+            tool_context.state[USER_DOCS_PASSTHROUGH_STATE_KEY] = True
     if tool_name == "checkpoint_agent":
+        from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
+            checkpoint_results_text_from_state,
+            optional_agents_for_progress_from_state,
+        )
+
+        blob = checkpoint_results_text_from_state(tool_context.state)
+        if blob and not tool_context.state.get("checkpoint_results"):
+            tool_context.state["checkpoint_results"] = blob
         if ensure_checkpoint_analysis_pending_stashed(tool_context.state):
             logger.info(
-                "doculink after_tool: checkpoint_analysis_pending_input ready"
+                "property_agent after_tool: checkpoint_analysis_pending_input ready"
             )
         else:
-            optional = tool_context.state.get("checkpoint_optional_agents")
+            optional = optional_agents_for_progress_from_state(tool_context.state)
             if optional:
                 logger.warning(
-                    "doculink after_tool: checkpoint_agent finished but pending "
+                    "property_agent after_tool: checkpoint_agent finished but pending "
                     "analysis input missing (optional_agents=%r has_checkpoint_results=%s)",
                     optional,
-                    bool(tool_context.state.get("checkpoint_results")),
+                    bool(checkpoint_results_text_from_state(tool_context.state)),
                 )
     return result
 
@@ -233,9 +237,20 @@ def before_tool_callback(
         property_id is not None,
     )
     if tool_name == "checkpoint_agent" and isinstance(args, dict):
-        sync_checkpoint_tool_args_to_state(tool_context.state, args)
+        uq = resolve_user_query_from_state(tool_context.state) or str(
+            args.get("user_query") or ""
+        )
+        if not requests_optional_analysis_from_resolved(
+            tool_context.state, user_query=uq
+        ):
+            args["checkpoint_optional_agents"] = []
+        elif tool_context.state.get("checkpoint_optional_agents"):
+            args["checkpoint_optional_agents"] = list(
+                tool_context.state["checkpoint_optional_agents"]
+            )
+        _sync_checkpoint_args(tool_context.state, args)
         logger.info(
-            "doculink before_tool: synced checkpoint session fields optional_agents=%r",
+            "property_agent before_tool: synced checkpoint session fields optional_agents=%r",
             tool_context.state.get("checkpoint_optional_agents"),
         )
     if property_id:
@@ -251,44 +266,18 @@ def before_tool_callback(
         )
 
 
-# ADK Web / session traces attribute a tool's *function response* event to the
-# **invoking** agent (here: doculink_agent). The tool name on that row is still
-# ``checkpoint_agent`` — that pairing (author=doculink, response=checkpoint_agent)
-# is expected, not a mis-route.
-
-doculink_agent = Agent(
-    model=GLOBAL_GEMINI_MODEL,
-    name="doculink_agent",
-    description=("Agent that manages and executes document retrieval-related tasks."),
-    instruction=doculink_agent_system_instruction(),
-    input_schema=DocsInput,
-    tools=_doculink_tools(),
-    disallow_transfer_to_parent=True,
-    before_model_callback=doculink_before_model_combined,
-    after_model_callback=doculink_after_model_combined,
-    before_tool_callback=before_tool_callback,
-    after_tool_callback=doculink_after_tool_combined,
-    after_agent_callback=doculink_after_agent_memory,
-    sub_agents=[checkpoint_progress_agent],
-)
-
-# Note: ADK doesn't have before_sub_agent callback, so we rely on property_id being passed
-# through DocsInput schema when root agent delegates to doculink_agent
-
-def _root_tools() -> list:
-    return [preload_memory_tool] if memory_preload_enabled() else []
-
-
 root_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
     name="property_agent",
     description=("Agent that manages and executes homecare-related tasks."),
-    instruction=root_agent_instructions(),
+    instruction=property_agent_executor_instructions(),
     input_schema=DiagnosisInput,
-    tools=_root_tools(),
-    sub_agents=[doculink_agent],
+    tools=_executor_tools(),
+    sub_agents=[checkpoint_progress_agent],
     before_model_callback=root_before_model_combined,
-    after_model_callback=after_model_auth_uid,
+    before_tool_callback=before_tool_callback,
+    after_model_callback=executor_after_model_combined,
+    after_tool_callback=executor_after_tool_combined,
     after_agent_callback=property_agent_after_agent_memory,
 )
 

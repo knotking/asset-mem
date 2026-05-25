@@ -10,7 +10,10 @@
     "what's up",
     "whats up",
     "hi there",
-    "hello there"
+    "hello there",
+    "hello good morning",
+    "hello good afternoon",
+    "hello good evening"
   ],
   "social": [
     "how are you",
@@ -18,6 +21,31 @@
     "hope you are well",
     "hope you're well",
     "nice to meet you"
+  ],
+  "capability_inquiry": [
+    "how can you help",
+    "how can you help me",
+    "what can you do",
+    "what can you help with",
+    "what do you do",
+    "what do you offer",
+    "tell me how you can help",
+    "you can tell me how you can help",
+    "i don't know you can tell me how you can help",
+    "what are you able to do",
+    "how do you work",
+    "what is this for",
+    "what do you suggest",
+    "what would you suggest",
+    "what should i do",
+    "what should i ask",
+    "i don't know what do you suggest",
+    "i don't know what to ask",
+    "i dont know what do you suggest",
+    "not sure what to ask",
+    "any suggestions",
+    "what do you recommend i start with",
+    "where should i start"
   ],
   "thanks": [
     "thanks",

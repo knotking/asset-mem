@@ -45,7 +45,7 @@ class DiagnosisInput(BaseModel):
     context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
     checkpoint_ids: Optional[List[str]] = Field(
         default=None,
-        description="Checkpoint IDs for checkpoint context (routes to doculink_agent when provided).",
+        description="Checkpoint IDs for checkpoint context (checkpoint retrieval when provided).",
     )
     property_address: Optional[str] = Field(
         default=None,
@@ -59,8 +59,8 @@ class DiagnosisInput(BaseModel):
         default=None,
         description=(
             "Primary agent selection. When provided, this takes precedence in routing decisions. "
-            "Allowed values: 'checkpoint' routes to doculink_agent for checkpoint queries, "
-            "'docs' routes to doculink_agent for user document queries. "
+            "Allowed values: 'checkpoint' for checkpoint retrieval/analysis, "
+            "'docs' for user document queries. "
             "If not provided, routing falls back to legacy logic based on checkpoint_ids."
         ),
     )
