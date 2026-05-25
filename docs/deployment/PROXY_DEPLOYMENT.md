@@ -712,7 +712,7 @@ https://homecare-agent-proxy-{env}-….run.app/firebase-agent-stream
 With **Google Cloud API Gateway** (managed product, distinct from this FastAPI service):
 
 ```text
-https://<gateway-host-or-api.homegeek.ai>/firebase-agent-stream
+https://<gateway-host-or-api.asset-mem.com>/firebase-agent-stream
         → API Gateway → same Cloud Run backend
 ```
 

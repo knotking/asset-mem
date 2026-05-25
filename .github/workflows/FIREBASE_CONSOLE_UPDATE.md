@@ -1,6 +1,6 @@
 # Firebase Console Updates for Repository Name Change
 
-When your repository changes from `HomeGeekAI/HomeApp` to `BuildGeekAI/HomeApp`, you need to update the repository connection in Firebase App Hosting.
+When your repository changes from `AssetMem/HomeApp` to `BuildGeekAI/HomeApp`, you need to update the repository connection in Firebase App Hosting.
 
 ## What Needs to be Updated
 
@@ -29,7 +29,7 @@ If the above doesn't work, you may need to update the Developer Connect Git repo
    - Navigate to: https://console.cloud.google.com/cloud-build/developer-connect?project=homegeek-staging
 
 2. **Check Git Repository Links**
-   - Look for any links pointing to `HomeGeekAI/HomeApp`
+   - Look for any links pointing to `AssetMem/HomeApp`
    - If found, you may need to:
      - Delete the old link
      - Create a new link pointing to `BuildGeekAI/HomeApp`

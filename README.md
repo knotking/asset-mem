@@ -11,7 +11,7 @@ This repository contains the complete source code for the HomeApp platform, a co
 >
 > 🤖 **AI Agents**: For documentation on AI agents including Analysis and Checkpoint agents, see [Analysis Agent](./docs/analysis/README.md) and [Checkpoint Features](./docs/checkpoint/README.md).
 
-<img width="1241" height="694" alt="HomeGeek AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
+<img width="1241" height="694" alt="AssetMem AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
 
 <img width="2752" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/70c8be49-b847-4cdc-b790-2bcfc2cdb113" />
 

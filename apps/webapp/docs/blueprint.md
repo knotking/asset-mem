@@ -1,4 +1,4 @@
-# **App Name**: HomeGeek AI
+# **App Name**: AssetMem AI
 
 ## Core Features:
 

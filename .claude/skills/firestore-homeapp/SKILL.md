@@ -13,7 +13,7 @@ description: >-
 
 1. **MCP:** `.cursor/mcp.json` → server `firebase` (`firebase-tools mcp`, `--dir` = `apps/webapp`, `--only firestore`).
 2. **Auth:** `npx firebase-tools@latest login` (or ADC with Firestore access).
-3. **Project:** Default in `apps/webapp/.firebaserc` is `homegeek-staging`; `firebase use prod` for `homegeek-prod`.
+3. **Project:** Default in `apps/webapp/.firebaserc` is `homegeek-staging`; `firebase use prod` for `homegeek-prod`. (Legacy GCP IDs; product brand is AssetMem AI.)
 4. Setup details: `.cursor/README.md`.
 
 ## Primary MCP tools (server: `firebase`)

@@ -174,8 +174,8 @@ export default ({ config }) => {
 
   return {
     ...config,
-    name: env === "prod" ? "HomeGeek AI" : `HomeGeek AI (${env})`,
-    slug: process.env.APP_SLUG || "homegeekai",
+    name: env === "prod" ? "AssetMem AI" : `AssetMem AI (${env})`,
+    slug: process.env.APP_SLUG || "assetmem-staging",
     ios: {
       bundleIdentifier: process.env.IOS_BUNDLE_ID || "com.assetmem.staging",
     },
@@ -578,7 +578,7 @@ EAS can auto-increment build numbers:
 
 **EAS Dashboard**:
 
-- View all builds: https://expo.dev/accounts/[account]/projects/homegeek-ai/builds
+- View all builds: https://expo.dev/accounts/[account]/projects/assetmem-staging/builds
 - Monitor build status
 - Download build artifacts
 - View build logs
@@ -597,7 +597,7 @@ eas build:view BUILD_ID --wait
 
 **EAS Dashboard**:
 
-- View updates: https://expo.dev/accounts/[account]/projects/homegeek-ai/updates
+- View updates: https://expo.dev/accounts/[account]/projects/assetmem-staging/updates
 - Monitor update adoption
 - View update manifests
 

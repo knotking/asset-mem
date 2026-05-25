@@ -1,6 +1,6 @@
-# GoDaddy DNS Setup for Firebase App Hosting
+# GoDaddy DNS Setup for Firebase App Hosting (asset-mem.com)
 
-This guide explains how to connect your GoDaddy domain to Firebase App Hosting so your custom domain (e.g., `yourdomain.com`) points to your Firebase App Hosting deployment.
+This guide explains how to connect your GoDaddy domain (`asset-mem.com`) to Firebase App Hosting so production and staging subdomains point to your Firebase App Hosting backends. GCP project IDs remain `homegeek-staging` / `homegeek-prod`; only DNS and custom-domain labels use AssetMem branding.
 
 ## Prerequisites
 
@@ -56,10 +56,10 @@ If your domain is currently connected to **GoDaddy Website Builder**, you'll nee
 
 You can add multiple custom domains to Firebase App Hosting. For this setup, we'll add both:
 
-- `homegeek.ai` (root domain - production)
-- `staging.homegeek.ai` (subdomain - staging)
+- `asset-mem.com` (root domain - production)
+- `staging.asset-mem.com` (subdomain - staging)
 
-### Adding Root Domain (homegeek.ai)
+### Adding Root Domain (asset-mem.com)
 
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Select your project (e.g., `homegeek-staging`)
@@ -67,16 +67,16 @@ You can add multiple custom domains to Firebase App Hosting. For this setup, we'
 4. Click on your **production backend** (e.g., `prod`)
 5. Go to the **Custom domains** tab
 6. Click **Add custom domain**
-7. Enter `homegeek.ai`
+7. Enter `asset-mem.com`
 8. Click **Continue**
 
-### Adding Staging Subdomain (staging.homegeek.ai)
+### Adding Staging Subdomain (staging.asset-mem.com)
 
 1. In Firebase Console, navigate to **App Hosting**
 2. Click on your **staging backend** (e.g., `staging`)
 3. Go to the **Custom domains** tab
 4. Click **Add custom domain**
-5. Enter `staging.homegeek.ai`
+5. Enter `staging.asset-mem.com`
 6. Click **Continue**
 
 **Note:** You can add both domains to the same backend if you want, or assign them to different backends (prod vs staging). The DNS configuration will be the same regardless.
@@ -85,9 +85,9 @@ You can add multiple custom domains to Firebase App Hosting. For this setup, we'
 
 Firebase will provide TXT records for domain verification. You'll need to verify each domain separately.
 
-### Verify Root Domain (homegeek.ai)
+### Verify Root Domain (asset-mem.com)
 
-1. **In Firebase Console** (for the backend where you added `homegeek.ai`):
+1. **In Firebase Console** (for the backend where you added `asset-mem.com`):
    - Copy the TXT record value (it will look like: `firebase=abc123xyz...`)
 
 2. **Log in to GoDaddy:**
@@ -108,9 +108,9 @@ Firebase will provide TXT records for domain verification. You'll need to verify
 
 5. **Return to Firebase Console** and click **Verify** or **Continue**
 
-### Verify Staging Subdomain (staging.homegeek.ai)
+### Verify Staging Subdomain (staging.asset-mem.com)
 
-1. **In Firebase Console** (for the backend where you added `staging.homegeek.ai`):
+1. **In Firebase Console** (for the backend where you added `staging.asset-mem.com`):
    - Copy the TXT record value (it will look like: `firebase=xyz789abc...`)
 
 2. **In GoDaddy DNS Management:**
@@ -131,7 +131,7 @@ Firebase will provide TXT records for domain verification. You'll need to verify
 
 After verification, Firebase will provide DNS records to point your domains to App Hosting. Configure each domain separately.
 
-### Configure Root Domain (homegeek.ai) - Using A Records
+### Configure Root Domain (asset-mem.com) - Using A Records
 
 Firebase will provide A record IP addresses for the root domain. GoDaddy doesn't allow CNAME on root domain, so A records are required.
 
@@ -146,7 +146,7 @@ Firebase will provide A record IP addresses for the root domain. GoDaddy doesn't
    - Click **Save**
    - **Repeat** for each A record IP address provided by Firebase (usually 2-4 IPs)
 
-### Configure Staging Subdomain (staging.homegeek.ai) - Using CNAME
+### Configure Staging Subdomain (staging.asset-mem.com) - Using CNAME
 
 For subdomains, Firebase typically provides a CNAME record pointing to the App Hosting domain.
 
@@ -271,7 +271,7 @@ When disconnecting from Website Builder, **your email will continue working** be
 - Any subdomains pointing to Website Builder
 - Domain forwarding to Website Builder
 
-## Current DNS Records (homegeek.ai)
+## Current DNS Records (asset-mem.com)
 
 Based on your GoDaddy DNS configuration, here are your current records:
 
@@ -283,7 +283,7 @@ Based on your GoDaddy DNS configuration, here are your current records:
 | A     | demo            | 34.72.193.80                                | 1 Hour | ✅ Keep (subdomain for demo)                          |
 | NS    | @               | ns17.domaincontrol.com.                     | 1 Hour | ✅ Keep (can't delete/edit)                           |
 | NS    | @               | ns18.domaincontrol.com.                     | 1 Hour | ✅ Keep (can't delete/edit)                           |
-| CNAME | www             | homegeek.ai.                                | 1 Hour | ⚠️ **UPDATE** - Change to Firebase App Hosting domain |
+| CNAME | www             | asset-mem.com.                                | 1 Hour | ⚠️ **UPDATE** - Change to Firebase App Hosting domain |
 | CNAME | \_domainconnect | \_domainconnect.gd.domaincontrol.com.       | 1 Hour | ✅ Keep (GoDaddy internal)                            |
 | SOA   | @               | Primary nameserver: ns17.domaincontrol.com. | 1 Hour | ✅ Keep (can edit if needed)                          |
 | MX    | @               | aspmx.l.google.com. (Priority: 1)           | 1 Hour | ✅ Keep (Google Workspace email)                      |
@@ -297,9 +297,9 @@ Based on your GoDaddy DNS configuration, here are your current records:
    - **Reason:** Currently pointing to GoDaddy Website Builder
    - **Replace with:** Firebase A records (provided by Firebase Console)
 
-2. **CNAME Record (www) - homegeek.ai.**
+2. **CNAME Record (www) - asset-mem.com.**
    - **Action:** EDIT this record
-   - **Current Value:** `homegeek.ai.`
+   - **Current Value:** `asset-mem.com.`
    - **New Value:** Firebase App Hosting domain (e.g., `prod--homegeek-prod.us-central1.hosted.app`)
    - **Note:** This creates a redirect loop. Change to point directly to Firebase.
 
@@ -343,7 +343,7 @@ Based on your GoDaddy DNS configuration, here are your current records:
 
 Here's what your GoDaddy DNS records should look like after Firebase setup:
 
-### For Root Domain (homegeek.ai):
+### For Root Domain (asset-mem.com):
 
 ```
 Type    Name    Value                           TTL
@@ -358,21 +358,21 @@ NS      @       ns18.domaincontrol.com.         1 hour
 SOA     @       Primary nameserver: ns17.domaincontrol.com.  1 hour
 ```
 
-### For WWW Subdomain (www.homegeek.ai):
+### For WWW Subdomain (www.asset-mem.com):
 
 ```
 Type    Name    Value                           TTL
 CNAME   www     prod--homegeek-prod.us-central1.hosted.app    1 hour
 ```
 
-### For Staging Subdomain (staging.homegeek.ai):
+### For Staging Subdomain (staging.asset-mem.com):
 
 ```
 Type    Name    Value                           TTL
 CNAME   staging staging--homegeek-prod.us-central1.hosted.app  1 hour
 ```
 
-### For Demo Subdomain (demo.homegeek.ai):
+### For Demo Subdomain (demo.asset-mem.com):
 
 ```
 Type    Name    Value                           TTL
@@ -386,7 +386,7 @@ Type    Name    Value                           TTL
 CNAME   _domainconnect   _domainconnect.gd.domaincontrol.com.  1 hour
 ```
 
-## Step-by-Step Action Plan for homegeek.ai
+## Step-by-Step Action Plan for asset-mem.com
 
 Based on your current DNS records, follow these steps in order:
 
@@ -402,9 +402,9 @@ Based on your current DNS records, follow these steps in order:
 
 ### Step 2: Add Firebase Verification TXT Records
 
-#### For Root Domain (homegeek.ai):
+#### For Root Domain (asset-mem.com):
 
-1. In Firebase Console (for the backend where you added `homegeek.ai`), get the verification TXT record value
+1. In Firebase Console (for the backend where you added `asset-mem.com`), get the verification TXT record value
 2. In GoDaddy DNS Management, click **Add**
 3. Create new record:
    - **Type:** TXT
@@ -414,9 +414,9 @@ Based on your current DNS records, follow these steps in order:
 4. Click **Save**
 5. Wait 5-10 minutes, then verify in Firebase Console
 
-#### For Staging Subdomain (staging.homegeek.ai):
+#### For Staging Subdomain (staging.asset-mem.com):
 
-1. In Firebase Console (for the backend where you added `staging.homegeek.ai`), get the verification TXT record value
+1. In Firebase Console (for the backend where you added `staging.asset-mem.com`), get the verification TXT record value
 2. In GoDaddy DNS Management, click **Add**
 3. Create new record:
    - **Type:** TXT
@@ -445,15 +445,15 @@ Based on your current DNS records, follow these steps in order:
 1. Find the existing CNAME record:
    - **Type:** CNAME
    - **Name:** www
-   - **Data:** homegeek.ai.
+   - **Data:** asset-mem.com.
 2. Click the **Edit** (pencil icon) button
-3. Change the **Value** from `homegeek.ai.` to your Firebase App Hosting domain:
+3. Change the **Value** from `asset-mem.com.` to your Firebase App Hosting domain:
    - Example: `prod--homegeek-prod.us-central1.hosted.app`
 4. Click **Save**
 
 ### Step 5: Add Staging CNAME Record
 
-1. In Firebase Console (for the backend where you added `staging.homegeek.ai`), get the CNAME record value
+1. In Firebase Console (for the backend where you added `staging.asset-mem.com`), get the CNAME record value
 2. In GoDaddy DNS Management, click **Add**
 3. Create new record:
    - **Type:** CNAME
@@ -493,14 +493,14 @@ After making changes, your DNS records should look like:
 1. **DNS Propagation:** Changes can take 5 minutes to 48 hours to propagate globally
 2. **SSL Certificate:** Firebase automatically provisions SSL certificates, which can take 15 minutes to 24 hours
 3. **Multiple Domains:** You can configure multiple domains/subdomains in Firebase:
-   - Root domain: `homegeek.ai` (uses A records)
-   - Staging subdomain: `staging.homegeek.ai` (uses CNAME record)
-   - WWW subdomain: `www.homegeek.ai` (uses CNAME record)
+   - Root domain: `asset-mem.com` (uses A records)
+   - Staging subdomain: `staging.asset-mem.com` (uses CNAME record)
+   - WWW subdomain: `www.asset-mem.com` (uses CNAME record)
 4. **HTTPS Redirect:** Firebase automatically redirects HTTP to HTTPS
 5. **Testing:** Use `curl` or browser to test:
-   - `curl -I https://homegeek.ai`
-   - `curl -I https://staging.homegeek.ai`
-   - `curl -I https://www.homegeek.ai`
+   - `curl -I https://asset-mem.com`
+   - `curl -I https://staging.asset-mem.com`
+   - `curl -I https://www.asset-mem.com`
 
 ## Firebase App Hosting vs Firebase Hosting
 

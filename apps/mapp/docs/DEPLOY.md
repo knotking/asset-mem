@@ -1,4 +1,4 @@
-# HomeGeekAI Mapp Deployment Guide
+# AssetMem Mapp Deployment Guide
 
 Complete guide for deploying the React Native + Expo mobile application using GitHub Actions and local deployment scripts.
 
@@ -198,7 +198,7 @@ Version: (leave empty for auto-increment)
 3. Click **Run workflow**
 4. Select options
 5. Click **Run workflow**
-6. Monitor build at [expo.dev](https://expo.dev/accounts/YOUR_ACCOUNT/projects/homegeek-ai/builds)
+6. Monitor build at [expo.dev](https://expo.dev/accounts/YOUR_ACCOUNT/projects/assetmem-staging/builds)
 
 ##### 2. Deploy Mapp - EAS Update (OTA)
 
@@ -504,7 +504,7 @@ git pull origin main
 # Version: 1.0.2 (or leave empty to auto-increment)
 
 # 3. Wait for builds to complete (~15-30 minutes)
-# Monitor at: https://expo.dev/accounts/[account]/projects/homegeek-ai/builds
+# Monitor at: https://expo.dev/accounts/[account]/projects/assetmem-staging/builds
 
 # 4. Download and test builds
 
@@ -548,7 +548,7 @@ git push origin main
 # 2. Wait for build to complete
 
 # 3. Share build via Expo
-# Navigate to: https://expo.dev/accounts/[account]/projects/homegeek-ai/builds
+# Navigate to: https://expo.dev/accounts/[account]/projects/assetmem-staging/builds
 # Download build or send invitation link to testers
 
 # 4. Testers install via link or TestFlight/Play Console
@@ -668,7 +668,7 @@ npx eas-cli credentials
 # 2. Force app restart (kill and reopen)
 
 # 3. Check update was published
-# https://expo.dev/accounts/[account]/projects/homegeek-ai/updates
+# https://expo.dev/accounts/[account]/projects/assetmem-staging/updates
 
 # 4. Verify runtime version matches
 # OTA updates only work with matching runtime versions
@@ -877,4 +877,4 @@ eas credentials                              # Manage credentials
 ---
 
 **Last Updated**: 2025-11-12
-**Maintainer**: HomeGeekAI Team
+**Maintainer**: AssetMem Team
