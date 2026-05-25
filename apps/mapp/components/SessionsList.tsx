@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { View, ActivityIndicator, Pressable, FlatList } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -40,6 +40,11 @@ import {
 import { deleteCollection, cn } from '@/lib/utils';
 import { deleteAgentSession, WEB_APP_URL } from '@/lib/api';
 import { createLogger } from '@/lib/logger';
+import {
+  filterAndSortSessions,
+  formatSessionDate,
+  SESSIONS_LIST_FLAT_LIST_PROPS,
+} from '@/lib/sessions-list-utils';
 
 const sessionLog = createLogger('session');
 import {
@@ -60,6 +65,96 @@ import {
 } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+
+// Memoized session list item
+const SessionItem = React.memo(({
+  session,
+  isSelected,
+  isSelectionMode,
+  onPress,
+  onLongPress,
+  handleOpenShareDialog,
+  handleOpenRenameDialog,
+  setSessionToDelete,
+}: {
+  session: Session;
+  isSelected: boolean;
+  isSelectionMode: boolean;
+  onPress: (session: Session) => void;
+  onLongPress: (session: Session) => void;
+  handleOpenShareDialog: (session: Session) => void;
+  handleOpenRenameDialog: (session: Session) => void;
+  setSessionToDelete: (session: Session) => void;
+}) => {
+  const handlePress = () => onPress(session);
+  const handleLongPress = () => onLongPress(session);
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      className={cn(
+        'rounded-lg border bg-card p-4',
+        isSelected ? 'border-primary' : 'border-border'
+      )}>
+      <View className="flex-row items-start gap-3">
+        {isSelectionMode && (
+          <View pointerEvents="none" className="mt-1">
+            <Checkbox checked={isSelected} onCheckedChange={() => {}} />
+          </View>
+        )}
+        <View className="flex-row flex-1 items-start gap-3">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-success/10">
+            <Icon as={MessageSquare} size={20} className="text-success" />
+          </View>
+          <View className="flex-1 gap-1">
+            <Text className="text-base font-semibold text-foreground">{session.name}</Text>
+            <Text className="text-xs text-muted-foreground">
+              {formatSessionDate(session.createdAt)}
+            </Text>
+            {session.messageCount !== undefined && session.messageCount > 0 && (
+              <Text className="text-xs text-muted-foreground">
+                {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
+              </Text>
+            )}
+            {session.lastMessageAt && (
+              <Text className="text-xs text-muted-foreground">
+                Last active: {formatSessionDate(session.lastMessageAt)}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {!isSelectionMode && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Icon as={MoreVertical} size={20} className="text-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onPress={() => handleOpenShareDialog(session)}>
+                <Icon as={Share2} size={20} className="text-foreground" />
+                <Text>Share</Text>
+              </DropdownMenuItem>
+              <DropdownMenuItem onPress={() => handleOpenRenameDialog(session)}>
+                <Icon as={Pencil} size={20} className="text-foreground" />
+                <Text>Rename</Text>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onPress={() => setSessionToDelete(session)}>
+                <Icon as={Trash2} size={20} />
+                <Text>Delete</Text>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </View>
+    </Pressable>
+  );
+});
+SessionItem.displayName = 'SessionItem';
 
 interface SessionsListProps {
   propertyId: string;
@@ -92,9 +187,10 @@ export default function SessionsList({
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
 
-  const sessions = sessionsByProperty[propertyId] || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const sessions = sessionsByProperty[propertyId] || [];
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -115,34 +211,10 @@ export default function SessionsList({
     setRenameValue('');
     setIsRenaming(false);
   }, [propertyId, exitSelectionMode]);
-  const filteredSessions = useMemo(() => {
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const getTimestampValue = (value: any): number => {
-      if (!value) return 0;
-      if (typeof value === 'number') return value;
-      if (typeof value === 'string') {
-        const parsed = Date.parse(value);
-        return Number.isNaN(parsed) ? 0 : parsed;
-      }
-      if (value instanceof Date) return value.getTime();
-      if (typeof value.toMillis === 'function') return value.toMillis();
-      if (typeof value.toDate === 'function') {
-        const date = value.toDate();
-        return date instanceof Date ? date.getTime() : 0;
-      }
-      return 0;
-    };
-
-    const base = normalizedTerm
-      ? sessions.filter((session) => session.name?.toLowerCase().includes(normalizedTerm))
-      : sessions;
-
-    return [...base].sort((a, b) => {
-      const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
-      const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
-      return bTime - aTime;
-    });
-  }, [sessions, searchTerm]);
+  const filteredSessions = useMemo(
+    () => filterAndSortSessions(sessions, searchTerm),
+    [sessions, searchTerm]
+  );
   useEffect(() => {
     setSelectedSessionIds((prev) => {
       const filtered = prev.filter((id) => sessions.some((session) => session.id === id));
@@ -166,6 +238,21 @@ export default function SessionsList({
         : [...prev, sessionId]
     );
   }, []);
+
+  const handleSessionPress = useCallback((session: Session) => {
+    if (isSelectionMode) {
+      toggleSessionSelection(session.id);
+      return;
+    }
+    onSessionPress?.(session);
+  }, [isSelectionMode, toggleSessionSelection, onSessionPress]);
+
+  const handleSessionLongPress = useCallback((session: Session) => {
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+      setSelectedSessionIds([session.id]);
+    }
+  }, [isSelectionMode]);
 
   const handleSelectAll = useCallback(() => {
     if (isAllSelected) {
@@ -320,12 +407,12 @@ export default function SessionsList({
     }
   };
 
-  const handleOpenShareDialog = (session: Session) => {
+  const handleOpenShareDialog = useCallback((session: Session) => {
     setSessionToShare(session);
     setShareState('idle');
     setSharedLink(null);
     setExistingShareId(null);
-  };
+  }, []);
 
   const handleCloseShareDialog = () => {
     if (shareState === 'creating' || shareState === 'updating' || shareState === 'checking') return;
@@ -450,11 +537,6 @@ export default function SessionsList({
     }
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
 
   if (isLoading) {
     return (
@@ -520,106 +602,37 @@ export default function SessionsList({
       </View>
 
       {/* Sessions List */}
-      <ScrollView className="flex-1 px-4">
-        {filteredSessions.length === 0 ? (
-          <View className="items-center py-8">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
-              <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+      <FlatList
+          data={filteredSessions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <SessionItem
+              session={item}
+              isSelected={selectedSessionIds.includes(item.id)}
+              isSelectionMode={isSelectionMode}
+              onPress={handleSessionPress}
+              onLongPress={handleSessionLongPress}
+              handleOpenShareDialog={handleOpenShareDialog}
+              handleOpenRenameDialog={handleOpenRenameDialog}
+              setSessionToDelete={setSessionToDelete}
+            />
+          )}
+          contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
+          className="flex-1 px-4"
+          ListEmptyComponent={
+            <View className="items-center py-8">
+              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
+              </View>
+              <Text className="text-center text-sm text-muted-foreground">
+                {searchTerm.trim().length > 0
+                  ? 'No sessions match your search.'
+                  : 'No sessions yet. Create one to start chatting about this property.'}
+              </Text>
             </View>
-            <Text className="text-center text-sm text-muted-foreground">
-              {searchTerm.trim().length > 0
-                ? 'No sessions match your search.'
-                : 'No sessions yet. Create one to start chatting about this property.'}
-            </Text>
-          </View>
-        ) : (
-          <View className="gap-4 pb-4">
-            {/* Regular Sessions - Draft sessions are hidden */}
-            {filteredSessions.map((session) => {
-              const isSelected = selectedSessionIds.includes(session.id);
-              const handleRowPress = () => {
-                if (isSelectionMode) {
-                  toggleSessionSelection(session.id);
-                  return;
-                }
-                onSessionPress?.(session);
-              };
-              const handleRowLongPress = () => {
-                if (!isSelectionMode) {
-                  setIsSelectionMode(true);
-                  setSelectedSessionIds([session.id]);
-                }
-              };
-
-              return (
-                <Pressable
-                  key={session.id}
-                  onPress={handleRowPress}
-                  onLongPress={handleRowLongPress}
-                  className={cn(
-                    'rounded-lg border bg-card p-4',
-                    isSelected ? 'border-primary' : 'border-border'
-                  )}>
-                  <View className="flex-row items-start gap-3">
-                    {isSelectionMode && (
-                      <View pointerEvents="none" className="mt-1">
-                        <Checkbox checked={isSelected} onCheckedChange={() => {}} />
-                      </View>
-                    )}
-                    <View className="flex-row flex-1 items-start gap-3">
-                      <View className="h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                        <Icon as={MessageSquare} size={20} className="text-success" />
-                      </View>
-                      <View className="flex-1 gap-1">
-                        <Text className="text-base font-semibold text-foreground">{session.name}</Text>
-                        <Text className="text-xs text-muted-foreground">
-                          {formatDate(session.createdAt)}
-                        </Text>
-                        {session.messageCount !== undefined && session.messageCount > 0 && (
-                          <Text className="text-xs text-muted-foreground">
-                            {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
-                          </Text>
-                        )}
-                        {session.lastMessageAt && (
-                          <Text className="text-xs text-muted-foreground">
-                            Last active: {formatDate(session.lastMessageAt)}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-
-                    {!isSelectionMode && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Icon as={MoreVertical} size={20} className="text-foreground" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onPress={() => handleOpenShareDialog(session)}>
-                            <Icon as={Share2} size={20} className="text-foreground" />
-                            <Text>Share</Text>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onPress={() => handleOpenRenameDialog(session)}>
-                            <Icon as={Pencil} size={20} className="text-foreground" />
-                            <Text>Rename</Text>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onPress={() => setSessionToDelete(session)}>
-                            <Icon as={Trash2} size={20} />
-                            <Text>Delete</Text>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+          }
+          {...SESSIONS_LIST_FLAT_LIST_PROPS}
+        />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
