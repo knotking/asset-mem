@@ -14,19 +14,16 @@ from .constants import (
     CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY,
     CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
     CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
-    CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
     CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY,
-    CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY,
-    CHECKPOINT_PROGRESS_EVENT_AUTHOR,
     CHECKPOINT_SESSION_INPUT_KEYS,
     OPTIONAL_BRANCH_TO_AGENT_NAME,
-    _PARALLEL_KEY_TO_BRANCH,
     _CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
     _VALID_OPTIONAL_BRANCHES,
     _JSON_FENCE_RE,
 )
 
 logger = logging.getLogger(__name__)
+
 
 def normalize_checkpoint_optional_agents(
     value: Any,
@@ -55,11 +52,13 @@ def optional_agents_for_progress_from_state(state: Any) -> List[str]:
     from property_agent.resolve_turn import resolved_turn_from_state
 
     resolved = resolved_turn_from_state(state)
-    if resolved is not None and resolved.run_optional_agents and not resolved.retrieval_only:
+    if (
+        resolved is not None
+        and resolved.run_optional_agents
+        and not resolved.retrieval_only
+    ):
         return [
-            b
-            for b in resolved.run_optional_agents
-            if b in _VALID_OPTIONAL_BRANCHES
+            b for b in resolved.run_optional_agents if b in _VALID_OPTIONAL_BRANCHES
         ]
     return normalize_checkpoint_optional_agents(state.get("checkpoint_optional_agents"))
 
@@ -127,9 +126,7 @@ def build_checkpoint_analysis_pending_payload(state: Any) -> Optional[Dict[str, 
     return payload
 
 
-def apply_tool_context_state_delta(
-    tool_context: Any, delta: Dict[str, Any]
-) -> None:
+def apply_tool_context_state_delta(tool_context: Any, delta: Dict[str, Any]) -> None:
     """Write session fields and merge into outgoing tool ``state_delta`` for parent sync."""
     if not delta or tool_context is None:
         return
@@ -360,9 +357,10 @@ def build_progressive_checkpoint_dual_format(
         checkpoint_results=checkpoint_results,
     )
     if not (analysis.get("title") or "").strip():
-        analysis["title"] = title_from_markdown_first_heading(
-            (user_query or "").strip()
-        ) or "Checkpoint analysis"
+        analysis["title"] = (
+            title_from_markdown_first_heading((user_query or "").strip())
+            or "Checkpoint analysis"
+        )
     if in_progress and requested_branches:
         analysis["analysisStatus"] = _analysis_status_for_branches(
             requested_branches,
@@ -370,11 +368,7 @@ def build_progressive_checkpoint_dual_format(
             pending=pending_branches,
         )
     markdown = render_analysis_markdown(analysis)
-    if not (user_query or "").strip():
-        intro = ""
-    else:
-        intro = f"{user_query.strip()}\n\n" if markdown else user_query.strip()
-    body_md = f"{intro}{markdown}".strip() if intro else markdown
+    body_md = markdown
     if not body_md.strip():
         body_md = f"# {analysis.get('title') or 'Checkpoint analysis'}\n"
     payload = {"analysis": analysis}
@@ -733,14 +727,10 @@ def render_analysis_markdown(analysis: Dict[str, Any]) -> str:
             diy_band = diy_cost.get("DIY")
             if isinstance(diy_band, dict) and diy_band.get("cost_range"):
                 lines.append("")
-                lines.append(
-                    f"**Estimated DIY cost:** {diy_band['cost_range']}"
-                )
+                lines.append(f"**Estimated DIY cost:** {diy_band['cost_range']}")
         if diy.get("hireProfessionalRecommended") is True:
             lines.append("")
-            lines.append(
-                "*Professional help is recommended for this repair.*"
-            )
+            lines.append("*Professional help is recommended for this repair.*")
         lines.append("")
 
     svc = analysis.get("serviceResults")
@@ -854,9 +844,7 @@ def rebuild_dual_format_from_analysis(
     """Rebuild markdown + ```json fence from a complete analysis object."""
     md = strip_json_fences(markdown_source).strip()
     intro = _extract_markdown_intro(md)
-    uq = (user_query or "").strip()
-    if uq and uq not in intro:
-        intro = f"{uq}\n\n{intro}".strip() if intro else uq
+    _ = user_query  # title/body come from analysis + markdown_source, not raw UI query
     rendered = render_analysis_markdown(analysis)
     if intro:
         rendered_lines = rendered.splitlines()
@@ -1091,7 +1079,10 @@ def _enrich_diy_results_from_branch(
         else:
             if branch_steps.get("steps") and _list_is_empty(ex_steps.get("steps")):
                 ex_steps["steps"] = branch_steps["steps"]
-            if branch_steps.get("summary") and not (ex_steps.get("summary") or "").strip():
+            if (
+                branch_steps.get("summary")
+                and not (ex_steps.get("summary") or "").strip()
+            ):
                 ex_steps["summary"] = branch_steps["summary"]
 
     for block_key, items_key in (
@@ -1130,7 +1121,9 @@ def _merge_cost_into(analysis: Dict[str, Any], raw: str) -> None:
     obj = _parse_branch_json_blob(raw or "")
     if not isinstance(obj, dict):
         return
-    if "costEstimationResults" in obj and isinstance(obj["costEstimationResults"], dict):
+    if "costEstimationResults" in obj and isinstance(
+        obj["costEstimationResults"], dict
+    ):
         analysis["costEstimationResults"] = obj["costEstimationResults"]
         return
     if "costEstimates" in obj and isinstance(obj["costEstimates"], dict):
@@ -1149,7 +1142,9 @@ def _merge_coverage_into(analysis: Dict[str, Any], raw: str) -> None:
         analysis["coverageResult"] = {"warrantyInfo": text[:8000], "insuranceInfo": ""}
         return
     inner = obj.get("coverageResult")
-    if isinstance(inner, dict) and ("warrantyInfo" in inner or "insuranceInfo" in inner):
+    if isinstance(inner, dict) and (
+        "warrantyInfo" in inner or "insuranceInfo" in inner
+    ):
         analysis["coverageResult"] = {
             "warrantyInfo": str(inner.get("warrantyInfo") or ""),
             "insuranceInfo": str(inner.get("insuranceInfo") or ""),
@@ -1193,7 +1188,10 @@ def analysis_has_structured_ui_sections(analysis: Dict[str, Any]) -> bool:
             return True
     cs = analysis.get("checkpointSummary")
     if isinstance(cs, dict):
-        if isinstance(cs.get("checkpointsAnalyzed"), (int, float)) and cs["checkpointsAnalyzed"] > 0:
+        if (
+            isinstance(cs.get("checkpointsAnalyzed"), (int, float))
+            and cs["checkpointsAnalyzed"] > 0
+        ):
             return True
         if cs.get("issuesDetected"):
             return True
@@ -1214,7 +1212,11 @@ def _enrich_checkpoint_summary_from_results(
     derived = build_checkpoint_summary_from_results_blob(
         checkpoint_results, markdown_source=markdown_source
     )
-    if derived.get("checkpointsAnalyzed", 0) > 0 or derived.get("issuesDetected") or derived.get("locations"):
+    if (
+        derived.get("checkpointsAnalyzed", 0) > 0
+        or derived.get("issuesDetected")
+        or derived.get("locations")
+    ):
         analysis["checkpointSummary"] = derived
 
 
@@ -1235,10 +1237,18 @@ def build_fallback_analysis(
     if not isinstance(parallel_blob, dict):
         return analysis
 
-    _merge_coverage_into(analysis, str(parallel_blob.get("checkpoint_parallel_coverage_result") or ""))
-    _merge_diy_into(analysis, str(parallel_blob.get("checkpoint_parallel_diy_result") or ""))
-    _merge_service_into(analysis, str(parallel_blob.get("checkpoint_parallel_service_result") or ""))
-    _merge_cost_into(analysis, str(parallel_blob.get("checkpoint_parallel_cost_result") or ""))
+    _merge_coverage_into(
+        analysis, str(parallel_blob.get("checkpoint_parallel_coverage_result") or "")
+    )
+    _merge_diy_into(
+        analysis, str(parallel_blob.get("checkpoint_parallel_diy_result") or "")
+    )
+    _merge_service_into(
+        analysis, str(parallel_blob.get("checkpoint_parallel_service_result") or "")
+    )
+    _merge_cost_into(
+        analysis, str(parallel_blob.get("checkpoint_parallel_cost_result") or "")
+    )
     _enrich_checkpoint_summary_from_results(
         analysis, checkpoint_results, markdown_source=markdown_source
     )
@@ -1303,7 +1313,17 @@ def merge_parallel_results_into_dual_format(
 
     analysis = extract_analysis_object_from_dual_format(body)
     if analysis is None:
-        return ensure_dual_format_body(body, parallel_results_json=parallel_results_json)
+        draft = build_fallback_analysis(
+            parallel_blob=parallel_blob,
+            markdown_source=body,
+        )
+        if not analysis_has_structured_ui_sections(draft):
+            return strip_json_fences(body).rstrip()
+        return rebuild_dual_format_from_analysis(
+            draft,
+            markdown_source=body,
+            user_query="",
+        )
 
     branch_merged = build_fallback_analysis(
         parallel_blob=parallel_blob, markdown_source=body
@@ -1312,7 +1332,9 @@ def merge_parallel_results_into_dual_format(
     cs = analysis.get("checkpointSummary")
     if isinstance(cs, dict) and _is_placeholder_checkpoint_summary(cs):
         branch_cs = branch_merged.get("checkpointSummary")
-        if isinstance(branch_cs, dict) and not _is_placeholder_checkpoint_summary(branch_cs):
+        if isinstance(branch_cs, dict) and not _is_placeholder_checkpoint_summary(
+            branch_cs
+        ):
             analysis["checkpointSummary"] = branch_cs
 
     branch_diy = branch_merged.get("diyResults")
@@ -1353,5 +1375,3 @@ def merge_parallel_results_into_dual_format(
             "checkpoint_dual_format: enriched markdown sections after parallel merge"
         )
     return enriched
-
-

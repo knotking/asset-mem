@@ -16,8 +16,8 @@ make test-eval    # run all eval tests (live Vertex/Gemini)
 | Target | Evalset file |
 |--------|----------------|
 | `make test-eval` | All eval tests |
-| `make test-eval-routing` | `doculink_routing.evalset.json` |
-| `make test-eval-docs` | `doculink_docs.evalset.json` |
+| `make test-eval-executor-routing` | `executor_routing.evalset.json` |
+| `make test-eval-user-docs` | `user_docs_routing.evalset.json` |
 | `make test-eval-checkpoint` | `checkpoint_optional_agents.evalset.json` |
 | `make test-eval-cost` | `cost_agent.evalset.json` |
 | `make test-eval-shopping` | `shopping_agent.evalset.json` |

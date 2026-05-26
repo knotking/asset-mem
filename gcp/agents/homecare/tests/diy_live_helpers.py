@@ -47,7 +47,9 @@ def print_youtube_results(results: list[dict[str, Any]]) -> None:
         url = (item.get("url") or "").strip()
         duration = (item.get("duration") or "").strip()
         desc = (item.get("description") or "").strip()
-        desc_wrapped = textwrap.shorten(desc, width=120, placeholder="…") if desc else ""
+        desc_wrapped = (
+            textwrap.shorten(desc, width=120, placeholder="…") if desc else ""
+        )
         print(f"\n[{i}] {title}")
         print(f"    url: {url}")
         if duration:
@@ -74,11 +76,17 @@ def print_product_results(products: list[dict[str, Any]]) -> None:
         if store:
             print(f"    store_url: {store}")
         if image:
-            print(f"    image_url: {image[:80]}…" if len(image) > 80 else f"    image_url: {image}")
+            print(
+                f"    image_url: {image[:80]}…"
+                if len(image) > 80
+                else f"    image_url: {image}"
+            )
     print("--- end products ---\n")
 
 
-def print_run_diy_pipeline_tool_output(parsed: dict[str, Any], *, label: str = "") -> None:
+def print_run_diy_pipeline_tool_output(
+    parsed: dict[str, Any], *, label: str = ""
+) -> None:
     """Pretty-print JSON returned by ``run_diy_pipeline`` (use ``pytest -s`` to see when tests pass)."""
     suffix = f" ({label})" if label else ""
     print(f"\n--- run_diy_pipeline tool output{suffix} ---")

@@ -43,17 +43,16 @@ The Docs Chat Agent handles document-based queries including:
 The Docs Chat Agent follows a hierarchical routing pattern:
 
 ```
-Root Property Agent (main orchestrator)
-└── DocuLink Agent (when primary_agent="docs")
-    └── User Docs Agent (document retrieval)
-        └── Vertex AI RAG (semantic search)
-            └── User Documents in GCS
+property_agent (resolve + executor)
+└── ask_user_docs_agent (when primary_agent="docs" or route=user_docs)
+    └── Vertex AI RAG (semantic search)
+        └── User Documents in GCS
 ```
 
 ### Component Breakdown
 
-1. **Root Property Agent**: Routes requests based on `primary_agent` field
-2. **DocuLink Agent**: Handles document and knowledge base queries
+1. **property_agent**: `resolve_turn_llm` sets `route=user_docs` when `primary_agent=docs`
+2. **Executor**: Calls `ask_user_docs_agent` directly (no doculink transfer)
 3. **User Docs Agent**: Retrieves information from user-uploaded documents
 4. **Vertex AI RAG**: Performs semantic search over document corpus
 5. **GCS Storage**: Stores user documents and import metadata
@@ -144,8 +143,8 @@ Uses Vertex AI RAG for semantic search:
    - Includes `context_doc_uris` if documents selected
 
 4. **Agent Processing**:
-   - Root agent routes to DocuLink agent
-   - DocuLink agent calls User Docs agent
+   - property_agent resolve sets route=user_docs
+   - Executor calls ask_user_docs_agent
    - User Docs agent queries RAG corpus
    - Retrieves relevant document chunks
 
@@ -161,7 +160,7 @@ API Request (primary_agent="docs")
     ↓
 Root Property Agent
     ↓
-DocuLink Agent (detects docs mode)
+property_agent executor (docs route)
     ↓
 User Docs Agent
     ↓

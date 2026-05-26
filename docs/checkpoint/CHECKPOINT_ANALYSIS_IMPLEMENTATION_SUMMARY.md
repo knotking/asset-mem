@@ -63,7 +63,7 @@ Users can select which analysis aspects they want:
    - Routes to analysis when optional agents selected
    - Maintains backward compatibility
 
-2. **DocuLink Agent** (`gcp/agents/homecare/property_agent/prompts.py`)
+2. **property_agent executor** (`gcp/agents/homecare/property_agent/prompts.py`)
    - Passes checkpoint_optional_agents to checkpoint_agent
    - Handles all location and context parameters
 

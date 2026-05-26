@@ -6,7 +6,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 **Where:** All ADK `Agent` definitions wired through `property_agent/model_config.py`:
 
-- Root `property_agent` and `doculink_agent`
+- Root `property_agent` (executor + resolve) and checkpoint analysis sub-agents
 - Checkpoint agent, coverage / service / shopping ADK agents
 - Checkpoint progress workflow (parallel runner is Python-only; **synthesis** uses this model)
 - Media search-query refiner and other small ADK tool agents
@@ -34,6 +34,6 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 | New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
-Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py` and re-run evals (`make test-eval-routing`, checkpoint evalsets).
+Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py` and re-run evals (`make test-eval-executor-routing`, checkpoint evalsets).
 
 Changing cost/DIY direct calls: edit `LEGACY_API_GEMINI.model` in the same file.

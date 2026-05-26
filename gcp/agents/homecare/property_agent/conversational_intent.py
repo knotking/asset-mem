@@ -25,7 +25,9 @@ _SUBSTANTIVE_RE = re.compile(
     re.IGNORECASE,
 )
 
-_WH_QUESTION_RE = re.compile(r"^\s*(how|what|when|where|why|who|which|can|could|should|is|are|do|does)\b", re.I)
+_WH_QUESTION_RE = re.compile(
+    r"^\s*(how|what|when|where|why|who|which|can|could|should|is|are|do|does)\b", re.I
+)
 
 # User explicitly wants optional branches (coverage / DIY / service / cost pipeline).
 _OPTIONAL_ANALYSIS_RE = re.compile(
@@ -263,8 +265,7 @@ def requests_property_information(normalized: str) -> bool:
     if _contains_any_phrase(normalized, _PROPERTY_TASK_TOPIC_PHRASES):
         return True
     if any(
-        marker in normalized
-        for marker in ("i mean", "actually", "instead", "rather")
+        marker in normalized for marker in ("i mean", "actually", "instead", "rather")
     ) and _contains_any_phrase(
         normalized,
         _PROPERTY_TASK_TOPIC_WORDS + ("first", "second", "third", "one", "two"),
@@ -282,7 +283,13 @@ def is_capability_inquiry_like(normalized: str) -> bool:
     if "don t know" in normalized or "dont know" in normalized:
         if any(
             token in normalized
-            for token in ("suggest", "should i", "what to ask", "where to start", "what can i")
+            for token in (
+                "suggest",
+                "should i",
+                "what to ask",
+                "where to start",
+                "what can i",
+            )
         ):
             return True
     if _contains_any_phrase(
@@ -416,9 +423,7 @@ def hydrate_turn_state_from_context(
     if llm_request is not None:
         payload = _payload_from_llm_request(llm_request)
     if payload is None:
-        payload = _latest_user_payload_from_events(
-            events, current_invocation_id=inv_id
-        )
+        payload = _latest_user_payload_from_events(events, current_invocation_id=inv_id)
 
     if payload and hasattr(state, "__setitem__"):
         for key in _TURN_PAYLOAD_STATE_KEYS:
@@ -447,7 +452,9 @@ def resolve_user_query_from_state(state: Mapping[str, Any] | None) -> str:
     return ""
 
 
-def resolve_property_address_from_state(state: Mapping[str, Any] | None) -> Optional[str]:
+def resolve_property_address_from_state(
+    state: Mapping[str, Any] | None,
+) -> Optional[str]:
     if not state:
         return None
     for key in ("property_address", "app:property_address"):
@@ -504,7 +511,9 @@ def last_turn_delivered_checkpoint_analysis(
         text = _event_text(event)
         if not text:
             continue
-        if "```json" in text and any(marker in text for marker in _ANALYSIS_JSON_MARKERS):
+        if "```json" in text and any(
+            marker in text for marker in _ANALYSIS_JSON_MARKERS
+        ):
             return True
     return False
 
@@ -809,7 +818,9 @@ def build_capabilities_summary(
         if addr
         else "I can help with your property. Here is what I can do:\n\n"
     )
-    return hint + intro + _CAPABILITY_BULLETS + "\nWhat would you like to explore first?"
+    return (
+        hint + intro + _CAPABILITY_BULLETS + "\nWhat would you like to explore first?"
+    )
 
 
 def build_conversational_reply(
@@ -820,7 +831,9 @@ def build_conversational_reply(
     state: Mapping[str, Any] | None = None,
 ) -> str:
     if label == "capabilities":
-        return build_capabilities_summary(property_address=property_address, state=state)
+        return build_capabilities_summary(
+            property_address=property_address, state=state
+        )
 
     addr = (property_address or "").strip()
     hint = _context_attachment_hint(state)
@@ -844,81 +857,3 @@ def build_conversational_reply(
             "about your property."
         )
     return "Happy to help! What would you like to know about your property?"
-
-
-def conversational_system_note(label: ConversationalLabel) -> str:
-    return (
-        "[Conversational turn — do NOT call any tools, sub-agents, or transfer_to_agent. "
-        f"Intent={label}. Reply in plain text only, briefly.]"
-    )
-
-
-def _ensure_generate_content_config(llm_request: Any) -> Any:
-    from google.genai import types
-
-    config = getattr(llm_request, "config", None)
-    if config is None:
-        config = types.GenerateContentConfig()
-        llm_request.config = config
-    return config
-
-
-def _system_instruction_text(llm_request: Any) -> str:
-    from google.genai import types
-
-    config = getattr(llm_request, "config", None)
-    if config is None:
-        return ""
-    si = getattr(config, "system_instruction", None)
-    if si is None:
-        return ""
-    if isinstance(si, str):
-        return si
-    if isinstance(si, types.Content):
-        parts = getattr(si, "parts", None) or []
-        return "".join((getattr(part, "text", None) or "") for part in parts)
-    return str(si)
-
-
-def inject_conversational_rephrase_into_llm_request(
-    llm_request: Any,
-    *,
-    label: str,
-    scaffold: str,
-) -> None:
-    """Legacy Option A helper (tests only); production uses canned ``before_model`` bypass."""
-    from google.genai import types
-
-    supplement = build_conversational_rephrase_prompt(label, scaffold)  # type: ignore[arg-type]
-    config = _ensure_generate_content_config(llm_request)
-    existing = _system_instruction_text(llm_request).strip()
-    combined = f"{supplement}\n\n---\n\n{existing}" if existing else supplement
-    config.system_instruction = types.Content(
-        role="system",
-        parts=[types.Part(text=combined)],
-    )
-
-
-def build_conversational_rephrase_prompt(
-    label: ConversationalLabel,
-    scaffold: str,
-) -> str:
-    """
-    System supplement for Option A: one LLM turn rephrases the deterministic scaffold.
-    """
-    note = conversational_system_note(label)
-    body = (scaffold or "").strip()
-    return (
-        f"{note}\n\n"
-        "You are answering a casual user message. Rewrite the MESSAGE SCAFFOLD below in "
-        "natural, warm, concise prose.\n\n"
-        "Rules:\n"
-        "- Plain text only (no ```json fences, no tool calls).\n"
-        "- Do NOT call tools, transfer_to_agent, or sub-agents.\n"
-        "- Preserve ALL facts from the scaffold: property address, every capability bullet, "
-        "attachment/checkpoint hints, and example questions.\n"
-        "- Do not invent checkpoint results, providers, costs, or policy details.\n"
-        "- Same intent as the scaffold; vary wording only.\n\n"
-        "MESSAGE SCAFFOLD (preserve meaning):\n"
-        f"{body}"
-    )

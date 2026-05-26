@@ -38,11 +38,14 @@ from .resolve_turn import (
     requests_optional_analysis_from_resolved,
 )
 from .prompts import property_agent_executor_instructions
-from .sub_agents.checkpoint_agent.agent import checkpoint_agent, _LastNonEmptyTextAgentTool
+from .sub_agents.checkpoint_agent.agent import (
+    checkpoint_agent,
+    _LastNonEmptyTextAgentTool,
+)
 from .sub_agents.checkpoint_analysis_agent.agent import checkpoint_progress_agent
 from .sub_agents.checkpoint_dual_format_guard import (
-    doculink_after_model_callback,
-    doculink_progressive_streaming_callback,
+    executor_after_model_callback,
+    executor_progressive_streaming_callback,
     ensure_checkpoint_analysis_pending_stashed,
     sync_checkpoint_tool_args_to_state as _sync_checkpoint_args,
 )
@@ -79,9 +82,7 @@ def root_before_model_combined(
 ) -> Optional[LlmResponse]:
     before_model_auth_uid(callback_context, llm_request)
     try:
-        return prepare_before_model_turn(
-            callback_context, llm_request=llm_request
-        )
+        return prepare_before_model_turn(callback_context, llm_request=llm_request)
     except Exception:
         logger.exception("prepare_before_model_turn failed")
         from .conversational_callbacks import apply_conversational_state_for_turn
@@ -93,9 +94,7 @@ def root_before_model_combined(
         )
 
 
-def before_model_auth_uid(
-    callback_context: Context, llm_request: LlmRequest
-) -> None:
+def before_model_auth_uid(callback_context: Context, llm_request: LlmRequest) -> None:
     _ = llm_request
     property_id = resolve_property_id(callback_context.state)
     if property_id:
@@ -113,9 +112,7 @@ def before_model_auth_uid(
     )
 
 
-def after_model_auth_uid(
-    callback_context: Context, llm_response: LlmResponse
-) -> None:
+def after_model_auth_uid(callback_context: Context, llm_response: LlmResponse) -> None:
     _ = (callback_context, llm_response)
     unbind_correlation_id()
     unbind_auth_uid()
@@ -125,16 +122,14 @@ def executor_after_model_combined(
     callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
     after_model_auth_uid(callback_context, llm_response)
-    streamed = doculink_progressive_streaming_callback(
-        callback_context, llm_response
-    )
+    streamed = executor_progressive_streaming_callback(callback_context, llm_response)
     if streamed is not None:
         mark_checkpoint_response_kind(callback_context, kind="analysis")
         return streamed
-    result = doculink_after_model_callback(callback_context, llm_response)
-    if callback_context.state.get("checkpoint_parallel_results") or callback_context.state.get(
-        "checkpoint_analysis_dual_format"
-    ):
+    result = executor_after_model_callback(callback_context, llm_response)
+    if callback_context.state.get(
+        "checkpoint_parallel_results"
+    ) or callback_context.state.get("checkpoint_analysis_dual_format"):
         mark_checkpoint_response_kind(callback_context, kind="analysis")
     return result
 
@@ -187,9 +182,11 @@ def executor_after_tool_combined(
     if tool_name == "ask_user_docs_agent":
         resolved = tool_context.state.get("resolved_turn")
         route = resolved.get("route") if isinstance(resolved, dict) else None
-        if route == "user_docs" or str(
-            tool_context.state.get("primary_agent") or ""
-        ).strip().lower() == "docs":
+        if (
+            route == "user_docs"
+            or str(tool_context.state.get("primary_agent") or "").strip().lower()
+            == "docs"
+        ):
             tool_context.state[USER_DOCS_PASSTHROUGH_STATE_KEY] = True
     if tool_name == "checkpoint_agent":
         from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
@@ -281,5 +278,5 @@ root_agent = Agent(
     after_agent_callback=property_agent_after_agent_memory,
 )
 
-# ADK Web / ``adk run`` use ``app`` when present so post-invocation session compaction runs.
-from property_agent.app_config import property_app as app  # noqa: E402
+# ADK Web / ``adk run`` look for a module-level ``app``.
+from property_agent.app_config import property_app as app  # noqa: F401,E402

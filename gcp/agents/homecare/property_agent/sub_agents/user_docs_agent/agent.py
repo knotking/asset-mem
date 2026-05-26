@@ -15,31 +15,36 @@ from .prompts import user_docs_agent_instruction
 import logging
 from ...agent_inputs import DocsInput
 from ...model_config import GLOBAL_GEMINI_MODEL
-    
+
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None ) -> list[str]:
+
+def get_user_file_ids(
+    user_id: str, context_doc_uris: Optional[List[str]] = None
+) -> list[str]:
     """
     Fetches FileId values from JSON files in the user's import_results folder in GCS.
-    
+
     If context_doc_uris is provided and not empty, returns only file IDs matching those URIs.
     If context_doc_uris is None or empty, returns ALL user file IDs (all-docs mode).
     """
     bucket_name = os.environ.get("GOOGLE_CLOUD_BUCKET")
-    folder_prefix = f"{os.environ.get('USER_UPLOAD_FOLDER', 'uploads')}/{user_id}/import-results"
+    folder_prefix = (
+        f"{os.environ.get('USER_UPLOAD_FOLDER', 'uploads')}/{user_id}/import-results"
+    )
     client = Client()
     bucket = client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=folder_prefix)
     file_ids: list[str] = []
-    
+
     # Determine if we're in all-docs mode (no specific docs selected)
     all_docs_mode = not context_doc_uris or len(context_doc_uris) == 0
 
     for blob in blobs:
-        if blob.name.endswith('.json') or blob.name.endswith('.ndjson'):
+        if blob.name.endswith(".json") or blob.name.endswith(".ndjson"):
             content = blob.download_as_text()
             # For ndjson, each line is a JSON object
             for line in content.splitlines():
@@ -55,19 +60,25 @@ def get_user_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None
                 except Exception as e:
                     logger.warning(f"Failed to parse line in {blob.name}: {e}")
 
-    
     return file_ids
 
-def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None) -> list[str]:
+
+def get_rag_file_ids(
+    user_id: str, context_doc_uris: Optional[List[str]] = None
+) -> list[str]:
     """
     Fetches the RAG IDs for the user.
-    
+
     If context_doc_uris is provided, returns only matching file IDs.
     If context_doc_uris is None/empty, returns all user file IDs.
     """
     t0 = time.monotonic()
     file_ids = get_user_file_ids(user_id, context_doc_uris)
-    mode = "all documents" if not context_doc_uris or len(context_doc_uris) == 0 else f"{len(context_doc_uris)} selected documents"
+    mode = (
+        "all documents"
+        if not context_doc_uris or len(context_doc_uris) == 0
+        else f"{len(context_doc_uris)} selected documents"
+    )
     logger.info(
         "user_docs: gcs_file_ids duration_ms=%d count=%d user_id=%s mode=%s",
         int((time.monotonic() - t0) * 1000),
@@ -76,6 +87,7 @@ def get_rag_file_ids(user_id: str, context_doc_uris: Optional[List[str]] = None)
         mode,
     )
     return file_ids
+
 
 def _ask_user_docs_retreival_sync(
     user_query: str,
@@ -95,7 +107,9 @@ def _ask_user_docs_retreival_sync(
         )
 
     if not rag_resources:
-        logger.warning(f"No RAG resources (file IDs or context URIs) found for user {user_id}.")
+        logger.warning(
+            f"No RAG resources (file IDs or context URIs) found for user {user_id}."
+        )
         return "No matching result found."
 
     response = rag.retrieval_query(
@@ -117,7 +131,10 @@ async def ask_user_docs_retreival(
     context_doc_uris: Optional[List[str]] = None,
     tool_context: ToolContext = None,
 ):
-    user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
+    user_id = (
+        tool_context.state.get("user_id")
+        or tool_context._invocation_context.session.user_id
+    )
     return await asyncio.to_thread(
         _ask_user_docs_retreival_sync,
         user_query,
@@ -125,17 +142,15 @@ async def ask_user_docs_retreival(
         user_id,
     )
 
+
 user_docs_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='ask_user_docs_agent',
+    name="ask_user_docs_agent",
     instruction=user_docs_agent_instruction(),
     input_schema=DocsInput,
-    tools=[
-        ask_user_docs_retreival
-    ],
+    tools=[ask_user_docs_retreival],
     disallow_transfer_to_parent=True,
-    output_key='user_docs_result'
-
+    output_key="user_docs_result",
 )
 
 __all__ = ["user_docs_agent"]

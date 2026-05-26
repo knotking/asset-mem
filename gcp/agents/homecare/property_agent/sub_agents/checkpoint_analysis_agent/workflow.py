@@ -12,6 +12,7 @@ from .input_schema import CheckpointAnalysisInput
 from .parallel_runner import CheckpointOptionalParallelAgent
 from .synthesis_prompt import CHECKPOINT_SYNTHESIS_INSTRUCTION
 
+
 def _build_checkpoint_analysis_workflow(
     *,
     workflow_name: str,
@@ -57,6 +58,6 @@ checkpoint_progress_agent, _, _ = _build_checkpoint_analysis_workflow(
     synthesis_agent_name="checkpoint_progress_synthesis_agent",
     workflow_description=(
         "Runs optional checkpoint analysis with progressive updates; "
-        "invoked via doculink transfer after checkpoint retrieval."
+        "invoked after checkpoint_agent retrieval when optional branches are requested."
     ),
 )

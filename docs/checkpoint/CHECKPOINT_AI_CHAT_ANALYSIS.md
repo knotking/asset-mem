@@ -37,7 +37,7 @@ Users can select which analysis aspects they want:
 
 ```
 Root Agent
-└── DocuLink Agent
+└── property_agent executor
     └── Checkpoint Agent
         ├── ask_checkpoints_retrieval (tool)
         └── Checkpoint Analysis Agent (orchestrator)
@@ -152,7 +152,7 @@ else:
     3. Return simple text response
 ```
 
-#### 4. DocuLink Agent Updates
+#### 4. property_agent executor updates
 
 **File**: `gcp/agents/homecare/property_agent/prompts.py`
 

@@ -1,0 +1,81 @@
+{
+  "eval_set_id": "user_docs_routing",
+  "name": "user_docs_routing",
+  "eval_cases": [
+    {
+      "eval_id": "_user_query_Get_me_details_on_my_insurance",
+      "conversation": [
+        {
+          "invocation_id": "e-a064f9c4-98f6-44c1-a3e7-6209637b377d",
+          "user_content": {
+            "parts": [
+              {
+                "text": "{ \"user_query\": “Get me details on my insurance”, \"context_doc_uris\": [ \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\" ], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": “docs”,  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"search_location\": { \"source\": \"property_address\", \"radius_miles\": 5, \"coordinates\": { \"lat\": 37.9319, \"lng\": -121.6958 }, \"label\": \"1982 Helena Way, Brentwood, CA 94513\" } }"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The insurance for the property at 1982 Helena Way, Brentwood, CA 94513 is provided by QBE Insurance Corporation under policy number **QWB86640732**. The policy period is from July 24, 2025, to July 24, 2026.\n\n### Coverage Details\nThe policy includes the following coverages:\n*   **Dwelling (Coverage A):** $550,000\n*   **Other Structures (Coverage B):** $27,500\n*   **Personal Property Unscheduled (Coverage C):** $5,000\n*   **Loss of Use (Coverage D):** $110,000\n*   **Personal Liability (Coverage E):** $500,000 per occurrence\n*   **Medical Payments (Coverage F):** $5,000 per person\n\nThe Section I deductible is $1,000. Please note that this policy does not provide coverage for water damage caused by flood, and earthquake coverage is only included if explicitly listed under endorsements.\n\n### Financial Summary\n*   **Total Annual Premium:** $860.15\n*   **Payment Due Date:** July 24, 2025\n*   **Billing:** The account is serviced by Millennial Specialty Insurance. Payment information must be updated via their [customer portal](https://www.msimga.com) or by contacting the American Home Insurance Agency, Inc. at (855) 424-4467.\n\n### Additional Information\n*   **Named Insured(s):** Parag Agarwal & Shubhra Bhushan\n*   **Agency:** American Home Insurance Agency, Inc.\n*   **Mortgagee:** Plaza Home Mortgage, Inc.\n\nThe policy reflects wildfire risk mitigation classifications and a FireLine® Wildfire Hazard Score (overall score of 9). You can access policy documents and billing information through the Millennial Specialty Insurance customer portal.\n\nCitations:\n- HomePolicyDocument.pdf, Homeowners Declaration - Client Detail, Homeowners Declaration - Location Address(es), Policy Declarations and Disclaimers, Coverages Table, Section I Deductibles\n- Notice of Policy Premium Due (part of HomePolicyDocument.pdf), Policy Details, Payment Instructions, Payment Details Box\n- Welcome to MSI Letter (part of HomePolicyDocument.pdf), New Customer Portal Information, Action Required: Update Billing Information\n- CALIFORNIA NOTICE – EXPLANATION OF WILDFIRE RISK SCORE (part of HomePolicyDocument.pdf), B. FireLine® Wildfire Hazard Score - Overall Score"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "adk-7df7d9f9-bd1d-4bde-bbd3-0f68e6336aa8",
+                        "args": {
+                          "context_doc_uris": [
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf",
+                            "gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"
+                          ],
+                          "user_query": "Get me details on my insurance for the property at 1982 Helena Way, Brentwood, CA 94513"
+                        },
+                        "name": "ask_user_docs_agent"
+                      },
+                      "thought_signature": "AY89a1_ueoDSxNq7Mu52wo7zpDT8bgZSr84lZsWEzD-KDRzTCYwf8qw2Xl4qSnozEUc="
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "property_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "adk-7df7d9f9-bd1d-4bde-bbd3-0f68e6336aa8",
+                        "name": "ask_user_docs_agent",
+                        "response": {
+                          "result": "The insurance for the property at 1982 Helena Way, Brentwood, CA 94513 is provided by QBE Insurance Corporation under policy number **QWB86640732**. The policy period is from July 24, 2025, to July 24, 2026.\n\n### Coverage Details\nThe policy includes the following coverages:\n*   **Dwelling (Coverage A):** $550,000\n*   **Other Structures (Coverage B):** $27,500\n*   **Personal Property Unscheduled (Coverage C):** $5,000\n*   **Loss of Use (Coverage D):** $110,000\n*   **Personal Liability (Coverage E):** $500,000 per occurrence\n*   **Medical Payments (Coverage F):** $5,000 per person\n\nThe Section I deductible is $1,000. Please note that this policy does not provide coverage for water damage caused by flood, and earthquake coverage is only included if explicitly listed under endorsements.\n\n### Financial Summary\n*   **Total Annual Premium:** $860.15\n*   **Payment Due Date:** July 24, 2025\n*   **Billing:** The account is serviced by Millennial Specialty Insurance. Payment information must be updated via their [customer portal](https://www.msimga.com) or by contacting the American Home Insurance Agency, Inc. at (855) 424-4467.\n\n### Additional Information\n*   **Named Insured(s):** Parag Agarwal & Shubhra Bhushan\n*   **Agency:** American Home Insurance Agency, Inc.\n*   **Mortgagee:** Plaza Home Mortgage, Inc.\n\nThe policy reflects wildfire risk mitigation classifications and a FireLine® Wildfire Hazard Score (overall score of 9). You can access policy documents and billing information through the Millennial Specialty Insurance customer portal.\n\nCitations:\n- HomePolicyDocument.pdf, Homeowners Declaration - Client Detail, Homeowners Declaration - Location Address(es), Policy Declarations and Disclaimers, Coverages Table, Section I Deductibles\n- Notice of Policy Premium Due (part of HomePolicyDocument.pdf), Policy Details, Payment Instructions, Payment Details Box\n- Welcome to MSI Letter (part of HomePolicyDocument.pdf), New Customer Portal Information, Action Required: Update Billing Information\n- CALIFORNIA NOTICE – EXPLANATION OF WILDFIRE RISK SCORE (part of HomePolicyDocument.pdf), B. FireLine® Wildfire Hazard Score - Overall Score"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1779768697.401593
+        }
+      ],
+      "session_input": {
+        "app_name": "property_agent",
+        "user_id": "GqC3zTlnb6hRS4vTH6TGeCpDXgH2"
+      },
+      "creation_timestamp": 1779768751.002491
+    }
+  ],
+  "creation_timestamp": 1779768747.056927
+}

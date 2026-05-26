@@ -60,7 +60,9 @@ def _youtube_search_data_api(
         return []
 
     if isinstance(body, dict) and body.get("error"):
-        logger.warning("YouTube Data API error payload for query=%r: %s", query, body.get("error"))
+        logger.warning(
+            "YouTube Data API error payload for query=%r: %s", query, body.get("error")
+        )
         return []
 
     items = body.get("items") if isinstance(body, dict) else None

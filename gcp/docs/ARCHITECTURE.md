@@ -38,7 +38,7 @@ The GCP directory contains a comprehensive AI-powered property care system built
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    Property Agent (Root Orchestrator)            │  │
 │  │  ┌────────────────────────────────────────────────────────────┐  │  │
-│  │  │              DocuLink Agent (doculink_agent)               │  │  │
+│  │  │  property_agent executor (resolve_turn + tools)            │  │  │
 │  │  │  Tools: checkpoint_agent | user_docs | knowledge_base      │  │  │
 │  │  │  Sub-agent: checkpoint_progress_agent (optional analysis)  │  │  │
 │  │  │    → parallel: coverage | diy | service | cost → synthesis │  │  │
@@ -93,15 +93,16 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 **Purpose:** Main orchestrator that routes user requests to specialized sub-agents based on input parameters.
 
 **Key Responsibilities:**
-- Analyzes input schema (`user_query`, `context_doc_uris`, `checkpoint_ids`, `property_address`, `primary_agent`, …)
-- Delegates property queries to DocuLink (`doculink_agent`) for checkpoint, user-docs, and knowledge-base paths
-- Handles casual queries directly without delegation
-- Returns sub-agent responses verbatim without modification
+- Runs **`resolve_turn_llm`** each turn (intent, route, optional branches) and applies state
+- Answers **casual** turns with canned text (no executor LLM / tools)
+- On substantive turns, injects **`[RESOLVED_TURN]`** and executes tools in one LLM hop
+- Returns tool/sub-agent output verbatim (dual-format for checkpoint flows)
 
 **Routing Logic:**
-1. **`primary_agent` or `checkpoint_ids`:** → DocuLink (checkpoint or docs path)
-2. **Other property queries:** → DocuLink (tool selection among checkpoint / user docs / knowledge base)
-3. **Casual Queries:** → Direct reply, no delegation
+1. **Casual** (greeting, capabilities, thanks): canned reply before executor
+2. **`route=checkpoint`:** `checkpoint_agent`; optional `checkpoint_progress_agent` when `run_optional_agents` is non-empty
+3. **`route=user_docs` / `knowledge_base`:** `ask_user_docs_agent` / `ask_knowledge_base_agent`
+4. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles are **context** for resolve, not sole routing authority
 
 **Input Schema:**
 ```python
@@ -114,11 +115,11 @@ class DiagnosisInput(BaseModel):
     checkpoint_optional_agents: Optional[List[str]]  # ["coverage", "diy", "service", "cost"]
 ```
 
-#### 1.2 DocuLink Agent
+#### 1.2 Executor tools (single hop)
 
-**Location:** `property_agent/agent.py` (`doculink_agent`)
+**Location:** `property_agent/agent.py` (`property_agent` root)
 
-**Purpose:** Single delegation target from the root agent for property queries — checkpoint retrieval, user-document RAG, knowledge-base RAG, and optional checkpoint analysis.
+**Purpose:** After resolve, the executor LLM calls retrieval/analysis tools directly (no `doculink_agent` transfer).
 
 **Tools (ADK `AgentTool`):**
 
@@ -138,9 +139,9 @@ class DiagnosisInput(BaseModel):
    - Vertex AI RAG over the shared reference corpus
    - Used when no user documents apply to the query
 
-**Tool selection (priority):** See `property_agent/prompts.py` → `doculink_agent_system_instruction()` — `primary_agent`, non-empty `checkpoint_optional_agents`, `checkpoint_ids`, query intent, then `context_doc_uris`, else knowledge base.
+**Tool selection:** `resolve_turn_llm` + `[RESOLVED_TURN]` block in `property_agent/prompts.py` → `property_agent_executor_instructions()`. Executor obeys `route` and `run_optional_agents`, not UI toggles alone.
 
-**Optional checkpoint analysis:** When `checkpoint_optional_agents` is non-empty, DocuLink calls `checkpoint_agent` once for retrieval, then transfers to `checkpoint_progress_agent`, which runs Python-parallel branches (`coverage`, `diy`, `service`, `cost`) and a synthesis step. Output is progressive dual-format (markdown + ```json `analysis` object) for webapp/mapp.
+**Optional checkpoint analysis:** When `run_optional_agents` is non-empty, executor calls `checkpoint_agent` for retrieval, then `transfer_to_agent(checkpoint_progress_agent)`, which runs Python-parallel branches (`coverage`, `diy`, `service`, `cost`) and synthesis. Output is progressive dual-format (markdown + ```json `analysis` object) for webapp/mapp.
 
 **Branch modules (invoked from checkpoint analysis, not separate root routes):**
 
@@ -152,7 +153,7 @@ class DiagnosisInput(BaseModel):
 | Cost | `cost_agent/` | AI + library cost estimates |
 | Shopping | `shopping_agent/` | Product recommendations (used by DIY) |
 
-**Fallback:** If retrieval returns nothing, DocuLink may answer from `user_query` with an explicit “no relevant information found” preface.
+**Fallback:** If retrieval returns nothing, the executor may answer from `user_query` with an explicit “no relevant information found” preface.
 
 #### 1.4 Agent Tools and Integrations
 
@@ -170,7 +171,7 @@ class DiagnosisInput(BaseModel):
 **Multimodal / media (outside live agent triage):**
 - Checkpoint photos/videos: analyzed asynchronously by the checkpoint-analysis Cloud Function (Gemini), not via a root-level triage agent
 - Proxy `extract-doc-info`: Gemini document classification on upload
-- Chat attachments: sent as `context_doc_uris` into DocuLink user-docs RAG
+- Chat attachments: sent as `context_doc_uris` into user-docs RAG via `ask_user_docs_agent`
 
 ### 2. Proxy Service (`gcp/proxy/`)
 
@@ -357,9 +358,9 @@ Supplemental ops (DLQ, alert policies) use `gcloud` or workflow steps documented
            └─> Streams query to Property Agent
 
 3. Property Agent (Root Orchestrator)
-   └─> Delegates property queries to DocuLink Agent (or direct reply for casual queries)
+   └─> Resolve turn → canned reply OR executor tools (single hop)
 
-4. DocuLink Agent
+4. property_agent executor
    └─> Selects tool: checkpoint_agent, ask_user_docs_agent, or ask_knowledge_base_agent
        └─> Optional checkpoint analysis (coverage, DIY, service, cost) when requested
            └─> Each branch calls tools (RAG, APIs, search)

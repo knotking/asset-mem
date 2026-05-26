@@ -40,7 +40,9 @@ def test_merge_state_delta_overwrites_scalar_keys():
 
 def test_apply_tool_context_state_delta_merges_actions():
     actions = SimpleNamespace(
-        state_delta={"checkpoint_optional_agents": ["coverage", "diy", "service", "cost"]}
+        state_delta={
+            "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"]
+        }
     )
     tool_context = SimpleNamespace(
         state={},

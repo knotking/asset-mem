@@ -11,11 +11,11 @@ from typing import Optional
 def get_location_pricing_prompt(trade: str, location: str) -> str:
     """
     Generate prompt for location-aware labor rate estimation.
-    
+
     Args:
         trade: Type of trade (plumber, electrician, HVAC, etc.)
         location: City and state
-        
+
     Returns:
         Formatted prompt string
     """
@@ -30,20 +30,22 @@ Please provide:
 Focus on current 2026 pricing data."""
 
 
-def get_material_cost_prompt(materials: str, repair_type: str, location: Optional[str] = None) -> str:
+def get_material_cost_prompt(
+    materials: str, repair_type: str, location: Optional[str] = None
+) -> str:
     """
     Generate prompt for material cost estimation.
-    
+
     Args:
         materials: List or description of materials needed
         repair_type: Type of repair
         location: Optional location for regional pricing
-        
+
     Returns:
         Formatted prompt string
     """
     location_context = f" in {location}" if location else ""
-    
+
     return f"""What is the current cost of materials for {repair_type}{location_context} in 2026?
 
 Materials needed: {materials}
@@ -60,10 +62,10 @@ Use current 2026 pricing."""
 def get_complexity_analysis_prompt(diagnosis: str) -> str:
     """
     Generate prompt for repair complexity analysis.
-    
+
     Args:
         diagnosis: Repair diagnosis text
-        
+
     Returns:
         Formatted prompt string
     """
@@ -109,16 +111,16 @@ Provide a clear assessment of whether this repair is suitable for DIY or require
 def get_market_trends_prompt(repair_type: str, location: Optional[str] = None) -> str:
     """
     Generate prompt for current market trends and pricing.
-    
+
     Args:
         repair_type: Type of repair or service
         location: Optional location for regional trends
-        
+
     Returns:
         Formatted prompt string
     """
     location_context = f" in {location}" if location else ""
-    
+
     return f"""What are the current pricing trends for {repair_type} services{location_context} in 2026?
 
 Please provide:
@@ -156,18 +158,18 @@ def get_comprehensive_cost_estimate_prompt(
     location: Optional[str] = None,
     repair_type: Optional[str] = None,
     severity: Optional[str] = None,
-    complexity_factors: Optional[list] = None
+    complexity_factors: Optional[list] = None,
 ) -> str:
     """
     Generate comprehensive cost estimation prompt with all context.
-    
+
     Args:
         diagnosis: Full repair diagnosis
         location: Property location (city, state)
         repair_type: Categorized repair type
         severity: Severity level (low, moderate, high)
         complexity_factors: List of complexity factors
-        
+
     Returns:
         Formatted comprehensive prompt
     """
@@ -176,8 +178,10 @@ def get_comprehensive_cost_estimate_prompt(
     severity_context = f"\n**Severity:** {severity}" if severity else ""
     complexity_context = ""
     if complexity_factors:
-        complexity_context = f"\n**Complexity Factors:** {', '.join(complexity_factors)}"
-    
+        complexity_context = (
+            f"\n**Complexity Factors:** {', '.join(complexity_factors)}"
+        )
+
     return f"""You are a home repair cost estimation expert. Provide accurate, detailed cost estimates for the following repair{location_context}.
 
 **Repair Diagnosis:** {diagnosis}{repair_context}{severity_context}{complexity_context}
@@ -271,22 +275,22 @@ def get_cost_validation_prompt(
     estimated_diy_range: str,
     estimated_pro_range: str,
     diagnosis: str,
-    location: Optional[str] = None
+    location: Optional[str] = None,
 ) -> str:
     """
     Generate prompt to validate and refine cost estimates.
-    
+
     Args:
         estimated_diy_range: Initial DIY cost estimate
         estimated_pro_range: Initial professional cost estimate
         diagnosis: Repair diagnosis
         location: Optional location
-        
+
     Returns:
         Validation prompt
     """
     location_context = f" in {location}" if location else ""
-    
+
     return f"""Please validate and refine these cost estimates for accuracy:
 
 **Repair:** {diagnosis}

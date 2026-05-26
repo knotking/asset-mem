@@ -43,8 +43,3 @@ Never ask the user to upload URIs or documents.
 def root_agent_instructions() -> str:
     """Alias for ADK / tests — same thin executor prompt."""
     return property_agent_executor_instructions()
-
-
-def doculink_agent_system_instruction() -> str:
-    """Deprecated: doculink is folded into property_agent; kept for import compatibility."""
-    return property_agent_executor_instructions()

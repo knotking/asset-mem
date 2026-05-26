@@ -41,7 +41,7 @@ def checkpoint_agent_instruction() -> str:
         2. **Retrieve Checkpoints:** Use the `ask_checkpoints_retrieval` tool with the user's query AND the `property_id` parameter. Always call it as: `ask_checkpoints_retrieval(user_query=<query>, property_id=<property_id>, checkpoint_ids=<checkpoint_ids if provided>, location=<location if provided>)`. The tool returns JSON with `checkpoints` (array of formatted checkpoint objects) and `search_query` (short phrase for optional analysis). It performs vector similarity search when no checkpoint IDs are provided.
         3. **Check for Analysis Request:** After retrieving checkpoints, check if `checkpoint_optional_agents` is provided and non-empty in your input schema.
         4. **Route Based on Analysis Request:**
-           - **If `checkpoint_optional_agents` is provided and non-empty:** Do **not** call any analysis tool. The parent DocuLink agent transfers to `checkpoint_progress_agent` after your turn. Return a **Phase 0** dual-format response: markdown summary of retrieved checkpoints plus ```json with `analysisStatus` showing requested branches as `pending` / `in_progress`. Use the formatted checkpoint data from retrieval (locations, issues, conditions). The retrieval tool stashes analysis input on session state automatically.
+           - **If `checkpoint_optional_agents` is provided and non-empty:** Do **not** call any analysis tool. The parent `property_agent` transfers to `checkpoint_progress_agent` after your turn. Return a **Phase 0** dual-format response: markdown summary of retrieved checkpoints plus ```json with `analysisStatus` showing requested branches as `pending` / `in_progress`. Use the formatted checkpoint data from retrieval (locations, issues, conditions). The retrieval tool stashes analysis input on session state automatically.
            - **If `checkpoint_optional_agents` is empty or None:** Synthesize a direct answer from the checkpoint data in DUAL FORMAT (simple query mode).
         
         **Simple Query Mode (No Optional Agents) - DUAL FORMAT REQUIRED:**
@@ -103,7 +103,7 @@ def checkpoint_agent_instruction() -> str:
            - Call `ask_checkpoints_retrieval` only; do **not** invoke any other tools
            - Build Phase 0 dual format from the `checkpoints` array (summary markdown + JSON with `analysisStatus` for each requested branch set to `pending`)
            - Include `checkpointSummary` with accurate `checkpointsAnalyzed`, `locations`, and `issuesDetected` from retrieved data
-           - Return that Phase 0 response; comprehensive analysis runs in `checkpoint_progress_agent` after DocuLink transfer
+           - Return that Phase 0 response; comprehensive analysis runs in `checkpoint_progress_agent` after the parent transfer
 
         **Tool Call Requirements:**
         - ALWAYS call `ask_checkpoints_retrieval` with `property_id` as a required parameter
@@ -207,7 +207,7 @@ def checkpoint_agent_instruction() -> str:
         IF checkpoint_optional_agents is provided AND non-empty:
             1. Retrieve checkpoints using ask_checkpoints_retrieval
             2. Return Phase 0 dual format (markdown + JSON with analysisStatus pending)
-            3. Stop — DocuLink transfers to checkpoint_progress_agent for parallel analysis
+            3. Stop — property_agent transfers to checkpoint_progress_agent for parallel analysis
         ELSE:
             1. Retrieve checkpoints using ask_checkpoints_retrieval
             2. Synthesize direct answer from checkpoint data

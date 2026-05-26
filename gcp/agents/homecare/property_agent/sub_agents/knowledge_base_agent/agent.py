@@ -1,4 +1,3 @@
-
 import os
 
 from google.adk.agents import Agent
@@ -12,9 +11,9 @@ from ...model_config import GLOBAL_GEMINI_MODEL
 load_dotenv()
 
 ask_knowledge_base_retrieval = VertexAiRagRetrieval(
-    name='ask_knowledge_base_retrieval',
+    name="ask_knowledge_base_retrieval",
     description=(
-        'Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,'
+        "Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,"
     ),
     rag_resources=[
         rag.RagResource(
@@ -30,14 +29,14 @@ ask_knowledge_base_retrieval = VertexAiRagRetrieval(
 
 knowledge_base_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='ask_knowledge_base_agent',
+    name="ask_knowledge_base_agent",
     instruction=knowledge_base_instructions(),
     input_schema=DocsInput,
     tools=[
         ask_knowledge_base_retrieval,
     ],
     disallow_transfer_to_parent=True,
-    output_key='knowledge_base_results'
+    output_key="knowledge_base_results",
 )
 
 __all__ = ["knowledge_base_agent"]

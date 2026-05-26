@@ -19,6 +19,7 @@ REPO_HOME = pathlib.Path(__file__).resolve().parents[1]
 EVALS_DIR = REPO_HOME / "property_agent" / "evals"
 SIMULATION_EVALSET = EVALS_DIR / "simulation.evalset.json"
 
+
 @pytest.fixture(scope="session", autouse=True)
 def load_env():
     dotenv.load_dotenv()

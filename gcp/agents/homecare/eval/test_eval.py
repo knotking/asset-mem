@@ -21,6 +21,7 @@ from eval.rubric_criteria import (
     config_conversational,
     config_default,
     config_routing,
+    config_routing_rubric_only,
 )
 
 pytest_plugins = ("pytest_asyncio",)
@@ -42,8 +43,7 @@ def _require_evalset(filename: str, recording_hint: str) -> pathlib.Path:
     path = _evalset_path(filename)
     if not path.is_file():
         pytest.skip(
-            f"Missing golden eval: {path}\n\n"
-            f"Record from adk web:\n{recording_hint}"
+            f"Missing golden eval: {path}\n\n" f"Record from adk web:\n{recording_hint}"
         )
     return path
 
@@ -71,17 +71,18 @@ async def _run_eval(
 
 
 @pytest.mark.asyncio
-async def test_eval_doculink_routing():
-    """Root → doculink routing for a general property query."""
+async def test_eval_executor_routing():
+    """Single-hop routing: property_agent invokes the correct tool directly."""
     await _run_eval(
         agent_module="property_agent",
-        evalset_file="doculink_routing.evalset.json",
+        evalset_file="executor_routing.evalset.json",
         eval_config=config_routing(),
         recording_hint=(
             "1. uv run adk web → select property_agent\n"
-            "2. Send a property-related question (no checkpoint_ids / primary_agent)\n"
-            "3. Eval tab → create eval set → save as doculink_routing.evalset.json\n"
-            "4. Expect trajectory: transfer_to_agent(agent_name=doculink_agent)"
+            "2. Send a substantive property question (e.g. kitchen checkpoint retrieval)\n"
+            "3. Eval tab → save as executor_routing.evalset.json\n"
+            "4. Expect: property_agent → checkpoint_agent | ask_user_docs_agent | "
+            "ask_knowledge_base_agent (single hop, no transfer_to_agent)"
         ),
     )
 
@@ -120,17 +121,17 @@ async def test_eval_multi_turn_conversational():
 
 
 @pytest.mark.asyncio
-async def test_eval_doculink_docs():
-    """DocuLink user-document retrieval (primary_agent=docs or context_doc_uris)."""
+async def test_eval_user_docs_routing():
+    """User-document retrieval (primary_agent=docs or context_doc_uris)."""
     await _run_eval(
         agent_module="property_agent",
-        evalset_file="doculink_docs.evalset.json",
-        eval_config=config_default(),
+        evalset_file="user_docs_routing.evalset.json",
+        eval_config=config_routing_rubric_only(),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
             "2. Session with primary_agent=docs and/or context_doc_uris; ask about uploaded docs\n"
-            "3. Save eval set as doculink_docs.evalset.json\n"
-            "4. Expect: transfer_to_agent → doculink_agent → ask_user_docs_agent (and/or knowledge_base_agent)"
+            "3. Save eval set as user_docs_routing.evalset.json\n"
+            "4. Expect: property_agent → ask_user_docs_agent"
         ),
     )
 
@@ -147,7 +148,7 @@ async def test_eval_checkpoint_optional_agents():
             "2. Provide checkpoint_ids, property_id, checkpoint_optional_agents "
             '["coverage","diy","service","cost"]\n'
             "3. Save as checkpoint_optional_agents.evalset.json\n"
-            "4. Expect: doculink → checkpoint_agent → checkpoint_progress_agent"
+            "4. Expect: property_agent → checkpoint_agent → checkpoint_progress_agent"
         ),
     )
 
@@ -161,7 +162,7 @@ async def test_eval_cost_agent():
         eval_config=config_checkpoint_branch("cost"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
-            "2. checkpoint_ids + checkpoint_optional_agents: [\"cost\"]; ask for cost details\n"
+            '2. checkpoint_ids + checkpoint_optional_agents: ["cost"]; ask for cost details\n'
             "3. Save as cost_agent.evalset.json (full root session, not isolated cost_agent)"
         ),
     )
@@ -176,7 +177,7 @@ async def test_eval_shopping_agent():
         eval_config=config_checkpoint_branch("diy"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
-            "2. checkpoint_optional_agents: [\"diy\"]; query like find products to fix it\n"
+            '2. checkpoint_optional_agents: ["diy"]; query like find products to fix it\n'
             "3. Save as shopping_agent.evalset.json"
         ),
     )
@@ -191,7 +192,7 @@ async def test_eval_service_agent():
         eval_config=config_checkpoint_branch("service"),
         recording_hint=(
             "1. uv run adk web → property_agent\n"
-            "2. checkpoint_optional_agents: [\"service\"]; ask for local service providers\n"
+            '2. checkpoint_optional_agents: ["service"]; ask for local service providers\n'
             "3. Save as service_agent.evalset.json"
         ),
     )

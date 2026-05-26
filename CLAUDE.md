@@ -56,8 +56,8 @@ make setup            # uv sync + .env from .env.example
 make run              # adk run property_agent
 make test             # unit tests only (tests/; CI on PRs)
 make test-eval        # all ADK evalsets (eval/; live Vertex)
-make test-eval-routing
-make test-eval-docs
+make test-eval-executor-routing
+make test-eval-user-docs
 make test-eval-checkpoint
 make test-eval-cost
 make test-eval-shopping
@@ -94,7 +94,7 @@ python scripts/test_token_usage_request.py --stream-chunks
 ### Request flow for AI features
 1. **Client** (`apps/mapp` or `apps/webapp`) authenticates via Firebase Auth, then calls the proxy. Mobile sends through `apps/mapp/lib/api.ts`; the web app talks to Firebase directly + uses `apps/webapp/src/lib/api-checkpoint.ts`. The proxy URLs are environment-injected (`apps/mapp/app.config.js` `extra.*`, webapp `apphosting*.yaml`).
 2. **Proxy API** (`gcp/proxy/api`, FastAPI on Cloud Run) routes are mounted under `/{FIREBASE_WEBHOOK_SECRET}` so the secret acts as a path prefix bearer. `main.py` only mounts agent/document/checkpoint/service-broker/token-quota routers when `FIREBASE_WEBHOOK_SECRET` is set; `POST /token-quota-status` is also exposed unprefixed for local dev. Routers (`routers/`) → services (`services/`) → either Vertex AI Reasoning Engine (`vertex_service.py`) or Gemini direct (`checkpoint_service.py` for comparisons) or Pub/Sub (`document_service.py` queues doc extraction; worker runs Gemini).
-3. **Vertex AI Agent Engine** runs `gcp/agents/homecare/property_agent`, an ADK app whose **root** (`property_agent`) delegates to **`doculink_agent`**, which selects among tools/sub-agents under `property_agent/sub_agents/` (e.g. `user_docs_agent`, `knowledge_base_agent`, `checkpoint_agent`, and—when requested—`checkpoint_analysis_agent` with coverage, diy, service, cost, shopping, etc.). Routing is driven by `prompts.py` (`primary_agent`, `checkpoint_ids`, and legacy rules), not a separate top-level `analysis_agent` package in the current repo layout.
+3. **Vertex AI Agent Engine** runs `gcp/agents/homecare/property_agent`, an ADK app whose **root** (`property_agent`) is a **single-hop executor**: `resolve_turn_llm` routes each turn, then the executor calls tools/sub-agents under `property_agent/sub_agents/` directly (e.g. `user_docs_agent`, `knowledge_base_agent`, `checkpoint_agent`, and—when requested—`checkpoint_progress_agent` with coverage, diy, service, cost, shopping, etc.). Client `primary_agent`, `checkpoint_ids`, and `checkpoint_optional_agents` are context; routing follows `[RESOLVED_TURN]`, not a separate `doculink_agent` hop.
 4. **Async workers** (`gcp/proxy/workers/function/`) are Pub/Sub-triggered Cloud Functions:
    - `user_docs` — imports user uploads into the Vertex AI RAG corpus
    - `checkpoint_analysis` — analyzes checkpoint media via Gemini, writes Firestore

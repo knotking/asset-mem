@@ -291,7 +291,9 @@ def test_compute_full_cost_estimate_falls_back_when_ai_returns_none(
     assert "plumb" in repair or "leak" in repair or "pipe" in repair
 
 
-def test_cost_estimation_sync_returns_json_string(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cost_estimation_sync_returns_json_string(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(CostEstimationConfig, "USE_AI_COST_ESTIMATION", False)
     raw = cost_mod._cost_estimation_sync("hvac furnace not heating")
     data = json.loads(raw)

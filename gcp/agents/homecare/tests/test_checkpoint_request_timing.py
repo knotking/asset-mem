@@ -2,8 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from property_agent.sub_agents import checkpoint_request_timing as crt
 
 
@@ -14,8 +12,8 @@ def test_emit_logs_single_structured_line():
     crt.record_parallel_ms(state, 24000)
     crt.record_diy_ms(state, 19000)
     crt.record_synthesis_ms(state, 5000)
-    crt.begin_doculink_phase(state)
-    crt.record_doculink_ms(state, 800)
+    crt.begin_executor_phase(state)
+    crt.record_executor_ms(state, 800)
 
     logger = MagicMock()
     crt.logger = logger

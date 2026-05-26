@@ -113,7 +113,7 @@ The Docs agent enables users to:
 - Payload includes: `"primary_agent": "docs"`
 - Payload includes: `"context_doc_uris": [...]` (selected docs) or `[]` (all docs)
 - Payload includes: `"user_query": "..."`
-- Agent routes to `doculink_agent` → `user_docs_agent`
+- Agent routes to `ask_user_docs_agent` (property_agent executor)
 
 ### Test 6: Cross-Property Isolation
 
@@ -177,12 +177,12 @@ input_data = {
     "context_doc_uris": ["gs://bucket/user123/manual.pdf"],
     "property_id": "prop123"
 }
-# Expected: Routes to doculink_agent
+# Expected: property_agent → ask_user_docs_agent
 ```
 
-**Test DocuLink Agent**:
+**Test executor (property_agent)**:
 ```python
-# Verify doculink_agent detects docs mode
+# Verify resolve sets route=user_docs and calls ask_user_docs_agent
 # Expected: Calls user_docs_agent tool
 # Expected: Passes context_doc_uris to user_docs_agent
 ```

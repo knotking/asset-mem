@@ -79,7 +79,7 @@ checkpoints = ask_checkpoints_retrieval(
 
 ## Integration
 
-The checkpoint agent is integrated into the `doculink_agent` as one of its tools. The doculink agent automatically uses checkpoint_agent when:
+The checkpoint agent is integrated into the root `property_agent` executor as a tool. The executor selects `checkpoint_agent` when:
 
 - User queries mention checkpoints
 - User asks about property condition over time

@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 _JSON_FENCE_RE = re.compile(r"```json\s*\n?([\s\S]*?)```", re.IGNORECASE)
 
-DOCULINK_AGENT_NAME = "doculink_agent"
 PROPERTY_AGENT_NAME = "property_agent"
+DOCULINK_AGENT_NAME = "doculink_agent"  # legacy (pre single-hop refactor)
+ORCHESTRATOR_AGENT_NAMES = frozenset({PROPERTY_AGENT_NAME, DOCULINK_AGENT_NAME})
 CHECKPOINT_DUAL_FORMAT_STATE_KEY = "checkpoint_analysis_dual_format"
 
 
@@ -57,7 +58,9 @@ def resolve_property_id(state: Mapping[str, Any] | None) -> Optional[str]:
 def memory_stream_id(*, property_id: Optional[str]) -> str:
     prefix = _stream_prefix()
     if property_id:
-        return f"{prefix}property:{property_id}" if prefix else f"property:{property_id}"
+        return (
+            f"{prefix}property:{property_id}" if prefix else f"property:{property_id}"
+        )
     return f"{prefix}user-general" if prefix else "user-general"
 
 
@@ -120,7 +123,9 @@ def build_ingest_custom_metadata(*, stream_id: str) -> dict[str, object]:
         metadata["force_flush"] = True
     else:
         metadata["generation_trigger_config"] = {
-            "generation_rule": {"idle_duration": os.getenv("ADK_MEMORY_IDLE_DURATION", "60s")}
+            "generation_rule": {
+                "idle_duration": os.getenv("ADK_MEMORY_IDLE_DURATION", "60s")
+            }
         }
     return metadata
 
@@ -228,12 +233,17 @@ async def ingest_invocation_to_memory_bank(
         )
 
 
-def invocation_used_doculink(session_events: Sequence[Event], invocation_id: str) -> bool:
+def invocation_used_orchestrator(
+    session_events: Sequence[Event], invocation_id: str
+) -> bool:
     for event in session_events:
         if event.invocation_id != invocation_id:
             continue
-        if event.author == DOCULINK_AGENT_NAME:
+        if event.author in ORCHESTRATOR_AGENT_NAMES:
             return True
-        if event.actions and event.actions.transfer_to_agent == DOCULINK_AGENT_NAME:
+        if (
+            event.actions
+            and event.actions.transfer_to_agent in ORCHESTRATOR_AGENT_NAMES
+        ):
             return True
     return False

@@ -102,9 +102,7 @@ def _apply_conversational_state_for_turn_impl(
 ) -> Optional[LlmResponse]:
     """When conversational, set state and return a canned model response (no extra LLM)."""
     state = callback_context.state
-    user_query = resolve_user_query_for_turn(
-        callback_context, llm_request=llm_request
-    )
+    user_query = resolve_user_query_for_turn(callback_context, llm_request=llm_request)
     if not user_query:
         logger.debug(
             "conversational bypass skipped agent=%s (no user_query in state or events)",
@@ -144,9 +142,7 @@ def _apply_conversational_state_for_turn_impl(
         state=state,
     )
     state[CONVERSATIONAL_TURN_STATE_KEY] = True
-    state["_saved_checkpoint_optional_agents"] = state.get(
-        "checkpoint_optional_agents"
-    )
+    state["_saved_checkpoint_optional_agents"] = state.get("checkpoint_optional_agents")
     state["checkpoint_optional_agents"] = []
 
     address = resolve_property_address_from_state(state)
@@ -222,7 +218,10 @@ def _conversational_before_tool_impl(
     resolved = resolved_turn_from_state(tool_context.state)
     if resolved is not None and resolved.is_casual:
         if tool_name in _BLOCKED_DOCULINK_TOOLS:
-            logger.info("conversational before_tool: blocked tool=%s (resolved casual)", tool_name)
+            logger.info(
+                "conversational before_tool: blocked tool=%s (resolved casual)",
+                tool_name,
+            )
             return dict(_CONVERSATIONAL_TOOL_RESULT)
         if tool_name == "transfer_to_agent":
             agent_name = (args or {}).get("agent_name")
@@ -261,7 +260,9 @@ def conversational_before_tool(
     try:
         return _conversational_before_tool_impl(tool, args, tool_context, **kwargs)
     except Exception:
-        logger.exception("conversational before_tool failed tool=%s", getattr(tool, "name", tool))
+        logger.exception(
+            "conversational before_tool failed tool=%s", getattr(tool, "name", tool)
+        )
         try:
             uq = resolve_user_query_for_turn(tool_context)
             events = _session_events(tool_context)

@@ -7,7 +7,7 @@ info:
     orchestrates multiple specialized sub-agents for comprehensive property care.
     
     **Property Agent Scope:**
-    The Property Agent helps with property care through DocuLink and checkpoint analysis:
+    The Property Agent helps with property care via a single-hop executor and checkpoint analysis:
     - **Maintenance Checkpoints**: Property inspections and condition over time
     - **Property Documents**: Answers from uploaded lease, policy, and insurance documents
     - **Coverage**: Warranty and insurance guidance from user documents
@@ -15,15 +15,15 @@ info:
     - **Service**: Local service provider recommendations
     - **Cost**: Repair cost estimates (DIY vs professional)
     
-    **Sub-Agents (via DocuLink and checkpoint analysis):**
+    **Sub-Agents (executor tools and checkpoint analysis):**
     - Checkpoint Agent: Property checkpoint retrieval (Firestore vector search)
     - Checkpoint analysis: Optional coverage, DIY, service, cost branches + synthesis
     - User Docs Agent: User document RAG (`context_doc_uris`)
     - Knowledge Base Agent: Shared corpus RAG
     - DIY / Service / Cost / Shopping: Used in optional checkpoint analysis paths
     
-    The Property Agent delegates to DocuLink for retrieval and checkpoint flows,
-    or returns a simple text response for casual queries.
+    The Property Agent resolves each turn, invokes retrieval tools directly,
+    or returns a canned text response for casual queries.
 
 paths: {}
 
@@ -65,7 +65,7 @@ components:
         primary_agent:
           type: string
           enum: [checkpoint, docs]
-          description: Explicit routing to checkpoint or docs path via DocuLink.
+          description: Context for resolve_turn (checkpoint or docs path).
           nullable: true
         checkpoint_optional_agents:
           type: array
@@ -79,7 +79,7 @@ components:
         
         **Key Points:**
         - Only `user_query` is required.
-        - All optional fields may be omitted entirely; the agent delegates to DocuLink for retrieval and checkpoint flows.
+        - All optional fields may be omitted entirely; the executor invokes tools for retrieval and checkpoint flows.
 
     DocsInput:
       type: object
@@ -88,7 +88,7 @@ components:
       properties:
         user_query:
           type: string
-          description: The user query for DocuLink and branch agents.
+          description: The user query for the executor and branch agents.
         context_doc_uris:
           type: array
           items:
@@ -118,7 +118,7 @@ components:
           type: object
           description: Unified market/geo (source, coordinates, radius_miles 5-100, label).
           nullable: true
-      description: Input schema for DocuLink and checkpoint optional-analysis branches.
+      description: Input schema for the executor and checkpoint optional-analysis branches.
 
     # ============================================================================
     # Branch output schemas (checkpoint optional analysis + retrieval)
@@ -581,7 +581,7 @@ components:
         - type: string
           description: Plain text response for casual or small-talk queries.
       description: |
-        The root agent returns a DocuLink retrieval payload, a checkpoint dual-format
+        The root agent returns a retrieval payload, a checkpoint dual-format
         response (markdown first, then fenced JSON with an `analysis` object), or plain text
         for casual queries.
         
@@ -1060,7 +1060,7 @@ components:
   # ============================================================================
   # Sub-Agent Summary (current)
   # ============================================================================
-  # Root property_agent → doculink_agent
+  # Root property_agent (single-hop executor; no doculink transfer)
   #   Tools: checkpoint_agent, ask_user_docs_agent, ask_knowledge_base_agent
   #   Sub-agent: checkpoint_progress_agent (optional parallel coverage|diy|service|cost + synthesis)
   # See property_agent/README.md and prompts.py for routing details.

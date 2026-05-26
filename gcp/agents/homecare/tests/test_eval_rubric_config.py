@@ -30,7 +30,7 @@ def test_routing_config_uses_tool_use_rubrics() -> None:
     assert "rubric_based_tool_use_quality_v1" in cfg.criteria
     criterion = cfg.criteria["rubric_based_tool_use_quality_v1"]
     assert len(criterion.rubrics) >= 1
-    assert _rubric_id(criterion.rubrics[0]) == "transfer_to_doculink"
+    assert _rubric_id(criterion.rubrics[0]) == "executor_invokes_route_tool"
 
 
 def test_checkpoint_config_uses_response_rubrics_and_semantic_match() -> None:

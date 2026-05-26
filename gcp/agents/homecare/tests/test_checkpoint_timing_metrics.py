@@ -31,9 +31,15 @@ def test_emit_records_each_phase_and_chars() -> None:
     with (
         patch.object(ctm, "_METRICS_ENABLED", True),
         patch.object(ctm, "_get_histogram", side_effect=fake_get_histogram),
-        patch.object(ctm, "_base_attributes", return_value={"source": "test", "component": "property_agent"}),
+        patch.object(
+            ctm,
+            "_base_attributes",
+            return_value={"source": "test", "component": "property_agent"},
+        ),
     ):
-        ctm.emit_checkpoint_timing_metrics(payload, source="doculink_after_model", state={})
+        ctm.emit_checkpoint_timing_metrics(
+            payload, source="doculink_after_model", state={}
+        )
 
     assert phase_hist.record.call_count == 6
     recorded_phases = {
@@ -47,7 +53,14 @@ def test_emit_records_each_phase_and_chars() -> None:
         "doculink",
         "total",
     }
-    phase_hist.record.assert_any_call(100.0, attributes={"source": "test", "component": "property_agent", "phase": "retrieval"})
+    phase_hist.record.assert_any_call(
+        100.0,
+        attributes={
+            "source": "test",
+            "component": "property_agent",
+            "phase": "retrieval",
+        },
+    )
     chars_hist.record.assert_called_once_with(
         12000.0, attributes={"source": "test", "component": "property_agent"}
     )
@@ -74,7 +87,11 @@ def test_emit_skips_none_phase_values() -> None:
             if name == ctm.METRIC_PHASE_DURATION_MS
             else None,
         ),
-        patch.object(ctm, "_base_attributes", return_value={"source": "t", "component": "property_agent"}),
+        patch.object(
+            ctm,
+            "_base_attributes",
+            return_value={"source": "t", "component": "property_agent"},
+        ),
     ):
         ctm.emit_checkpoint_timing_metrics(
             {"retrieval_ms": None, "total_ms": 500},

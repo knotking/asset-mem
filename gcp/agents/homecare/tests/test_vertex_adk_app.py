@@ -23,7 +23,9 @@ def test_homecare_adk_app_wires_runner_with_property_app():
         "in_memory_memory_service": MagicMock(),
     }
 
-    with patch.object(HomecareAdkApp, "set_up", wraps=adk._wire_runners_with_property_app):
+    with patch.object(
+        HomecareAdkApp, "set_up", wraps=adk._wire_runners_with_property_app
+    ):
         adk._wire_runners_with_property_app()
 
     runner = adk._tmpl_attrs["runner"]

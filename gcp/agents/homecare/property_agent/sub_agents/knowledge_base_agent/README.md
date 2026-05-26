@@ -1,6 +1,6 @@
 # Knowledge Base Agent
 
-This sub-agent retrieves authoritative information from a configured Vertex AI RAG corpus and returns a concise, cited answer. It is invoked by the DocuLink Agent when no user context documents are provided.
+This sub-agent retrieves authoritative information from a configured Vertex AI RAG corpus and returns a concise, cited answer. The root `property_agent` executor invokes it via `ask_knowledge_base_agent` when resolve sets `route=knowledge_base`.
 
 ## What it does
 - Uses `VertexAiRagRetrieval` to query a RAG corpus
@@ -30,7 +30,7 @@ This sub-agent retrieves authoritative information from a configured Vertex AI R
   - `vector_distance_threshold` (default 0.6)
 
 ## Invocation context
-The DocuLink Agent decides whether to call this agent vs. the user-docs agent. If `context_doc_uris` are not provided or empty, the DocuLink Agent uses this knowledge base agent.
+Resolve + executor decide between this agent and user-docs. If `context_doc_uris` are not provided or empty and the query is not docs/checkpoint-specific, the executor may use this knowledge base agent.
 
 ## Response shape
 - Primary output is a concise textual answer with a trailing "Citations:" section

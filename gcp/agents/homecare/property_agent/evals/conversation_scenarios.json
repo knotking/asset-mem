@@ -3,13 +3,13 @@
     {
       "eval_id": "routing_greeting_property_care",
       "starting_prompt": "Hello! I have a question about my home at 1982 Helena Way in Brentwood.",
-      "conversation_plan": "Greet the agent and ask what it can help with for property care and checkpoints. If the agent explains capabilities or asks what you need, say you want help understanding your property checkpoints. Continue until the agent routes you to doculink or offers checkpoint-related help. Stop when you have a clear, helpful reply.",
+      "conversation_plan": "Greet the agent and ask what it can help with for property care and checkpoints. If the agent explains capabilities or asks what you need, say you want help understanding your property checkpoints. Continue until the agent offers checkpoint-related help or answers substantively. Stop when you have a clear, helpful reply.",
       "user_persona": "NOVICE"
     },
     {
       "eval_id": "docs_insurance_water_damage",
       "starting_prompt": "Can you tell me what my home insurance policy says about water damage?",
-      "conversation_plan": "Ask about coverage for water damage from uploaded documents. If the agent asks for document context or routes to doculink, cooperate. Provide property_address 1982 Helena Way if asked. End when the agent gives an answer grounded in documents or explains it needs uploaded docs.",
+      "conversation_plan": "Ask about coverage for water damage from uploaded documents. If the agent asks for document context or uses user-docs retrieval, cooperate. Provide property_address 1982 Helena Way if asked. End when the agent gives an answer grounded in documents or explains it needs uploaded docs.",
       "user_persona": "EXPERT"
     },
     {

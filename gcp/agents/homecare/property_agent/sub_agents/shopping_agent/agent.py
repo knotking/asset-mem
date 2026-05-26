@@ -57,11 +57,17 @@ def product_recommendations(
             category,
             len(query or ""),
         )
-        return json.dumps({"recommendedProducts": {"message": "Product recommendations service not available (missing API key)."}})
-    
+        return json.dumps(
+            {
+                "recommendedProducts": {
+                    "message": "Product recommendations service not available (missing API key)."
+                }
+            }
+        )
+
     try:
         import serpapi
-        
+
         # Build search query based on category
         if category == "DIY":
             search_query = f"{query} DIY repair products tools"
@@ -79,7 +85,9 @@ def product_recommendations(
             "hl": "en",
         }
         sl = parse_search_location_arg(search_location)
-        location_name = resolve_serpapi_location_name(sl, property_address=property_address)
+        location_name = resolve_serpapi_location_name(
+            sl, property_address=property_address
+        )
         if location_name:
             params["location"] = location_name
             logger.debug(
@@ -91,7 +99,9 @@ def product_recommendations(
             search_results.get("error")
         )
         err_text = (
-            str(search_results.get("error") or "") if isinstance(search_results, dict) else ""
+            str(search_results.get("error") or "")
+            if isinstance(search_results, dict)
+            else ""
         )
         if (
             serp_err
@@ -127,7 +137,7 @@ def product_recommendations(
                 type(products).__name__,
             )
             products = []
-        
+
         # Process products
         def process_products(products, max_results=5):
             processed = []
@@ -159,7 +169,7 @@ def product_recommendations(
                     )
                     continue
             return processed
-        
+
         processed_items = process_products(products)
         logger.debug(
             "product_recommendations: SerpAPI processed_items=%s",
@@ -187,7 +197,7 @@ def product_recommendations(
             "recommendedProducts": {
                 category: {
                     "products": processed_items,
-                    "description": f"Essential products you'll need for {category.lower()} repair"
+                    "description": f"Essential products you'll need for {category.lower()} repair",
                 }
             }
         }
@@ -209,20 +219,25 @@ def product_recommendations(
             _elapsed_ms(),
             category,
         )
-        return json.dumps({"recommendedProducts": {"error": f"Error retrieving product recommendations: {str(e)}"}})
+        return json.dumps(
+            {
+                "recommendedProducts": {
+                    "error": f"Error retrieving product recommendations: {str(e)}"
+                }
+            }
+        )
 
 
 shopping_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='shopping_agent',
+    name="shopping_agent",
     description="Provides product recommendations for DIY repairs, professional services, and general repair needs.",
     instruction=shopping_agent_instructions(),
     tools=[product_recommendations],
-    input_schema=DocsInput
+    input_schema=DocsInput,
 )
 
 # ADK AgentEvaluator expects ``root_agent`` on ``*.agent`` modules.
 root_agent = shopping_agent
 
 __all__ = ["shopping_agent", "product_recommendations", "root_agent"]
-

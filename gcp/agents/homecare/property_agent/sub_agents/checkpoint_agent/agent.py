@@ -41,17 +41,15 @@ from ..checkpoint_dual_format_guard import (
     dual_format_is_passthrough_quality,
     enrich_dual_format_markdown,
     apply_tool_context_state_delta,
-    ensure_checkpoint_analysis_pending_stashed,
     ensure_dual_format_body,
     format_checkpoints_for_analysis_blob,
-    normalize_checkpoint_optional_agents,
     resolve_passthrough_dual_format_from_state,
     stash_checkpoint_dual_format_in_state,
 )
 from google.adk.events.event import Event, EventActions
 from ..checkpoint_request_timing import (
     begin_checkpoint_request,
-    begin_doculink_phase,
+    begin_executor_phase,
     record_retrieval_ms,
     set_return_chars,
 )
@@ -112,9 +110,7 @@ def _stash_pending_checkpoint_analysis(
         should_stash_checkpoint_optional_analysis,
     )
 
-    if not should_stash_checkpoint_optional_analysis(
-        tool_context.state, user_query
-    ):
+    if not should_stash_checkpoint_optional_analysis(tool_context.state, user_query):
         return
     requested = optional_agents_for_progress_from_state(tool_context.state)
     if not requested or not formatted_results:
@@ -191,7 +187,9 @@ def _extract_tool_visible_text(content: types.Content | None) -> str:
                 thought_chunks.append(p.text)
             else:
                 chunks.append(p.text)
-        fr = getattr(p, "function_response", None) or getattr(p, "functionResponse", None)
+        fr = getattr(p, "function_response", None) or getattr(
+            p, "functionResponse", None
+        )
         if fr is None:
             continue
         resp = getattr(fr, "response", None)
@@ -402,7 +400,9 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                                     tool_context,
                                     vis,
                                     branch=branch,
-                                    state_delta=delta if isinstance(delta, dict) else None,
+                                    state_delta=delta
+                                    if isinstance(delta, dict)
+                                    else None,
                                 )
                         logger.debug(
                             "_LastNonEmptyTextAgentTool event=%d author=%r "
@@ -504,7 +504,9 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                         len(tool_result),
                     )
 
-            if isinstance(tool_result, str) and dual_format_is_passthrough_quality(tool_result):
+            if isinstance(tool_result, str) and dual_format_is_passthrough_quality(
+                tool_result
+            ):
                 tool_result = enrich_dual_format_markdown(tool_result)
                 stash_checkpoint_dual_format_in_state(tool_context.state, tool_result)
 
@@ -536,7 +538,7 @@ class _LastNonEmptyTextAgentTool(AgentTool):
                 ensure_checkpoint_analysis_pending_stashed(tool_context.state)
                 if isinstance(tool_result, str):
                     set_return_chars(tool_context.state, len(tool_result))
-                    begin_doculink_phase(tool_context.state)
+                    begin_executor_phase(tool_context.state)
             logger.debug(
                 "_LastNonEmptyTextAgentTool.run_async end wrapped=%r "
                 "return_type=%s return_len=%s",
@@ -564,18 +566,18 @@ def ask_checkpoints_retrieval(
     property_id: str,  # Mandatory - required for property-specific checkpoint queries
     location: Optional[str] = None,
     checkpoint_ids: Optional[List[str]] = None,
-    tool_context: ToolContext = None
+    tool_context: ToolContext = None,
 ):
     """
     Retrieves relevant checkpoints using Firestore Vector Search based on semantic query matching.
-    
+
     Args:
         user_query: Natural language query about checkpoints (e.g., "Show me checkpoints with water damage")
         property_id: Property ID (REQUIRED) - must be provided to query property-specific checkpoints
         location: Optional location filter (e.g., "Kitchen", "Car")
         checkpoint_ids: Optional list of specific checkpoint IDs to limit results to (when provided, only these checkpoints are considered)
         tool_context: Tool context containing user_id and session information
-        
+
     Returns:
         ``{"checkpoints": [...], "search_query": str}`` — checkpoints carry analysis fields;
         ``search_query`` is a short phrase from locations and issue descriptions for
@@ -592,11 +594,7 @@ def ask_checkpoints_retrieval(
             record_retrieval_ms(tool_context.state, _elapsed_ms())
 
     try:
-        ck_mode = (
-            "by_id"
-            if checkpoint_ids and len(checkpoint_ids) > 0
-            else "vector"
-        )
+        ck_mode = "by_id" if checkpoint_ids and len(checkpoint_ids) > 0 else "vector"
         logger.info(
             "checkpoint_retrieval: start mode=%s property_id=%s "
             "user_query_len=%d location_set=%s checkpoint_id_count=%d",
@@ -614,14 +612,19 @@ def ask_checkpoints_retrieval(
         )
 
         # Get user_id from context
-        user_id = tool_context.state.get("user_id") or tool_context._invocation_context.session.user_id
+        user_id = (
+            tool_context.state.get("user_id")
+            or tool_context._invocation_context.session.user_id
+        )
         logger.debug("checkpoint_retrieval: user_id=%s", user_id)
 
         # property_id is now mandatory in function signature, but check tool_context.state as fallback if somehow missing
         if not property_id:
             property_id = tool_context.state.get("property_id")
-            logger.warning(f"property_id not provided as parameter, attempting to retrieve from tool_context.state: {property_id}")
-        
+            logger.warning(
+                f"property_id not provided as parameter, attempting to retrieve from tool_context.state: {property_id}"
+            )
+
         if not user_id:
             logger.error(f"Missing user_id: user_id={user_id}")
             logger.info(
@@ -630,28 +633,30 @@ def ask_checkpoints_retrieval(
             )
             _record_retrieval_timing()
             return {"checkpoints": [], "search_query": ""}
-        
+
         if not property_id:
-            logger.error("Missing property_id - checkpoint retrieval REQUIRES property_id. Cannot proceed without it.")
+            logger.error(
+                "Missing property_id - checkpoint retrieval REQUIRES property_id. Cannot proceed without it."
+            )
             logger.info(
                 "checkpoint_retrieval: end duration_ms=%d outcome=no_property checkpoints=0",
                 _elapsed_ms(),
             )
             _record_retrieval_timing()
             return {"checkpoints": [], "search_query": ""}
-        
+
         logger.debug(
             "checkpoint_retrieval: resolved user_id=%s property_id=%s",
             user_id,
             property_id,
         )
-        
+
         # Lazy import to avoid deployment issues
         from google.cloud import firestore
-        
+
         # Initialize Firestore client
         db = firestore.Client()
-        
+
         # If specific checkpoint IDs are provided, fetch those checkpoints directly
         if checkpoint_ids and len(checkpoint_ids) > 0:
             logger.debug(
@@ -660,9 +665,13 @@ def ask_checkpoints_retrieval(
                 checkpoint_ids,
             )
             checkpoints = []
-            checkpoints_ref = db.collection("users").document(user_id)\
-                .collection("properties").document(property_id)\
+            checkpoints_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("properties")
+                .document(property_id)
                 .collection("checkpoints")
+            )
             logger.debug(
                 "checkpoint_retrieval: collection users/%s/properties/%s/checkpoints",
                 user_id,
@@ -684,10 +693,14 @@ def ask_checkpoints_retrieval(
                             bool(checkpoint_data.get("aiAnalysis")),
                         )
                     else:
-                        logger.warning(f"Checkpoint document {checkpoint_id} does not exist")
+                        logger.warning(
+                            f"Checkpoint document {checkpoint_id} does not exist"
+                        )
                 except Exception as e:
-                    logger.error(f"Error fetching checkpoint {checkpoint_id}: {e}", exc_info=True)
-            
+                    logger.error(
+                        f"Error fetching checkpoint {checkpoint_id}: {e}", exc_info=True
+                    )
+
             logger.info(
                 "checkpoint_retrieval: firestore_by_id fetch_duration_ms=%d "
                 "fetched=%d requested=%d total_elapsed_ms=%d",
@@ -697,7 +710,9 @@ def ask_checkpoints_retrieval(
                 _elapsed_ms(),
             )
             if not checkpoints:
-                logger.warning(f"None of the specified checkpoint IDs were found: {checkpoint_ids}")
+                logger.warning(
+                    f"None of the specified checkpoint IDs were found: {checkpoint_ids}"
+                )
                 logger.info(
                     "checkpoint_retrieval: end duration_ms=%d outcome=no_matches checkpoints=0",
                     _elapsed_ms(),
@@ -717,7 +732,7 @@ def ask_checkpoints_retrieval(
                 property_id=property_id,
                 query_text=user_query,
                 limit=5,
-                location=location
+                location=location,
             )
             logger.info(
                 "checkpoint_retrieval: vector_search duration_ms=%d returned=%d",
@@ -738,7 +753,7 @@ def ask_checkpoints_retrieval(
                 )
                 _record_retrieval_timing()
                 return {"checkpoints": [], "search_query": ""}
-        
+
         # Format checkpoints for agent consumption
         # Extract relevant information: summary, location, detected items, issues, etc.
         logger.debug(
@@ -756,21 +771,21 @@ def ask_checkpoints_retrieval(
             )
             checkpoint_id = checkpoint.get("id")
             ai_analysis = checkpoint.get("aiAnalysis", {})
-            
+
             # Build a summary text from checkpoint data
             summary_parts = []
             if ai_analysis.get("summary"):
                 summary_parts.append(f"Summary: {ai_analysis['summary']}")
-            
+
             location = checkpoint.get("location") or ai_analysis.get("detectedAsset")
             if location:
                 summary_parts.append(f"Location/Asset: {location}")
-            
+
             detected_items = ai_analysis.get("detectedItems", [])
             if detected_items:
                 items_text = ", ".join(detected_items[:5])  # Limit to first 5
                 summary_parts.append(f"Detected items: {items_text}")
-            
+
             issues = ai_analysis.get("issues", [])
             if issues:
                 issue_descriptions = []
@@ -779,35 +794,37 @@ def ask_checkpoints_retrieval(
                         issue_descriptions.append(issue.get("description", ""))
                     elif isinstance(issue, str):
                         issue_descriptions.append(issue)
-                
+
                 if issue_descriptions:
                     issues_text = "; ".join(issue_descriptions)
                     summary_parts.append(f"Issues: {issues_text}")
-            
+
             conditions = ai_analysis.get("conditions", [])
             if conditions:
                 conditions_text = ", ".join(conditions[:3])  # Limit to first 3
                 summary_parts.append(f"Conditions: {conditions_text}")
-            
+
             # Get checkpoint name (prefer name, fallback to location or "Checkpoint")
             checkpoint_name = checkpoint.get("name") or location or "Checkpoint"
-            
+
             # Include checkpoint name in the text summary for agent consumption
             if checkpoint_name and checkpoint_name != "Checkpoint":
                 summary_parts.insert(0, f"Checkpoint Name: {checkpoint_name}")
-            
+
             # Build formatted checkpoint data
             formatted_checkpoint = {
                 "checkpointId": checkpoint_id,  # Keep ID for internal reference
                 "checkpointName": checkpoint_name,  # Add name field
-                "text": "\n".join(summary_parts) if summary_parts else "No summary available",
+                "text": "\n".join(summary_parts)
+                if summary_parts
+                else "No summary available",
                 "location": location,
                 "createdAt": checkpoint.get("createdAt"),
                 "summary": ai_analysis.get("summary", ""),
                 "detectedItems": detected_items,
                 "conditions": conditions,
                 "issues": issues[:5] if issues else [],  # Limit issues for context
-                "similarity_score": checkpoint.get("similarity_score", 0.0)
+                "similarity_score": checkpoint.get("similarity_score", 0.0),
             }
             logger.debug(
                 "formatted_checkpoint=%s",
@@ -820,7 +837,7 @@ def ask_checkpoints_retrieval(
                 idx + 1,
                 len(formatted_checkpoint.get("text") or ""),
             )
-        
+
         search_query = build_search_query_from_checkpoints(formatted_results)
         search_query = refine_checkpoint_media_search_query(
             search_query, formatted_results
@@ -840,7 +857,9 @@ def ask_checkpoints_retrieval(
             len(formatted_results),
         )
         if tool_context is not None and search_query:
-            tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = search_query
+            tool_context.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = (
+                search_query
+            )
         if tool_context is not None and formatted_results:
             _stash_pending_checkpoint_analysis(
                 tool_context,
@@ -869,14 +888,14 @@ def ask_checkpoints_retrieval(
 
 checkpoint_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='checkpoint_agent',
+    name="checkpoint_agent",
     instruction=checkpoint_agent_instruction(),
     input_schema=DocsInput,  # Reuse DocsInput schema (user_query, property_id, checkpoint_optional_agents, etc.)
     tools=[
         ask_checkpoints_retrieval,
     ],
     disallow_transfer_to_parent=True,
-    output_key='checkpoint_result',
+    output_key="checkpoint_result",
     after_model_callback=checkpoint_agent_after_model_callback,
 )
 

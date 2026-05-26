@@ -25,8 +25,7 @@ graph TD
     User[User Query] --> UI[Web/Mobile UI]
     UI --> |primary_agent='docs'| API[Proxy API]
     API --> RootAgent[Root Property Agent]
-    RootAgent --> |Route to| DocuLink[DocuLink Agent]
-    DocuLink --> UserDocs[User Docs Agent]
+    RootAgent[property_agent executor] --> UserDocs[ask_user_docs_agent]
     UserDocs --> RAG[Vertex AI RAG]
     RAG --> GCS[User Documents in GCS]
     GCS --> RAG
@@ -52,8 +51,8 @@ primary_agent: Optional[PrimaryAgent] = Field(
     default=None,
     description=(
         "Primary agent selection. When provided, this takes precedence in routing decisions. "
-        "Allowed values: 'analysis' routes to analysis_agent, 'checkpoint' routes to doculink_agent for checkpoint queries, "
-        "'docs' routes to doculink_agent for user document queries. "
+        "Allowed values: 'checkpoint' and 'docs' are context for resolve_turn; "
+        "the executor calls checkpoint_agent or ask_user_docs_agent directly. "
         "If not provided, routing falls back to legacy logic based on checkpoint_ids."
     ),
 )
@@ -65,25 +64,24 @@ primary_agent: Optional[PrimaryAgent] = Field(
 
 **Changes**:
 - Added routing rule for `primary_agent="docs"`
-- Ensures delegation to `doculink_agent` with proper parameters
+- `primary_agent=docs` is passed to resolve; executor calls `ask_user_docs_agent`
 
 **Routing Priority**:
 ```
-0. primary_agent="docs" → doculink_agent (user_docs_agent)
-1. primary_agent="checkpoint" → doculink_agent (checkpoint_agent)
-2. Legacy logic based on checkpoint_ids → doculink_agent (checkpoint path)
-3. Other property queries → doculink_agent
+0. primary_agent="docs" → resolve route=user_docs → ask_user_docs_agent
+1. primary_agent="checkpoint" → resolve route=checkpoint → checkpoint_agent
+2. checkpoint_ids / optional agents → context for resolve + tools
+3. Other property queries → resolve picks checkpoint | user_docs | knowledge_base
 ```
 
 **Code Addition**:
 ```python
-*   If `primary_agent` is explicitly provided and equals `"docs"`, **always** delegate to the `doculink_agent`, 
+*   If `primary_agent` is `"docs"`, resolve forces `route=user_docs` and the executor calls `ask_user_docs_agent`,
     passing `user_query`, `context_doc_uris` (if present), `property_address` (if present), and `property_id` 
-    (if present). The `doculink_agent` will use the `user_docs_agent` tool to retrieve information from the 
-    user's uploaded documents.
+    (if present) to retrieve information from the user's uploaded documents.
 ```
 
-#### 3. DocuLink Agent Instructions
+#### 3. Executor instructions (property_agent)
 
 **File**: `gcp/agents/homecare/property_agent/prompts.py`
 
@@ -336,9 +334,9 @@ import { FileText } from 'lucide-react-native';
    ```
    Root Agent receives payload
    → Detects primary_agent="docs"
-   → Routes to DocuLink Agent
+   → resolve route=user_docs → ask_user_docs_agent
    
-   DocuLink Agent receives request
+   property_agent executor receives request
    → Detects docs mode
    → Calls user_docs_agent tool
    
@@ -351,7 +349,7 @@ import { FileText } from 'lucide-react-native';
 
 5. **Response Flow**:
    ```
-   User Docs Agent → DocuLink Agent → Root Agent → API → Frontend → User
+   User Docs Agent → property_agent → API → Frontend → User
    ```
 
 ### Response Format

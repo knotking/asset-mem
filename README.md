@@ -142,7 +142,7 @@ The backend logic is powered by Google Cloud Platform, utilizing Vertex AI for t
 ### Core Components
 
 1.  **AI Agents (`gcp/agents/homecare`)**:
-    -   A multi-agent system including Property Agent, Analysis Agent, and DocuLink Agent.
+    -   A multi-agent system centered on **property_agent** (checkpoint, docs, optional analysis branches).
     -   Uses Vertex AI Reasoning Engine.
     -   [Read the Agent Documentation](./gcp/agents/homecare/README.md)
 

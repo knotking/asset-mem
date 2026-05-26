@@ -26,87 +26,49 @@ Pass thresholds depend on the eval (see `eval/rubric_criteria.py`):
 
 | Eval | Criteria |
 |------|----------|
-| `doculink_docs` | `test_config.json`: tool trajectory (IN_ORDER) ≥ 0.8, ROUGE ≥ 0.6 |
-| `doculink_routing` | Tool trajectory + `rubric_based_tool_use_quality_v1` (transfer to doculink) |
+| `user_docs_routing` | `rubric_based_tool_use_quality_v1` only (`executor_invokes_route_tool`; no strict tool-arg trajectory) |
+| `executor_routing` | Tool trajectory + `rubric_based_tool_use_quality_v1` (`executor_invokes_route_tool`) |
 | `checkpoint_*` | Tool trajectory + `rubric_based_final_response_quality_v1` (dual-format rubrics) + `final_response_match_v2` |
 | `cost` / `shopping` / `service` | Checkpoint rubrics plus branch rubrics in `property_agent/evals/rubrics/branch_*.json` |
-
-`evaluate_full_response` is set on rubric criteria for forward compatibility when ADK merges [PR #5316](https://github.com/google/adk-python/pull/5316).
 
 ## Golden files
 
 | File | What to record |
 |------|----------------|
-| `doculink_routing.evalset.json` | Legacy trajectories (doculink transfer); re-record for single-hop `property_agent` executor |
-| `conversational_bypass.evalset.json` | Casual phrases (hello, thanks, looks good, …) with `checkpoint_optional_agents` in payload — plain text, **no** analysis tools |
-| `multi_turn_conversational.evalset.json` | Turn 1: recommend providers / analysis; turn 2: thanks / got it / closure — no second analysis run |
-| `doculink_docs.evalset.json` | `primary_agent: "docs"` and/or `context_doc_uris`; user-docs query |
-| `checkpoint_optional_agents.evalset.json` | `checkpoint_ids` + `checkpoint_optional_agents: ["coverage","diy","service","cost"]` |
-| `cost_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["cost"]` → cost in checkpoint analysis |
-| `shopping_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["diy"]` → DIY/products path |
-| `service_agent.evalset.json` | E2E: `checkpoint_optional_agents: ["service"]` → local providers path |
+| `executor_routing.evalset.json` | Substantive turn: executor calls `checkpoint_agent`, `ask_user_docs_agent`, or `ask_knowledge_base_agent` |
+| `user_docs_routing.evalset.json` | `primary_agent: "docs"` and/or `context_doc_uris`; user-docs query |
+| `conversational_bypass.evalset.json` | Casual phrases (hello, thanks, …) with optional-agent flags — plain text, **no** tools |
+| `multi_turn_conversational.evalset.json` | Turn 1 analysis; turn 2 thanks / closure — no second analysis |
+| `checkpoint_optional_agents.evalset.json` | `checkpoint_ids` + all optional branches |
+| `cost_agent.evalset.json` | `checkpoint_optional_agents: ["cost"]` |
+| `shopping_agent.evalset.json` | `checkpoint_optional_agents: ["diy"]` |
+| `service_agent.evalset.json` | `checkpoint_optional_agents: ["service"]` |
 
-All evalsets are recorded against **`property_agent`** (full session). Cost/shopping/service files are end-to-end checkpoint flows, not isolated sub-agent modules.
-
-**Unit tests** for cost logic (library slice, mocks): `tests/test_diy_agent.py` (`test_cost_estimation_diy_from_library`, etc.).
+All evalsets are recorded against **`property_agent`**. Missing files cause pytest to **skip** with recording instructions.
 
 ## Run evals locally
 
 ```bash
-make test-eval              # all six eval tests (~3 min, live Vertex)
-make test-eval-routing      # one file
-make test-eval-conversational  # conversational_bypass + multi_turn (after recording)
+make test-eval
+make test-eval-executor-routing
+make test-eval-user-docs
+make test-eval-conversational
 
-uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.json \
+uv run adk eval property_agent property_agent/evals/executor_routing.evalset.json \
   --config_file_path=property_agent/evals/test_config.json \
   --print_detailed_results
 ```
 
-Missing evalset files cause pytest to **skip** that test with recording instructions.
+## User simulation
 
-## User simulation (ADK 1.25+)
-
-**`simulation.evalset.json`** uses `conversation_scenario` (LLM user simulator) instead of a fixed golden `final_response`. Scenario definitions are also listed in **`conversation_scenarios.json`**.
-
-```bash
-export RUN_ADK_SIMULATION_TESTS=1
-make test-simulation
-```
-
-Criteria: `test_config_simulation.json` / `eval/rubric_criteria.config_simulation()` — `multi_turn_task_success_v1`, routing tool rubrics, `safety_v1`, `hallucinations_v1`, and `user_simulator_config`.
-
-```bash
-uv run adk eval property_agent property_agent/evals/simulation.evalset.json \
-  --config_file_path=property_agent/evals/test_config_simulation.json \
-  --print_detailed_results
-```
-
-## Conversational intent (unit tests)
-
-Phrase taxonomy and classifier (no Vertex):
-
-```bash
-uv run pytest tests/test_conversational_intent.py -v
-```
-
-Fixtures: `property_agent/conversational_phrases.json` (greetings, thanks, closure, app reactions, etc.).
+See `simulation.evalset.json` and `conversation_scenarios.json`. Run with `RUN_ADK_SIMULATION_TESTS=1 make test-simulation`.
 
 ## Conformance (replay)
 
-Deterministic replay tests live under **`property_agent/conformance/`** (`spec.yaml` per case). Includes:
-
-- `routing/hello_plain_welcome/` — hello in checkpoint mode → no `transfer_to_agent`
-- `multi_turn/casual_after_service_analysis/`, `thanks_after_service_analysis/`, `got_it_after_analysis/` — turn 2 casual with same optional-agent flags
-
-Record fixtures with ADK web running, then replay:
-
 ```bash
-uv run adk web          # terminal 1 (default http://127.0.0.1:8000)
-make conformance-record # terminal 2 — writes generated-recordings.yaml
-make conformance-test   # replay; skips cases without recordings
+uv run adk web
+make conformance-record
+make conformance-test
 ```
 
-## CI
-
-- **Pull requests:** `.github/workflows/test-homecare-agent.yaml` runs `make test` (unit tests only).
-- **Evals:** `make test-eval` locally; optional nightly/pre-deploy workflow (not on every PR).
+Cases under `property_agent/conformance/` include `routing/hello_plain_welcome/` and multi-turn casual follow-ups.

@@ -77,7 +77,7 @@ User Query (primary_agent="docs")
     ↓
 Root Property Agent
     ↓
-DocuLink Agent
+property_agent executor
     ↓
 User Docs Agent
     ↓

@@ -9,7 +9,9 @@ import pytest
 from google.adk.agents import Agent as LlmAgent
 
 from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
-from property_agent.sub_agents.checkpoint_agent.agent import build_search_query_from_checkpoints
+from property_agent.sub_agents.checkpoint_agent.agent import (
+    build_search_query_from_checkpoints,
+)
 
 
 def _minimal_tool_context():
@@ -32,7 +34,9 @@ def _stub_invoke(per_agent: dict | None = None, default: str = "ok"):
 
 
 def test_parallel_agent_is_python_base_agent_not_llm():
-    assert isinstance(caa.checkpoint_optional_parallel_agent, caa.CheckpointOptionalParallelAgent)
+    assert isinstance(
+        caa.checkpoint_optional_parallel_agent, caa.CheckpointOptionalParallelAgent
+    )
     assert not isinstance(caa.checkpoint_optional_parallel_agent, LlmAgent)
     assert not hasattr(caa.checkpoint_optional_parallel_agent, "model")
 
@@ -261,9 +265,7 @@ async def test_execute_checkpoint_optional_parallel_invokes_runner(monkeypatch):
         calls.append(kwargs)
         return "{}"
 
-    monkeypatch.setattr(
-        caa, "run_checkpoint_optional_agents_parallel", _capture
-    )
+    monkeypatch.setattr(caa, "run_checkpoint_optional_agents_parallel", _capture)
     payload = {
         "checkpoint_results": "Issues: paint chip",
         "user_query": "get diy",
@@ -296,7 +298,9 @@ async def test_execute_checkpoint_optional_parallel_invokes_runner(monkeypatch):
     assert len(calls) == 1
     assert calls[0]["checkpoint_optional_agents"] == ["diy"]
     assert calls[0]["search_query"] == "garage door paint"
-    assert tool_ctx.state.get("checkpoint_retrieval_search_query") == "garage door paint"
+    assert (
+        tool_ctx.state.get("checkpoint_retrieval_search_query") == "garage door paint"
+    )
 
 
 def test_parallel_runner_marks_unrequested_as_skipped(monkeypatch):
@@ -338,6 +342,7 @@ def test_parallel_runner_writes_checkpoint_parallel_results_state(monkeypatch):
     assert tc.state.get("checkpoint_parallel_results") == out
     data = json.loads(tc.state["checkpoint_parallel_results"])
     assert data["checkpoint_parallel_coverage_result"] == "coverage-ok"
+
     async def _diy_ok(_payload):
         return "diy-ok"
 
@@ -456,7 +461,9 @@ def test_optional_branch_search_user_query_strips_checkpoint_prose():
     assert "garage" in low or "paint" in low or "chipping" in low
 
 
-def test_parallel_runner_payload_uses_search_user_query(monkeypatch: pytest.MonkeyPatch):
+def test_parallel_runner_payload_uses_search_user_query(
+    monkeypatch: pytest.MonkeyPatch,
+):
     captured: list[dict] = []
 
     async def _capture_diy(payload):
@@ -514,7 +521,9 @@ def test_build_checkpoint_cost_query_uses_retrieval_seed_not_checkpoint_blob():
     }
     data = json.loads(caa._build_checkpoint_cost_query(payload))
     assert data["market_location"] == "1982 Helena Way, Brentwood, CA 94513"
-    assert data["diagnosis"] == "residential garage door paint chipping scratches repair"
+    assert (
+        data["diagnosis"] == "residential garage door paint chipping scratches repair"
+    )
     assert "Checkpoint context" not in data["diagnosis"]
     assert "electrical outlet" not in data["diagnosis"]
 
@@ -543,7 +552,9 @@ def test_build_checkpoint_cost_query_omits_empty_address():
     assert data["diagnosis"] == "q"
 
 
-def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.MonkeyPatch):
+def test_parallel_runner_cost_branch_calls_direct_pipeline(
+    monkeypatch: pytest.MonkeyPatch,
+):
     captured: list[str] = []
 
     def _sync_capture(query: str) -> str:
@@ -572,13 +583,9 @@ def test_parallel_runner_cost_branch_calls_direct_pipeline(monkeypatch: pytest.M
 def test_resolve_effective_search_query_from_state():
     tc = _minimal_tool_context()
     tc.state["checkpoint_retrieval_search_query"] = "garage door paint repair"
+    assert caa.resolve_effective_search_query(None, tc) == "garage door paint repair"
     assert (
-        caa.resolve_effective_search_query(None, tc)
-        == "garage door paint repair"
-    )
-    assert (
-        caa.resolve_effective_search_query("  explicit wins  ", tc)
-        == "explicit wins"
+        caa.resolve_effective_search_query("  explicit wins  ", tc) == "explicit wins"
     )
 
 
@@ -592,8 +599,7 @@ def test_search_query_from_analysis_json():
         }
     )
     assert (
-        caa._search_query_from_analysis_json(payload)
-        == "residential garage door paint"
+        caa._search_query_from_analysis_json(payload) == "residential garage door paint"
     )
 
 
@@ -655,7 +661,9 @@ def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.Monke
 
 
 def test_resolve_branch_search_user_query_prefers_explicit():
-    q = caa.resolve_branch_search_user_query("  Kitchen   sink leak  ", "fallback blob " * 20)
+    q = caa.resolve_branch_search_user_query(
+        "  Kitchen   sink leak  ", "fallback blob " * 20
+    )
     assert q == "Kitchen sink leak"
 
 
@@ -773,7 +781,9 @@ def test_dual_format_guard_merges_fenced_coverage_coverage_result_shape():
             "checkpoint_parallel_cost_result": "SKIPPED",
         }
     )
-    out = dfg.ensure_dual_format_body("# Garage Door\n\nProse only.", parallel_results_json=parallel)
+    out = dfg.ensure_dual_format_body(
+        "# Garage Door\n\nProse only.", parallel_results_json=parallel
+    )
     m = re.search(r"```json\s*\n?([\s\S]*?)```", out, re.IGNORECASE)
     assert m
     blob = json.loads(m.group(1).strip())
@@ -814,7 +824,9 @@ def test_merge_parallel_fills_empty_youtube_and_products_from_diy_branch():
                     "diyResults": {
                         "diySteps": {
                             "summary": "Branch summary",
-                            "steps": [{"stepNumber": 1, "description": "Clean surface"}],
+                            "steps": [
+                                {"stepNumber": 1, "description": "Clean surface"}
+                            ],
                         },
                         "youtubeSearch": {
                             "videos": [
@@ -849,7 +861,10 @@ def test_merge_parallel_fills_empty_youtube_and_products_from_diy_branch():
     blob = json.loads(m.group(1).strip())
     diy = blob["analysis"]["diyResults"]
     assert len(diy["youtubeSearch"]["videos"]) == 1
-    assert diy["youtubeSearch"]["videos"][0]["url"] == "https://www.youtube.com/watch?v=abc"
+    assert (
+        diy["youtubeSearch"]["videos"][0]["url"]
+        == "https://www.youtube.com/watch?v=abc"
+    )
     assert len(diy["recommendedProducts"]["products"]) == 1
     assert diy["diySteps"]["steps"][0]["description"] == "Sand"
 
@@ -1036,7 +1051,9 @@ def test_merge_parallel_restores_trimmed_service_pros_from_branch():
     serp = blob["analysis"]["serviceResults"]["localPros"]["serpAPIResults"]
     assert len(serp) == 4
     assert serp[3]["name"] == "Pro D"
-    assert len(blob["analysis"]["serviceResults"]["localPros"]["googleSearchResults"]) == 1
+    assert (
+        len(blob["analysis"]["serviceResults"]["localPros"]["googleSearchResults"]) == 1
+    )
 
 
 def test_merge_parallel_restores_trimmed_diy_products_from_branch():
@@ -1416,7 +1433,7 @@ def test_pending_checkpoint_analysis_input_from_state():
     assert inp.search_query == "garage leak"
 
 
-def test_doculink_progressive_streaming_callback_emits_on_seq():
+def test_executor_progressive_streaming_callback_emits_on_seq():
     from unittest.mock import MagicMock
 
     from google.adk.models.llm_response import LlmResponse
@@ -1443,7 +1460,7 @@ def test_doculink_progressive_streaming_callback_emits_on_seq():
         content=types.Content(role="model", parts=[types.Part(text="...")]),
         partial=True,
     )
-    out = dfg.doculink_progressive_streaming_callback(ctx, partial)
+    out = dfg.executor_progressive_streaming_callback(ctx, partial)
     assert out is not None
     assert "## Checkpoint Summary" in out.content.parts[0].text
     assert ctx.state[dfg.CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY] == 1
@@ -1532,7 +1549,7 @@ def test_synthesis_after_model_callback_skips_streaming_partials():
     partial = LlmResponse(
         content=types.Content(
             role="model",
-            parts=[types.Part(text="# Bad\n\n```json\n{\"analysis\":{}}\n```")],
+            parts=[types.Part(text='# Bad\n\n```json\n{"analysis":{}}\n```')],
         ),
         partial=True,
     )
@@ -1561,7 +1578,7 @@ def test_enrich_dual_format_skips_placeholder_summary():
     assert dfg.enrich_dual_format_markdown(body) == body
 
 
-def test_doculink_after_model_callback_skips_streaming_partials():
+def test_executor_after_model_callback_skips_streaming_partials():
     from unittest.mock import MagicMock
 
     from google.adk.models.llm_response import LlmResponse
@@ -1584,13 +1601,13 @@ def test_doculink_after_model_callback_skips_streaming_partials():
         content=types.Content(role="model", parts=[types.Part(text="# T")]),
         partial=True,
     )
-    assert dfg.doculink_after_model_callback(ctx, partial) is None
+    assert dfg.executor_after_model_callback(ctx, partial) is None
 
     final = LlmResponse(
         content=types.Content(role="model", parts=[types.Part(text="incomplete")]),
         partial=False,
     )
-    fixed = dfg.doculink_after_model_callback(ctx, final)
+    fixed = dfg.executor_after_model_callback(ctx, final)
     assert fixed is not None
     assert "## Checkpoint Summary" in fixed.content.parts[0].text
 
