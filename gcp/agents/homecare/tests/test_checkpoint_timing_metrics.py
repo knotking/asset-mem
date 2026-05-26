@@ -23,7 +23,7 @@ def test_emit_records_each_phase_and_chars() -> None:
         "parallel_ms": 2000,
         "diy_ms": 1500,
         "synthesis_ms": 800,
-        "doculink_ms": 50,
+        "executor_ms": 50,
         "total_ms": 4500,
         "return_chars": 12000,
     }
@@ -38,7 +38,7 @@ def test_emit_records_each_phase_and_chars() -> None:
         ),
     ):
         ctm.emit_checkpoint_timing_metrics(
-            payload, source="doculink_after_model", state={}
+            payload, source="executor_after_model", state={}
         )
 
     assert phase_hist.record.call_count == 6
@@ -50,7 +50,7 @@ def test_emit_records_each_phase_and_chars() -> None:
         "parallel",
         "diy",
         "synthesis",
-        "doculink",
+        "executor",
         "total",
     }
     phase_hist.record.assert_any_call(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 from google.genai import types
@@ -31,6 +32,51 @@ def test_apply_resolved_clears_ui_optional_on_retrieval_only() -> None:
     assert state[RESOLVED_TURN_STATE_KEY]["retrieval_only"] is True
 
 
+def test_apply_resolved_preserves_stash_on_answer_from_context() -> None:
+    dual = (
+        "# Analysis\n\n```json\n"
+        '{"analysis":{"checkpointSummary":{"overallCondition":"damaged","checkpointsAnalyzed":2}}}'
+        "\n```"
+    )
+    state = {
+        "checkpoint_analysis_dual_format": dual,
+        "checkpoint_result": "stale",
+        "checkpoint_parallel_results": {"coverage": {}},
+    }
+    apply_resolved_turn_to_state(
+        state,
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="What is wrong overall?",
+            retrieval_only=True,
+            run_optional_agents=[],
+            user_goal="answer_from_context",
+        ),
+    )
+    assert state["checkpoint_analysis_dual_format"] == dual
+    assert state.get("session_working_memory_snapshot") is not None
+
+
+def test_apply_resolved_clears_checkpoint_stash_on_retrieval_only_non_context() -> None:
+    state = {
+        "checkpoint_analysis_dual_format": "# Old\n\n```json\n{}\n```",
+        "checkpoint_result": "stale",
+    }
+    apply_resolved_turn_to_state(
+        state,
+        ResolvedTurn(
+            intent="substantive",
+            route="user_docs",
+            expanded_user_query="What does my lease say?",
+            retrieval_only=True,
+            run_optional_agents=[],
+            user_goal="answer_from_context",
+        ),
+    )
+    assert state["checkpoint_analysis_dual_format"] is None
+
+
 def test_apply_resolved_sets_optional_branches() -> None:
     state = {"checkpoint_optional_agents": ["coverage", "diy", "service", "cost"]}
     apply_resolved_turn_to_state(
@@ -44,6 +90,70 @@ def test_apply_resolved_sets_optional_branches() -> None:
         ),
     )
     assert state["checkpoint_optional_agents"] == ["cost"]
+
+
+def test_apply_resolved_preserves_stash_when_optional_misroutes_provider_follow_up() -> (
+    None
+):
+    dual = "# Analysis\n\n```json\n{}\n```"
+    state = {
+        "checkpoint_parallel_results": json.dumps(
+            {
+                "checkpoint_parallel_service_result": json.dumps(
+                    {
+                        "serviceResults": {
+                            "localPros": {
+                                "serpAPIResults": [
+                                    {
+                                        "name": "Bay Area Garage Door Repair Brentwood",
+                                        "contact": "(925) 234-4255",
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                )
+            }
+        ),
+        "checkpoint_analysis_dual_format": dual,
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+        "user_query": "get me more details on Bay Area Garage Door Repair",
+    }
+    apply_resolved_turn_to_state(
+        state,
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="get me more details on Bay Area Garage Door Repair",
+            retrieval_only=False,
+            run_optional_agents=["service"],
+            user_goal="new_analysis",
+        ),
+    )
+    assert state["checkpoint_analysis_dual_format"] == dual
+    assert state["checkpoint_optional_agents"] == []
+
+
+def test_apply_resolved_clears_stale_analysis_on_new_optional_run() -> None:
+    state = {
+        "checkpoint_analysis_dual_format": "# Full report\n",
+        "checkpoint_parallel_results": '{"checkpoint_parallel_service_result": "ok"}',
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+    }
+    apply_resolved_turn_to_state(
+        state,
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="list professional service options",
+            retrieval_only=False,
+            run_optional_agents=["service"],
+            user_goal="new_analysis",
+        ),
+    )
+    assert state["checkpoint_optional_agents"] == ["service"]
+    assert state["checkpoint_analysis_dual_format"] is None
+    assert state["checkpoint_parallel_results"] is None
 
 
 def test_inject_resolved_turn_uses_string_system_instruction() -> None:

@@ -259,16 +259,43 @@ def executor_progressive_streaming_callback(
     return llm_response.model_copy(update={"content": new_content, "partial": True})
 
 
-def _skip_checkpoint_dual_format_echo(state: Any) -> bool:
-    """Do not replace user_docs / knowledge_base answers with stale checkpoint stash."""
+def _skip_checkpoint_dual_format_echo(state: Any, *, model_text: str = "") -> bool:
+    """Skip stash echo unless this invocation ran structured analysis or user asked for replay."""
+    _ = model_text
+    from property_agent.conversational_intent import (
+        executor_invocation_requested_structured_analysis,
+        query_requests_full_analysis_replay,
+    )
+    from property_agent.resolve_turn import resolved_turn_from_state
+
     if str(state.get("primary_agent") or "").strip().lower() == "docs":
         return True
-    raw = state.get("resolved_turn")
-    if isinstance(raw, dict):
-        route = raw.get("route")
-        if route in ("user_docs", "knowledge_base"):
+
+    resolved = resolved_turn_from_state(state)
+    expanded = ""
+    user_goal = ""
+    if resolved is not None:
+        expanded = str(resolved.expanded_user_query or "").strip()
+        user_goal = str(resolved.user_goal or "")
+        if resolved.route in ("user_docs", "knowledge_base"):
             return True
-    return False
+    else:
+        raw = state.get("resolved_turn")
+        if isinstance(raw, dict):
+            expanded = str(raw.get("expanded_user_query") or "").strip()
+            user_goal = str(raw.get("user_goal") or "")
+            if raw.get("route") in ("user_docs", "knowledge_base"):
+                return True
+
+    if user_goal == "replay_deliverable" or query_requests_full_analysis_replay(
+        expanded
+    ) or query_requests_full_analysis_replay(str(state.get("user_query") or "")):
+        return False
+
+    if executor_invocation_requested_structured_analysis(state):
+        return False
+
+    return True
 
 
 def executor_after_model_callback(
@@ -283,7 +310,8 @@ def executor_after_model_callback(
     Only act on the final model chunk; during streaming this callback fires once per
     partial and would otherwise emit the full stash as a duplicate event each time.
     """
-    if _skip_checkpoint_dual_format_echo(callback_context.state):
+    text = extract_text_from_llm_response(llm_response)
+    if _skip_checkpoint_dual_format_echo(callback_context.state, model_text=text):
         return None
     if llm_response_declares_tool_use(llm_response):
         return None
@@ -292,7 +320,6 @@ def executor_after_model_callback(
     stashed = resolve_passthrough_dual_format_from_state(callback_context.state)
     if not stashed:
         return None
-    text = extract_text_from_llm_response(llm_response)
     stashed = enrich_dual_format_markdown(stashed)
     record_executor_ms(callback_context.state)
     model_ok = dual_format_is_passthrough_quality(

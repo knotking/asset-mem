@@ -14,8 +14,6 @@ from ..cost_agent.agent import _cost_estimation_sync  # noqa: F401
 from .legacy_parse import (
     normalize_checkpoint_analysis_tool_args,
     parse_checkpoint_analysis_payload,
-    parse_inline_checkpoint_analysis_request,
-    parse_legacy_checkpoint_analysis_prose,
 )
 from .parallel_runner import (
     CheckpointOptionalParallelAgent,
@@ -27,6 +25,7 @@ from .search_query import (
     optional_branch_search_user_query,
     resolve_branch_search_user_query,
     resolve_effective_search_query,
+    resolve_optional_branch_user_query,
 )
 from .synthesis_prompt import CHECKPOINT_SYNTHESIS_INSTRUCTION
 from . import legacy_parse as _legacy_parse
@@ -69,12 +68,11 @@ __all__ = [
     "execute_checkpoint_optional_parallel",
     "normalize_checkpoint_analysis_tool_args",
     "parse_checkpoint_analysis_payload",
-    "parse_inline_checkpoint_analysis_request",
-    "parse_legacy_checkpoint_analysis_prose",
     "run_checkpoint_optional_agents_parallel",
     "CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY",
     "CHECKPOINT_SYNTHESIS_INSTRUCTION",
     "optional_branch_search_user_query",
     "resolve_branch_search_user_query",
     "resolve_effective_search_query",
+    "resolve_optional_branch_user_query",
 ]

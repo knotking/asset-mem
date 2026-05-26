@@ -103,6 +103,14 @@ def optional_branch_search_user_query(
     return out
 
 
+def _truncate_query(text: str, *, max_chars: int) -> str:
+    out = re.sub(r"\s+", " ", (text or "").strip()).strip()
+    if len(out) > max_chars:
+        cut = out[: max_chars + 1]
+        out = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_chars].strip()
+    return out
+
+
 def resolve_branch_search_user_query(
     search_query: Optional[str],
     checkpoint_results: str,
@@ -112,13 +120,32 @@ def resolve_branch_search_user_query(
     """Use caller-provided search_query when set; otherwise compact checkpoint_results."""
     raw = (search_query or "").strip()
     if raw:
-        out = re.sub(r"\s+", " ", raw).strip()
+        out = _truncate_query(raw, max_chars=max_chars)
     else:
         out = optional_branch_search_user_query(checkpoint_results, max_chars=max_chars)
-    if len(out) > max_chars:
-        cut = out[: max_chars + 1]
-        out = cut.rsplit(" ", 1)[0].strip() if " " in cut else cut[:max_chars].strip()
     return out
+
+
+def resolve_optional_branch_user_query(
+    *,
+    turn_query: str,
+    search_query: Optional[str],
+    checkpoint_results: str,
+    query_mode: str = "branch_issue_search",
+    max_chars: int = 400,
+) -> str:
+    """
+    Query passed to optional branches as DocsInput.user_query.
+
+    Entity/explicit follow-ups use the user's turn text; generic analysis uses the
+    compact checkpoint issue stem (unless search_query was stashed from retrieval).
+    """
+    turn = (turn_query or "").strip()
+    if query_mode in ("branch_entity_search", "branch_explicit") and turn:
+        return _truncate_query(turn, max_chars=max_chars)
+    return resolve_branch_search_user_query(
+        search_query, checkpoint_results, max_chars=max_chars
+    )
 
 
 def _stash_retrieval_search_query(

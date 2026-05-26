@@ -1578,19 +1578,17 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
   const trimmedAssistantContent =
     typeof message.content === 'string' ? message.content.trim() : '';
   const hasAssistantResponse = !isUser && trimmedAssistantContent.length > 0;
-  /** Show "Thinking..." during tool execution or agent handoff (before body text exists). */
-  const hasInFlightAgentStep =
-    message.agentSteps?.some(
-      (s) => s.status === 'executing' || s.status === 'transferredto'
-    ) ?? false;
-  const showThinkingStrip = !isUser && !hasAssistantResponse && hasInFlightAgentStep;
+  /** Text status strip while streaming (tools + gap before first text chunk). Matches mapp. */
+  const hasAgentSteps = (message.agentSteps?.length ?? 0) > 0;
+  const showThinkingStrip =
+    !isUser && !hasAssistantResponse && hasAgentSteps;
   const thinkingStatus = useDebouncedThinkingStatus(
     showThinkingStrip ? message.agentSteps : null,
     { messageContent: message.content },
   );
   const thinkingHeader = thinkingStatus.header;
   const thinkingPreview = thinkingStatus.preview;
-  /** Dots when the list marks this bubble as the in-flight reply; agentSteps must not hide this (e.g. only completed steps while waiting for text). */
+  /** Dots only before proxy emits the first agentSteps row (resolve / first tool call). */
   const showLoadingIndicator =
     isLoading && !isUser && !hasAssistantResponse && !showThinkingStrip;
   const fileData = message.file;

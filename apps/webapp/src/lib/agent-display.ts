@@ -13,12 +13,9 @@ export const DEFAULT_THINKING_LABEL = "Working on it…";
 
 export const COORDINATING_LABEL = "Understanding your request…";
 
-export const ORCHESTRATOR_AGENT_NAMES = new Set<string>([
-  "property_agent",
-  "doculink_agent",
-]);
+export const ORCHESTRATOR_AGENT_NAMES = new Set<string>(["property_agent"]);
 
-const ORCHESTRATOR_PIPELINE_ORDER = ["property_agent", "doculink_agent"] as const;
+const ORCHESTRATOR_PIPELINE_ORDER = ["property_agent"] as const;
 
 function orchestratorPipelineIndex(name: string): number {
   const idx = ORCHESTRATOR_PIPELINE_ORDER.indexOf(

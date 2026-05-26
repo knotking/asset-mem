@@ -37,7 +37,7 @@ def test_emit_logs_single_structured_line():
     assert "parallel_ms=24000" in parts
     assert "diy_ms=19000" in parts
     assert "synthesis_ms=5000" in parts
-    assert "doculink_ms=800" in parts
+    assert "executor_ms=800" in parts
     assert "return_chars=11832" in parts
     assert "total_ms=" in parts
 

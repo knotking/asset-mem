@@ -41,49 +41,41 @@ def test_parallel_agent_is_python_base_agent_not_llm():
     assert not hasattr(caa.checkpoint_optional_parallel_agent, "model")
 
 
-_LEGACY_PROSE_SAMPLE = """\
-checkpoint_results:
-Checkpoint Name: Checkpoint • May 11 • 9:10 PM
-Summary: Gray garage door with paint damage.
-Location/Asset: Garage
-Issues: Significant paint chipping near the handle.
+_JSON_INPUT_SAMPLE = {
+    "checkpoint_results": (
+        "Checkpoint Name: Checkpoint • May 11 • 9:10 PM\n"
+        "Summary: Gray garage door with paint damage.\n"
+        "Location/Asset: Garage\n"
+        "Issues: Significant paint chipping near the handle."
+    ),
+    "user_query": "analyse my checkpoints",
+    "search_query": "residential garage door paint chipping scratches repair",
+    "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+    "context_doc_uris": ["gs://bucket/doc1.pdf"],
+    "property_address": "1982 Helena Way, Brentwood, CA 94513",
+    "property_id": "nY3XQ92eUa02Qs14QWEn",
+    "search_location": {
+        "source": "property_address",
+        "radius_miles": 5,
+        "coordinates": {"lat": 37.9, "lng": -121.7},
+        "label": "1982 Helena Way, Brentwood, CA 94513",
+    },
+}
 
-user_query: analyse my checkpoints
-search_query: residential garage door paint chipping scratches repair
-checkpoint_optional_agents: ['coverage', 'diy', 'service', 'cost']
-context_doc_uris: ['gs://bucket/doc1.pdf']
-property_address: 1982 Helena Way, Brentwood, CA 94513
-property_id: nY3XQ92eUa02Qs14QWEn
-location_coordinates: {'lat': 37.9, 'lng': -121.7}
-location_radius: 5
-"""
 
-
-def test_parse_legacy_checkpoint_analysis_prose():
-    data = caa.parse_legacy_checkpoint_analysis_prose(_LEGACY_PROSE_SAMPLE)
+def test_parse_checkpoint_analysis_payload_json():
+    data = caa.parse_checkpoint_analysis_payload(json.dumps(_JSON_INPUT_SAMPLE))
     assert data is not None
     assert "Gray garage door" in data["checkpoint_results"]
     assert data["user_query"] == "analyse my checkpoints"
-    assert data["search_query"] == (
-        "residential garage door paint chipping scratches repair"
-    )
-    assert data["checkpoint_optional_agents"] == [
-        "coverage",
-        "diy",
-        "service",
-        "cost",
-    ]
-    assert data["property_id"] == "nY3XQ92eUa02Qs14QWEn"
-    assert data["location_coordinates"] == {"lat": 37.9, "lng": -121.7}
-    assert data["location_radius"] == 5
 
 
-def test_parse_checkpoint_analysis_input_from_legacy_prose():
+def test_parse_checkpoint_analysis_input_from_json():
     from google.genai import types
 
     user_content = types.Content(
         role="user",
-        parts=[types.Part(text=_LEGACY_PROSE_SAMPLE)],
+        parts=[types.Part(text=json.dumps(_JSON_INPUT_SAMPLE))],
     )
     invocation = SimpleNamespace(
         user_content=user_content,
@@ -103,51 +95,9 @@ def test_parse_checkpoint_analysis_input_from_legacy_prose():
     assert inp.search_query == "residential garage door paint chipping scratches repair"
 
 
-def test_normalize_checkpoint_analysis_tool_args_from_request_blob():
+def test_normalize_checkpoint_analysis_tool_args_from_request_json():
     normalized = caa.normalize_checkpoint_analysis_tool_args(
-        {"request": _LEGACY_PROSE_SAMPLE}
-    )
-    validated = caa.CheckpointAnalysisInput.model_validate(normalized)
-    assert validated.user_query == "analyse my checkpoints"
-    assert validated.checkpoint_optional_agents == [
-        "coverage",
-        "diy",
-        "service",
-        "cost",
-    ]
-
-
-_INLINE_REQUEST_SAMPLE = (
-    "checkpoint_results: 'Checkpoint Name: Checkpoint • May 11 • 9:10 PM\\n"
-    "Summary: Gray garage door with paint damage.\\n"
-    "Location/Asset: Garage\\n"
-    "Issues: Significant paint chipping near the handle.\\n"
-    "Conditions: damaged, wear and tear', "
-    "user_query: 'analyse my checkpoints', "
-    "checkpoint_optional_agents: [ 'coverage', 'diy', 'service', 'cost' ], "
-    "search_query: 'residential garage door paint chipping scratches repair' }"
-)
-
-
-def test_parse_inline_checkpoint_analysis_request():
-    data = caa.parse_inline_checkpoint_analysis_request(_INLINE_REQUEST_SAMPLE)
-    assert data is not None
-    assert "Gray garage door" in data["checkpoint_results"]
-    assert data["user_query"] == "analyse my checkpoints"
-    assert data["checkpoint_optional_agents"] == [
-        "coverage",
-        "diy",
-        "service",
-        "cost",
-    ]
-    assert data["search_query"] == (
-        "residential garage door paint chipping scratches repair"
-    )
-
-
-def test_normalize_checkpoint_analysis_tool_args_from_inline_request_blob():
-    normalized = caa.normalize_checkpoint_analysis_tool_args(
-        {"request": _INLINE_REQUEST_SAMPLE}
+        {"request": json.dumps(_JSON_INPUT_SAMPLE)}
     )
     validated = caa.CheckpointAnalysisInput.model_validate(normalized)
     assert validated.user_query == "analyse my checkpoints"
@@ -255,6 +205,112 @@ def test_parse_checkpoint_analysis_input_falls_back_to_pending_on_partial_json()
     assert inp.user_query == "analyse my checkpoints"
     assert inp.search_location is not None
     assert inp.search_location["coordinates"]["lat"] == 37.9
+
+
+def test_merge_routing_keeps_resolved_service_only_over_client_toggles() -> None:
+    """Client payload toggles must not expand branches when resolve requested service only."""
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    pending = {
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
+        "user_query": "list professional service options for the garage door damage",
+        "search_query": "garage door paint repair",
+        "checkpoint_optional_agents": ["service"],
+        "property_id": "prop-1",
+    }
+    client_routing = {
+        "user_query": "list professional",
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+        "property_id": "prop-1",
+        "search_location": {
+            "source": "device_gps",
+            "radius_miles": 5,
+            "coordinates": {"lat": 37.9, "lng": -121.7},
+        },
+    }
+    session = SimpleNamespace(
+        user_id="u1",
+        state={
+            dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
+            "checkpoint_results": pending["checkpoint_results"],
+            "checkpoint_optional_agents": ["service"],
+            RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+                intent="substantive",
+                route="checkpoint",
+                expanded_user_query=pending["user_query"],
+                retrieval_only=False,
+                run_optional_agents=["service"],
+                user_goal="new_analysis",
+            ).to_dict(),
+        },
+        app_name="property_agent",
+        id="sess-1",
+    )
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=json.dumps(client_routing))],
+    )
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=session,
+        invocation_id="inv-service-only",
+        agent=caa.checkpoint_optional_parallel_agent,
+        branch=None,
+    )
+    inp = caa._parse_checkpoint_analysis_input(invocation)
+    assert inp is not None
+    assert inp.checkpoint_optional_agents == ["service"]
+
+
+def test_merge_routing_keeps_resolved_diy_only_over_client_toggles() -> None:
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    pending = {
+        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
+        "user_query": "get more details on DIY repair options",
+        "checkpoint_optional_agents": ["diy"],
+    }
+    client_routing = {
+        "user_query": "get more details on DIY",
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+    }
+    session = SimpleNamespace(
+        user_id="u1",
+        state={
+            dfg.CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
+            "checkpoint_results": pending["checkpoint_results"],
+            RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+                intent="substantive",
+                route="checkpoint",
+                expanded_user_query=pending["user_query"],
+                retrieval_only=False,
+                run_optional_agents=["diy"],
+                user_goal="new_analysis",
+            ).to_dict(),
+        },
+        app_name="property_agent",
+        id="sess-1",
+    )
+    from google.genai import types
+
+    user_content = types.Content(
+        role="user",
+        parts=[types.Part(text=json.dumps(client_routing))],
+    )
+    invocation = SimpleNamespace(
+        user_content=user_content,
+        session=session,
+        invocation_id="inv-diy-only",
+        agent=caa.checkpoint_optional_parallel_agent,
+        branch=None,
+    )
+    inp = caa._parse_checkpoint_analysis_input(invocation)
+    assert inp is not None
+    assert inp.checkpoint_optional_agents == ["diy"]
 
 
 @pytest.mark.asyncio
@@ -1595,8 +1651,24 @@ def test_executor_after_model_callback_skips_streaming_partials():
 {"analysis": {"title": "T", "checkpointSummary": {"checkpointsAnalyzed": 1, "issuesDetected": ["x"], "overallCondition": "ok", "locations": ["Garage"]}}}
 ```
 """
+    from property_agent.conversational_intent import (
+        EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY,
+    )
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+
     ctx = MagicMock()
-    ctx.state = {dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed}
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed,
+        EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY: True,
+        RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="Analyse checkpoints",
+            retrieval_only=False,
+            run_optional_agents=["diy"],
+            user_goal="new_analysis",
+        ).to_dict(),
+    }
     partial = LlmResponse(
         content=types.Content(role="model", parts=[types.Part(text="# T")]),
         partial=True,
@@ -1610,6 +1682,181 @@ def test_executor_after_model_callback_skips_streaming_partials():
     fixed = dfg.executor_after_model_callback(ctx, final)
     assert fixed is not None
     assert "## Checkpoint Summary" in fixed.content.parts[0].text
+
+
+def test_executor_after_model_callback_skips_echo_when_prior_analysis_and_thin_model():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# Full
+
+## Coverage
+Excluded.
+
+```json
+{"analysis": {"title": "Full", "coverageResult": {"warrantyInfo": "n/a"}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed,
+        "checkpoint_last_response_kind": "analysis",
+        RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="What is wrong overall?",
+            retrieval_only=False,
+            run_optional_agents=[],
+        ).to_dict(),
+    }
+    conversational = LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[
+                types.Part(
+                    text="Garage door has paint chipping; functional but cosmetically damaged."
+                )
+            ],
+        ),
+        partial=False,
+    )
+    assert dfg.executor_after_model_callback(ctx, conversational) is None
+    assert "paint chipping" in conversational.content.parts[0].text
+    assert "## Coverage" not in conversational.content.parts[0].text
+
+
+def test_executor_after_model_callback_allows_echo_on_full_replay_request():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# T
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 1
+
+```json
+{"analysis": {"title": "T", "checkpointSummary": {"checkpointsAnalyzed": 1, "issuesDetected": ["x"], "overallCondition": "ok", "locations": ["Garage"]}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed,
+        RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="Show me the full analysis report again",
+            retrieval_only=True,
+            run_optional_agents=[],
+        ).to_dict(),
+    }
+    final = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text="brief")]),
+        partial=False,
+    )
+    fixed = dfg.executor_after_model_callback(ctx, final)
+    assert fixed is not None
+    assert "## Checkpoint Summary" in fixed.content.parts[0].text
+
+
+def test_executor_after_model_callback_skips_echo_on_retrieval_only_follow_up():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# Full analysis
+
+## Coverage
+Excluded.
+
+```json
+{"analysis": {"title": "Full", "coverageResult": {"warrantyInfo": "n/a"}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed,
+        RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="What is wrong overall?",
+            retrieval_only=True,
+            run_optional_agents=[],
+        ).to_dict(),
+    }
+    conversational = LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[
+                types.Part(
+                    text="Garage door shows paint chipping and scratches; still functional."
+                )
+            ],
+        ),
+        partial=False,
+    )
+    assert dfg.executor_after_model_callback(ctx, conversational) is None
+    assert "paint chipping" in conversational.content.parts[0].text
+    assert "## Coverage" not in conversational.content.parts[0].text
+
+
+def test_executor_after_model_callback_echoes_when_invocation_ran_analysis():
+    from unittest.mock import MagicMock
+
+    from google.adk.models.llm_response import LlmResponse
+    from google.genai import types
+
+    from property_agent.conversational_intent import (
+        EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY,
+    )
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+    from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
+
+    stashed = """# Full analysis
+
+## Checkpoint Summary
+- **Checkpoints Analyzed**: 1
+
+## Coverage
+Excluded.
+
+```json
+{"analysis": {"title": "Full", "checkpointSummary": {"checkpointsAnalyzed": 1, "issuesDetected": ["x"], "overallCondition": "ok", "locations": ["Garage"]}, "coverageResult": {"warrantyInfo": "n/a"}}}
+```
+"""
+    ctx = MagicMock()
+    ctx.state = {
+        dfg.CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY: stashed,
+        EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY: True,
+        RESOLVED_TURN_STATE_KEY: ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="Find providers for garage door",
+            retrieval_only=False,
+            run_optional_agents=["service"],
+            user_goal="new_analysis",
+        ).to_dict(),
+    }
+    thin = LlmResponse(
+        content=types.Content(role="model", parts=[types.Part(text="brief")]),
+        partial=False,
+    )
+    fixed = dfg.executor_after_model_callback(ctx, thin)
+    assert fixed is not None
+    assert "## Coverage" in fixed.content.parts[0].text
 
 
 def test_enrich_dual_format_markdown_adds_sections_from_json():

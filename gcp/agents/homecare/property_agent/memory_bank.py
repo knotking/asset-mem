@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 _JSON_FENCE_RE = re.compile(r"```json\s*\n?([\s\S]*?)```", re.IGNORECASE)
 
 PROPERTY_AGENT_NAME = "property_agent"
-DOCULINK_AGENT_NAME = "doculink_agent"  # legacy (pre single-hop refactor)
-ORCHESTRATOR_AGENT_NAMES = frozenset({PROPERTY_AGENT_NAME, DOCULINK_AGENT_NAME})
+ORCHESTRATOR_AGENT_NAMES = frozenset({PROPERTY_AGENT_NAME})
 CHECKPOINT_DUAL_FORMAT_STATE_KEY = "checkpoint_analysis_dual_format"
 
 

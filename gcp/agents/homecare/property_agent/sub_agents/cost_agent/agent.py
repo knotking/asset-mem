@@ -92,17 +92,14 @@ def _extract_diagnosis_from_query(query: str) -> Optional[str]:
 
 def _market_location_from_payload(parsed: Dict[str, Any]) -> Optional[str]:
     """Resolve market label from a parsed cost/query JSON object."""
-    from ...search_location_utils import (
-        legacy_search_location_from_payload,
-        market_label,
-    )
+    from ...search_location_utils import market_label, search_location_from_payload
     from ...serpapi_geo import looks_like_coordinate_pair
 
     pa = (parsed.get("property_address") or parsed.get("address") or "").strip() or None
     explicit = (parsed.get("market_location") or "").strip() or None
     if explicit and not looks_like_coordinate_pair(explicit):
         return explicit
-    sl = legacy_search_location_from_payload(parsed)
+    sl = search_location_from_payload(parsed)
     resolved = market_label(sl, property_address=pa)
     if resolved and not looks_like_coordinate_pair(resolved):
         return resolved
@@ -133,11 +130,6 @@ def _extract_market_location_from_query(query: str) -> Optional[str]:
                 pass
 
     return market_location
-
-
-def _extract_property_address_from_query(query: str) -> Optional[str]:
-    """Deprecated alias — use market location for pricing."""
-    return _extract_market_location_from_query(query)
 
 
 def _extract_service_results_from_query(query: str) -> Optional[Dict[str, Any]]:

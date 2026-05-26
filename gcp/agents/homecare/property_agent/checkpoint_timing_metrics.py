@@ -25,7 +25,7 @@ _PHASE_KEYS = (
     "parallel_ms",
     "diy_ms",
     "synthesis_ms",
-    "doculink_ms",
+    "executor_ms",
     "total_ms",
 )
 

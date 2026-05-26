@@ -104,7 +104,7 @@ def _stash_pending_checkpoint_analysis(
     search_query: str,
     user_query: str,
 ) -> None:
-    """Stash structured analysis input for doculink → checkpoint_progress_agent transfer."""
+    """Stash structured analysis input for property_agent → checkpoint_progress_agent transfer."""
     from property_agent.sub_agents.checkpoint_dual_format.dual_format_body import (
         optional_agents_for_progress_from_state,
         should_stash_checkpoint_optional_analysis,
@@ -250,7 +250,7 @@ class _LastNonEmptyTextAgentTool(AgentTool):
     ``skip_summarization`` remains true, ``Event.is_final_response()`` is always true, so
     ``BaseLlmFlow`` ends the parent agent loop immediately after the tool — no follow-up model
     turn (ADK Web then shows no assistant message). Clearing restores one more LLM step for
-    doculink to echo checkpoint output.
+    property_agent to echo checkpoint output.
     """
 
     def __init__(

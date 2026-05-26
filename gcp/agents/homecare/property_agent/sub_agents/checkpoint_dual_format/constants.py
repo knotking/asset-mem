@@ -7,7 +7,7 @@ from typing import Dict
 
 _JSON_FENCE_RE = re.compile(r"```json\s*\n?([\s\S]*?)```", re.IGNORECASE)
 
-# Stashed by nested checkpoint_analysis workflow; parent checkpoint_agent / doculink read this.
+# Stashed by nested checkpoint_analysis workflow; parent checkpoint_agent reads this.
 CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY = "checkpoint_analysis_dual_format"
 # Incremental optional-branch payloads for progressive UI updates.
 CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY = "checkpoint_analysis_progress"
@@ -15,9 +15,9 @@ CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY = "checkpoint_analysis_progress"
 CHECKPOINT_PROGRESS_EVENT_AUTHOR = "checkpoint_analysis_progress"
 # State delta key: optional branch name that just completed (coverage|diy|service|cost).
 CHECKPOINT_BRANCH_COMPLETED_STATE_KEY = "checkpoint_branch_completed"
-# Serialized CheckpointAnalysisInput for doculink transfer → checkpoint_progress_agent.
+# Serialized CheckpointAnalysisInput for checkpoint_progress_agent transfer.
 CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY = "checkpoint_analysis_pending_input"
-# Monotonic counter bumped when progress stash updates (doculink streaming callback).
+# Monotonic counter bumped when progress stash updates (executor streaming callback).
 CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY = "checkpoint_progress_emit_seq"
 CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY = "checkpoint_progress_last_emitted_seq"
 

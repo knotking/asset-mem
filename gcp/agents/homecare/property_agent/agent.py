@@ -31,11 +31,16 @@ from .conversational_callbacks import (
     conversational_before_tool,
     mark_checkpoint_response_kind,
 )
-from .conversational_intent import resolve_user_query_from_state
+from .conversational_intent import (
+    mark_executor_invocation_structured_analysis,
+    resolve_user_query_from_state,
+)
+from .query_mode import branches_mentioned_in_query, snapshot_session_analysis_context
 from .resolve_turn import (
     USER_DOCS_PASSTHROUGH_STATE_KEY,
     prepare_before_model_turn,
     requests_optional_analysis_from_resolved,
+    resolved_turn_from_state,
 )
 from .prompts import property_agent_executor_instructions
 from .sub_agents.checkpoint_agent.agent import (
@@ -85,11 +90,10 @@ def root_before_model_combined(
         return prepare_before_model_turn(callback_context, llm_request=llm_request)
     except Exception:
         logger.exception("prepare_before_model_turn failed")
-        from .conversational_callbacks import apply_conversational_state_for_turn
+        from .conversational_callbacks import fail_closed_before_model_on_resolve_error
 
-        return apply_conversational_state_for_turn(
+        return fail_closed_before_model_on_resolve_error(
             callback_context,
-            agent_name="property_agent",
             llm_request=llm_request,
         )
 
@@ -210,6 +214,15 @@ def executor_after_tool_combined(
                     optional,
                     bool(checkpoint_results_text_from_state(tool_context.state)),
                 )
+        if requests_optional_analysis_from_resolved(tool_context.state):
+            mark_executor_invocation_structured_analysis(tool_context.state)
+        if tool_context.state.get("checkpoint_analysis_dual_format") or tool_context.state.get(
+            "checkpoint_parallel_results"
+        ):
+            snapshot_session_analysis_context(tool_context.state)
+    if tool_name == "transfer_to_agent" and isinstance(args, dict):
+        if args.get("agent_name") == "checkpoint_progress_agent":
+            mark_executor_invocation_structured_analysis(tool_context.state)
     return result
 
 
@@ -241,10 +254,18 @@ def before_tool_callback(
             tool_context.state, user_query=uq
         ):
             args["checkpoint_optional_agents"] = []
-        elif tool_context.state.get("checkpoint_optional_agents"):
-            args["checkpoint_optional_agents"] = list(
-                tool_context.state["checkpoint_optional_agents"]
-            )
+        else:
+            branches: list[str] = []
+            resolved = resolved_turn_from_state(tool_context.state)
+            if resolved is not None:
+                branches.extend(resolved.run_optional_agents or [])
+            branches.extend(branches_mentioned_in_query(uq))
+            state_branches = tool_context.state.get("checkpoint_optional_agents") or []
+            for branch in state_branches:
+                if branch not in branches:
+                    branches.append(branch)
+            if branches:
+                args["checkpoint_optional_agents"] = branches
         _sync_checkpoint_args(tool_context.state, args)
         logger.info(
             "property_agent before_tool: synced checkpoint session fields optional_agents=%r",
