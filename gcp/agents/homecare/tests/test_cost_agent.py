@@ -93,7 +93,7 @@ def test_extract_diagnosis_from_json_payload() -> None:
 def test_extract_property_address_from_json_payload() -> None:
     query = json.dumps({"property_address": "1982 Helena Way, Brentwood, CA 94513"})
     assert (
-        cost_mod._extract_property_address_from_query(query)
+        cost_mod._extract_market_location_from_query(query)
         == "1982 Helena Way, Brentwood, CA 94513"
     )
 

@@ -1,4 +1,4 @@
-"""Classify casual vs substantive user turns for property_agent routing."""
+"""Turn hydration, optional-branch detection, and canned conversational replies."""
 
 from __future__ import annotations
 
@@ -13,22 +13,6 @@ ConversationalLabel = Literal[
 
 _PHRASES_PATH = Path(__file__).resolve().parent / "conversational_phrases.json"
 
-# Imperatives / questions that always need tools even when short.
-_SUBSTANTIVE_RE = re.compile(
-    r"\b("
-    r"recommend|analyse|analyze|analysis|find|show|compare|explain|search|list|"
-    r"help me with|help me find|how much|how do i|what about|what changed|when did|why is|why are|"
-    r"can you find|can you recommend|can you show|can you explain|can you compare|"
-    r"do i have|is this covered|coverage for|providers? for|cost of|estimate|"
-    r"diy steps|checkpoints? with|damage|repair|inspect"
-    r")\b",
-    re.IGNORECASE,
-)
-
-_WH_QUESTION_RE = re.compile(
-    r"^\s*(how|what|when|where|why|who|which|can|could|should|is|are|do|does)\b", re.I
-)
-
 # User explicitly wants optional branches (coverage / DIY / service / cost pipeline).
 _OPTIONAL_ANALYSIS_RE = re.compile(
     r"\b("
@@ -38,6 +22,20 @@ _OPTIONAL_ANALYSIS_RE = re.compile(
     r"coverage for|is this covered|am i covered|warranty|insurance for|check coverage|"
     r"cost estimate|how much|get details on cost|estimate (?:the )?cost|"
     r"what would it cost|compare.*cost"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# User wants the prior full structured report replayed, not a new short summary.
+_FULL_ANALYSIS_REPLAY_RE = re.compile(
+    r"\b("
+    r"show (?:me )?(?:the )?full (?:analysis|report)|"
+    r"(?:show|see|view|open|repeat|display) (?:me )?(?:the )?(?:full |complete )?"
+    r"(?:analysis|report|results)(?: again)?|"
+    r"(?:full |complete )(?:analysis|report) again|"
+    r"run (?:a )?full analysis|"
+    r"(?:analyse|analyze) (?:my )?checkpoints again|"
+    r"re-?run (?:the )?analysis"
     r")\b",
     re.IGNORECASE,
 )
@@ -57,6 +55,10 @@ _RETRIEVAL_ONLY_RE = re.compile(
 CHECKPOINT_LAST_RESPONSE_KIND_KEY = "checkpoint_last_response_kind"
 CONVERSATIONAL_TURN_STATE_KEY = "conversational_turn"
 LAST_OFFERED_OPTIONS_KEY = "last_offered_options"
+# Set for the current executor invocation when structured checkpoint analysis runs.
+EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY = (
+    "_executor_invocation_structured_analysis"
+)
 
 # Order matches ``_CAPABILITY_BULLETS`` (for "first one" / "second one" picks).
 DEFAULT_CAPABILITY_OPTIONS: tuple[str, ...] = (
@@ -91,6 +93,11 @@ _STANDALONE_OPTIONAL_BRANCH_RE = re.compile(
     re.IGNORECASE,
 )
 
+_HOW_ABOUT_OPTIONAL_BRANCH_RE = re.compile(
+    r"\bhow about\s+(?:the\s+)?(?P<branch>coverage|diy|service|cost)\b",
+    re.IGNORECASE,
+)
+
 _ORDINAL_TO_INDEX: dict[str, int] = {
     "first": 0,
     "1st": 0,
@@ -104,21 +111,6 @@ _ORDINAL_TO_INDEX: dict[str, int] = {
     "5th": 4,
     "sixth": 5,
     "6th": 5,
-}
-
-_EXPANDED_QUERY_BY_OPTION: dict[str, str] = {
-    "checkpoints": (
-        "Show me my maintenance checkpoints and the latest inspection findings."
-    ),
-    "documents": (
-        "Answer my question using my uploaded property documents such as lease or policy."
-    ),
-    "coverage": (
-        "Explain warranty and insurance coverage using my property documents."
-    ),
-    "diy": "Suggest DIY steps, videos, and products for my property issue.",
-    "service": "Recommend local contractors and service providers near my property.",
-    "cost": "Estimate repair costs and compare DIY versus professional options.",
 }
 
 _ANALYSIS_JSON_MARKERS = (
@@ -148,21 +140,6 @@ GREETING_PHRASES: tuple[str, ...] = tuple(
     + PHRASE_CATEGORIES.get("off_topic", [])
 )
 
-CAPABILITY_INQUIRY_PHRASES: tuple[str, ...] = tuple(
-    PHRASE_CATEGORIES.get("capability_inquiry", [])
-)
-
-ACKNOWLEDGMENT_PHRASES: tuple[str, ...] = tuple(
-    PHRASE_CATEGORIES.get("thanks", [])
-    + PHRASE_CATEGORIES.get("positive_reaction", [])
-    + PHRASE_CATEGORIES.get("understanding", [])
-    + PHRASE_CATEGORIES.get("affirmation", [])
-    + PHRASE_CATEGORIES.get("closure", [])
-    + PHRASE_CATEGORIES.get("app_reaction", [])
-    + PHRASE_CATEGORIES.get("ultra_short", [])
-)
-
-
 def normalize_user_query(user_query: str) -> str:
     text = (user_query or "").strip().lower()
     text = re.sub(r"[^\w\s'+]", " ", text)
@@ -185,119 +162,8 @@ def _matches_any_phrase(normalized: str, phrases: Sequence[str]) -> bool:
     return False
 
 
-def _contains_any_phrase(normalized: str, phrases: Sequence[str]) -> bool:
-    for phrase in phrases:
-        if phrase and phrase in normalized:
-            return True
-    return False
-
-
-def _has_task_verb_signal(normalized: str) -> bool:
-    """Task verbs / WH-questions without treating casual meta phrases as substantive."""
-    if _SUBSTANTIVE_RE.search(normalized):
-        return True
-    if "?" in (normalized or "") and _WH_QUESTION_RE.match(normalized):
-        return True
-    if _WH_QUESTION_RE.match(normalized) and len(normalized.split()) >= 3:
-        return True
-    return False
-
-
-def is_substantive_signal(normalized: str) -> bool:
-    if not normalized:
-        return False
-    if (
-        is_greeting_like(normalized)
-        or is_acknowledgment_like(normalized)
-        or is_capability_inquiry_like(normalized)
-    ):
-        return False
-    return _has_task_verb_signal(normalized)
-
-
 def is_greeting_like(normalized: str) -> bool:
     return _matches_any_phrase(normalized, GREETING_PHRASES)
-
-
-def is_acknowledgment_like(normalized: str) -> bool:
-    return _matches_any_phrase(normalized, ACKNOWLEDGMENT_PHRASES)
-
-
-_PROPERTY_TASK_TOPIC_PHRASES = (
-    "tell me about",
-    "tell me more",
-    "what about",
-    "what is in",
-    "what s in",
-    "read my",
-    "summarize",
-    "summary of",
-    "show me",
-    "can you show",
-)
-
-_PROPERTY_TASK_TOPIC_WORDS = (
-    "document",
-    "documents",
-    "lease",
-    "policy",
-    "insurance",
-    "checkpoint",
-    "checkpoints",
-    "coverage",
-    "kitchen",
-    "garage",
-    "inspection",
-    "warranty",
-    "provider",
-    "repair",
-    "cost",
-    "diy",
-)
-
-
-def requests_property_information(normalized: str) -> bool:
-    """True when the user asks for property docs, checkpoints, or similar (not casual chat)."""
-    if is_substantive_signal(normalized):
-        return True
-    if _RETRIEVAL_ONLY_RE.search(normalized):
-        return True
-    if _contains_any_phrase(normalized, _PROPERTY_TASK_TOPIC_PHRASES):
-        return True
-    if any(
-        marker in normalized for marker in ("i mean", "actually", "instead", "rather")
-    ) and _contains_any_phrase(
-        normalized,
-        _PROPERTY_TASK_TOPIC_WORDS + ("first", "second", "third", "one", "two"),
-    ):
-        return True
-    return False
-
-
-def is_capability_inquiry_like(normalized: str) -> bool:
-    if _contains_any_phrase(normalized, CAPABILITY_INQUIRY_PHRASES):
-        return True
-    # Vague "I don't know / what do you suggest" without a concrete property task.
-    if _has_task_verb_signal(normalized):
-        return False
-    if "don t know" in normalized or "dont know" in normalized:
-        if any(
-            token in normalized
-            for token in (
-                "suggest",
-                "should i",
-                "what to ask",
-                "where to start",
-                "what can i",
-            )
-        ):
-            return True
-    if _contains_any_phrase(
-        normalized,
-        ("what do you suggest", "what would you suggest", "any suggestions"),
-    ):
-        return True
-    return False
 
 
 _TURN_PAYLOAD_STATE_KEYS = (
@@ -494,7 +360,6 @@ def last_turn_delivered_checkpoint_analysis(
 
     model_authors = {
         "property_agent",
-        "doculink_agent",
         "checkpoint_progress_agent",
         "checkpoint_analysis_synthesis_agent",
         "checkpoint_progress_synthesis_agent",
@@ -544,27 +409,6 @@ def _indexical_option_key(
     return str(options[idx])
 
 
-def is_indexical_phrase(normalized: str) -> bool:
-    """True for ``second one``, ``how about the 4th one in your list``, etc."""
-    return bool(_INDEXICAL_PHRASE_RE.match(normalized))
-
-
-def expand_indexical_user_query(
-    user_query: str,
-    state: Mapping[str, Any] | None,
-) -> str:
-    """
-    Expand ``first one`` / ``second one`` after a capability list into a full query.
-
-    No-op when session has no ``last_offered_options`` or the phrase is not indexical.
-    """
-    key = _indexical_option_key(normalize_user_query(user_query), state)
-    if not key:
-        return user_query
-    expanded = _EXPANDED_QUERY_BY_OPTION.get(key)
-    return expanded if expanded else user_query
-
-
 def resolve_requested_optional_branches(
     user_query: str,
     state: Mapping[str, Any] | None = None,
@@ -602,6 +446,12 @@ def resolve_requested_optional_branches(
         if branch in OPTIONAL_CHECKPOINT_BRANCHES and branch not in picked:
             picked.append(branch)
 
+    how_about_match = _HOW_ABOUT_OPTIONAL_BRANCH_RE.search(normalized)
+    if how_about_match:
+        branch = how_about_match.group("branch").lower()
+        if branch in OPTIONAL_CHECKPOINT_BRANCHES and branch not in picked:
+            picked.append(branch)
+
     if picked:
         return picked
 
@@ -634,67 +484,49 @@ def resolve_requested_optional_branches(
         ):
             if "cost" not in picked:
                 picked.append("cost")
-        if not picked:
-            ui = None
-            if state is not None:
-                ui = state.get("checkpoint_optional_agents") or state.get(
-                    "_checkpoint_optional_agents_ui"
-                )
-            if isinstance(ui, list) and ui:
-                return [str(b) for b in ui if str(b) in OPTIONAL_CHECKPOINT_BRANCHES]
 
     return picked
 
 
-def classify_turn(
-    user_query: str,
-    *,
-    session_events: Sequence[Any] | None = None,
-    current_invocation_id: Optional[str] = None,
-    state: Mapping[str, Any] | None = None,
-) -> ConversationalLabel:
-    _ = (session_events, current_invocation_id, state)
+def clear_executor_invocation_analysis_flag(state: Any) -> None:
+    """Reset per-invocation analysis tracking before the executor runs."""
+    if state is not None and hasattr(state, "__setitem__"):
+        state[EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY] = False
+
+
+def mark_executor_invocation_structured_analysis(state: Any) -> None:
+    """This executor invocation is producing (or passing through) structured analysis."""
+    if state is not None and hasattr(state, "__setitem__"):
+        state[EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY] = True
+
+
+def executor_invocation_requested_structured_analysis(
+    state: Mapping[str, Any] | None,
+) -> bool:
+    if not state:
+        return False
+    return bool(state.get(EXECUTOR_INVOCATION_STRUCTURED_ANALYSIS_KEY))
+
+
+def query_requests_full_analysis_replay(user_query: str) -> bool:
+    """True when the user asks to see the full prior checkpoint analysis again."""
     normalized = normalize_user_query(user_query)
     if not normalized:
-        return "greeting"
-
-    # Task signals win over casual phrases (e.g. "hello, show kitchen notes").
-    if requests_property_information(normalized):
-        return "substantive"
-    if is_substantive_signal(normalized):
-        return "substantive"
-    if _INDEXICAL_PHRASE_RE.match(normalized):
-        return "substantive"
-
-    if is_greeting_like(normalized):
-        return "greeting"
-
-    if is_capability_inquiry_like(normalized):
-        return "capabilities"
-
-    if is_acknowledgment_like(normalized):
-        return "acknowledgment"
-
-    # Uncertain — prefer substantive so the model can use conversation history.
-    return "substantive"
+        return False
+    return bool(_FULL_ANALYSIS_REPLAY_RE.search(normalized))
 
 
-def is_conversational_turn(
-    user_query: str,
-    *,
-    session_events: Sequence[Any] | None = None,
-    current_invocation_id: Optional[str] = None,
-    state: Mapping[str, Any] | None = None,
-) -> bool:
-    return (
-        classify_turn(
-            user_query,
-            session_events=session_events,
-            current_invocation_id=current_invocation_id,
-            state=state,
-        )
-        != "substantive"
-    )
+def prior_checkpoint_analysis_in_session(state: Mapping[str, Any] | None) -> bool:
+    """True when this session already delivered checkpoint analysis or has a stash."""
+    if not state:
+        return False
+    if state.get(CHECKPOINT_LAST_RESPONSE_KIND_KEY) == "analysis":
+        return True
+    if state.get("checkpoint_analysis_dual_format"):
+        return True
+    if state.get("checkpoint_parallel_results"):
+        return True
+    return False
 
 
 def requests_checkpoint_optional_analysis(
@@ -718,59 +550,6 @@ def requests_checkpoint_optional_analysis(
     if _OPTIONAL_ANALYSIS_RE.search(normalized):
         return True
     return False
-
-
-def apply_query_gated_optional_agents(
-    state: Mapping[str, Any],
-    user_query: str,
-) -> None:
-    """Set or clear optional agents from query intent (retrieval-only vs branch picks)."""
-    if not hasattr(state, "__setitem__"):
-        return
-
-    branches = resolve_requested_optional_branches(user_query, state)
-    if branches:
-        ui = state.get("checkpoint_optional_agents") or state.get(
-            "_checkpoint_optional_agents_ui"
-        )
-        if isinstance(ui, list) and ui:
-            filtered = [b for b in branches if b in ui]
-            state["checkpoint_optional_agents"] = filtered or list(branches)
-        else:
-            state["checkpoint_optional_agents"] = list(branches)
-        return
-
-    if requests_checkpoint_optional_analysis(user_query, state=state):
-        return
-
-    if state.get("checkpoint_optional_agents"):
-        state["_checkpoint_optional_agents_ui"] = state.get(
-            "checkpoint_optional_agents"
-        )
-        state["checkpoint_optional_agents"] = []
-
-
-def should_skip_tools(
-    user_query: str,
-    *,
-    session_events: Sequence[Any] | None = None,
-    current_invocation_id: Optional[str] = None,
-    state: Mapping[str, Any] | None = None,
-) -> bool:
-    label = classify_turn(
-        user_query,
-        session_events=session_events,
-        current_invocation_id=current_invocation_id,
-        state=state,
-    )
-    if label == "substantive":
-        return False
-    if label in ("greeting", "capabilities"):
-        return True
-    # acknowledgment: skip re-fetch when prior turn already answered
-    if label == "acknowledgment":
-        return True
-    return True
 
 
 _CAPABILITY_BULLETS = (

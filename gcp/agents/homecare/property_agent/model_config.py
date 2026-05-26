@@ -37,7 +37,7 @@ class Gemini3(Gemini):
         )
 
 
-# ADK agents (root, doculink, checkpoint branches, synthesis): fast routing + streaming.
+# ADK agents (root executor, checkpoint branches, synthesis): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
 
 

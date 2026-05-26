@@ -421,7 +421,7 @@ def agent_steps_from_progressive_dual_format(body: str) -> List[Dict[str, Any]]:
 
 
 def bump_checkpoint_progress_emit_seq(state: Any) -> int:
-    """Increment progress emit sequence; used by doculink streaming callback."""
+    """Increment progress emit sequence; used by executor streaming callback."""
     if not hasattr(state, "get"):
         return 0
     current = state.get(CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY, 0)

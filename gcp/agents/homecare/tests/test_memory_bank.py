@@ -41,7 +41,7 @@ def test_select_events_for_memory_ingest_filters_tools():
         _text_event(author="user", text="Hello"),
         Event(
             invocation_id="inv-1",
-            author="doculink_agent",
+            author="property_agent",
             content=types.Content(
                 role="model",
                 parts=[
@@ -53,7 +53,7 @@ def test_select_events_for_memory_ingest_filters_tools():
                 ],
             ),
         ),
-        _text_event(author="doculink_agent", text="Final answer"),
+        _text_event(author="property_agent", text="Final answer"),
         Event(
             invocation_id="inv-1",
             author="user",
@@ -71,11 +71,11 @@ def test_select_events_for_memory_ingest_filters_tools():
     selected = select_events_for_memory_ingest(
         events,
         invocation_id="inv-1",
-        allowed_authors=frozenset({"user", "doculink_agent"}),
+        allowed_authors=frozenset({"user", "property_agent"}),
     )
     assert len(selected) == 2
     assert selected[0].author == "user"
-    assert selected[1].author == "doculink_agent"
+    assert selected[1].author == "property_agent"
     assert "Final answer" in selected[1].content.parts[0].text
 
 
@@ -91,7 +91,7 @@ def test_invocation_used_orchestrator():
         Event(
             invocation_id="inv-1",
             author="property_agent",
-            actions=EventActions(transfer_to_agent="doculink_agent"),
+            actions=EventActions(transfer_to_agent="property_agent"),
         )
     ]
     assert invocation_used_orchestrator(events, "inv-1") is True
@@ -104,7 +104,7 @@ async def test_ingest_skips_when_disabled(monkeypatch):
     from property_agent import memory_bank as mb
 
     ctx = MagicMock()
-    await mb.ingest_invocation_to_memory_bank(ctx, agent_name="doculink_agent")
+    await mb.ingest_invocation_to_memory_bank(ctx, agent_name="property_agent")
     ctx.add_events_to_memory.assert_not_called()
 
 
@@ -131,7 +131,7 @@ async def test_ingest_checkpoint_facts_use_add_events_not_add_memory(monkeypatch
     ctx.add_events_to_memory = AsyncMock()
 
     await mb.ingest_invocation_to_memory_bank(
-        ctx, agent_name="doculink_agent", include_checkpoint_facts=True
+        ctx, agent_name="property_agent", include_checkpoint_facts=True
     )
     assert ctx.add_events_to_memory.await_count == 2
     ctx.add_memory.assert_not_called()
@@ -156,7 +156,7 @@ async def test_ingest_calls_add_events_when_enabled(monkeypatch):
     ctx.add_events_to_memory = AsyncMock()
 
     await mb.ingest_invocation_to_memory_bank(
-        ctx, agent_name="doculink_agent", include_checkpoint_facts=False
+        ctx, agent_name="property_agent", include_checkpoint_facts=False
     )
     ctx.add_events_to_memory.assert_awaited_once()
     call_kwargs = ctx.add_events_to_memory.await_args.kwargs

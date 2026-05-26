@@ -16,7 +16,7 @@ export const streamingAssistantMessage: Message = {
   role: 'assistant',
   content: '',
   createdAt: now,
-  agentSteps: [{ name: 'doculink_agent', status: 'executing' }],
+  agentSteps: [{ name: 'property_agent', status: 'executing' }],
   primaryAgent: 'docs',
 };
 

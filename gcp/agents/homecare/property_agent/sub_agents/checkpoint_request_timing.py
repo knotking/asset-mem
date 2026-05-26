@@ -15,9 +15,7 @@ _TIMING_FIELDS = (
     "parallel_ms",
     "diy_ms",
     "synthesis_ms",
-    # Legacy name: this used to time the doculink transfer hop. After the
-    # single-hop refactor it measures the executor "echo/enrichment" phase.
-    "doculink_ms",
+    "executor_ms",
     "total_ms",
     "return_chars",
 )
@@ -50,8 +48,8 @@ def begin_checkpoint_request(state: Any) -> None:
         "diy_ms": None,
         "synthesis_ms": None,
         "synthesis_started_at": None,
-        "doculink_started_at": None,
-        "doculink_ms": None,
+        "executor_started_at": None,
+        "executor_ms": None,
         "return_chars": None,
     }
     _write_state(state, data)
@@ -115,8 +113,8 @@ def begin_executor_phase(state: Any) -> None:
     if not data:
         begin_checkpoint_request(state)
         data = _state_dict(state)
-    if data.get("doculink_started_at") is None:
-        data["doculink_started_at"] = time.monotonic()
+    if data.get("executor_started_at") is None:
+        data["executor_started_at"] = time.monotonic()
     _write_state(state, data)
 
 
@@ -125,11 +123,11 @@ def record_executor_ms(state: Any, duration_ms: Optional[int] = None) -> None:
     if not data:
         return
     if duration_ms is not None:
-        data["doculink_ms"] = int(duration_ms)
+        data["executor_ms"] = int(duration_ms)
     else:
-        started = data.get("doculink_started_at")
+        started = data.get("executor_started_at")
         if isinstance(started, (int, float)):
-            data["doculink_ms"] = int((time.monotonic() - float(started)) * 1000)
+            data["executor_ms"] = int((time.monotonic() - float(started)) * 1000)
     _write_state(state, data)
 
 
@@ -175,7 +173,7 @@ def emit_checkpoint_request_timing(
         "parallel_ms": data.get("parallel_ms"),
         "diy_ms": data.get("diy_ms"),
         "synthesis_ms": data.get("synthesis_ms"),
-        "doculink_ms": data.get("doculink_ms"),
+        "executor_ms": data.get("executor_ms"),
         "total_ms": total_ms,
         "return_chars": data.get("return_chars"),
         "source": source,

@@ -17,7 +17,7 @@ from google.adk.tools.agent_tool import AgentTool
 from typing_extensions import override
 
 from ...agent_inputs import CheckpointOptionalAgent
-from ...search_location_utils import legacy_search_location_from_payload
+from ...search_location_utils import search_location_from_payload
 from ..checkpoint_dual_format_guard import (
     CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
     CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
@@ -42,6 +42,7 @@ from .search_query import (
     optional_branch_search_user_query,
     resolve_branch_search_user_query,
     resolve_effective_search_query,
+    resolve_optional_branch_user_query,
     _stash_retrieval_search_query,
 )
 
@@ -190,7 +191,7 @@ async def _run_checkpoint_diy_pipeline(payload: Dict[str, Any]) -> str:
         diagnosis = branch_q or "Property maintenance"
     uris = payload.get("context_doc_uris")
     seed = (payload.get("checkpoint_retrieval_search_query") or "").strip()
-    sl = legacy_search_location_from_payload(payload)
+    sl = search_location_from_payload(payload)
     return await run_diy_pipeline(
         diagnosis,
         property_address=(payload.get("property_address") or "").strip() or None,
@@ -220,7 +221,7 @@ def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
 
     diagnosis = _checkpoint_cost_diagnosis(payload)
     body: Dict[str, Any] = {"diagnosis": diagnosis}
-    sl = legacy_search_location_from_payload(payload)
+    sl = search_location_from_payload(payload)
     pa = (payload.get("property_address") or "").strip() or None
     label = market_label(sl, property_address=pa)
     if label:
@@ -370,13 +371,25 @@ async def run_checkpoint_optional_agents_parallel(
         return json.dumps(results, ensure_ascii=False)
 
     search_query = resolve_effective_search_query(search_query, tool_context)
-    branch_user_query = resolve_branch_search_user_query(
-        search_query or None, checkpoint_results, max_chars=400
+    query_mode = "branch_issue_search"
+    if tool_context is not None:
+        from property_agent.resolve_turn import resolved_turn_from_state
+
+        resolved = resolved_turn_from_state(tool_context.state)
+        if resolved is not None and resolved.query_mode:
+            query_mode = resolved.query_mode
+    branch_user_query = resolve_optional_branch_user_query(
+        turn_query=user_query,
+        search_query=search_query or None,
+        checkpoint_results=checkpoint_results,
+        query_mode=query_mode,
+        max_chars=400,
     )
     logger.info(
-        "checkpoint optional parallel: start branches=%s checkpoint_blob_len=%d "
-        "retrieval_search_query_len=%d branch_user_query_len=%d",
+        "checkpoint optional parallel: start branches=%s query_mode=%s "
+        "checkpoint_blob_len=%d retrieval_search_query_len=%d branch_user_query_len=%d",
         sorted(set(requested)),
+        query_mode,
         len(checkpoint_results or ""),
         len(search_query),
         len(branch_user_query),

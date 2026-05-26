@@ -44,7 +44,7 @@ describe('mergeMessagesFromSnapshot', () => {
         role: 'assistant',
         content: '',
         createdAt: baseTime,
-        agentSteps: [{ name: 'doculink_agent', status: 'executing' }],
+        agentSteps: [{ name: 'property_agent', status: 'executing' }],
       },
     ];
     const loaded: Message[] = [
@@ -53,7 +53,7 @@ describe('mergeMessagesFromSnapshot', () => {
         role: 'assistant',
         content: 'partial',
         createdAt: baseTime,
-        agentSteps: [{ name: 'doculink_agent', status: 'executing' }],
+        agentSteps: [{ name: 'property_agent', status: 'executing' }],
       },
     ];
     const merged = mergeMessagesFromSnapshot(prev, loaded);

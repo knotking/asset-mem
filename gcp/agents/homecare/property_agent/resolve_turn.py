@@ -13,9 +13,16 @@ from google.genai import types
 from .conversational_intent import (
     CONVERSATIONAL_TURN_STATE_KEY,
     build_conversational_reply,
+    clear_executor_invocation_analysis_flag,
     last_turn_delivered_checkpoint_analysis,
     resolve_property_address_from_state,
     resolve_user_query_from_state,
+)
+from .query_mode import (
+    QueryModeKind,
+    format_session_working_memory_block,
+    should_answer_provider_from_context,
+    snapshot_session_analysis_context,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +33,7 @@ USER_DOCS_PASSTHROUGH_STATE_KEY = "_executor_user_docs_passthrough"
 
 RouteKind = Literal["none", "checkpoint", "user_docs", "knowledge_base"]
 IntentKind = Literal["greeting", "capabilities", "acknowledgment", "substantive"]
+UserGoalKind = Literal["answer_from_context", "new_analysis", "replay_deliverable"]
 
 CASUAL_INTENTS = frozenset({"greeting", "capabilities", "acknowledgment"})
 
@@ -39,6 +47,8 @@ class ResolvedTurn:
     expanded_user_query: str
     retrieval_only: bool
     run_optional_agents: list[str] = field(default_factory=list)
+    user_goal: UserGoalKind = "answer_from_context"
+    query_mode: QueryModeKind = "interpret_session"
     menu_index: Optional[int] = None
     capability_key: Optional[str] = None
     resolve_source: str = "llm"
@@ -104,6 +114,20 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
         return
 
     if resolved.run_optional_agents:
+        session_query = str(
+            state.get("user_query") or resolved.expanded_user_query or ""
+        )
+        if should_answer_provider_from_context(session_query, state=state):
+            snapshot_session_analysis_context(state)
+            if state.get("checkpoint_optional_agents"):
+                state["_checkpoint_optional_agents_ui"] = state.get(
+                    "checkpoint_optional_agents"
+                )
+            state["checkpoint_optional_agents"] = []
+            return
+        _clear_checkpoint_passthrough_stash(state)
+        if hasattr(state, "__setitem__"):
+            state["checkpoint_parallel_results"] = None
         ui = state.get("checkpoint_optional_agents") or state.get(
             "_checkpoint_optional_agents_ui"
         )
@@ -120,6 +144,10 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
                 "checkpoint_optional_agents"
             )
         state["checkpoint_optional_agents"] = []
+        if resolved.user_goal == "answer_from_context":
+            snapshot_session_analysis_context(state)
+        else:
+            _clear_checkpoint_passthrough_stash(state)
 
 
 def _clear_checkpoint_passthrough_stash(state: Any) -> None:
@@ -150,6 +178,23 @@ def resolved_turn_from_state(state: Mapping[str, Any] | None) -> Optional[Resolv
             expanded_user_query=str(raw.get("expanded_user_query") or ""),
             retrieval_only=bool(raw.get("retrieval_only", True)),
             run_optional_agents=list(raw.get("run_optional_agents") or []),
+            user_goal=(
+                raw.get("user_goal")
+                if raw.get("user_goal")
+                in ("answer_from_context", "new_analysis", "replay_deliverable")
+                else "answer_from_context"
+            ),
+            query_mode=(
+                raw.get("query_mode")
+                if raw.get("query_mode")
+                in (
+                    "interpret_session",
+                    "branch_issue_search",
+                    "branch_entity_search",
+                    "branch_explicit",
+                )
+                else "interpret_session"
+            ),
             menu_index=raw.get("menu_index"),
             capability_key=raw.get("capability_key"),
             resolve_source=str(raw.get("resolve_source") or "llm"),
@@ -171,13 +216,22 @@ def requests_optional_analysis_from_resolved(
     return bool(resolved.run_optional_agents) and not resolved.retrieval_only
 
 
-def format_resolved_turn_block(resolved: ResolvedTurn) -> str:
+def format_resolved_turn_block(
+    resolved: ResolvedTurn,
+    *,
+    state: Mapping[str, Any] | None = None,
+) -> str:
     payload = resolved.to_dict()
     payload["ui_context_note"] = (
         "primary_agent, checkpoint_ids, context_doc_uris, and UI optional toggles "
         "are context only — follow this block, not UI fields."
     )
-    return "[RESOLVED_TURN]\n" f"{json.dumps(payload, indent=2)}\n" "[/RESOLVED_TURN]"
+    blocks = ["[RESOLVED_TURN]\n" f"{json.dumps(payload, indent=2)}\n" "[/RESOLVED_TURN]"]
+    if resolved.user_goal == "answer_from_context" and state is not None:
+        memory = format_session_working_memory_block(state)
+        if memory:
+            blocks.append(memory)
+    return "\n\n".join(blocks)
 
 
 def _ensure_generate_content_config(llm_request: Any) -> Any:
@@ -206,14 +260,22 @@ def _system_instruction_text(llm_request: Any) -> str:
 def inject_resolved_turn_into_llm_request(
     llm_request: Any,
     resolved: ResolvedTurn,
+    *,
+    state: Mapping[str, Any] | None = None,
 ) -> None:
     """Append resolved JSON to the executor system instruction for this turn."""
-    block = format_resolved_turn_block(resolved)
+    block = format_resolved_turn_block(resolved, state=state)
     config = _ensure_generate_content_config(llm_request)
     existing = _system_instruction_text(llm_request).strip()
     if "[RESOLVED_TURN]" in existing:
         existing = re.sub(
             r"\[RESOLVED_TURN\][\s\S]*?\[/RESOLVED_TURN\]",
+            "",
+            existing,
+        ).strip()
+    if "[SESSION_WORKING_MEMORY]" in existing:
+        existing = re.sub(
+            r"\[SESSION_WORKING_MEMORY\][\s\S]*?\[/SESSION_WORKING_MEMORY\]\n?",
             "",
             existing,
         ).strip()
@@ -268,7 +330,9 @@ def prepare_before_model_turn(
         existing = resolved_turn_from_state(state)
         if existing is not None and not existing.is_casual:
             if llm_request is not None:
-                inject_resolved_turn_into_llm_request(llm_request, existing)
+                inject_resolved_turn_into_llm_request(
+                    llm_request, existing, state=state
+                )
             logger.debug(
                 "resolve_turn skip re-resolve invocation_id=%s route=%s",
                 inv_id,
@@ -276,6 +340,7 @@ def prepare_before_model_turn(
             )
             return None
 
+    clear_executor_invocation_analysis_flag(state)
     resolved = resolve_turn(ctx, llm_request=llm_request)
     apply_resolved_turn_to_state(state, resolved)
     if inv_id and state is not None:
@@ -306,23 +371,16 @@ def prepare_before_model_turn(
         return _plain_llm_response(text)
 
     if llm_request is not None:
-        inject_resolved_turn_into_llm_request(llm_request, resolved)
+        inject_resolved_turn_into_llm_request(llm_request, resolved, state=state)
     logger.info(
-        "resolve_turn substantive source=%s route=%s retrieval_only=%s optional=%r query=%r",
+        "resolve_turn substantive source=%s route=%s user_goal=%s query_mode=%s "
+        "retrieval_only=%s optional=%r query=%r",
         resolved.resolve_source,
         resolved.route,
+        resolved.user_goal,
+        resolved.query_mode,
         resolved.retrieval_only,
         resolved.run_optional_agents,
         (resolved.expanded_user_query or "")[:80],
     )
-    return None
-
-
-def run_resolve_for_executor(
-    ctx: Any,
-    *,
-    llm_request: Any = None,
-) -> Optional[ResolvedTurn]:
-    """Deprecated alias — use ``prepare_before_model_turn``."""
-    _ = (ctx, llm_request)
     return None

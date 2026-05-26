@@ -7,16 +7,12 @@ import {
 /** Shown when no specialist step is active yet. */
 export const DEFAULT_THINKING_LABEL = "Working on it…";
 
-/** Single label for router/orchestrator agents (property_agent, doculink_agent). */
+/** Single label for the root property_agent orchestrator. */
 export const COORDINATING_LABEL = "Understanding your request…";
 
-export const ORCHESTRATOR_AGENT_NAMES = new Set<string>([
-  "property_agent",
-  "doculink_agent",
-]);
+export const ORCHESTRATOR_AGENT_NAMES = new Set<string>(["property_agent"]);
 
-/** Routing order — first entry is the only step that may show {@link COORDINATING_LABEL}. */
-const ORCHESTRATOR_PIPELINE_ORDER = ["property_agent", "doculink_agent"] as const;
+const ORCHESTRATOR_PIPELINE_ORDER = ["property_agent"] as const;
 
 function orchestratorPipelineIndex(name: string): number {
   const idx = ORCHESTRATOR_PIPELINE_ORDER.indexOf(

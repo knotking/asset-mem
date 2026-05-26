@@ -17,6 +17,7 @@ from property_agent.resolve_turn import (
     resolve_turn,
 )
 from property_agent.resolve_turn_llm import (
+    _apply_checkpoint_retrieval_plan,
     _apply_primary_agent_constraints,
     _sanitize_llm_payload,
     resolve_llm_disabled,
@@ -57,6 +58,141 @@ def test_sanitize_casual_intent() -> None:
     assert out["intent"] == "greeting"
     assert out["route"] == "none"
     assert out["run_optional_agents"] == []
+
+
+def test_sanitize_coerces_retrieval_only_on_interpretive_follow_up() -> None:
+    state = {"checkpoint_last_response_kind": "analysis"}
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "What is wrong with my overall conditions?",
+            "retrieval_only": False,
+            "run_optional_agents": [],
+        },
+        user_query="whats wrong with my overall conditions?",
+        state=state,
+    )
+    assert out is not None
+    assert out["retrieval_only"] is True
+    assert out["run_optional_agents"] == []
+    assert out["user_goal"] == "answer_from_context"
+
+
+def test_sanitize_ignores_llm_branches_copied_from_ui_toggles() -> None:
+    state = {
+        "checkpoint_last_response_kind": "analysis",
+        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
+    }
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "What is wrong with my overall condition?",
+            "retrieval_only": False,
+            "run_optional_agents": ["coverage", "diy", "service", "cost"],
+        },
+        user_query="what is wrong with my overall condition?",
+        state=state,
+    )
+    assert out is not None
+    assert out["retrieval_only"] is True
+    assert out["run_optional_agents"] == []
+    assert out["user_goal"] == "answer_from_context"
+
+
+def test_sanitize_advisory_professional_not_service_analysis() -> None:
+    state = {
+        "checkpoint_last_response_kind": "analysis",
+        "checkpoint_optional_agents": ["service"],
+    }
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "Should I engage a professional for garage door repair?",
+            "retrieval_only": False,
+            "run_optional_agents": ["service"],
+        },
+        user_query="should I engage a professional?",
+        state=state,
+    )
+    assert out is not None
+    assert out["retrieval_only"] is True
+    assert out["run_optional_agents"] == []
+    assert out["user_goal"] == "answer_from_context"
+
+
+def test_apply_checkpoint_retrieval_plan_includes_service_from_query_text() -> None:
+    payload = {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Analyse my checkpoints for coverage, diy, service, and cost",
+        "retrieval_only": True,
+        "run_optional_agents": [],
+    }
+    out = _apply_checkpoint_retrieval_plan(
+        payload,
+        user_query="analyse my checkpoints for coverage, diy, service, and cost",
+        state={"checkpoint_optional_agents": ["coverage", "diy", "cost"]},
+    )
+    assert "service" in out["run_optional_agents"]
+    assert out["user_goal"] == "new_analysis"
+
+
+def test_sanitize_generic_analyse_uses_ui_toggles() -> None:
+    state = {
+        "checkpoint_optional_agents": ["diy", "cost"],
+    }
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "Analyse my checkpoints",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+        },
+        user_query="analyse my checkpoints",
+        state=state,
+    )
+    assert out is not None
+    assert out["retrieval_only"] is False
+    assert out["run_optional_agents"] == ["diy", "cost"]
+    assert out["user_goal"] == "new_analysis"
+
+
+def test_sanitize_keeps_optional_run_for_cost_request() -> None:
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "checkpoint",
+            "expanded_user_query": "Estimate repair costs for garage door paint damage.",
+            "retrieval_only": False,
+            "run_optional_agents": ["cost"],
+        },
+        user_query="how about cost?",
+        state={"primary_agent": "checkpoint"},
+    )
+    assert out is not None
+    assert out["retrieval_only"] is False
+    assert out["run_optional_agents"] == ["cost"]
+
+
+def test_apply_checkpoint_retrieval_plan_full_replay_not_coerced() -> None:
+    payload = {
+        "intent": "substantive",
+        "route": "checkpoint",
+        "expanded_user_query": "Show me the full analysis report again",
+        "retrieval_only": True,
+        "run_optional_agents": [],
+    }
+    out = _apply_checkpoint_retrieval_plan(
+        payload,
+        user_query="show full report again",
+        state={"checkpoint_last_response_kind": "analysis"},
+    )
+    assert out["retrieval_only"] is False
+    assert out["user_goal"] == "replay_deliverable"
 
 
 def test_sanitize_substantive_cost() -> None:

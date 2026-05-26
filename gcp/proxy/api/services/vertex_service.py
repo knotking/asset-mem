@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 # Router/orchestrator agents — one stable user-facing label (see agent-display.ts).
 _COORDINATING_AGENTS = {
     "property_agent",
-    "doculink_agent",
 }
 
 _COORDINATING_LABEL = "Understanding your request…"
@@ -89,7 +88,6 @@ _CHECKPOINT_PROGRESS_AUTHORS = {
 _CHECKPOINT_CONTENT_REPLACE_AUTHORS = _CHECKPOINT_PROGRESS_AUTHORS | {
     "checkpoint_analysis_synthesis_agent",
     "checkpoint_progress_synthesis_agent",
-    "doculink_agent",
 }
 
 _CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
