@@ -174,7 +174,11 @@ def install_auth_uid_logging(
                 fmt_str = ""
                 if isinstance(fmt_obj, logging.Formatter):
                     fmt_str = getattr(fmt_obj, "_fmt", "") or ""
-                if not fmt_str or "auth_uid" not in fmt_str or "correlation_id" not in fmt_str:
+                if (
+                    not fmt_str
+                    or "auth_uid" not in fmt_str
+                    or "correlation_id" not in fmt_str
+                ):
                     h.setFormatter(logging.Formatter(_DEFAULT_FORMAT, datefmt=datefmt))
 
     _INSTALLED = True

@@ -81,14 +81,14 @@ test-eval: ## Run ADK eval tests (live Vertex; property_agent/evals/*.evalset.js
 	$(call print_header,Running Evaluation Tests)
 	$(PYTEST) eval/ -v
 
-test-eval-routing: ## Eval: doculink_routing.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_doculink_routing -v
+test-eval-executor-routing: ## Eval: executor_routing.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_executor_routing -v
 
 test-eval-conversational: ## Eval: conversational_bypass + multi_turn_conversational
 	$(PYTEST) eval/test_eval.py::test_eval_conversational_bypass eval/test_eval.py::test_eval_multi_turn_conversational -v
 
-test-eval-docs: ## Eval: doculink_docs.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_doculink_docs -v
+test-eval-user-docs: ## Eval: user_docs_routing.evalset.json
+	$(PYTEST) eval/test_eval.py::test_eval_user_docs_routing -v
 
 test-eval-checkpoint: ## Eval: checkpoint_optional_agents.evalset.json
 	$(PYTEST) eval/test_eval.py::test_eval_checkpoint_optional_agents -v

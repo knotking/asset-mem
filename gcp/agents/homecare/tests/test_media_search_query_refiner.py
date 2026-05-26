@@ -4,7 +4,9 @@ import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from property_agent.sub_agents.checkpoint_agent import media_search_query_refiner as msqr
+from property_agent.sub_agents.checkpoint_agent import (
+    media_search_query_refiner as msqr,
+)
 
 
 def _fake_formatted():
@@ -14,7 +16,9 @@ def _fake_formatted():
             "summary": "Gray garage door with paint damage near handle.",
             "detectedItems": ["door", "door handle"],
             "issues": [
-                {"description": "Significant paint chipping on the door surface near the handle."}
+                {
+                    "description": "Significant paint chipping on the door surface near the handle."
+                }
             ],
         }
     ]
@@ -141,7 +145,9 @@ def test_refiner_truncates_long_output(monkeypatch):
     mock_client.models.generate_content.return_value = _Resp()
     monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
 
-    out = msqr.refine_checkpoint_media_search_query("x", _fake_formatted(), max_out_chars=50)
+    out = msqr.refine_checkpoint_media_search_query(
+        "x", _fake_formatted(), max_out_chars=50
+    )
     assert len(out) <= 50
 
 

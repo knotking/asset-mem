@@ -199,9 +199,7 @@ def test_last_turn_analysis_from_session_events() -> None:
 )
 def test_acknowledgment_after_analysis_skips_tools(phrase: str) -> None:
     events = [
-        _mock_analysis_event(
-            '```json\n{"analysis": {"serviceResults": {}}}\n```'
-        )
+        _mock_analysis_event('```json\n{"analysis": {"serviceResults": {}}}\n```')
     ]
     assert should_skip_tools(
         phrase,
@@ -212,16 +210,17 @@ def test_acknowledgment_after_analysis_skips_tools(phrase: str) -> None:
 
 def test_new_question_after_analysis_stays_substantive() -> None:
     events = [
-        _mock_analysis_event(
-            '```json\n{"analysis": {"serviceResults": {}}}\n```'
-        )
+        _mock_analysis_event('```json\n{"analysis": {"serviceResults": {}}}\n```')
     ]
     query = "find providers open on weekends"
-    assert classify_turn(
-        query,
-        session_events=events,
-        current_invocation_id="inv-2",
-    ) == "substantive"
+    assert (
+        classify_turn(
+            query,
+            session_events=events,
+            current_invocation_id="inv-2",
+        )
+        == "substantive"
+    )
     assert not should_skip_tools(
         query,
         session_events=events,
@@ -268,9 +267,7 @@ def test_help_me_with_stays_substantive() -> None:
 
 def test_property_document_followup_after_analysis_is_substantive() -> None:
     events = [
-        _mock_analysis_event(
-            '```json\n{"analysis": {"checkpointSummary": {}}}\n```'
-        )
+        _mock_analysis_event('```json\n{"analysis": {"checkpointSummary": {}}}\n```')
     ]
     query = "I mean tell me about property document"
     assert requests_property_information(normalize_user_query(query))
@@ -301,16 +298,15 @@ def test_analyse_checkpoints_requests_optional_analysis() -> None:
 
 
 def test_what_about_diy_after_analysis() -> None:
-    events = [
-        _mock_analysis_event(
-            '```json\n{"analysis": {"diyResults": {}}}\n```'
+    events = [_mock_analysis_event('```json\n{"analysis": {"diyResults": {}}}\n```')]
+    assert (
+        classify_turn(
+            "what about DIY instead",
+            session_events=events,
+            current_invocation_id="inv-2",
         )
-    ]
-    assert classify_turn(
-        "what about DIY instead",
-        session_events=events,
-        current_invocation_id="inv-2",
-    ) == "substantive"
+        == "substantive"
+    )
 
 
 @pytest.mark.parametrize(
@@ -324,15 +320,16 @@ def test_indexical_followups_are_substantive(phrase: str) -> None:
 
 def test_short_ambiguous_after_analysis_is_substantive_not_ack() -> None:
     events = [
-        _mock_analysis_event(
-            '```json\n{"analysis": {"serviceResults": {}}}\n```'
-        )
+        _mock_analysis_event('```json\n{"analysis": {"serviceResults": {}}}\n```')
     ]
-    assert classify_turn(
-        "second one",
-        session_events=events,
-        current_invocation_id="inv-2",
-    ) == "substantive"
+    assert (
+        classify_turn(
+            "second one",
+            session_events=events,
+            current_invocation_id="inv-2",
+        )
+        == "substantive"
+    )
     assert not should_skip_tools(
         "second one",
         session_events=events,
@@ -366,9 +363,10 @@ def test_third_one_in_list_requests_coverage_branch() -> None:
     query = "how about third one in your list?"
     assert resolve_requested_optional_branches(query, state) == ["coverage"]
     assert requests_checkpoint_optional_analysis(query, state=state)
-    assert "warranty and insurance coverage" in expand_indexical_user_query(
-        query, state
-    ).lower()
+    assert (
+        "warranty and insurance coverage"
+        in expand_indexical_user_query(query, state).lower()
+    )
 
 
 def test_apply_query_gated_sets_coverage_only() -> None:

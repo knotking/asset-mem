@@ -1,6 +1,6 @@
 # Analysis Agent Documentation
 
-> **Historical:** This folder documents the retired **Analysis / Triage** agent tree (`analysis_agent`, `diagnosis_uris`, multimodal triage at the root). The live system uses **property_agent → doculink_agent** with checkpoint retrieval and optional `checkpoint_optional_agents` (coverage, diy, service, cost). See `gcp/docs/ARCHITECTURE.md`, `gcp/agents/homecare/property_agent/README.md`, and `docs/checkpoint/` for current behavior.
+> **Historical:** This folder documents the retired **Analysis / Triage** agent tree (`analysis_agent`, `diagnosis_uris`, multimodal triage at the root). The live system uses **property_agent** (single-hop executor) with checkpoint retrieval and optional `checkpoint_optional_agents` (coverage, diy, service, cost). See `gcp/docs/ARCHITECTURE.md`, `gcp/agents/homecare/property_agent/README.md`, and `docs/checkpoint/` for current behavior.
 
 ## Overview
 

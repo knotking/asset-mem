@@ -63,7 +63,9 @@ def test_youtube_search_real_fetch() -> None:
         assert item.get("title")
         url = item.get("url") or ""
         assert isinstance(url, str)
-        assert "youtube.com" in url or "youtu.be" in url, f"unexpected video url shape: {url[:80]!r}"
+        assert (
+            "youtube.com" in url or "youtu.be" in url
+        ), f"unexpected video url shape: {url[:80]!r}"
 
 
 @requires_external_diy_search

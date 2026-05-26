@@ -24,6 +24,7 @@ def _vertex_genai_client():
     """Indirection so tests can monkeypatch without replacing a read-only property."""
     return LEGACY_API_GEMINI.api_client
 
+
 _REFINE_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -71,9 +72,7 @@ def _hints_from_formatted(
         if not isinstance(items, list):
             items = []
         item_strs = [
-            str(x).strip()
-            for x in items[:12]
-            if isinstance(x, str) and str(x).strip()
+            str(x).strip() for x in items[:12] if isinstance(x, str) and str(x).strip()
         ]
         issues_out: List[str] = []
         for issue in (fc.get("issues") or [])[:6]:
@@ -167,7 +166,7 @@ def refine_checkpoint_media_search_query(
         "- Use ONLY facts present in INPUT_JSON and RAW_QUERY. Do not invent damage, rooms, or objects.\n"
         "- If the property location is Garage (or similar) and issues mention a door, paint, chips, "
         "scratches, or panels in a residential context, prefer explicit phrases like "
-        "\"residential garage door\" or \"garage door\" so results are not confused with car paint repair.\n"
+        '"residential garage door" or "garage door" so results are not confused with car paint repair.\n'
         "- If the context is clearly a vehicle, say so explicitly (e.g. car door paint).\n"
         "- Output one short query string in refined_query; no bullet lists, no markdown, no quotes.\n"
         "- Omit street addresses and personal names.\n"

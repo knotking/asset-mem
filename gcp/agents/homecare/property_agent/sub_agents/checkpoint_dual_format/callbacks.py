@@ -1,10 +1,10 @@
-"""ADK after_model callbacks for checkpoint and doculink flows."""
+"""ADK after_model callbacks for checkpoint flows (single-hop executor)."""
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_response import LlmResponse
@@ -12,7 +12,7 @@ from google.genai import types
 
 from ..checkpoint_request_timing import (
     emit_checkpoint_request_timing,
-    record_doculink_ms,
+    record_executor_ms,
     record_synthesis_ms,
     set_return_chars,
 )
@@ -22,7 +22,6 @@ from .constants import (
     CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY,
 )
 from .dual_format_body import (
-    bump_checkpoint_progress_emit_seq,
     build_fallback_analysis,
     dual_format_has_valid_analysis_json,
     dual_format_is_passthrough_quality,
@@ -43,6 +42,7 @@ from .dual_format_body import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 def ensure_dual_format_body(
     body: str,
@@ -176,9 +176,7 @@ def checkpoint_agent_after_model_callback(
                 CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY
             )
             if isinstance(progress, str) and progress.strip():
-                text = patch_dual_format_from_state(
-                    progress, callback_context.state
-                )
+                text = patch_dual_format_from_state(progress, callback_context.state)
 
     if stashed and not dual_format_is_passthrough_quality(text):
         stashed = enrich_dual_format_markdown(stashed)
@@ -223,12 +221,12 @@ def checkpoint_agent_after_model_callback(
     return llm_response.model_copy(update={"content": new_content})
 
 
-def doculink_progressive_streaming_callback(
+def executor_progressive_streaming_callback(
     callback_context: CallbackContext,
     llm_response: LlmResponse,
 ) -> Optional[LlmResponse]:
     """
-    While doculink streams a follow-up turn, emit the latest stashed checkpoint
+    While the executor streams a follow-up turn, emit the latest stashed checkpoint
     progress body when the progress sequence advances (pairs with sub-agent events).
     """
     if llm_response_declares_tool_use(llm_response):
@@ -253,7 +251,7 @@ def doculink_progressive_streaming_callback(
     state[CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY] = seq_i
     body = enrich_dual_format_markdown(stashed)
     logger.info(
-        "doculink_agent: streaming checkpoint progress (seq=%d chars=%d)",
+        "property_agent: streaming checkpoint progress (seq=%d chars=%d)",
         seq_i,
         len(body),
     )
@@ -273,14 +271,14 @@ def _skip_checkpoint_dual_format_echo(state: Any) -> bool:
     return False
 
 
-def doculink_after_model_callback(
+def executor_after_model_callback(
     callback_context: CallbackContext,
     llm_response: LlmResponse,
 ) -> Optional[LlmResponse]:
     """
     When checkpoint_agent returned dual-format output, echo it verbatim with rich markdown.
 
-    Doculink often re-streams JSON fragments instead of the tool payload; restore stash.
+    The executor can re-stream JSON fragments instead of the tool payload; restore stash.
 
     Only act on the final model chunk; during streaming this callback fires once per
     partial and would otherwise emit the full stash as a duplicate event each time.
@@ -296,22 +294,22 @@ def doculink_after_model_callback(
         return None
     text = extract_text_from_llm_response(llm_response)
     stashed = enrich_dual_format_markdown(stashed)
-    record_doculink_ms(callback_context.state)
-    model_ok = dual_format_is_passthrough_quality(text) and markdown_has_rich_analysis_sections(
-        strip_json_fences(text)
-    )
+    record_executor_ms(callback_context.state)
+    model_ok = dual_format_is_passthrough_quality(
+        text
+    ) and markdown_has_rich_analysis_sections(strip_json_fences(text))
     if model_ok and text.strip() == stashed.strip():
         final_body = text
     elif not (text or "").strip() or not model_ok:
         logger.info(
-            "doculink_agent: echoing checkpoint dual-format (model_chars=%d stash_chars=%d)",
+            "property_agent: echoing checkpoint dual-format (model_chars=%d stash_chars=%d)",
             len(text or ""),
             len(stashed),
         )
         final_body = stashed
     elif not markdown_has_rich_analysis_sections(strip_json_fences(text)):
         logger.info(
-            "doculink_agent: replacing thin markdown with enriched checkpoint output"
+            "property_agent: replacing thin markdown with enriched checkpoint output"
         )
         final_body = stashed
     else:
@@ -321,7 +319,7 @@ def doculink_after_model_callback(
     emit_checkpoint_request_timing(
         callback_context.state,
         return_chars=len(final_body),
-        source="doculink_final",
+        source="executor_final",
     )
 
     if final_body != text:

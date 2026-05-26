@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from google.genai import types
+
 from property_agent.resolve_turn import (
     RESOLVED_TURN_STATE_KEY,
     ResolvedTurn,
     apply_resolved_turn_to_state,
     format_resolved_turn_block,
+    inject_resolved_turn_into_llm_request,
 )
 
 
@@ -39,6 +44,21 @@ def test_apply_resolved_sets_optional_branches() -> None:
         ),
     )
     assert state["checkpoint_optional_agents"] == ["cost"]
+
+
+def test_inject_resolved_turn_uses_string_system_instruction() -> None:
+    llm_request = SimpleNamespace(config=types.GenerateContentConfig())
+    inject_resolved_turn_into_llm_request(
+        llm_request,
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="summarize checkpoints",
+            retrieval_only=True,
+        ),
+    )
+    assert isinstance(llm_request.config.system_instruction, str)
+    assert "[RESOLVED_TURN]" in llm_request.config.system_instruction
 
 
 def test_format_resolved_turn_block() -> None:

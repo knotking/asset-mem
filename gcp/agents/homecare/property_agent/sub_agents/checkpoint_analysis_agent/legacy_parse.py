@@ -28,6 +28,7 @@ def _tool_context(ctx: InvocationContext):
 
     return _agent.Context(invocation_context=ctx)
 
+
 # Legacy prose keys emitted when checkpoint_agent passes a single ``request`` blob.
 _LEGACY_ANALYSIS_FIELD_NAMES: Tuple[str, ...] = (
     "checkpoint_results",
@@ -42,12 +43,16 @@ _LEGACY_ANALYSIS_FIELD_NAMES: Tuple[str, ...] = (
     "location_radius",
 )
 _LEGACY_FIELD_MARKER_RE = re.compile(
-    r"(?:^|\n)(" + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES) + r")\s*:\s*",
+    r"(?:^|\n)("
+    + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES)
+    + r")\s*:\s*",
     re.IGNORECASE,
 )
 # checkpoint_agent sometimes emits one line: field: '...', user_query: '...', ...
 _INLINE_FIELD_MARKER_RE = re.compile(
-    r"(?:^|,\s*)(" + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES) + r")\s*:\s*",
+    r"(?:^|,\s*)("
+    + "|".join(re.escape(k) for k in _LEGACY_ANALYSIS_FIELD_NAMES)
+    + r")\s*:\s*",
     re.IGNORECASE,
 )
 
@@ -66,9 +71,7 @@ def _coerce_legacy_analysis_field(key: str, value_str: str) -> Any:
         try:
             return ast.literal_eval(raw)
         except (SyntaxError, ValueError):
-            logger.debug(
-                "checkpoint analysis parse: literal_eval failed for %s", key
-            )
+            logger.debug("checkpoint analysis parse: literal_eval failed for %s", key)
             return raw
     if key == "location_radius":
         try:
@@ -309,9 +312,7 @@ def _parse_checkpoint_analysis_input(
                 return CheckpointAnalysisInput.model_validate(data)
             except Exception as exc:
                 ck = data.get("checkpoint_results")
-                if pending is not None and (
-                    not isinstance(ck, str) or not ck.strip()
-                ):
+                if pending is not None and (not isinstance(ck, str) or not ck.strip()):
                     merged = _merge_routing_into_pending(data, pending)
                     if merged is not None:
                         logger.info(

@@ -7,7 +7,7 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 
 def user_docs_agent_instruction() -> str:
     instruction_prompt = """
-        You are a highly specialized sub-agent, operating within the DocuLink Agent, dedicated to answering user questions by leveraging information from their personal uploaded documents **and any provided context document URIs**. Your core function is to provide direct, accurate, and concise answers based solely on the content retrievable through the `ask_user_docs_retreival` tool.
+        You are a highly specialized sub-agent, invoked by the property agent executor, dedicated to answering user questions by leveraging information from their personal uploaded documents **and any provided context document URIs**. Your core function is to provide direct, accurate, and concise answers based solely on the content retrievable through the `ask_user_docs_retreival` tool.
 
         **Your Core Task and Workflow:**
         1.  **Retrieve Information:** You must first and foremost use the `ask_user_docs_retreival` tool with the user's query, along with any `context_doc_uris` and `property_address` that were provided, to fetch relevant document snippets.
@@ -44,4 +44,3 @@ def user_docs_agent_instruction() -> str:
     """
 
     return instruction_prompt
-

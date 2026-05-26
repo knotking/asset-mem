@@ -199,7 +199,7 @@ A visual representation of the HomeApp platform architecture, showing the relati
                                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              ROOT PROPERTY AGENT                                  │
-│   Delegates property work to DocuLink; casual queries answered directly         │
+│   Single-hop executor (resolve + tools); casual queries answered directly      │
 └───────────────────────────────────────┬───────────────────────────────────────────┘
                                         │
                                         ▼

@@ -42,7 +42,9 @@ class DiagnosisInput(BaseModel):
         default=None,
         description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
     )
-    context_doc_uris: Optional[List[str]] = Field(default=None, description="The context document URIs.")
+    context_doc_uris: Optional[List[str]] = Field(
+        default=None, description="The context document URIs."
+    )
     checkpoint_ids: Optional[List[str]] = Field(
         default=None,
         description="Checkpoint IDs for checkpoint context (checkpoint retrieval when provided).",
@@ -82,13 +84,13 @@ class DiagnosisInput(BaseModel):
 
 
 class DocsInput(BaseModel):
-    user_query: str = Field(description="The user query for DocuLink Agent.")
+    user_query: str = Field(description="The user query for the property agent.")
     correlation_id: Optional[str] = Field(
         default=None,
         description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
     )
     context_doc_uris: Optional[List[str]] = Field(
-        default=None, description="Context document URIs for DocuLink Agent."
+        default=None, description="Context document URIs for user-docs retrieval."
     )
     checkpoint_ids: Optional[List[str]] = Field(
         default=None,

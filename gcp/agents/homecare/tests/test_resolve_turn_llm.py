@@ -8,9 +8,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from property_agent.conversational_intent import LAST_OFFERED_OPTIONS_KEY
 from property_agent.resolve_turn import (
     CASUAL_INTENTS,
+    RESOLVE_APPLIED_INVOCATION_KEY,
     ResolvedTurn,
     prepare_before_model_turn,
     requests_optional_analysis_from_resolved,
@@ -20,7 +20,6 @@ from property_agent.resolve_turn_llm import (
     _apply_primary_agent_constraints,
     _sanitize_llm_payload,
     resolve_llm_disabled,
-    resolve_turn_llm,
 )
 
 
@@ -113,6 +112,27 @@ def test_resolve_fallback_when_llm_fails(monkeypatch: pytest.MonkeyPatch) -> Non
     assert resolved.retrieval_only is True
 
 
+def test_prepare_before_model_skips_re_resolve_same_invocation() -> None:
+    ctx = _ctx(query="analyse my checkpoints")
+    llm_out = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="analyse my checkpoints",
+        retrieval_only=False,
+        run_optional_agents=["coverage", "diy"],
+        resolve_source="llm",
+    )
+    llm_request = SimpleNamespace(config=None)
+    with patch(
+        "property_agent.resolve_turn.resolve_turn", return_value=llm_out
+    ) as mock_resolve:
+        assert prepare_before_model_turn(ctx, llm_request=llm_request) is None
+        assert mock_resolve.call_count == 1
+        assert ctx.state.get(RESOLVE_APPLIED_INVOCATION_KEY) == "inv-1"
+        assert prepare_before_model_turn(ctx, llm_request=llm_request) is None
+        assert mock_resolve.call_count == 1
+
+
 def test_prepare_before_model_casual_returns_response() -> None:
     ctx = _ctx(query="hello")
     llm_out = ResolvedTurn(
@@ -123,7 +143,9 @@ def test_prepare_before_model_casual_returns_response() -> None:
         resolve_source="llm",
     )
     with patch("property_agent.resolve_turn.resolve_turn", return_value=llm_out):
-        response = prepare_before_model_turn(ctx, llm_request=SimpleNamespace(config=None))
+        response = prepare_before_model_turn(
+            ctx, llm_request=SimpleNamespace(config=None)
+        )
     assert response is not None
     assert ctx.state.get("conversational_turn") is True
 

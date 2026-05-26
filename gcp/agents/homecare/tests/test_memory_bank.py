@@ -11,7 +11,7 @@ from google.genai import types
 
 from property_agent.memory_bank import (
     build_ingest_custom_metadata,
-    invocation_used_doculink,
+    invocation_used_orchestrator,
     memory_stream_id,
     resolve_property_id,
     select_events_for_memory_ingest,
@@ -46,7 +46,9 @@ def test_select_events_for_memory_ingest_filters_tools():
                 role="model",
                 parts=[
                     types.Part(
-                        function_call=types.FunctionCall(name="checkpoint_agent", args={})
+                        function_call=types.FunctionCall(
+                            name="checkpoint_agent", args={}
+                        )
                     )
                 ],
             ),
@@ -84,7 +86,7 @@ def test_build_ingest_custom_metadata_force_flush(monkeypatch):
     assert meta["force_flush"] is True
 
 
-def test_invocation_used_doculink():
+def test_invocation_used_orchestrator():
     events = [
         Event(
             invocation_id="inv-1",
@@ -92,8 +94,8 @@ def test_invocation_used_doculink():
             actions=EventActions(transfer_to_agent="doculink_agent"),
         )
     ]
-    assert invocation_used_doculink(events, "inv-1") is True
-    assert invocation_used_doculink(events, "inv-2") is False
+    assert invocation_used_orchestrator(events, "inv-1") is True
+    assert invocation_used_orchestrator(events, "inv-2") is False
 
 
 @pytest.mark.asyncio

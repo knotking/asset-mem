@@ -11,7 +11,9 @@ from property_agent.sub_agents.shopping_agent.agent import (
 )
 
 
-def test_product_recommendations_passes_serpapi_location(monkeypatch: pytest.MonkeyPatch):
+def test_product_recommendations_passes_serpapi_location(
+    monkeypatch: pytest.MonkeyPatch,
+):
     captured: list[dict] = []
 
     class FakeSearch:

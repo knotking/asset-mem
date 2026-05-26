@@ -70,15 +70,17 @@ def _redact_value(key: str, value: Any) -> Any:
             return f"<{len(value)} uris>"
         return "<uris>"
     if key == "search_location" and isinstance(value, dict):
-        coords = value.get("coordinates") if isinstance(value.get("coordinates"), dict) else {}
+        coords = (
+            value.get("coordinates")
+            if isinstance(value.get("coordinates"), dict)
+            else {}
+        )
         return {
             "source": value.get("source"),
             "radius_miles": value.get("radius_miles"),
             "has_label": bool((value.get("label") or "").strip()),
             "coordinates": (
-                {"lat": coords.get("lat"), "lng": coords.get("lng")}
-                if coords
-                else None
+                {"lat": coords.get("lat"), "lng": coords.get("lng")} if coords else None
             ),
         }
     if isinstance(value, str):

@@ -9,9 +9,12 @@ from typing import Any, Optional
 
 from google.adk.tools import ToolContext
 
+from .input_schema import CheckpointAnalysisInput
+
 logger = logging.getLogger(__name__)
 
 CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY = "checkpoint_retrieval_search_query"
+
 
 def _text_from_user_content(content: Any) -> str:
     if content is None:
@@ -77,7 +80,9 @@ def _strip_checkpoint_title_noise(text: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
-def optional_branch_search_user_query(checkpoint_results: str, *, max_chars: int = 280) -> str:
+def optional_branch_search_user_query(
+    checkpoint_results: str, *, max_chars: int = 280
+) -> str:
     """
     Short plain-text query for optional parallel agents (DIY / shopping / YouTube paths).
 
@@ -116,8 +121,9 @@ def resolve_branch_search_user_query(
     return out
 
 
-
-def _stash_retrieval_search_query(tool_ctx: Context, inp: CheckpointAnalysisInput) -> None:
+def _stash_retrieval_search_query(
+    tool_ctx: ToolContext, inp: CheckpointAnalysisInput
+) -> None:
     sq = (inp.search_query or "").strip()
     if not sq:
         text = _text_from_user_content(tool_ctx.user_content)

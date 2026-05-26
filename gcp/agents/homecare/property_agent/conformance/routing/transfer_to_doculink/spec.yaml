@@ -1,8 +1,0 @@
-description: >
-  Substantive checkpoint query should invoke checkpoint_agent on property_agent
-  (no doculink transfer). For casual hello use hello_plain_welcome/ instead.
-agent: property_agent
-initial_state: {}
-user_messages:
-  - text: |
-      {"user_query": "hello", "primary_agent": "checkpoint", "property_address": "1982 Helena Way, Brentwood, CA 94513", "search_location": {"source": "device_gps", "coordinates": {"lat": 37.9, "lng": -121.7}, "radius_miles": 5}}

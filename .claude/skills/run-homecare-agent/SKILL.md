@@ -9,7 +9,7 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 
 ## Architecture in one paragraph
 
-`property_agent/agent.py` defines a root orchestrator that delegates to **DocuLink** (`doculink_agent`). DocuLink selects among tools/sub-agents under `property_agent/sub_agents/`:
+`property_agent/agent.py` defines the root **single-hop executor** (`property_agent`). Each substantive turn: `resolve_turn_llm` → inject `[RESOLVED_TURN]` → executor LLM calls tools/sub-agents under `property_agent/sub_agents/` directly:
 
 - `checkpoint_agent` — Firestore vector retrieval; optional `checkpoint_progress_agent` for parallel coverage / DIY / service / cost analysis
 - `user_docs_agent` — RAG over user uploads (`context_doc_uris`)
@@ -49,8 +49,8 @@ Golden eval sets are recorded from **`adk web`** and committed under `property_a
 
 ```bash
 make test-eval              # all evals (live Vertex, ~3 min)
-make test-eval-routing      # doculink_routing.evalset.json
-make test-eval-docs
+make test-eval-executor-routing  # executor_routing.evalset.json
+make test-eval-user-docs         # user_docs_routing.evalset.json
 make test-eval-checkpoint
 make test-eval-cost
 make test-eval-shopping

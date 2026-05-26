@@ -8,7 +8,7 @@
     {
       "name": "plain_conversational_greeting",
       "description": "Casual greetings in checkpoint mode should get a property-scoped welcome without tool calls.",
-      "criteria": "Pass if the reply is short plain text welcoming the user and offering help, without checkpoint retrieval or dual-format JSON. Fail if the agent transfers to doculink and runs checkpoint_agent for hello/thanks-only messages."
+      "criteria": "Pass if the reply is short plain text welcoming the user and offering help, without checkpoint retrieval or dual-format JSON. Fail if the agent invokes checkpoint_agent or runs optional analysis for hello/thanks-only messages."
     }
   ]
 }

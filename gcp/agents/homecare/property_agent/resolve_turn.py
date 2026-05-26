@@ -13,7 +13,6 @@ from google.genai import types
 from .conversational_intent import (
     CONVERSATIONAL_TURN_STATE_KEY,
     build_conversational_reply,
-    hydrate_turn_state_from_context,
     last_turn_delivered_checkpoint_analysis,
     resolve_property_address_from_state,
     resolve_user_query_from_state,
@@ -22,6 +21,7 @@ from .conversational_intent import (
 logger = logging.getLogger(__name__)
 
 RESOLVED_TURN_STATE_KEY = "resolved_turn"
+RESOLVE_APPLIED_INVOCATION_KEY = "_resolve_turn_invocation_id"
 USER_DOCS_PASSTHROUGH_STATE_KEY = "_executor_user_docs_passthrough"
 
 RouteKind = Literal["none", "checkpoint", "user_docs", "knowledge_base"]
@@ -177,11 +177,7 @@ def format_resolved_turn_block(resolved: ResolvedTurn) -> str:
         "primary_agent, checkpoint_ids, context_doc_uris, and UI optional toggles "
         "are context only — follow this block, not UI fields."
     )
-    return (
-        "[RESOLVED_TURN]\n"
-        f"{json.dumps(payload, indent=2)}\n"
-        "[/RESOLVED_TURN]"
-    )
+    return "[RESOLVED_TURN]\n" f"{json.dumps(payload, indent=2)}\n" "[/RESOLVED_TURN]"
 
 
 def _ensure_generate_content_config(llm_request: Any) -> Any:
@@ -222,10 +218,8 @@ def inject_resolved_turn_into_llm_request(
             existing,
         ).strip()
     combined = f"{existing}\n\n{block}" if existing else block
-    config.system_instruction = types.Content(
-        role="system",
-        parts=[types.Part(text=combined)],
-    )
+    # ADK eval AgentDetails expects instructions as str (not genai Content).
+    config.system_instruction = combined
 
 
 def _take_user_docs_passthrough(state: Any) -> Optional[str]:
@@ -270,8 +264,22 @@ def prepare_before_model_turn(
         )
         return _plain_llm_response(passthrough)
 
+    if inv_id and state is not None and state.get(RESOLVE_APPLIED_INVOCATION_KEY) == inv_id:
+        existing = resolved_turn_from_state(state)
+        if existing is not None and not existing.is_casual:
+            if llm_request is not None:
+                inject_resolved_turn_into_llm_request(llm_request, existing)
+            logger.debug(
+                "resolve_turn skip re-resolve invocation_id=%s route=%s",
+                inv_id,
+                existing.route,
+            )
+            return None
+
     resolved = resolve_turn(ctx, llm_request=llm_request)
     apply_resolved_turn_to_state(state, resolved)
+    if inv_id and state is not None:
+        state[RESOLVE_APPLIED_INVOCATION_KEY] = inv_id
 
     if resolved.is_casual:
         prior_analysis = (

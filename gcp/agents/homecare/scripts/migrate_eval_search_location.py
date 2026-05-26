@@ -10,7 +10,9 @@ from pathlib import Path
 def _migrate_args(args: dict) -> bool:
     if not isinstance(args, dict):
         return False
-    if not any(k in args for k in ("location_coordinates", "location_type", "location_radius")):
+    if not any(
+        k in args for k in ("location_coordinates", "location_type", "location_radius")
+    ):
         return False
 
     coords = args.pop("location_coordinates", None) or {}
@@ -38,7 +40,9 @@ def _migrate_args(args: dict) -> bool:
 def _walk(node) -> int:
     changed = 0
     if isinstance(node, dict):
-        if node.get("name") == "checkpoint_agent" and isinstance(node.get("args"), dict):
+        if node.get("name") == "checkpoint_agent" and isinstance(
+            node.get("args"), dict
+        ):
             if _migrate_args(node["args"]):
                 changed += 1
         for v in node.values():

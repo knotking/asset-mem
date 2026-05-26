@@ -2,7 +2,6 @@
 
 import pytest
 
-from property_agent.agent_inputs import SearchLocation, SearchLocationCoordinates
 from property_agent.sub_agents.service_agent import agent as service_mod
 
 

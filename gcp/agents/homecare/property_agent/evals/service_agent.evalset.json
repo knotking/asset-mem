@@ -31,44 +31,6 @@
                   "parts": [
                     {
                       "function_call": {
-                        "id": "adk-deadb55a-bdd1-4a27-b578-52640815ba5a",
-                        "args": {
-                          "agent_name": "doculink_agent"
-                        },
-                        "name": "transfer_to_agent"
-                      },
-                      "thought_signature": "AY89a1_2aS2lYQztnfzbalyrDnMHOG6MOH2Nc0g8oW6CFluf-DvKu9Z-wRiU-kBOmv0="
-                    },
-                    {
-                      "text": ""
-                    }
-                  ],
-                  "role": "model"
-                }
-              },
-              {
-                "author": "property_agent",
-                "content": {
-                  "parts": [
-                    {
-                      "function_response": {
-                        "id": "adk-deadb55a-bdd1-4a27-b578-52640815ba5a",
-                        "name": "transfer_to_agent",
-                        "response": {
-                          "result": null
-                        }
-                      }
-                    }
-                  ],
-                  "role": "user"
-                }
-              },
-              {
-                "author": "doculink_agent",
-                "content": {
-                  "parts": [
-                    {
-                      "function_call": {
                         "id": "adk-0ebb0271-940d-4239-9309-7cb59e4972ac",
                         "args": {
                           "user_query": "find service providers",
@@ -107,7 +69,7 @@
                 }
               },
               {
-                "author": "doculink_agent",
+                "author": "property_agent",
                 "content": {
                   "parts": [
                     {
@@ -124,7 +86,7 @@
                 }
               },
               {
-                "author": "doculink_agent",
+                "author": "property_agent",
                 "content": {
                   "parts": [
                     {
@@ -142,23 +104,6 @@
                     }
                   ],
                   "role": "model"
-                }
-              },
-              {
-                "author": "doculink_agent",
-                "content": {
-                  "parts": [
-                    {
-                      "function_response": {
-                        "id": "adk-d4e30d40-a934-4196-abe2-6310850107ae",
-                        "name": "transfer_to_agent",
-                        "response": {
-                          "result": null
-                        }
-                      }
-                    }
-                  ],
-                  "role": "user"
                 }
               },
               {

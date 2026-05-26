@@ -41,7 +41,9 @@ def search_location_from_payload(payload: Dict[str, Any]) -> Optional[SearchLoca
     return parse_search_location(payload.get("search_location"))
 
 
-def legacy_search_location_from_payload(payload: Dict[str, Any]) -> Optional[SearchLocation]:
+def legacy_search_location_from_payload(
+    payload: Dict[str, Any],
+) -> Optional[SearchLocation]:
     """Build SearchLocation from deprecated location_* fields when search_location absent."""
     if payload.get("search_location"):
         return parse_search_location(payload["search_location"])
@@ -50,7 +52,11 @@ def legacy_search_location_from_payload(payload: Dict[str, Any]) -> Optional[Sea
         return None
     from .agent_inputs import SearchLocationCoordinates
 
-    source = "device_gps" if payload.get("location_type") == "location" else "property_address"
+    source = (
+        "device_gps"
+        if payload.get("location_type") == "location"
+        else "property_address"
+    )
     label = (payload.get("property_address") or "").strip() or None
     if source == "device_gps":
         label = None
@@ -58,6 +64,8 @@ def legacy_search_location_from_payload(payload: Dict[str, Any]) -> Optional[Sea
     return SearchLocation(
         source=source,
         radius_miles=int(radius),
-        coordinates=SearchLocationCoordinates(lat=float(coords["lat"]), lng=float(coords["lng"])),
+        coordinates=SearchLocationCoordinates(
+            lat=float(coords["lat"]), lng=float(coords["lng"])
+        ),
         label=label,
     )

@@ -23,7 +23,7 @@ from google.genai import types
 from ...agent_inputs import SearchLocation
 from ...logging_context import auth_uid_scope, get_auth_uid
 from ...model_config import LEGACY_API_GEMINI
-from ...search_location_utils import market_label, parse_search_location
+from ...search_location_utils import market_label
 from ..cost_agent.agent import cost_estimation_diy_from_library
 from ..shopping_agent.agent import product_recommendations
 
@@ -32,7 +32,9 @@ from .youtube import youtube_search
 logger = logging.getLogger(__name__)
 
 
-def _run_pool_phase(fn: Callable[..., Any], args: tuple[Any, ...], uid: Optional[str]) -> Any:
+def _run_pool_phase(
+    fn: Callable[..., Any], args: tuple[Any, ...], uid: Optional[str]
+) -> Any:
     """Run ``fn(*args)`` in a thread pool with the caller's Firebase UID on log records."""
     with auth_uid_scope(uid):
         return fn(*args)
@@ -305,11 +307,15 @@ def _parse_checkpoint_fields(diagnosis: str) -> tuple[str, str, str, str]:
         count=1,
     ).lstrip()
     t = re.sub(r"(?is)\bcheckpoint\s+context\s*:?\s*", "", t, count=1).strip()
-    t = re.sub(r"(?is)checkpoint\s+name\s*:\s*[^\n,]+(?:,|\n)?\s*", "", t, count=1).strip()
+    t = re.sub(
+        r"(?is)checkpoint\s+name\s*:\s*[^\n,]+(?:,|\n)?\s*", "", t, count=1
+    ).strip()
 
     one_line = re.sub(r"\s+", " ", t)
 
-    loc = _extract_labeled_line(t, "Location/Asset") or _extract_labeled_line(t, "Location")
+    loc = _extract_labeled_line(t, "Location/Asset") or _extract_labeled_line(
+        t, "Location"
+    )
     sum_ = _extract_labeled_line(t, "Summary")
     iss = _extract_labeled_line(t, "Issues")
 
@@ -342,12 +348,12 @@ def parse_checkpoint_structured_context(diagnosis: str) -> Dict[str, Any]:
     t = re.sub(r"\r\n?", "\n", raw)
     loc, sum_, iss, one_line = _parse_checkpoint_fields(diagnosis)
 
-    detected_raw = _extract_labeled_line(t, "Detected items") or _extract_inline_labeled_value(
-        one_line, r"Detected\s+items"
-    )
-    conditions_raw = _extract_labeled_line(t, "Conditions") or _extract_inline_labeled_value(
-        one_line, "Conditions"
-    )
+    detected_raw = _extract_labeled_line(
+        t, "Detected items"
+    ) or _extract_inline_labeled_value(one_line, r"Detected\s+items")
+    conditions_raw = _extract_labeled_line(
+        t, "Conditions"
+    ) or _extract_inline_labeled_value(one_line, "Conditions")
 
     out: Dict[str, Any] = {}
     if loc:
@@ -433,9 +439,7 @@ def _diy_web_search_grounded(diagnosis: str, market_location: str) -> str:
     checkpoint_ctx = parse_checkpoint_structured_context(diagnosis)
     ctx_block = ""
     if checkpoint_ctx:
-        ctx_block = (
-            f"Structured checkpoint:\n{json.dumps(checkpoint_ctx, ensure_ascii=False)}\n\n"
-        )
+        ctx_block = f"Structured checkpoint:\n{json.dumps(checkpoint_ctx, ensure_ascii=False)}\n\n"
     prompt = (
         f"{ctx_block}"
         f"Issue / search focus:\n{diagnosis[:4000]}\n\n"
@@ -733,7 +737,9 @@ def _generate_diy_steps_llm(
                 raise ValueError("missing diySteps")
             model_hire = parsed.get("hire_professional_recommended")
             inferred = _infer_hire_professional(diagnosis)
-            hire = (model_hire or inferred) if isinstance(model_hire, bool) else inferred
+            hire = (
+                (model_hire or inferred) if isinstance(model_hire, bool) else inferred
+            )
             return hire, diy_steps
         except Exception as exc:
             last_exc = exc
@@ -749,7 +755,9 @@ def _generate_diy_steps_llm(
         type(last_exc).__name__ if last_exc else "Unknown",
         last_exc,
     )
-    return _infer_hire_professional(diagnosis), _fallback_diy_steps(diagnosis, web_summary)
+    return _infer_hire_professional(diagnosis), _fallback_diy_steps(
+        diagnosis, web_summary
+    )
 
 
 def _fallback_diy_steps(diagnosis: str, web_summary: str) -> Dict[str, Any]:
@@ -930,9 +938,7 @@ def run_diy_pipeline_sync(
                 property_address,
             )
         else:
-            submit_phase(
-                "youtube", _youtube_for_diagnosis, diagnosis, search_location
-            )
+            submit_phase("youtube", _youtube_for_diagnosis, diagnosis, search_location)
             submit_phase(
                 "products",
                 _products_for_diagnosis,

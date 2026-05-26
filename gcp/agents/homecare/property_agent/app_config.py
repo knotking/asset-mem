@@ -37,7 +37,9 @@ def _compaction_disabled() -> bool:
 def build_events_compaction_config() -> Optional[EventsCompactionConfig]:
     """Build compaction config from env, or None when disabled."""
     if _compaction_disabled():
-        logger.info("ADK session event compaction disabled via ADK_EVENTS_COMPACTION_DISABLED")
+        logger.info(
+            "ADK session event compaction disabled via ADK_EVENTS_COMPACTION_DISABLED"
+        )
         return None
 
     config = EventsCompactionConfig(

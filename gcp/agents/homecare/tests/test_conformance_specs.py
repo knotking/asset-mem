@@ -22,9 +22,7 @@ def test_conformance_specs_load() -> None:
 
 def test_conformance_recordings_documented_when_missing() -> None:
     """Replay needs generated-recordings.yaml — recorded via make conformance-record."""
-    spec_path = (
-        CONFORMANCE_ROOT / "routing" / "transfer_to_doculink" / "spec.yaml"
-    )
+    spec_path = CONFORMANCE_ROOT / "routing" / "hello_plain_welcome" / "spec.yaml"
     case_dir = spec_path.parent
     recordings = case_dir / "generated-recordings.yaml"
     if recordings.is_file():

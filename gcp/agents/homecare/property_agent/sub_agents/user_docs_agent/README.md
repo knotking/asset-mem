@@ -1,6 +1,6 @@
 # User Docs Agent
 
-This sub-agent answers questions using the user’s uploaded documents together with any provided `context_doc_uris`. It is selected by the DocuLink Agent when `context_doc_uris` are present.
+This sub-agent answers questions using the user’s uploaded documents together with any provided `context_doc_uris`. The root `property_agent` executor invokes it via `ask_user_docs_agent` when resolve sets `route=user_docs` or `primary_agent=docs`.
 
 ## What it does
 - Finds user-specific file IDs from GCS import results for the current user

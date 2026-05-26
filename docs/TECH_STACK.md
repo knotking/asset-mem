@@ -67,7 +67,7 @@ The backend is built using Python and deployed on Google Cloud Platform, providi
 The backend implements a multi-agent system using Google Cloud's Agent Development Kit (ADK):
 
 - **Root Property Agent**: Orchestrates routing and delegates to specialized sub-agents
-- **DocuLink Agent**: Handles document retrieval and Q&A
+- **property_agent executor**: Document/checkpoint retrieval and Q&A (single hop)
   - User Docs Agent: Retrieves from user-uploaded documents
   - Knowledge Base Agent: Retrieves from general RAG corpus
 - **Analysis Agent**: Performs multimodal diagnostics and triage workflows

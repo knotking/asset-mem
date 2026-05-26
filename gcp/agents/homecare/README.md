@@ -35,9 +35,9 @@ For detailed usage, see sections below.
 
 ### Main Orchestrator Agent (`root_agent`)
 
-The main orchestrator delegates property queries to **DocuLink** (`doculink_agent`), which routes among checkpoint retrieval, user-document RAG, and knowledge-base lookup. Optional checkpoint analysis (coverage, DIY, service, cost) runs when `checkpoint_optional_agents` is set.
+The **property agent** (`property_agent`) is the root executor: it resolves each turn (`resolve_turn_llm`), then invokes checkpoint retrieval, user-document RAG, or knowledge-base lookup via **AgentTool** calls in a single hop (no `doculink_agent` transfer). Optional checkpoint analysis (coverage, DIY, service, cost) runs when `checkpoint_optional_agents` is set.
 
-### Sub-Agents (under DocuLink / checkpoint analysis)
+### Sub-Agents (tools and checkpoint analysis)
 
 - **Checkpoint Agent**: Firestore vector retrieval for property checkpoints
 - **Checkpoint analysis** (optional): coverage, DIY, service, cost branches + synthesis
@@ -96,7 +96,7 @@ The system accepts various input types:
 - **Property Address / search_location**: Location for local service and cost context
 
 ### Processing Flow
-1. **Root routing**: `primary_agent`, `checkpoint_ids`, or general property query → DocuLink
+1. **Root routing**: `resolve_turn` + `[RESOLVED_TURN]` → executor tools (`checkpoint_agent`, `ask_user_docs_agent`, `ask_knowledge_base_agent`)
 2. **Retrieval**: Checkpoint vector search, user docs, or knowledge base
 3. **Optional analysis**: Parallel coverage / DIY / service / cost when requested
 4. **Response**: Dual-format markdown + JSON for checkpoint flows; verbatim retrieval otherwise
@@ -388,8 +388,8 @@ From the `gcp/agents/homecare` directory:
 
 ```bash
 make test-eval              # all eval tests (live Vertex, ~3 min)
-make test-eval-routing      # doculink_routing.evalset.json
-make test-eval-docs         # doculink_docs.evalset.json
+make test-eval-executor-routing  # executor_routing.evalset.json
+make test-eval-user-docs         # user_docs_routing.evalset.json
 make test-eval-checkpoint   # checkpoint_optional_agents.evalset.json
 make test-eval-cost         # cost_agent.evalset.json
 make test-eval-shopping     # shopping_agent.evalset.json
@@ -401,7 +401,7 @@ make test-eval-service      # service_agent.evalset.json
 ```bash
 uv run pytest eval/ -v
 
-uv run adk eval property_agent property_agent/evals/doculink_routing.evalset.json \
+uv run adk eval property_agent property_agent/evals/executor_routing.evalset.json \
   --config_file_path=property_agent/evals/test_config.json \
   --print_detailed_results
 ```

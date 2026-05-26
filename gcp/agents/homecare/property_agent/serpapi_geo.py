@@ -34,7 +34,9 @@ def _geo_cache_ttl_seconds() -> float:
 class _TtlCache:
     """In-process TTL cache (disabled when ttl_seconds is 0)."""
 
-    def __init__(self, ttl_seconds: float, *, max_size: int = _GEO_CACHE_MAX_ENTRIES) -> None:
+    def __init__(
+        self, ttl_seconds: float, *, max_size: int = _GEO_CACHE_MAX_ENTRIES
+    ) -> None:
         self._ttl = ttl_seconds
         self._max_size = max_size
         self._entries: Dict[Any, Tuple[Any, float]] = {}
@@ -70,6 +72,7 @@ def clear_geo_caches() -> None:
     """Clear SerpAPI / reverse-geocode caches (tests)."""
     _reverse_geocode_cache.clear()
     _serpapi_locations_cache.clear()
+
 
 # Abbrev → full name for SerpAPI ``locations.json?q=City,State`` queries.
 _US_STATE_FULL: Dict[str, str] = {
@@ -334,7 +337,12 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def _looks_like_serpapi_canonical(text: str) -> bool:
     """True when ``text`` already matches SerpAPI ``canonical_name`` shape."""
     t = (text or "").strip()
-    return bool(t) and t.endswith("United States") and t.count(",") >= 2 and not is_street_address(t)
+    return (
+        bool(t)
+        and t.endswith("United States")
+        and t.count(",") >= 2
+        and not is_street_address(t)
+    )
 
 
 def lookup_serpapi_canonical_location(
@@ -381,7 +389,9 @@ def lookup_serpapi_canonical_location(
             timeout=_LOCATIONS_API_TIMEOUT_S,
         )
         if not resp.ok:
-            logger.debug("serpapi locations.json HTTP %s for q=%r", resp.status_code, query)
+            logger.debug(
+                "serpapi locations.json HTTP %s for q=%r", resp.status_code, query
+            )
             return None
         candidates = resp.json()
         if not isinstance(candidates, list) or not candidates:
@@ -446,7 +456,9 @@ def _reverse_geocode_sync(lat: float, lng: float) -> Optional[str]:
     if cached is not None:
         return cached
 
-    api_key = (os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GEOCODING_API_KEY") or "").strip()
+    api_key = (
+        os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GEOCODING_API_KEY") or ""
+    ).strip()
     if not api_key:
         return None
     resolved: Optional[str] = None
@@ -609,7 +621,12 @@ def merge_search_location_sources(
         coordinates=SearchLocationCoordinates(lat=lat, lng=lng),
         label=label,
     )
-    return enrich_search_location_label(sl, merged.get("property_address") if isinstance(merged.get("property_address"), str) else None)
+    return enrich_search_location_label(
+        sl,
+        merged.get("property_address")
+        if isinstance(merged.get("property_address"), str)
+        else None,
+    )
 
 
 def parse_search_location_arg(raw: Any) -> Optional[SearchLocation]:
@@ -765,7 +782,9 @@ def format_google_maps_results(
     else:
         items = items[:max_results]
 
-    places = [_format_maps_item_line(item) for item in items if _format_maps_item_line(item)]
+    places = [
+        _format_maps_item_line(item) for item in items if _format_maps_item_line(item)
+    ]
     if places:
         return str(places)
     error = data.get("error")

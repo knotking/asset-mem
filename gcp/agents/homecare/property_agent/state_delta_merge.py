@@ -46,16 +46,10 @@ def merge_state_delta(
 
     merged = deepcopy(existing)
     for key, value in incoming.items():
-        if (
-            key in merged
-            and isinstance(merged[key], list)
-            and isinstance(value, list)
-        ):
+        if key in merged and isinstance(merged[key], list) and isinstance(value, list):
             merged[key] = _merge_list_values(key, merged[key], value)
         elif (
-            key in merged
-            and isinstance(merged[key], dict)
-            and isinstance(value, dict)
+            key in merged and isinstance(merged[key], dict) and isinstance(value, dict)
         ):
             merged[key] = deep_merge_dicts(deepcopy(merged[key]), deepcopy(value))
         else:

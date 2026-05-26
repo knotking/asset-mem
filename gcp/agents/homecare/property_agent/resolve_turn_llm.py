@@ -204,9 +204,7 @@ def _json_from_response(response: Any) -> Optional[dict[str, Any]]:
         if not parts:
             continue
         blob = "\n".join(
-            getattr(p, "text", "") or ""
-            for p in parts
-            if getattr(p, "text", None)
+            getattr(p, "text", "") or "" for p in parts if getattr(p, "text", None)
         ).strip()
         if not blob:
             continue
@@ -313,12 +311,16 @@ def _apply_primary_agent_constraints(
                 "retrieval_only": True,
                 "run_optional_agents": [],
                 "menu_index": None,
-                "capability_key": "documents" if has_docs else payload.get("capability_key"),
+                "capability_key": "documents"
+                if has_docs
+                else payload.get("capability_key"),
             }
         return payload
 
     if primary == "checkpoint":
-        if payload.get("route") == "user_docs" and _query_looks_checkpoint_focused(expanded):
+        if payload.get("route") == "user_docs" and _query_looks_checkpoint_focused(
+            expanded
+        ):
             payload = {**payload, "route": "checkpoint"}
         return payload
 

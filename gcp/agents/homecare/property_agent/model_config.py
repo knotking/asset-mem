@@ -14,7 +14,6 @@ from google.genai import Client, types
 
 
 class Gemini3(Gemini):
-
     @cached_property
     def api_client(self) -> Client:
         """Provides the api client with explicit configuration.
@@ -24,7 +23,7 @@ class Gemini3(Gemini):
         """
         # Ensure project ID is retrieved, falling back to a placeholder or raising an error if needed.
         project = os.getenv("GOOGLE_CLOUD_PROJECT")
-        
+
         # Explicitly setting location to 'global' to avoid regional endpoint resolution issues
         location = "global"
 
@@ -36,6 +35,7 @@ class Gemini3(Gemini):
                 retry_options=self.retry_options,
             ),
         )
+
 
 # ADK agents (root, doculink, checkpoint branches, synthesis): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")

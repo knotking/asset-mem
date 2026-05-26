@@ -63,8 +63,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 load_dotenv()
 GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
-GOOGLE_CLOUD_LOCATION = 'global' # Google Cloud Location is always global for Agent Engine
-DEPLOY_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION") # Deploy Location is the location where the Agent Engine is deployed
+GOOGLE_CLOUD_LOCATION = (
+    "global"  # Google Cloud Location is always global for Agent Engine
+)
+DEPLOY_LOCATION = os.getenv(
+    "GOOGLE_CLOUD_LOCATION"
+)  # Deploy Location is the location where the Agent Engine is deployed
 STAGING_BUCKET = os.getenv("STAGING_BUCKET")
 AGENT_ENGINE_ID = os.getenv("AGENT_ENGINE_ID")
 # Define the path to the .env file relative to this script
@@ -75,6 +79,7 @@ vertexai.init(
     staging_bucket=STAGING_BUCKET,
 )
 
+
 # Function to update the .env file
 def update_env_file(agent_engine_id, env_file_path):
     """Updates the .env file with the agent engine ID."""
@@ -84,11 +89,13 @@ def update_env_file(agent_engine_id, env_file_path):
     except Exception as e:
         print(f"Error updating .env file: {e}")
 
+
 logger.info("deploying app...")
 app = HomecareAdkApp(
     agent=root_agent,
     enable_tracing=True,
 )
+
 
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "update"
@@ -137,23 +144,27 @@ def main():
             requirements=common_requirements,
             extra_packages=extra_packages,
             display_name=display_name,
-            env_vars=common_env_vars
+            env_vars=common_env_vars,
         )
-        logging.info(f"Deployed agent to Vertex AI Agent Engine successfully, resource name: {remote_app.resource_name}")
+        logging.info(
+            f"Deployed agent to Vertex AI Agent Engine successfully, resource name: {remote_app.resource_name}"
+        )
         update_env_file(remote_app.resource_name, ENV_FILE_PATH)
     elif action == "update":
- 
         updated_app = agent_engines.update(
             resource_name=AGENT_ENGINE_ID,
             agent_engine=app,
             env_vars=common_env_vars,
             requirements=common_requirements,
-            extra_packages=extra_packages
+            extra_packages=extra_packages,
         )
-        logging.info(f"Updated agent on Vertex AI Agent Engine successfully, resource name: {updated_app.resource_name}")
+        logging.info(
+            f"Updated agent on Vertex AI Agent Engine successfully, resource name: {updated_app.resource_name}"
+        )
         update_env_file(updated_app.resource_name, ENV_FILE_PATH)
     else:
         logger.error("Invalid action. Use 'create' or 'update'.")
+
 
 if __name__ == "__main__":
     main()

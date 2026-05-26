@@ -78,11 +78,24 @@ def config_default() -> EvalConfig:
 
 
 def config_routing() -> EvalConfig:
-    """Root → doculink transfer plus expected tool trajectory."""
+    """Single-hop executor tool use plus expected tool trajectory."""
     return EvalConfig.model_validate(
         {
             "criteria": {
                 "tool_trajectory_avg_score": _TOOL_TRAJECTORY_IN_ORDER,
+                "rubric_based_tool_use_quality_v1": _rubric_tool_use_criterion(
+                    ["routing_tool_use"]
+                ),
+            }
+        }
+    )
+
+
+def config_routing_rubric_only() -> EvalConfig:
+    """Routing eval without strict tool-arg matching (session fields vary by turn)."""
+    return EvalConfig.model_validate(
+        {
+            "criteria": {
                 "rubric_based_tool_use_quality_v1": _rubric_tool_use_criterion(
                     ["routing_tool_use"]
                 ),

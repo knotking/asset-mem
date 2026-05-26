@@ -27,13 +27,16 @@ from ..checkpoint_dual_format_guard import (
     build_progressive_checkpoint_dual_format,
     stash_checkpoint_dual_format_in_state,
 )
-from ..checkpoint_request_timing import mark_synthesis_started, record_diy_ms, record_parallel_ms
+from ..checkpoint_request_timing import (
+    mark_synthesis_started,
+    record_diy_ms,
+    record_parallel_ms,
+)
 from ..coverage_agent.agent import coverage_agent
 from ..diy_agent.agent import diy_agent
 from ..diy_agent.orchestrator import run_diy_pipeline
 from ..service_agent.agent import service_agent
-from ..cost_agent.agent import _cost_estimation_sync, cost_agent
-from .input_schema import CheckpointAnalysisInput
+from ..cost_agent.agent import cost_agent
 from .legacy_parse import _parse_checkpoint_analysis_input
 from .search_query import (
     optional_branch_search_user_query,
@@ -55,6 +58,7 @@ def _agent_attr(name: str):
 BranchCompleteCallback = Callable[
     [str, Dict[str, str], str, ToolContext], Awaitable[None]
 ]
+
 
 async def execute_checkpoint_optional_parallel(
     ctx: InvocationContext,
@@ -115,9 +119,7 @@ class CheckpointOptionalParallelAgent(BaseAgent):
                 tool_context.state[CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY] = body
                 bump_checkpoint_progress_emit_seq(tool_context.state)
             delta: Dict[str, Any] = {
-                "checkpoint_parallel_results": json.dumps(
-                    results, ensure_ascii=False
-                ),
+                "checkpoint_parallel_results": json.dumps(results, ensure_ascii=False),
             }
             if branch:
                 delta[CHECKPOINT_BRANCH_COMPLETED_STATE_KEY] = branch
@@ -126,9 +128,7 @@ class CheckpointOptionalParallelAgent(BaseAgent):
                     invocation_id=ctx.invocation_id,
                     author=CHECKPOINT_PROGRESS_EVENT_AUTHOR,
                     branch=ctx.branch,
-                    content=types.Content(
-                        role="model", parts=[types.Part(text=body)]
-                    ),
+                    content=types.Content(role="model", parts=[types.Part(text=body)]),
                     actions=EventActions(state_delta=delta),
                 )
             )
@@ -341,7 +341,11 @@ async def run_checkpoint_optional_agents_parallel(
 ) -> str:
     """Run requested optional agents concurrently on the active event loop."""
     total_start = time.monotonic()
-    if tool_context and hasattr(tool_context, "_invocation_context") and hasattr(tool_context._invocation_context, "session"):
+    if (
+        tool_context
+        and hasattr(tool_context, "_invocation_context")
+        and hasattr(tool_context._invocation_context, "session")
+    ):
         tool_context.state["user_id"] = tool_context._invocation_context.session.user_id
 
     results: Dict[str, str] = {
@@ -377,9 +381,7 @@ async def run_checkpoint_optional_agents_parallel(
         len(search_query),
         len(branch_user_query),
     )
-    if not search_query and len(branch_user_query) + 40 < len(
-        checkpoint_results or ""
-    ):
+    if not search_query and len(branch_user_query) + 40 < len(checkpoint_results or ""):
         logger.debug(
             "checkpoint optional branches: derived from checkpoint_results only query_len=%d checkpoint_results_len=%d",
             len(branch_user_query),
@@ -450,5 +452,3 @@ async def run_checkpoint_optional_agents_parallel(
         len(branch_user_query),
     )
     return _serialize_and_store_parallel_results(tool_context, results)
-
-

@@ -15,6 +15,8 @@ _TIMING_FIELDS = (
     "parallel_ms",
     "diy_ms",
     "synthesis_ms",
+    # Legacy name: this used to time the doculink transfer hop. After the
+    # single-hop refactor it measures the executor "echo/enrichment" phase.
     "doculink_ms",
     "total_ms",
     "return_chars",
@@ -108,7 +110,7 @@ def record_synthesis_ms(state: Any, duration_ms: Optional[int] = None) -> None:
     _write_state(state, data)
 
 
-def begin_doculink_phase(state: Any) -> None:
+def begin_executor_phase(state: Any) -> None:
     data = _state_dict(state)
     if not data:
         begin_checkpoint_request(state)
@@ -118,7 +120,7 @@ def begin_doculink_phase(state: Any) -> None:
     _write_state(state, data)
 
 
-def record_doculink_ms(state: Any, duration_ms: Optional[int] = None) -> None:
+def record_executor_ms(state: Any, duration_ms: Optional[int] = None) -> None:
     data = _state_dict(state)
     if not data:
         return

@@ -84,4 +84,3 @@ def shopping_agent_instructions() -> str:
         * Focus on relevant, high-quality products that match the needs.
     """
     return instruction
-

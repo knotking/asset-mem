@@ -1,0 +1,922 @@
+2026-05-26 10:33:24,860 - DEBUG - service_registry.py:206 - services.py not found in /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare, skipping.
+2026-05-26 10:33:24,860 - INFO - service_factory.py:266 - Using in-memory memory service
+2026-05-26 10:33:24,860 - INFO - local_storage.py:84 - Using per-agent session storage rooted at /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare
+2026-05-26 10:33:24,860 - INFO - local_storage.py:110 - Using file artifact service at /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.adk/artifacts
+/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.venv/lib/python3.11/site-packages/google/adk/cli/fast_api.py:204: UserWarning: [EXPERIMENTAL] InMemoryCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  credential_service = InMemoryCredentialService()
+/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.venv/lib/python3.11/site-packages/google/adk/auth/credential_service/in_memory_credential_service.py:33: UserWarning: [EXPERIMENTAL] BaseCredentialService: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  super().__init__()
+2026-05-26 10:33:24,928 - DEBUG - selector_events.py:54 - Using selector: KqueueSelector
+INFO:     Started server process [86765]
+INFO:     Waiting for application startup.
+
++-----------------------------------------------------------------------------+
+| ADK Web Server started                                                      |
+|                                                                             |
+| For local testing, access at http://127.0.0.1:8000.                         |
++-----------------------------------------------------------------------------+
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63436 - "GET /dev-ui/?app=property_agent&userId=GqC3zTlnb6hRS4vTH6TGeCpDXgH2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63436 - "GET /dev-ui/assets/config/runtime-config.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63436 - "GET /list-apps?relative_path=./ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63438 - "GET /version HTTP/1.1" 200 OK
+2026-05-26 10:33:34,898 - INFO - envs.py:83 - Loaded .env file for property_agent at /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.env
+2026-05-26 10:33:34,899 - DEBUG - agent_loader.py:358 - Loading agent property_agent - not in cache.
+2026-05-26 10:33:34,899 - DEBUG - agent_loader.py:256 - Loading .env for agent property_agent from /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare
+2026-05-26 10:33:34,901 - INFO - envs.py:83 - Loaded .env file for property_agent at /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.env
+2026-05-26 10:33:34,937 - INFO - _api_client.py:658 - The user provided project/location will take precedence over the Vertex AI API key from the environment variable.
+2026-05-26 10:33:35,047 - INFO - firestore_vector_search.py:25 - Google Gen AI SDK initialized for query embeddings (project: None, location: us-central1)
+/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/.venv/lib/python3.11/site-packages/google/cloud/aiplatform/models.py:52: FutureWarning: Support for google-cloud-storage < 3.0.0 will be removed in a future version of google-cloud-aiplatform. Please upgrade to google-cloud-storage >= 3.0.0.
+  from google.cloud.aiplatform.utils import gcs_utils
+/Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/app_config.py:45: UserWarning: [EXPERIMENTAL] EventsCompactionConfig: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.
+  config = EventsCompactionConfig(
+2026-05-26 10:33:36,639 [auth_uid=-] [req=-] property_agent.app_config INFO ADK session compaction enabled token_threshold=80000 event_retention_size=40
+2026-05-26 10:33:36,639 [auth_uid=-] [req=-] google_adk.google.adk.cli.utils.agent_loader DEBUG Module property_agent has no root_agent. Trying next pattern.
+2026-05-26 10:33:36,639 [auth_uid=-] [req=-] google_adk.google.adk.cli.utils.agent_loader DEBUG Found app in property_agent.agent
+INFO:     127.0.0.1:63438 - "GET /dev/build_graph/property_agent HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63436 - "GET /dev/build_graph_image/property_agent?dark_mode=false HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63442 - "GET /dev/build_graph_image/property_agent?dark_mode=true HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63443 - "GET /builder/app/property_agent?ts=1779771814887 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63446 - "GET /apps/property_agent/eval_sets HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63447 - "GET /apps/property_agent/eval_results HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63447 - "GET /apps/property_agent/eval_results/rag_car_diagnostics_1755697063.4584389 HTTP/1.1" 404 Not Found
+2026-05-26 10:33:54,394 [auth_uid=-] [req=-] google_adk.google.adk.cli.utils.local_storage INFO Creating local session service at /Users/prakashbaskaran/projects/HomeApp/gcp/agents/homecare/property_agent/.adk/session.db
+2026-05-26 10:33:54,403 [auth_uid=-] [req=-] google_adk.google.adk.cli.adk_web_server INFO New session created: d6b44d1c-59db-44e7-9871-e7fc7352e082
+INFO:     127.0.0.1:63500 - "POST /apps/property_agent/users/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63500 - "POST /run_sse HTTP/1.1" 200 OK
+2026-05-26 10:33:54,499 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai._api_client INFO The user provided project/location will take precedence over the Vertex AI API key from the environment variable.
+2026-05-26 10:33:54,523 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai.models INFO AFC is enabled with max remote calls: 10.
+2026-05-26 10:33:57,745 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] httpx INFO HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/homegeek-staging/locations/global/publishers/google/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-05-26 10:33:57,749 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.resolve_turn_llm INFO resolve_turn_llm intent=substantive route=checkpoint retrieval_only=True optional=[] elapsed_ms=3226
+2026-05-26 10:33:57,751 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.resolve_turn INFO resolve_turn substantive source=llm route=checkpoint retrieval_only=True optional=[] query='summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513'
+2026-05-26 10:33:57,752 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-3.1-flash-lite, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-05-26 10:33:57,753 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Request:
+-----------------------------------------------------------
+System Instruction:
+You are the Property Care AI executor for AssetMem. Each substantive turn includes a
+[RESOLVED_TURN] JSON block in your instructions — follow it exactly. Do not re-route from
+`checkpoint_ids`, `context_doc_uris`, or UI optional toggles alone (follow `route` from
+[RESOLVED_TURN]; when `route` is `user_docs`, call `ask_user_docs_agent` only — never
+`checkpoint_agent` or `checkpoint_progress_agent`).
+
+**Input fields:** `user_query`, `context_doc_uris`, `checkpoint_ids`, `property_address`,
+`property_id`, `primary_agent`, `checkpoint_optional_agents`, `search_location`.
+
+**Tools:**
+* `checkpoint_agent` — checkpoint retrieval (pass `property_id`, `checkpoint_ids`,
+  `checkpoint_optional_agents` from [RESOLVED_TURN] `run_optional_agents`, empty when
+  `retrieval_only` is true).
+* `ask_user_docs_agent` — user-uploaded documents.
+* `ask_knowledge_base_agent` — general knowledge base.
+
+**Execute [RESOLVED_TURN]:**
+* `route` = `checkpoint` → call `checkpoint_agent` once with resolved `expanded_user_query`.
+  If `run_optional_agents` is non-empty, then `transfer_to_agent(agent_name="checkpoint_progress_agent")`
+  and return that output verbatim.
+* `route` = `user_docs` → `ask_user_docs_agent` (use `context_doc_uris` when provided).
+* `route` = `knowledge_base` → `ask_knowledge_base_agent`.
+* `route` = `none` — you should not reach this path (casual turns are handled before you run).
+
+**Checkpoint dual format (CRITICAL):** When `checkpoint_agent` returns markdown plus a
+```json fenced block, copy the **entire** tool string to the user verbatim — do not summarize
+or drop JSON. Your next visible turn must include that full payload.
+
+**Presentation:** Return tool/sub-agent output directly. No meta-commentary about tools.
+If retrieval is empty, you may give a short best-effort answer prefixed with:
+"No relevant information was found in provided docs/knowledge base. Here's a best-effort answer:"
+
+Never ask the user to upload URIs or documents.
+
+
+You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+
+You have a list of other agents to transfer to:
+
+
+Agent name: checkpoint_progress_agent
+Agent description: Runs optional checkpoint analysis with progressive updates; invoked after checkpoint_agent retrieval when optional branches are requested.
+
+
+If you are the best to answer the question according to your description,
+you can answer it.
+
+If another agent is better for answering the question according to its
+description, call `transfer_to_agent` function to transfer the question to that
+agent. When transferring, do not generate any text other than the function
+call.
+
+**NOTE**: the only available agents for `transfer_to_agent` function are
+`checkpoint_progress_agent`.
+
+[RESOLVED_TURN]
+{
+  "intent": "substantive",
+  "route": "checkpoint",
+  "expanded_user_query": "summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513",
+  "retrieval_only": true,
+  "run_optional_agents": [],
+  "menu_index": null,
+  "capability_key": "checkpoints",
+  "resolve_source": "llm",
+  "ui_context_note": "primary_agent, checkpoint_ids, context_doc_uris, and UI optional toggles are context only \u2014 follow this block, not UI fields."
+}
+[/RESOLVED_TURN]
+-----------------------------------------------------------
+Config:
+{'http_options': {'headers': {'x-goog-api-client': 'google-adk/1.33.0 gl-python/3.11.14', 'user-agent': 'google-adk/1.33.0 gl-python/3.11.14'}}, 'tools': [{}], 'labels': {'adk_agent_name': 'property_agent'}}
+-----------------------------------------------------------
+Contents:
+{"parts":[{"text":"{\n  \"user_query\": “summarize my checkpoints\",\n  \"context_doc_uris\": [\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\",\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\",\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"\n  ],\n  \"checkpoint_ids\": [\"HMaFGfwgL58ef5bGYS8o\", \"CZMA72oMvQPHRsq7phyb\"],\n  \"property_id\": \"nY3XQ92eUa02Qs14QWEn\",\n  \"primary_agent\": \"checkpoint”,\n  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\",\n  \"search_location\": {\n    \"source\": \"property_address\",\n    \"radius_miles\": 5,\n    \"coordinates\": {\n      \"lat\": 37.9319,\n      \"lng\": -121.6958\n    },\n    \"label\": \"1982 Helena Way, Brentwood, CA 94513\"\n  }\n}\n\n"}],"role":"user"}
+-----------------------------------------------------------
+Functions:
+transfer_to_agent: {'agent_name': {'enum': ['checkpoint_progress_agent'], 'type': <Type.STRING: 'STRING'>}} -> {'type': <Type.NULL: 'NULL'>}
+ask_user_docs_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+ask_knowledge_base_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+checkpoint_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+-----------------------------------------------------------
+
+2026-05-26 10:33:59,253 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-05-26 10:33:59,253 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai.types WARNING Warning: there are non-text parts in the response: ['function_call'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+2026-05-26 10:33:59,254 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Response:
+-----------------------------------------------------------
+Text:
+None
+-----------------------------------------------------------
+Function calls:
+name: checkpoint_agent, args: {'checkpoint_ids': ['HMaFGfwgL58ef5bGYS8o', 'CZMA72oMvQPHRsq7phyb'], 'user_query': 'summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513', 'property_id': 'nY3XQ92eUa02Qs14QWEn'}
+-----------------------------------------------------------
+Raw response:
+{"sdk_http_response":{"headers":{"Content-Type":"application/json; charset=UTF-8","Vary":"Origin, X-Origin, Referer","Content-Encoding":"gzip","Date":"Tue, 26 May 2026 05:03:59 GMT","Server":"scaffolding on HTTPServer2","X-XSS-Protection":"0","X-Frame-Options":"SAMEORIGIN","X-Content-Type-Options":"nosniff","Alt-Svc":"h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000","Transfer-Encoding":"chunked"}},"candidates":[{"content":{"parts":[{"function_call":{"args":{"checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","property_id":"nY3XQ92eUa02Qs14QWEn"},"name":"checkpoint_agent"},"thought_signature":"AY89a1_5LvfIDm06ZYQRE7Nly07XLK_3OnE3RUl2TlBA1TMsu0NsAbrKPAzWLyFaOdY="}],"role":"model"},"finish_reason":"STOP"}],"create_time":"2026-05-26T05:03:58.206407Z","model_version":"gemini-3.1-flash-lite","response_id":"vikVasfMDKLojMwPjfi54QE","usage_metadata":{"candidates_token_count":101,"candidates_tokens_details":[{"modality":"TEXT","token_count":101}],"prompt_token_count":1702,"prompt_tokens_details":[{"modality":"TEXT","token_count":1702}],"total_token_count":1803,"traffic_type":"ON_DEMAND"}}
+-----------------------------------------------------------
+
+2026-05-26 10:33:59,265 [auth_uid=-] [req=-] google_adk.google.adk.cli.adk_web_server DEBUG Generated event in agent run streaming: {"modelVersion":"gemini-3.1-flash-lite","content":{"parts":[{"functionCall":{"id":"adk-26755c18-5d70-4879-9a9b-1cab07637b5b","args":{"checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","property_id":"nY3XQ92eUa02Qs14QWEn"},"name":"checkpoint_agent"},"thoughtSignature":"AY89a1_5LvfIDm06ZYQRE7Nly07XLK_3OnE3RUl2TlBA1TMsu0NsAbrKPAzWLyFaOdY="}],"role":"model"},"finishReason":"STOP","usageMetadata":{"candidatesTokenCount":101,"candidatesTokensDetails":[{"modality":"TEXT","tokenCount":101}],"promptTokenCount":1702,"promptTokensDetails":[{"modality":"TEXT","tokenCount":1702}],"totalTokenCount":1803,"trafficType":"ON_DEMAND"},"invocationId":"e-048d80cf-2f85-4291-9035-1d2b95e059a1","author":"property_agent","actions":{"stateDelta":{"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","property_address":"1982 Helena Way, Brentwood, CA 94513","property_id":"nY3XQ92eUa02Qs14QWEn","primary_agent":"checkpoint","checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"context_doc_uris":["gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf","gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf","gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"],"search_location":{"source":"property_address","radius_miles":5,"coordinates":{"lat":37.9319,"lng":-121.6958},"label":"1982 Helena Way, Brentwood, CA 94513"},"resolved_turn":{"intent":"substantive","route":"checkpoint","expanded_user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","retrieval_only":true,"run_optional_agents":[],"menu_index":null,"capability_key":"checkpoints","resolve_source":"llm"},"conversational_turn":false,"checkpoint_optional_agents":[],"_resolve_turn_invocation_id":"e-048d80cf-2f85-4291-9035-1d2b95e059a1"},"artifactDelta":{},"requestedAuthConfigs":{},"requestedToolConfirmations":{}},"longRunningToolIds":[],"id":"ffeda4d3-9626-423d-a694-133115e03a60","timestamp":1779771834.4977658}
+2026-05-26 10:33:59,266 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.agent INFO property_agent before_tool: synced checkpoint session fields optional_agents=[]
+2026-05-26 10:33:59,266 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.agent INFO property_id nY3XQ92eUa02Qs14QWEn set in tool context
+2026-05-26 10:33:59,277 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-3.1-flash-lite, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-05-26 10:33:59,278 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Request:
+-----------------------------------------------------------
+System Instruction:
+
+        ⚠️⚠️⚠️ CRITICAL OUTPUT REQUIREMENT ⚠️⚠️⚠️
+        YOU MUST ALWAYS RETURN YOUR RESPONSE IN TWO PARTS:
+        1. Markdown text (FIRST)
+        2. JSON code block starting with ```json and ending with ``` (SECOND)
+        
+        NEVER return only markdown. ALWAYS include the JSON code block.
+        This applies to BOTH simple query mode AND analysis mode.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+        
+        You are a specialized sub-agent dedicated to answering questions about property checkpoints using semantic search capabilities. Your core function is to retrieve and synthesize information from checkpoint analysis data based on user queries. You can also trigger comprehensive analysis with recommendations when requested.
+
+        **Conversational bypass:** If `user_query` is only a greeting, thanks, acknowledgment, or closure (e.g. hello, thanks, looks good, got it, I'm good) with **no new checkpoint question**, respond in **plain text only** — do **not** call `ask_checkpoints_retrieval` and do **not** return dual-format JSON.
+        
+        **CRITICAL REQUIREMENTS:**
+        - You MUST always call `ask_checkpoints_retrieval` with the `property_id` parameter. Property ID is REQUIRED and cannot be omitted.
+        - The `property_id` is available in your input schema. You MUST extract it and pass it to the tool.
+        - If `property_id` is not available in your input, you cannot proceed and must inform the user that property ID is required.
+        - **NEVER include checkpoint IDs in your response.** Checkpoint IDs (like "2AalUxGcl8OGmh53p0wS") are internal identifiers and must NOT appear in your responses. Only use checkpoint names, locations, dates, and findings.
+        - **ALWAYS return dual format response** - Both Markdown AND JSON are MANDATORY for all responses.
+
+        **Input Schema Fields:**
+        *   `user_query` (str): The user's question about checkpoints
+        *   `property_id` (str): Property ID (REQUIRED)
+        *   `checkpoint_ids` (Optional[List[str]]): Specific checkpoint IDs to query
+        *   `checkpoint_optional_agents` (Optional[List[str]]): Optional analysis agents to invoke after retrieval. Allowed values: "coverage", "diy", "service", "cost"
+        *   `context_doc_uris` (Optional[List[str]]): Context documents for coverage checks
+        *   `property_address` (Optional[str]): Property record address (identity/context only)
+        *   `search_location` (Optional[object]): Unified market/geo for optional agents (service, cost, DIY)
+
+        **Your Core Task and Workflow:**
+        1. **Extract property_id:** Get `property_id` from your input schema. This is REQUIRED.
+        2. **Retrieve Checkpoints:** Use the `ask_checkpoints_retrieval` tool with the user's query AND the `property_id` parameter. Always call it as: `ask_checkpoints_retrieval(user_query=<query>, property_id=<property_id>, checkpoint_ids=<checkpoint_ids if provided>, location=<location if provided>)`. The tool returns JSON with `checkpoints` (array of formatted checkpoint objects) and `search_query` (short phrase for optional analysis). It performs vector similarity search when no checkpoint IDs are provided.
+        3. **Check for Analysis Request:** After retrieving checkpoints, check if `checkpoint_optional_agents` is provided and non-empty in your input schema.
+        4. **Route Based on Analysis Request:**
+           - **If `checkpoint_optional_agents` is provided and non-empty:** Do **not** call any analysis tool. The parent `property_agent` transfers to `checkpoint_progress_agent` after your turn. Return a **Phase 0** dual-format response: markdown summary of retrieved checkpoints plus ```json with `analysisStatus` showing requested branches as `pending` / `in_progress`. Use the formatted checkpoint data from retrieval (locations, issues, conditions). The retrieval tool stashes analysis input on session state automatically.
+           - **If `checkpoint_optional_agents` is empty or None:** Synthesize a direct answer from the checkpoint data in DUAL FORMAT (simple query mode).
+        
+        **Simple Query Mode (No Optional Agents) - DUAL FORMAT REQUIRED:**
+        
+        ⚠️ CRITICAL: Even in simple query mode, you MUST return BOTH Markdown AND JSON.
+        
+        When `checkpoint_optional_agents` is empty or None, formulate a clear and factual answer that addresses the user's question. You may need to:
+           - Compare multiple checkpoints (e.g., "What changed in my kitchen?")
+           - Identify patterns across checkpoints (e.g., "What issues were found?")
+           - Provide timeline information (e.g., "When was the last time I checked the roof?")
+           - Analyze trends (e.g., "How has my property condition changed over time?")
+        *   **Selected `checkpoint_ids` vs query:** When specific checkpoint IDs were provided, you only have data for those inspections. If the user asks about a room or topic (e.g. kitchen) that does not match the selected checkpoint locations (e.g. garage), say so clearly and summarize what the selected checkpoints actually contain — do not invent kitchen data.
+        
+        **MANDATORY Output Format for Simple Query Mode:**
+        
+        Your response MUST include:
+        1. **Markdown text (FIRST)** - Human-readable formatted response starting with `# Title`
+        2. **JSON code block (SECOND)** - Structured data wrapped in ```json ... ```
+        
+        **JSON Structure for Simple Queries:**
+        ```json
+        {
+          "analysis": {
+            "title": "Concise title describing the query results",
+            "checkpointSummary": {
+              "checkpointsAnalyzed": 2,
+              "queryType": "single|comparison|trend|location-specific",
+              "locations": ["Kitchen", "Bathroom"],
+              "dateRange": "Jan 2025 - Jan 2026"
+            },
+            "checkpointDetails": [
+              {
+                "name": "Monthly Inspection - Jan 2025",
+                "location": "Kitchen",
+                "date": "2025-01-15",
+                "summary": "Brief summary of this checkpoint",
+                "detectedItems": ["item1", "item2"],
+                "conditions": ["condition1", "condition2"],
+                "issues": ["issue1", "issue2"]
+              }
+            ],
+            "insights": {
+              "changes": "Description of changes observed (for comparison queries)",
+              "patterns": "Description of patterns identified (for trend queries)",
+              "recommendations": "Brief recommendations if applicable"
+            }
+          }
+        }
+        ```
+        
+        **Field Guidelines:**
+        - `title`: Create a concise, user-friendly title (e.g., "Kitchen Checkpoint History", "Bathroom Condition Comparison")
+        - `checkpointSummary`: Always include this section with count, query type, locations, and date range
+        - `checkpointDetails`: Array of checkpoint objects with all relevant information from retrieved checkpoints
+        - `insights`: Include changes/patterns/recommendations based on query type (omit fields that don't apply)
+        
+        **Analysis Mode (With Optional Agents) — retrieval only:**
+        When `checkpoint_optional_agents` contains one or more agents ("coverage", "diy", "service", "cost"):
+           - Call `ask_checkpoints_retrieval` only; do **not** invoke any other tools
+           - Build Phase 0 dual format from the `checkpoints` array (summary markdown + JSON with `analysisStatus` for each requested branch set to `pending`)
+           - Include `checkpointSummary` with accurate `checkpointsAnalyzed`, `locations`, and `issuesDetected` from retrieved data
+           - Return that Phase 0 response; comprehensive analysis runs in `checkpoint_progress_agent` after the parent transfer
+
+        **Tool Call Requirements:**
+        - ALWAYS call `ask_checkpoints_retrieval` with `property_id` as a required parameter
+        - If `checkpoint_ids` are provided in your input, pass them to the tool
+        - If `location` is mentioned in the query, extract it and pass as `location` parameter
+        - Never call the tool without `property_id` - it will fail
+        
+        **Handling Results:**
+        *   **No Checkpoints Found:** If the `ask_checkpoints_retrieval` tool returns an empty `checkpoints` array (or missing checkpoints), your response **must be:** "No matching checkpoints found for your query. Try rephrasing your question or check if you have any checkpoints created."
+        *   **Checkpoints Found:** When checkpoints are retrieved:
+            - **Summarize findings** from the retrieved checkpoint data
+            - **Include relevant details** like location, detected items, conditions, and issues
+            - **Reference checkpoint names ONLY** when discussing specific checkpoints (e.g., "Checkpoint 'Monthly Inspection - Jan 2025' from Kitchen" or "Checkpoint 'Pre-Storm Exterior Check'")
+            - **NEVER include checkpoint IDs** in your response. Do not mention checkpoint IDs, checkpointId, or any alphanumeric identifiers
+            - **Always use the checkpoint name** (found in the "Checkpoint Name" field or checkpointName field) when referencing checkpoints
+            - **Cite checkpoint information** clearly in your response using only names, locations, dates, and findings
+            - **Return in DUAL FORMAT** - Both Markdown and JSON
+
+        **Complete Example Response for Simple Query Mode:**
+        
+        Query: "What changed in my kitchen between checkpoints?"
+        
+        Response:
+        ```
+        # Kitchen Checkpoint Comparison
+        
+        Based on your checkpoints, I found 2 relevant checkpoints from your kitchen:
+        
+        ## Checkpoint 'Monthly Inspection - Jan 2025' (Kitchen)
+        - **Date**: January 15, 2025
+        - **Detected Items**: Refrigerator, Stove, Sink, Cabinets
+        - **Conditions**: Minor wear on cabinet doors, small water stain under sink
+        - **Issues**: Loose cabinet door handle, minor leak under sink
+        
+        ## Checkpoint 'Kitchen Check - Dec 2024' (Kitchen)
+        - **Date**: December 10, 2024
+        - **Detected Items**: Refrigerator, Stove, Sink, Cabinets
+        - **Conditions**: All items in good condition
+        - **Issues**: None detected
+        
+        ## Changes Observed
+        - **New Issues**: Loose cabinet door handle and minor leak under sink appeared between December and January
+        - **Condition Changes**: Cabinet doors showing minor wear, new water stain detected
+        - **Recommendations**: Address the sink leak promptly to prevent further water damage
+        
+        ```json
+        {
+          "analysis": {
+            "title": "Kitchen Checkpoint Comparison",
+            "checkpointSummary": {
+              "checkpointsAnalyzed": 2,
+              "queryType": "comparison",
+              "locations": ["Kitchen"],
+              "dateRange": "Dec 2024 - Jan 2025"
+            },
+            "checkpointDetails": [
+              {
+                "name": "Monthly Inspection - Jan 2025",
+                "location": "Kitchen",
+                "date": "2025-01-15",
+                "summary": "Minor issues detected including loose cabinet handle and sink leak",
+                "detectedItems": ["Refrigerator", "Stove", "Sink", "Cabinets"],
+                "conditions": ["Minor wear on cabinet doors", "Small water stain under sink"],
+                "issues": ["Loose cabinet door handle", "Minor leak under sink"]
+              },
+              {
+                "name": "Kitchen Check - Dec 2024",
+                "location": "Kitchen",
+                "date": "2024-12-10",
+                "summary": "All items in good condition with no issues detected",
+                "detectedItems": ["Refrigerator", "Stove", "Sink", "Cabinets"],
+                "conditions": ["All items in good condition"],
+                "issues": []
+              }
+            ],
+            "insights": {
+              "changes": "New issues appeared between December and January: loose cabinet door handle and minor leak under sink. Cabinet doors showing minor wear and new water stain detected.",
+              "patterns": "Kitchen condition declined slightly with emergence of maintenance issues",
+              "recommendations": "Address the sink leak promptly to prevent further water damage. Tighten or replace the loose cabinet door handle."
+            }
+          }
+        }
+        ```
+        ```
+        
+        **Important Directives:**
+        *   **Use only information from retrieved checkpoints** - do not make up or infer information not present in the checkpoint data
+        *   **Be specific** - reference checkpoint names (not IDs), locations, dates, and specific findings when available
+        *   **CRITICAL: NEVER include checkpoint IDs** - Do not mention checkpoint IDs, checkpointId fields, or any alphanumeric identifiers in your response. Only use checkpoint names, locations, dates, and findings
+        *   **Always use checkpoint names** - When referencing checkpoints in your response, use ONLY the checkpoint name (e.g., "Checkpoint 'Monthly Inspection - Jan 2025'") and never include IDs or identifiers
+        *   **Maintain neutrality and conciseness** - avoid speculative content or personal opinions
+        *   **Never reveal your internal decision-making process** - provide direct answers based on checkpoint data
+        *   **For queries about changes/comparisons**, clearly indicate what changed, what stayed the same, and any new issues detected, referencing checkpoints by their names only (never IDs)
+        *   **When analysis is requested** (checkpoint_optional_agents provided), return Phase 0 dual format only; do not call analysis tools
+        *   **ALWAYS return dual format** - Both Markdown text AND JSON code block are MANDATORY for all responses
+        *   **CRITICAL: Do NOT announce or describe which tools or agents you are calling.** Do NOT say things like "The checkpoint_analysis_agent has successfully generated..." or "I will now call..." or "I have retrieved...". Simply return the tool/agent output directly without any meta-commentary about the process.
+        *   **NEVER include status messages** about tool or agent execution. The user only wants to see the final results, not announcements about what you're doing.
+        
+        **Decision Logic:**
+        ```
+        IF checkpoint_optional_agents is provided AND non-empty:
+            1. Retrieve checkpoints using ask_checkpoints_retrieval
+            2. Return Phase 0 dual format (markdown + JSON with analysisStatus pending)
+            3. Stop — property_agent transfers to checkpoint_progress_agent for parallel analysis
+        ELSE:
+            1. Retrieve checkpoints using ask_checkpoints_retrieval
+            2. Synthesize direct answer from checkpoint data
+            3. Return response in DUAL FORMAT (Markdown + JSON) as shown in examples above
+        ```
+        
+        ⚠️⚠️⚠️ FINAL REMINDER ⚠️⚠️⚠️
+        Before you return your response, verify:
+        ✓ Does it start with markdown text (# Title)?
+        ✓ Does it end with a ```json code block containing the analysis object?
+        ✓ Are BOTH parts present?
+        
+        If you're missing the JSON code block, ADD IT NOW before returning.
+        The webapp/mobile app CANNOT function without the JSON structure.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+    
+
+You are an agent. Your internal name is "checkpoint_agent".
+-----------------------------------------------------------
+Config:
+{'http_options': {'headers': {'x-goog-api-client': 'google-adk/1.33.0 gl-python/3.11.14', 'user-agent': 'google-adk/1.33.0 gl-python/3.11.14'}}, 'tools': [{}], 'labels': {'adk_agent_name': 'checkpoint_agent'}}
+-----------------------------------------------------------
+Contents:
+{"parts":[{"text":"{\"user_query\":\"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513\",\"checkpoint_ids\":[\"HMaFGfwgL58ef5bGYS8o\",\"CZMA72oMvQPHRsq7phyb\"],\"property_id\":\"nY3XQ92eUa02Qs14QWEn\",\"checkpoint_optional_agents\":[]}"}],"role":"user"}
+-----------------------------------------------------------
+Functions:
+ask_checkpoints_retrieval: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'property_id': {'type': <Type.STRING: 'STRING'>}, 'location': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {}
+-----------------------------------------------------------
+
+2026-05-26 10:34:00,608 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-05-26 10:34:00,609 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Response:
+-----------------------------------------------------------
+Text:
+None
+-----------------------------------------------------------
+Function calls:
+name: ask_checkpoints_retrieval, args: {'user_query': 'summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513', 'checkpoint_ids': ['HMaFGfwgL58ef5bGYS8o', 'CZMA72oMvQPHRsq7phyb'], 'property_id': 'nY3XQ92eUa02Qs14QWEn'}
+-----------------------------------------------------------
+Raw response:
+{"sdk_http_response":{"headers":{"Content-Type":"application/json; charset=UTF-8","Vary":"Origin, X-Origin, Referer","Content-Encoding":"gzip","Date":"Tue, 26 May 2026 05:04:00 GMT","Server":"scaffolding on HTTPServer2","X-XSS-Protection":"0","X-Frame-Options":"SAMEORIGIN","X-Content-Type-Options":"nosniff","Alt-Svc":"h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000","Transfer-Encoding":"chunked"}},"candidates":[{"content":{"parts":[{"function_call":{"args":{"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"property_id":"nY3XQ92eUa02Qs14QWEn"},"name":"ask_checkpoints_retrieval"},"thought_signature":"AY89a18nxW2QXUQ5hD1lwN4t1TJw4pk2x-xQ0uHvG_zdQ7mHPlZOTCOBIjpOtbdSVCo="}],"role":"model"},"finish_reason":"STOP"}],"create_time":"2026-05-26T05:03:59.484020Z","model_version":"gemini-3.1-flash-lite","response_id":"vykVarTFHba-jMwPj_i9kQk","usage_metadata":{"candidates_token_count":106,"candidates_tokens_details":[{"modality":"TEXT","token_count":106}],"prompt_token_count":3839,"prompt_tokens_details":[{"modality":"TEXT","token_count":3839}],"total_token_count":3945,"traffic_type":"ON_DEMAND"}}
+-----------------------------------------------------------
+
+2026-05-26 10:34:00,609 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.agent INFO checkpoint_retrieval: start mode=by_id property_id=nY3XQ92eUa02Qs14QWEn user_query_len=65 location_set=False checkpoint_id_count=2
+2026-05-26 10:34:03,790 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.agent INFO checkpoint_retrieval: firestore_by_id fetch_duration_ms=2653 fetched=2 requested=2 total_elapsed_ms=3180
+2026-05-26 10:34:03,790 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai._api_client INFO The user provided project/location will take precedence over the Vertex AI API key from the environment variable.
+2026-05-26 10:34:03,806 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai.models INFO AFC is enabled with max remote calls: 10.
+2026-05-26 10:34:06,628 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] httpx INFO HTTP Request: POST https://us-central1-aiplatform.googleapis.com/v1beta1/projects/homegeek-staging/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2026-05-26 10:34:06,635 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.media_search_query_refiner INFO media_search_query_refiner: refined duration_ms=2829 raw_len=173 out_len=55
+2026-05-26 10:34:06,636 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.agent INFO checkpoint_retrieval: format duration_ms=2845 checkpoints=2
+2026-05-26 10:34:06,636 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.agent INFO checkpoint_retrieval: end duration_ms=6026 outcome=ok checkpoints=2 search_query_len=55
+2026-05-26 10:34:06,639 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-3.1-flash-lite, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-05-26 10:34:06,640 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Request:
+-----------------------------------------------------------
+System Instruction:
+
+        ⚠️⚠️⚠️ CRITICAL OUTPUT REQUIREMENT ⚠️⚠️⚠️
+        YOU MUST ALWAYS RETURN YOUR RESPONSE IN TWO PARTS:
+        1. Markdown text (FIRST)
+        2. JSON code block starting with ```json and ending with ``` (SECOND)
+        
+        NEVER return only markdown. ALWAYS include the JSON code block.
+        This applies to BOTH simple query mode AND analysis mode.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+        
+        You are a specialized sub-agent dedicated to answering questions about property checkpoints using semantic search capabilities. Your core function is to retrieve and synthesize information from checkpoint analysis data based on user queries. You can also trigger comprehensive analysis with recommendations when requested.
+
+        **Conversational bypass:** If `user_query` is only a greeting, thanks, acknowledgment, or closure (e.g. hello, thanks, looks good, got it, I'm good) with **no new checkpoint question**, respond in **plain text only** — do **not** call `ask_checkpoints_retrieval` and do **not** return dual-format JSON.
+        
+        **CRITICAL REQUIREMENTS:**
+        - You MUST always call `ask_checkpoints_retrieval` with the `property_id` parameter. Property ID is REQUIRED and cannot be omitted.
+        - The `property_id` is available in your input schema. You MUST extract it and pass it to the tool.
+        - If `property_id` is not available in your input, you cannot proceed and must inform the user that property ID is required.
+        - **NEVER include checkpoint IDs in your response.** Checkpoint IDs (like "2AalUxGcl8OGmh53p0wS") are internal identifiers and must NOT appear in your responses. Only use checkpoint names, locations, dates, and findings.
+        - **ALWAYS return dual format response** - Both Markdown AND JSON are MANDATORY for all responses.
+
+        **Input Schema Fields:**
+        *   `user_query` (str): The user's question about checkpoints
+        *   `property_id` (str): Property ID (REQUIRED)
+        *   `checkpoint_ids` (Optional[List[str]]): Specific checkpoint IDs to query
+        *   `checkpoint_optional_agents` (Optional[List[str]]): Optional analysis agents to invoke after retrieval. Allowed values: "coverage", "diy", "service", "cost"
+        *   `context_doc_uris` (Optional[List[str]]): Context documents for coverage checks
+        *   `property_address` (Optional[str]): Property record address (identity/context only)
+        *   `search_location` (Optional[object]): Unified market/geo for optional agents (service, cost, DIY)
+
+        **Your Core Task and Workflow:**
+        1. **Extract property_id:** Get `property_id` from your input schema. This is REQUIRED.
+        2. **Retrieve Checkpoints:** Use the `ask_checkpoints_retrieval` tool with the user's query AND the `property_id` parameter. Always call it as: `ask_checkpoints_retrieval(user_query=<query>, property_id=<property_id>, checkpoint_ids=<checkpoint_ids if provided>, location=<location if provided>)`. The tool returns JSON with `checkpoints` (array of formatted checkpoint objects) and `search_query` (short phrase for optional analysis). It performs vector similarity search when no checkpoint IDs are provided.
+        3. **Check for Analysis Request:** After retrieving checkpoints, check if `checkpoint_optional_agents` is provided and non-empty in your input schema.
+        4. **Route Based on Analysis Request:**
+           - **If `checkpoint_optional_agents` is provided and non-empty:** Do **not** call any analysis tool. The parent `property_agent` transfers to `checkpoint_progress_agent` after your turn. Return a **Phase 0** dual-format response: markdown summary of retrieved checkpoints plus ```json with `analysisStatus` showing requested branches as `pending` / `in_progress`. Use the formatted checkpoint data from retrieval (locations, issues, conditions). The retrieval tool stashes analysis input on session state automatically.
+           - **If `checkpoint_optional_agents` is empty or None:** Synthesize a direct answer from the checkpoint data in DUAL FORMAT (simple query mode).
+        
+        **Simple Query Mode (No Optional Agents) - DUAL FORMAT REQUIRED:**
+        
+        ⚠️ CRITICAL: Even in simple query mode, you MUST return BOTH Markdown AND JSON.
+        
+        When `checkpoint_optional_agents` is empty or None, formulate a clear and factual answer that addresses the user's question. You may need to:
+           - Compare multiple checkpoints (e.g., "What changed in my kitchen?")
+           - Identify patterns across checkpoints (e.g., "What issues were found?")
+           - Provide timeline information (e.g., "When was the last time I checked the roof?")
+           - Analyze trends (e.g., "How has my property condition changed over time?")
+        *   **Selected `checkpoint_ids` vs query:** When specific checkpoint IDs were provided, you only have data for those inspections. If the user asks about a room or topic (e.g. kitchen) that does not match the selected checkpoint locations (e.g. garage), say so clearly and summarize what the selected checkpoints actually contain — do not invent kitchen data.
+        
+        **MANDATORY Output Format for Simple Query Mode:**
+        
+        Your response MUST include:
+        1. **Markdown text (FIRST)** - Human-readable formatted response starting with `# Title`
+        2. **JSON code block (SECOND)** - Structured data wrapped in ```json ... ```
+        
+        **JSON Structure for Simple Queries:**
+        ```json
+        {
+          "analysis": {
+            "title": "Concise title describing the query results",
+            "checkpointSummary": {
+              "checkpointsAnalyzed": 2,
+              "queryType": "single|comparison|trend|location-specific",
+              "locations": ["Kitchen", "Bathroom"],
+              "dateRange": "Jan 2025 - Jan 2026"
+            },
+            "checkpointDetails": [
+              {
+                "name": "Monthly Inspection - Jan 2025",
+                "location": "Kitchen",
+                "date": "2025-01-15",
+                "summary": "Brief summary of this checkpoint",
+                "detectedItems": ["item1", "item2"],
+                "conditions": ["condition1", "condition2"],
+                "issues": ["issue1", "issue2"]
+              }
+            ],
+            "insights": {
+              "changes": "Description of changes observed (for comparison queries)",
+              "patterns": "Description of patterns identified (for trend queries)",
+              "recommendations": "Brief recommendations if applicable"
+            }
+          }
+        }
+        ```
+        
+        **Field Guidelines:**
+        - `title`: Create a concise, user-friendly title (e.g., "Kitchen Checkpoint History", "Bathroom Condition Comparison")
+        - `checkpointSummary`: Always include this section with count, query type, locations, and date range
+        - `checkpointDetails`: Array of checkpoint objects with all relevant information from retrieved checkpoints
+        - `insights`: Include changes/patterns/recommendations based on query type (omit fields that don't apply)
+        
+        **Analysis Mode (With Optional Agents) — retrieval only:**
+        When `checkpoint_optional_agents` contains one or more agents ("coverage", "diy", "service", "cost"):
+           - Call `ask_checkpoints_retrieval` only; do **not** invoke any other tools
+           - Build Phase 0 dual format from the `checkpoints` array (summary markdown + JSON with `analysisStatus` for each requested branch set to `pending`)
+           - Include `checkpointSummary` with accurate `checkpointsAnalyzed`, `locations`, and `issuesDetected` from retrieved data
+           - Return that Phase 0 response; comprehensive analysis runs in `checkpoint_progress_agent` after the parent transfer
+
+        **Tool Call Requirements:**
+        - ALWAYS call `ask_checkpoints_retrieval` with `property_id` as a required parameter
+        - If `checkpoint_ids` are provided in your input, pass them to the tool
+        - If `location` is mentioned in the query, extract it and pass as `location` parameter
+        - Never call the tool without `property_id` - it will fail
+        
+        **Handling Results:**
+        *   **No Checkpoints Found:** If the `ask_checkpoints_retrieval` tool returns an empty `checkpoints` array (or missing checkpoints), your response **must be:** "No matching checkpoints found for your query. Try rephrasing your question or check if you have any checkpoints created."
+        *   **Checkpoints Found:** When checkpoints are retrieved:
+            - **Summarize findings** from the retrieved checkpoint data
+            - **Include relevant details** like location, detected items, conditions, and issues
+            - **Reference checkpoint names ONLY** when discussing specific checkpoints (e.g., "Checkpoint 'Monthly Inspection - Jan 2025' from Kitchen" or "Checkpoint 'Pre-Storm Exterior Check'")
+            - **NEVER include checkpoint IDs** in your response. Do not mention checkpoint IDs, checkpointId, or any alphanumeric identifiers
+            - **Always use the checkpoint name** (found in the "Checkpoint Name" field or checkpointName field) when referencing checkpoints
+            - **Cite checkpoint information** clearly in your response using only names, locations, dates, and findings
+            - **Return in DUAL FORMAT** - Both Markdown and JSON
+
+        **Complete Example Response for Simple Query Mode:**
+        
+        Query: "What changed in my kitchen between checkpoints?"
+        
+        Response:
+        ```
+        # Kitchen Checkpoint Comparison
+        
+        Based on your checkpoints, I found 2 relevant checkpoints from your kitchen:
+        
+        ## Checkpoint 'Monthly Inspection - Jan 2025' (Kitchen)
+        - **Date**: January 15, 2025
+        - **Detected Items**: Refrigerator, Stove, Sink, Cabinets
+        - **Conditions**: Minor wear on cabinet doors, small water stain under sink
+        - **Issues**: Loose cabinet door handle, minor leak under sink
+        
+        ## Checkpoint 'Kitchen Check - Dec 2024' (Kitchen)
+        - **Date**: December 10, 2024
+        - **Detected Items**: Refrigerator, Stove, Sink, Cabinets
+        - **Conditions**: All items in good condition
+        - **Issues**: None detected
+        
+        ## Changes Observed
+        - **New Issues**: Loose cabinet door handle and minor leak under sink appeared between December and January
+        - **Condition Changes**: Cabinet doors showing minor wear, new water stain detected
+        - **Recommendations**: Address the sink leak promptly to prevent further water damage
+        
+        ```json
+        {
+          "analysis": {
+            "title": "Kitchen Checkpoint Comparison",
+            "checkpointSummary": {
+              "checkpointsAnalyzed": 2,
+              "queryType": "comparison",
+              "locations": ["Kitchen"],
+              "dateRange": "Dec 2024 - Jan 2025"
+            },
+            "checkpointDetails": [
+              {
+                "name": "Monthly Inspection - Jan 2025",
+                "location": "Kitchen",
+                "date": "2025-01-15",
+                "summary": "Minor issues detected including loose cabinet handle and sink leak",
+                "detectedItems": ["Refrigerator", "Stove", "Sink", "Cabinets"],
+                "conditions": ["Minor wear on cabinet doors", "Small water stain under sink"],
+                "issues": ["Loose cabinet door handle", "Minor leak under sink"]
+              },
+              {
+                "name": "Kitchen Check - Dec 2024",
+                "location": "Kitchen",
+                "date": "2024-12-10",
+                "summary": "All items in good condition with no issues detected",
+                "detectedItems": ["Refrigerator", "Stove", "Sink", "Cabinets"],
+                "conditions": ["All items in good condition"],
+                "issues": []
+              }
+            ],
+            "insights": {
+              "changes": "New issues appeared between December and January: loose cabinet door handle and minor leak under sink. Cabinet doors showing minor wear and new water stain detected.",
+              "patterns": "Kitchen condition declined slightly with emergence of maintenance issues",
+              "recommendations": "Address the sink leak promptly to prevent further water damage. Tighten or replace the loose cabinet door handle."
+            }
+          }
+        }
+        ```
+        ```
+        
+        **Important Directives:**
+        *   **Use only information from retrieved checkpoints** - do not make up or infer information not present in the checkpoint data
+        *   **Be specific** - reference checkpoint names (not IDs), locations, dates, and specific findings when available
+        *   **CRITICAL: NEVER include checkpoint IDs** - Do not mention checkpoint IDs, checkpointId fields, or any alphanumeric identifiers in your response. Only use checkpoint names, locations, dates, and findings
+        *   **Always use checkpoint names** - When referencing checkpoints in your response, use ONLY the checkpoint name (e.g., "Checkpoint 'Monthly Inspection - Jan 2025'") and never include IDs or identifiers
+        *   **Maintain neutrality and conciseness** - avoid speculative content or personal opinions
+        *   **Never reveal your internal decision-making process** - provide direct answers based on checkpoint data
+        *   **For queries about changes/comparisons**, clearly indicate what changed, what stayed the same, and any new issues detected, referencing checkpoints by their names only (never IDs)
+        *   **When analysis is requested** (checkpoint_optional_agents provided), return Phase 0 dual format only; do not call analysis tools
+        *   **ALWAYS return dual format** - Both Markdown text AND JSON code block are MANDATORY for all responses
+        *   **CRITICAL: Do NOT announce or describe which tools or agents you are calling.** Do NOT say things like "The checkpoint_analysis_agent has successfully generated..." or "I will now call..." or "I have retrieved...". Simply return the tool/agent output directly without any meta-commentary about the process.
+        *   **NEVER include status messages** about tool or agent execution. The user only wants to see the final results, not announcements about what you're doing.
+        
+        **Decision Logic:**
+        ```
+        IF checkpoint_optional_agents is provided AND non-empty:
+            1. Retrieve checkpoints using ask_checkpoints_retrieval
+            2. Return Phase 0 dual format (markdown + JSON with analysisStatus pending)
+            3. Stop — property_agent transfers to checkpoint_progress_agent for parallel analysis
+        ELSE:
+            1. Retrieve checkpoints using ask_checkpoints_retrieval
+            2. Synthesize direct answer from checkpoint data
+            3. Return response in DUAL FORMAT (Markdown + JSON) as shown in examples above
+        ```
+        
+        ⚠️⚠️⚠️ FINAL REMINDER ⚠️⚠️⚠️
+        Before you return your response, verify:
+        ✓ Does it start with markdown text (# Title)?
+        ✓ Does it end with a ```json code block containing the analysis object?
+        ✓ Are BOTH parts present?
+        
+        If you're missing the JSON code block, ADD IT NOW before returning.
+        The webapp/mobile app CANNOT function without the JSON structure.
+        ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+    
+
+You are an agent. Your internal name is "checkpoint_agent".
+-----------------------------------------------------------
+Config:
+{'http_options': {'headers': {'x-goog-api-client': 'google-adk/1.33.0 gl-python/3.11.14', 'user-agent': 'google-adk/1.33.0 gl-python/3.11.14'}}, 'tools': [{}], 'labels': {'adk_agent_name': 'checkpoint_agent'}}
+-----------------------------------------------------------
+Contents:
+{"parts":[{"text":"{\"user_query\":\"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513\",\"checkpoint_ids\":[\"HMaFGfwgL58ef5bGYS8o\",\"CZMA72oMvQPHRsq7phyb\"],\"property_id\":\"nY3XQ92eUa02Qs14QWEn\",\"checkpoint_optional_agents\":[]}"}],"role":"user"}
+{"parts":[{"function_call":{"args":{"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"property_id":"nY3XQ92eUa02Qs14QWEn"},"name":"ask_checkpoints_retrieval"},"thought_signature":"AY89a18nxW2QXUQ5hD1lwN4t1TJw4pk2x-xQ0uHvG_zdQ7mHPlZOTCOBIjpOtbdSVCo="}],"role":"model"}
+{"parts":[{"function_response":{"name":"ask_checkpoints_retrieval","response":{"checkpoints":[{"checkpointId":"HMaFGfwgL58ef5bGYS8o","checkpointName":"Checkpoint • May 11 • 9:10 PM","text":"Checkpoint Name: Checkpoint • May 11 • 9:10 PM\nSummary: A close-up view of a gray garage door showing significant paint damage and scratches, particularly around the handle area.\nLocation/Asset: Garage\nDetected items: door, door handle, deadbolt, wall outlet\nIssues: Significant paint chipping and scratching on the door surface near the handle.\nConditions: damaged, wear and tear","location":"Garage","createdAt":"2026-05-11T15:41:02.516000Z","summary":"A close-up view of a gray garage door showing significant paint damage and scratches, particularly around the handle area.","detectedItems":["door","door handle","deadbolt","wall outlet"],"conditions":["damaged","wear and tear"],"issues":[{"description":"Significant paint chipping and scratching on the door surface near the handle.","severity":"minor"}],"similarity_score":0.0},{"checkpointId":"CZMA72oMvQPHRsq7phyb","checkpointName":"Checkpoint • May 11 • 6:22 PM","text":"Checkpoint Name: Checkpoint • May 11 • 6:22 PM\nSummary: The image displays a gray door within a garage setting, featuring a black doorknob and deadbolt. The door exhibits significant paint chipping and scratches, particularly along its edges and across the surface. The adjacent white wall and concrete floor appear to be in good condition, with an electrical outlet visible on the wall.\nLocation/Asset: Garage\nDetected items: door, doorknob, deadbolt, wall, electrical outlet\nIssues: Extensive paint chipping on the door surface and edges.; Multiple scratches on the door.\nConditions: damaged, wear and tear, clean","location":"Garage","createdAt":"2026-05-11T12:52:09.319000Z","summary":"The image displays a gray door within a garage setting, featuring a black doorknob and deadbolt. The door exhibits significant paint chipping and scratches, particularly along its edges and across the surface. The adjacent white wall and concrete floor appear to be in good condition, with an electrical outlet visible on the wall.","detectedItems":["door","doorknob","deadbolt","wall","electrical outlet","concrete floor"],"conditions":["damaged","wear and tear","clean","functional"],"issues":[{"description":"Extensive paint chipping on the door surface and edges.","severity":"moderate"},{"description":"Multiple scratches on the door.","severity":"minor"}],"similarity_score":0.0}],"search_query":"residential garage door paint chipping scratches repair"}}}],"role":"user"}
+-----------------------------------------------------------
+Functions:
+ask_checkpoints_retrieval: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'property_id': {'type': <Type.STRING: 'STRING'>}, 'location': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {}
+-----------------------------------------------------------
+
+2026-05-26 10:34:10,037 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-05-26 10:34:10,037 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Response:
+-----------------------------------------------------------
+Text:
+# Garage Checkpoint Summary
+
+I have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.
+
+## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)
+- **Date**: May 11, 2026
+- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.
+- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet
+- **Conditions**: Damaged, wear and tear, clean, functional
+- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.
+
+## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)
+- **Date**: May 11, 2026
+- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.
+- **Detected Items**: Door, door handle, deadbolt, wall outlet
+- **Conditions**: Damaged, wear and tear
+- **Issues**: Significant paint chipping and scratching on the door surface near the handle.
+
+## Insights
+- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.
+- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.
+
+```json
+{
+  "analysis": {
+    "title": "Garage Checkpoint Summary",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "queryType": "location-specific",
+      "locations": ["Garage"],
+      "dateRange": "May 11, 2026 - May 11, 2026"
+    },
+    "checkpointDetails": [
+      {
+        "name": "Checkpoint • May 11 • 6:22 PM",
+        "location": "Garage",
+        "date": "2026-05-11",
+        "summary": "The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.",
+        "detectedItems": ["door", "doorknob", "deadbolt", "wall", "electrical outlet"],
+        "conditions": ["damaged", "wear and tear", "clean", "functional"],
+        "issues": ["Extensive paint chipping on the door surface and edges.", "Multiple scratches on the door."]
+      },
+      {
+        "name": "Checkpoint • May 11 • 9:10 PM",
+        "location": "Garage",
+        "date": "2026-05-11",
+        "summary": "A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.",
+        "detectedItems": ["door", "door handle", "deadbolt", "wall outlet"],
+        "conditions": ["damaged", "wear and tear"],
+        "issues": ["Significant paint chipping and scratching on the door surface near the handle."]
+      }
+    ],
+    "insights": {
+      "patterns": "Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.",
+      "recommendations": "Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration."
+    }
+  }
+}
+```
+-----------------------------------------------------------
+Function calls:
+
+-----------------------------------------------------------
+Raw response:
+{"sdk_http_response":{"headers":{"Content-Type":"application/json; charset=UTF-8","Vary":"Origin, X-Origin, Referer","Content-Encoding":"gzip","Date":"Tue, 26 May 2026 05:04:10 GMT","Server":"scaffolding on HTTPServer2","X-XSS-Protection":"0","X-Frame-Options":"SAMEORIGIN","X-Content-Type-Options":"nosniff","Alt-Svc":"h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000","Transfer-Encoding":"chunked"}},"candidates":[{"content":{"parts":[{"text":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```","thought_signature":"AY89a18BlPOLTiKbC5D_0fa7osu5ekOaL9-9yrWMelXbmPQYKab_3szYEWCwMt00DqQ="}],"role":"model"},"finish_reason":"STOP"}],"create_time":"2026-05-26T05:04:07.006781Z","model_version":"gemini-3.1-flash-lite","response_id":"xykVav00ivaM0A-G14fYDg","usage_metadata":{"candidates_token_count":779,"candidates_tokens_details":[{"modality":"TEXT","token_count":779}],"prompt_token_count":4476,"prompt_tokens_details":[{"modality":"TEXT","token_count":4476}],"total_token_count":5255,"traffic_type":"ON_DEMAND"}}
+-----------------------------------------------------------
+
+2026-05-26 10:34:10,038 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.runners INFO Closing runner...
+2026-05-26 10:34:10,038 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.runners INFO Runner closed.
+2026-05-26 10:34:10,038 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.sub_agents.checkpoint_agent.agent INFO nested_agent_tool: done wrapped='checkpoint_agent' duration_ms=10772 events=3 state_delta_batches=2 outcome=ok return_len=3084
+2026-05-26 10:34:10,042 [auth_uid=-] [req=-] google_adk.google.adk.cli.adk_web_server DEBUG Generated event in agent run streaming: {"content":{"parts":[{"functionResponse":{"id":"adk-26755c18-5d70-4879-9a9b-1cab07637b5b","name":"checkpoint_agent","response":{"result":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```"}}}],"role":"user"},"invocationId":"e-048d80cf-2f85-4291-9035-1d2b95e059a1","author":"property_agent","actions":{"skipSummarization":false,"stateDelta":{"user_id":"GqC3zTlnb6hRS4vTH6TGeCpDXgH2","user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","checkpoint_optional_agents":[],"checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"property_id":"nY3XQ92eUa02Qs14QWEn","checkpoint_request_timing":{"started_at":2476196.494908041,"emitted":false,"retrieval_ms":6026,"parallel_ms":null,"diy_ms":null,"synthesis_ms":null,"synthesis_started_at":null,"doculink_started_at":2476207.267361708,"doculink_ms":null,"return_chars":3084},"checkpoint_retrieval_search_query":"residential garage door paint chipping scratches repair","checkpoint_analysis_dual_format":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```","checkpoint_result":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```","checkpoint_results":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```"},"artifactDelta":{},"requestedAuthConfigs":{},"requestedToolConfirmations":{}},"id":"16342397-afaf-485c-b702-44c2e3415bdd","timestamp":1779771850.039005}
+2026-05-26 10:34:10,045 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-3.1-flash-lite, backend: GoogleLLMVariant.VERTEX_AI, stream: False
+2026-05-26 10:34:10,045 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Request:
+-----------------------------------------------------------
+System Instruction:
+You are the Property Care AI executor for AssetMem. Each substantive turn includes a
+[RESOLVED_TURN] JSON block in your instructions — follow it exactly. Do not re-route from
+`checkpoint_ids`, `context_doc_uris`, or UI optional toggles alone (follow `route` from
+[RESOLVED_TURN]; when `route` is `user_docs`, call `ask_user_docs_agent` only — never
+`checkpoint_agent` or `checkpoint_progress_agent`).
+
+**Input fields:** `user_query`, `context_doc_uris`, `checkpoint_ids`, `property_address`,
+`property_id`, `primary_agent`, `checkpoint_optional_agents`, `search_location`.
+
+**Tools:**
+* `checkpoint_agent` — checkpoint retrieval (pass `property_id`, `checkpoint_ids`,
+  `checkpoint_optional_agents` from [RESOLVED_TURN] `run_optional_agents`, empty when
+  `retrieval_only` is true).
+* `ask_user_docs_agent` — user-uploaded documents.
+* `ask_knowledge_base_agent` — general knowledge base.
+
+**Execute [RESOLVED_TURN]:**
+* `route` = `checkpoint` → call `checkpoint_agent` once with resolved `expanded_user_query`.
+  If `run_optional_agents` is non-empty, then `transfer_to_agent(agent_name="checkpoint_progress_agent")`
+  and return that output verbatim.
+* `route` = `user_docs` → `ask_user_docs_agent` (use `context_doc_uris` when provided).
+* `route` = `knowledge_base` → `ask_knowledge_base_agent`.
+* `route` = `none` — you should not reach this path (casual turns are handled before you run).
+
+**Checkpoint dual format (CRITICAL):** When `checkpoint_agent` returns markdown plus a
+```json fenced block, copy the **entire** tool string to the user verbatim — do not summarize
+or drop JSON. Your next visible turn must include that full payload.
+
+**Presentation:** Return tool/sub-agent output directly. No meta-commentary about tools.
+If retrieval is empty, you may give a short best-effort answer prefixed with:
+"No relevant information was found in provided docs/knowledge base. Here's a best-effort answer:"
+
+Never ask the user to upload URIs or documents.
+
+
+You are an agent. Your internal name is "property_agent". The description about you is "Agent that manages and executes homecare-related tasks.".
+
+
+You have a list of other agents to transfer to:
+
+
+Agent name: checkpoint_progress_agent
+Agent description: Runs optional checkpoint analysis with progressive updates; invoked after checkpoint_agent retrieval when optional branches are requested.
+
+
+If you are the best to answer the question according to your description,
+you can answer it.
+
+If another agent is better for answering the question according to its
+description, call `transfer_to_agent` function to transfer the question to that
+agent. When transferring, do not generate any text other than the function
+call.
+
+**NOTE**: the only available agents for `transfer_to_agent` function are
+`checkpoint_progress_agent`.
+
+[RESOLVED_TURN]
+{
+  "intent": "substantive",
+  "route": "checkpoint",
+  "expanded_user_query": "summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513",
+  "retrieval_only": true,
+  "run_optional_agents": [],
+  "menu_index": null,
+  "capability_key": "checkpoints",
+  "resolve_source": "llm",
+  "ui_context_note": "primary_agent, checkpoint_ids, context_doc_uris, and UI optional toggles are context only \u2014 follow this block, not UI fields."
+}
+[/RESOLVED_TURN]
+-----------------------------------------------------------
+Config:
+{'http_options': {'headers': {'x-goog-api-client': 'google-adk/1.33.0 gl-python/3.11.14', 'user-agent': 'google-adk/1.33.0 gl-python/3.11.14'}}, 'tools': [{}], 'labels': {'adk_agent_name': 'property_agent'}}
+-----------------------------------------------------------
+Contents:
+{"parts":[{"text":"{\n  \"user_query\": “summarize my checkpoints\",\n  \"context_doc_uris\": [\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\",\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\",\n    \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\"\n  ],\n  \"checkpoint_ids\": [\"HMaFGfwgL58ef5bGYS8o\", \"CZMA72oMvQPHRsq7phyb\"],\n  \"property_id\": \"nY3XQ92eUa02Qs14QWEn\",\n  \"primary_agent\": \"checkpoint”,\n  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\",\n  \"search_location\": {\n    \"source\": \"property_address\",\n    \"radius_miles\": 5,\n    \"coordinates\": {\n      \"lat\": 37.9319,\n      \"lng\": -121.6958\n    },\n    \"label\": \"1982 Helena Way, Brentwood, CA 94513\"\n  }\n}\n\n"}],"role":"user"}
+{"parts":[{"function_call":{"args":{"checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"user_query":"summarize my checkpoints for 1982 Helena Way, Brentwood, CA 94513","property_id":"nY3XQ92eUa02Qs14QWEn"},"name":"checkpoint_agent"},"thought_signature":"AY89a1_5LvfIDm06ZYQRE7Nly07XLK_3OnE3RUl2TlBA1TMsu0NsAbrKPAzWLyFaOdY="}],"role":"model"}
+{"parts":[{"function_response":{"name":"checkpoint_agent","response":{"result":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```"}}}],"role":"user"}
+-----------------------------------------------------------
+Functions:
+transfer_to_agent: {'agent_name': {'enum': ['checkpoint_progress_agent'], 'type': <Type.STRING: 'STRING'>}} -> {'type': <Type.NULL: 'NULL'>}
+ask_user_docs_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+ask_knowledge_base_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+checkpoint_agent: {'user_query': {'type': <Type.STRING: 'STRING'>}, 'correlation_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'context_doc_uris': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'checkpoint_ids': {'items': {'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}, 'property_address': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'property_id': {'nullable': True, 'type': <Type.STRING: 'STRING'>}, 'search_location': {'nullable': True, 'type': <Type.OBJECT: 'OBJECT'>}, 'checkpoint_optional_agents': {'items': {'enum': ['coverage', 'diy', 'service', 'cost'], 'type': <Type.STRING: 'STRING'>}, 'nullable': True, 'type': <Type.ARRAY: 'ARRAY'>}} -> {'type': <Type.STRING: 'STRING'>}
+-----------------------------------------------------------
+
+2026-05-26 10:34:12,693 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-05-26 10:34:12,694 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.models.google_llm DEBUG 
+LLM Response:
+-----------------------------------------------------------
+Text:
+# Garage Checkpoint Summary
+
+I have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.
+
+## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)
+- **Date**: May 11, 2026
+- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.
+- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet
+- **Conditions**: Damaged, wear and tear, clean, functional
+- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.
+
+## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)
+- **Date**: May 11, 2026
+- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.
+- **Detected Items**: Door, door handle, deadbolt, wall outlet
+- **Conditions**: Damaged, wear and tear
+- **Issues**: Significant paint chipping and scratching on the door surface near the handle.
+
+## Insights
+- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.
+- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.
+
+```json
+{
+  "analysis": {
+    "title": "Garage Checkpoint Summary",
+    "checkpointSummary": {
+      "checkpointsAnalyzed": 2,
+      "queryType": "location-specific",
+      "locations": ["Garage"],
+      "dateRange": "May 11, 2026 - May 11, 2026"
+    },
+    "checkpointDetails": [
+      {
+        "name": "Checkpoint • May 11 • 6:22 PM",
+        "location": "Garage",
+        "date": "2026-05-11",
+        "summary": "The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.",
+        "detectedItems": ["door", "doorknob", "deadbolt", "wall", "electrical outlet"],
+        "conditions": ["damaged", "wear and tear", "clean", "functional"],
+        "issues": ["Extensive paint chipping on the door surface and edges.", "Multiple scratches on the door."]
+      },
+      {
+        "name": "Checkpoint • May 11 • 9:10 PM",
+        "location": "Garage",
+        "date": "2026-05-11",
+        "summary": "A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.",
+        "detectedItems": ["door", "door handle", "deadbolt", "wall outlet"],
+        "conditions": ["damaged", "wear and tear"],
+        "issues": ["Significant paint chipping and scratching on the door surface near the handle."]
+      }
+    ],
+    "insights": {
+      "patterns": "Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.",
+      "recommendations": "Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration."
+    }
+  }
+}
+```
+-----------------------------------------------------------
+Function calls:
+
+-----------------------------------------------------------
+Raw response:
+{"sdk_http_response":{"headers":{"Content-Type":"application/json; charset=UTF-8","Vary":"Origin, X-Origin, Referer","Content-Encoding":"gzip","Date":"Tue, 26 May 2026 05:04:12 GMT","Server":"scaffolding on HTTPServer2","X-XSS-Protection":"0","X-Frame-Options":"SAMEORIGIN","X-Content-Type-Options":"nosniff","Alt-Svc":"h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000","Transfer-Encoding":"chunked"}},"candidates":[{"content":{"parts":[{"text":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```","thought_signature":"AY89a195u05zKfH9LfYc78bVggffoLCkf68iztL8MklPqk4UxxFLVhFTAH0mi_BClp8="}],"role":"model"},"finish_reason":"STOP"}],"create_time":"2026-05-26T05:04:10.227057Z","model_version":"gemini-3.1-flash-lite","response_id":"yikVavHtDars694PlvzqmQI","usage_metadata":{"candidates_token_count":779,"candidates_tokens_details":[{"modality":"TEXT","token_count":779}],"prompt_token_count":2572,"prompt_tokens_details":[{"modality":"TEXT","token_count":2572}],"total_token_count":3351,"traffic_type":"ON_DEMAND"}}
+-----------------------------------------------------------
+
+2026-05-26 10:34:12,694 [auth_uid=-] [req=-] property_agent.sub_agents.checkpoint_request_timing INFO checkpoint_request_timing: retrieval_ms=6026 parallel_ms=- diy_ms=- synthesis_ms=- doculink_ms=2655 total_ms=13428 return_chars=3084 source=executor_final
+2026-05-26 10:34:12,697 [auth_uid=-] [req=-] google_adk.google.adk.cli.adk_web_server DEBUG Generated event in agent run streaming: {"modelVersion":"gemini-3.1-flash-lite","content":{"parts":[{"text":"# Garage Checkpoint Summary\n\nI have summarized the two recent checkpoints for the garage at 1982 Helena Way. Both inspections show consistent issues with the garage door finish.\n\n## Checkpoint 'Checkpoint • May 11 • 6:22 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area (wall and floor) appears to be in good condition.\n- **Detected Items**: Door, doorknob, deadbolt, wall, electrical outlet\n- **Conditions**: Damaged, wear and tear, clean, functional\n- **Issues**: Extensive paint chipping on the door surface and edges; multiple scratches on the door.\n\n## Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage)\n- **Date**: May 11, 2026\n- **Summary**: A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\n- **Detected Items**: Door, door handle, deadbolt, wall outlet\n- **Conditions**: Damaged, wear and tear\n- **Issues**: Significant paint chipping and scratching on the door surface near the handle.\n\n## Insights\n- **Patterns**: Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\n- **Recommendations**: You may want to consider sanding and repainting the door to prevent further deterioration or address the cosmetic damage.\n\n```json\n{\n  \"analysis\": {\n    \"title\": \"Garage Checkpoint Summary\",\n    \"checkpointSummary\": {\n      \"checkpointsAnalyzed\": 2,\n      \"queryType\": \"location-specific\",\n      \"locations\": [\"Garage\"],\n      \"dateRange\": \"May 11, 2026 - May 11, 2026\"\n    },\n    \"checkpointDetails\": [\n      {\n        \"name\": \"Checkpoint • May 11 • 6:22 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"The door shows significant paint chipping and scratches, especially along the edges and surface. The surrounding area appears in good condition.\",\n        \"detectedItems\": [\"door\", \"doorknob\", \"deadbolt\", \"wall\", \"electrical outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\", \"clean\", \"functional\"],\n        \"issues\": [\"Extensive paint chipping on the door surface and edges.\", \"Multiple scratches on the door.\"]\n      },\n      {\n        \"name\": \"Checkpoint • May 11 • 9:10 PM\",\n        \"location\": \"Garage\",\n        \"date\": \"2026-05-11\",\n        \"summary\": \"A closer view of the door confirms paint damage and scratches, specifically concentrated around the handle area.\",\n        \"detectedItems\": [\"door\", \"door handle\", \"deadbolt\", \"wall outlet\"],\n        \"conditions\": [\"damaged\", \"wear and tear\"],\n        \"issues\": [\"Significant paint chipping and scratching on the door surface near the handle.\"]\n      }\n    ],\n    \"insights\": {\n      \"patterns\": \"Both checkpoints highlight recurring issues with paint damage and scratches on the garage door, particularly near the handle and along the edges.\",\n      \"recommendations\": \"Consider sanding and repainting the door to address the cosmetic damage and prevent further deterioration.\"\n    }\n  }\n}\n```","thoughtSignature":"AY89a195u05zKfH9LfYc78bVggffoLCkf68iztL8MklPqk4UxxFLVhFTAH0mi_BClp8="}],"role":"model"},"finishReason":"STOP","usageMetadata":{"candidatesTokenCount":779,"candidatesTokensDetails":[{"modality":"TEXT","tokenCount":779}],"promptTokenCount":2572,"promptTokensDetails":[{"modality":"TEXT","tokenCount":2572}],"totalTokenCount":3351,"trafficType":"ON_DEMAND"},"invocationId":"e-048d80cf-2f85-4291-9035-1d2b95e059a1","author":"property_agent","actions":{"stateDelta":{"checkpoint_request_timing":{"started_at":2476196.494908041,"emitted":true,"retrieval_ms":6026,"parallel_ms":null,"diy_ms":null,"synthesis_ms":null,"synthesis_started_at":null,"doculink_started_at":2476207.267361708,"doculink_ms":2655,"return_chars":3084,"total_ms":13428},"checkpoint_last_response_kind":"analysis"},"artifactDelta":{},"requestedAuthConfigs":{},"requestedToolConfirmations":{}},"id":"c43ee628-705a-4cbe-95f0-ef766767b32c","timestamp":1779771850.044705}
+2026-05-26 10:34:12,698 [auth_uid=-] [req=-] property_agent.memory_bank INFO memory ingest queued events=2 stream_id=property:nY3XQ92eUa02Qs14QWEn agent=property_agent property_id=nY3XQ92eUa02Qs14QWEn
+2026-05-26 10:34:12,698 [auth_uid=-] [req=-] property_agent.memory_bank INFO memory ingest checkpoint facts=1 stream_id=property:nY3XQ92eUa02Qs14QWEn
+2026-05-26 10:34:12,698 [auth_uid=-] [req=-] google_adk.google.adk.runners DEBUG Running event compactor.
+INFO:     127.0.0.1:63500 - "GET /debug/trace/session/d6b44d1c-59db-44e7-9871-e7fc7352e082 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63683 - "POST /run_sse HTTP/1.1" 200 OK
+2026-05-26 10:34:29,434 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_genai.models INFO AFC is enabled with max remote calls: 10.
+2026-05-26 10:34:31,284 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] httpx INFO HTTP Request: POST https://aiplatform.googleapis.com/v1beta1/projects/homegeek-staging/locations/global/publishers/google/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-05-26 10:34:31,286 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.resolve_turn_llm INFO resolve_turn_llm intent=acknowledgment route=none retrieval_only=True optional=[] elapsed_ms=1852
+2026-05-26 10:34:31,286 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.resolve_turn INFO resolve_turn casual intent=acknowledgment source=llm query='ok looks good'
+2026-05-26 10:34:31,289 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.cli.adk_web_server DEBUG Generated event in agent run streaming: {"content":{"parts":[{"text":"You're welcome! I'm glad that was helpful. Let me know anytime you want updated information or a new question about your property."}],"role":"model"},"invocationId":"e-bd7b9d91-4315-4cb1-b751-433792b32ecd","author":"property_agent","actions":{"stateDelta":{"user_query":"ok looks good","property_address":"1982 Helena Way, Brentwood, CA 94513","property_id":"nY3XQ92eUa02Qs14QWEn","primary_agent":"checkpoint","checkpoint_ids":["HMaFGfwgL58ef5bGYS8o","CZMA72oMvQPHRsq7phyb"],"context_doc_uris":["gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf","gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf","gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf"],"search_location":{"source":"property_address","radius_miles":5,"coordinates":{"lat":37.9319,"lng":-121.6958},"label":"1982 Helena Way, Brentwood, CA 94513"},"resolved_turn":{"intent":"acknowledgment","route":"none","expanded_user_query":"ok looks good","retrieval_only":true,"run_optional_agents":[],"menu_index":null,"capability_key":null,"resolve_source":"llm"},"conversational_turn":true,"_saved_checkpoint_optional_agents":[],"checkpoint_optional_agents":[],"_resolve_turn_invocation_id":"e-bd7b9d91-4315-4cb1-b751-433792b32ecd"},"artifactDelta":{},"requestedAuthConfigs":{},"requestedToolConfirmations":{}},"id":"1d8ca7d3-4929-4c5a-bf34-9081a209c14e","timestamp":1779771869.4342139}
+2026-05-26 10:34:31,290 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.memory_bank INFO memory ingest queued events=2 stream_id=property:nY3XQ92eUa02Qs14QWEn agent=property_agent property_id=nY3XQ92eUa02Qs14QWEn
+2026-05-26 10:34:31,290 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] property_agent.memory_bank INFO memory ingest checkpoint facts=1 stream_id=property:nY3XQ92eUa02Qs14QWEn
+2026-05-26 10:34:31,290 [auth_uid=GqC3zTlnb6hRS4vTH6TGeCpDXgH2] [req=-] google_adk.google.adk.runners DEBUG Running event compactor.
+INFO:     127.0.0.1:63683 - "GET /debug/trace/session/d6b44d1c-59db-44e7-9871-e7fc7352e082 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+
++-----------------------------------------------------------------------------+
+| ADK Web Server shutting down...                                             |
++-----------------------------------------------------------------------------+
+
+2026-05-26 10:39:01,960 [auth_uid=-] [req=-] google_adk.google.adk.runners INFO Closing runner...
+2026-05-26 10:39:01,960 [auth_uid=-] [req=-] google_adk.google.adk.runners INFO Runner closed.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [86765]
+
+Aborted!

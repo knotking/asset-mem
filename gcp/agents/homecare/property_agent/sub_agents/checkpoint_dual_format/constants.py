@@ -48,4 +48,3 @@ CHECKPOINT_SESSION_INPUT_KEYS: tuple[str, ...] = (
 
 _CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY = "checkpoint_retrieval_search_query"
 _VALID_OPTIONAL_BRANCHES = frozenset(OPTIONAL_BRANCH_TO_AGENT_NAME.keys())
-

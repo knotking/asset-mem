@@ -56,7 +56,10 @@ def test_diy_agent_single_tool_no_nested_agent_tools() -> None:
 def test_infer_hire_professional_heuristics() -> None:
     assert diy_orch._infer_hire_professional("touch up paint on drywall") is False
     assert diy_orch._infer_hire_professional("gas line leak near stove") is True
-    assert diy_orch._infer_hire_professional("replace main electrical service panel") is True
+    assert (
+        diy_orch._infer_hire_professional("replace main electrical service panel")
+        is True
+    )
 
 
 def test_parse_checkpoint_structured_context() -> None:
@@ -78,8 +81,12 @@ Conditions: damaged, wear and tear
 
 
 def test_assemble_diy_results_applies_prefetch() -> None:
-    cost = json.dumps({"diyCostEstimates": {"repair_type": "t", "DIY": {"cost_range": "$1-2"}}})
-    yt = [{"title": "T", "url": "https://www.youtube.com/watch?v=abc", "description": "D"}]
+    cost = json.dumps(
+        {"diyCostEstimates": {"repair_type": "t", "DIY": {"cost_range": "$1-2"}}}
+    )
+    yt = [
+        {"title": "T", "url": "https://www.youtube.com/watch?v=abc", "description": "D"}
+    ]
     products = json.dumps(
         {
             "recommendedProducts": {
@@ -111,12 +118,17 @@ def test_assemble_diy_results_applies_prefetch() -> None:
     assert dr["diyCostEstimates"]["repair_type"] == "t"
 
 
-def test_synthesize_diy_json_uses_steps_llm_and_assembly(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_synthesize_diy_json_uses_steps_llm_and_assembly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: dict = {}
 
     def fake_steps(diagnosis: str, web_summary: str) -> tuple:
         calls["steps"] = (diagnosis, web_summary)
-        return False, {"summary": "s", "steps": [{"stepNumber": 1, "description": "Step A"}]}
+        return False, {
+            "summary": "s",
+            "steps": [{"stepNumber": 1, "description": "Step A"}],
+        }
 
     monkeypatch.setattr(diy_orch, "_generate_diy_steps_llm", fake_steps)
     out = json.loads(
@@ -155,7 +167,10 @@ Issues: Significant paint chipping and scratching on the door surface near the h
 
 
 def test_compact_diy_search_seed_plain_issue_unchanged() -> None:
-    assert diy_orch._compact_diy_search_seed("replace faucet washer") == "replace faucet washer"
+    assert (
+        diy_orch._compact_diy_search_seed("replace faucet washer")
+        == "replace faucet washer"
+    )
 
 
 def test_compact_diy_search_seed_inline_comma_checkpoint_format() -> None:
@@ -191,11 +206,20 @@ def test_shopping_search_seed_prefers_location_and_issues() -> None:
 
 
 def test_youtube_videos_client_shape_requires_url() -> None:
-    assert diy_orch._youtube_videos_client_shape(
-        [{"title": "x", "url": "", "description": "d"}]
-    ) == []
+    assert (
+        diy_orch._youtube_videos_client_shape(
+            [{"title": "x", "url": "", "description": "d"}]
+        )
+        == []
+    )
     out = diy_orch._youtube_videos_client_shape(
-        [{"title": "T", "url": "https://www.youtube.com/watch?v=abc", "description": "D"}]
+        [
+            {
+                "title": "T",
+                "url": "https://www.youtube.com/watch?v=abc",
+                "description": "D",
+            }
+        ]
     )
     assert len(out) == 1
     assert out[0]["url"].endswith("watch?v=abc")
@@ -228,10 +252,18 @@ def test_apply_prefetched_diy_artifacts_overrides_model_hallucination() -> None:
             }
         }
     )
-    yt = [{"title": "Vid", "url": "https://www.youtube.com/watch?v=z", "description": "desc"}]
+    yt = [
+        {
+            "title": "Vid",
+            "url": "https://www.youtube.com/watch?v=z",
+            "description": "desc",
+        }
+    ]
     diy_orch._apply_prefetched_diy_artifacts(dr, yt, pj)
     assert len(dr["youtubeSearch"]["videos"]) == 1
-    assert dr["youtubeSearch"]["videos"][0]["url"] == "https://www.youtube.com/watch?v=z"
+    assert (
+        dr["youtubeSearch"]["videos"][0]["url"] == "https://www.youtube.com/watch?v=z"
+    )
     assert len(dr["recommendedProducts"]["products"]) == 1
     assert dr["recommendedProducts"]["products"][0]["item_name"] == "Real sealant"
 
@@ -289,7 +321,9 @@ def test_apply_prefetched_diy_artifacts_clears_hallucination_when_fetch_empty() 
     assert dr["recommendedProducts"]["products"] == []
 
 
-def test_youtube_search_uses_data_api_when_key_set(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_youtube_search_uses_data_api_when_key_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("YOUTUBE_API_KEY", "test-youtube-key")
 
     def fake_get(url: str, params: dict | None = None, timeout: float | None = None):
@@ -334,7 +368,9 @@ def test_youtube_search_uses_data_api_when_key_set(monkeypatch: pytest.MonkeyPat
     assert out[0]["duration"] == ""
 
 
-def test_youtube_search_returns_empty_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_youtube_search_returns_empty_without_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("YOUTUBE_API_KEY", raising=False)
     from property_agent.sub_agents.diy_agent.youtube import youtube_search
 
@@ -440,7 +476,10 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
             {
                 "hire_professional_recommended": False,
                 "diyResults": {
-                    "diySteps": {"summary": "ok", "steps": [{"stepNumber": 1, "description": "x"}]},
+                    "diySteps": {
+                        "summary": "ok",
+                        "steps": [{"stepNumber": 1, "description": "x"}],
+                    },
                     "youtubeSearch": {"videos": yt},
                     "recommendedProducts": {"products": products_flat},
                     "diyCostEstimates": cost_inner,
@@ -449,7 +488,11 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
             ensure_ascii=False,
         )
 
-    monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", lambda d, a: "1. Turn off water.\n2. Replace washer.")
+    monkeypatch.setattr(
+        diy_orch,
+        "_diy_web_search_grounded",
+        lambda d, a: "1. Turn off water.\n2. Replace washer.",
+    )
     monkeypatch.setattr(
         diy_orch, "_youtube_for_diagnosis", lambda d, search_location=None: mock_youtube
     )
@@ -464,7 +507,9 @@ def test_run_diy_pipeline_fully_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda q: '{"diyCostEstimates":{"repair_type":"t","DIY":{"cost_range":"$1-2"}}}',
     )
     monkeypatch.setattr(diy_orch, "_synthesize_diy_json", mock_synthesize)
-    out = asyncio.run(run_diy_pipeline(user_query="clogged drain", property_address=None))
+    out = asyncio.run(
+        run_diy_pipeline(user_query="clogged drain", property_address=None)
+    )
     body = json.loads(out)
     dr = body.get("diyResults")
     assert isinstance(dr, dict)
@@ -506,10 +551,14 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
     monkeypatch.setattr(diy_orch, "product_recommendations", cap_pr)
 
     def boom_yt(_d: str, search_location=None) -> list:
-        raise AssertionError("legacy _youtube_for_diagnosis must not run when retrieval seed is set")
+        raise AssertionError(
+            "legacy _youtube_for_diagnosis must not run when retrieval seed is set"
+        )
 
     def boom_pr(_d: str, search_location=None) -> str:
-        raise AssertionError("legacy _products_for_diagnosis must not run when retrieval seed is set")
+        raise AssertionError(
+            "legacy _products_for_diagnosis must not run when retrieval seed is set"
+        )
 
     monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", boom_yt)
     monkeypatch.setattr(diy_orch, "_products_for_diagnosis", boom_pr)
@@ -522,7 +571,11 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
     monkeypatch.setattr(
         diy_orch,
         "_synthesize_diy_json",
-        lambda diagnosis, web_summary, youtube_videos, products_json, cost_json: json.dumps(
+        lambda diagnosis,
+        web_summary,
+        youtube_videos,
+        products_json,
+        cost_json: json.dumps(
             {
                 "hire_professional_recommended": False,
                 "diyResults": {
@@ -557,7 +610,9 @@ def test_run_diy_pipeline_checkpoint_retrieval_query_only_for_youtube_and_produc
 
 def test_web_grounding_query_uses_retrieval_seed_when_set() -> None:
     assert (
-        diy_orch._web_grounding_query("full blob with outlet", "garage door paint repair")
+        diy_orch._web_grounding_query(
+            "full blob with outlet", "garage door paint repair"
+        )
         == "garage door paint repair"
     )
 
@@ -599,7 +654,9 @@ def test_web_grounding_max_output_tokens_env(monkeypatch: pytest.MonkeyPatch) ->
     assert diy_orch._web_grounding_max_output_tokens() == 1024
 
 
-def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_diy_pipeline_cache_hits_on_second_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("DIY_ORCHESTRATOR_CACHE_TTL_SECONDS", "600")
     calls = {"n": 0}
 
@@ -608,7 +665,9 @@ def test_run_diy_pipeline_cache_hits_on_second_call(monkeypatch: pytest.MonkeyPa
         return "cached web"
 
     monkeypatch.setattr(diy_orch, "_diy_web_search_grounded", counted_web)
-    monkeypatch.setattr(diy_orch, "_youtube_for_diagnosis", lambda d, search_location=None: [])
+    monkeypatch.setattr(
+        diy_orch, "_youtube_for_diagnosis", lambda d, search_location=None: []
+    )
     monkeypatch.setattr(
         diy_orch,
         "_products_for_diagnosis",
@@ -662,7 +721,9 @@ def test_youtube_for_diagnosis_live_orchestrator() -> None:
         assert item.get("title")
         url = item.get("url") or ""
         assert isinstance(url, str)
-        assert "youtube.com" in url or "youtu.be" in url, f"unexpected video url shape: {url[:80]!r}"
+        assert (
+            "youtube.com" in url or "youtu.be" in url
+        ), f"unexpected video url shape: {url[:80]!r}"
 
 
 @pytest.mark.integration_external

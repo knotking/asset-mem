@@ -9,12 +9,11 @@ load_dotenv()
 
 coverage_agent = Agent(
     model=GLOBAL_GEMINI_MODEL,
-    name='coverage_agent',
+    name="coverage_agent",
     description="Retrieves warranty and insurance coverage information from user documents.",
     instruction=coverage_agent_instructions(),
     tools=[ask_user_docs_retreival],
-    input_schema=DocsInput
+    input_schema=DocsInput,
 )
 
 __all__ = ["coverage_agent"]
-

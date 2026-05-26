@@ -45,4 +45,3 @@ def coverage_agent_instructions() -> str:
         * Include the complete coverage information from the tool.
     """
     return instruction
-

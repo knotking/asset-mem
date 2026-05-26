@@ -13,13 +13,6 @@ from property_agent.conversational_callbacks import (
     apply_conversational_state_for_turn,
     conversational_before_tool,
 )
-from property_agent.conversational_intent import (
-    build_conversational_rephrase_prompt,
-    inject_conversational_rephrase_into_llm_request,
-    should_skip_tools,
-)
-
-
 def test_state_take_works_without_pop() -> None:
     class _NoPopState(dict):
         def pop(self, *args, **kwargs):
@@ -203,25 +196,3 @@ def test_apply_conversational_expands_second_one_on_substantive_turn() -> None:
     assert ctx.state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
     assert "uploaded property documents" in ctx.state["user_query"].lower()
 
-
-def test_inject_conversational_rephrase_still_available_on_intent_module() -> None:
-    """Legacy Option A helper remains for tests/tools; production uses canned bypass."""
-    tools_dict = {"transfer_to_agent": object()}
-    llm_request = SimpleNamespace(
-        config=types.GenerateContentConfig(
-            system_instruction=types.Content(
-                role="system",
-                parts=[types.Part(text="Base agent instruction.")],
-            )
-        ),
-        tools_dict=dict(tools_dict),
-    )
-    inject_conversational_rephrase_into_llm_request(
-        llm_request,
-        label="greeting",
-        scaffold="Hello! Here is what I can do:\n\n- **DIY:** steps",
-    )
-    text = llm_request.config.system_instruction.parts[0].text
-    assert "MESSAGE SCAFFOLD" in text
-    assert build_conversational_rephrase_prompt("greeting", "x")
-    assert llm_request.tools_dict == tools_dict

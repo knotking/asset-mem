@@ -4,7 +4,9 @@ from property_agent.agent_inputs import SearchLocation, SearchLocationCoordinate
 from property_agent import serpapi_geo as sg
 
 
-def _sl(lat: float = 37.9, lng: float = -121.7, label: str | None = "Brentwood, CA") -> SearchLocation:
+def _sl(
+    lat: float = 37.9, lng: float = -121.7, label: str | None = "Brentwood, CA"
+) -> SearchLocation:
     return SearchLocation(
         source="device_gps",
         radius_miles=5,
@@ -88,10 +90,7 @@ def test_youtube_location_radius_km_clamps_to_api_max():
 
 def test_resolve_serpapi_location_name_uses_canonical_label():
     canonical = "Brentwood,Contra Costa County,California,United States"
-    assert (
-        sg.resolve_serpapi_location_name(_sl(label=canonical))
-        == canonical
-    )
+    assert sg.resolve_serpapi_location_name(_sl(label=canonical)) == canonical
 
 
 def test_lookup_serpapi_canonical_location_picks_nearest(monkeypatch):
@@ -170,7 +169,10 @@ def test_looks_like_coordinate_pair():
 
 
 def test_lookup_serpapi_canonical_location_returns_none_without_city_state():
-    assert sg.lookup_serpapi_canonical_location(_sl(label=None), property_address=None) is None
+    assert (
+        sg.lookup_serpapi_canonical_location(_sl(label=None), property_address=None)
+        is None
+    )
 
 
 def test_parse_search_location_arg_without_source_defaults_device_gps():
