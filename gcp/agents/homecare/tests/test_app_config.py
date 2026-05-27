@@ -33,7 +33,7 @@ def test_build_events_compaction_config_defaults(monkeypatch):
     config = app_config.build_events_compaction_config()
 
     assert config is not None
-    assert config.token_threshold == 80_000
+    assert config.token_threshold == 40_000
     assert config.event_retention_size == 40
     assert config.compaction_interval == 10_000
 

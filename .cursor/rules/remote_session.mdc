@@ -1,0 +1,34 @@
+---
+description: Write a turn report for Cursor Control after each agent turn
+alwaysApply: true
+---
+
+# Cursor Control — turn report
+
+At the **end of every agent turn**, without asking for confirmation:
+
+1. Set `state` to one of: `completed`, `needs_input`, `failed`.
+   - Use `needs_input` if you are blocked on the user, asked a question, or need a decision.
+   - Use `failed` if the turn ended with an error you could not fix.
+2. Write `turn_recap` (one paragraph: what happened this turn).
+3. Write `project_snapshot` (brief overall progress).
+4. If `needs_input`, set `question` to a short mobile-friendly line.
+
+Create the directory if needed:
+
+```bash
+mkdir -p .cursor-control/outbox
+```
+
+Write the JSON file:
+
+```json: .cursor-control/outbox/turn-${{date:YYYYMMDD-HHmmss}}.json
+{
+  "state": "completed",
+  "turn_recap": "<recap>",
+  "project_snapshot": "<snapshot>",
+  "question": ""
+}
+```
+
+Do not print extra explanation—just write the file.

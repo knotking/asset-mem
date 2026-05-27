@@ -605,10 +605,10 @@ def call_resolve_turn_llm(
     )
     prompt = f"{_RESOLVE_SYSTEM}\n\nINPUT_JSON:\n{user_blob}\n"
 
-    client = _vertex_client()
     model = getattr(GLOBAL_GEMINI_MODEL, "model", None) or "gemini-3.1-flash-lite"
     t0 = time.monotonic()
     try:
+        client = _vertex_client()
         response = client.models.generate_content(
             model=model,
             contents=prompt,
