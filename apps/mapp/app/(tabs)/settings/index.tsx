@@ -28,25 +28,25 @@ export default function SettingsHubScreen() {
           icon={User}
           title="Account"
           subtitle={accountSubtitle}
-          onPress={() => router.push('/(tabs)/settings/account')}
+          onPress={() => router.navigate('/(tabs)/settings/account')}
         />
         <SettingsHubRow
           icon={CreditCard}
           title="Plan & billing"
           subtitle={billingSubtitle}
-          onPress={() => router.push('/(tabs)/settings/billing')}
+          onPress={() => router.navigate('/(tabs)/settings/billing')}
         />
         <SettingsHubRow
           icon={Activity}
           title="AI usage"
           subtitle={usageSubtitle}
-          onPress={() => router.push('/(tabs)/settings/usage')}
+          onPress={() => router.navigate('/(tabs)/settings/usage')}
         />
         <SettingsHubRow
           icon={Camera}
           title="Checkpoints"
           subtitle={checkpointsSubtitle}
-          onPress={() => router.push('/(tabs)/settings/checkpoints')}
+          onPress={() => router.navigate('/(tabs)/settings/checkpoints')}
         />
       </View>
 
