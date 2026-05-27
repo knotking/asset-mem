@@ -113,7 +113,6 @@ def call_turn_intent_llm(
     """Single flash JSON call; None on failure or when disabled."""
     if turn_intent_llm_disabled():
         return None
-    client = GLOBAL_GEMINI_MODEL.api_client
     model = getattr(GLOBAL_GEMINI_MODEL, "model", None) or "gemini-3.1-flash-lite"
     blob = json.dumps(
         {
@@ -125,6 +124,7 @@ def call_turn_intent_llm(
     prompt = f"{_INTENT_SYSTEM}\n\nINPUT_JSON:\n{blob}\n"
     t0 = time.monotonic()
     try:
+        client = GLOBAL_GEMINI_MODEL.api_client
         response = client.models.generate_content(
             model=model,
             contents=prompt,

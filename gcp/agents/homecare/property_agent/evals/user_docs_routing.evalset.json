@@ -10,7 +10,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "{ \"user_query\": “Get me details on my insurance”, \"context_doc_uris\": [ \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\" ], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": “docs”,  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"search_location\": { \"source\": \"property_address\", \"radius_miles\": 5, \"coordinates\": { \"lat\": 37.9319, \"lng\": -121.6958 }, \"label\": \"1982 Helena Way, Brentwood, CA 94513\" } }"
+                "text": "{ \"user_query\": \"Get me details on my insurance\", \"context_doc_uris\": [ \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778515446737_lease.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778503868363_HomePolicyDocument.pdf\", \"gs://homegeek-staging.firebasestorage.app/documents/GqC3zTlnb6hRS4vTH6TGeCpDXgH2/1778514953205_car_insurance.pdf\" ], \"property_id\": \"nY3XQ92eUa02Qs14QWEn\", \"primary_agent\": \"docs\",  \"property_address\": \"1982 Helena Way, Brentwood, CA 94513\", \"search_location\": { \"source\": \"property_address\", \"radius_miles\": 5, \"coordinates\": { \"lat\": 37.9319, \"lng\": -121.6958 }, \"label\": \"1982 Helena Way, Brentwood, CA 94513\" } }"
               }
             ],
             "role": "user"
