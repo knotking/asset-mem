@@ -108,6 +108,13 @@ class DocsInput(BaseModel):
         default=None,
         description="Unified search/market location for service, cost, DIY, and shopping.",
     )
+    checkpoint_retrieval_search_query: Optional[str] = Field(
+        default=None,
+        description=(
+            "Short issue stem from checkpoint retrieval (location + issues). "
+            "Checkpoint flows only: primary search phrase for service SerpAPI/google_search."
+        ),
+    )
     checkpoint_optional_agents: Optional[List[CheckpointOptionalAgent]] = Field(
         default=None,
         description=(

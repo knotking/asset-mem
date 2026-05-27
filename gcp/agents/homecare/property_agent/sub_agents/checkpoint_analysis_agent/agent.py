@@ -26,6 +26,7 @@ from .search_query import (
     resolve_branch_search_user_query,
     resolve_effective_search_query,
     resolve_optional_branch_user_query,
+    resolve_service_branch_user_query,
 )
 from .synthesis_prompt import CHECKPOINT_SYNTHESIS_INSTRUCTION
 from . import legacy_parse as _legacy_parse
@@ -75,4 +76,5 @@ __all__ = [
     "resolve_branch_search_user_query",
     "resolve_effective_search_query",
     "resolve_optional_branch_user_query",
+    "resolve_service_branch_user_query",
 ]

@@ -228,12 +228,37 @@ def _is_checkpoint_dual_format_content(text: str) -> bool:
     return bool(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.search(text))
 
 
+_CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY = "checkpoint_progress_sse_body"
+_CHECKPOINT_BRANCH_COMPLETED_STATE_KEY = "checkpoint_branch_completed"
+
+
+def _event_state_delta(event: Dict[str, Any]) -> Dict[str, Any]:
+    actions = event.get("actions")
+    if not isinstance(actions, dict):
+        return {}
+    delta = actions.get("state_delta") or actions.get("stateDelta")
+    return delta if isinstance(delta, dict) else {}
+
+
+def _checkpoint_progress_display_text(event: Dict[str, Any], event_text: str) -> str:
+    """
+    Full dual-format for progressive UI may live in state_delta while session text is slim.
+    """
+    delta = _event_state_delta(event)
+    sse_body = delta.get(_CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY)
+    if isinstance(sse_body, str) and sse_body.strip():
+        if _is_checkpoint_dual_format_content(sse_body):
+            return sse_body
+    return event_text
+
+
 def _should_replace_assistant_content(event: Dict[str, Any], event_text: str) -> bool:
     """Checkpoint analysis bodies are full snapshots; later events must not append."""
     author = event.get("author")
     if isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS:
         return True
-    return _is_checkpoint_dual_format_content(event_text)
+    display = _checkpoint_progress_display_text(event, event_text)
+    return _is_checkpoint_dual_format_content(display)
 
 
 def _strip_user_query_echoes(content: str, user_query: str) -> str:
@@ -656,6 +681,20 @@ def _checkpoint_optional_completed_steps(response_payload: Any) -> List[Dict[str
         preview = _preview_for_response(agent_name, response_payload)
         updates.append(_step_update(agent_name, "completed", preview=preview))
     return updates
+
+
+def _progressive_checkpoint_step_updates_from_state_delta(
+    event: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Mark optional specialist rows completed when branch name is on the event delta."""
+    delta = _event_state_delta(event)
+    branch = delta.get(_CHECKPOINT_BRANCH_COMPLETED_STATE_KEY)
+    if not isinstance(branch, str) or not branch.strip():
+        return []
+    agent_name = _CHECKPOINT_OPTIONAL_AGENT_BY_KEY.get(branch.strip())
+    if not agent_name:
+        return []
+    return [_step_update(agent_name, "completed")]
 
 
 def _progressive_checkpoint_step_updates_from_text(
@@ -1115,16 +1154,19 @@ async def stream_agent_answers(
             user_id=user_id, session_id=session_id, message=message
         ):
             event_text = extract_text_from_event(event)
-            if event_text:
+            display_text = _checkpoint_progress_display_text(event, event_text)
+            if display_text:
                 if _should_replace_assistant_content(event, event_text):
-                    assistant_content_accumulated = event_text
+                    assistant_content_accumulated = display_text
                 else:
-                    assistant_content_accumulated += event_text
+                    assistant_content_accumulated += display_text
 
             step_updates = extract_agent_step_updates_from_event(event)
             if _is_checkpoint_progress_event(event, event_text):
-                step_updates = step_updates + _progressive_checkpoint_step_updates_from_text(
-                    event_text
+                step_updates = (
+                    step_updates
+                    + _progressive_checkpoint_step_updates_from_state_delta(event)
+                    + _progressive_checkpoint_step_updates_from_text(display_text)
                 )
             if step_updates:
                 for step_update in step_updates:
@@ -1167,13 +1209,24 @@ async def stream_agent_answers(
                 transfer_message = extract_event_data_with_transfer_target(event)
                 if transfer_message:
                     yield transfer_message
-                else:
-                    parts = event.get("content", {}).get("parts", [])
-                    for part in parts:
-                        if isinstance(part, dict) and "text" in part and part["text"]:
-                            yield f"{prettify_name(event.get('author',''))}: {part['text']}"
+                elif display_text:
+                    yield f"{prettify_name(event.get('author', ''))}: {display_text}"
             else:
-                yield event
+                if (
+                    _is_checkpoint_progress_event(event, event_text)
+                    and display_text
+                    and display_text != event_text
+                ):
+                    patched = dict(event)
+                    content = patched.get("content")
+                    if isinstance(content, dict):
+                        patched["content"] = {
+                            **content,
+                            "parts": [{"text": display_text}],
+                        }
+                    yield patched
+                else:
+                    yield event
     except Exception:
         stream_failed = True
         logger.exception(

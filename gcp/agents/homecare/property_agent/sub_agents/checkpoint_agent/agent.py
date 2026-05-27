@@ -7,6 +7,7 @@ Can optionally trigger comprehensive analysis with coverage, DIY, service, and c
 
 import json
 import logging
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Type
@@ -204,26 +205,46 @@ def _extract_tool_visible_text(content: types.Content | None) -> str:
     return "\n".join(thought_chunks).strip()
 
 
+def _checkpoint_progress_append_to_parent_enabled() -> bool:
+    raw = (os.getenv("CHECKPOINT_PROGRESS_APPEND_TO_PARENT_SESSION") or "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
 async def _forward_checkpoint_progress_to_parent(
     tool_context: ToolContext,
     body: str,
     *,
     branch: Optional[str] = None,
     state_delta: Optional[Dict[str, Any]] = None,
+    session_event_text: Optional[str] = None,
 ) -> None:
-    """Append a progressive checkpoint analysis model event on the parent session."""
+    """
+    Optionally append a slim progress marker on the parent ADK session.
+
+    Full dual-format for streaming lives in state and in
+    CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY on the event delta. Disabled by default
+    (CHECKPOINT_PROGRESS_APPEND_TO_PARENT_SESSION) to avoid bloating LLM history.
+    """
+    if not _checkpoint_progress_append_to_parent_enabled():
+        return
     if not (body or "").strip():
         return
     invocation_context = tool_context._invocation_context
     if invocation_context is None or invocation_context.session_service is None:
         return
+    from property_agent.sub_agents.checkpoint_dual_format.constants import (
+        CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY,
+    )
+
     delta: Dict[str, Any] = dict(state_delta or {})
+    delta[CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY] = body
     if branch:
         delta[CHECKPOINT_BRANCH_COMPLETED_STATE_KEY] = branch
+    visible = (session_event_text or "").strip() or "# Checkpoint analysis\n\n_Updating…_\n"
     event = Event(
         invocation_id=invocation_context.invocation_id,
         author=CHECKPOINT_PROGRESS_EVENT_AUTHOR,
-        content=types.Content(role="model", parts=[types.Part(text=body)]),
+        content=types.Content(role="model", parts=[types.Part(text=visible)]),
         actions=EventActions(state_delta=delta) if delta else EventActions(),
     )
     try:

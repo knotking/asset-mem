@@ -15,6 +15,7 @@ from .constants import (
     CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
     CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
     CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY,
+    CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY,
     CHECKPOINT_SESSION_INPUT_KEYS,
     OPTIONAL_BRANCH_TO_AGENT_NAME,
     _CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
@@ -307,6 +308,36 @@ def stash_checkpoint_dual_format_in_state(state: Any, body: str) -> None:
         return
     state[CHECKPOINT_ANALYSIS_DUAL_FORMAT_STATE_KEY] = body
     state["checkpoint_result"] = body
+
+
+def minimal_checkpoint_progress_session_text(
+    *,
+    completed_branches: List[str],
+    pending_branches: List[str],
+    requested_branches: List[str],
+) -> str:
+    """
+    Short placeholder for ADK session history during progressive analysis.
+
+    Full dual-format for UI lives in CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY on the
+    event state_delta and in CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY on session state.
+    """
+    total = len(requested_branches) or 1
+    done = len(completed_branches)
+    title = "Checkpoint analysis"
+    if not requested_branches:
+        return f"# {title}\n\n_Preparing analysis…_\n"
+    labels = ", ".join(requested_branches)
+    if done >= total:
+        return f"# {title}\n\n_Analysis complete ({done}/{total}: {labels})._\n"
+    running = pending_branches[0] if pending_branches else ""
+    if running:
+        return (
+            f"# {title}\n\n_Progress {done}/{total} — "
+            f"completed: {', '.join(completed_branches) or 'none'}; "
+            f"running: {running}._\n"
+        )
+    return f"# {title}\n\n_Progress {done}/{total} ({labels})._\n"
 
 
 def _analysis_status_for_branches(

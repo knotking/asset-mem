@@ -18,6 +18,11 @@ from .memory_bank import (
     memory_preload_enabled,
     resolve_property_id,
 )
+from .session_analysis_store import (
+    maybe_persist_session_analysis_from_state,
+    resolve_agent_session_id_from_context,
+    resolve_user_id_from_context,
+)
 from .logging_context import (
     bind_auth_uid,
     bind_correlation_id,
@@ -153,6 +158,12 @@ def after_tool_auth_uid(
 async def property_agent_after_agent_memory(
     callback_context: CallbackContext,
 ) -> None:
+    maybe_persist_session_analysis_from_state(
+        callback_context.state,
+        user_id=resolve_user_id_from_context(callback_context),
+        property_id=resolve_property_id(callback_context.state),
+        agent_session_id=resolve_agent_session_id_from_context(callback_context),
+    )
     await ingest_invocation_to_memory_bank(
         callback_context,
         agent_name=PROPERTY_AGENT_NAME,

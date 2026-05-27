@@ -18,7 +18,17 @@ from .conversational_intent import (
     resolve_property_address_from_state,
     resolve_user_query_from_state,
 )
+from .context_only_turn import (
+    build_context_only_response,
+    should_short_circuit_context_only_turn,
+)
+from .session_analysis_store import (
+    maybe_hydrate_session_analysis_from_firestore,
+    resolve_user_id_from_context,
+)
+from .memory_bank import resolve_property_id
 from .query_mode import (
+    SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
     QueryModeKind,
     format_session_working_memory_block,
     should_answer_provider_from_context,
@@ -227,11 +237,23 @@ def format_resolved_turn_block(
         "are context only — follow this block, not UI fields."
     )
     blocks = ["[RESOLVED_TURN]\n" f"{json.dumps(payload, indent=2)}\n" "[/RESOLVED_TURN]"]
-    if resolved.user_goal == "answer_from_context" and state is not None:
+    if state is not None and _should_inject_session_working_memory(resolved, state):
         memory = format_session_working_memory_block(state)
         if memory:
             blocks.append(memory)
     return "\n\n".join(blocks)
+
+
+def _should_inject_session_working_memory(
+    resolved: ResolvedTurn,
+    state: Mapping[str, Any],
+) -> bool:
+    """Inject compact facts for follow-ups so the executor need not re-read full transcripts."""
+    if resolved.user_goal == "answer_from_context":
+        return True
+    if resolved.retrieval_only and state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY):
+        return True
+    return False
 
 
 def _ensure_generate_content_config(llm_request: Any) -> Any:
@@ -318,6 +340,16 @@ def prepare_before_model_turn(
     events = _session_events(ctx)
     inv_id = _invocation_id(ctx)
 
+    uid = resolve_user_id_from_context(ctx)
+    property_id = resolve_property_id(state)
+    if state is not None and uid:
+        state.setdefault("user_id", uid)
+    maybe_hydrate_session_analysis_from_firestore(
+        state,
+        user_id=uid,
+        property_id=property_id,
+    )
+
     passthrough = _take_user_docs_passthrough(state)
     if passthrough:
         logger.info(
@@ -369,6 +401,32 @@ def prepare_before_model_turn(
             (resolve_user_query_from_state(state) or "")[:80],
         )
         return _plain_llm_response(text)
+
+    user_query = (
+        resolve_user_query_from_state(state) or resolved.expanded_user_query or ""
+    )
+    if should_short_circuit_context_only_turn(
+        resolved, state=state, user_query=user_query
+    ):
+        context_text = build_context_only_response(
+            resolved,
+            state=state,
+            session_events=events,
+            user_query=user_query,
+            current_invocation_id=inv_id,
+        )
+        if context_text:
+            if state is not None and hasattr(state, "__setitem__"):
+                state["_context_only_short_circuit"] = True
+            logger.info(
+                "resolve_turn context_only_short_circuit user_goal=%s "
+                "query_mode=%s chars=%d query=%r",
+                resolved.user_goal,
+                resolved.query_mode,
+                len(context_text),
+                user_query[:80],
+            )
+            return _plain_llm_response(context_text)
 
     if llm_request is not None:
         inject_resolved_turn_into_llm_request(llm_request, resolved, state=state)

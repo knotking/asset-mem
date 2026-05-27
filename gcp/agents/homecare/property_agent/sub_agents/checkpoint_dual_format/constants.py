@@ -20,6 +20,8 @@ CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY = "checkpoint_analysis_pending_input
 # Monotonic counter bumped when progress stash updates (executor streaming callback).
 CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY = "checkpoint_progress_emit_seq"
 CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY = "checkpoint_progress_last_emitted_seq"
+# Full dual-format body for SSE/Firestore; kept out of slim session event text (token savings).
+CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY = "checkpoint_progress_sse_body"
 
 OPTIONAL_BRANCH_TO_AGENT_NAME: Dict[str, str] = {
     "coverage": "coverage_agent",
