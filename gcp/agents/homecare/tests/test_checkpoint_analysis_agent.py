@@ -9,6 +9,9 @@ import pytest
 from google.adk.agents import Agent as LlmAgent
 
 from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
+from property_agent.sub_agents.checkpoint_analysis_agent.search_query import (
+    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY,
+)
 from property_agent.sub_agents.checkpoint_agent.agent import (
     build_search_query_from_checkpoints,
 )
@@ -690,6 +693,44 @@ def test_parallel_runner_uses_state_when_search_query_arg_missing(
     assert captured[0]["user_query"] == (
         "residential garage door paint chipping scratches repair"
     )
+
+
+def test_parallel_runner_service_uses_stem_under_branch_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from property_agent.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
+
+    captured: list[dict] = []
+
+    async def _capture_service(agent, payload, tool_context):
+        captured.append(dict(payload))
+        return "ok"
+
+    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _capture_service)
+    stem = "residential garage door paint chipping scratches repair"
+    tc = _minimal_tool_context()
+    tc.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = stem
+    tc.state[RESOLVED_TURN_STATE_KEY] = ResolvedTurn(
+        intent="substantive",
+        route="checkpoint",
+        expanded_user_query="analyse my checkpoints for coverage, diy, service, and cost",
+        retrieval_only=False,
+        run_optional_agents=["service"],
+        user_goal="new_analysis",
+        query_mode="branch_explicit",
+    ).to_dict()
+    asyncio.run(
+        caa.run_checkpoint_optional_agents_parallel(
+            checkpoint_results="Checkpoint Garage Issues: paint chipping " * 5,
+            user_query="analyse my checkpoints for coverage, diy, service, and cost",
+            checkpoint_optional_agents=["service"],
+            search_query=None,
+            tool_context=tc,
+        )
+    )
+    assert len(captured) == 1
+    assert captured[0]["user_query"] == stem
+    assert captured[0]["checkpoint_retrieval_search_query"] == stem
 
 
 def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.MonkeyPatch):
@@ -1933,6 +1974,20 @@ Full markdown from synthesis.
     assert blob["analysis"]["checkpointSummary"]["checkpointsAnalyzed"] == 2
 
 
+def test_minimal_checkpoint_progress_session_text():
+    from property_agent.sub_agents.checkpoint_dual_format import dual_format_body as dfg
+
+    slim = dfg.minimal_checkpoint_progress_session_text(
+        completed_branches=["coverage"],
+        pending_branches=["diy"],
+        requested_branches=["coverage", "diy"],
+    )
+    assert "Progress 1/2" in slim
+    assert "coverage" in slim
+    assert "running: diy" in slim
+    assert "```json" not in slim
+
+
 def test_build_progressive_checkpoint_dual_format_includes_status():
     from property_agent.sub_agents import checkpoint_dual_format_guard as dfg
 
@@ -1973,9 +2028,11 @@ async def test_parallel_runner_emits_progressive_callbacks(monkeypatch):
     async def _stub_branch(name, payload, tool_context):
         return f"{name}-ok"
 
-    async def on_complete(branch, results, body, tool_context):
+    async def on_complete(branch, results, body, tool_context, **kwargs):
         order.append(branch or "phase0")
         assert dfg.dual_format_has_valid_analysis_json(body)
+        session_event_text = kwargs.get("session_event_text") or ""
+        assert "```json" not in session_event_text
 
     monkeypatch.setattr(caa, "_run_single_optional_agent_async", _stub_branch)
     blob = """Checkpoint Name: Garage

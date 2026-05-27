@@ -20,6 +20,43 @@ from ...serpapi_geo import (
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+_SERPAPI_FAILURE_MARKERS = (
+    "SerpAPI Maps error:",
+    "Service provider search not available",
+)
+
+
+def _retrieval_search_stem_from_context(
+    tool_context: Optional[ToolContext], *, fallback_query: str
+) -> str:
+    stem = (fallback_query or "").strip()
+    if tool_context is None:
+        return stem
+    state = getattr(tool_context, "state", None)
+    if state is None or not hasattr(state, "get"):
+        return stem
+    sq = state.get("checkpoint_retrieval_search_query")
+    if isinstance(sq, str) and sq.strip():
+        return sq.strip()
+    return stem
+
+
+def _append_serpapi_fallback_hint(
+    result: str, *, query: str, tool_context: Optional[ToolContext]
+) -> str:
+    if not any(marker in result for marker in _SERPAPI_FAILURE_MARKERS):
+        return result
+    stem = _retrieval_search_stem_from_context(tool_context, fallback_query=query)
+    if not stem:
+        return result
+    return (
+        f"{result}\n\n"
+        "SERPAPI_FALLBACK_HINT: Use google_search only with problem-focused queries "
+        f'derived from the repair issue (e.g. "{stem} local repair professionals"). '
+        "Do NOT search for home inspection, property checkpoint audits, lease compliance, "
+        "or generic property maintenance unless user_query explicitly requests those."
+    )
+
 
 def _serpapi_api_key() -> Optional[str]:
     return (os.environ.get("SERP_API_KEY") or "").strip() or None
@@ -109,15 +146,21 @@ async def serpapi_search(
 
     resolved = merge_search_location_sources(search_location, state_sl)
     if resolved is not None:
-        return await asyncio.to_thread(
+        maps_result = await asyncio.to_thread(
             _run_serpapi_maps_search, query, resolved, property_address
+        )
+        return _append_serpapi_fallback_hint(
+            maps_result, query=query, tool_context=tool_context
         )
 
     q = (query or "").strip()
     if not q:
         return "Service provider search not available (empty query)."
     logger.info("serpapi_search: web fallback q_len=%d (no coordinates)", len(q))
-    return await asyncio.to_thread(_run_serpapi_web_fallback, q)
+    web_result = await asyncio.to_thread(_run_serpapi_web_fallback, q)
+    return _append_serpapi_fallback_hint(
+        web_result, query=query, tool_context=tool_context
+    )
 
 
 service_agent = Agent(

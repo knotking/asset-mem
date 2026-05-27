@@ -22,9 +22,11 @@ from ..checkpoint_dual_format_guard import (
     CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
     CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
     CHECKPOINT_PROGRESS_EVENT_AUTHOR,
+    CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY,
     bump_checkpoint_progress_emit_seq,
     build_phase0_checkpoint_dual_format,
     build_progressive_checkpoint_dual_format,
+    minimal_checkpoint_progress_session_text,
     stash_checkpoint_dual_format_in_state,
 )
 from ..checkpoint_request_timing import (
@@ -43,6 +45,7 @@ from .search_query import (
     resolve_branch_search_user_query,
     resolve_effective_search_query,
     resolve_optional_branch_user_query,
+    resolve_service_branch_user_query,
     _stash_retrieval_search_query,
 )
 
@@ -114,6 +117,8 @@ class CheckpointOptionalParallelAgent(BaseAgent):
             results: Dict[str, str],
             body: str,
             tool_context: ToolContext,
+            *,
+            session_event_text: str,
         ) -> None:
             stash_checkpoint_dual_format_in_state(tool_context.state, body)
             if hasattr(tool_context.state, "__setitem__"):
@@ -121,6 +126,7 @@ class CheckpointOptionalParallelAgent(BaseAgent):
                 bump_checkpoint_progress_emit_seq(tool_context.state)
             delta: Dict[str, Any] = {
                 "checkpoint_parallel_results": json.dumps(results, ensure_ascii=False),
+                CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY: body,
             }
             if branch:
                 delta[CHECKPOINT_BRANCH_COMPLETED_STATE_KEY] = branch
@@ -129,7 +135,10 @@ class CheckpointOptionalParallelAgent(BaseAgent):
                     invocation_id=ctx.invocation_id,
                     author=CHECKPOINT_PROGRESS_EVENT_AUTHOR,
                     branch=ctx.branch,
-                    content=types.Content(role="model", parts=[types.Part(text=body)]),
+                    content=types.Content(
+                        role="model",
+                        parts=[types.Part(text=session_event_text)],
+                    ),
                     actions=EventActions(state_delta=delta),
                 )
             )
@@ -324,8 +333,19 @@ async def _emit_progressive_update(
         pending_branches=pending,
         in_progress=bool(pending),
     )
+    session_event_text = minimal_checkpoint_progress_session_text(
+        completed_branches=completed,
+        pending_branches=pending,
+        requested_branches=requested,
+    )
     if on_branch_complete is not None:
-        await on_branch_complete(branch, results, body, tool_context)
+        await on_branch_complete(
+            branch,
+            results,
+            body,
+            tool_context,
+            session_event_text=session_event_text,
+        )
 
 
 async def run_checkpoint_optional_agents_parallel(
@@ -385,14 +405,23 @@ async def run_checkpoint_optional_agents_parallel(
         query_mode=query_mode,
         max_chars=400,
     )
+    service_user_query = resolve_service_branch_user_query(
+        turn_query=user_query,
+        search_query=search_query or None,
+        checkpoint_results=checkpoint_results,
+        query_mode=query_mode,
+        max_chars=400,
+    )
     logger.info(
         "checkpoint optional parallel: start branches=%s query_mode=%s "
-        "checkpoint_blob_len=%d retrieval_search_query_len=%d branch_user_query_len=%d",
+        "checkpoint_blob_len=%d retrieval_search_query_len=%d branch_user_query_len=%d "
+        "service_user_query_len=%d",
         sorted(set(requested)),
         query_mode,
         len(checkpoint_results or ""),
         len(search_query),
         len(branch_user_query),
+        len(service_user_query),
     )
     if not search_query and len(branch_user_query) + 40 < len(checkpoint_results or ""):
         logger.debug(
@@ -421,13 +450,29 @@ async def run_checkpoint_optional_agents_parallel(
         requested_branches=requested,
     )
     if on_branch_complete is not None:
-        await on_branch_complete("", results, phase0, tool_context)
+        await on_branch_complete(
+            "",
+            results,
+            phase0,
+            tool_context,
+            session_event_text=minimal_checkpoint_progress_session_text(
+                completed_branches=[],
+                pending_branches=list(requested),
+                requested_branches=requested,
+            ),
+        )
     else:
         stash_checkpoint_dual_format_in_state(tool_context.state, phase0)
 
     async def _run_named_branch(name: str) -> Tuple[str, str]:
+        branch_payload = payload
+        if name == "service":
+            branch_payload = {
+                **payload,
+                "user_query": service_user_query,
+            }
         value = await _agent_attr("_run_single_optional_agent_async")(
-            name, payload, tool_context
+            name, branch_payload, tool_context
         )
         return name, value
 

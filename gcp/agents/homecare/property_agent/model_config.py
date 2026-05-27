@@ -60,3 +60,6 @@ class _LegacyApiGemini:
 
 # Direct ``generate_content`` call sites (cost estimator, DIY orchestrator steps/web).
 LEGACY_API_GEMINI = _LegacyApiGemini()
+
+# Same Vertex client as LEGACY_API_GEMINI (not ADK Gemini3 / location=global).
+LEGACY_GEMINI_MODEL = LEGACY_API_GEMINI

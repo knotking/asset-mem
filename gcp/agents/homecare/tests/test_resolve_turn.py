@@ -182,3 +182,25 @@ def test_format_resolved_turn_block() -> None:
     )
     assert "[RESOLVED_TURN]" in block
     assert "ui_context_note" in block
+
+
+def test_format_resolved_turn_block_injects_working_memory_when_snapshot() -> None:
+    from property_agent.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
+
+    block = format_resolved_turn_block(
+        ResolvedTurn(
+            intent="substantive",
+            route="checkpoint",
+            expanded_user_query="tell me about Hetcho",
+            retrieval_only=True,
+            user_goal="answer_from_context",
+            query_mode="interpret_session",
+        ),
+        state={
+            SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+                "service_providers_mentioned": ["Hetcho Services"],
+            }
+        },
+    )
+    assert "[SESSION_WORKING_MEMORY]" in block
+    assert "Hetcho" in block

@@ -12,6 +12,7 @@ from property_agent.query_mode import (
     format_provider_context_answer,
     infer_query_mode,
     needs_fresh_checkpoint_retrieval,
+    query_asks_area_outside_memory,
     query_references_known_provider,
     should_answer_provider_from_context,
     should_block_checkpoint_agent_for_context_turn,
@@ -147,6 +148,43 @@ def test_resolve_optional_branch_user_query_issue_uses_compact_stem() -> None:
     assert "9:10" not in q
 
 
+def test_resolve_service_branch_user_query_explicit_menu_uses_retrieval_stem() -> None:
+    stem = "residential garage door paint chipping scratches repair"
+    q = caa.resolve_service_branch_user_query(
+        turn_query="analyse my checkpoints for coverage, diy, service, and cost",
+        search_query=stem,
+        checkpoint_results="blob",
+        query_mode="branch_explicit",
+    )
+    assert q == stem
+
+
+def test_resolve_service_branch_user_query_garage_provider_turn_uses_turn() -> None:
+    turn = (
+        "Can you find more service providers for the garage door refinishing "
+        "or related property maintenance tasks?"
+    )
+    stem = "residential garage door paint chipping scratches repair"
+    q = caa.resolve_service_branch_user_query(
+        turn_query=turn,
+        search_query=stem,
+        checkpoint_results="blob",
+        query_mode="branch_explicit",
+    )
+    assert q == turn
+
+
+def test_resolve_service_branch_user_query_entity_uses_turn() -> None:
+    turn = "Get more details about Right Way Garage Doors"
+    q = caa.resolve_service_branch_user_query(
+        turn_query=turn,
+        search_query="garage door paint repair",
+        checkpoint_results="blob",
+        query_mode="branch_entity_search",
+    )
+    assert "Right Way" in q
+
+
 def test_build_session_working_memory_includes_providers() -> None:
     state = {"checkpoint_parallel_results": _service_parallel_json("Acme Door Co")}
     memory = build_session_working_memory(state)
@@ -205,13 +243,141 @@ def test_should_block_provider_follow_up_not_kitchen() -> None:
         user_goal="answer_from_context",
         query_mode="interpret_session",
     )
-    assert not should_block_checkpoint_agent_for_context_turn(
+    assert not needs_fresh_checkpoint_retrieval(
+        "Get more details on OneHandyPro",
+        state=state,
+    )
+
+
+def test_kitchen_outside_memory_uses_context_not_fresh_retrieval() -> None:
+    state = {
+        "checkpoint_parallel_results": _service_parallel_json("OneHandyPro"),
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {
+                "locations": ["Garage"],
+                "checkpointsAnalyzed": 2,
+            },
+        },
+    }
+    assert query_asks_area_outside_memory(
+        "Are there issues in the kitchen?",
+        state,
+    )
+    assert not needs_fresh_checkpoint_retrieval(
+        "Are there issues in the kitchen?",
+        state=state,
+    )
+    assert should_block_checkpoint_agent_for_context_turn(
         user_query="Are there issues in the kitchen?",
         state=state,
         user_goal="answer_from_context",
         query_mode="interpret_session",
     )
-    assert needs_fresh_checkpoint_retrieval("Are there issues in the kitchen?")
+
+
+def test_query_references_ace_handyman_not_handyman_reed() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "service_providers_mentioned": [
+                "Ace Handyman Services Brentwood",
+                "Handyman Reed",
+            ],
+            "service_provider_details": {
+                "Ace Handyman Services Brentwood": {
+                    "name": "Ace Handyman Services Brentwood",
+                    "website": "https://acehandymanservices.com",
+                },
+                "Handyman Reed": {
+                    "name": "Handyman Reed",
+                    "website": "https://handymanreed.com",
+                },
+            },
+        },
+    }
+    match = query_references_known_provider(
+        "Get more details on Ace Handyman services for the garage door repairs",
+        state,
+    )
+    assert match == "Ace Handyman Services Brentwood"
+
+
+def test_format_provider_context_answer_includes_numeric_rating() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "service_providers_mentioned": ["Brentwood Pro Painters"],
+            "service_provider_details": {
+                "Brentwood Pro Painters": {
+                    "name": "Brentwood Pro Painters",
+                    "rating": 4.8,
+                },
+            },
+        },
+    }
+    text = format_provider_context_answer(
+        "get me more details on Brentwood Pro painters",
+        state,
+    )
+    assert text is not None
+    assert "4.8" in text
+    assert "**Rating:**" in text
+
+
+def test_format_provider_context_answer_synthesis_service_field() -> None:
+    """Synthesis often uses ``service`` (singular) on serpAPIResults items."""
+    inner = json.dumps(
+        {
+            "analysis": {
+                "serviceResults": {
+                    "localPros": {
+                        "serpAPIResults": [
+                            {
+                                "name": "Precision Door Service",
+                                "service": "Full Inspection & Maintenance",
+                            },
+                            {
+                                "name": "Brentwood Garage Door Pros",
+                                "service": "Garage door repair",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+    )
+    state = {"checkpoint_analysis_dual_format": f"# Analysis\n\n```json\n{inner}\n```\n"}
+    match = query_references_known_provider(
+        "get more details on Precision Door Service",
+        state,
+    )
+    assert match == "Precision Door Service"
+    text = format_provider_context_answer(
+        "get more details on Precision Door Service",
+        state,
+    )
+    assert text is not None
+    assert "Precision Door Service" in text
+    assert "Full Inspection" in text
+
+
+def test_format_provider_context_answer_name_only_not_none() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "service_providers_mentioned": ["Precision Door Service"],
+            "service_provider_details": {
+                "Precision Door Service": {"name": "Precision Door Service"},
+            },
+        },
+    }
+    text = format_provider_context_answer(
+        "get more details on Precision Door Service",
+        state,
+    )
+    assert text is not None
+    assert "Precision Door Service" in text
+    assert "previous **Service results**" in text
+    assert "limited details saved" in text
+    assert "fresh provider search" in text
+    assert "bathroom" not in text.lower()
 
 
 def test_format_provider_context_answer() -> None:
@@ -238,5 +404,6 @@ def test_format_provider_context_answer() -> None:
     }
     text = format_provider_context_answer("More about OneHandyPro", state)
     assert text is not None
+    assert "previous **Service results**" in text
     assert "OneHandyPro" in text
     assert "CSLB licensed" in text

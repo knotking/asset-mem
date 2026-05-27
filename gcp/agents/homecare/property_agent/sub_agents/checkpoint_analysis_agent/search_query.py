@@ -126,6 +126,55 @@ def resolve_branch_search_user_query(
     return out
 
 
+_GENERIC_CHECKPOINT_ANALYSIS_RE = re.compile(
+    r"\b(?:analyse|analyze|review|check|inspect|run|do)\b.{0,48}\bcheckpoints?\b",
+    re.IGNORECASE,
+)
+_PROBLEM_FOCUS_RE = re.compile(
+    r"\b(?:paint|chipping|chip|scratch|leak|refinish|refurbish|garage\s*door|roof|"
+    r"plumb|hvac|electrical|mold|broken|damaged|repair|replace|install|fix|"
+    r"water heater|faucet|gutter)\b",
+    re.IGNORECASE,
+)
+
+
+def _turn_is_generic_checkpoint_analysis_menu(turn: str) -> bool:
+    """True when the user only names analysis branches without a specific repair task."""
+    text = (turn or "").strip()
+    if not text:
+        return False
+    from property_agent.conversational_intent import resolve_requested_optional_branches
+
+    branches = resolve_requested_optional_branches(text, None)
+    if len(branches) < 2:
+        return False
+    if _GENERIC_CHECKPOINT_ANALYSIS_RE.search(text):
+        return True
+    return bool(
+        re.search(r"\b(?:full|comprehensive)\s+analysis\b", text, re.IGNORECASE)
+    )
+
+
+def _turn_has_specific_problem_focus(turn: str) -> bool:
+    """True when the turn names a repair, trade, or provider entity (not only branch menu)."""
+    text = (turn or "").strip()
+    if not text:
+        return False
+    from property_agent.query_mode import query_requests_entity_detail
+
+    if query_requests_entity_detail(text):
+        return True
+    if _PROBLEM_FOCUS_RE.search(text):
+        return True
+    if re.search(
+        r"\bfind\b.{0,40}\b(?:providers?|contractors?|pros)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+    return False
+
+
 def resolve_optional_branch_user_query(
     *,
     turn_query: str,
@@ -137,8 +186,8 @@ def resolve_optional_branch_user_query(
     """
     Query passed to optional branches as DocsInput.user_query.
 
-    Entity/explicit follow-ups use the user's turn text; generic analysis uses the
-    compact checkpoint issue stem (unless search_query was stashed from retrieval).
+    Entity follow-ups use the user's turn text; generic analysis uses the compact
+    checkpoint issue stem (unless search_query was stashed from retrieval).
     """
     turn = (turn_query or "").strip()
     if query_mode in ("branch_entity_search", "branch_explicit") and turn:
@@ -146,6 +195,50 @@ def resolve_optional_branch_user_query(
     return resolve_branch_search_user_query(
         search_query, checkpoint_results, max_chars=max_chars
     )
+
+
+def resolve_service_branch_user_query(
+    *,
+    turn_query: str,
+    search_query: Optional[str],
+    checkpoint_results: str,
+    query_mode: str = "branch_issue_search",
+    max_chars: int = 400,
+) -> str:
+    """
+    user_query for the service branch: prefer retrieval issue stem over generic menu turns.
+
+    Under ``branch_explicit``, a turn like "analyse checkpoints for coverage, diy, service"
+    must not steer SerpAPI/google_search toward home inspection; use the retrieval seed instead.
+    Provider-specific or problem-focused turns still use the user's text.
+    """
+    turn = (turn_query or "").strip()
+    stem = resolve_branch_search_user_query(
+        search_query, checkpoint_results, max_chars=max_chars
+    )
+
+    if query_mode == "branch_entity_search" and turn:
+        return _truncate_query(turn, max_chars=max_chars)
+
+    from property_agent.query_mode import query_requests_entity_detail
+
+    if turn and query_requests_entity_detail(turn):
+        return _truncate_query(turn, max_chars=max_chars)
+
+    if stem:
+        if query_mode == "branch_issue_search":
+            return stem
+        if query_mode == "branch_explicit":
+            if _turn_is_generic_checkpoint_analysis_menu(turn):
+                return stem
+            if turn and not _turn_has_specific_problem_focus(turn):
+                return stem
+
+    if turn:
+        return _truncate_query(turn, max_chars=max_chars)
+    if stem:
+        return stem
+    return optional_branch_search_user_query(checkpoint_results, max_chars=max_chars)
 
 
 def _stash_retrieval_search_query(

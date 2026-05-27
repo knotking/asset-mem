@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Sliding-window fields are required by ADK even when only token threshold is used.
 _DEFAULT_COMPACTION_INTERVAL = 10_000
 _DEFAULT_OVERLAP_SIZE = 1
-_DEFAULT_TOKEN_THRESHOLD = 80_000
+_DEFAULT_TOKEN_THRESHOLD = 40_000
 _DEFAULT_EVENT_RETENTION_SIZE = 40
 
 

@@ -14,7 +14,10 @@ def service_agent_instructions() -> str:
         Provide comprehensive professional service solutions with local professional service provider information.
         
         **Input Parameters:**
-        *   `user_query` (str): The user's question or description.
+        *   `user_query` (str): The user's question or description (checkpoint flows: compact repair/issue text).
+        *   `checkpoint_retrieval_search_query` (str, optional): Issue stem from checkpoint retrieval
+            (e.g. "residential garage door paint chipping scratches repair"). When set, use this as the
+            primary problem for SerpAPI and google_search queries—not generic "checkpoint" or inspection language.
         *   `context_doc_uris` (List[str], optional): Additional context documents.
         *   `property_address` (str, optional): Property record address for identity/context only — do NOT use for local search when `search_location` is provided.
         *   `search_location` (object, optional): Single source of truth for market/geo:
@@ -33,12 +36,16 @@ def service_agent_instructions() -> str:
         *   `google_search`: Searches the internet for service-related information (grounded web).
         
         **MANDATORY Sequence of Operations - Always Call ALL REQUIRED TOOLS:**
-        1. Use `user_query` and any checkpoint or retrieval context in the request to understand the specific problem
+        1. Determine the repair problem stem: prefer `checkpoint_retrieval_search_query` when provided, else `user_query`.
+           Ignore lease/insurance document themes unless the user explicitly asked about coverage or inspection.
         2. Call `serpapi_search` with:
-           - `query`: problem-focused text (e.g. "garage door paint repair professionals") — do NOT embed lat/lng or "within N miles" in the query; geo is applied via `search_location`
+           - `query`: problem-focused text from the stem (e.g. "garage door paint repair professionals") — do NOT embed lat/lng or "within N miles" in the query; geo is applied via `search_location`
            - `search_location`: pass through the input `search_location` object when present (the tool also reads session state if omitted)
            - **Fallback (no search_location)**: `query` only, e.g. "[problem description] repair service near me"
-        3. Optionally call `google_search` when you need extra context to disambiguate provider categories
+        3. If `serpapi_search` returns an error or unavailability message, call `google_search` using ONLY
+           problem-focused queries from the stem (e.g. "[stem] local repair professionals"). Do NOT search for
+           home inspection, property checkpoint audits, lease compliance, or generic "property maintenance"
+           unless the user_query explicitly requests those categories.
         4. Return results in a nested JSON structure
         
         **Expected Output - NESTED JSON:**
@@ -57,7 +64,8 @@ def service_agent_instructions() -> str:
         **Important:**
         * You MUST call serpapi_search for provider results.
         * Do not generate cost estimates here; cost estimation is handled by the dedicated cost agent.
-        * Tailor queries from `user_query` and any structured context in the request for accurate local results.
+        * Tailor SerpAPI/google_search queries from `checkpoint_retrieval_search_query` or `user_query`; never substitute unrelated categories when Maps search fails.
+        * `serpAPIResults` must be a JSON array of provider objects when SerpAPI succeeds; on failure use a short error string, not fabricated provider lists.
         * Focus ONLY on professional service options - do not include DIY solutions.
         * Include contact information, ratings, distances, and locations for all service providers.
         * Sort results by distance (closest first) when using coordinate-based search.

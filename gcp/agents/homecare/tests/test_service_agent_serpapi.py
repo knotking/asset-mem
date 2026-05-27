@@ -1,5 +1,7 @@
 """Tests for service_agent SerpAPI Google Maps integration."""
 
+from types import SimpleNamespace
+
 import pytest
 
 from property_agent.sub_agents.service_agent import agent as service_mod
@@ -75,3 +77,45 @@ def test_serpapi_maps_search_partial_llm_payload_without_source(
     assert captured[0]["lat"] == 37.9
     assert captured[0]["lon"] == -121.7
     assert "Bay Area Door" in out
+
+
+def test_append_serpapi_fallback_hint_includes_retrieval_stem() -> None:
+    state = {
+        "checkpoint_retrieval_search_query": (
+            "residential garage door paint chipping scratches repair"
+        )
+    }
+    tool_context = SimpleNamespace(state=state)
+    raw = "SerpAPI Maps error: Your account has run out of searches."
+    out = service_mod._append_serpapi_fallback_hint(
+        raw,
+        query="home maintenance and inspection services",
+        tool_context=tool_context,
+    )
+    assert "SERPAPI_FALLBACK_HINT" in out
+    assert "residential garage door paint chipping" in out
+    assert "home inspection" in out.lower()
+
+
+@pytest.mark.asyncio
+async def test_serpapi_search_appends_hint_on_maps_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _fail_maps(query, resolved, property_address=None):
+        return "SerpAPI Maps error: quota exceeded"
+
+    monkeypatch.setattr(service_mod, "_run_serpapi_maps_search", _fail_maps)
+    state = {"checkpoint_retrieval_search_query": "garage door paint repair"}
+    tool_context = SimpleNamespace(state=state)
+    sl = {
+        "source": "property_address",
+        "radius_miles": 5,
+        "coordinates": {"lat": 37.9, "lng": -121.7},
+    }
+    out = await service_mod.serpapi_search(
+        "generic inspection services",
+        search_location=sl,
+        tool_context=tool_context,
+    )
+    assert "SERPAPI_FALLBACK_HINT" in out
+    assert "garage door paint repair" in out

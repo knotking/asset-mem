@@ -488,6 +488,52 @@ def resolve_requested_optional_branches(
     return picked
 
 
+def resolve_explicit_optional_branches(
+    user_query: str,
+    state: Mapping[str, Any] | None = None,
+) -> list[str]:
+    """
+    Branches from explicit user picks only (menu, "I mean cost", "how about diy").
+
+    Does not infer branches from loose words like "diy" or "cost" in explain questions.
+    """
+    normalized = normalize_user_query(user_query)
+    if not normalized:
+        return []
+
+    if _RETRIEVAL_ONLY_RE.search(normalized) and not (
+        _MEAN_OPTIONAL_BRANCH_RE.search(normalized)
+        or _STANDALONE_OPTIONAL_BRANCH_RE.match(normalized)
+        or _indexical_option_key(normalized, state)
+    ):
+        return []
+
+    picked: list[str] = []
+
+    menu_key = _indexical_option_key(normalized, state)
+    if menu_key in OPTIONAL_CHECKPOINT_BRANCHES:
+        picked.append(menu_key)
+
+    mean_match = _MEAN_OPTIONAL_BRANCH_RE.search(normalized)
+    if mean_match:
+        branch = mean_match.group("branch").lower()
+        if branch in OPTIONAL_CHECKPOINT_BRANCHES and branch not in picked:
+            picked.append(branch)
+    standalone_match = _STANDALONE_OPTIONAL_BRANCH_RE.match(normalized)
+    if standalone_match:
+        branch = standalone_match.group("branch").lower()
+        if branch in OPTIONAL_CHECKPOINT_BRANCHES and branch not in picked:
+            picked.append(branch)
+
+    how_about_match = _HOW_ABOUT_OPTIONAL_BRANCH_RE.search(normalized)
+    if how_about_match:
+        branch = how_about_match.group("branch").lower()
+        if branch in OPTIONAL_CHECKPOINT_BRANCHES and branch not in picked:
+            picked.append(branch)
+
+    return picked
+
+
 def clear_executor_invocation_analysis_flag(state: Any) -> None:
     """Reset per-invocation analysis tracking before the executor runs."""
     if state is not None and hasattr(state, "__setitem__"):
