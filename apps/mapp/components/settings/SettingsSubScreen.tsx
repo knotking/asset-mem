@@ -19,7 +19,7 @@ export function SettingsSubScreen({ title, children }: SettingsSubScreenProps) {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="flex-row items-center border-b border-border bg-card px-2 py-2">
         <Button
-          onPress={() => router.back()}
+          onPress={() => router.replace('/(tabs)/settings')}
           variant="ghost"
           size="icon"
           accessibilityLabel="Back to settings">
