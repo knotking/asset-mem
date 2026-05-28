@@ -97,9 +97,9 @@
   "submit": {
     "prod": {
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-id",
-        "appleTeamId": "your-apple-team-id"
+        "appleId": "pagarwal@buildgeek.ai",
+        "ascAppId": "6774020500",
+        "appleTeamId": "6KNR5V2FY4"
       },
       "android": {
         "track": "internal"
