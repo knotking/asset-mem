@@ -18,7 +18,7 @@ on:
           - staging
           - prod
       version:
-        description: "App version (e.g., 0.0.3). Leave empty to auto-increment."
+        description: "App version override (e.g., 0.0.3). Leave empty to use eas.json profile APP_VERSION."
         required: false
         type: string
       message:
@@ -161,12 +161,14 @@ jobs:
           WEB_APP_URL=$(node -pe "require('./eas.json').build['$ENV'].env.WEB_APP_URL")
           APP_SLUG=$(node -pe "require('./eas.json').build['$ENV'].env.APP_SLUG")
           EXPO_PROJECT_ID=$(node -pe "require('./eas.json').build['$ENV'].env.EXPO_PROJECT_ID")
+          APP_VERSION=$(node -pe "require('./eas.json').build['$ENV'].env.APP_VERSION || '0.0.1'")
 
           echo "APP_ENV=$APP_ENV" >> $GITHUB_ENV
           echo "PROXY_BASE_URL=$PROXY_BASE_URL" >> $GITHUB_ENV
           echo "WEB_APP_URL=$WEB_APP_URL" >> $GITHUB_ENV
           echo "APP_SLUG=$APP_SLUG" >> $GITHUB_ENV
           echo "EXPO_PROJECT_ID=$EXPO_PROJECT_ID" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
 
           echo "Loaded environment variables:"
           echo "  APP_ENV: $APP_ENV"
@@ -174,19 +176,20 @@ jobs:
           echo "  WEB_APP_URL: $WEB_APP_URL"
           echo "  APP_SLUG: $APP_SLUG"
           echo "  EXPO_PROJECT_ID: $EXPO_PROJECT_ID"
+          echo "  APP_VERSION: $APP_VERSION"
 
-      - name: Generate app version
+      - name: Set app version
         id: version
         run: |
-          # Use manual version input if provided, otherwise auto-increment
+          # Use manual version input if provided, otherwise use eas.json profile APP_VERSION
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION="${{ github.event.inputs.version }}"
             echo "Using manual version: $VERSION"
+            echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           else
-            VERSION="0.0.${{ github.run_number }}"
-            echo "Using auto-incremented version: $VERSION"
+            VERSION="${APP_VERSION}"
+            echo "Using APP_VERSION from eas.json profile: $VERSION"
           fi
-          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Publish update
