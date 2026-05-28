@@ -199,30 +199,28 @@ A visual representation of the HomeApp platform architecture, showing the relati
                                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                              ROOT PROPERTY AGENT                                  │
-│   Single-hop executor (resolve + tools); casual queries answered directly      │
+│   Single orchestrator (resolve + flat tools); casual queries answered directly    │
 └───────────────────────────────────────┬───────────────────────────────────────────┘
                                         │
                                         ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
-│                              DOCULINK AGENT                                       │
+│                         ORCHESTRATOR LLM + FLAT TOOLS                             │
 │                                                                                   │
-│   Tools: checkpoint_agent | ask_user_docs_agent | ask_knowledge_base_agent      │
+│   Tools: run_checkpoint_pipeline | user_docs_retrieval | knowledge_base_retrieval │
 │                                                                                   │
-│   IF checkpoint_optional_agents set:                                              │
-│     checkpoint_agent (retrieval) → checkpoint_progress_agent                      │
-│       → parallel coverage | diy | service | cost → synthesis (dual-format)        │
-│   ELIF checkpoint_ids / checkpoint intent / primary_agent=checkpoint:               │
-│     checkpoint_agent                                                              │
-│   ELIF primary_agent=docs OR context_doc_uris:                                    │
-│     ask_user_docs_agent                                                           │
-│   ELSE:                                                                           │
-│     ask_knowledge_base_agent                                                      │
+│   IF new checkpoint analysis:                                                     │
+│     run_checkpoint_pipeline → retrieval → parallel branches → assembler           │
+│       → synthesis → state_delta (contentJson + contentMarkdown)                   │
+│   ELIF route=user_docs OR context_doc_uris:                                       │
+│     user_docs_retrieval                                                           │
+│   ELIF route=knowledge_base:                                                      │
+│     knowledge_base_retrieval                                                      │
 │                                                                                   │
 │        │              │                │                                          │
 │        ▼              ▼                ▼                                          │
 │  ┌────────────┐ ┌───────────┐ ┌─────────────┐                                    │
 │  │ Checkpoint │ │ User Docs │ │ Knowledge   │                                    │
-│  │  (vector)  │ │   RAG     │ │ Base RAG    │                                    │
+│  │  pipeline  │ │   RAG     │ │ Base RAG    │                                    │
 │  └─────┬──────┘ └─────┬─────┘ └──────┬──────┘                                    │
 └────────┼──────────────┼──────────────┼────────────────────────────────────────────┘
          │              │              │
@@ -468,16 +466,14 @@ HomeApp/
 └── gcp/                            # Backend services
     ├── agents/
     │   └── homecare/
-    │       ├── property_agent/    # Root agent
-    │       │   ├── sub_agents/
-    │       │   │   ├── checkpoint_agent/
-    │       │   │   ├── checkpoint_analysis_agent/
-    │       │   │   ├── knowledge_base_agent/
-    │       │   │   ├── user_docs_agent/
-    │       │   │   └── {coverage,diy,service,cost,shopping}_agent/
-    │       │   ├── agent.py       # Agent orchestration
-    │       │   └── prompts.py     # Agent instructions
-    │       └── eval/              # Agent evaluation
+    │       ├── property_agent/    # Root orchestrator
+    │       │   ├── agents/        # Leaf specialists (user_docs, kb, coverage, diy, …)
+    │       │   ├── checkpoint/    # pipeline, retrieval, analysis, progress_stream
+    │       │   ├── routing/
+    │       │   ├── runtime/       # agent.py, homecare_runner.py, vertex_app
+    │       │   └── registry.py   # flat tool registry
+    │       ├── tests/             # Unit tests (make test; CI on PRs)
+    │       └── property_agent/evals/  # Placeholder only — ADK evalsets removed
     │
     ├── proxy/
     │   ├── api/                   # FastAPI service

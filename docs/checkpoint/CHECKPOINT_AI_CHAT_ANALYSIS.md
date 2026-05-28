@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint AI Chat Analysis
 
 ## Overview
@@ -99,7 +101,7 @@ DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
 #### 2. Checkpoint Analysis Agent
 
-**Location**: `gcp/agents/homecare/property_agent/sub_agents/checkpoint_analysis_agent/`
+**Location**: `gcp/agents/homecare/property_agent/checkpoint/analysis/`
 
 **Purpose**: Orchestrates coverage, DIY, service, and cost agents to provide comprehensive recommendations based on checkpoint data.
 
@@ -131,7 +133,7 @@ class CheckpointAnalysisInput(BaseModel):
 
 #### 3. Checkpoint Agent Updates
 
-**File**: `gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/agent.py`
+**File**: `gcp/agents/homecare/property_agent/checkpoint/retrieval/agent.py`
 
 **Changes**:
 - Added `checkpoint_analysis_agent` as a tool

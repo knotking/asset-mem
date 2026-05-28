@@ -8,20 +8,21 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from property_agent.resolve_turn import (
+from agent_framework.routing.resolved_turn import RESOLVE_APPLIED_INVOCATION_KEY
+
+from property_agent.routing.resolve_turn import (
     CASUAL_INTENTS,
-    RESOLVE_APPLIED_INVOCATION_KEY,
     ResolvedTurn,
     prepare_before_model_turn,
     requests_optional_analysis_from_resolved,
     resolve_turn,
 )
-from property_agent.resolve_turn_llm import (
-    _apply_checkpoint_retrieval_plan,
-    _apply_primary_agent_constraints,
-    _sanitize_llm_payload,
-    resolve_llm_disabled,
+from property_agent.routing.apply_resolved_turn import (
+    apply_checkpoint_retrieval_plan as _apply_checkpoint_retrieval_plan,
+    apply_primary_agent_constraints as _apply_primary_agent_constraints,
+    sanitize_llm_payload as _sanitize_llm_payload,
 )
+from property_agent.routing.resolve_turn_llm import resolve_llm_disabled
 
 
 def _ctx(*, query: str, state: dict | None = None) -> MagicMock:
@@ -227,7 +228,7 @@ def test_resolve_turn_uses_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     ctx = _ctx(query="how about cost?", state={"primary_agent": "checkpoint"})
     with patch(
-        "property_agent.resolve_turn_llm.call_resolve_turn_llm",
+        "property_agent.routing.resolve_turn_llm.call_resolve_turn_llm",
         return_value=llm_out,
     ) as mock_llm:
         resolved = resolve_turn(ctx)
@@ -240,7 +241,7 @@ def test_resolve_fallback_when_llm_fails(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.delenv("RESOLVE_LLM_DISABLED", raising=False)
     ctx = _ctx(query="how about cost?")
     with patch(
-        "property_agent.resolve_turn_llm.call_resolve_turn_llm",
+        "property_agent.routing.resolve_turn_llm.call_resolve_turn_llm",
         return_value=None,
     ):
         resolved = resolve_turn(ctx)
@@ -260,7 +261,7 @@ def test_prepare_before_model_skips_re_resolve_same_invocation() -> None:
     )
     llm_request = SimpleNamespace(config=None)
     with patch(
-        "property_agent.resolve_turn.resolve_turn", return_value=llm_out
+        "property_agent.routing.resolve_turn.resolve_turn", return_value=llm_out
     ) as mock_resolve:
         assert prepare_before_model_turn(ctx, llm_request=llm_request) is None
         assert mock_resolve.call_count == 1
@@ -278,7 +279,7 @@ def test_prepare_before_model_casual_returns_response() -> None:
         retrieval_only=True,
         resolve_source="llm",
     )
-    with patch("property_agent.resolve_turn.resolve_turn", return_value=llm_out):
+    with patch("property_agent.routing.resolve_turn.resolve_turn", return_value=llm_out):
         response = prepare_before_model_turn(
             ctx, llm_request=SimpleNamespace(config=None)
         )

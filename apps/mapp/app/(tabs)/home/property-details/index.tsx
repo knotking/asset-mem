@@ -377,6 +377,7 @@ export default function PropertyDetailsScreen() {
         await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
           role: 'user',
           content: userMessage,
+          contentMarkdown: userMessage,
           createdAt: serverTimestamp(),
           ...(fileData && { file: fileData }),
         });
@@ -415,6 +416,7 @@ export default function PropertyDetailsScreen() {
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress,
+          propertyId: id,
           primaryAgent,
           checkpointOptionalAgents:
             selectedCheckpointOptionalAgents.length > 0
@@ -640,7 +642,6 @@ function PropertyDetailsScreenContent({
   handleSelectFiles,
   searchLocation,
   setSearchLocation,
-  updateMessageLocallyRef,
   router,
   user,
   db,

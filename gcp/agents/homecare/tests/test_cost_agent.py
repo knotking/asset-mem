@@ -6,10 +6,10 @@ import json
 
 import pytest
 
-from property_agent.sub_agents.cost_agent import agent as cost_mod
-from property_agent.sub_agents.cost_agent.config import CostEstimationConfig
-from property_agent.sub_agents.cost_agent import ai_cost_estimator as ai_cost_mod
-from property_agent.sub_agents.cost_agent.ai_cost_estimator import (
+from property_agent.agents.cost_agent import agent as cost_mod
+from property_agent.agents.cost_agent.config import CostEstimationConfig
+from property_agent.agents.cost_agent import ai_cost_estimator as ai_cost_mod
+from property_agent.agents.cost_agent.ai_cost_estimator import (
     _extract_location_info,
     estimate_costs_with_ai,
     validate_cost_ranges,
@@ -132,6 +132,44 @@ def test_extract_market_location_uses_property_address_over_coords() -> None:
         cost_mod._extract_market_location_from_query(query)
         == "1982 Helena Way, Brentwood, CA 94513"
     )
+
+
+def test_generate_cost_estimate_skips_grounding_when_web_context_provided(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict = {}
+
+    class _FakeClient:
+        class _Models:
+            def generate_content(self, **_kwargs):
+                captured.update(_kwargs)
+                config = _kwargs.get("config")
+                assert config is not None
+                assert config.tools is None
+
+                class _Resp:
+                    text = "1. DIY: $50-100\n2. Professional: $200-400"
+
+                return _Resp()
+
+        models = _Models()
+
+    ai_cost_mod._generate_cost_estimate_content(
+        _FakeClient(),  # type: ignore[arg-type]
+        "prompt",
+        web_context="already fetched web notes",
+    )
+    assert "prompt" in str(captured.get("contents", ""))
+
+
+def test_extract_grounding_web_summary_from_query() -> None:
+    q = json.dumps(
+        {
+            "diagnosis": "garage door paint",
+            "grounding_web_summary": "  shared context  ",
+        }
+    )
+    assert cost_mod._extract_grounding_web_summary_from_query(q) == "shared context"
 
 
 def test_estimate_costs_with_ai_timeout(monkeypatch: pytest.MonkeyPatch) -> None:

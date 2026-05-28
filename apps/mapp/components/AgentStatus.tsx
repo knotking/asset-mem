@@ -8,8 +8,9 @@ import { Text } from '@/components/ui/text';
 
 type Props = {
   steps: AgentStep[];
-  /** When set, progressive checkpoint JSON drives the ticker (matches footer). */
-  messageContent?: string | null;
+  /** Structured payload from message `contentJson`. */
+  messageContentJson?: Record<string, unknown> | null;
+  accordionAnalysis?: Record<string, unknown> | null;
 };
 
 function SparkleAnimation() {
@@ -80,10 +81,14 @@ function AnimatedThinkingText({ text }: { text: string }) {
   );
 }
 
-export function AgentStatus({ steps, messageContent }: Props) {
+export function AgentStatus({
+  steps,
+  messageContentJson,
+  accordionAnalysis,
+}: Props) {
   const { header: headerText, preview: headerPreview } = useDebouncedThinkingStatus(
     steps,
-    { messageContent },
+    { messageContentJson, accordionAnalysis },
   );
 
   if (!steps || steps.length === 0) return null;

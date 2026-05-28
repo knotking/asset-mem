@@ -31,7 +31,7 @@ Built on `@rn-primitives/accordion` with React Native Reanimated for smooth anim
 
 ### 2. Structured Response Types ([apps/common/src/types.ts](apps/common/src/types.ts))
 
-The type system supports both legacy flat structures and new nested structures for backward compatibility:
+The type system supports structured analysis payloads consumed via `contentJson`:
 
 ```typescript
 export type ServiceProvider = {
@@ -145,27 +145,22 @@ export type StructuredResponseData = {
 
 The ChatMessage component includes comprehensive parsing and rendering capabilities:
 
-#### A. JSON Parsing Logic
+#### A. Structured Data Source
 
-The `extractContentParts` function implements a multi-stage parsing strategy to handle various response formats:
+Orchestrator V2 uses persisted `contentJson` as the single source for structured UI.
 
-**Parsing Strategy (in order):**
-1. **Combined markdown + JSON blocks**: Matches ````markdown\n...\n``` ```json\n...\n````
-2. **JSON code block**: Matches ````json\n...\n```
-3. **Generic code block**: Tries to parse any code block as JSON
-4. **Raw JSON**: Attempts to parse entire content as JSON
+**Current behavior:**
+- Proxy persists `contentJson` + `contentMarkdown`
+- Chat UI reads `contentJson` directly for accordions
+- Message text is not parsed for fenced JSON in hot paths
 
-**Validation:**
-- Checks for structured data keys using `hasStructuredDataKeys()`
-- Validates presence of: `triageResult`, `coverageResult`, `diyResults`, `serviceResults`, `costEstimationResults`
-- Supports both nested (`analysis.*`) and flat structures
-
-**Content Extraction:**
+**Content resolution:**
 ```typescript
-const extractContentParts = (
-  content: string,
-  isUser: boolean
-): { structuredData: StructuredResponseData | null; markdownContent: string }
+import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+
+const { markdown, contentJson } = resolveMessageContentParts(message);
+// contentJson → StructuredResponse when sections are visible
+// markdown → prose fallback when no structured UI
 ```
 
 #### B. StructuredResponse Component
@@ -586,7 +581,7 @@ The `getProvidersArray` function searches for provider arrays in:
 ## Features Implemented
 
 ✅ Accordion component with smooth animations
-✅ Multi-stage JSON parsing from markdown code blocks
+✅ Orchestrator V2 `contentMarkdown` / `contentJson` message contract
 ✅ Structured response display with 5 sections
 ✅ Service provider cards with normalization
 ✅ Product cards with image loading
@@ -671,12 +666,52 @@ The `getProvidersArray` function searches for provider arrays in:
 
 ### Sample Test Message
 
-Create a test message in Firestore:
+Create a test message in Firestore with separate V2 fields:
 
 ```json
 {
   "role": "assistant",
-  "content": "```markdown\\nHere's my complete analysis...\\n```\\n\\n```json\\n{\\n  \\\"analysis\\\": {\\n    \\\"title\\\": \\\"Water Heater Repair Analysis\\\",\\n    \\\"triageResult\\\": {\\n      \\\"diagnosis\\\": \\\"Your water heater has a **faulty heating element**. This is a common issue...\\\"\\n    },\\n    \\\"coverageResult\\\": {\\n      \\\"warrantyInfo\\\": \\\"Your appliance warranty covers parts for up to 5 years...\\\",\\n      \\\"insuranceInfo\\\": \\\"Standard homeowner's insurance typically covers sudden failures...\\\"\\n    },\\n    \\\"diyResults\\\": {\\n      \\\"diySteps\\\": {\\n        \\\"summary\\\": \\\"This repair requires **moderate skill**...\\\",\\n        \\\"steps\\\": [\\n          { \\\"stepNumber\\\": 1, \\\"description\\\": \\\"Turn off power at breaker\\\" },\\n          { \\\"stepNumber\\\": 2, \\\"description\\\": \\\"Shut off water supply\\\" }\\n        ]\\n      },\\n      \\\"youtubeSearch\\\": {\\n        \\\"videos\\\": [{\\n          \\\"title\\\": \\\"How to Replace Water Heater Element\\\",\\n          \\\"url\\\": \\\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\\\",\\n          \\\"description\\\": \\\"Step-by-step tutorial\\\"\\n        }]\\n      },\\n      \\\"recommendedProducts\\\": {\\n        \\\"products\\\": [{\\n          \\\"product_name\\\": \\\"Water Heater Element\\\",\\n          \\\"vendor\\\": \\\"Home Depot\\\",\\n          \\\"price\\\": \\\"$24.99\\\",\\n          \\\"rating\\\": \\\"4.5\\\",\\n          \\\"reviews\\\": \\\"1234\\\",\\n          \\\"url\\\": \\\"https://homedepot.com/...\\\",\\n          \\\"image_url\\\": \\\"https://picsum.photos/200\\\"\\n        }]\\n      }\\n    },\\n    \\\"serviceResults\\\": {\\n      \\\"localPros\\\": {\\n        \\\"googleSearchResults\\\": [{\\n          \\\"name\\\": \\\"Quick Fix Plumbing\\\",\\n          \\\"contact_info\\\": \\\"(555) 123-4567\\\",\\n          \\\"location\\\": \\\"123 Main St, San Francisco, CA\\\",\\n          \\\"reviews\\\": \\\"125\\\",\\n          \\\"ratings\\\": \\\"4.8/5\\\",\\n          \\\"directions\\\": \\\"https://maps.google.com/?q=123+Main+St\\\",\\n          \\\"website\\\": \\\"https://quickfixplumbing.com\\\",\\n          \\\"authorized\\\": \\\"True\\\",\\n          \\\"additional_information\\\": \\\"24/7 emergency service\\\",\\n          \\\"specialties\\\": \\\"Water heaters, pipe repair\\\",\\n          \\\"link\\\": \\\"https://yelp.com/biz/quick-fix\\\"\\n        }]\\n      }\\n    },\\n    \\\"costEstimationResults\\\": {\\n      \\\"costEstimates\\\": {\\n        \\\"repair_type\\\": \\\"Heating element replacement\\\",\\n        \\\"DIY\\\": {\\n          \\\"cost_range\\\": \\\"$25-$50\\\",\\n          \\\"savings\\\": \\\"Save $150-$250\\\",\\n          \\\"complexity\\\": \\\"Moderate\\\",\\n          \\\"includes\\\": [\\\"Element\\\", \\\"Gasket\\\", \\\"Tools\\\"]\\n        },\\n        \\\"Service\\\": {\\n          \\\"cost_range\\\": \\\"$175-$300\\\",\\n          \\\"benefits\\\": \\\"Professional warranty\\\",\\n          \\\"complexity\\\": \\\"Simple\\\",\\n          \\\"includes\\\": [\\\"Labor\\\", \\\"Parts\\\", \\\"Warranty\\\"]\\n        },\\n        \\\"comparison\\\": {\\n          \\\"diy_savings\\\": \\\"60-70% savings\\\",\\n          \\\"professional_benefits\\\": \\\"Warranty and expertise\\\",\\n          \\\"considerations\\\": \\\"DIY takes 2-3 hours\\\"\\n        }\\n      }\\n    }\\n  }\\n}\\n```",
+  "content": "",
+  "contentMarkdown": "Here's my complete analysis of your water heater issue.",
+  "contentJson": {
+    "analysis": {
+      "title": "Water Heater Repair Analysis",
+      "triageResult": {
+        "diagnosis": "Your water heater has a **faulty heating element**. This is a common issue..."
+      },
+      "coverageResult": {
+        "warrantyInfo": "Your appliance warranty covers parts for up to 5 years...",
+        "insuranceInfo": "Standard homeowner's insurance typically covers sudden failures..."
+      },
+      "diyResults": {
+        "diySteps": {
+          "summary": "This repair requires **moderate skill**...",
+          "steps": [
+            { "stepNumber": 1, "description": "Turn off power at breaker" },
+            { "stepNumber": 2, "description": "Shut off water supply" }
+          ]
+        }
+      },
+      "serviceResults": {
+        "localPros": {
+          "googleSearchResults": [
+            {
+              "name": "Quick Fix Plumbing",
+              "contact_info": "(555) 123-4567",
+              "authorized": "True"
+            }
+          ]
+        }
+      },
+      "costEstimationResults": {
+        "costEstimates": {
+          "repair_type": "Heating element replacement",
+          "DIY": { "cost_range": "$25-$50" },
+          "Service": { "cost_range": "$175-$300" }
+        }
+      }
+    }
+  },
   "createdAt": "2025-01-15T10:30:00Z"
 }
 ```
@@ -686,7 +721,21 @@ Create a test message in Firestore:
 ```json
 {
   "role": "assistant",
-  "content": "```json\\n{\\n  \\\"analysis\\\": {\\n    \\\"triageResult\\\": {\\n      \\\"needs_clarification\\\": true,\\n      \\\"message\\\": \\\"I need more information to help diagnose your issue:\\\",\\n      \\\"clarification_questions\\\": [\\n        \\\"How old is your water heater?\\\",\\n        \\\"Is the water completely cold or lukewarm?\\\",\\n        \\\"Do you hear any unusual noises?\\\"\\n      ]\\n    }\\n  }\\n}\\n```"
+  "content": "",
+  "contentMarkdown": "",
+  "contentJson": {
+    "analysis": {
+      "triageResult": {
+        "needs_clarification": true,
+        "message": "I need more information to help diagnose your issue:",
+        "clarification_questions": [
+          "How old is your water heater?",
+          "Is the water completely cold or lukewarm?",
+          "Do you hear any unusual noises?"
+        ]
+      }
+    }
+  }
 }
 ```
 
@@ -700,7 +749,7 @@ Create a test message in Firestore:
 ### Modified:
 - [types.ts](apps/common/src/types.ts) - Comprehensive type definitions with backward compatibility
 - [ChatMessage.tsx](apps/mapp/components/ChatMessage.tsx) - Complete implementation with:
-  - Multi-stage JSON parsing (`extractContentParts`)
+  - `resolveMessageContentParts` + `structuredDataHasVisibleSections`
   - StructuredResponse component with 5 sections
   - ServiceProviderCard with normalization
   - ProductCard with image handling
@@ -795,15 +844,10 @@ Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
 
 **Solution:**
 ```typescript
-// Verify video ID extraction
-const getYouTubeVideoId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
-};
+import { getYouTubeVideoId } from '@/lib/youtube-utils';
 
 // Test with known good video
-<YouTubeEmbed videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
+const videoId = getYouTubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 ```
 
 ### Markdown Not Rendering
@@ -873,10 +917,11 @@ const allProviders = useMemo(() => {
   // Expensive array processing
 }, [service]);
 
-// Content extraction
-const extractedParts = useMemo(() => {
-  return extractContentParts(message.content, isUser);
-}, [message.content, isUser]);
+// Content split
+const displayParts = useMemo(
+  () => getMessageDisplayParts(message),
+  [message, message.contentJson, message.contentMarkdown, message.content]
+);
 ```
 
 ### Component Optimization
@@ -900,7 +945,7 @@ Product and attachment images use expo-image with:
 
 ## Notes
 
-- The implementation supports both legacy and new JSON structures for backward compatibility
+- Structured UI follows the `contentJson` contract directly
 - All styling uses NativeWind for consistency with the rest of the app
 - The accordion animations are smooth (200ms timing) and performant
 - Service provider cards handle various field name variations gracefully

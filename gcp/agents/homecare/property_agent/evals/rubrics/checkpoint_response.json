@@ -1,22 +1,37 @@
 {
-  "rubrics": [
+  "name": "checkpoint_response_v2",
+  "description": "Score Orchestrator V2 checkpoint assistant messages: contentJson.analysis structure, not dual-format fences.",
+  "version": 2,
+  "criteria": [
     {
-      "rubric_id": "dual_format_json",
-      "rubric_content": {
-        "text_property": "The response includes a fenced ```json code block containing a JSON object (dual-format checkpoint analysis output)."
-      }
+      "id": "content_json_analysis_shape",
+      "weight": 0.35,
+      "description": "Assistant message has contentJson.analysis with title and analysisStatus (when optional branches run).",
+      "rubric": "Pass when contentJson.analysis is an object with at least title; for branch runs, analysisStatus maps branch names to pending|running|completed."
     },
     {
-      "rubric_id": "checkpoint_summary_in_json",
-      "rubric_content": {
-        "text_property": "The JSON block includes checkpoint analysis fields such as checkpointSummary (e.g. checkpointsAnalyzed, issuesDetected, overallCondition, or locations) under an \"analysis\" key or equivalent structure."
-      }
+      "id": "no_dual_format_fences",
+      "weight": 0.25,
+      "description": "No ```json fence in contentMarkdown or message.content.",
+      "rubric": "Fail if contentMarkdown or legacy content contains ```json blocks; structured data must live in contentJson only."
     },
     {
-      "rubric_id": "addresses_user_query",
-      "rubric_content": {
-        "text_property": "The response addresses the user's property checkpoint or home-care request in natural language markdown, not only raw JSON."
-      }
+      "id": "content_markdown_prose",
+      "weight": 0.2,
+      "description": "contentMarkdown is user-visible prose separate from accordions.",
+      "rubric": "Pass when contentMarkdown is non-empty markdown without embedded analysis JSON."
+    },
+    {
+      "id": "schema_version",
+      "weight": 0.1,
+      "description": "contentSchemaVersion is 2 on V2 assistant messages.",
+      "rubric": "Pass when contentSchemaVersion equals 2."
+    },
+    {
+      "id": "follow_up_markdown_only",
+      "weight": 0.1,
+      "description": "Context-only follow-ups omit contentJson on the new message.",
+      "rubric": "Pass when follow-up turns have contentMarkdown only and prior message retains contentJson."
     }
   ]
 }

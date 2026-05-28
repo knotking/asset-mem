@@ -135,7 +135,7 @@ docs/docs_chat/
 
 - **[Analysis Agent](../analysis/README.md)** - Problem diagnosis and solutions
 - **[Checkpoint Agent](../checkpoint/README.md)** - Property history and condition tracking
-- **[User Docs Agent](../../gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/README.md)** - Underlying document retrieval agent
+- **[User Docs Agent](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)** - Document retrieval (registry tool `user_docs_retrieval`)
 
 ## Support
 

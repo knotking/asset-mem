@@ -44,15 +44,25 @@ describe('ChatMessage', () => {
     const { getByText } = renderWithProviders(
       <ChatMessage message={messageFixtures.userTextMessage} sessionId="session-1" />
     );
-    expect(getByText(messageFixtures.userTextMessage.content)).toBeTruthy();
+    expect(getByText(messageFixtures.userTextMessage.contentMarkdown!)).toBeTruthy();
   });
 
   it('renders structured assistant accordion labels from dual-format payload', () => {
     const ChatMessage = require('@/components/ChatMessage').default;
-    const { getByText } = renderWithProviders(
+    const { getByText, queryByText } = renderWithProviders(
       <ChatMessage message={messageFixtures.garageDoorDualFormatMessage} sessionId="session-1" />
     );
-    expect(getByText('Checkpoint Summary')).toBeTruthy();
-    expect(getByText('DIY Recommendations')).toBeTruthy();
+    expect(getByText(/Garage Door Maintenance Analysis: 1982 Helena Way/i)).toBeTruthy();
+    expect(queryByText('Working on it…')).toBeNull();
+  });
+
+  it('renders structured accordion from contentJson when contentMarkdown is empty', () => {
+    const ChatMessage = require('@/components/ChatMessage').default;
+    const { getAllByText, getByText, queryByText } = renderWithProviders(
+      <ChatMessage message={messageFixtures.structuredAssistantMessage} sessionId="session-1" />
+    );
+    expect(getAllByText(/Roof inspection recommended within 6 months/i).length).toBeGreaterThan(0);
+    expect(getByText('Triage Summary')).toBeTruthy();
+    expect(queryByText('Working on it…')).toBeNull();
   });
 });

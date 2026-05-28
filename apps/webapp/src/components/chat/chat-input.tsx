@@ -174,6 +174,14 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
         selectedDocuments.length === 0);
 
     const [popoverOpen, setPopoverOpen] = useState(false);
+    const handlePropertySelect = (property: Property) => {
+      onPropertySelect?.(property);
+      setPopoverOpen(false);
+    };
+    const handleDocumentSelect = (doc: DocumentType) => {
+      onDocumentSelect?.(doc);
+      setPopoverOpen(false);
+    };
     const handleOptionalAgentToggle = (agent: AnalysisOptionalAgent) => {
       const isSelected = selectedOptionalAgents.includes(agent);
       const nextSelection = isSelected

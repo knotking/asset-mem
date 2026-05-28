@@ -22,7 +22,6 @@ import { CheckpointAccordionBranchBadge } from "@/components/chat/checkpoint-acc
 import {
   DISPLAY_TITLE_GRADIENT_CLASS,
   hasCheckpointDisplayTitleInProgress,
-  parseStructuredResponseFromContent,
 } from "@/lib/checkpoint-branch-progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
@@ -33,6 +32,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
+import { resolveMessageContentParts } from "@/lib/message-content-parts";
+import {
+  assistantMessageHasDisplayableContent,
+  getMessageDisplayParts,
+} from "@/lib/message-display-parts";
 
 const parseLog = createLogger("parse");
 
@@ -1535,8 +1539,14 @@ function AssistantProgressStrip({
   );
 }
 
-const ChatMessageComponent = ({ message, isLoading = false, context }: Props) => {
+const ChatMessageComponent = ({
+  message,
+  isLoading = false,
+  context,
+}: Props) => {
   const isUser = message.role === "user";
+  const { markdown: messageMarkdown, contentJson: messageContentJson } =
+    resolveMessageContentParts(message);
   const [isMediaLoaded, setIsMediaLoaded] = React.useState(false);
   const { toast } = useToast();
   
@@ -1575,26 +1585,35 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
     }
   }, [toast]);
 
-  const trimmedAssistantContent =
-    typeof message.content === 'string' ? message.content.trim() : '';
-  const hasAssistantResponse = !isUser && trimmedAssistantContent.length > 0;
-  /** Text status strip while streaming (tools + gap before first text chunk). Matches mapp. */
+  const displayParts = useMemo(
+    () => getMessageDisplayParts(message),
+    [message, messageMarkdown, messageContentJson]
+  );
+
+  const hasDisplayableContent = useMemo(() => {
+    if (isUser) return !!messageMarkdown?.trim();
+    return assistantMessageHasDisplayableContent(displayParts);
+  }, [isUser, displayParts, messageMarkdown]);
+
+  /** Text status strip while streaming (tools + gap before first displayable content). Matches mapp. */
   const hasAgentSteps = (message.agentSteps?.length ?? 0) > 0;
   const showThinkingStrip =
-    !isUser && !hasAssistantResponse && hasAgentSteps;
+    !isUser && !hasDisplayableContent && hasAgentSteps;
   const thinkingStatus = useDebouncedThinkingStatus(
     showThinkingStrip ? message.agentSteps : null,
-    { messageContent: message.content },
+    {
+      messageContentJson,
+    },
   );
   const thinkingHeader = thinkingStatus.header;
   const thinkingPreview = thinkingStatus.preview;
   /** Dots only before proxy emits the first agentSteps row (resolve / first tool call). */
   const showLoadingIndicator =
-    isLoading && !isUser && !hasAssistantResponse && !showThinkingStrip;
+    isLoading && !isUser && !hasDisplayableContent && !showThinkingStrip;
   const fileData = message.file;
 
   const handleCopyClick = () => {
-    const whatsappFormattedText = markdownToWhatsapp(message.content);
+    const whatsappFormattedText = markdownToWhatsapp(messageMarkdown);
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(whatsappFormattedText).then(() => {
         toast({
@@ -1727,245 +1746,17 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
   };
   
   const bubbleStyle = !isUser ? { borderRadius: '18px 18px 18px 6px' } : {};
-  const isMediaOnly = (fileData?.type.startsWith('image/') || fileData?.type.startsWith('video/')) && !message.content;
+  const isMediaOnly =
+    (fileData?.type.startsWith("image/") || fileData?.type.startsWith("video/")) &&
+    !messageMarkdown;
 
-  let structuredData: StructuredResponseData | null = null;
-  let fallbackParsedJson: any | null = null;
-
-  const jsonToMarkdown = (data: any, level: number = 3): string => {
-    const heading = (text: string, lvl: number) => `${'#'.repeat(Math.min(6, lvl))} ${text}`;
-    const toInline = (val: any): string => {
-      if (val === null || val === undefined) return '`null`';
-      if (typeof val === 'string') return val.includes('\n') ? `\n\n${val}\n\n` : val;
-      if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-      if (Array.isArray(val)) return val.length === 0 ? '[]' : `${val.length} items`;
-      if (typeof val === 'object') return Object.keys(val).length === 0 ? '{}' : `${Object.keys(val).length} fields`;
-      return String(val);
-    };
-
-    const isHomogeneousObjectArray = (arr: any[]): boolean => {
-      if (arr.length === 0) return false;
-      return arr.every(it => it && typeof it === 'object' && !Array.isArray(it));
-    };
-
-    if (Array.isArray(data)) {
-      if (isHomogeneousObjectArray(data)) {
-        const headers = Array.from(new Set(data.flatMap(obj => Object.keys(obj))));
-        const lines: string[] = [];
-        lines.push(`| ${headers.join(' | ')} |`);
-        lines.push(`| ${headers.map(() => '---').join(' | ')} |`);
-        data.forEach((row) => {
-          lines.push(`| ${headers.map(h => toInline((row as any)[h] ?? '')).join(' | ')} |`);
-        });
-        return lines.join('\n');
-      }
-      return data.map((it: any) => `- ${toInline(it)}`).join('\n');
-    }
-
-    if (typeof data === 'object' && data) {
-      const sections: string[] = [];
-      for (const [key, value] of Object.entries(data)) {
-        if (value && typeof value === 'object') {
-          sections.push(heading(String(key), level));
-          sections.push(jsonToMarkdown(value, level + 1));
-          sections.push('');
-        } else {
-          sections.push(`- **${key}**: ${toInline(value)}`);
-        }
-      }
-      return sections.join('\n');
-    }
-
-    return toInline(data);
-  };
-    try {
-        if (!isUser && message.content) {
-          let contentToParse = message.content.trim();
-          
-          parseLog.debug('contentParsing.start', {
-            length: contentToParse.length,
-            hasJsonFence: contentToParse.includes('```json'),
-            hasMarkdownFence: contentToParse.includes('```markdown'),
-          });
-          
-          // Helper function to check if parsed JSON has structured data keys
-          const hasStructuredDataKeys = (parsed: any): boolean => {
-              if (!parsed || typeof parsed !== 'object') return false;
-              // Check for nested structure (analysis.*)
-              if (parsed.analysis && typeof parsed.analysis === 'object') {
-                  return !!(parsed.analysis.triageResult || parsed.analysis.coverageResult || 
-                           parsed.analysis.diyResults || parsed.analysis.serviceResults ||
-                           parsed.analysis.checkpointSummary || parsed.analysis.checkpointDetails);
-              }
-              // Check for flat structure
-              return !!(parsed.triageResult || parsed.diyResults || parsed.serviceResults || 
-                       parsed.coverageResult || parsed.checkpointSummary || parsed.checkpointDetails);
-          };
-          
-          // Method 1: PRIORITY - Extract JSON from ```json code block (for dual-format responses)
-          // This ensures we only read from the JSON code block and ignore any markdown that follows
-          const jsonCodeBlockRegex = /```json\s*\n?([\s\S]*?)```/;
-          const jsonCodeBlockMatch = contentToParse.match(jsonCodeBlockRegex);
-          if (jsonCodeBlockMatch) {
-              const codeContent = jsonCodeBlockMatch[1].trim();
-              if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
-                  try {
-                      const parsed = JSON.parse(codeContent);
-                      if (hasStructuredDataKeys(parsed)) {
-                          structuredData = parsed;
-                          parseLog.debug('contentParsing.method1');
-                      } else if (parsed && typeof parsed === 'object') {
-                          fallbackParsedJson = parsed;
-                      }
-                  } catch (e) {
-                      parseLog.warn('contentParsing.method1.failed', { cause: String(e) });
-                  }
-              }
-          }
-          
-          // Method 2: If no ```json code block found, try generic code blocks (``` ... ```)
-          if (!structuredData) {
-              const genericCodeBlockRegex = /```[^`]*\s*\n?([\s\S]*?)```/g;
-              let codeBlockMatch;
-              
-              // Try all code blocks (but skip if we already found JSON code block)
-              while ((codeBlockMatch = genericCodeBlockRegex.exec(contentToParse)) !== null) {
-                  const codeContent = codeBlockMatch[1].trim();
-                  if (codeContent.startsWith('{') || codeContent.startsWith('[')) {
-                      try {
-                          const parsed = JSON.parse(codeContent);
-                          if (hasStructuredDataKeys(parsed)) {
-                              structuredData = parsed;
-                              parseLog.debug('contentParsing.method2');
-                              break; // Stop after finding valid JSON
-                          }
-                      } catch {
-                          // Not valid JSON in this block
-                      }
-                  }
-              }
-          }
-          
-          // Method 3: If no code block found, try direct JSON parsing (pure JSON response)
-          if (!structuredData && contentToParse.startsWith('{') && contentToParse.endsWith('}')) {
-              try {
-                  const parsed = JSON.parse(contentToParse);
-                  if (hasStructuredDataKeys(parsed)) {
-                      structuredData = parsed;
-                      parseLog.debug('contentParsing.method3');
-                  } else if (parsed && typeof parsed === 'object') {
-                      fallbackParsedJson = parsed;
-                  }
-              } catch {
-                  // Not pure JSON, continue with other methods
-              }
-          }
-              
-          // Method 4: Fallback - Try to find JSON object directly from content (only if no code block found)
-          // This is a fallback for responses that don't use code blocks
-          // NOTE: We only do this if we haven't found JSON in a code block to avoid parsing markdown
-          if (!structuredData && !jsonCodeBlockMatch) {
-              // More aggressive regex to match JSON objects with our keys
-              const patterns = [
-                  // Match complete JSON objects that might span multiple lines
-                  /\{[^{}]*(?:"analysis"|"triageResult"|"diyResults"|"serviceResults"|"coverageResult")[^{}]*\}/,
-                  // Try to find the first { and match until balanced closing }
-                  /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/
-              ];
-              
-              for (const pattern of patterns) {
-                  const objectMatches = contentToParse.match(new RegExp(pattern.source, 'g'));
-                  if (objectMatches) {
-                      for (const match of objectMatches) {
-                          try {
-                              const parsed = JSON.parse(match);
-                              if (hasStructuredDataKeys(parsed)) {
-                                  structuredData = parsed;
-                                  parseLog.debug('contentParsing.method4');
-                                  break;
-                              }
-                          } catch {
-                              // Continue trying
-                          }
-                      }
-                      if (structuredData) break;
-                  }
-              }
-              
-              // Method 5: Last resort - Try to extract JSON by finding the first { and last matching }
-              // Only if no code block was detected (to avoid parsing markdown)
-              if (!structuredData && contentToParse.includes('{')) {
-                  const firstBrace = contentToParse.indexOf('{');
-                  const lastBrace = contentToParse.lastIndexOf('}');
-                  if (firstBrace < lastBrace) {
-                      const potentialJson = contentToParse.substring(firstBrace, lastBrace + 1);
-                      try {
-                          const parsed = JSON.parse(potentialJson);
-                          if (hasStructuredDataKeys(parsed)) {
-                              structuredData = parsed;
-                              parseLog.debug('contentParsing.method5');
-                          }
-                      } catch {
-                          // Try cleaning common issues
-                          try {
-                              // Remove comments, fix trailing commas, etc.
-                              let cleaned = potentialJson
-                                  .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
-                                  .replace(/\/\/.*$/gm, '') // Remove line comments
-                                  .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-                                  .replace(/\\(?!["\\/bfnrtu])/g, '\\\\'); // Fix escape sequences
-                              
-                              const parsed = JSON.parse(cleaned);
-                              if (hasStructuredDataKeys(parsed)) {
-                                  structuredData = parsed;
-                                  parseLog.debug('contentParsing.method5b');
-                              }
-                          } catch {
-                              // Final fallback - give up
-                          }
-                      }
-                  }
-              }
-          }
-          
-          // Debug logging
-        if (structuredData) {
-            const sd: any = structuredData;
-            const serviceData = sd?.analysis?.serviceResults || sd?.serviceResults;
-            parseLog.debug('contentParsing.success', {
-              hasAnalysis: !!sd?.analysis,
-              hasTriage: !!(sd?.analysis?.triageResult || sd?.triageResult),
-              hasDiy: !!(sd?.analysis?.diyResults || sd?.diyResults),
-              hasService: !!(sd?.analysis?.serviceResults || sd?.serviceResults),
-              hasCoverage: !!(sd?.analysis?.coverageResult || sd?.coverageResult),
-              structure: sd?.analysis ? 'nested' : 'flat',
-              serpCount: serviceData?.localPros?.serpAPIResults
-                ? Array.isArray(serviceData.localPros.serpAPIResults)
-                  ? serviceData.localPros.serpAPIResults.length
-                  : 'not array'
-                : undefined,
-            });
-        } else {
-              const hasJsonMarkers = message.content.includes('"analysis"') || 
-                                     message.content.includes('"triageResult"') || 
-                                     message.content.includes('"serviceResults"') ||
-                                     message.content.includes('"diyResults"') ||
-                                     message.content.includes('"coverageResult"');
-              if (hasJsonMarkers) {
-                  parseLog.warn('contentParsing.markersButFailed', { length: message.content.length });
-              }
-          }
-        }
-    } catch (e) {
-      parseLog.error('contentParsing.exception', undefined, e);
-    }
+  const effectiveStructuredData = displayParts.structuredData;
 
   const displayTitleAnalysisInProgress = useMemo(() => {
-    if (isUser || !message.content?.trim()) return false;
-    const parsed = parseStructuredResponseFromContent(message.content);
-    if (!parsed) return false;
-    return hasCheckpointDisplayTitleInProgress(parsed);
-  }, [isUser, message.content]);
+    if (isUser) return false;
+    if (!messageContentJson) return false;
+    return hasCheckpointDisplayTitleInProgress(messageContentJson);
+  }, [isUser, messageContentJson]);
 
   return (
     <div
@@ -1979,7 +1770,7 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
       </div>
       <div className={cn(
           "flex flex-col max-w-full sm:max-w-[calc(100%-4rem)] group relative",
-          structuredData ? 'w-full md:w-5/6 lg:w-4/5' : 'w-fit'
+          effectiveStructuredData ? 'w-full md:w-5/6 lg:w-4/5' : 'w-fit'
       )} ref={bubbleRef} onCopy={handleCopy}>
           <div
             style={bubbleStyle}
@@ -1990,21 +1781,22 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
               {
                 "rounded-lg": isUser,
                 "bg-muted border":
-                  !isUser && !showThinkingStrip && !showLoadingIndicator && !structuredData,
+                  !isUser && !showThinkingStrip && !showLoadingIndicator && !effectiveStructuredData,
                 "bg-transparent border-0 shadow-none":
                   showThinkingStrip ||
                   showLoadingIndicator ||
-                  structuredData
+                  effectiveStructuredData
               },
-              (isUser && message.content) && "bg-secondary text-secondary-foreground",
-              fileData && message.content ? "gap-2" : "",
-              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !hasAssistantResponse)) ? "p-2" : structuredData ? "" : "px-4 py-2.5"
+              (isUser && messageMarkdown) && "bg-secondary text-secondary-foreground",
+              fileData && messageMarkdown ? "gap-2" : "",
+              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !hasDisplayableContent)) ? "p-2" : effectiveStructuredData ? "" : "px-4 py-2.5"
             )}
           >
             {!isUser &&
-              hasAssistantResponse &&
+              hasDisplayableContent &&
               !showLoadingIndicator &&
-              !structuredData && (
+              !effectiveStructuredData &&
+              !!messageMarkdown.trim() && (
                 <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyClick}>
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">Copy message</span>
@@ -2032,10 +1824,10 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
                     </circle>
                 </svg>
                </div>
-            ) : structuredData ? (
+            ) : effectiveStructuredData ? (
                 <motion.div layout className="flex w-full flex-col gap-3">
                   <StructuredResponse
-                    data={structuredData}
+                    data={effectiveStructuredData}
                     displayTitleInProgress={displayTitleAnalysisInProgress}
                     saveMeta={{
                       source: 'chat',
@@ -2046,16 +1838,16 @@ const ChatMessageComponent = ({ message, isLoading = false, context }: Props) =>
             ) : (
                 <>
                 {renderFilePreview()}
-                {message.content && (
+                {messageMarkdown && (
                   <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                     {isUser ? (
-                      <p className="whitespace-pre-wrap break-words text-secondary-foreground">{message.content}</p>
+                      <p className="whitespace-pre-wrap break-words text-secondary-foreground">{messageMarkdown}</p>
                     ) : (
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]}
                         components={markdownRenderers}
                       >
-                        {fallbackParsedJson ? jsonToMarkdown(fallbackParsedJson) : message.content}
+                        {messageMarkdown}
                       </ReactMarkdown>
                     )}
                      {renderDocumentList()}

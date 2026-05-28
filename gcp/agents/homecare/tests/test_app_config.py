@@ -27,21 +27,22 @@ def test_build_events_compaction_config_defaults(monkeypatch):
     ):
         monkeypatch.delenv(key, raising=False)
 
-    from property_agent import app_config
+    from property_agent.runtime import app_config
 
     importlib.reload(app_config)
     config = app_config.build_events_compaction_config()
 
     assert config is not None
-    assert config.token_threshold == 40_000
-    assert config.event_retention_size == 40
+    # G4 session-diet defaults on when unset, so compaction defaults are tightened.
+    assert config.token_threshold == 24_000
+    assert config.event_retention_size == 24
     assert config.compaction_interval == 10_000
 
 
 def test_build_events_compaction_config_disabled(monkeypatch):
     monkeypatch.setenv("ADK_EVENTS_COMPACTION_DISABLED", "1")
 
-    from property_agent import app_config
+    from property_agent.runtime import app_config
 
     importlib.reload(app_config)
     assert app_config.build_events_compaction_config() is None
@@ -52,7 +53,7 @@ def test_build_events_compaction_config_disabled(monkeypatch):
 def test_property_app_has_root_agent(monkeypatch):
     monkeypatch.delenv("ADK_EVENTS_COMPACTION_DISABLED", raising=False)
 
-    from property_agent import app_config
+    from property_agent.runtime import app_config
 
     importlib.reload(app_config)
     app = app_config.build_property_app()

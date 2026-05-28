@@ -6,7 +6,6 @@
 import type { AgentStep } from "@/lib/types";
 import {
   getCheckpointBranchProgress,
-  parseStructuredResponseFromContent,
 } from "@/lib/checkpoint-branch-progress";
 
 export const DEFAULT_THINKING_LABEL = "Working on it…";
@@ -24,7 +23,7 @@ function orchestratorPipelineIndex(name: string): number {
   return idx >= 0 ? idx : ORCHESTRATOR_PIPELINE_ORDER.length;
 }
 
-const HIDDEN_TICKER_AGENTS = new Set<string>(["transfer_to_agent"]);
+const HIDDEN_TICKER_AGENTS = new Set<string>([]);
 
 const CHECKPOINT_OPTIONAL_STEP_NAMES = new Set<string>([
   "coverage_agent",
@@ -37,10 +36,8 @@ export const CHECKPOINT_PARALLEL_ANALYSIS_LABEL = "Analyzing your checkpoints…
 
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   diagnostic_agent: "Diagnosing the issue…",
-  ask_knowledge_base_agent: "Searching repair guides…",
-  ask_knowledge_base_retrieval: "Searching repair guides…",
-  ask_user_docs_agent: "Searching your documents…",
-  ask_user_docs_retrieval: "Searching your documents…",
+  knowledge_base_retrieval: "Searching repair guides…",
+  user_docs_retrieval: "Searching your documents…",
   analyse_multimodal_data: "Reviewing your photo or video…",
   research_agent: "Researching options…",
   service_provider_agent: "Finding pros near you…",
@@ -51,9 +48,8 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   cost_agent: "Estimating repair costs…",
   coverage_agent: "Checking warranty & insurance…",
   diy_agent: "Building DIY steps…",
-  checkpoint_agent: "Loading your checkpoints…",
+  run_checkpoint_pipeline: "Loading your checkpoints…",
   checkpoint_analysis_agent: "Analyzing your checkpoints…",
-  checkpoint_progress_agent: "Preparing your analysis…",
   checkpoint_analysis_synthesis_agent: "Writing your summary…",
   checkpoint_optional_agents_parallel_runner: "Finishing your analysis…",
   checkpoint_analysis_progress: "Updating your analysis…",
@@ -67,13 +63,6 @@ export function isOrchestratorAgent(name: string | undefined | null): boolean {
 
 export function isHiddenTickerAgent(name: string | undefined | null): boolean {
   return !!name && HIDDEN_TICKER_AGENTS.has(name);
-}
-
-export function isStepVisibleInStatusList(step: AgentStep): boolean {
-  if (step.status === "transferredto") return false;
-  if (isHiddenTickerAgent(step.name)) return false;
-  if (isOrchestratorAgent(step.name)) return false;
-  return true;
 }
 
 export function prettifyAgentName(name: string | undefined | null): string {
@@ -106,7 +95,7 @@ export function shouldUseCoordinatingLabel(
   }
 
   const inFlightOrchestrators = orchestrators.filter(
-    (s) => s.status === "executing" || s.status === "transferredto",
+    (s) => s.status === "executing",
   );
   if (inFlightOrchestrators.length === 0) return false;
 
@@ -141,16 +130,7 @@ export function getAgentStepDisplayLabel(
 
 function isVisibleTickerStep(step: AgentStep): boolean {
   if (isHiddenTickerAgent(step.name)) return false;
-  return step.status === "executing" || step.status === "transferredto";
-}
-
-function analysisFromMessageContent(
-  content: string | null | undefined,
-): unknown {
-  if (!content?.trim()) return null;
-  const parsed = parseStructuredResponseFromContent(content);
-  if (!parsed) return null;
-  return parsed.analysis ?? parsed;
+  return step.status === "executing";
 }
 
 function executingCheckpointOptionalSteps(
@@ -174,12 +154,6 @@ export function pickActiveAgentStep(
       return step;
     }
   }
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i];
-    if (step.status === "transferredto" && isVisibleTickerStep(step) && !isOrchestratorAgent(step.name)) {
-      return step;
-    }
-  }
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     if (isVisibleTickerStep(step)) return step;
@@ -193,14 +167,16 @@ export type ThinkingStatus = {
 };
 
 export type ThinkingStatusOptions = {
-  messageContent?: string | null;
+  messageContentJson?: Record<string, unknown> | null;
+  accordionAnalysis?: Record<string, unknown> | null;
 };
 
 export function getThinkingStatusFromSteps(
   steps: AgentStep[] | undefined | null,
   options?: ThinkingStatusOptions,
 ): ThinkingStatus {
-  const analysis = analysisFromMessageContent(options?.messageContent);
+  const analysis: unknown =
+    options?.accordionAnalysis ?? options?.messageContentJson ?? null;
   const branchProgress = getCheckpointBranchProgress(analysis);
   if (branchProgress?.isInProgress) {
     return {
@@ -227,18 +203,4 @@ export function getThinkingStatusFromSteps(
     header: getAgentStepDisplayLabel(active, steps),
     preview: active.preview?.trim() || null,
   };
-}
-
-export function formatAgentStepDuration(step: AgentStep): string | null {
-  if (!step.startedAt) return null;
-  const end = step.completedAt ?? Date.now();
-  const ms = Math.max(0, end - step.startedAt);
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) {
-    return `${seconds >= 10 ? seconds.toFixed(0) : seconds.toFixed(1)}s`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  const remainder = Math.round(seconds - minutes * 60);
-  return `${minutes}m ${remainder}s`;
 }

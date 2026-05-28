@@ -109,7 +109,7 @@
           "Agent"
         ],
         "summary": "Stream Agent Response",
-        "description": "Process a query from the agent and stream the response.",
+        "description": "Process a query from the agent and stream the response. Throttled Firestore message patches may include V2 fields from Reasoning Engine `actions.state_delta`: `contentMarkdown` (prose), `contentJson` (structured UI), `analysisRunId`, and progressive `agentSteps`. Merged per `message_content_persist.apply_message_patch_from_state_delta` with `contentSchemaVersion: 2`.",
         "operationId": "firebase_streaming_webhook_mock_secret_firebase_agent_stream_post",
         "requestBody": {
           "content": {
@@ -505,7 +505,7 @@
               }
             ],
             "title": "Checkpoint Ids",
-            "description": "Checkpoint IDs for checkpoint context (enables checkpoint_agent routing)"
+            "description": "Checkpoint IDs for checkpoint context (enables run_checkpoint_pipeline when new analysis is needed)"
           },
           "property_address": {
             "type": "string",
@@ -856,6 +856,34 @@
           "user_id"
         ],
         "title": "TokenQuotaStatusRequest"
+      },
+      "AgentStateDeltaMessageFields": {
+        "type": "object",
+        "title": "AgentStateDeltaMessageFields",
+        "description": "Subset of Reasoning Engine state_delta keys merged into Firestore assistant messages during streaming (see message_content_persist.apply_message_patch_from_state_delta).",
+        "properties": {
+          "contentMarkdown": {
+            "type": "string",
+            "description": "Assistant prose for chat rendering; JSON fences stripped on persist."
+          },
+          "contentJson": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Structured checkpoint/analysis UI payload; branch sections merged with last-write-wins."
+          },
+          "analysisRunId": {
+            "type": "string",
+            "description": "Correlation id for a checkpoint analysis run when present."
+          },
+          "agentSteps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Progressive tool/step rows for the assistant message (stream/UI only; not in state_delta merge helper)."
+          }
+        }
       },
       "ValidationError": {
         "properties": {

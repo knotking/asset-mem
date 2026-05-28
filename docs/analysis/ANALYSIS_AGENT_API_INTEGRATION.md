@@ -1,3 +1,5 @@
+> **Archived:** Retired Analysis / Triage agent docs. See [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Analysis Agent API Integration
 
 ## Overview
@@ -795,4 +797,3 @@ def check_rate_limit(user_id: str, resource: str, limit: int, window: timedelta)
 - Per-user rate limits enforced
 - API key rotation for external services
 - DDoS protection via Cloud Armor
-

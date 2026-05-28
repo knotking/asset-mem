@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Tab Feature Implementation Plan
 
 ## Overview
@@ -362,7 +364,7 @@ Users can naturally ask questions about checkpoints in the AI Chat tab:
 
 - `apps/mapp/components/property-details/PropertyChatTab.tsx` - Add checkpoint context
 - Update `streamAgentResponse` to include checkpoint URIs
-- `gcp/agents/homecare/property_agent/sub_agents/` - Add checkpoint retrieval tool (see 5.11.9)
+- `gcp/agents/homecare/property_agent/checkpoint/` - Add checkpoint retrieval tool (see 5.11.9)
 
 #### 5.11.2 Create Checkpoints from Chat
 
@@ -691,7 +693,7 @@ Checkpoint {
 - `gcp/proxy/workers/function/checkpoint_analysis/embedding_service.py` - Embedding generation service
   - `generate_checkpoint_embedding(checkpoint: Checkpoint) -> List[float]`
   - `extract_checkpoint_text(checkpoint: Checkpoint) -> str`
-- `gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/` - New sub-agent
+- `gcp/agents/homecare/property_agent/checkpoint/retrieval/` - New sub-agent
   - `agent.py` - Checkpoint retrieval tool using Firestore vector search
   - `prompts.py` - Agent instructions
   - `firestore_vector_search.py` - Firestore KNN search utility
@@ -2194,8 +2196,8 @@ export type VisualizationSettings = {
   - Extract text from checkpoint analysis
   - Generate embeddings using Gemini Embeddings API
   - Update Firestore documents with embeddings
-- `gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/agent.py` - Checkpoint retrieval tool and agent
-- `gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/prompts.py` - Agent instructions
+- `gcp/agents/homecare/property_agent/checkpoint/retrieval/agent.py` - Checkpoint retrieval tool and agent
+- `gcp/agents/homecare/property_agent/checkpoint/retrieval/prompts.py` - Agent instructions
 
 **UI Components:**
 

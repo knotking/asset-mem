@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint AI Chat Analysis - Implementation Summary
 
 ## Overview
@@ -45,7 +47,7 @@ Users can select which analysis aspects they want:
 
 #### New Components Created
 
-1. **Checkpoint Analysis Agent** (`gcp/agents/homecare/property_agent/sub_agents/checkpoint_analysis_agent/`)
+1. **Checkpoint analysis pipeline** (`gcp/agents/homecare/property_agent/checkpoint/analysis/`)
    - Orchestrator for coverage, DIY, service, and cost agents
    - Extracts issues from checkpoint data
    - Synthesizes problems into clear statements
@@ -58,7 +60,7 @@ Users can select which analysis aspects they want:
 
 #### Modified Components
 
-1. **Checkpoint Agent** (`gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/`)
+1. **Checkpoint retrieval** (`gcp/agents/homecare/property_agent/checkpoint/retrieval/`)
    - Added checkpoint_analysis_agent as tool
    - Routes to analysis when optional agents selected
    - Maintains backward compatibility

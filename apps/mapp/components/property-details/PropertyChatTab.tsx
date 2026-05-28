@@ -18,7 +18,9 @@ import {
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
-import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
+import {
+  getInFlightCheckpointProgressFromMessages,
+} from '@homeapp/common/lib/checkpoint-branch-progress';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import type {
   FileAttachment,
@@ -113,10 +115,9 @@ function PropertyChatTab({
     return next;
   }, [messages, userId]);
 
-  const branchProgress = React.useMemo(
-    () => getInFlightCheckpointProgressFromMessages(messages),
-    [messages]
-  );
+  const branchProgress = React.useMemo(() => {
+    return getInFlightCheckpointProgressFromMessages(messages);
+  }, [messages]);
 
   const giftedChatUser = React.useMemo(() => ({ _id: userId }), [userId]);
 
@@ -126,7 +127,12 @@ function PropertyChatTab({
   const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
 
   const renderBubble = React.useCallback((props: BubbleProps<IMessage>) => {
-    return <GiftedChatBubble {...props} sessionId={sessionIdRef.current ?? undefined} />;
+    return (
+      <GiftedChatBubble
+        {...props}
+        sessionId={sessionIdRef.current ?? undefined}
+      />
+    );
   }, []);
 
   const renderChatEmpty = React.useCallback(

@@ -25,7 +25,7 @@ graph TD
     User[User Query] --> UI[Web/Mobile UI]
     UI --> |primary_agent='docs'| API[Proxy API]
     API --> RootAgent[Root Property Agent]
-    RootAgent[property_agent executor] --> UserDocs[ask_user_docs_agent]
+    RootAgent[property_agent executor] --> UserDocs[user_docs_retrieval]
     UserDocs --> RAG[Vertex AI RAG]
     RAG --> GCS[User Documents in GCS]
     GCS --> RAG
@@ -52,7 +52,7 @@ primary_agent: Optional[PrimaryAgent] = Field(
     description=(
         "Primary agent selection. When provided, this takes precedence in routing decisions. "
         "Allowed values: 'checkpoint' and 'docs' are context for resolve_turn; "
-        "the executor calls checkpoint_agent or ask_user_docs_agent directly. "
+        "the orchestrator calls run_checkpoint_pipeline or user_docs_retrieval directly. "
         "If not provided, routing falls back to legacy logic based on checkpoint_ids."
     ),
 )
@@ -64,19 +64,19 @@ primary_agent: Optional[PrimaryAgent] = Field(
 
 **Changes**:
 - Added routing rule for `primary_agent="docs"`
-- `primary_agent=docs` is passed to resolve; executor calls `ask_user_docs_agent`
+- `primary_agent=docs` is passed to resolve; executor calls `user_docs_retrieval`
 
 **Routing Priority**:
 ```
-0. primary_agent="docs" → resolve route=user_docs → ask_user_docs_agent
-1. primary_agent="checkpoint" → resolve route=checkpoint → checkpoint_agent
+0. primary_agent="docs" → resolve route=user_docs → user_docs_retrieval
+1. primary_agent="checkpoint" → resolve route=checkpoint → run_checkpoint_pipeline (when new analysis needed)
 2. checkpoint_ids / optional agents → context for resolve + tools
 3. Other property queries → resolve picks checkpoint | user_docs | knowledge_base
 ```
 
 **Code Addition**:
 ```python
-*   If `primary_agent` is `"docs"`, resolve forces `route=user_docs` and the executor calls `ask_user_docs_agent`,
+*   If `primary_agent` is `"docs"`, resolve forces `route=user_docs` and the executor calls `user_docs_retrieval`,
     passing `user_query`, `context_doc_uris` (if present), `property_address` (if present), and `property_id` 
     (if present) to retrieve information from the user's uploaded documents.
 ```
@@ -90,26 +90,25 @@ primary_agent: Optional[PrimaryAgent] = Field(
 - Supports both selected docs and all-docs modes
 - Routes to `user_docs_agent` tool
 
-**Decision Logic**:
+**Decision Logic** (V2 — `resolve_turn_llm` + flat tool registry):
 ```python
 1. If routed via primary_agent="docs":
-   → Use user_docs_agent
-   → Search selected docs if context_doc_uris provided
-   → Search all docs if context_doc_uris empty
-   
-2. Else if checkpoint_ids provided:
-   → Use checkpoint_agent
-   
+   → resolve route=user_docs → user_docs_retrieval
+
+2. Else if checkpoint context needs new retrieval or full analysis:
+   → resolve route=checkpoint → run_checkpoint_pipeline
+   (checkpoint_ids and optional branches are resolve inputs, not a separate root agent)
+
 3. Else if context_doc_uris provided:
-   → Use user_docs_agent
-   
+   → user_docs path
+
 4. Else:
-   → Use knowledge_base_agent
+   → knowledge_base_retrieval
 ```
 
 #### 4. User Docs Agent Enhancement
 
-**File**: `gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent.py`
+**File**: `gcp/agents/homecare/property_agent/agents/user_docs_agent/agent.py`
 
 **Changes**:
 - Updated `get_user_file_ids()` to support all-docs mode
@@ -334,11 +333,11 @@ import { FileText } from 'lucide-react-native';
    ```
    Root Agent receives payload
    → Detects primary_agent="docs"
-   → resolve route=user_docs → ask_user_docs_agent
+   → resolve route=user_docs → user_docs_retrieval
    
    property_agent executor receives request
    → Detects docs mode
-   → Calls user_docs_agent tool
+   → Calls user_docs_retrieval tool
    
    User Docs Agent
    → Gets file IDs for search scope
@@ -558,7 +557,7 @@ INFO: Streaming agent response for docs query
 ### Backend (5 files)
 1. `gcp/agents/homecare/property_agent/agent_inputs.py`
 2. `gcp/agents/homecare/property_agent/prompts.py`
-3. `gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/agent.py`
+3. `gcp/agents/homecare/property_agent/agents/user_docs_agent/agent.py`
 4. `gcp/proxy/api/schemas/agent.py`
 5. `gcp/proxy/api/services/vertex_service.py`
 
@@ -592,3 +591,4 @@ For implementation questions:
 - [Docs Chat Overview](DOCS_CHAT_OVERVIEW.md)
 - [Docs Chat Testing Guide](DOCS_CHAT_TESTING.md)
 - [Docs Chat API Integration](DOCS_CHAT_API_INTEGRATION.md)
+- [Webapp chat UI (V2 message contract)](../../apps/webapp/docs/CHAT.md)

@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Processing Status - Implementation Verification
 
 ## Summary
@@ -156,4 +158,3 @@ The blank screen issue has been resolved through:
 - Defensive rendering checks
 - Fallback values for missing data
 - Platform-appropriate timing adjustments
-

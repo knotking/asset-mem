@@ -4,23 +4,29 @@ from __future__ import annotations
 
 import json
 
-from property_agent.query_mode import (
+from property_agent.routing.query_mode import (
     SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
     branches_mentioned_in_query,
     build_session_working_memory,
     extract_known_service_providers,
     format_provider_context_answer,
+    format_session_working_memory_block,
     infer_query_mode,
     needs_fresh_checkpoint_retrieval,
     query_asks_area_outside_memory,
     query_references_known_provider,
     should_answer_provider_from_context,
-    should_block_checkpoint_agent_for_context_turn,
+    should_block_checkpoint_pipeline_for_context_turn,
     snapshot_session_analysis_context,
 )
-from property_agent.resolve_turn import ResolvedTurn, apply_resolved_turn_to_state
-from property_agent.resolve_turn_llm import _apply_checkpoint_retrieval_plan
-from property_agent.sub_agents.checkpoint_analysis_agent import agent as caa
+from property_agent.routing.resolve_turn import ResolvedTurn, apply_resolved_turn_to_state
+from property_agent.routing.apply_resolved_turn import (
+    apply_checkpoint_retrieval_plan as _apply_checkpoint_retrieval_plan,
+)
+from property_agent.checkpoint.analysis.search_query import (
+    resolve_optional_branch_user_query,
+    resolve_service_branch_user_query,
+)
 
 
 def _service_parallel_json(*names: str) -> str:
@@ -124,7 +130,7 @@ def test_infer_query_mode_entity_search() -> None:
 
 def test_resolve_optional_branch_user_query_entity_uses_turn_text() -> None:
     blob = "Checkpoint garage door paint chipping " * 10
-    q = caa.resolve_optional_branch_user_query(
+    q = resolve_optional_branch_user_query(
         turn_query="Get more details about Right Way Garage Doors",
         search_query=None,
         checkpoint_results=blob,
@@ -138,7 +144,7 @@ def test_resolve_optional_branch_user_query_issue_uses_compact_stem() -> None:
     blob = (
         "Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage): paint chipping near handle."
     )
-    q = caa.resolve_optional_branch_user_query(
+    q = resolve_optional_branch_user_query(
         turn_query="Analyse my checkpoints",
         search_query=None,
         checkpoint_results=blob,
@@ -150,7 +156,7 @@ def test_resolve_optional_branch_user_query_issue_uses_compact_stem() -> None:
 
 def test_resolve_service_branch_user_query_explicit_menu_uses_retrieval_stem() -> None:
     stem = "residential garage door paint chipping scratches repair"
-    q = caa.resolve_service_branch_user_query(
+    q = resolve_service_branch_user_query(
         turn_query="analyse my checkpoints for coverage, diy, service, and cost",
         search_query=stem,
         checkpoint_results="blob",
@@ -165,7 +171,7 @@ def test_resolve_service_branch_user_query_garage_provider_turn_uses_turn() -> N
         "or related property maintenance tasks?"
     )
     stem = "residential garage door paint chipping scratches repair"
-    q = caa.resolve_service_branch_user_query(
+    q = resolve_service_branch_user_query(
         turn_query=turn,
         search_query=stem,
         checkpoint_results="blob",
@@ -176,7 +182,7 @@ def test_resolve_service_branch_user_query_garage_provider_turn_uses_turn() -> N
 
 def test_resolve_service_branch_user_query_entity_uses_turn() -> None:
     turn = "Get more details about Right Way Garage Doors"
-    q = caa.resolve_service_branch_user_query(
+    q = resolve_service_branch_user_query(
         turn_query=turn,
         search_query="garage door paint repair",
         checkpoint_results="blob",
@@ -210,12 +216,21 @@ def test_branches_mentioned_in_query_includes_service() -> None:
 def test_snapshot_survives_answer_from_context_apply() -> None:
     state = {
         "checkpoint_parallel_results": _service_parallel_json("OneHandyPro"),
-        "checkpoint_analysis_dual_format": (
-            "# Analysis\n\n```json\n"
-            '{"analysis":{"serviceResults":{"localPros":{"serpAPIResults":'
-            '[{"name":"OneHandyPro","notes":"Licensed","website":"https://onehandypro.com"}]}}}}'
-            "\n```"
-        ),
+        "checkpoint_analysis": {
+            "analysis": {
+                "serviceResults": {
+                    "localPros": {
+                        "serpAPIResults": [
+                            {
+                                "name": "OneHandyPro",
+                                "notes": "Licensed",
+                                "website": "https://onehandypro.com",
+                            }
+                        ]
+                    }
+                }
+            }
+        },
         "checkpoint_optional_agents": ["service"],
     }
     snapshot_session_analysis_context(state)
@@ -228,7 +243,7 @@ def test_snapshot_survives_answer_from_context_apply() -> None:
         query_mode="interpret_session",
     )
     apply_resolved_turn_to_state(state, resolved)
-    assert state.get("checkpoint_analysis_dual_format")
+    assert isinstance(state.get("checkpoint_analysis"), dict)
     assert isinstance(state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY), dict)
     memory = build_session_working_memory(state)
     assert "OneHandyPro" in memory.get("service_providers_mentioned", [])
@@ -237,7 +252,7 @@ def test_snapshot_survives_answer_from_context_apply() -> None:
 def test_should_block_provider_follow_up_not_kitchen() -> None:
     state = {"checkpoint_parallel_results": _service_parallel_json("OneHandyPro")}
     snapshot_session_analysis_context(state)
-    assert should_block_checkpoint_agent_for_context_turn(
+    assert should_block_checkpoint_pipeline_for_context_turn(
         user_query="Get more details on OneHandyPro",
         state=state,
         user_goal="answer_from_context",
@@ -267,7 +282,7 @@ def test_kitchen_outside_memory_uses_context_not_fresh_retrieval() -> None:
         "Are there issues in the kitchen?",
         state=state,
     )
-    assert should_block_checkpoint_agent_for_context_turn(
+    assert should_block_checkpoint_pipeline_for_context_turn(
         user_query="Are there issues in the kitchen?",
         state=state,
         user_goal="answer_from_context",
@@ -344,7 +359,7 @@ def test_format_provider_context_answer_synthesis_service_field() -> None:
             }
         }
     )
-    state = {"checkpoint_analysis_dual_format": f"# Analysis\n\n```json\n{inner}\n```\n"}
+    state = {"checkpoint_analysis": json.loads(inner)}
     match = query_references_known_provider(
         "get more details on Precision Door Service",
         state,
@@ -407,3 +422,151 @@ def test_format_provider_context_answer() -> None:
     assert "previous **Service results**" in text
     assert "OneHandyPro" in text
     assert "CSLB licensed" in text
+
+
+def test_snapshot_from_parallel_only_service_branch() -> None:
+    state = {
+        "checkpoint_parallel_results": _service_parallel_json(
+            "Ace Handyman Services Brentwood"
+        ),
+        "checkpoint_last_response_kind": "analysis",
+    }
+    snapshot_session_analysis_context(state)
+    memory = state[SESSION_WORKING_MEMORY_SNAPSHOT_KEY]
+    assert "Ace Handyman Services Brentwood" in memory.get(
+        "service_providers_mentioned", []
+    )
+    details = memory.get("service_provider_details") or {}
+    assert "Ace Handyman Services Brentwood" in details
+
+
+def test_snapshot_includes_branch_digests() -> None:
+    state = {
+        "checkpoint_analysis": {
+            "analysis": {
+                "title": "Garage repair",
+                "checkpointSummary": {
+                    "locations": ["Garage"],
+                    "checkpointsAnalyzed": 1,
+                    "issuesDetected": ["Paint chips"],
+                    "overallCondition": "fair",
+                },
+                "analysisStatus": {
+                    "diy": "completed",
+                    "service": "completed",
+                },
+                "diyResults": {
+                    "diySteps": {
+                        "steps": [
+                            {"title": "Clean the surface"},
+                            {"title": "Sand and prime"},
+                        ]
+                    }
+                },
+                "coverageResult": {
+                    "warrantyInfo": "No warranty for cosmetic wear.",
+                    "insuranceInfo": "Renters policy excludes wear.",
+                },
+                "costEstimationResults": {
+                    "costEstimates": {
+                        "diy": {"min": 125, "max": 290, "currency": "USD"},
+                    }
+                },
+            }
+        }
+    }
+    snapshot_session_analysis_context(state)
+    memory = state[SESSION_WORKING_MEMORY_SNAPSHOT_KEY]
+    assert "diy" in memory.get("branches_completed", [])
+    assert memory.get("diy_steps_summary") == ["Clean the surface", "Sand and prime"]
+    assert "No warranty" in (memory.get("coverage_summary") or {}).get(
+        "warrantyInfo", ""
+    )
+    assert (memory.get("cost_summary") or {}).get("diy", {}).get("max") == 290
+
+
+def test_snapshot_survives_prune_simulation() -> None:
+    from property_agent.runtime.session_diet import prune_heavy_checkpoint_state
+
+    state = {
+        "checkpoint_parallel_results": _service_parallel_json("Up Right Garage Door Repair"),
+        "checkpoint_analysis": {"analysis": {"title": "Checkpoint analysis"}},
+        "checkpoint_last_response_kind": "analysis",
+    }
+    snapshot_session_analysis_context(state)
+    prune_heavy_checkpoint_state(state)
+    assert state.get("checkpoint_parallel_results") is None
+    assert state.get("checkpoint_analysis") is None
+    memory = build_session_working_memory(state)
+    assert "Up Right Garage Door Repair" in memory.get("service_providers_mentioned", [])
+
+
+def test_should_block_entity_detail_with_memory_without_provider_match() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+            "service_providers_mentioned": ["Ace Handyman Services Brentwood"],
+        }
+    }
+    assert should_block_checkpoint_pipeline_for_context_turn(
+        user_query="get me more details on Ace Handyman",
+        state=state,
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        tool_name="knowledge_base_retrieval",
+    )
+
+
+def test_should_not_block_user_docs_on_user_docs_route() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        }
+    }
+    assert not should_block_checkpoint_pipeline_for_context_turn(
+        user_query="What does section 4.5 of the lease say?",
+        state=state,
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        resolved_route="user_docs",
+        tool_name="user_docs_retrieval",
+    )
+
+
+def test_format_session_memory_includes_provider_lines() -> None:
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "service_provider_details": {
+                "Up Right Garage Door Repair Brentwood": {
+                    "name": "Up Right Garage Door Repair Brentwood",
+                    "phone": "(925) 293-8232",
+                    "ratings": "4.9",
+                    "reviews": "94",
+                    "location": "8375 Brentwood Blvd, Brentwood, CA 94513",
+                }
+            }
+        }
+    }
+    block = format_session_working_memory_block(state)
+    assert "Service providers (from prior analysis)" in block
+    assert "925" in block
+    assert "rating: 4.9" in block
+    assert "reviews: 94" in block
+    assert "SESSION_WORKING_MEMORY" in block
+
+
+def test_provider_entry_normalizes_ratings_and_reviews_from_serp_shape() -> None:
+    from property_agent.routing.query_mode.session_memory import _provider_entry_from_item
+
+    entry = _provider_entry_from_item(
+        {
+            "name": "Up Right Garage Door Repair Brentwood",
+            "phone": "(925) 293-8232",
+            "ratings": "4.9",
+            "reviews": 94,
+            "address": "8375 Brentwood Blvd, Brentwood, CA 94513",
+        }
+    )
+    assert entry["rating"] == "4.9"
+    assert entry["reviews"] == 94
+    assert "8375 Brentwood Blvd" in entry["location"]

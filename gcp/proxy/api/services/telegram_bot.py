@@ -18,7 +18,7 @@ import re
 import asyncio
 import time
 import json
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Union
 
 # aiogram imports
 from aiogram.enums import ParseMode, ChatAction
@@ -39,6 +39,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from utils.gcp import upload_file_to_gcs, listen_to_event
+from utils.message_content_persist import _strip_json_fences
 
 # Configure logging
 logger: logging.Logger = logging.getLogger(__name__)
@@ -416,98 +417,18 @@ def _format_value(value: Any) -> str:
             return f"{str_value[:497]}..."
         return str_value
 
-def extract_markdown_from_dual_format(text: str) -> Optional[str]:
-    """
-    Extracts the markdown portion from a dual-format response (Markdown + JSON code block).
-    
-    Analysis Agent responses should be in the format:
-    [Markdown formatted response here]
-    
-    ```json
-    { ... JSON data ... }
-    ```
-    
-    Args:
-        text: The full response text that may contain both Markdown and JSON
-        
-    Returns:
-        The extracted markdown text if dual format is detected, None otherwise
-    """
-    if not text or not isinstance(text, str):
-        return None
-    
-    # Check if response contains a JSON code block marker
-    if '```json' not in text:
-        return None
-    
-    # Pattern 1: Match markdown content before ```json ... ```
-    # This handles multi-line markdown before the JSON block
-    # Uses non-greedy match to stop at the first ```json
-    pattern1 = r'(.+?)\s*```json\s*\n.*?```'
-    match1 = re.search(pattern1, text, re.DOTALL)
-    
-    if match1:
-        markdown_part = match1.group(1).strip()  # Group 1 is the markdown before the JSON block
-        if markdown_part:
-            logger.info("✓ Extracted markdown from dual-format response (Pattern 1)")
-            return markdown_part
-    
-    # Pattern 2: More flexible - captures everything before ```json
-    # Handles cases where there might be minimal whitespace
-    pattern2 = r'(.+?)\s*```json'
-    match2 = re.search(pattern2, text, re.DOTALL)
-    if match2:
-        markdown_part = match2.group(1).strip()
-        if markdown_part:
-            logger.info("✓ Extracted markdown from dual-format response (Pattern 2)")
-            return markdown_part
-    
-    # Pattern 3: Split by ```json and take the first part
-    parts = text.split('```json')
-    if len(parts) > 1:
-        markdown_part = parts[0].strip()
-        if markdown_part:
-            logger.info("✓ Extracted markdown from dual-format response (Pattern 3)")
-            return markdown_part
-    
-    logger.debug("No markdown found before JSON code block - response may be JSON-only")
-    return None
-
 def safe_markdown_format(text: str) -> str:
     """
-    Formats text for Telegram MarkdownV2, ensuring JSON is converted to readable markdown.
-    
-    For Analysis Agent responses in dual format (JSON + Markdown), extracts the markdown portion.
-    For other responses, converts JSON to markdown format (backward compatible).
-    
-    Args:
-        text: The response text that may be in dual format (JSON + Markdown) or JSON-only
-        
-    Returns:
-        Formatted markdown text ready for Telegram MarkdownV2
+    Formats text for Telegram MarkdownV2.
+
+    V2 agent output should arrive as prose (``contentMarkdown``) without ```json fences.
+    Legacy fenced blobs from the stream are stripped the same way as Firestore persist.
+    Remaining JSON-shaped text is converted to readable markdown for Telegram.
     """
     if not text or not isinstance(text, str):
         return str(text)
-    
-    # First, check if this is a dual-format response (JSON code block + Markdown)
-    # If so, extract just the markdown portion and use it directly
-    markdown_text = extract_markdown_from_dual_format(text)
-    if markdown_text:
-        logger.info(f"Using extracted markdown from dual-format response (length: {len(markdown_text)} chars)")
-        # We have markdown from dual format, format it for Telegram
-        formatted_text = format_google_maps_links(markdown_text)
-        formatted_text = format_youtube_links(formatted_text)
-        
-        try:
-            telegram_formatted = telegramify_markdown.markdownify(formatted_text)
-            logger.debug("Successfully formatted markdown for Telegram")
-            return telegram_formatted
-        except Exception as e:
-            logger.warning(f"telegramify_markdown failed: {e}. Falling back to escape_markdown.")
-            return escape_markdown(formatted_text)
-    
-    # Not dual format - fall back to existing behavior (convert JSON to markdown)
-    logger.debug("No dual-format detected, converting JSON to markdown")
+
+    text = _strip_json_fences(text.strip())
     # First, check if text contains JSON and convert it to markdown
     # This MUST happen first to remove all JSON syntax
     converted_text = json_to_markdown(text)
@@ -709,7 +630,6 @@ async def handle_attachment(message: aio_types.Message):
                     property_address=None,
                 )
             async for answer_part in stream_agent_answers(agent_request):
-                # Extract markdown from dual-format response if available, otherwise convert JSON to markdown
                 answer_str = str(answer_part)
                 formatted_answer = safe_markdown_format(answer_str)
                 for part in split_message(formatted_answer):
@@ -737,7 +657,6 @@ async def handle_text_message(message: aio_types.Message):
         property_address=None,
     )
     async for answer_part in stream_agent_answers(agent_request):
-        # Extract markdown from dual-format response if available, otherwise convert JSON to markdown
         answer_str = str(answer_part)
         formatted_answer = safe_markdown_format(answer_str)
         for part in split_message(formatted_answer):

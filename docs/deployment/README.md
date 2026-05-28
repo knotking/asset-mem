@@ -25,6 +25,7 @@ HomeApp is a full-stack application deployed on Google Cloud Platform (GCP) with
 - [Worker Functions Deployment](./WORKERS_DEPLOYMENT.md)
 - [Infrastructure Setup](./INFRASTRUCTURE.md)
 - [Operations (DLQ, alerts, runbooks)](./OPERATIONS.md) — scripts in [`.github/scripts/`](../../.github/scripts/)
+- [Orchestrator V2 cutover runbook](./runbooks/orchestrator-v2-cutover.md)
 - [CI/CD Pipelines](./CICD.md)
 - [Environment Configuration](./ENVIRONMENTS.md)
 

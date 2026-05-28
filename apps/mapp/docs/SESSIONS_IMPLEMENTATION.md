@@ -66,13 +66,12 @@ A comprehensive session management component with advanced features:
 - Generates shareable web URLs
 - Copy link to clipboard functionality
 
-#### SessionsModal (`apps/mapp/components/SessionsModal.tsx`)
-A modal wrapper for the SessionsList component:
-- Full-screen modal with slide animation
+#### SessionsDrawerContent (`apps/mapp/components/property-details/SessionsDrawerContent.tsx`)
+Drawer content wrapper for the sessions list:
+- Rendered inside `PushDrawer` on the property details screen
 - Property name in header
 - Safe area support
-- Portal host for nested modals/dialogs
-- Auto-closes on session selection
+- Auto-closes drawer on session selection
 
 ### 4. Property Details Integration
 The sessions feature is integrated via a drawer in the property details screen:
@@ -206,7 +205,7 @@ Access via the three-dot menu on each session:
 ### Created:
 - `apps/mapp/lib/api.ts` - API functions for sessions, streaming, and document analysis
 - `apps/mapp/components/SessionsList.tsx` - Comprehensive sessions list with search, selection, and actions
-- `apps/mapp/components/SessionsModal.tsx` - Modal wrapper for sessions list
+- `apps/mapp/components/property-details/SessionsDrawerContent.tsx` - Drawer content for sessions list
 - `apps/mapp/components/PushDrawer.tsx` - Drawer component for sessions UI
 - `apps/common/src/contexts/session-context.tsx` - Session state management and real-time sync
 

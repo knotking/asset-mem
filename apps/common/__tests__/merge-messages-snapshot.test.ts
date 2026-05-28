@@ -37,6 +37,52 @@ describe('mergeMessagesFromSnapshot', () => {
     expect(merged[1]).toBe(loaded[1]);
   });
 
+  it('replaces message when contentMarkdown arrives without content change', () => {
+    const prev: Message[] = [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        content: '',
+        createdAt: baseTime,
+      },
+    ];
+    const loaded: Message[] = [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        content: '',
+        contentMarkdown: 'Hello from V2',
+        createdAt: baseTime,
+      },
+    ];
+    const merged = mergeMessagesFromSnapshot(prev, loaded);
+    expect(merged[0]).toBe(loaded[0]);
+    expect(merged[0].contentMarkdown).toBe('Hello from V2');
+  });
+
+  it('replaces message when contentJson arrives without content change', () => {
+    const prev: Message[] = [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        content: '',
+        createdAt: baseTime,
+      },
+    ];
+    const loaded: Message[] = [
+      {
+        id: 'assistant',
+        role: 'assistant',
+        content: '',
+        contentJson: { analysis: { title: 'Done' } },
+        createdAt: baseTime,
+      },
+    ];
+    const merged = mergeMessagesFromSnapshot(prev, loaded);
+    expect(merged[0]).toBe(loaded[0]);
+    expect(merged[0].contentJson).toEqual({ analysis: { title: 'Done' } });
+  });
+
   it('replaces message when agentSteps change', () => {
     const prev: Message[] = [
       {

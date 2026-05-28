@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Feature - Presentation Updates Summary
 
 ## Overview
@@ -243,4 +245,3 @@ The presentation is now ready for:
 - Product roadmap discussions
 - Marketing materials
 - Documentation for new team members
-

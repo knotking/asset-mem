@@ -12,6 +12,7 @@ The HomeApp web application allows property managers and homeowners to access th
 ### 💬 AI Chat
 - **Conversational Interface**: Chat with the AI agent about your property.
 - **Document Q&A**: Ask questions about uploaded manuals and docs.
+- **Implementation**: [docs/CHAT.md](docs/CHAT.md) — V2 `contentMarkdown` / `contentJson` rendering and thinking strip.
 
 ### 📸 Checkpoints (Preview)
 - **Timeline View**: View a visual history of property checkpoints.

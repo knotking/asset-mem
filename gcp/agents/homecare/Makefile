@@ -1,4 +1,7 @@
-.PHONY: help install setup clean run test deploy test-eval lint format
+.PHONY: help install setup clean run test deploy lint format \
+	test-eval test-eval-executor-routing test-eval-conversational \
+	test-eval-user-docs test-eval-checkpoint test-eval-cost \
+	test-eval-shopping test-eval-service test-simulation
 
 # Default target
 .DEFAULT_GOAL := help
@@ -69,42 +72,23 @@ run: ## Run the agent locally
 	$(call print_header,Running Agent)
 	adk run $(AGENT_DIR)
 
-test: ## Run unit tests only (excludes live ADK evals)
+test: ## Run unit tests (CI-safe; no live Vertex evalsets)
 	$(call print_header,Running Unit Tests)
-	$(PYTEST) tests/ -v
+	$(PYTEST) tests/ ../../agent_framework/tests/ -v
 
-test-all: ## Run unit tests and ADK evals
-	$(call print_header,Running All Tests)
-	$(PYTEST) tests/ eval/ -v
+test-all: test ## Alias for unit tests (ADK evalsets removed)
 
-test-eval: ## Run ADK eval tests (live Vertex; property_agent/evals/*.evalset.json)
-	$(call print_header,Running Evaluation Tests)
-	$(PYTEST) eval/ -v
+define eval_removed_msg
+	@echo "${COLOR_YELLOW}ADK evalsets were removed.${COLOR_RESET}"
+	@echo "  Use: make test          (unit tests, CI)"
+	@echo "  Use: uv run adk web     (manual staging QA)"
+	@echo "  Use: make conformance-test  (replay fixtures)"
+	@exit 1
+endef
 
-test-eval-executor-routing: ## Eval: executor_routing.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_executor_routing -v
-
-test-eval-conversational: ## Eval: conversational_bypass + multi_turn_conversational
-	$(PYTEST) eval/test_eval.py::test_eval_conversational_bypass eval/test_eval.py::test_eval_multi_turn_conversational -v
-
-test-eval-user-docs: ## Eval: user_docs_routing.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_user_docs_routing -v
-
-test-eval-checkpoint: ## Eval: checkpoint_optional_agents.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_checkpoint_optional_agents -v
-
-test-eval-cost: ## Eval: cost_agent.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_cost_agent -v
-
-test-eval-shopping: ## Eval: shopping_agent.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_shopping_agent -v
-
-test-eval-service: ## Eval: service_agent.evalset.json
-	$(PYTEST) eval/test_eval.py::test_eval_service_agent -v
-
-test-simulation: ## Live user-simulation evals (RUN_ADK_SIMULATION_TESTS=1, Vertex)
-	$(call print_header,Running Simulation Evals)
-	RUN_ADK_SIMULATION_TESTS=1 $(PYTEST) eval/test_simulation.py -v
+test-eval test-eval-executor-routing test-eval-conversational test-eval-user-docs \
+test-eval-checkpoint test-eval-cost test-eval-shopping test-eval-service test-simulation:
+	$(eval_removed_msg)
 
 CONFORMANCE_DIR := property_agent/conformance
 
@@ -166,6 +150,11 @@ requirements: ## Generate requirements.txt from pyproject.toml
 	$(call print_header,Generating Requirements)
 	uv pip compile pyproject.toml -o requirements.txt
 	$(call print_success,Requirements generated)
+
+validate-agent-engine-bundle: ## Validate Agent Engine requirements and extra_packages tar
+	$(call print_header,Validating Agent Engine Bundle)
+	$(PYTEST) tests/test_agent_engine_bundle.py -v
+	$(call print_success,Agent Engine bundle validation passed)
 
 shell: ## Start Python shell with environment
 	$(call print_header,Starting Python Shell)

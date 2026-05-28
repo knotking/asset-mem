@@ -25,6 +25,16 @@ function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
   return true;
 }
 
+function contentJsonEqual(
+  a: Message['contentJson'],
+  b: Message['contentJson']
+): boolean {
+  if (a === b) return true;
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /** Shallow compare fields that affect chat UI and GiftedChat transform. */
 export function areMessagesEqual(a: Message, b: Message): boolean {
   if (a === b) return true;
@@ -32,6 +42,8 @@ export function areMessagesEqual(a: Message, b: Message): boolean {
   if (a.primaryAgent !== b.primaryAgent) return false;
   if (messageCreatedAtMillis(a.createdAt) !== messageCreatedAtMillis(b.createdAt)) return false;
   if (!agentStepsEqual(a.agentSteps, b.agentSteps)) return false;
+  if ((a.contentMarkdown ?? '') !== (b.contentMarkdown ?? '')) return false;
+  if (!contentJsonEqual(a.contentJson, b.contentJson)) return false;
 
   const aFile = a.file;
   const bFile = b.file;

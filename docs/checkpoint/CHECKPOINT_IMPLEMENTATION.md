@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Feature - Webapp Implementation
 
 This document describes the checkpoint feature that has been ported from the mobile app (mapp) to the web application (webapp).
@@ -223,4 +225,3 @@ The webapp implementation takes advantage of web capabilities:
 3. **Keyboard Shortcuts** - Power user features (future)
 4. **Better Charts** - More space for metrics visualization
 5. **Multi-window** - Open multiple checkpoints (future)
-

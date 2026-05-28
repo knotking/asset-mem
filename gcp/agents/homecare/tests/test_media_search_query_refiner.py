@@ -4,7 +4,7 @@ import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from property_agent.sub_agents.checkpoint_agent import (
+from property_agent.checkpoint.retrieval import (
     media_search_query_refiner as msqr,
 )
 
@@ -157,3 +157,65 @@ def test_refiner_empty_formatted_skips_call(monkeypatch):
     monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
     assert msqr.refine_checkpoint_media_search_query("seed", []) == "seed"
     mock_client.models.generate_content.assert_not_called()
+
+
+def test_refiner_prompt_is_issue_type_general_not_garage_only():
+    prompt = msqr._refiner_prompt(
+        "Kitchen leak Bathroom mold",
+        '{"checkpoints":[{"location":"Kitchen","issues":["sink leak"]}]}',
+    )
+    assert "plumbing" in prompt.lower() or "Plumbing" in prompt
+    assert "electrical" in prompt.lower() or "HVAC" in prompt
+    assert "Multiple checkpoints" in prompt
+    assert "Do NOT assume surface materials" in prompt
+    assert "ONE most actionable repair focus" in prompt
+    assert "vehicles" in prompt.lower()
+    assert "auto body" in prompt.lower()
+    assert "Do not mix domains" in prompt
+    assert "3-6 word keyword phrase" in prompt
+    assert "garage door paint repair" in prompt
+
+
+def test_refiner_compacts_verbose_youtube_query_from_model(monkeypatch):
+    monkeypatch.setenv("HOMEAPP_REFINE_MEDIA_SEARCH_QUERY", "1")
+    payload = {
+        "issue_stem": "residential garage door paint chipping and scratches",
+        "youtube_query": "how to repair paint chips and scratches on garage door",
+        "shopping_materials": ["exterior metal primer", "exterior paint"],
+        "service_trade_query": "garage door refinishing contractor",
+    }
+
+    class _Resp:
+        text = json.dumps(payload)
+        parsed = None
+        candidates = None
+        prompt_feedback = None
+
+    mock_client = MagicMock()
+    mock_client.models.generate_content.return_value = _Resp()
+    monkeypatch.setattr(msqr, "_vertex_genai_client", lambda: mock_client)
+
+    intents = msqr.refine_checkpoint_branch_search_intents(
+        "Garage paint chips", _fake_formatted()
+    )
+    assert intents.youtube_query == "garage door paint repair"
+
+
+def test_hints_from_formatted_includes_multiple_checkpoints():
+    formatted = [
+        {
+            "location": "Kitchen",
+            "summary": "Under-sink leak.",
+            "issues": [{"description": "Slow drip at P-trap."}],
+        },
+        {
+            "location": "Garage",
+            "summary": "Garage door paint chips.",
+            "issues": [{"description": "Paint chipping near handle."}],
+        },
+    ]
+    blob = msqr._hints_from_formatted(formatted)
+    data = json.loads(blob)
+    assert len(data["checkpoints"]) == 2
+    assert data["checkpoints"][0]["location"] == "Kitchen"
+    assert data["checkpoints"][1]["location"] == "Garage"

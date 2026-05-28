@@ -22,6 +22,13 @@ import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
 
+function toDate(value: Checkpoint['createdAt'] | undefined): Date {
+  if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  return value ? new Date(value as unknown as Date) : new Date(0);
+}
+
 interface CheckpointComparisonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,8 +46,8 @@ export function CheckpointComparisonDialog({
   const [comparisonResult, setComparisonResult] = useState<VisualDiffAnalysis | null>(null);
 
   // Determine which is older (before) and which is newer (after)
-  const date1 = checkpoint1.createdAt?.toDate?.() || new Date(checkpoint1.createdAt);
-  const date2 = checkpoint2.createdAt?.toDate?.() || new Date(checkpoint2.createdAt);
+  const date1 = toDate(checkpoint1.createdAt);
+  const date2 = toDate(checkpoint2.createdAt);
   const [beforeCheckpoint, afterCheckpoint] = date1 < date2
     ? [checkpoint1, checkpoint2]
     : [checkpoint2, checkpoint1];

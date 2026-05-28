@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Feature Implementation Summary
 
 ## Completed Features (Mobile App - `apps/mapp`)
@@ -222,7 +224,7 @@ Chose Firestore Vector Search over Vertex AI RAG Corpus because:
 **Files to Create/Modify:**
 
 - `gcp/proxy/workers/function/checkpoint_analysis/embedding_service.py` - Embedding generation service
-- `gcp/agents/homecare/property_agent/sub_agents/checkpoint_agent/` - New checkpoint retrieval agent
+- `gcp/agents/homecare/property_agent/checkpoint/retrieval/` - Checkpoint retrieval
 - `apps/common/src/types.ts` - Add embedding fields to Checkpoint type
 - `apps/webapp/firestore.indexes.json` - Add vector index configuration
 

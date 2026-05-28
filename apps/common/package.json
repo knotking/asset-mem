@@ -16,8 +16,7 @@
     "./contexts/messages-context": "./src/contexts/messages-context.tsx",
     "./contexts/property-context": "./src/contexts/property-context.tsx",
     "./contexts/properties-list-context": "./src/contexts/properties-list-context.tsx",
-    "./contexts/property-documents-context": "./src/contexts/property-documents-context.tsx",
-    "./contexts/upload-dialog-context": "./src/contexts/upload-dialog-context.tsx",
+    "./contexts/document-upload-context": "./src/contexts/document-upload-context.tsx",
     "./contexts/checkpoint-context": "./src/contexts/checkpoint-context.tsx",
     "./contexts/saved-service-providers-context": "./src/contexts/saved-service-providers-context.tsx",
     "./lib/saved-service-provider-dedupe": "./src/lib/saved-service-provider-dedupe.ts",
@@ -33,9 +32,9 @@
     "./hooks/use-debounced-thinking-status": "./src/hooks/use-debounced-thinking-status.ts",
     "./hooks/use-theme-preference": "./src/hooks/use-theme-preference.ts",
     "./lib/checkpoint-branch-progress": "./src/lib/checkpoint-branch-progress.ts",
-    "./lib/logger": "./src/lib/logger.ts",
     "./lib/correlation-id": "./src/lib/correlation-id.ts",
     "./lib/search-location": "./src/search-location.ts",
+    "./lib/message-content-parts": "./src/lib/message-content-parts.ts",
     "./lib/shared-chat": "./src/lib/shared-chat.ts"
   },
   "peerDependencies": {

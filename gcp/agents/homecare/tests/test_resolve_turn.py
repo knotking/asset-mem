@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from google.genai import types
 
-from property_agent.resolve_turn import (
+from property_agent.routing.resolve_turn import (
     RESOLVED_TURN_STATE_KEY,
     ResolvedTurn,
     apply_resolved_turn_to_state,
@@ -33,13 +33,12 @@ def test_apply_resolved_clears_ui_optional_on_retrieval_only() -> None:
 
 
 def test_apply_resolved_preserves_stash_on_answer_from_context() -> None:
-    dual = (
-        "# Analysis\n\n```json\n"
-        '{"analysis":{"checkpointSummary":{"overallCondition":"damaged","checkpointsAnalyzed":2}}}'
-        "\n```"
-    )
+    analysis = {
+        "title": "Analysis",
+        "checkpointSummary": {"overallCondition": "damaged", "checkpointsAnalyzed": 2},
+    }
     state = {
-        "checkpoint_analysis_dual_format": dual,
+        "checkpoint_analysis": analysis,
         "checkpoint_result": "stale",
         "checkpoint_parallel_results": {"coverage": {}},
     }
@@ -54,13 +53,13 @@ def test_apply_resolved_preserves_stash_on_answer_from_context() -> None:
             user_goal="answer_from_context",
         ),
     )
-    assert state["checkpoint_analysis_dual_format"] == dual
+    assert state["checkpoint_analysis"] == analysis
     assert state.get("session_working_memory_snapshot") is not None
 
 
 def test_apply_resolved_clears_checkpoint_stash_on_retrieval_only_non_context() -> None:
     state = {
-        "checkpoint_analysis_dual_format": "# Old\n\n```json\n{}\n```",
+        "checkpoint_analysis": {"title": "Old"},
         "checkpoint_result": "stale",
     }
     apply_resolved_turn_to_state(
@@ -74,7 +73,7 @@ def test_apply_resolved_clears_checkpoint_stash_on_retrieval_only_non_context() 
             user_goal="answer_from_context",
         ),
     )
-    assert state["checkpoint_analysis_dual_format"] is None
+    assert state["checkpoint_analysis"] is None
 
 
 def test_apply_resolved_sets_optional_branches() -> None:
@@ -115,7 +114,7 @@ def test_apply_resolved_preserves_stash_when_optional_misroutes_provider_follow_
                 )
             }
         ),
-        "checkpoint_analysis_dual_format": dual,
+        "checkpoint_analysis": {"title": "Garage", "serviceResults": {}},
         "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
         "user_query": "get me more details on Bay Area Garage Door Repair",
     }
@@ -130,13 +129,13 @@ def test_apply_resolved_preserves_stash_when_optional_misroutes_provider_follow_
             user_goal="new_analysis",
         ),
     )
-    assert state["checkpoint_analysis_dual_format"] == dual
+    assert state["checkpoint_analysis"]["title"] == "Garage"
     assert state["checkpoint_optional_agents"] == []
 
 
 def test_apply_resolved_clears_stale_analysis_on_new_optional_run() -> None:
     state = {
-        "checkpoint_analysis_dual_format": "# Full report\n",
+        "checkpoint_analysis": {"title": "Full report"},
         "checkpoint_parallel_results": '{"checkpoint_parallel_service_result": "ok"}',
         "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
     }
@@ -152,7 +151,7 @@ def test_apply_resolved_clears_stale_analysis_on_new_optional_run() -> None:
         ),
     )
     assert state["checkpoint_optional_agents"] == ["service"]
-    assert state["checkpoint_analysis_dual_format"] is None
+    assert state["checkpoint_analysis"] is None
     assert state["checkpoint_parallel_results"] is None
 
 
@@ -185,7 +184,7 @@ def test_format_resolved_turn_block() -> None:
 
 
 def test_format_resolved_turn_block_injects_working_memory_when_snapshot() -> None:
-    from property_agent.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
+    from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
 
     block = format_resolved_turn_block(
         ResolvedTurn(

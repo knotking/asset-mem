@@ -2,6 +2,10 @@
 
 This module provides unified observability capabilities (metrics, logs, traces) across all features of the HomeApp platform. It supports both platform-wide analysis and feature-specific reporting.
 
+## Logging context vs ADK agents
+
+Request-scoped `auth_uid` / `correlation_id` for **proxy and workers** live in `common/observability/logging_context.py`. Vertex ADK agents use the parallel module in `gcp/agent_framework/observability/logging_context.py` (deployed with Agent Engine). Keep behavior in sync when changing either.
+
 ## Structure
 
 ```

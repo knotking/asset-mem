@@ -3,8 +3,8 @@
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.google_search_tool import GoogleSearchTool
 
-from property_agent.sub_agents.service_agent import agent as service_agent_module
-from property_agent.sub_agents.service_agent.agent import service_agent
+from property_agent.agents.service_agent import agent as service_agent_module
+from property_agent.agents.service_agent.agent import service_agent
 
 
 def test_service_agent_has_no_nested_google_search_subagent() -> None:

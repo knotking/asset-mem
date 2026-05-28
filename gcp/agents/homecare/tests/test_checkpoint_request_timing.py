@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from property_agent.sub_agents import checkpoint_request_timing as crt
+from property_agent.checkpoint import timing as crt
 
 
 def test_emit_logs_single_structured_line():
@@ -19,7 +19,7 @@ def test_emit_logs_single_structured_line():
     crt.logger = logger
 
     with patch(
-        "property_agent.checkpoint_timing_metrics.emit_checkpoint_timing_metrics"
+        "property_agent.metrics.checkpoint_timing_metrics.emit_checkpoint_timing_metrics"
     ) as emit_metrics:
         crt.emit_checkpoint_request_timing(state, return_chars=11832, source="test")
 

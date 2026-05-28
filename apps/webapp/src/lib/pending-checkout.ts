@@ -4,7 +4,6 @@ import {
 } from '@/lib/billing-client';
 
 const CHECKOUT_QUERY = 'checkout';
-const SUBSCRIBE_QUERY = 'subscribe';
 
 type FirebaseUserWithToken = { getIdToken: () => Promise<string> };
 
@@ -31,11 +30,4 @@ export async function completeAuthThenStripeCheckout(
 ): Promise<void> {
   const token = await user.getIdToken();
   window.location.replace(await createCheckoutRedirectUrl(token, tier));
-}
-
-export function readCheckoutTierFromSearchParams(
-  params: URLSearchParams,
-): BillingCheckoutTier | null {
-  const raw = params.get(CHECKOUT_QUERY) ?? params.get(SUBSCRIBE_QUERY);
-  return isBillingCheckoutTier(raw) ? raw : null;
 }

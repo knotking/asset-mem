@@ -113,6 +113,7 @@ export interface StreamAgentResponseParams {
   contextDocURIs?: string[];
   checkpointIds?: string[]; // Checkpoint IDs for checkpoint context
   propertyAddress?: string;
+  propertyId?: string;
   primaryAgent?: PrimaryAgent;
   checkpointOptionalAgents?: string[];
   searchLocation?: SearchLocationInput;
@@ -134,6 +135,7 @@ export async function streamAgentResponse({
   contextDocURIs = [],
   checkpointIds = [],
   propertyAddress,
+  propertyId,
   primaryAgent,
   checkpointOptionalAgents = [],
   searchLocation,
@@ -171,6 +173,10 @@ export async function streamAgentResponse({
       context_doc_uris: contextDocURIs,
       property_address: propertyAddress,
     };
+
+    if (propertyId) {
+      requestBody.property_id = propertyId;
+    }
 
     if (primaryAgent === 'checkpoint') {
       if (checkpointIds.length > 0) {
@@ -231,7 +237,6 @@ export async function streamAgentResponse({
       let match;
       while ((match = agentStatusRegex.exec(fullText)) !== null) {
         const status = match[1].toLowerCase() as
-          | 'transferredto'
           | 'executing'
           | 'completed'
           | 'failed';
@@ -305,7 +310,6 @@ export async function streamAgentResponse({
       const match = rawChunk.match(agentStatusRegex);
       if (match) {
         const status = match[1].toLowerCase() as
-          | 'transferredto'
           | 'executing'
           | 'completed'
           | 'failed';
@@ -580,109 +584,3 @@ export async function compareCheckpoints(
   }
 }
 
-export interface AnalyzeMultipleCheckpointsInput {
-  checkpointIds: string[];
-  userId: string;
-  propertyId: string;
-}
-
-export interface CheckpointTrend {
-  label: string;
-  value: string;
-  direction: 'up' | 'down' | 'stable';
-  description: string;
-}
-
-export interface TimelineItem {
-  checkpointId: string;
-  date: string;
-  status: 'good' | 'warning' | 'critical';
-  note: string;
-}
-
-export interface AnalyzeMultipleCheckpointsOutput {
-  summary: string;
-  trends: CheckpointTrend[];
-  recommendations: string[];
-  timeline: TimelineItem[];
-}
-
-/**
- * Analyze multiple checkpoints to generate insights and trends
- * Note: This is a placeholder for future backend implementation.
- * Currently returns a structure that can be populated by the frontend.
- */
-export async function analyzeMultipleCheckpoints(
-  input: AnalyzeMultipleCheckpointsInput
-): Promise<AnalyzeMultipleCheckpointsOutput> {
-  try {
-    // TODO: Replace with actual backend endpoint when available
-    // const url = CHECKPOINT_MULTI_ANALYSIS_URL;
-    // if (!url) {
-    //   throw new Error('CHECKPOINT_MULTI_ANALYSIS_URL not set.');
-    // }
-
-    // For now, return a structure that indicates backend support is needed
-    // The CheckpointAnalysisModal will generate mock data based on checkpoint info
-    throw new Error('Backend API for multi-checkpoint analysis not yet implemented');
-
-    // Future implementation:
-    // const response = await fetch(url, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(input),
-    // });
-
-    // if (!response.ok) {
-    //   const errorBody = await response.text();
-    //   throw new Error(
-    //     `Failed to analyze checkpoints, status: ${response.status}, body: ${errorBody}`
-    //   );
-    // }
-
-    // const data = await response.json();
-    // return data;
-  } catch (error) {
-    log.error('checkpoint.multiAnalysis.failed', undefined, error);
-    throw error;
-  }
-}
-
-/**
- * Extracts the title from a checkpoint agent response.
- * Checkpoint agents return responses in dual format: Markdown + JSON code block.
- * The JSON contains an analysis.title field that should be used to rename the session.
- *
- * @param content The agent response content
- * @returns The title string if found, null otherwise
- */
-export function extractCheckpointTitle(content: string): string | null {
-  if (!content) return null;
-
-  try {
-    // Look for JSON code block in the response
-    const jsonMatch = content.match(/```json\s*\n?([\s\S]*?)```/);
-    if (!jsonMatch) return null;
-
-    const jsonStr = jsonMatch[1].trim();
-    const parsed = JSON.parse(jsonStr);
-
-    // Check for checkpoint-specific fields to confirm this is a checkpoint response
-    const analysis = parsed.analysis || parsed;
-    const hasCheckpointData = !!(analysis.checkpointSummary || analysis.checkpointDetails);
-
-    if (!hasCheckpointData) return null;
-
-    // Extract title from analysis.title
-    if (analysis.title && typeof analysis.title === 'string') {
-      return analysis.title.trim();
-    }
-
-    return null;
-  } catch (error) {
-    // Failed to parse JSON or extract title
-    return null;
-  }
-}

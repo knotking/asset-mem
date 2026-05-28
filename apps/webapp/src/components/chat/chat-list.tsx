@@ -5,25 +5,26 @@ import { useEffect, useRef, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/components/chat/chat-message';
 import type { Message } from '@/lib/types';
+import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
 import { AnimatePresence } from 'framer-motion';
 import { Bot } from 'lucide-react';
 
 type Props = {
   messages: Message[];
   isMessagesLoading: boolean;
-  context?: 'property' | 'document' | null;
+  context?: 'property' | null;
 };
 
-function assistantHasNoVisibleTextYet(message: Message): boolean {
+function assistantHasNoDisplayableContentYet(message: Message): boolean {
   if (message.role !== 'assistant') return false;
-  const c = message.content;
-  if (c == null) return true;
-  if (typeof c !== 'string') return true;
-  return c.trim().length === 0;
+  return !assistantMessageHasDisplayableContent(getMessageDisplayParts(message));
 }
 
-export function ChatList({ messages, isMessagesLoading, context }: Props) {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+export function ChatList({
+  messages,
+  isMessagesLoading,
+  context,
+}: Props) {
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
         const isLoading =
           index === messages.length - 1 &&
           message.role === 'assistant' &&
-          assistantHasNoVisibleTextYet(message);
+          assistantHasNoDisplayableContentYet(message);
 
         // Also check for the local-only placeholder ID
         const isPlaceholder = message.id.startsWith('local-');
@@ -52,7 +53,7 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
             <ChatMessage 
                 key={message.id} 
                 message={message}
-                isLoading={isLoading || (isPlaceholder && assistantHasNoVisibleTextYet(message))}
+                isLoading={isLoading || (isPlaceholder && assistantHasNoDisplayableContentYet(message))}
                 context={context}
             />
         )
@@ -64,7 +65,7 @@ export function ChatList({ messages, isMessagesLoading, context }: Props) {
   const isEmpty = messages.length === 0 && !isMessagesLoading;
 
   return (
-    <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
+    <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
       {isEmpty ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
           <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80">

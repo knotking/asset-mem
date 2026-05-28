@@ -44,7 +44,11 @@ interface ChatSettingsPopoverProps {
   initialTab?: 'agent' | 'location';
 }
 
-const OPTIONAL_AGENT_OPTIONS = [
+const OPTIONAL_AGENT_OPTIONS: ReadonlyArray<{
+  id: CheckpointOptionalAgent;
+  label: string;
+  icon: typeof ShieldCheck;
+}> = [
   { id: 'coverage', label: 'Coverage', icon: ShieldCheck },
   { id: 'diy', label: 'DIY', icon: Hammer },
   { id: 'service', label: 'Service', icon: Wrench },
@@ -217,9 +221,7 @@ export function ChatSettingsPopover({
                     {OPTIONAL_AGENT_OPTIONS.map((option) => {
                       const isSelected =
                         primaryAgent === 'checkpoint'
-                          ? selectedCheckpointOptionalAgents.includes(
-                              option.id as CheckpointOptionalAgent
-                            )
+                          ? selectedCheckpointOptionalAgents.includes(option.id)
                           : selectedOptionalAgents.includes(option.id);
                       const Icon = option.icon;
                       return (
@@ -231,7 +233,7 @@ export function ChatSettingsPopover({
                           onClick={() =>
                             primaryAgent === 'checkpoint'
                               ? onToggleCheckpointOptionalAgent(
-                                  option.id as CheckpointOptionalAgent
+                                  option.id
                                 )
                               : onToggleOptionalAgent(option.id)
                           }

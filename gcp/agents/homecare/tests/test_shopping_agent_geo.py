@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from property_agent.sub_agents.shopping_agent.agent import (
+from property_agent.agents.shopping_agent.agent import (
     _serp_shopping_price_display,
     _serp_shopping_product_link,
     product_recommendations,
@@ -60,9 +60,10 @@ def test_product_recommendations_street_property_address_uses_city_region(
 
     monkeypatch.setattr(serpapi_mod, "GoogleSearch", FakeSearch)
 
-    import property_agent.serpapi_geo as sg
+    from property_agent.geo import cache as geo_cache
+    from property_agent.geo import http as geo_http
 
-    sg._serpapi_locations_cache.clear()
+    geo_cache._serpapi_locations_cache.clear()
 
     class FakeLocResp:
         ok = True
@@ -77,7 +78,7 @@ def test_product_recommendations_street_property_address_uses_city_region(
                 },
             ]
 
-    monkeypatch.setattr(sg.requests, "get", lambda *a, **k: FakeLocResp())
+    monkeypatch.setattr(geo_http.requests, "get", lambda *a, **k: FakeLocResp())
 
     sl = {
         "source": "device_gps",

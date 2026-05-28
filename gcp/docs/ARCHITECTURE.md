@@ -38,10 +38,10 @@ The GCP directory contains a comprehensive AI-powered property care system built
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                    Property Agent (Root Orchestrator)            │  │
 │  │  ┌────────────────────────────────────────────────────────────┐  │  │
-│  │  │  property_agent executor (resolve_turn + tools)            │  │  │
-│  │  │  Tools: checkpoint_agent | user_docs | knowledge_base      │  │  │
-│  │  │  Sub-agent: checkpoint_progress_agent (optional analysis)  │  │  │
-│  │  │    → parallel: coverage | diy | service | cost → synthesis │  │  │
+│  │  │  Single orchestrator LLM + flat tool registry              │  │  │
+│  │  │  Tools: run_checkpoint_pipeline | user_docs | knowledge_base│  │  │
+│  │  │  Checkpoint pipeline: retrieval → parallel branches →       │  │  │
+│  │  │    assembler (contentJson) → synthesis (contentMarkdown)    │  │  │
 │  │  └────────────────────────────────────────────────────────────┘  │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────┬───────────────────────────────────────────────┘
@@ -84,7 +84,7 @@ The GCP directory contains a comprehensive AI-powered property care system built
 
 ### 1. Agents (`gcp/agents/homecare/`)
 
-A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine that orchestrates checkpoint retrieval, optional checkpoint analysis, document retrieval, and service recommendations.
+A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine that orchestrates checkpoint retrieval, checkpoint analysis, document retrieval, and service recommendations.
 
 #### 1.1 Property Agent (Root Orchestrator)
 
@@ -94,15 +94,18 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 
 **Key Responsibilities:**
 - Runs **`resolve_turn_llm`** each turn (intent, route, optional branches) and applies state
-- Answers **casual** turns with canned text (no executor LLM / tools)
-- On substantive turns, injects **`[RESOLVED_TURN]`** and executes tools in one LLM hop
-- Returns tool/sub-agent output verbatim (dual-format for checkpoint flows)
+- Answers **casual** turns with canned text (no orchestrator LLM / tools)
+- On substantive turns, the **orchestrator LLM** calls flat registry tools (checkpoint pipeline, RAG)
+- Emits **`state_delta`** patches (`contentMarkdown`, `contentJson`, `analysisRunId`, `agentSteps`) for the proxy to merge into Firestore messages
 
 **Routing Logic:**
-1. **Casual** (greeting, capabilities, thanks): canned reply before executor
-2. **`route=checkpoint`:** `checkpoint_agent`; optional `checkpoint_progress_agent` when `run_optional_agents` is non-empty
-3. **`route=user_docs` / `knowledge_base`:** `ask_user_docs_agent` / `ask_knowledge_base_agent`
-4. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles are **context** for resolve, not sole routing authority
+1. **Casual** (greeting, capabilities, thanks): canned reply before orchestrator
+2. **Follow-up** from prior analysis: orchestrator answers from session memory / prior message `contentJson` digests — markdown only
+3. **New checkpoint work:** orchestrator calls **`run_checkpoint_pipeline`** (retrieval + optional parallel branches + assembler + synthesis)
+4. **`route=user_docs` / `knowledge_base`:** `user_docs_retrieval` / `knowledge_base_retrieval` AgentTools
+5. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles are **context** for resolve, not sole routing authority
+
+See [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) for the canonical V2 contract.
 
 **Input Schema:**
 ```python
@@ -115,35 +118,31 @@ class DiagnosisInput(BaseModel):
     checkpoint_optional_agents: Optional[List[str]]  # ["coverage", "diy", "service", "cost"]
 ```
 
-#### 1.2 Executor tools (single hop)
+#### 1.2 Flat tool registry
 
-**Location:** `property_agent/agent.py` (`property_agent` root)
+**Location:** `property_agent/registry.py` (tools wired via `manifest.py` / `runtime/root_agent_plugin.py`)
 
-**Purpose:** After resolve, the executor LLM calls retrieval/analysis tools directly (no `doculink_agent` transfer).
+**Purpose:** The orchestrator LLM calls a flat tool registry — no nested checkpoint sub-agent hops.
 
-**Tools (ADK `AgentTool`):**
+**Tools:**
 
-1. **Checkpoint Agent** (`checkpoint_agent/`)
-   - Firestore vector search over property checkpoints
-   - Requires `property_id` for semantic checkpoint queries
-   - Honors `checkpoint_ids` when the user selects specific checkpoints
-   - Passes `search_location` for geo-aware optional branches
-   - Returns dual-format markdown + fenced JSON for rich UI rendering
+1. **`run_checkpoint_pipeline`** (`checkpoint/pipeline.py` — `FunctionTool`)
+   - Firestore vector retrieval over property checkpoints
+   - Optional parallel branches (`coverage`, `diy`, `service`, `cost`) via `checkpoint/analysis/parallel_runner.py`
+   - Deterministic assembly → `contentJson`; synthesis LLM → `contentMarkdown`
+   - Emits incremental `state_delta` patches during the run
 
-2. **User Docs Agent** (`user_docs_agent/`)
+2. **`user_docs_retrieval`** (`agents/user_docs_agent/` — `AgentTool`)
    - Vertex AI RAG over the user upload corpus
    - Scoped by `context_doc_uris` when provided (includes chat attachments)
-   - Tool: `ask_user_docs_retrieval`
 
-3. **Knowledge Base Agent** (`knowledge_base_agent/`)
+3. **`knowledge_base_retrieval`** (`agents/knowledge_base_agent/` — `AgentTool`)
    - Vertex AI RAG over the shared reference corpus
    - Used when no user documents apply to the query
 
-**Tool selection:** `resolve_turn_llm` + `[RESOLVED_TURN]` block in `property_agent/prompts.py` → `property_agent_executor_instructions()`. Executor obeys `route` and `run_optional_agents`, not UI toggles alone.
+**Tool selection:** Orchestrator instructions in `property_agent/prompts.py`; resolve output in session state guides casual vs follow-up vs new analysis.
 
-**Optional checkpoint analysis:** When `run_optional_agents` is non-empty, executor calls `checkpoint_agent` for retrieval, then `transfer_to_agent(checkpoint_progress_agent)`, which runs Python-parallel branches (`coverage`, `diy`, `service`, `cost`) and synthesis. Output is progressive dual-format (markdown + ```json `analysis` object) for webapp/mapp.
-
-**Branch modules (invoked from checkpoint analysis, not separate root routes):**
+**Branch modules (invoked inside `run_checkpoint_pipeline`, not separate root routes):**
 
 | Branch | Module | Role |
 |--------|--------|------|
@@ -171,7 +170,7 @@ class DiagnosisInput(BaseModel):
 **Multimodal / media (outside live agent triage):**
 - Checkpoint photos/videos: analyzed asynchronously by the checkpoint-analysis Cloud Function (Gemini), not via a root-level triage agent
 - Proxy `extract-doc-info`: Gemini document classification on upload
-- Chat attachments: sent as `context_doc_uris` into user-docs RAG via `ask_user_docs_agent`
+- Chat attachments: sent as `context_doc_uris` into user-docs RAG via `user_docs_retrieval`
 
 ### 2. Proxy Service (`gcp/proxy/`)
 
@@ -358,18 +357,17 @@ Supplemental ops (DLQ, alert policies) use `gcloud` or workflow steps documented
            └─> Streams query to Property Agent
 
 3. Property Agent (Root Orchestrator)
-   └─> Resolve turn → canned reply OR executor tools (single hop)
+   └─> Resolve turn → canned reply OR orchestrator LLM + flat tools
 
-4. property_agent executor
-   └─> Selects tool: checkpoint_agent, ask_user_docs_agent, or ask_knowledge_base_agent
-       └─> Optional checkpoint analysis (coverage, DIY, service, cost) when requested
-           └─> Each branch calls tools (RAG, APIs, search)
-               └─> Synthesis returns dual-format markdown + JSON for checkpoint flows
+4. Orchestrator tools
+   └─> run_checkpoint_pipeline | user_docs_retrieval | knowledge_base_retrieval
+       └─> Checkpoint path: retrieval → parallel branches → assembler → synthesis
+           └─> state_delta patches (contentJson, contentMarkdown, agentSteps)
 
 5. Response Assembly
-   └─> Property Agent returns sub-agent response verbatim
-       └─> Proxy formats for client
-           └─> Streams via SSE to client
+   └─> Proxy merges state_delta via message_content_persist
+       └─> Firestore message document (contentMarkdown + contentJson SSOT)
+           └─> Streams SSE to client; UI listens to Firestore for rendering
 ```
 
 ### File Upload Flow
@@ -697,10 +695,11 @@ uvicorn main:app --host=0.0.0.0 --port=8080 --reload
 
 ### Testing
 
-**Agent Evaluation:**
-- Golden datasets in `property_agent/evals/*.evalset.json` (recorded via `adk web`)
-- Pytest runner: `gcp/agents/homecare/eval/test_eval.py` (`make test-eval`)
-- Google ADK `AgentEvaluator` with tool trajectory and response matching scores (`property_agent/evals/test_config.json`)
+**Agent evaluation:**
+- Unit tests: `make test` in `gcp/agents/homecare` (`tests/`; CI on PRs)
+- Manual E2E: `adk web` against `property_agent` on staging
+- Conformance replay: `make conformance-test` (`property_agent/conformance/`)
+- ADK evalsets (`*.evalset.json`, `make test-eval*`) were removed
 
 **Integration Tests:**
 - Firebase integration tests

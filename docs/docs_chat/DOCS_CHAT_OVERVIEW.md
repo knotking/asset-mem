@@ -44,7 +44,7 @@ The Docs Chat Agent follows a hierarchical routing pattern:
 
 ```
 property_agent (resolve + executor)
-└── ask_user_docs_agent (when primary_agent="docs" or route=user_docs)
+└── user_docs_retrieval (when primary_agent="docs" or route=user_docs)
     └── Vertex AI RAG (semantic search)
         └── User Documents in GCS
 ```
@@ -52,7 +52,7 @@ property_agent (resolve + executor)
 ### Component Breakdown
 
 1. **property_agent**: `resolve_turn_llm` sets `route=user_docs` when `primary_agent=docs`
-2. **Executor**: Calls `ask_user_docs_agent` directly (no doculink transfer)
+2. **Executor**: Calls `user_docs_retrieval` directly (no doculink transfer)
 3. **User Docs Agent**: Retrieves information from user-uploaded documents
 4. **Vertex AI RAG**: Performs semantic search over document corpus
 5. **GCS Storage**: Stores user documents and import metadata
@@ -144,7 +144,7 @@ Uses Vertex AI RAG for semantic search:
 
 4. **Agent Processing**:
    - property_agent resolve sets route=user_docs
-   - Executor calls ask_user_docs_agent
+   - Executor calls user_docs_retrieval
    - User Docs agent queries RAG corpus
    - Retrieves relevant document chunks
 
@@ -359,7 +359,7 @@ Return to user
 - [Docs Chat Implementation](DOCS_CHAT_IMPLEMENTATION.md)
 - [Docs Chat Testing Guide](DOCS_CHAT_TESTING.md)
 - [Docs Chat API Integration](DOCS_CHAT_API_INTEGRATION.md)
-- [User Docs Agent README](../../gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/README.md)
+- [User Docs Agent README](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
 - [Analysis Agent Overview](../analysis/ANALYSIS_AGENT_OVERVIEW.md)
 - [Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md)
 

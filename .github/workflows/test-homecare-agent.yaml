@@ -3,11 +3,13 @@ name: Test Homecare Agent
 on:
   pull_request:
     paths:
+      - "gcp/agent_framework/**"
       - "gcp/agents/homecare/**"
   push:
     branches:
       - main
     paths:
+      - "gcp/agent_framework/**"
       - "gcp/agents/homecare/**"
 
 env:

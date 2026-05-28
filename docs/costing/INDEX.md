@@ -94,7 +94,7 @@
 - **Prompts**: `gcp/agents/homecare/property_agent/sub_agents/cost_agent/prompts.py`
 
 ### Tests
-- **E2E eval**: `gcp/agents/homecare/property_agent/evals/cost_agent.evalset.json` (`make test-eval-cost`)
+- **E2E QA**: `adk web` on staging; unit tests: `make test` in `gcp/agents/homecare`
 - **Unit tests**: `gcp/agents/homecare/tests/test_cost_agent.py`, `tests/test_diy_agent.py`
 
 ### Documentation

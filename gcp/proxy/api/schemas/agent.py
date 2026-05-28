@@ -33,7 +33,7 @@ class AgentRequest(BaseModel):
     session_id: Optional[str] = Field(default="", description="Session ID for the conversation context")
     user_query: str = Field(default="Analyse", description="The query or prompt from the user")
     context_doc_uris: List[str] = Field(default_factory=list, description="List of GCS URIs for context documents")
-    checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (enables checkpoint_agent routing)")
+    checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (enables run_checkpoint_pipeline when new analysis is needed)")
     property_address: str = Field(
         default="",
         description="Property record address (identity/context only, not market geo)",

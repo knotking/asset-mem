@@ -23,8 +23,10 @@ for root in (_here.parent.parent, _here):
     if root and (root / "common").is_dir() and str(root) not in sys.path:
         sys.path.insert(0, str(root))
         break
+# agent_framework lives at gcp/agent_framework/ (same sys.path root as common).
 
 import logging
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -37,8 +39,11 @@ from core.events import lifespan
 from routers import agent, documents, telegram, service_broker, checkpoint, token_quota, billing, auth_handoff, stripe_webhook
 from services.vertex_service import reasoning_engine_resource
 
-# Configure logging (auth uid on every line via ContextVar + Filter)
-install_auth_uid_logging(level=logging.INFO)
+# Configure logging (auth uid on every line via ContextVar + Filter).
+# PROXY_LOG_LEVEL=DEBUG for verbose third-party logs; default INFO keeps stream_chunk visible.
+_proxy_log_level_name = os.environ.get("PROXY_LOG_LEVEL", "INFO").upper()
+_proxy_log_level = getattr(logging, _proxy_log_level_name, logging.INFO)
+install_auth_uid_logging(level=_proxy_log_level)
 logger: logging.Logger = logging.getLogger(__name__)
 
 # --- FastAPI App ---

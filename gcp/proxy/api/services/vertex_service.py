@@ -1,7 +1,6 @@
 import os
 import logging
 import re
-import time
 import vertexai
 from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
@@ -17,6 +16,27 @@ from services.token_usage_service import (
     persist_user_token_usage,
 )
 from services.stream_persist_throttle import StreamPersistThrottle
+from utils.agent_steps_state import complete_pending_specialists, merge_step_update
+from utils.message_content_persist import (
+    apply_message_patch_from_state_delta,
+    finalize_assistant_message,
+    fence_chars_removed,
+)
+from utils.message_patch_state import (
+    constrain_content_json_size,
+    validate_assistant_message_patch,
+    build_assistant_message_patch,
+    is_stale_revision,
+    next_revision,
+    normalize_revision,
+)
+from utils.orchestrator_v2_metrics import (
+    StreamPatchTracker,
+    record_fence_strip,
+    record_patch_apply,
+    record_stale_revision_reject,
+    record_ttf_structured_patch_ms,
+)
 from common.observability.logging_context import (
     get_correlation_id,
     pubsub_payload_with_correlation,
@@ -34,6 +54,7 @@ _COORDINATING_AGENTS = {
 _COORDINATING_LABEL = "Understanding your request…"
 
 _DEFAULT_DISPLAY_LABEL = "Working on it…"
+_MAX_CONTENT_JSON_BYTES = int(os.environ.get("MAX_CONTENT_JSON_BYTES", "200000"))
 
 def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
     uq = payload.get("user_query") or ""
@@ -50,10 +71,8 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
 
 _DISPLAY_NAME_MAP = {
     "diagnostic_agent": "Diagnosing the issue…",
-    "ask_knowledge_base_agent": "Searching repair guides…",
-    "ask_knowledge_base_retrieval": "Searching repair guides…",
-    "ask_user_docs_agent": "Searching your documents…",
-    "ask_user_docs_retrieval": "Searching your documents…",
+    "knowledge_base_retrieval": "Searching repair guides…",
+    "user_docs_retrieval": "Searching your documents…",
     "analyse_multimodal_data": "Reviewing your photo or video…",
     "research_agent": "Researching options…",
     "service_provider_agent": "Finding pros near you…",
@@ -64,9 +83,8 @@ _DISPLAY_NAME_MAP = {
     "cost_agent": "Estimating repair costs…",
     "coverage_agent": "Checking warranty & insurance…",
     "diy_agent": "Building DIY steps…",
-    "checkpoint_agent": "Loading your checkpoints…",
+    "run_checkpoint_pipeline": "Loading your checkpoints…",
     "checkpoint_analysis_agent": "Analyzing your checkpoints…",
-    "checkpoint_progress_agent": "Preparing your analysis…",
     "checkpoint_analysis_synthesis_agent": "Writing your summary…",
     "checkpoint_optional_agents_parallel_runner": "Finishing your analysis…",
     "checkpoint_analysis_progress": "Updating your analysis…",
@@ -75,7 +93,7 @@ _DISPLAY_NAME_MAP = {
 }
 
 _CHECKPOINT_ROLLUP_TOOLS = {
-    "checkpoint_agent",
+    "run_checkpoint_pipeline",
     "checkpoint_analysis_agent",
 }
 
@@ -84,10 +102,9 @@ _CHECKPOINT_PROGRESS_AUTHORS = {
     "checkpoint_optional_agents_parallel_runner",
 }
 
-# Authors and payloads that emit a full checkpoint dual-format body — replace, never append.
+# Authors that emit full checkpoint snapshots — replace, never append.
 _CHECKPOINT_CONTENT_REPLACE_AUTHORS = _CHECKPOINT_PROGRESS_AUTHORS | {
     "checkpoint_analysis_synthesis_agent",
-    "checkpoint_progress_synthesis_agent",
 }
 
 _CHECKPOINT_OPTIONAL_AGENT_BY_KEY = {
@@ -210,25 +227,6 @@ def get_chat_id_from_session_by_agent_id(user_id: str, agent_session_id: str) ->
         return None
 
 
-_JSON_FENCE_RE = re.compile(
-    r"```(?:json)?\s*(\{.*?\})\s*```",
-    flags=re.DOTALL | re.IGNORECASE,
-)
-
-_CHECKPOINT_ANALYSIS_JSON_FENCE_RE = re.compile(
-    r"```json\s*(\{[\s\S]*?\})\s*```",
-    flags=re.IGNORECASE,
-)
-
-
-def _is_checkpoint_dual_format_content(text: str) -> bool:
-    """True when text looks like markdown + fenced analysis JSON from checkpoint agents."""
-    if not (text or "").strip() or "```json" not in text:
-        return False
-    return bool(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.search(text))
-
-
-_CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY = "checkpoint_progress_sse_body"
 _CHECKPOINT_BRANCH_COMPLETED_STATE_KEY = "checkpoint_branch_completed"
 
 
@@ -241,28 +239,21 @@ def _event_state_delta(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _checkpoint_progress_display_text(event: Dict[str, Any], event_text: str) -> str:
-    """
-    Full dual-format for progressive UI may live in state_delta while session text is slim.
-    """
     delta = _event_state_delta(event)
-    sse_body = delta.get(_CHECKPOINT_PROGRESS_SSE_BODY_STATE_KEY)
-    if isinstance(sse_body, str) and sse_body.strip():
-        if _is_checkpoint_dual_format_content(sse_body):
-            return sse_body
+    patch_md = delta.get("contentMarkdown")
+    if isinstance(patch_md, str) and patch_md.strip():
+        return patch_md
     return event_text
 
 
 def _should_replace_assistant_content(event: Dict[str, Any], event_text: str) -> bool:
-    """Checkpoint analysis bodies are full snapshots; later events must not append."""
+    _ = event_text
     author = event.get("author")
-    if isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS:
-        return True
-    display = _checkpoint_progress_display_text(event, event_text)
-    return _is_checkpoint_dual_format_content(display)
+    return isinstance(author, str) and author in _CHECKPOINT_CONTENT_REPLACE_AUTHORS
 
 
 def _strip_user_query_echoes(content: str, user_query: str) -> str:
-    """Remove echoed user_query lines that checkpoint dual-format builders insert."""
+    """Remove echoed user_query lines duplicated in model output."""
     content = (content or "").strip()
     uq = (user_query or "").strip()
     if not content or not uq:
@@ -278,100 +269,6 @@ def _strip_user_query_echoes(content: str, user_query: str) -> str:
     return "\n".join(filtered).strip()
 
 
-def _keep_last_checkpoint_dual_format(content: str) -> str:
-    """When multiple analysis JSON blocks were concatenated, keep the last valid one."""
-    matches = list(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.finditer(content))
-    if len(matches) <= 1:
-        return content
-    for match in reversed(matches):
-        try:
-            parsed = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(parsed, dict) or "analysis" not in parsed:
-            continue
-        prior_ends = [m.end() for m in matches if m.end() <= match.start()]
-        markdown_start = prior_ends[-1] if prior_ends else 0
-        markdown_part = content[markdown_start : match.start()].strip()
-        json_text = json.dumps(parsed, ensure_ascii=False, indent=2)
-        if markdown_part:
-            return f"{markdown_part}\n\n```json\n{json_text}\n```\n"
-        return f"```json\n{json_text}\n```\n"
-    return content
-
-
-_CHECKPOINT_BRANCH_SECTION_KEYS = {
-    "coverage": "coverageResult",
-    "diy": "diyResults",
-    "service": "serviceResults",
-    "cost": "costEstimationResults",
-}
-
-
-def _strip_analysis_status_from_dual_format(content: str) -> str:
-    """Remove analysisStatus from completed checkpoint bodies (stale after synthesis)."""
-    if not _is_checkpoint_dual_format_content(content):
-        return content
-    match = None
-    for candidate in reversed(list(_CHECKPOINT_ANALYSIS_JSON_FENCE_RE.finditer(content))):
-        try:
-            parsed = json.loads(candidate.group(1))
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict) and isinstance(parsed.get("analysis"), dict):
-            match = candidate
-            parsed_root = parsed
-            break
-    else:
-        return content
-
-    analysis = dict(parsed_root["analysis"])
-    if "analysisStatus" not in analysis:
-        return content
-    analysis.pop("analysisStatus", None)
-    parsed_root = {**parsed_root, "analysis": analysis}
-    markdown_part = content[: match.start()].rstrip()
-    json_text = json.dumps(parsed_root, ensure_ascii=False, indent=2)
-    if markdown_part:
-        return f"{markdown_part}\n\n```json\n{json_text}\n```\n"
-    return f"```json\n{json_text}\n```\n"
-
-
-def _should_strip_analysis_status_on_finalize(
-    content: str,
-    agent_steps_by_name: Dict[str, Dict[str, Any]],
-    optional_agent_keys: List[str],
-) -> bool:
-    """Drop analysisStatus when the stream finished and branch work is done or sections exist."""
-    if not _is_checkpoint_dual_format_content(content):
-        return False
-    if optional_agent_keys:
-        expected = [
-            _CHECKPOINT_OPTIONAL_AGENT_BY_KEY[k]
-            for k in optional_agent_keys
-            if k in _CHECKPOINT_OPTIONAL_AGENT_BY_KEY
-        ]
-        if expected and all(
-            agent_steps_by_name.get(name, {}).get("status") == "completed"
-            for name in expected
-        ):
-            return True
-    data = _coerce_result_to_dict(content)
-    if not data:
-        return False
-    analysis = _unwrap_analysis(data)
-    if not isinstance(analysis, dict):
-        return False
-    status = analysis.get("analysisStatus")
-    if not isinstance(status, dict):
-        return False
-    for branch, section_key in _CHECKPOINT_BRANCH_SECTION_KEYS.items():
-        branch_status = status.get(branch)
-        if branch_status in ("pending", "running") and section_key in analysis:
-            return True
-    return all(st == "completed" for st in status.values())
-
-
 def _normalize_assistant_content_for_persist(
     content: str,
     user_query: str,
@@ -379,14 +276,65 @@ def _normalize_assistant_content_for_persist(
     agent_steps_by_name: Optional[Dict[str, Dict[str, Any]]] = None,
     optional_agent_keys: Optional[List[str]] = None,
     finalize: bool = False,
+    prose_only_persist: bool = False,
 ) -> str:
-    if _is_checkpoint_dual_format_content(content):
-        content = _keep_last_checkpoint_dual_format(content)
-    if finalize and agent_steps_by_name is not None and _should_strip_analysis_status_on_finalize(
-        content, agent_steps_by_name, optional_agent_keys or []
-    ):
-        content = _strip_analysis_status_from_dual_format(content)
-    return _strip_user_query_echoes(content, user_query)
+    _ = (agent_steps_by_name, optional_agent_keys, finalize)
+    normalized = _strip_user_query_echoes(content, user_query)
+    if prose_only_persist:
+        from utils.message_content_persist import _strip_json_fences
+
+        normalized = _strip_json_fences(normalized)
+    return normalized
+
+
+def _has_structured_message_patch(message_content_patch: Dict[str, Any]) -> bool:
+    if not message_content_patch:
+        return False
+    if isinstance(message_content_patch.get("contentJson"), dict):
+        return True
+    if isinstance(message_content_patch.get("contentMarkdown"), str):
+        return True
+    return False
+
+
+def _resolve_assistant_message_fields_for_persist(
+    *,
+    assistant_content_accumulated: str,
+    user_query: str,
+    message_content_patch: Dict[str, Any],
+    prose_only_persist: bool,
+    finalize: bool,
+    agent_steps_by_name: Optional[Dict[str, Dict[str, Any]]],
+    optional_agent_keys: Optional[List[str]],
+) -> tuple[str, str, Optional[Dict[str, Any]]]:
+    """Return (persist_content, content_markdown, content_json)."""
+    normalized_accumulated = _normalize_assistant_content_for_persist(
+        assistant_content_accumulated,
+        user_query,
+        agent_steps_by_name=agent_steps_by_name,
+        optional_agent_keys=optional_agent_keys,
+        finalize=finalize,
+        prose_only_persist=prose_only_persist,
+    )
+
+    if _has_structured_message_patch(message_content_patch):
+        patch_markdown = message_content_patch.get("contentMarkdown")
+        if not isinstance(patch_markdown, str) or not patch_markdown.strip():
+            patch_markdown = normalized_accumulated
+        patch_json = message_content_patch.get("contentJson")
+        patch_json_dict = patch_json if isinstance(patch_json, dict) else None
+        content_markdown, content_json = finalize_assistant_message(
+            patch_markdown,
+            patch_json_dict,
+        )
+    else:
+        content_markdown, content_json = finalize_assistant_message(
+            normalized_accumulated,
+            None,
+        )
+
+    persist_content = content_markdown if prose_only_persist else normalized_accumulated
+    return persist_content, content_markdown, content_json
 
 
 def _coerce_result_to_dict(result: Any) -> Optional[Dict[str, Any]]:
@@ -396,8 +344,7 @@ def _coerce_result_to_dict(result: Any) -> Optional[Dict[str, Any]]:
     tolerate:
       1. A plain dict (e.g. when ADK returned a structured result).
       2. A JSON string.
-      3. A Markdown-wrapped string with one or more ```json fences
-         (e.g. checkpoint_analysis_agent emits dual-format output).
+      3. A string containing one balanced JSON object.
     """
     if isinstance(result, dict):
         return result
@@ -415,17 +362,7 @@ def _coerce_result_to_dict(result: Any) -> Optional[Dict[str, Any]]:
     except Exception:
         pass
 
-    # 2. Look for a fenced ```json { ... } ``` block anywhere in the string.
-    match = _JSON_FENCE_RE.search(s)
-    if match:
-        try:
-            decoded = json.loads(match.group(1))
-            if isinstance(decoded, dict):
-                return decoded
-        except Exception:
-            pass
-
-    # 3. Last resort: take the first balanced { ... } substring.
+    # 2. Last resort: take the first balanced { ... } substring.
     first = s.find("{")
     last = s.rfind("}")
     if 0 <= first < last:
@@ -553,7 +490,7 @@ def _checkpoint_preview(data: Dict[str, Any]) -> Optional[str]:
     checkpoints = root.get("checkpoints") or root.get("checkpointDetails")
     if isinstance(checkpoints, list) and checkpoints:
         return f"Reviewed {len(checkpoints)} checkpoint{'s' if len(checkpoints) != 1 else ''}"
-    # Fallback: if checkpoint_agent rolled up coverage / service into its result,
+    # Fallback: if run_checkpoint_pipeline rolled up coverage / service into its result,
     # surface that instead so the row isn't blank.
     for fallback in (_service_preview, _coverage_preview):
         try:
@@ -586,12 +523,10 @@ _PREVIEW_FORMATTERS: Dict[str, Callable[[Dict[str, Any]], Optional[str]]] = {
     "service_provider_agent": _service_preview,
     "cost_agent": _cost_preview,
     "cost_estimation_agent": _cost_preview,
-    "checkpoint_agent": _checkpoint_preview,
+    "run_checkpoint_pipeline": _checkpoint_preview,
     "checkpoint_analysis_agent": _checkpoint_preview,
-    "ask_user_docs_agent": _docs_preview,
-    "ask_user_docs_retrieval": _docs_preview,
-    "ask_knowledge_base_agent": _docs_preview,
-    "ask_knowledge_base_retrieval": _docs_preview,
+    "user_docs_retrieval": _docs_preview,
+    "knowledge_base_retrieval": _docs_preview,
 }
 
 
@@ -697,36 +632,84 @@ def _progressive_checkpoint_step_updates_from_state_delta(
     return [_step_update(agent_name, "completed")]
 
 
-def _progressive_checkpoint_step_updates_from_text(
-    event_text: str,
-) -> List[Dict[str, Any]]:
-    """Mark optional specialist rows completed from progressive dual-format JSON."""
-    if not (event_text or "").strip():
-        return []
-    data = _coerce_result_to_dict(event_text)
-    if not data:
-        return []
-    root = _unwrap_analysis(data)
-    if not isinstance(root, dict):
-        return []
-    status = root.get("analysisStatus")
-    if not isinstance(status, dict):
-        return []
-    updates: List[Dict[str, Any]] = []
-    for branch, st in status.items():
-        if st != "completed":
-            continue
-        agent_name = _CHECKPOINT_OPTIONAL_AGENT_BY_KEY.get(str(branch))
-        if agent_name:
-            updates.append(_step_update(agent_name, "completed"))
-    return updates
-
-
 def _is_checkpoint_progress_event(event: Dict[str, Any], event_text: str) -> bool:
     if not event_text:
         return False
     author = event.get("author")
     return isinstance(author, str) and author in _CHECKPOINT_PROGRESS_AUTHORS
+
+
+def _stream_event_kind(event: Dict[str, Any]) -> str:
+    """Compact event classification for logs (avoids dumping full stream payloads)."""
+    parts = event.get("content", {}).get("parts", []) or []
+    for part in parts:
+        if not isinstance(part, dict):
+            continue
+        function_call = part.get("function_call")
+        if isinstance(function_call, dict):
+            name = function_call.get("name") or "?"
+            return f"function_call:{name}"
+        function_response = part.get("function_response")
+        if isinstance(function_response, dict):
+            name = function_response.get("name") or "?"
+            return f"function_response:{name}"
+    author = event.get("author")
+    if isinstance(author, str) and author in _CHECKPOINT_PROGRESS_AUTHORS:
+        return "checkpoint_progress"
+    for part in parts:
+        if isinstance(part, dict) and isinstance(part.get("text"), str) and part["text"]:
+            return "text"
+    return "other"
+
+
+def _analysis_status_from_delta(delta: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    for container_key in ("checkpoint_analysis", "contentJson"):
+        container = delta.get(container_key)
+        if not isinstance(container, dict):
+            continue
+        analysis = container.get("analysis")
+        if not isinstance(analysis, dict):
+            continue
+        status = analysis.get("analysisStatus")
+        if isinstance(status, dict):
+            return {
+                str(key): str(value)
+                for key, value in status.items()
+                if key in _CHECKPOINT_OPTIONAL_AGENT_BY_KEY
+            }
+    return None
+
+
+def stream_event_log_summary(event: Dict[str, Any]) -> Dict[str, Any]:
+    """Small dict for INFO/DEBUG stream logs (full events stay at DEBUG elsewhere)."""
+    delta = _event_state_delta(event)
+    text = extract_text_from_event(event)
+    return {
+        "author": event.get("author"),
+        "invocation_id": event.get("invocation_id"),
+        "kind": _stream_event_kind(event),
+        "text_chars": len(text),
+        "delta_keys": sorted(delta.keys())[:16],
+        "branch_completed": delta.get(_CHECKPOINT_BRANCH_COMPLETED_STATE_KEY),
+        "analysis_status": _analysis_status_from_delta(delta),
+        "has_content_json": "contentJson" in delta,
+        "has_content_markdown": bool(
+            isinstance(delta.get("contentMarkdown"), str) and delta["contentMarkdown"].strip()
+        ),
+    }
+
+
+def _step_updates_log_slice(
+    step_updates: List[Dict[str, Any]],
+) -> List[Dict[str, Optional[str]]]:
+    return [
+        {
+            "name": step.get("name"),
+            "status": step.get("status"),
+            "preview": (step.get("preview") or "")[:80] or None,
+        }
+        for step in step_updates
+    ]
 
 
 def extract_agent_step_updates_from_event(event: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -738,36 +721,23 @@ def extract_agent_step_updates_from_event(event: Dict[str, Any]) -> List[Dict[st
     and do not emit their own events to the parent Reasoning Engine stream.
     """
     parts = event.get("content", {}).get("parts", [])
-    actions = event.get("actions", {})
-
-    transfer_target = actions.get("transfer_to_agent")
-    if transfer_target:
-        target = str(transfer_target)
-        return [_step_update(target, "transferredto")]
-
     for part in parts:
         if not isinstance(part, dict):
             continue
         function_call = part.get("function_call")
         if isinstance(function_call, dict):
             tool_name = function_call.get("name")
-            if tool_name and tool_name != "transfer_to_agent":
+            if tool_name:
                 tool_name_str = str(tool_name)
                 # Only the rollup tool is "executing" here; optional specialists
                 # get agentSteps rows from progressive checkpoint_analysis_progress
                 # events (completed per branch) so the UI is not biased to cost_agent.
                 return [_step_update(tool_name_str, "executing")]
-            if tool_name == "transfer_to_agent":
-                args = function_call.get("args", {})
-                target = args.get("agent_name") if isinstance(args, dict) else None
-                if target:
-                    target_str = str(target)
-                    return [_step_update(target_str, "transferredto")]
 
         function_response = part.get("function_response")
         if isinstance(function_response, dict):
             tool_name = function_response.get("name")
-            if tool_name and tool_name != "transfer_to_agent":
+            if tool_name:
                 tool_name_str = str(tool_name)
                 preview = _preview_for_response(
                     tool_name_str, function_response.get("response")
@@ -856,6 +826,11 @@ async def stream_agent_answers(
     property_id = request.property_id  # Option 1: property_id from request
     primary_agent = request.primary_agent  # Primary agent selection for explicit routing
     checkpoint_optional_agents = request.checkpoint_optional_agents or []
+    prose_only_persist = True
+    logger.info(
+        "stream_query prose_only_persist enabled session_id=%s",
+        session_id,
+    )
     from common.search_location import SearchLocationInput, resolve_search_location
     from common.search_location.models import SearchLocationCoordinates
     from common.search_location.resolve import parse_search_location_input
@@ -913,7 +888,7 @@ async def stream_agent_answers(
     if context_doc_uris:
         payload["context_doc_uris"] = context_doc_uris
 
-    # Include checkpoint_ids if provided (enables checkpoint_agent routing)
+    # Include checkpoint_ids if provided (context for run_checkpoint_pipeline)
     if checkpoint_ids:
         payload["checkpoint_ids"] = checkpoint_ids
         logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
@@ -970,7 +945,15 @@ async def stream_agent_answers(
     chat_id: Optional[str] = None
     assistant_message_ref = None
     assistant_content_accumulated = ""
+    message_content_patch: Dict[str, Any] = {}
     agent_steps_by_name: Dict[str, Dict[str, str]] = {}
+    message_revision = 0
+    initial_message_revision = 0
+    persist_applied_count = 0
+    progress_event_count = 0
+    stream_invocation_id: Optional[str] = None
+    patch_tracker = StreamPatchTracker()
+    ttf_structured_patch_recorded = False
     logger.debug(
         "Token usage: stream_query starting user_id=%s session_id=%s parse_response=%s",
         user_id,
@@ -1018,6 +1001,17 @@ async def stream_agent_answers(
                     assistant_message_ref = selected_doc.reference
                     existing_data = selected_doc.to_dict() or {}
                     assistant_content_accumulated = str(existing_data.get("content") or "")
+                    existing_markdown = existing_data.get("contentMarkdown")
+                    if isinstance(existing_markdown, str) and existing_markdown.strip():
+                        message_content_patch["contentMarkdown"] = existing_markdown
+                    existing_json = existing_data.get("contentJson")
+                    if isinstance(existing_json, dict):
+                        message_content_patch["contentJson"] = existing_json
+                    existing_run_id = existing_data.get("analysisRunId")
+                    if isinstance(existing_run_id, str) and existing_run_id.strip():
+                        message_content_patch["analysisRunId"] = existing_run_id.strip()
+                    message_revision = normalize_revision(existing_data.get("revision"), default=0)
+                    initial_message_revision = message_revision
                     for step in existing_data.get("agentSteps") or []:
                         if isinstance(step, dict) and step.get("name") and step.get("status"):
                             preserved: Dict[str, Any] = {
@@ -1050,6 +1044,7 @@ async def stream_agent_answers(
                     )
                 else:
                     assistant_message_ref = messages_ref.document()
+                    initial_message_revision = message_revision
                     assistant_message_ref.set(
                         {
                             "role": "assistant",
@@ -1057,6 +1052,7 @@ async def stream_agent_answers(
                             "createdAt": firestore.SERVER_TIMESTAMP,
                             "primaryAgent": primary_agent,
                             "agentSteps": [],
+                            "revision": message_revision,
                         }
                     )
                     logger.info(
@@ -1076,76 +1072,141 @@ async def stream_agent_answers(
             db_client = None
 
     def persist_chat_message_state(*, finalize: bool = False) -> None:
+        nonlocal message_revision, persist_applied_count, ttf_structured_patch_recorded
         if not assistant_message_ref:
             return
         try:
             steps_list = list(agent_steps_by_name.values())
-            assistant_message_ref.set(
-                {
-                    "role": "assistant",
-                    "content": _normalize_assistant_content_for_persist(
-                        assistant_content_accumulated,
-                        user_query,
-                        agent_steps_by_name=agent_steps_by_name,
-                        optional_agent_keys=checkpoint_optional_agents,
-                        finalize=finalize,
-                    ),
-                    "agentSteps": steps_list,
-                    "primaryAgent": primary_agent,
-                    "updatedAt": firestore.SERVER_TIMESTAMP,
-                },
-                merge=True,
+            persist_content, content_markdown, content_json = (
+                _resolve_assistant_message_fields_for_persist(
+                    assistant_content_accumulated=assistant_content_accumulated,
+                    user_query=user_query,
+                    message_content_patch=message_content_patch,
+                    prose_only_persist=prose_only_persist,
+                    finalize=finalize,
+                    agent_steps_by_name=agent_steps_by_name,
+                    optional_agent_keys=checkpoint_optional_agents,
+                )
             )
-            logger.debug(
-                "Persisted chat assistant message state user_id=%s chat_id=%s message_id=%s content_len=%s steps=%s",
+            fence_removed = fence_chars_removed(
+                message_content_patch.get("contentMarkdown")
+                if isinstance(message_content_patch.get("contentMarkdown"), str)
+                else assistant_content_accumulated
+            )
+            content_json, content_json_truncated = constrain_content_json_size(
+                content_json,
+                max_bytes=_MAX_CONTENT_JSON_BYTES,
+            )
+            message_revision = next_revision(message_revision)
+            accum = dict(message_content_patch)
+            accum["contentMarkdown"] = content_markdown
+            accum["contentJson"] = content_json
+            patch_payload = build_assistant_message_patch(
+                content=persist_content,
+                agent_steps=steps_list,
+                primary_agent=primary_agent,
+                revision=message_revision,
+                updated_at=firestore.SERVER_TIMESTAMP,
+                accumulated_state_delta=accum,
+            )
+            if content_json_truncated:
+                logger.warning(
+                    "contentJson truncated to size budget user_id=%s chat_id=%s message_id=%s revision=%s max_bytes=%s",
+                    user_id,
+                    chat_id,
+                    assistant_message_ref.id if assistant_message_ref else None,
+                    message_revision,
+                    _MAX_CONTENT_JSON_BYTES,
+                )
+            if finalize and fence_removed > 0:
+                record_fence_strip(chars_removed=fence_removed)
+            try:
+                validate_assistant_message_patch(patch_payload)
+            except ValueError as schema_error:
+                logger.warning(
+                    "Rejecting invalid assistant patch before write user_id=%s chat_id=%s message_id=%s revision=%s error=%s",
+                    user_id,
+                    chat_id,
+                    assistant_message_ref.id if assistant_message_ref else None,
+                    message_revision,
+                    schema_error,
+                )
+                message_revision = max(0, message_revision - 1)
+                return
+            stored_revision_after_write = 0
+            if db_client is not None:
+                transaction = db_client.transaction()
+
+                @firestore.transactional
+                def _apply_patch_if_newer(txn):
+                    snapshot = assistant_message_ref.get(transaction=txn)
+                    current_data = snapshot.to_dict() if snapshot and snapshot.exists else {}
+                    current_revision = normalize_revision(
+                        (current_data or {}).get("revision"), default=0
+                    )
+                    if is_stale_revision(
+                        incoming_revision=message_revision,
+                        stored_revision=current_revision,
+                    ):
+                        return False, current_revision
+                    txn.set(assistant_message_ref, patch_payload, merge=True)
+                    return True, message_revision
+
+                did_apply, stored_revision_after_write = _apply_patch_if_newer(transaction)
+                if not did_apply:
+                    logger.warning(
+                        "Skipping stale assistant patch user_id=%s chat_id=%s message_id=%s incoming_revision=%s stored_revision=%s",
+                        user_id,
+                        chat_id,
+                        assistant_message_ref.id if assistant_message_ref else None,
+                        message_revision,
+                        stored_revision_after_write,
+                    )
+                    record_stale_revision_reject(
+                        incoming_revision=message_revision,
+                        stored_revision=stored_revision_after_write,
+                    )
+                    message_revision = stored_revision_after_write
+                    return
+                if did_apply:
+                    persist_applied_count += 1
+                    patch_tracker.patch_applies += 1
+                    record_patch_apply(
+                        revision=message_revision,
+                        has_content_json=isinstance(content_json, dict),
+                    )
+            else:
+                assistant_message_ref.set(patch_payload, merge=True)
+                stored_revision_after_write = message_revision
+                persist_applied_count += 1
+                patch_tracker.patch_applies += 1
+                record_patch_apply(
+                    revision=message_revision,
+                    has_content_json=isinstance(content_json, dict),
+                )
+            logger.info(
+                "chat_persist user_id=%s chat_id=%s message_id=%s finalize=%s "
+                "content_len=%s steps=%s revision=%s persist_writes=%s",
                 user_id,
                 chat_id,
                 assistant_message_ref.id if assistant_message_ref else None,
-                len(assistant_content_accumulated),
+                finalize,
+                len(persist_content),
                 len(steps_list),
+                stored_revision_after_write,
+                persist_applied_count,
             )
         except Exception as e:
             logger.warning("Failed to persist chat assistant message state: %s", e, exc_info=True)
-    def _merge_step_update(update: Dict[str, Any]) -> None:
-        """Merge an extracted step into agent_steps_by_name, preserving prior
-        fields (startedAt, preview from an earlier event, etc.)."""
-        name = update.get("name")
-        if not name:
-            return
-        now_ms = int(time.time() * 1000)
-        previous = agent_steps_by_name.get(name, {})
-        merged: Dict[str, Any] = {**previous, **update}
-        # First time we see this step → stamp startedAt.
-        if "startedAt" not in merged:
-            merged["startedAt"] = now_ms
-        # Completion / failure → stamp completedAt (only once).
-        if merged.get("status") in ("completed", "failed") and not merged.get("completedAt"):
-            merged["completedAt"] = now_ms
-        # Don't overwrite a non-empty preview with None on subsequent events.
-        if not merged.get("preview") and previous.get("preview"):
-            merged["preview"] = previous["preview"]
-        # Lock in the first displayName we showed so randomized orchestrator
-        # labels (and any future updates) don't shuffle across status changes.
-        if previous.get("displayName"):
-            merged["displayName"] = previous["displayName"]
-        agent_steps_by_name[name] = merged
-
     def _complete_pending_checkpoint_specialists() -> None:
         """When a checkpoint rollup tool completes, close out any synthetic
         specialist rows that were created from checkpoint_optional_agents but
         did not have their own section in the final analysis payload."""
-        for agent_name in _CHECKPOINT_OPTIONAL_AGENT_NAMES:
-            step = agent_steps_by_name.get(agent_name)
-            if not step or step.get("status") != "executing":
-                continue
-            _merge_step_update(
-                {
-                    "name": agent_name,
-                    "status": "completed",
-                    "displayName": step.get("displayName")
-                    or _display_name_for(agent_name),
-                }
-            )
+        complete_pending_specialists(
+            agent_steps_by_name,
+            _CHECKPOINT_OPTIONAL_AGENT_NAMES,
+            display_name_for=_display_name_for,
+        )
 
     persist_throttle = StreamPersistThrottle(interval_ms=200)
 
@@ -1153,6 +1214,24 @@ async def stream_agent_answers(
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
         ):
+            inv = event.get("invocation_id")
+            if isinstance(inv, str) and inv.strip():
+                stream_invocation_id = inv.strip()
+
+            state_delta = _event_state_delta(event)
+            if state_delta:
+                message_content_patch = apply_message_patch_from_state_delta(
+                    state_delta,
+                    message_content_patch,
+                )
+                if isinstance(state_delta.get("contentJson"), dict):
+                    patch_tracker.note_structured_patch()
+                    if not ttf_structured_patch_recorded:
+                        ttf_ms = patch_tracker.ttf_structured_patch_ms()
+                        if ttf_ms is not None:
+                            record_ttf_structured_patch_ms(ttf_ms)
+                            ttf_structured_patch_recorded = True
+
             event_text = extract_text_from_event(event)
             display_text = _checkpoint_progress_display_text(event, event_text)
             if display_text:
@@ -1163,52 +1242,47 @@ async def stream_agent_answers(
 
             step_updates = extract_agent_step_updates_from_event(event)
             if _is_checkpoint_progress_event(event, event_text):
-                step_updates = (
-                    step_updates
-                    + _progressive_checkpoint_step_updates_from_state_delta(event)
-                    + _progressive_checkpoint_step_updates_from_text(display_text)
+                step_updates = step_updates + _progressive_checkpoint_step_updates_from_state_delta(
+                    event
                 )
             if step_updates:
                 for step_update in step_updates:
-                    _merge_step_update(step_update)
+                    merge_step_update(agent_steps_by_name, step_update)
                 if any(
                     step_update.get("name") in _CHECKPOINT_ROLLUP_TOOLS
                     and step_update.get("status") == "completed"
                     for step_update in step_updates
                 ):
                     _complete_pending_checkpoint_specialists()
-                logger.info(
-                    "agentSteps update event=%s author=%s updates=%s",
-                    stream_event_count,
-                    event.get("author"),
-                    [
-                        {
-                            "name": step_update.get("name"),
-                            "status": step_update.get("status"),
-                            "preview": step_update.get("preview"),
-                        }
-                        for step_update in step_updates
-                    ],
-                )
-            elif event_text:
-                logger.info(
-                    "agent text event=%s author=%s chars=%s",
-                    stream_event_count,
-                    event.get("author"),
-                    len(event_text),
-                )
 
+            is_progress = _is_checkpoint_progress_event(event, event_text)
+            if is_progress:
+                progress_event_count += 1
+
+            did_persist = False
             if event_text or step_updates:
                 if persist_throttle.should_persist():
                     persist_chat_message_state()
+                    did_persist = True
+
+            logger.info(
+                "stream_chunk event=%s %s step_updates=%s did_persist=%s "
+                "progress_events=%s agent_steps=%s",
+                stream_event_count,
+                stream_event_log_summary(event),
+                _step_updates_log_slice(step_updates),
+                did_persist,
+                progress_event_count,
+                sorted(agent_steps_by_name.keys()),
+            )
             accumulate_usage_from_stream_event(
                 usage_running, event, event_index=stream_event_count
             )
             stream_event_count += 1
             if parse_response:
-                transfer_message = extract_event_data_with_transfer_target(event)
-                if transfer_message:
-                    yield transfer_message
+                step_message = extract_event_step_summary(event)
+                if step_message:
+                    yield step_message
                 elif display_text:
                     yield f"{prettify_name(event.get('author', ''))}: {display_text}"
             else:
@@ -1245,28 +1319,40 @@ async def stream_agent_answers(
             dict(usage_running),
         )
         if not stream_failed and stream_event_count:
+            final_revision = message_revision
             logger.info(
-                "stream_query completed session_id=%s stream_chunks=%s token_usage=%s",
+                "stream_query completed session_id=%s invocation_id=%s "
+                "stream_chunks=%s progress_chunks=%s persist_writes=%s "
+                "revision=%s->%s agent_steps=%s chat_id=%s message_id=%s token_usage=%s",
                 session_id,
+                stream_invocation_id or "-",
                 stream_event_count,
+                progress_event_count,
+                persist_applied_count,
+                initial_message_revision,
+                final_revision,
+                sorted(agent_steps_by_name.keys()),
+                chat_id or "-",
+                assistant_message_ref.id if assistant_message_ref else "-",
                 dict(usage_running),
             )
         if stream_failed:
-            _merge_step_update(
+            merge_step_update(
+                agent_steps_by_name,
                 {
                     "name": "agent_stream",
                     "status": "failed",
                     "displayName": _display_name_for("agent_stream"),
-                }
+                },
             )
         persist_chat_message_state(finalize=not stream_failed)
         persist_user_token_usage(user_id, usage_running)
 
         
-def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
+def extract_event_step_summary(event_data: dict) -> str | None:
     """
-    Extracts agent, tool names (can be multiple), and specifically the transfer target agent
-    from a parsed event dictionary, returning a formatted string.
+    Extracts agent and tool names from a parsed event dictionary,
+    returning a formatted string.
     Returns None if:
     1. content.parts[0].text exists.
     2. content.parts[0].function_response.response.result is None.
@@ -1275,9 +1361,9 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
         author_agent = event_data.get('author')
         called_tools = []
         responded_tools = []
-        transfer_target_agent = None
-
-        logger.debug("Extracting from event data: %s", event_data)
+        logger.debug(
+            "Extracting from event summary: %s", stream_event_log_summary(event_data)
+        )
 
         content_parts = event_data.get('content', {}).get('parts', [])
 
@@ -1294,11 +1380,6 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
                     return None
         # --- END NEW LOGIC ---
 
-        # Check for transfer_to_agent in actions (useful for function_response events, even if result is not None)
-        actions = event_data.get('actions', {})
-        if 'transfer_to_agent' in actions:
-            transfer_target_agent = actions.get('transfer_to_agent')
-
         for part in content_parts:
             # Handle function_call events
             if 'function_call' in part:
@@ -1306,17 +1387,12 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
                 current_tool_name = function_call_data.get('name')
                 if current_tool_name:
                     called_tools.append(current_tool_name)
-                    
-                    # Special handling for 'transfer_to_agent' function call
-                    if current_tool_name == 'transfer_to_agent' and 'args' in function_call_data:
-                        if 'agent_name' in function_call_data['args']:
-                            transfer_target_agent = function_call_data['args']['agent_name']
             
             # Handle function_response events (only if result was not None, as per early exit)
             elif 'function_response' in part:
                 function_response_data = part['function_response']
                 current_tool_name = function_response_data.get('name')
-                if current_tool_name and current_tool_name != 'transfer_to_agent':
+                if current_tool_name:
                     if current_tool_name not in responded_tools:
                         responded_tools.append(current_tool_name)
 
@@ -1327,10 +1403,7 @@ def extract_event_data_with_transfer_target(event_data: dict) -> str | None:
 
         result_parts = [f"{prettify_name(author_agent)}"]
 
-        if transfer_target_agent:
-            result_parts.append(f"TransferredTo: {prettify_name(transfer_target_agent)}")
-
-        if called_tools and not transfer_target_agent:
+        if called_tools:
             result_parts.append(f"Executing: {', '.join(format_name(tool, bold=False) for tool in called_tools)}")
         if responded_tools:
             result_parts.append(f"Completed: {', '.join(format_name(tool, bold=False) for tool in responded_tools)}")

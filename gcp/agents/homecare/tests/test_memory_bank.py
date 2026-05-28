@@ -9,12 +9,15 @@ from google.adk.events.event import Event
 from google.adk.events.event_actions import EventActions, EventCompaction
 from google.genai import types
 
-from property_agent.memory_bank import (
+from agent_framework.memory.ingest import (
     build_ingest_custom_metadata,
+    select_events_for_memory_ingest,
+)
+
+from property_agent.memory_bank import (
     invocation_used_orchestrator,
     memory_stream_id,
     resolve_property_id,
-    select_events_for_memory_ingest,
 )
 
 
@@ -47,7 +50,7 @@ def test_select_events_for_memory_ingest_filters_tools():
                 parts=[
                     types.Part(
                         function_call=types.FunctionCall(
-                            name="checkpoint_agent", args={}
+                            name="run_checkpoint_pipeline", args={}
                         )
                     )
                 ],
@@ -91,7 +94,7 @@ def test_invocation_used_orchestrator():
         Event(
             invocation_id="inv-1",
             author="property_agent",
-            actions=EventActions(transfer_to_agent="property_agent"),
+            actions=EventActions(),
         )
     ]
     assert invocation_used_orchestrator(events, "inv-1") is True
@@ -113,7 +116,6 @@ async def test_ingest_checkpoint_facts_use_add_events_not_add_memory(monkeypatch
     monkeypatch.setenv("ADK_MEMORY_INGEST_ENABLED", "1")
     from property_agent import memory_bank as mb
 
-    dual_format = 'Summary\n```json\n{"analysis": {"title": "Roof moisture risk"}}\n```'
     event = _text_event(author="user", text="Analyze kitchen")
     session = MagicMock()
     session.events = [event]
@@ -126,7 +128,7 @@ async def test_ingest_checkpoint_facts_use_add_events_not_add_memory(monkeypatch
     ctx._invocation_context = invocation
     ctx.state = {
         "property_id": "prop-1",
-        mb.CHECKPOINT_DUAL_FORMAT_STATE_KEY: dual_format,
+        mb.CHECKPOINT_ANALYSIS_STATE_KEY: {"title": "Roof moisture risk"},
     }
     ctx.add_events_to_memory = AsyncMock()
 

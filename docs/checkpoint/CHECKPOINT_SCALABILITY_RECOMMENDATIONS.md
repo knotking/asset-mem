@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Feature Scalability Recommendations
 
 ## Priority 1: Critical Fixes (Do First)
@@ -321,4 +323,3 @@ The current architecture **can scale to ~100-200 users** before hitting serious 
 1. Add pagination (prevents crashes)
 2. Move to async processing (enables scaling)
 3. Add rate limiting (prevents quota issues)
-

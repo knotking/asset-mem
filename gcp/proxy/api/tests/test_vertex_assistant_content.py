@@ -1,9 +1,9 @@
 """Tests for checkpoint assistant content normalization in vertex_service."""
 
 from services.vertex_service import (
-    _is_checkpoint_dual_format_content,
-    _keep_last_checkpoint_dual_format,
+    _has_structured_message_patch,
     _normalize_assistant_content_for_persist,
+    _resolve_assistant_message_fields_for_persist,
     _should_replace_assistant_content,
     _strip_user_query_echoes,
 )
@@ -21,37 +21,75 @@ def test_should_replace_for_synthesis_author():
     assert _should_replace_assistant_content(event, "short text") is True
 
 
-def test_should_replace_for_dual_format_payload():
-    text = "# Title\n\n```json\n{\"analysis\": {\"title\": \"T\"}}\n```\n"
-    assert _is_checkpoint_dual_format_content(text)
-    assert _should_replace_assistant_content({"author": "other"}, text) is True
-
-
-def test_keep_last_checkpoint_dual_format_drops_earlier_copy():
-    first = (
-        "analyse my checkpoints\n\n# Checkpoint analysis\n\n"
-        '```json\n{"analysis": {"title": "First"}}\n```\n\n'
-    )
-    second = (
-        "# Analysis of Garage\n\nanalyse my checkpoints\n\n"
-        "## Summary\n\n"
-        '```json\n{"analysis": {"title": "Second"}}\n```\n'
-    )
-    merged = first + second
-    kept = _keep_last_checkpoint_dual_format(merged)
-    assert "First" not in kept
-    assert "Second" in kept
-    assert "analyse my checkpoints" not in kept.split("```json")[0]
+def test_should_replace_for_synthesis_prose_payload():
+    text = "# Title\n\nstructured payload"
+    assert _should_replace_assistant_content(
+        {"author": "checkpoint_analysis_synthesis_agent"}, text
+    ) is True
 
 
 def test_normalize_strips_query_and_dedupes():
-    merged = (
-        "analyse my checkpoints\n\n# First\n\n"
-        '```json\n{"analysis": {"title": "First"}}\n```\n\n'
-        "# Second\n\n"
-        '```json\n{"analysis": {"title": "Second"}}\n```\n'
-    )
+    merged = "analyse my checkpoints\n\n# Summary\n\nstructured payload"
     out = _normalize_assistant_content_for_persist(merged, "analyse my checkpoints")
-    assert "First" not in out
-    assert "Second" in out
+    assert "# Summary" in out
     assert not out.startswith("analyse my checkpoints")
+
+
+def test_normalize_prose_only_persist_strips_json_fence() -> None:
+    merged = (
+        "# Garage overview\n\n"
+        '```json\n{"analysis": {"title": "Garage"}}\n```\n'
+    )
+    out = _normalize_assistant_content_for_persist(
+        merged,
+        "analyse my checkpoints",
+        prose_only_persist=True,
+    )
+    assert "Garage overview" in out
+    assert "```json" not in out
+    assert '"analysis"' not in out
+
+
+def test_has_structured_message_patch_detects_content_json() -> None:
+    assert _has_structured_message_patch(
+        {"contentJson": {"analysis": {"title": "T"}}}
+    )
+    assert not _has_structured_message_patch({})
+
+
+def test_resolve_assistant_message_fields_prefers_state_delta_patch() -> None:
+    legacy, markdown, content_json = _resolve_assistant_message_fields_for_persist(
+        assistant_content_accumulated="ignored dual body",
+        user_query="q",
+        message_content_patch={
+            "contentMarkdown": "# From agent",
+            "contentJson": {"analysis": {"title": "Agent"}},
+        },
+        prose_only_persist=True,
+        finalize=False,
+        agent_steps_by_name=None,
+        optional_agent_keys=None,
+    )
+    assert markdown == "# From agent"
+    assert legacy == "# From agent"
+    assert content_json == {"analysis": {"title": "Agent"}}
+
+
+def test_resolve_assistant_message_fields_no_fence_fallback_without_state_delta() -> None:
+    dual = (
+        "# Summary\n\n"
+        '```json\n{"analysis": {"title": "Split"}}\n```\n'
+    )
+    legacy, markdown, content_json = _resolve_assistant_message_fields_for_persist(
+        assistant_content_accumulated=dual,
+        user_query="q",
+        message_content_patch={},
+        prose_only_persist=True,
+        finalize=False,
+        agent_steps_by_name=None,
+        optional_agent_keys=None,
+    )
+    assert "Summary" in markdown
+    assert "```json" not in markdown
+    assert content_json is None
+    assert "```json" not in legacy

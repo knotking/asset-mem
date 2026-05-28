@@ -5,7 +5,11 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 
 # Add the parent directory to sys.path to import main
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_api_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(_api_dir)
+_gcp_root = os.path.dirname(os.path.dirname(_api_dir))
+if os.path.isfile(os.path.join(_gcp_root, "agent_framework", "__init__.py")) and _gcp_root not in sys.path:
+    sys.path.insert(0, _gcp_root)
 
 # Set before importing main so core.config.Settings picks them up.
 os.environ["FIREBASE_WEBHOOK_SECRET"] = "test_secret"

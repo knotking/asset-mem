@@ -48,6 +48,7 @@ export function CheckpointDetailDialog() {
       : new Date();
 
   const hasAnalysis = !!checkpoint.aiAnalysis;
+  const analysis = checkpoint.aiAnalysis;
   const isAnalyzing = checkpoint.analysisStatus === 'processing' || checkpoint.analysisStatus === 'pending';
   const analysisFailed = checkpoint.analysisStatus === 'failed';
   const isAnalyzed = checkpoint.analysisStatus === 'completed' && hasAnalysis;
@@ -318,10 +319,10 @@ export function CheckpointDetailDialog() {
           )}
 
           {/* AI Analysis Results */}
-          {hasAnalysis && (
+          {hasAnalysis && analysis && (
             <>
               <Separator />
-              <AnalysisResults analysis={checkpoint.aiAnalysis} />
+              <AnalysisResults analysis={analysis} />
             </>
           )}
 
