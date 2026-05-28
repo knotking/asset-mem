@@ -9,6 +9,7 @@ on:
       - "gcp/common/observability/**"
       - "gcp/common/token/**"
       - "gcp/common/billing_plans.py"
+      - "gcp/common/plan_limits.py"
       - ".github/workflows/deploy-checkpoint-analysis.yaml"
   workflow_dispatch:
     inputs:
@@ -120,6 +121,9 @@ jobs:
 
           cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
           echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"
+
+          cp gcp/common/plan_limits.py "${DST_COMMON_DIR}/plan_limits.py"
+          echo "✓ Copied plan_limits.py -> ${DST_COMMON_DIR}/"
 
       - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy
         env:

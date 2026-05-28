@@ -9,6 +9,7 @@ on:
       - "gcp/common/gemini_document_extract.py"
       - "gcp/common/token/**"
       - "gcp/common/billing_plans.py"
+      - "gcp/common/plan_limits.py"
       - "gcp/common/observability/**"
       - ".github/workflows/deploy-document-analysis.yaml"
   workflow_dispatch:
@@ -107,6 +108,9 @@ jobs:
 
           cp gcp/common/billing_plans.py "${DST_COMMON_DIR}/billing_plans.py"
           echo "✓ Copied billing_plans.py -> ${DST_COMMON_DIR}/"
+
+          cp gcp/common/plan_limits.py "${DST_COMMON_DIR}/plan_limits.py"
+          echo "✓ Copied plan_limits.py -> ${DST_COMMON_DIR}/"
 
           cp gcp/common/gemini_document_extract.py "${DST_COMMON_DIR}/gemini_document_extract.py"
           echo "✓ Copied gemini_document_extract.py -> ${DST_COMMON_DIR}/"
