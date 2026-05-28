@@ -38,6 +38,10 @@ from common.token import (
     new_llm_usage_sink,
     persist_firestore_token_totals,
 )
+from common.plan_limits import (
+    PlanLimitExceeded,
+    check_monthly_checkpoint_creations_allowed,
+)
 from prompt_builder import get_asset_category
 
 from google.cloud import pubsub_v1
@@ -128,6 +132,38 @@ def pubsub_checkpoint_analysis(request, context):
                 .collection("checkpoints")
                 .document(checkpoint_id)
             )
+
+            # /analyze-checkpoint records monthly checkpoint creations at enqueue time.
+            # Keep worker-side limit enforcement for non-API sources only.
+            if source != "checkpoint-analysis-api":
+                try:
+                    check_monthly_checkpoint_creations_allowed(db, user_id, 1)
+                except PlanLimitExceeded as e:
+                    logger.warning(
+                        "Checkpoint analysis skipped: creation limit exceeded user=%s period=%s used=%s limit=%s source=%s",
+                        user_id,
+                        e.period_key,
+                        e.used,
+                        e.limit,
+                        source,
+                    )
+                    try:
+                        checkpoint_ref.update(
+                            {
+                                "analysisStatus": "failed",
+                                "analysisCreationQuotaExceeded": True,
+                                "analysisCreationQuotaPeriod": e.period_key,
+                                "analysisCreationQuotaUsed": e.used,
+                                "analysisCreationQuotaLimit": e.limit,
+                            }
+                        )
+                    except Exception as upd_err:
+                        logger.error(
+                            "Failed to mark checkpoint creation quota failure: %s",
+                            upd_err,
+                            exc_info=True,
+                        )
+                    return
             
             try:
                 check_token_quota_or_raise(db, user_id)

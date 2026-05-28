@@ -15,6 +15,10 @@ from common.token import (
     new_llm_usage_sink,
     persist_firestore_token_totals,
 )
+from common.plan_limits import (
+    PlanLimitExceeded,
+    check_monthly_document_creations_allowed,
+)
 from utils import parse_pubsub_message
 
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +33,7 @@ def pubsub_document_analysis(request, context):
     user_id = payload.get("userId")
     doc_url = payload.get("docUrl")
     content_type = payload.get("contentType")
+    source = payload.get("source", "unknown")
 
     if not doc_id or not user_id or not doc_url or not content_type:
         logger.warning("Missing required fields in payload: %s", payload)
@@ -73,6 +78,28 @@ def pubsub_document_analysis(request, context):
                     }
                 )
                 return
+
+            # /extract-doc-info records monthly document creations at enqueue time.
+            # Keep worker-side limit enforcement for non-API sources only.
+            if source != "document-analysis-api":
+                try:
+                    check_monthly_document_creations_allowed(db, user_id, 1)
+                except PlanLimitExceeded as e:
+                    logger.warning(
+                        "Document analysis skipped: creation limit exceeded user=%s period=%s used=%s limit=%s source=%s",
+                        user_id,
+                        e.period_key,
+                        e.used,
+                        e.limit,
+                        source,
+                    )
+                    doc_ref.update(
+                        {
+                            "status": "failed",
+                            "summary": "Monthly document limit reached.",
+                        }
+                    )
+                    return
 
             try:
                 check_token_quota_or_raise(db, user_id)

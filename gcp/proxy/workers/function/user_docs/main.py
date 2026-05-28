@@ -63,7 +63,11 @@ def pubsub_to_user_docs(request, context):
                 except ValueError:
                     firebase_admin.initialize_app()
                 db = admin_firestore.client()
-                check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
+                # /rag-file-upload already checks and records document creations before publishing
+                # this worker event. Re-checking with the same count here can double-charge a batch
+                # and incorrectly block first-time free users.
+                if source != "rag-file-upload":
+                    check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
             rag_service = RagService()
             result_msg = rag_service.import_files(gcs_urls, user_id)
             success = True

@@ -15,10 +15,17 @@ sys.modules["google.cloud.aiplatform_v1.types.vertex_rag_data_service"] = MagicM
 sys.modules["vertexai"] = MagicMock()
 sys.modules["vertexai.rag"] = MagicMock()
 
-# Add the parent directory (../function) to sys.path before importing main
-function_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'function'))
+# Add the worker source directory (../function/user_docs) to sys.path before importing main
+function_dir = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "function", "user_docs")
+)
 if function_dir not in sys.path:
     sys.path.insert(0, function_dir)
+
+# Add gcp root for shared `common.*` imports used by worker modules
+gcp_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if gcp_root_dir not in sys.path:
+    sys.path.insert(0, gcp_root_dir)
 
 import main
 
@@ -83,6 +90,67 @@ class TestPubSubToUserDocs(unittest.TestCase):
         # Assert
         mock_rag_service_cls.assert_not_called()
         mock_publisher_client.assert_not_called()
+
+    @patch("main.check_monthly_document_creations_allowed")
+    @patch("main.admin_firestore")
+    @patch("main.firebase_admin")
+    @patch("main.RagService")
+    def test_pubsub_to_user_docs_skips_quota_check_for_rag_source(
+        self,
+        mock_rag_service_cls,
+        mock_firebase_admin,
+        mock_admin_firestore,
+        mock_quota_check,
+    ):
+        gcs_urls = ["gs://bucket/file1.txt", "gs://bucket/file2.txt"]
+        payload = {
+            "gcs_urls": gcs_urls,
+            "user_id": "u1",
+            "source": "rag-file-upload",
+        }
+        event = {
+            "data": base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
+        }
+
+        mock_firebase_admin.get_app.return_value = object()
+        mock_admin_firestore.client.return_value = MagicMock()
+        mock_rag_service_cls.return_value.import_files.return_value = "ok"
+
+        main.pubsub_to_user_docs(event, None)
+
+        mock_quota_check.assert_not_called()
+        mock_rag_service_cls.return_value.import_files.assert_called_once_with(gcs_urls, "u1")
+
+    @patch("main.check_monthly_document_creations_allowed")
+    @patch("main.admin_firestore")
+    @patch("main.firebase_admin")
+    @patch("main.RagService")
+    def test_pubsub_to_user_docs_enforces_quota_check_for_non_rag_source(
+        self,
+        mock_rag_service_cls,
+        mock_firebase_admin,
+        mock_admin_firestore,
+        mock_quota_check,
+    ):
+        gcs_urls = ["gs://bucket/file1.txt", "gs://bucket/file2.txt"]
+        payload = {
+            "gcs_urls": gcs_urls,
+            "user_id": "u2",
+            "source": "other-source",
+        }
+        event = {
+            "data": base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
+        }
+
+        db = MagicMock()
+        mock_firebase_admin.get_app.return_value = object()
+        mock_admin_firestore.client.return_value = db
+        mock_rag_service_cls.return_value.import_files.return_value = "ok"
+
+        main.pubsub_to_user_docs(event, None)
+
+        mock_quota_check.assert_called_once_with(db, "u2", len(gcs_urls))
+        mock_rag_service_cls.return_value.import_files.assert_called_once_with(gcs_urls, "u2")
 
 if __name__ == "__main__":
     unittest.main()

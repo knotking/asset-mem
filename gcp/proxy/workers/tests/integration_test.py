@@ -10,10 +10,17 @@ os.environ["GCP_PROJECT_ID"] = "homegeek-staging"
 os.environ["USER_UPLOAD_RESULT_TOPIC"] = "projects/homegeek-staging/topics/user-upload-result-topic"
 os.environ["GCS_BUCKET"] = "homegeek-user-data"
 
-# Add the parent directory (../function) to sys.path before importing main
-function_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'function'))
+# Add the worker source directory (../function/user_docs) to sys.path before importing main
+function_dir = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "function", "user_docs")
+)
 if function_dir not in sys.path:
     sys.path.insert(0, function_dir)
+
+# Add gcp root for shared `common.*` imports used by worker modules
+gcp_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if gcp_root_dir not in sys.path:
+    sys.path.insert(0, gcp_root_dir)
 
 import main
 
