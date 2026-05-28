@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from google.cloud import firestore
 
-from common.plan_limits import PlanLimitExceeded, check_and_record_monthly_document_creations
+from common.plan_limits import (
+    PlanLimitExceeded,
+    check_and_record_monthly_document_creations,
+    check_monthly_document_creations_allowed,
+)
 from core.auth_deps import RATE_BUCKET_AGENT, RATE_BUCKET_DOCUMENTS, authenticated_user
 from utils.plan_limit_http import plan_limit_exceeded_response
 from core.firebase_auth import apply_uid_to_agent_request, apply_uid_to_camel_user_id
@@ -30,7 +34,10 @@ async def firebase_webhook_file_upload(
         if uris:
             db = firestore.Client()
             try:
-                check_and_record_monthly_document_creations(db, uid, len(uris))
+                # Document creations are recorded by /extract-doc-info.
+                # Keep this endpoint as a non-recording guardrail to avoid double-counting
+                # when clients call both rag-file-upload and extract-doc-info per file.
+                check_monthly_document_creations_allowed(db, uid, len(uris))
             except PlanLimitExceeded as e:
                 return plan_limit_exceeded_response(e)
         return handle_firebase_file_upload(request_data)
