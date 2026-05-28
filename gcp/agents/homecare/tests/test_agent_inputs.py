@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from property_agent.agent_inputs import SearchLocation, SearchLocationCoordinates
+from property_agent.shared.inputs import SearchLocation, SearchLocationCoordinates
 
 
 def test_search_location_radius_accepts_valid_range() -> None:

@@ -21,14 +21,13 @@ npm run test:watch
 | [`jest.config.js`](../jest.config.js) | `jest-expo` preset, `@/` alias, transform ignore patterns |
 | [`jest.setup.js`](../jest.setup.js) | Reanimated mock, NetInfo default |
 | [`__mocks__/`](../__mocks__/) | GiftedChat, YouTube, expo-image/video, markdown, clipboard, haptics |
-| [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures (incl. `garageDoorDualFormatMessage`) |
+| [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures (markdown + structured variants) |
 | [`lib/gifted-chat-bubble-equal.ts`](../lib/gifted-chat-bubble-equal.ts) | Bubble memo comparator (`areGiftedChatBubblePropsEqual`) |
 | [`lib/property-chat-list-props.ts`](../lib/property-chat-list-props.ts) | Android GiftedChat `listViewProps` tuning |
 | [`lib/gifted-chat-utils.ts`](../lib/gifted-chat-utils.ts) | GiftedChat transform + `transformMessagesToGiftedChatCached` |
 | [`apps/common/src/lib/merge-messages-snapshot.ts`](../../common/src/lib/merge-messages-snapshot.ts) | Incremental Firestore snapshot merge |
 | [`__tests__/gifted-chat-utils.cached.test.ts`](../__tests__/gifted-chat-utils.cached.test.ts) | Cached transform reference reuse |
-| [`lib/chat-content-cache.ts`](../lib/chat-content-cache.ts) | LRU parse cache for assistant message content |
-| [`lib/chat-content-parse.ts`](../lib/chat-content-parse.ts) | Markdown + JSON extraction, visible-section gate (used by cache) |
+| [`lib/chat-content-parse.ts`](../lib/chat-content-parse.ts) | `getMessageDisplayParts`, visibility helpers for Orchestrator V2 fields |
 | [`lib/css-theme-tokens.ts`](../lib/css-theme-tokens.ts) | HSL tokens aligned with `global.css` for native chat styles |
 | [`lib/chat-message-native-styles.ts`](../lib/chat-message-native-styles.ts) | StyleSheet bypass for NativeWind opacity/shadow interop issues |
 | [`lib/lazy-youtube-player.tsx`](../lib/lazy-youtube-player.tsx) | Defers Youtube WebView until accordion expanded + layout |

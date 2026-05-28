@@ -1,3 +1,5 @@
+> **Archived:** Retired Analysis / Triage agent docs. See [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Analysis Agent Deployment and Operations
 
 ## Overview

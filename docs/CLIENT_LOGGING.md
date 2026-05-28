@@ -156,7 +156,7 @@ Every proxy `fetch` should send **`X-Request-ID`** so Cloud Run logs, structured
 | Layer | Module / behavior |
 |-------|-------------------|
 | Webapp | `apps/webapp/src/lib/correlation-id.ts` — `proxyFetch()`, `createCorrelationId()` |
-| Mapp | `apps/mapp/lib/correlation-id.ts` |
+| Mapp | `@homeapp/common/lib/correlation-id` via `apps/mapp/lib/api.ts` — `proxyFetchWithAuth()`, `createCorrelationId()` |
 | Common (mapp quota) | `@homeapp/common/lib/correlation-id` |
 | Proxy | `CorrelationIdMiddleware` — reads header (or `X-Correlation-ID`), echoes on response |
 | Python logs | `[req=…]` via `gcp/common/observability/logging_context.py`; JSON `log_event` adds `correlation_id` |

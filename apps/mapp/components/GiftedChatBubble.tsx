@@ -32,7 +32,11 @@ function messageFromGiftedChat(currentMessage: IMessage): Message {
   };
 }
 
-function GiftedChatBubble({ currentMessage, sessionId, position }: CustomBubbleProps) {
+function GiftedChatBubble({
+  currentMessage,
+  sessionId,
+  position,
+}: CustomBubbleProps) {
   if (!currentMessage) {
     return null;
   }
@@ -52,5 +56,4 @@ function GiftedChatBubble({ currentMessage, sessionId, position }: CustomBubbleP
   );
 }
 
-export { areGiftedChatBubblePropsEqual };
 export default React.memo(GiftedChatBubble, areGiftedChatBubblePropsEqual);

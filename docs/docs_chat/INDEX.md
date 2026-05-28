@@ -216,7 +216,7 @@ Comprehensive testing guide with test cases and procedures.
 ## Related Documentation
 
 ### Internal Documentation
-- [User Docs Agent README](../../gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/README.md)
+- [User Docs Agent README](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
 - [Property Agent README](../../gcp/agents/homecare/property_agent/README.md)
 - [Proxy API README](../../gcp/proxy/api/README.md)
 

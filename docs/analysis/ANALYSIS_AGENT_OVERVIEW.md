@@ -1,3 +1,5 @@
+> **Archived:** Retired Analysis / Triage agent docs. See [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Analysis Agent Overview
 
 ## Introduction
@@ -232,4 +234,3 @@ See [Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md) 
 - **Cost Tracking**: Historical cost analysis and trends
 - **Contractor Ratings**: User feedback and rating system
 - **Parallel Agent Execution**: Run DIY and Service agents simultaneously for faster results
-

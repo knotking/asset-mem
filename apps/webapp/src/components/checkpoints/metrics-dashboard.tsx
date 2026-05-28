@@ -6,6 +6,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Activity } from 'lucide-react';
 import { usePropertyCheckpointMetrics } from '@/hooks/use-property-checkpoint-metrics';
 import { format } from 'date-fns';
+import type { PropertyCheckpointMetrics } from '@/lib/types';
+
+function toDate(value: PropertyCheckpointMetrics['updatedAt']): Date {
+  if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  return value ? new Date(value as unknown as Date) : new Date(0);
+}
 
 export function MetricsDashboard() {
   const { metrics, loading } = usePropertyCheckpointMetrics();
@@ -171,7 +179,7 @@ export function MetricsDashboard() {
         {metrics.updatedAt && (
           <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
             Last updated: {format(
-              metrics.updatedAt.toDate?.() || new Date(metrics.updatedAt),
+              toDate(metrics.updatedAt),
               'PPp'
             )}
             {metrics.window && (

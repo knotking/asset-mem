@@ -1,5 +1,7 @@
 # Checkpoint Documentation
 
+Serving code lives under `gcp/agents/homecare/property_agent/checkpoint/` (`run_checkpoint_pipeline`, retrieval, optional-branch analysis). See `property_agent/ARCHITECTURE.md` and `docs/ORCHESTRATOR_V2_PLAN.md`.
+
 ## Overview
 
 The Checkpoint feature allows users to capture and track property condition over time through photos and videos, with AI-powered analysis to detect changes, issues, and maintenance needs.
@@ -40,7 +42,7 @@ The Checkpoint feature allows users to capture and track property condition over
 
 ### For Developers
 
-1. **Backend**: See [Checkpoint Analysis Agent](../../gcp/agents/homecare/property_agent/sub_agents/checkpoint_analysis_agent/README.md)
+1. **Backend**: See `gcp/agents/homecare/property_agent/checkpoint/analysis/` and `ARCHITECTURE.md`
 2. **API**: See [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)
 3. **Frontend (Webapp)**: See [Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)
 4. **Frontend (Mobile)**: See checkpoint components in `apps/mapp/components/property-details/`
@@ -81,10 +83,9 @@ Checkpoint System
 │   ├── Comparison worker
 │   └── Metrics aggregation
 │
-├── AI Layer (Vertex AI)
-│   ├── Checkpoint Agent (queries)
-│   ├── Checkpoint Analysis Agent (recommendations)
-│   └── Sub-agents (coverage, DIY, service, cost)
+├── AI Layer (Vertex AI property_agent)
+│   ├── run_checkpoint_pipeline (retrieval + optional branches)
+│   └── Optional branches (coverage, DIY, service, cost) in checkpoint/analysis/
 │
 └── Client Layer
     ├── Webapp (Next.js)

@@ -72,6 +72,8 @@ Imports such as `common.token` require the `gcp` directory on `PYTHONPATH`, or a
 
 **Docker / Cloud Run:** GitHub Actions runs **`cp -R gcp/common gcp/proxy/api/common`**, then **`gcloud run deploy --source=gcp/proxy/api`** using **`Dockerfile`** in this directory. **`gcp/proxy/api/.gcloudignore`** forces the staged **`common/`** into the upload (it is listed in `.gitignore` so it is not committed). For a one-shot local build without staging, use **`docker build -f gcp/Dockerfile.proxy gcp`** from the repo root.
 
+**Checkpoint stream debugging (local):** Default log level is **`INFO`** (`PROXY_LOG_LEVEL=INFO`). Each Reasoning Engine chunk logs **`stream_chunk`** with author/kind/`analysis_status`; Firestore writes log **`chat_persist`**; completion logs **`stream_chunks`**, **`progress_chunks`**, **`persist_writes`**, and **`revision=start->end`**. Set **`PROXY_LOG_LEVEL=DEBUG`** for full third-party noise.
+
 ### LLM token usage (Firestore)
 
 Each completed `stream_query` against the Reasoning Engine increments counters on `llm_token_usage/{userId}`. Token fields come from `usageMetadata` / `usage_metadata` on stream events when present.
@@ -81,6 +83,18 @@ The checkpoint analysis worker (Gemini `generate_content` / `embed_content`) use
 `POST …/extract-doc-info` only enqueues Pub/Sub; the **document analysis worker** records tokens from `generate_content`’s `usage_metadata` and increments `workerLlmCallCount` per completed job. Quota is checked in the worker before the Gemini call.
 
 **Full schema** (root document, `periods/{YYYY-MM}` history, field tables): **[`gcp/common/token/README.md`](../../../common/token/README.md#firestore-schema)**.
+
+### V2 chat message persistence
+
+Assistant rendering SSOT is the Firestore message document (`users/{userId}/chats/{chatId}/messages/{messageId}`), not fenced JSON in `message.content` or `properties/{id}/analysis/current`.
+
+On each throttled persist during `POST /firebase-agent-stream`, `services/vertex_service.py` calls `utils/message_content_persist.persist_chat_message_state`, which:
+
+1. Reads **`actions.state_delta`** from Reasoning Engine stream events when present (`contentJson`, `contentMarkdown`, `analysisRunId`, branch hints, `agentSteps`)
+2. **Merges** patches with monotonic `revision` and schema validation (`contentSchemaVersion: 2`)
+3. Enforces size limits via `utils/message_patch_state.constrain_content_json_size`
+
+Clients (mapp / webapp) listen to Firestore and render via `@homeapp/common` `resolveMessageContentParts`. Canonical contract: [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../../agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
 
 ### Token quota (rate limit)
 

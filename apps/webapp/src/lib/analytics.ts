@@ -31,10 +31,6 @@ export function getGaMeasurementId(): string | undefined {
   return id || undefined;
 }
 
-export function isAnalyticsEnabled(): boolean {
-  return Boolean(getGaMeasurementId());
-}
-
 /** Persist UTM query params from the current URL (client-only). */
 export function captureUtmFromSearchParams(search: string): void {
   if (typeof window === 'undefined') return;

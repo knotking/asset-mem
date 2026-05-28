@@ -1,10 +1,7 @@
 """Tests for property_agent.log_redaction."""
 
-from property_agent.log_redaction import (
-    redact_gcs_uris,
-    redact_tool_args_for_log,
-    safe_text_preview,
-)
+from agent_framework.observability.log_redaction import redact_gcs_uris, safe_text_preview
+from property_agent.observability.log_redaction import redact_tool_args_for_log
 
 
 def test_safe_text_preview_truncates():

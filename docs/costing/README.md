@@ -198,7 +198,7 @@ docs/costing/
 
 ### Code Location
 - **Cost Agent**: `gcp/agents/homecare/property_agent/sub_agents/cost_agent/`
-- **E2E eval**: `gcp/agents/homecare/property_agent/evals/cost_agent.evalset.json`
+- **E2E QA**: manual `adk web` on staging (ADK evalsets removed); unit tests: `make test`
 - **Unit tests**: `gcp/agents/homecare/tests/test_cost_agent.py`
 - **Documentation**: `docs/costing/`
 

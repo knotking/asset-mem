@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY proxy/api/ .
 COPY common/ ./common/
+COPY agent_framework/ ./agent_framework/
 
 ENV PORT=8080
 EXPOSE 8080

@@ -36,6 +36,16 @@ function effectiveCreatedAtMillis(
   return giftedChatCreatedAtMillis(giftedCreatedAt);
 }
 
+function contentJsonEqual(
+  a: Record<string, unknown> | null | undefined,
+  b: Record<string, unknown> | null | undefined
+): boolean {
+  if (a === b) return true;
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /** Compare GiftedChat bubble props to skip re-renders when message payload is unchanged. */
 export function areGiftedChatBubblePropsEqual(
   prev: GiftedChatBubbleCompareProps,
@@ -62,6 +72,15 @@ export function areGiftedChatBubblePropsEqual(
   const prevFile = prevCustom?.file;
   const nextFile = nextCustom?.file;
   if (prevFile?.url !== nextFile?.url || prevFile?.name !== nextFile?.name) return false;
+
+  const prevFirestore = prevCustom?.firestoreMessage;
+  const nextFirestore = nextCustom?.firestoreMessage;
+  if ((prevFirestore?.contentMarkdown ?? '') !== (nextFirestore?.contentMarkdown ?? '')) {
+    return false;
+  }
+  if (!contentJsonEqual(prevFirestore?.contentJson, nextFirestore?.contentJson)) {
+    return false;
+  }
 
   if (
     effectiveCreatedAtMillis(prevCustom, prevMsg.createdAt) !==

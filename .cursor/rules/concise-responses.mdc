@@ -1,0 +1,34 @@
+---
+description: Prefer short, direct answers unless the user asks for depth
+alwaysApply: true
+---
+
+# Concise responses
+
+Default to **short answers** for questions, status checks, and “what/why/how” queries.
+
+## Default
+
+- Lead with the direct answer in 1–3 sentences or a tight bullet list (≤5 bullets).
+- Skip preamble, recap of the question, and closing filler.
+- No “say the word and I’ll…” unless the user is clearly blocked on a decision.
+
+## Go longer only when
+
+- The user asks for detail, explanation, a walkthrough, or a comparison.
+- You are implementing code, writing a PR, debugging with evidence, or producing a doc/spec.
+- A wrong short answer would be misleading (security, migration risk, breaking change).
+
+## Format
+
+- Use prose for simple Q&A; use bullets for lists of options or steps.
+- Put code citations or commands only when they add value — not to pad length.
+
+## After making code changes
+
+Cursor already shows file diffs in the chat UI — do **not** repeat them in your reply.
+
+- Summarize **what changed and why** in plain language (file paths ok).
+- Do **not** paste before/after blocks, full hunks, or large fenced code for edits you just applied.
+- Skip line-by-line walkthroughs unless the user asks for a review or explanation.
+- One-line pointers are enough (e.g. “Updated `ChatMessage.tsx` to use `getMessageDisplayParts`”).

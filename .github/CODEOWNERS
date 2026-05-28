@@ -1,0 +1,14 @@
+* @prakashbaskaran
+
+# Platform boundary: require explicit review on core contracts/primitives.
+/gcp/agent_framework/** @prakashbaskaran
+
+# Orchestrator V2 message SSOT + patch/revision guards
+/gcp/proxy/api/utils/message_content_persist.py @prakashbaskaran
+/gcp/proxy/api/utils/message_patch_state.py @prakashbaskaran
+/gcp/proxy/api/utils/orchestrator_v2_metrics.py @prakashbaskaran
+/gcp/proxy/api/services/vertex_service.py @prakashbaskaran
+
+# Agent routing (resolve hop) and checkpoint pipeline
+/gcp/agents/homecare/property_agent/routing/ @prakashbaskaran
+/gcp/agents/homecare/property_agent/checkpoint/ @prakashbaskaran

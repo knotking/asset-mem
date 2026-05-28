@@ -1,8 +1,9 @@
 import {
   assistantMessageHasDisplayableContent,
-  extractContentParts,
+  getMessageDisplayParts,
   structuredDataHasVisibleSections,
 } from '@/lib/chat-content-parse';
+import { messageFixtures } from './fixtures/messages';
 
 describe('structuredDataHasVisibleSections', () => {
   it('returns false for empty checkpoint streaming shell', () => {
@@ -43,19 +44,41 @@ describe('structuredDataHasVisibleSections', () => {
   });
 });
 
-describe('assistantMessageHasDisplayableContent', () => {
-  it('returns false for title-only JSON shell', () => {
-    const extracted = extractContentParts(
-      JSON.stringify({ analysis: { title: 'Garage Door Maintenance Analysis' } }),
-      false
-    );
-    expect(assistantMessageHasDisplayableContent(extracted)).toBe(false);
+describe('getMessageDisplayParts', () => {
+  it('returns markdown for plain assistant text', () => {
+    expect(getMessageDisplayParts(messageFixtures.partialAssistantMessage)).toEqual({
+      structuredData: null,
+      markdown: messageFixtures.partialAssistantMessage.contentMarkdown,
+    });
   });
 
+  it('prefers structured UI when contentJson has visible sections', () => {
+    expect(getMessageDisplayParts(messageFixtures.structuredAssistantMessage)).toEqual({
+      structuredData: messageFixtures.structuredAssistantMessage.contentJson,
+      markdown: '',
+    });
+  });
+
+  it('uses contentJson over dual-format markdown when sections are visible', () => {
+    const parts = getMessageDisplayParts(messageFixtures.garageDoorDualFormatMessage);
+    expect(parts.structuredData).toBe(messageFixtures.garageDoorDualFormatMessage.contentJson);
+    expect(parts.markdown).toBe('');
+  });
+});
+
+describe('assistantMessageHasDisplayableContent', () => {
   it('returns true for plain markdown text', () => {
     expect(
       assistantMessageHasDisplayableContent(
-        extractContentParts('Hello from the assistant.', false)
+        getMessageDisplayParts(messageFixtures.partialAssistantMessage)
+      )
+    ).toBe(true);
+  });
+
+  it('returns true for structured contentJson-only messages', () => {
+    expect(
+      assistantMessageHasDisplayableContent(
+        getMessageDisplayParts(messageFixtures.structuredAssistantMessage)
       )
     ).toBe(true);
   });

@@ -1,0 +1,24 @@
+---
+description: Keep related docs updated when code behavior changes
+alwaysApply: true
+---
+
+# Docs in sync with code
+
+When you change code behavior, update related documentation in the same PR.
+
+## Do
+
+- Update READMEs, `docs/`, and feature docs that describe the changed behavior
+- Remove or revise stale references (deleted files, renamed modules, obsolete flows)
+- Keep doc examples aligned with current APIs and user-facing behavior
+
+## Scope
+
+- Only docs **related** to the change — no drive-by rewrites of unrelated files
+- Skip doc updates for refactors that do not change behavior
+
+## Examples
+
+- Deleted `SessionsModal.tsx` → update `SESSIONS_IMPLEMENTATION.md` to reference `PushDrawer` + `SessionsDrawerContent`
+- Chat now uses `contentMarkdown` / `contentJson` → update mapp chat docs that still describe JSON-in-markdown parsing

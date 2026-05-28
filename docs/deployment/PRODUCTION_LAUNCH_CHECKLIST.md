@@ -119,7 +119,7 @@ Many PH items are tracked in [LAUNCH_PLAN_PROGRESS.md § Phase 1](./LAUNCH_PLAN_
 | 5.3 | **High** | Agent unit tests in PR CI | `test-homecare-agent.yaml` | [x] | Eng | Already exists |
 | 5.4 | **High** | Smoke E2E: signup → property → chat | Playwright or manual script in PH doc | [ ] | Eng | |
 | 5.5 | **Medium** | Staging soak test (24–48h) | No critical errors | [ ] | Eng | |
-| 5.6 | **Medium** | Nightly agent eval (optional) | `make test-eval` | [ ] | Eng | Vertex live; not blocking |
+| 5.6 | **Medium** | Manual agent QA on staging (optional) | `adk web` | [ ] | Eng | ADK evalsets removed; not blocking |
 
 ---
 

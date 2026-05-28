@@ -7,10 +7,11 @@ license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "agent-framework",
     "google-adk==1.33.0",
     "google-cloud-aiplatform[adk,agent-engines]==1.151.0",
     "google-auth==2.52.0",
-    "google-cloud-firestore==2.22.0",  # For Firestore vector search in checkpoint_agent
+    "google-cloud-firestore==2.22.0",  # Firestore vector search in checkpoint retrieval (run_checkpoint_pipeline)
     "google-cloud-pubsub==2.31.1",
     "google-genai==1.72.0",  # For query embedding generation in checkpoint_agent
     "google-search-results==2.4.2",
@@ -38,14 +39,17 @@ dev = [
     "black==25.1.0",
 ]
 
-[tool.setuptools]
-packages = ["property_agent"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["property_agent*"]
+
+[tool.uv.sources]
+agent-framework = { path = "../../agent_framework", editable = true }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 markers = [
     "integration_external: live YouTube / SerpAPI (opt-in via RUN_EXTERNAL_DIY_SEARCH_TESTS=1)",
-    "integration_simulation: live ADK user-simulation evals (opt-in via RUN_ADK_SIMULATION_TESTS=1)",
 ]
 
 [build-system]

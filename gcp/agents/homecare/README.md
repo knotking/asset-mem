@@ -4,8 +4,6 @@
 
 This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, and product recommendations through a sophisticated multi-agent architecture.
 
-![RAG Architecture](RAG_architecture.png)
-
 The system consists of a main orchestrator agent that delegates tasks to specialized sub-agents, each handling specific aspects of home care diagnostics and support.
 
 ## Quick Start
@@ -22,8 +20,8 @@ make setup
 # Run the agent locally
 make run
 
-# Run tests
-make test-eval
+# Run unit tests
+make test
 
 # Deploy to Vertex AI
 make deploy
@@ -35,15 +33,14 @@ For detailed usage, see sections below.
 
 ### Main Orchestrator Agent (`root_agent`)
 
-The **property agent** (`property_agent`) is the root executor: it resolves each turn (`resolve_turn_llm`), then invokes checkpoint retrieval, user-document RAG, or knowledge-base lookup via **AgentTool** calls in a single hop (no `doculink_agent` transfer). Optional checkpoint analysis (coverage, DIY, service, cost) runs when `checkpoint_optional_agents` is set.
+The **property agent** (`property_agent`) is the root orchestrator: it resolves each turn (`resolve_turn_llm`), then the orchestrator LLM invokes **`run_checkpoint_pipeline`**, user-document RAG, or knowledge-base lookup via a **flat tool registry** (no nested checkpoint hop). Optional checkpoint analysis (coverage, DIY, service, cost) runs inside the pipeline when `checkpoint_optional_agents` is set. Structured output is emitted as `state_delta` patches for the proxy to persist as `contentJson` + `contentMarkdown` on Firestore messages.
 
-### Sub-Agents (tools and checkpoint analysis)
+### Sub-Agents (leaf modules and checkpoint pipeline)
 
-- **Checkpoint Agent**: Firestore vector retrieval for property checkpoints
-- **Checkpoint analysis** (optional): coverage, DIY, service, cost branches + synthesis
+- **`run_checkpoint_pipeline`**: retrieval + optional coverage / DIY / service / cost + assembler + synthesis
 - **User Docs Agent**: RAG over user-uploaded documents (`context_doc_uris`)
 - **Knowledge Base Agent**: RAG over the shared corpus
-- **DIY / Service / Cost / Shopping**: Used in checkpoint optional-analysis and DIY orchestrator paths
+- **DIY / Service / Cost / Shopping**: Leaf agents invoked inside the checkpoint pipeline
 
 ## Key Features
 
@@ -96,10 +93,10 @@ The system accepts various input types:
 - **Property Address / search_location**: Location for local service and cost context
 
 ### Processing Flow
-1. **Root routing**: `resolve_turn` + `[RESOLVED_TURN]` → executor tools (`checkpoint_agent`, `ask_user_docs_agent`, `ask_knowledge_base_agent`)
-2. **Retrieval**: Checkpoint vector search, user docs, or knowledge base
-3. **Optional analysis**: Parallel coverage / DIY / service / cost when requested
-4. **Response**: Dual-format markdown + JSON for checkpoint flows; verbatim retrieval otherwise
+1. **Root routing**: `resolve_turn` → casual canned reply OR orchestrator LLM + flat tools
+2. **Checkpoint path**: `run_checkpoint_pipeline` — retrieval, optional parallel branches, assembler, synthesis
+3. **Docs / KB path**: `user_docs_retrieval` or `knowledge_base_retrieval`
+4. **Response**: Proxy merges `state_delta` into Firestore message (`contentMarkdown` + `contentJson`); clients render via `resolveMessageContentParts`
 
 ### Output Schema
 ```json
@@ -136,7 +133,7 @@ The system accepts various input types:
 
 ## Agent Architecture
 
-![RAG](RAG_workflow.png)
+See [property_agent/ARCHITECTURE.md](property_agent/ARCHITECTURE.md) and [docs/ORCHESTRATOR_V2_PLAN.md](docs/ORCHESTRATOR_V2_PLAN.md).
 
 ### Key Features
 
@@ -301,8 +298,8 @@ make setup
 # Run the agent locally
 make run
 
-# Run tests
-make test-eval
+# Run unit tests
+make test
 
 # Deploy the agent
 make deploy
@@ -310,10 +307,10 @@ make deploy
 
 ### Unit tests (`tests/`)
 
-`make test` runs **only** fast unit tests under `tests/` (no live ADK evals). CI runs this on PRs via `.github/workflows/test-homecare-agent.yaml`. For unit tests + evals:
+`make test` runs fast unit tests under `tests/` (mocked, no live Vertex). CI runs this on PRs via `.github/workflows/test-homecare-agent.yaml`.
 
 ```bash
-make test-all
+make test
 # or
 uv run pytest tests/ -v
 ```
@@ -380,33 +377,13 @@ Agent Response:
 
 ## Evaluating the Agent
 
-Golden eval sets are **recorded from `adk web`** and stored under `property_agent/evals/*.evalset.json`. See **`property_agent/evals/README.md`** for the recording checklist.
+ADK web-recorded `*.evalset.json` files and `make test-eval*` were **removed**. Use:
 
-### Using Makefile (Recommended)
+- **`make test`** — unit tests under `tests/` (CI on every PR)
+- **`uv run adk web`** — manual staging QA against `property_agent`
+- **`make conformance-test`** — replay recorded cases under `property_agent/conformance/`
 
-From the `gcp/agents/homecare` directory:
-
-```bash
-make test-eval              # all eval tests (live Vertex, ~3 min)
-make test-eval-executor-routing  # executor_routing.evalset.json
-make test-eval-user-docs         # user_docs_routing.evalset.json
-make test-eval-checkpoint   # checkpoint_optional_agents.evalset.json
-make test-eval-cost         # cost_agent.evalset.json
-make test-eval-shopping     # shopping_agent.evalset.json
-make test-eval-service      # service_agent.evalset.json
-```
-
-### Using UV / ADK CLI
-
-```bash
-uv run pytest eval/ -v
-
-uv run adk eval property_agent property_agent/evals/executor_routing.evalset.json \
-  --config_file_path=property_agent/evals/test_config.json \
-  --print_detailed_results
-```
-
-Pass thresholds live in `property_agent/evals/test_config.json` (`tool_trajectory_avg_score`, `response_match_score`).
+See **`property_agent/evals/README.md`** for details.
 
 ## Deploying the Agent
 

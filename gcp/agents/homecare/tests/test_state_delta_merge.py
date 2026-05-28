@@ -2,22 +2,21 @@
 
 from types import SimpleNamespace
 
-from property_agent.state_delta_merge import merge_state_delta
-from property_agent.sub_agents.checkpoint_dual_format_guard import (
-    apply_tool_context_state_delta,
-)
+from agent_framework.state.state_delta_merge import merge_state_delta
+from property_agent.checkpoint.analysis.assembler import apply_tool_context_state_delta
+from property_agent.bindings.state_merge import merge_homecare_state_delta
 
 
-def test_merge_state_delta_concatenates_lists():
+def test_merge_state_delta_concatenates_lists_without_dedupe():
     existing = {"checkpoint_optional_agents": ["coverage"]}
     incoming = {"checkpoint_optional_agents": ["diy"]}
     merged = merge_state_delta(existing, incoming)
     assert merged["checkpoint_optional_agents"] == ["coverage", "diy"]
 
 
-def test_merge_state_delta_dedupes_repeated_checkpoint_optional_agents():
+def test_merge_homecare_state_delta_dedupes_repeated_checkpoint_optional_agents():
     branches = ["coverage", "diy", "service", "cost"]
-    merged = merge_state_delta(
+    merged = merge_homecare_state_delta(
         {"checkpoint_optional_agents": list(branches)},
         {"checkpoint_optional_agents": list(branches)},
     )

@@ -14,7 +14,7 @@ export type PropertyType = (typeof PROPERTY_TYPES)[number];
 export type AgentStep = {
   /** Raw tool/agent name as emitted by ADK (kept as the unique key). */
   name: string;
-  status: "transferredto" | "executing" | "completed" | "failed";
+  status: "executing" | "completed" | "failed";
   /** Human-friendly label, e.g. "Finding local pros". */
   displayName?: string;
   /** One-line summary of what the step actually produced, e.g. "Found 8 plumbers in 5-mile radius". */
@@ -66,6 +66,10 @@ export type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  contentMarkdown?: string;
+  contentJson?: StructuredResponseData | Record<string, unknown> | null;
+  contentSchemaVersion?: number;
+  revision?: number;
   createdAt?: Timestamp | Date;
   followUpQuestions?: string[];
   file?: {
@@ -227,6 +231,8 @@ export type StructuredResponseData = {
       issuesDetected?: string[];
       overallCondition?: string;
       locations?: string[];
+      /** Property record address when provided on the checkpoint analysis request. */
+      propertyAddress?: string;
       queryType?: "single" | "comparison" | "trend" | "location-specific";
       dateRange?: string;
     };

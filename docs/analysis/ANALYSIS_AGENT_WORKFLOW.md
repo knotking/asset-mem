@@ -1,3 +1,5 @@
+> **Archived:** Retired Analysis / Triage agent docs. See [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Analysis Agent Workflow
 
 ## Overview
@@ -628,4 +630,3 @@ Please provide these details so I can give you specific recommendations.
 - API quota exhaustion
 - Slow response times
 - Repeated clarification loops
-

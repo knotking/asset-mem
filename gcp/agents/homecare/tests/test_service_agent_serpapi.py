@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from property_agent.sub_agents.service_agent import agent as service_mod
+from property_agent.agents.service_agent import agent as service_mod
 
 
 def test_serpapi_maps_search_uses_structured_geo(monkeypatch: pytest.MonkeyPatch):

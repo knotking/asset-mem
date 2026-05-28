@@ -1,3 +1,5 @@
+> **Archived:** Retired Analysis / Triage agent docs. See [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Analysis Agent Sub-Agents
 
 ## Overview
@@ -842,4 +844,3 @@ Each sub-agent has unit tests for:
 - Mock API responses
 - Test user documents
 - Various query types
-

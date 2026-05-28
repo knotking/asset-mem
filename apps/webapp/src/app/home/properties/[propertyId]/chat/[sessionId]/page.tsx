@@ -17,7 +17,9 @@ import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from "@/lib/type
 import { ChatList } from "@/components/chat/chat-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { CheckpointAnalysisProgressFooter } from "@/components/chat/checkpoint-analysis-progress-footer";
-import { getInFlightCheckpointProgressFromMessages } from "@/lib/checkpoint-branch-progress";
+import {
+  getInFlightCheckpointProgressFromMessages,
+} from "@/lib/checkpoint-branch-progress";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useRouter, useParams } from "next/navigation";
 import { db, storage } from "@/lib/firebase";
@@ -356,6 +358,7 @@ export default function PropertyChatSessionPage() {
       const userMessagePayload: WithFieldValue<DocumentData> = {
         role: "user",
         content,
+        contentMarkdown: content,
       };
 
       if (fileAttachment && fileAttachment.downloadURL) {
@@ -482,10 +485,9 @@ export default function PropertyChatSessionPage() {
     ]
   );
 
-  const branchProgress = useMemo(
-    () => getInFlightCheckpointProgressFromMessages(messages),
-    [messages]
-  );
+  const branchProgress = useMemo(() => {
+    return getInFlightCheckpointProgressFromMessages(messages);
+  }, [messages]);
 
   if (authPending || !user || isMessagesLoading || isDocsLoading) {
     return <ChatPageSkeleton />;

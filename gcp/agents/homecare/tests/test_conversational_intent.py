@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from property_agent.conversational_intent import (
+from property_agent.routing.conversational_intent import (
     CHECKPOINT_LAST_RESPONSE_KIND_KEY,
     LAST_OFFERED_OPTIONS_KEY,
     build_conversational_reply,

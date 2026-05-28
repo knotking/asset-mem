@@ -63,12 +63,12 @@ import {
 } from '@/components/ui/accordion';
 import Markdown from 'react-native-markdown-display';
 import { useMarkdownStyles, markdownRules } from '@/lib/markdown-styles';
-import { getCachedExtractContentParts } from '@/lib/chat-content-cache';
-import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import {
   assistantMessageHasDisplayableContent,
+  getMessageDisplayParts,
   structuredDataHasVisibleSections,
 } from '@/lib/chat-content-parse';
+import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
@@ -77,6 +77,7 @@ import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
 import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
+import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -186,12 +187,6 @@ const providerHasValidData = (provider: unknown): boolean => isDisplayableServic
 
 const getProvidersArray = (providers: any): ServiceProvider[] =>
   flattenServiceProviderRawList(providers) as ServiceProvider[];
-
-const getYouTubeVideoId = (url: string): string | null => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
-};
 
 const normalizeUrl = (u?: string): string | undefined => {
   if (!u || typeof u !== 'string') return undefined;
@@ -1405,27 +1400,19 @@ const MessageContent = React.memo(
     isUser,
     messageId,
     sessionId,
+    structuredData,
   }: {
     content: string;
     isUser: boolean;
     messageId: string;
     sessionId?: string;
+    structuredData?: StructuredResponseData | null;
   }) => {
   const markdownStyles = useMarkdownStyles(isUser);
 
-  // Memoize structured data and markdown content parsing
-  const { structuredData, plainContent } = useMemo(() => {
-    const { structuredData, markdownContent } = getCachedExtractContentParts(
-      messageId,
-      content,
-      isUser
-    );
-    return { structuredData, plainContent: markdownContent };
-  }, [content, isUser, messageId]);
-
   if (structuredData && structuredDataHasVisibleSections(structuredData)) {
     return (
-      <View className="w-full">
+      <View className="w-full gap-3">
         <StructuredResponse
           data={structuredData}
           saveMeta={{
@@ -1438,7 +1425,6 @@ const MessageContent = React.memo(
     );
   }
 
-  // Render content with markdown support - natural width for text messages
   return (
     <Markdown style={markdownStyles} rules={markdownRules}>
       {content}
@@ -1551,6 +1537,8 @@ const FilePreview = React.memo(
 
 function ChatMessage({ message, sessionId }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const { markdown: messageMarkdown, contentJson: messageContentJson } =
+    resolveMessageContentParts(message);
   const colorScheme = useColorScheme();
   const nativeStyles = useMemo(
     () => createChatMessageNativeStyles(colorScheme),
@@ -1563,15 +1551,15 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
     message: string;
   } | null>(null);
 
-  // Extract content parts once and memoize for both display and copy operations
-  const extractedParts = useMemo(() => {
-    return getCachedExtractContentParts(message.id, message.content, isUser);
-  }, [message.id, message.content, isUser]);
+  const displayParts = useMemo(
+    () => getMessageDisplayParts(message),
+    [message, messageMarkdown, messageContentJson]
+  );
 
   const hasDisplayableContent = useMemo(() => {
-    if (isUser) return !!message.content?.trim();
-    return assistantMessageHasDisplayableContent(extractedParts);
-  }, [isUser, extractedParts, message.content]);
+    if (isUser) return !!messageMarkdown?.trim();
+    return assistantMessageHasDisplayableContent(displayParts);
+  }, [isUser, displayParts, messageMarkdown]);
 
   const showEarlyLoading = !isUser && !hasDisplayableContent;
   const showThinkingStrip =
@@ -1579,8 +1567,8 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
   const showTypingIndicator = showEarlyLoading && !showThinkingStrip;
   const isStructuredAssistant =
     !isUser &&
-    !!extractedParts.structuredData &&
-    structuredDataHasVisibleSections(extractedParts.structuredData);
+    !!displayParts.structuredData &&
+    structuredDataHasVisibleSections(displayParts.structuredData);
   const isFullWidthAssistant = isStructuredAssistant;
   const isLoading = showEarlyLoading;
 
@@ -1597,28 +1585,9 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
     return markdownToWhatsapp(content);
   }, []);
 
-  // Use the memoized extracted markdown content
   const getMarkdownContent = useCallback(() => {
-    let markdown = extractedParts.markdownContent || message.content;
-
-    // Final safety check: strip any remaining ```markdown wrappers
-    if (markdown.includes('```markdown')) {
-      const markdownWrapperMatch = markdown.match(/```markdown\s*\n([\s\S]*?)```/);
-      if (markdownWrapperMatch) {
-        const innerContent = markdownWrapperMatch[1].trim();
-        const prefix = markdown.substring(0, markdown.indexOf(markdownWrapperMatch[0])).trim();
-        markdown = prefix ? `${prefix}\n\n${innerContent}` : innerContent;
-      } else {
-        // Fallback: just remove the ```markdown and closing ```
-        markdown = markdown
-          .replace(/```markdown\s*\n/g, '')
-          .replace(/\n```\s*$/g, '')
-          .trim();
-      }
-    }
-
-    return markdown;
-  }, [extractedParts.markdownContent, message.content]);
+    return displayParts.markdown || messageMarkdown;
+  }, [displayParts.markdown, messageMarkdown]);
 
   const handleCopyMessage = useCallback(async () => {
     try {
@@ -1690,7 +1659,7 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
             {showThinkingStrip ? (
               <AgentStatus
                 steps={message.agentSteps!}
-                messageContent={message.content}
+                messageContentJson={messageContentJson}
               />
             ) : null}
             {showTypingIndicator ? (
@@ -1701,10 +1670,11 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
             {hasDisplayableContent ? (
               <View className={`flex flex-col gap-3 ${isStructuredAssistant ? 'p-0' : 'p-3'}`}>
                 <MessageContent
-                  content={message.content}
+                  content={messageMarkdown}
                   isUser={isUser}
                   messageId={message.id}
                   sessionId={sessionId}
+                  structuredData={displayParts.structuredData}
                 />
               </View>
             ) : null}

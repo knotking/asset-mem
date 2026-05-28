@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from property_agent import checkpoint_timing_metrics as ctm
+from property_agent.metrics import checkpoint_timing_metrics as ctm
 
 
 def test_emit_records_each_phase_and_chars() -> None:

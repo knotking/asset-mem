@@ -1,38 +1,10 @@
-import type { StructuredResponseData } from '@homeapp/common/types';
+import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import type { Message, StructuredResponseData } from '@homeapp/common/types';
 
-export type ExtractedContentParts = {
+export type MessageDisplayParts = {
   structuredData: StructuredResponseData | null;
-  markdownContent: string;
+  markdown: string;
 };
-
-/** Keys aligned with checkpoint dual-format analysis (see analysis_has_structured_ui_sections). */
-const STRUCTURED_ANALYSIS_KEYS = [
-  'coverageResult',
-  'diyResults',
-  'serviceResults',
-  'costEstimationResults',
-  'checkpointDetails',
-  'insights',
-] as const;
-
-function analysisHasStructuredKeys(analysis: Record<string, unknown>): boolean {
-  for (const key of STRUCTURED_ANALYSIS_KEYS) {
-    if (analysis[key]) return true;
-  }
-  return !!analysis.checkpointSummary || !!analysis.triageResult;
-}
-
-function hasStructuredDataKeys(parsed: unknown): boolean {
-  if (!parsed || typeof parsed !== 'object') return false;
-  const p = parsed as Record<string, unknown>;
-  if (p.analysis && typeof p.analysis === 'object') {
-    return analysisHasStructuredKeys(p.analysis as Record<string, unknown>);
-  }
-  for (const key of STRUCTURED_ANALYSIS_KEYS) {
-    if (p[key]) return true;
-  }
-  return !!p.checkpointSummary || !!p.triageResult;
-}
 
 function checkpointSummaryHasVisibleData(
   checkpointSummary: NonNullable<StructuredResponseData['analysis']>['checkpointSummary']
@@ -138,119 +110,19 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
   return false;
 }
 
-function acceptStructuredPayload(parsed: unknown): parsed is StructuredResponseData {
-  return (
-    hasStructuredDataKeys(parsed) &&
-    structuredDataHasVisibleSections(parsed as StructuredResponseData)
-  );
-}
-
-function structuredOrMarkdown(
-  parsed: StructuredResponseData,
-  markdownContent: string
-): ExtractedContentParts {
-  if (acceptStructuredPayload(parsed)) {
-    return { structuredData: parsed, markdownContent };
+/** Resolve structured vs markdown display from Orchestrator V2 message fields. */
+export function getMessageDisplayParts(message: Message): MessageDisplayParts {
+  const { markdown, contentJson } = resolveMessageContentParts(message);
+  if (contentJson && structuredDataHasVisibleSections(contentJson)) {
+    return { structuredData: contentJson, markdown: '' };
   }
-  const md = markdownContent.trim();
-  // Dual-format: keep markdown body while JSON is still streaming.
-  if (md) {
-    return { structuredData: null, markdownContent: md };
-  }
-  // JSON-only shells must not surface as markdown (avoids raw JSON in the bubble).
-  return { structuredData: null, markdownContent: '' };
+  return { structuredData: null, markdown };
 }
 
 /** Whether assistant message parts should render content (vs typing / agent status). */
-export function assistantMessageHasDisplayableContent(
-  extracted: ExtractedContentParts
-): boolean {
-  if (extracted.structuredData) {
-    return structuredDataHasVisibleSections(extracted.structuredData);
+export function assistantMessageHasDisplayableContent(parts: MessageDisplayParts): boolean {
+  if (parts.structuredData) {
+    return structuredDataHasVisibleSections(parts.structuredData);
   }
-  return !!extracted.markdownContent?.trim();
-}
-
-/** Extract markdown and structured JSON from assistant message content. */
-export function extractContentParts(
-  content: string,
-  isUser: boolean
-): ExtractedContentParts {
-  if (isUser || !content) {
-    return { structuredData: null, markdownContent: content };
-  }
-
-  try {
-    const contentToParse = content.trim();
-
-    let combinedMatch = contentToParse.match(
-      /```markdown\s*\n([\s\S]*?)\n```\s*\n?```json\s*\n([\s\S]*?)\n```/
-    );
-
-    if (!combinedMatch) {
-      combinedMatch = contentToParse.match(
-        /```markdown\s*\n([\s\S]*?)```\s*\n?```json\s*\n([\s\S]*?)```/
-      );
-    }
-
-    if (combinedMatch) {
-      const markdownText = combinedMatch[1].trim();
-      const jsonStr = combinedMatch[2].trim();
-
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const preMarkdownText = contentToParse
-          .substring(0, contentToParse.indexOf(combinedMatch[0]))
-          .trim();
-        const fullMarkdownContent = preMarkdownText
-          ? `${preMarkdownText}\n\n${markdownText}`
-          : markdownText;
-        const accepted = structuredOrMarkdown(parsed as StructuredResponseData, fullMarkdownContent);
-        if (accepted.structuredData || accepted.markdownContent) return accepted;
-      } catch {
-        // Failed to parse JSON from combined blocks
-      }
-    }
-
-    const jsonMatch = contentToParse.match(/```json\s*\n?([\s\S]*?)```/);
-
-    if (jsonMatch) {
-      const jsonStr = jsonMatch[1].trim();
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const markdownContent = contentToParse.replace(jsonMatch[0], '').trim();
-        const accepted = structuredOrMarkdown(parsed as StructuredResponseData, markdownContent);
-        if (accepted.structuredData || accepted.markdownContent) return accepted;
-      } catch {
-        // Failed to parse JSON from code block
-      }
-    }
-
-    const anyCodeBlockMatch = contentToParse.match(/```\s*\n?([\s\S]*?)```/);
-
-    if (anyCodeBlockMatch) {
-      const codeBlockContent = anyCodeBlockMatch[1].trim();
-      try {
-        const parsed = JSON.parse(codeBlockContent);
-        const markdownContent = contentToParse.replace(anyCodeBlockMatch[0], '').trim();
-        const accepted = structuredOrMarkdown(parsed as StructuredResponseData, markdownContent);
-        if (accepted.structuredData || accepted.markdownContent) return accepted;
-      } catch {
-        // Not JSON, continue
-      }
-    }
-
-    try {
-      const parsed = JSON.parse(contentToParse);
-      if (typeof parsed === 'object' && parsed !== null) {
-        return structuredOrMarkdown(parsed as StructuredResponseData, '');
-      }
-    } catch {
-      // Not valid JSON, treat as plain markdown
-    }
-  } catch {
-    // Error in content parsing
-  }
-
-  return { structuredData: null, markdownContent: content };
+  return !!parts.markdown?.trim();
 }

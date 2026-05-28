@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Asset Type Feature - Change Summary
 
 **Date:** December 29, 2025  
@@ -426,4 +428,3 @@ Firestore: Analysis results saved to checkpoint
 **Implementation completed on:** December 29, 2025  
 **All TODOs completed:** ✅  
 **Ready for testing:** ✅
-

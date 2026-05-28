@@ -4,7 +4,7 @@ import type { Timestamp } from "firebase/firestore";
 export type AgentStep = {
   /** Raw tool/agent name as emitted by ADK (kept as the unique key). */
   name: string;
-  status: "transferredto" | "executing" | "completed" | "failed";
+  status: "executing" | "completed" | "failed";
   /** Human-friendly label, e.g. "Finding local pros". */
   displayName?: string;
   /** One-line summary of what the step actually produced. */
@@ -41,6 +41,10 @@ export type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  contentMarkdown?: string;
+  contentJson?: StructuredResponseData | Record<string, unknown> | null;
+  contentSchemaVersion?: number;
+  revision?: number;
   createdAt?: Timestamp | Date;
   followUpQuestions?: string[];
   file?: {
@@ -276,9 +280,11 @@ export type Property = {
   createdAt: Timestamp;
   propertyType?: string;
   propertySubType?: string;
+  cityStateZip?: string;
   documents?: Document[];
   docIds?: string[]; // For client-side convenience
   docGsURIs?: string[]; // For client-side convenience
+  services?: number;
   servicesCount?: number;
   checksCount?: number;
 };
@@ -336,6 +342,7 @@ export type Checkpoint = {
   createdAt: Timestamp;
   capturedAt?: Timestamp; // When the media was captured (vs when uploaded)
   media: CheckpointMedia[];
+  assetType?: "real_estate" | "vehicle" | "appliance" | "other"; // User-selected asset type
   location?: string; // e.g., "Kitchen", "Living Room", "Exterior" (user-provided or auto-detected)
   detectedAsset?: string; // Auto-detected asset name from AI (e.g., "Kitchen", "Refrigerator", "Car")
   assetConfidence?: number; // 0-1 confidence score for asset detection

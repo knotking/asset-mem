@@ -3,8 +3,6 @@
  * the webapp does not depend on `@homeapp/common`. Keep both files in sync.
  */
 
-import type { StructuredResponseData } from "@/lib/types";
-
 export type CheckpointOptionalAgent = "coverage" | "diy" | "service" | "cost";
 
 const CHECKPOINT_OPTIONAL_AGENTS: CheckpointOptionalAgent[] = [
@@ -76,7 +74,7 @@ function normalizeStatus(raw: unknown): CheckpointBranchStatus | null {
   return null;
 }
 
-export function formatCheckpointBranchList(names: string[]): string {
+function formatCheckpointBranchList(names: string[]): string {
   if (names.length === 0) return "";
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} & ${names[1]}`;
@@ -159,107 +157,19 @@ export function getCheckpointBranchProgress(
   };
 }
 
-function hasStructuredResponseKeys(parsed: unknown): boolean {
-  if (!parsed || typeof parsed !== "object") return false;
-  const obj = parsed as Record<string, unknown>;
-  const analysis = obj.analysis;
-  if (analysis && typeof analysis === "object") {
-    const a = analysis as Record<string, unknown>;
-    return !!(
-      a.triageResult ||
-      a.coverageResult ||
-      a.diyResults ||
-      a.serviceResults ||
-      a.checkpointSummary ||
-      a.checkpointDetails
-    );
-  }
-  return !!(
-    obj.triageResult ||
-    obj.diyResults ||
-    obj.serviceResults ||
-    obj.coverageResult ||
-    obj.checkpointSummary ||
-    obj.checkpointDetails
-  );
-}
-
-export function parseStructuredResponseFromContent(
-  content: string
-): StructuredResponseData | null {
-  const contentToParse = content.trim();
-  if (!contentToParse) return null;
-
-  try {
-    let combinedMatch = contentToParse.match(
-      /```markdown\s*\n([\s\S]*?)\n```\s*\n?```json\s*\n([\s\S]*?)\n```/
-    );
-    if (!combinedMatch) {
-      combinedMatch = contentToParse.match(
-        /```markdown\s*\n([\s\S]*?)```\s*\n?```json\s*\n([\s\S]*?)```/
-      );
-    }
-    if (combinedMatch) {
-      try {
-        const parsed = JSON.parse(combinedMatch[2].trim());
-        if (hasStructuredResponseKeys(parsed)) {
-          return parsed as StructuredResponseData;
-        }
-      } catch {
-        // continue
-      }
-    }
-
-    const jsonMatch = contentToParse.match(/```json\s*\n?([\s\S]*?)```/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[1].trim());
-        if (hasStructuredResponseKeys(parsed)) {
-          return parsed as StructuredResponseData;
-        }
-      } catch {
-        // continue
-      }
-    }
-
-    const anyCodeBlockMatch = contentToParse.match(/```\s*\n?([\s\S]*?)```/);
-    if (anyCodeBlockMatch) {
-      try {
-        const parsed = JSON.parse(anyCodeBlockMatch[1].trim());
-        if (hasStructuredResponseKeys(parsed)) {
-          return parsed as StructuredResponseData;
-        }
-      } catch {
-        // continue
-      }
-    }
-
-    const parsed = JSON.parse(contentToParse);
-    if (hasStructuredResponseKeys(parsed)) {
-      return parsed as StructuredResponseData;
-    }
-  } catch {
-    // not structured JSON
-  }
-
-  return null;
-}
-
-function analysisFromStructured(
-  parsed: StructuredResponseData | null
-): unknown {
-  if (!parsed) return null;
-  return parsed.analysis ?? parsed;
-}
-
 export function getCheckpointBranchProgressFromMessage(
-  message: { role: string; content?: string | null } | null | undefined
+  message:
+    | {
+        role: string;
+        contentJson?: Record<string, unknown> | null;
+      }
+    | null
+    | undefined
 ): CheckpointBranchProgress | null {
   if (!message || message.role !== "assistant") return null;
-  const content = typeof message.content === "string" ? message.content : "";
-  if (!content.trim()) return null;
-  const parsed = parseStructuredResponseFromContent(content);
-  return getCheckpointBranchProgress(analysisFromStructured(parsed));
+  if (!message.contentJson || typeof message.contentJson !== "object") return null;
+  const root = message.contentJson as Record<string, unknown>;
+  return getCheckpointBranchProgress(root.analysis ?? root);
 }
 
 /** CSS utility in globals.css — gradient text with looping background-position animation. */
@@ -305,7 +215,11 @@ export function hasCheckpointDisplayTitleInProgress(structured: unknown): boolea
 }
 
 export function getInFlightCheckpointProgressFromMessages(
-  messages: Array<{ role: string; content?: string | null }>
+  messages: Array<{
+    role: string;
+    content?: string | null;
+    contentJson?: Record<string, unknown> | null;
+  }>
 ): CheckpointBranchProgress | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];

@@ -1,3 +1,1 @@
-from . import agent as agent
-
-__all__ = ["agent"]
+"""Property agent package: agent_framework orchestration + property plugin."""

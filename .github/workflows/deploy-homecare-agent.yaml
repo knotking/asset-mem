@@ -5,8 +5,10 @@ on:
     branches:
       - main
     paths:
+      - "gcp/agent_framework/**"
       - "gcp/agents/homecare/deployment/**"
       - "gcp/agents/homecare/property_agent/**"
+      - "gcp/agents/homecare/pyproject.toml"
       - ".github/workflows/deploy-homecare-agent.yaml"
   workflow_dispatch:
     inputs:

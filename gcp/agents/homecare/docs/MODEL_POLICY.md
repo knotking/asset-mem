@@ -11,7 +11,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 - Checkpoint progress workflow (parallel runner is Python-only; **synthesis** uses this model)
 - Media search-query refiner and other small ADK tool agents
 
-**Why:** Low latency, streaming-friendly routing and synthesis; most turns are orchestration or structured dual-format output.
+**Why:** Low latency, streaming-friendly routing and synthesis; most turns are orchestration or separate `contentJson` / `contentMarkdown` fields via `state_delta`.
 
 **Client:** ADK `Gemini3` wrapper with Vertex `location=global`.
 
@@ -21,7 +21,7 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 
 - `cost_agent/ai_cost_estimator.py` — structured cost JSON
 - `diy_agent/orchestrator.py` — DIY steps synthesis, grounded web search helper
-- `checkpoint_agent/media_search_query_refiner.py` — retrieval search phrase cleanup
+- `checkpoint/retrieval/media_search_query_refiner.py` — retrieval search phrase cleanup
 - Firestore checkpoint **query embeddings** (`text-embedding-004`, separate from chat models)
 
 **Why:** These paths predate the 3.x ADK default or need `response_json_schema` / orchestrator-specific retry behavior on the standard Vertex client (`vertexai=True`, project region).
@@ -34,6 +34,6 @@ The property agent uses **two Gemini backends**, chosen by call path rather than
 | New one-shot JSON from Python (`generate_content`) | `LEGACY_API_GEMINI` unless ADK migration is explicit |
 | Embeddings | `text-embedding-004` in `firestore_vector_search.py` (not chat models) |
 
-Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py` and re-run evals (`make test-eval-executor-routing`, checkpoint evalsets).
+Changing the default chat model for ADK agents: edit `Gemini3(model=...)` in `model_config.py`, run `make test`, and exercise key flows via `adk web` on staging.
 
 Changing cost/DIY direct calls: edit `LEGACY_API_GEMINI.model` in the same file.

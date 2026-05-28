@@ -9,14 +9,16 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 
 ## Architecture in one paragraph
 
-`property_agent/agent.py` defines the root **single-hop executor** (`property_agent`). Each substantive turn: `resolve_turn_llm` → inject `[RESOLVED_TURN]` → executor LLM calls tools/sub-agents under `property_agent/sub_agents/` directly:
+`property_agent` is the root **orchestrator** (`property_agent/runtime/agent.py`). Each substantive turn: `resolve_turn_llm` → orchestrator LLM calls flat registry tools:
 
-- `checkpoint_agent` — Firestore vector retrieval; optional `checkpoint_progress_agent` for parallel coverage / DIY / service / cost analysis
-- `user_docs_agent` — RAG over user uploads (`context_doc_uris`)
-- `knowledge_base_agent` — RAG over the shared corpus
-- `diy_agent` / `service_agent` / `cost_agent` / `shopping_agent` — used in checkpoint optional-analysis and DIY orchestrator paths
+- `run_checkpoint_pipeline` — Firestore vector retrieval, optional parallel coverage / DIY / service / cost analysis, deterministic `contentJson` assembly, synthesis markdown; emits `state_delta` patches
+- `user_docs_retrieval` — RAG over user uploads (`context_doc_uris`)
+- `knowledge_base_retrieval` — RAG over the shared corpus
+- Leaf agents (`diy_agent`, `service_agent`, `cost_agent`, `shopping_agent`) — invoked inside the checkpoint pipeline, not as root routes
 
-The root agent + sub-agent registration is in `property_agent/agent.py` and `property_agent/__init__.py`. Prompts are in `prompts.py` files alongside each agent.
+Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical V2 contract: `gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`.
+
+**ADK dev streaming:** `HomecareRunner` + `checkpoint/progress_stream.py` multiplex progress text events while `run_checkpoint_pipeline` runs (see `property_agent/ARCHITECTURE.md`). Set `HOMEAPP_CHECKPOINT_PROGRESS_RUNNER=0` for stock ADK `Runner`.
 
 ## Setup
 
@@ -45,21 +47,7 @@ Don't activate the venv manually unless you need to; `uv run` handles it.
 
 ## Evaluation
 
-Golden eval sets are recorded from **`adk web`** and committed under `property_agent/evals/*.evalset.json`. See `property_agent/evals/README.md`. Evals hit live Vertex/Gemini and need credentials.
-
-```bash
-make test-eval              # all evals (live Vertex, ~3 min)
-make test-eval-executor-routing  # executor_routing.evalset.json
-make test-eval-user-docs         # user_docs_routing.evalset.json
-make test-eval-checkpoint
-make test-eval-cost
-make test-eval-shopping
-make test-eval-service
-```
-
-Unit tests only (CI-safe): `make test` or `uv run pytest tests/ -v`.
-
-Pass thresholds: `property_agent/evals/test_config.json`.
+ADK evalsets were removed. Use **`make test`** (unit tests, CI-safe) and manual **`uv run adk web`** on staging for E2E QA. Conformance replay: `make conformance-test` (see `property_agent/conformance/`). Details: `property_agent/evals/README.md`.
 
 ## Lint / type-check
 
@@ -90,7 +78,7 @@ This creates a corpus and uploads a sample PDF (Alphabet 10-K by default — edi
 In production, the user_docs corpus is populated asynchronously by the `pubsub_to_user_docs` Cloud Function (`gcp/proxy/workers/function/user_docs/`) when users upload files via the proxy.
 
 ## Customization tips
-- **Adding a sub-agent**: create a new package under `property_agent/sub_agents/<name>/` with `__init__.py`, `agent.py`, and `prompts.py`. Register it in `property_agent/agent.py` so the root orchestrator can delegate to it.
+- **Adding a sub-agent**: create a new package under `property_agent/agents/<name>/` with `__init__.py`, `agent.py`, and `prompts.py`. Wire it into the checkpoint pipeline or registry if the orchestrator should call it.
 - **Changing the model**: ADK agents use `gemini-3.1-flash-lite` via `model_config.GLOBAL_GEMINI_MODEL`; direct `generate_content` call sites use `LEGACY_API_GEMINI` (`gemini-2.5-flash`).
 - **Adding tools**: ADK tools are normal Python callables; attach them to the sub-agent's `tools` list in its `agent.py`.
 

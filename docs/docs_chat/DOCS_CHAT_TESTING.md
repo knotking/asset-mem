@@ -113,7 +113,7 @@ The Docs agent enables users to:
 - Payload includes: `"primary_agent": "docs"`
 - Payload includes: `"context_doc_uris": [...]` (selected docs) or `[]` (all docs)
 - Payload includes: `"user_query": "..."`
-- Agent routes to `ask_user_docs_agent` (property_agent executor)
+- Agent routes to `user_docs_retrieval` (property_agent executor)
 
 ### Test 6: Cross-Property Isolation
 
@@ -177,12 +177,12 @@ input_data = {
     "context_doc_uris": ["gs://bucket/user123/manual.pdf"],
     "property_id": "prop123"
 }
-# Expected: property_agent → ask_user_docs_agent
+# Expected: property_agent → user_docs_retrieval
 ```
 
 **Test executor (property_agent)**:
 ```python
-# Verify resolve sets route=user_docs and calls ask_user_docs_agent
+# Verify resolve sets route=user_docs and calls user_docs_retrieval
 # Expected: Calls user_docs_agent tool
 # Expected: Passes context_doc_uris to user_docs_agent
 ```
@@ -272,7 +272,7 @@ Before deploying to production:
 
 - [Analysis Agent Overview](analysis/ANALYSIS_AGENT_OVERVIEW.md)
 - [Checkpoint AI Chat Analysis](checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md)
-- [User Docs Agent README](../gcp/agents/homecare/property_agent/sub_agents/user_docs_agent/README.md)
+- [User Docs Agent README](../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
 - [Session Management](../apps/common/docs/SESSION_MANAGEMENT.md)
 
 ## Support

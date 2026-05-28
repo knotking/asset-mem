@@ -173,11 +173,10 @@ When the assistant returns structured data (JSON format), the component renders 
    - What's included in each option
 
 **Message Content Extraction:**
-The component intelligently parses assistant messages that contain both markdown and JSON:
-- Extracts structured data from code blocks (```json ... ```)
-- Preserves markdown content for display
-- Handles various formats (nested analysis objects, flat structures)
-- Strips wrapper code blocks for clean display
+The component uses the strict Orchestrator V2 message contract:
+- Renders prose from `contentMarkdown`
+- Renders accordions from `contentJson`
+- Does not parse structured JSON from message text in the hot path
 
 **File Preview Component:**
 - **Images**: Aspect ratio preservation, lazy loading with skeleton, error fallback
@@ -402,16 +401,19 @@ EXPO_PUBLIC_AGENT_SSE_URL=<your-agent-streaming-endpoint>
 
 ## Implementation Details
 
-### Message Content Parsing
-The `ChatMessage` component includes sophisticated content parsing logic:
+### Message Content Contract
+`ChatMessage` follows the persisted message contract instead of parsing fenced JSON:
 
-1. **Content Extraction** (`extractContentParts` function):
-   - Detects and parses JSON code blocks within assistant messages
-   - Supports multiple formats: ````markdown ... ``` ```json ... ````, ````json ... ````, or plain JSON
-   - Validates structured data by checking for specific keys (triageResult, coverageResult, diyResults, etc.)
-   - Preserves markdown content separate from structured data
+1. **Markdown path**:
+   - Uses `contentMarkdown` for prose rendering
+   - Falls back to `content` only for plain legacy text
 
-2. **Structured Data Keys**:
+2. **Structured path**:
+   - Uses `contentJson` for accordion/structured UI
+   - Expects proxy persistence to populate `contentJson` and `contentSchemaVersion`
+   - When `contentJson` has visible sections, structured UI takes priority over markdown (aligned with webapp)
+
+3. **Structured Data Keys**:
    - Supports both nested (`analysis.triageResult`) and flat (`triageResult`) structures
    - Handles various provider array locations (providers, localPros, googleSearchResults, etc.)
 
@@ -427,14 +429,13 @@ The component includes several utility functions moved outside components for pe
 - **`normalizeProvider(p)`**: Converts various provider data formats into standardized ServiceProvider type
 - **`providerHasValidData(provider)`**: Checks if provider has minimum required data (name)
 - **`getProvidersArray(providers)`**: Extracts provider arrays from various nested structures
-- **`getYouTubeVideoId(url)`**: Extracts 11-character video ID from YouTube URLs
+- **`getYouTubeVideoId(url)`** (in `lib/youtube-utils.ts`): Extracts 11-character video ID from YouTube URLs
 - **`normalizeUrl(u)`**: Adds https:// protocol and validates URL format
-- **`hasStructuredDataKeys(parsed)`**: Validates if parsed JSON contains expected structured data keys
 - **`getPreviewText(value, max)`**: Generates truncated preview text from markdown (max 240 chars)
 
 ### Performance Optimizations
 - **React.memo**: All sub-components wrapped for render optimization (MessageAvatar, ProductCard, YouTubeEmbed, ServiceProviderCard, StructuredResponse, MessageContent, FilePreview)
-- **useMemo**: Expensive computations cached (provider arrays, dimensions, content parsing, section visibility flags)
+- **useMemo**: Expensive computations cached (provider arrays, dimensions, `getMessageDisplayParts`, section visibility flags)
 - **useCallback**: Event handlers memoized to prevent re-renders (copy, share, long-press, link opening)
 - **Lazy Loading**: Images load with skeleton placeholders using expo-image transitions
 - **Image Caching**: Expo-image configured with memory-disk cache policy for offline access
@@ -478,46 +479,37 @@ The component includes several utility functions moved outside components for pe
 - Touch targets sized appropriately for mobile (buttons, cards)
 - Semantic color coding (success=green, warning=yellow, destructive=red)
 
-## Example Structured Response Format
+## Example Structured Response Fields
 
-Assistant messages can include structured data for rich UI rendering:
+Rich UI rendering uses these persisted message fields:
 
-```markdown
-**Analysis Agent**: Here's what I found...
+```typescript
+type Message = {
+  contentMarkdown?: string | null;
+  contentJson?: Record<string, unknown> | null;
+  contentSchemaVersion?: number;
+  revision?: number;
+}
+```
 
-\```json
+Example `contentJson` payload (abbreviated):
+
+```json
 {
-  "title": "Leaky Faucet Repair Options",
   "analysis": {
-    "triageResult": {
-      "diagnosis": "Your kitchen faucet has a worn O-ring causing the leak..."
-    },
+    "title": "Faucet O-ring Replacement",
+    "triageResult": { "diagnosis": "The leak is likely from a worn O-ring." },
     "coverageResult": {
-      "warrantyInfo": "Plumbing fixtures typically have a 1-year manufacturer warranty...",
-      "insuranceInfo": "Standard homeowners insurance generally doesn't cover wear and tear..."
+      "warrantyInfo": "No active warranty found.",
+      "insuranceInfo": "Wear and tear is typically not covered."
     },
     "diyResults": {
-      "diySteps": {
-        "summary": "This is a beginner-friendly repair...",
-        "steps": [
-          { "description": "Turn off water supply under sink" },
-          { "description": "Remove faucet handle..." }
-        ]
-      },
-      "youtubeSearch": {
-        "videos": [
-          { "url": "https://youtube.com/watch?v=...", "title": "How to Fix..." }
-        ]
-      },
       "recommendedProducts": {
         "products": [
           {
-            "product_name": "Universal Faucet Repair Kit",
+            "item_name": "O-ring kit",
             "vendor": "Home Depot",
-            "price": "$12.99",
-            "rating": "4.5",
-            "url": "https://...",
-            "image_url": "https://..."
+            "price": "$12.99"
           }
         ]
       }
@@ -527,13 +519,7 @@ Assistant messages can include structured data for rich UI rendering:
         "googleSearchResults": [
           {
             "name": "ABC Plumbing",
-            "ratings": "4.8/5",
-            "reviews": "127 reviews",
-            "contact_info": "(555) 123-4567",
-            "location": "123 Main St, City, ST",
-            "link": "https://yelp.com/...",
-            "directions": "https://maps.google.com/...",
-            "authorized": "True"
+            "contact_info": "(555) 123-4567"
           }
         ]
       }
@@ -541,29 +527,20 @@ Assistant messages can include structured data for rich UI rendering:
     "costEstimationResults": {
       "costEstimates": {
         "repair_type": "Faucet O-ring Replacement",
-        "DIY": {
-          "cost_range": "$10-$25",
-          "complexity": "Easy",
-          "savings": "70-85% compared to professional service"
-        },
-        "Service": {
-          "cost_range": "$100-$150",
-          "complexity": "Quick repair",
-          "benefits": "Warranty on work, professional guarantee"
-        }
+        "DIY": { "cost_range": "$10-$25" },
+        "Service": { "cost_range": "$100-$150" }
       }
     }
   }
 }
-\```
 ```
 
-The component automatically detects this format and renders the structured UI.
+The component reads `contentJson` directly and renders the structured UI when visible sections exist.
 
 ## Notes
 
 - Messages are loaded in real-time using Firestore onSnapshot listeners
-- Assistant responses with structured data are automatically parsed and rendered in accordion UI
+- Assistant responses use persisted `contentMarkdown` / `contentJson` fields (no fenced JSON parsing)
 - The chat automatically claims draft sessions on first message
 - All messages are persisted in Firestore for history
 - The UI is designed to be similar to the webapp implementation but optimized for mobile

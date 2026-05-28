@@ -1,7 +1,6 @@
 import type { AgentStep } from "../types";
 import {
   getCheckpointBranchProgress,
-  parseStructuredResponseFromContent,
 } from "./checkpoint-branch-progress";
 
 /** Shown when no specialist step is active yet. */
@@ -22,7 +21,7 @@ function orchestratorPipelineIndex(name: string): number {
 }
 
 /** Internal tools that should never appear in the thinking ticker. */
-const HIDDEN_TICKER_AGENTS = new Set<string>(["transfer_to_agent"]);
+const HIDDEN_TICKER_AGENTS = new Set<string>([]);
 
 /** Checkpoint optional specialists (parallel branches). */
 const CHECKPOINT_OPTIONAL_STEP_NAMES = new Set<string>([
@@ -42,10 +41,8 @@ export const CHECKPOINT_PARALLEL_ANALYSIS_LABEL = "Analyzing your checkpoints…
  */
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   diagnostic_agent: "Diagnosing the issue…",
-  ask_knowledge_base_agent: "Searching repair guides…",
-  ask_knowledge_base_retrieval: "Searching repair guides…",
-  ask_user_docs_agent: "Searching your documents…",
-  ask_user_docs_retrieval: "Searching your documents…",
+  knowledge_base_retrieval: "Searching repair guides…",
+  user_docs_retrieval: "Searching your documents…",
   analyse_multimodal_data: "Reviewing your photo or video…",
   research_agent: "Researching options…",
   service_provider_agent: "Finding pros near you…",
@@ -56,9 +53,8 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   cost_agent: "Estimating repair costs…",
   coverage_agent: "Checking warranty & insurance…",
   diy_agent: "Building DIY steps…",
-  checkpoint_agent: "Loading your checkpoints…",
+  run_checkpoint_pipeline: "Loading your checkpoints…",
   checkpoint_analysis_agent: "Analyzing your checkpoints…",
-  checkpoint_progress_agent: "Preparing your analysis…",
   checkpoint_analysis_synthesis_agent: "Writing your summary…",
   checkpoint_optional_agents_parallel_runner: "Finishing your analysis…",
   checkpoint_analysis_progress: "Updating your analysis…",
@@ -76,7 +72,6 @@ export function isHiddenTickerAgent(name: string | undefined | null): boolean {
 
 /** Whether a step should appear in the expanded step list (webapp AgentStatus card). */
 export function isStepVisibleInStatusList(step: AgentStep): boolean {
-  if (step.status === "transferredto") return false;
   if (isHiddenTickerAgent(step.name)) return false;
   if (isOrchestratorAgent(step.name)) return false;
   return true;
@@ -120,7 +115,7 @@ export function shouldUseCoordinatingLabel(
   }
 
   const inFlightOrchestrators = orchestrators.filter(
-    (s) => s.status === "executing" || s.status === "transferredto",
+    (s) => s.status === "executing",
   );
   if (inFlightOrchestrators.length === 0) return false;
 
@@ -156,16 +151,7 @@ export function getAgentStepDisplayLabel(
 
 function isVisibleTickerStep(step: AgentStep): boolean {
   if (isHiddenTickerAgent(step.name)) return false;
-  return step.status === "executing" || step.status === "transferredto";
-}
-
-function analysisFromMessageContent(
-  content: string | null | undefined,
-): unknown {
-  if (!content?.trim()) return null;
-  const parsed = parseStructuredResponseFromContent(content);
-  if (!parsed) return null;
-  return parsed.analysis ?? parsed;
+  return step.status === "executing";
 }
 
 function executingCheckpointOptionalSteps(
@@ -194,12 +180,6 @@ export function pickActiveAgentStep(
       return step;
     }
   }
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i];
-    if (step.status === "transferredto" && isVisibleTickerStep(step) && !isOrchestratorAgent(step.name)) {
-      return step;
-    }
-  }
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     if (isVisibleTickerStep(step)) return step;
@@ -213,8 +193,10 @@ export type ThinkingStatus = {
 };
 
 export type ThinkingStatusOptions = {
-  /** Dual-format assistant body; when present, `analysisStatus` drives the ticker. */
-  messageContent?: string | null;
+  /** Structured payload from message `contentJson`. */
+  messageContentJson?: Record<string, unknown> | null;
+  /** Branch-progress snapshot mapped for accordion / ticker rendering. */
+  accordionAnalysis?: Record<string, unknown> | null;
 };
 
 /** Header + preview for the early thinking strip from agent steps and/or message JSON. */
@@ -222,7 +204,8 @@ export function getThinkingStatusFromSteps(
   steps: AgentStep[] | undefined | null,
   options?: ThinkingStatusOptions,
 ): ThinkingStatus {
-  const analysis = analysisFromMessageContent(options?.messageContent);
+  const analysis: unknown =
+    options?.accordionAnalysis ?? options?.messageContentJson ?? null;
   const branchProgress = getCheckpointBranchProgress(analysis);
   if (branchProgress?.isInProgress) {
     return {

@@ -1,3 +1,5 @@
+> **Archived (May 2026):** Historical checkpoint docs. Current behavior: `gcp/agents/homecare/property_agent/checkpoint/` and [ORCHESTRATOR_V2_PLAN.md](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
+
 # Checkpoint Integration in AI Chat
 
 ## Overview
@@ -151,4 +153,3 @@ See [Checkpoint AI Chat Analysis](./CHECKPOINT_AI_CHAT_ANALYSIS.md) for complete
 - Uses shadcn/ui Sheet component for drawer (web equivalent of mobile drawer)
 - Respects existing chat patterns and conventions
 - All TODOs completed successfully
-

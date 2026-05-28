@@ -2,9 +2,9 @@
 
 from google.adk.tools.agent_tool import AgentTool
 
-from property_agent.agent_inputs import DocsInput
-from property_agent.sub_agents.coverage_agent.agent import coverage_agent
-from property_agent.sub_agents.user_docs_agent.agent import ask_user_docs_retreival
+from property_agent.shared.inputs import DocsInput
+from property_agent.agents.coverage_agent.agent import coverage_agent
+from property_agent.agents.user_docs_agent.agent import ask_user_docs_retreival
 
 
 def test_coverage_agent_tool_surface() -> None:

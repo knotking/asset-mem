@@ -104,34 +104,24 @@ The markdown rendering is integrated throughout the message flow:
 
 #### A. MessageContent Component
 
-The main `MessageContent` component handles both regular messages and structured data:
+The main `MessageContent` component resolves content via `@homeapp/common/lib/message-content-parts`:
 
 ```typescript
-const MessageContent = ({ content, isUser }) => {
-  const markdownStyles = useMarkdownStyles(isUser);
+import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 
-  // Extract structured data and markdown content
-  const { structuredData, plainContent } = useMemo(() => {
-    const { structuredData, markdownContent } = extractContentParts(content, isUser);
-    return { structuredData, plainContent: markdownContent };
-  }, [content, isUser]);
+const { markdown, contentJson } = resolveMessageContentParts(message);
 
-  // For structured responses with JSON
-  if (structuredData) {
-    return (
-      <View className="w-full min-w-full">
-        <StructuredResponse data={structuredData} />
-      </View>
-    );
-  }
+// Structured responses (when contentJson has visible sections)
+if (contentJson && structuredDataHasVisibleSections(contentJson)) {
+  return <StructuredResponse data={contentJson} />;
+}
 
-  // For regular messages
-  return (
-    <Markdown style={markdownStyles} rules={markdownRules}>
-      {content}
-    </Markdown>
-  );
-};
+// Markdown-only responses
+return (
+  <Markdown style={markdownStyles} rules={markdownRules}>
+    {markdown}
+  </Markdown>
+);
 ```
 
 #### B. StructuredResponse Sections
@@ -150,14 +140,13 @@ Markdown is used in accordion content sections within the `StructuredResponse` c
 </AccordionContent>
 ```
 
-#### C. Content Parsing
+#### C. Content Contract
 
-The `extractContentParts` helper function intelligently separates markdown content from JSON structured data:
+Structured rendering no longer depends on parsing JSON/code fences from message text.
 
-- Handles multiple formats: markdown code blocks with JSON, standalone JSON blocks, mixed content
-- Supports nested structures (`analysis.*`) and flat structures
-- Removes code block wrappers for clean rendering
-- Preserves markdown formatting in plain text sections
+- Proxy persists `contentMarkdown` and `contentJson` separately
+- UI reads these fields directly
+- Legacy fenced JSON parsing is removed from hot-path rendering
 
 ## Supported Markdown Features
 
@@ -318,18 +307,21 @@ Visit [this guide](https://example.com) for more details.`
 ### Structured Response with Markdown
 
 ```typescript
-const content = `\`\`\`json
-{
-  "analysis": {
-    "triageResult": {
-      "diagnosis": "Your **insurance policy** covers water damage up to *$50,000*. Here's what you need to know:\n\n- Deductible: $500\n- Coverage: Flood and pipe damage\n- Claim process: [File online](https://example.com)"
+<ChatMessage message={{
+  role: 'assistant',
+  content: '',
+  contentMarkdown: 'Here are the steps:\n\n1. **Stop the water source**\n2. *Remove standing water*',
+  contentJson: {
+    analysis: {
+      triageResult: {
+        diagnosis: 'Your **insurance policy** covers water damage up to *$50,000*.'
+      }
     }
   }
-}
-\`\`\``;
-
-<ChatMessage message={{ role: 'assistant', content }} />
+}} />
 ```
+
+When `contentJson` has visible accordion sections, structured UI is shown; otherwise markdown prose is rendered.
 
 ### YouTube Video Embedding
 
@@ -383,31 +375,22 @@ The markdown automatically adapts to:
 ## Integration in Message Flow
 
 ```
-Message arrives
+Message arrives (Firestore)
       ↓
-MessageContent component
+resolveMessageContentParts(message)
       ↓
-Check for JSON structure?
+contentJson has visible sections?
       ↓
   ┌───┴───┐
   ↓       ↓
  Yes      No
   ↓       ↓
-Parse   Render
-JSON    Markdown
-  ↓       ↓
-Plain   Display
-text?   styled
-  ↓       content
-Render
-Markdown
+StructuredResponse   Markdown
+(accordion)          (contentMarkdown)
   ↓
-Display structured
-accordion sections
-  ↓
-Each section
-renders content
-with Markdown
+Each section renders
+fields with Markdown
+where needed
 ```
 
 ## Performance Considerations
@@ -418,7 +401,7 @@ with Markdown
 2. **Native rendering**: No WebView overhead (except YouTube embeds which use native player)
 3. **Selective parsing**: Only parses markdown when needed
 4. **Lazy accordion**: Content only rendered when expanded
-5. **Content extraction memoization**: Structured data parsing is memoized with `useMemo`
+5. **Content extraction memoization**: `structuredDataHasVisibleSections` gates accordion rendering
 6. **Responsive YouTube player**: Uses layout measurements for optimal sizing
 
 ### Text Selection
@@ -630,5 +613,5 @@ const { colorScheme } = useColorScheme();
 - Links are automatically tappable and open in the system browser
 - YouTube videos are automatically embedded when standalone links are detected
 - The feature works identically across iOS and Android
-- Content parsing intelligently separates markdown from structured JSON data
+- Content is read from persisted `contentMarkdown` / `contentJson` fields (Orchestrator V2 contract)
 - Supports both nested (`analysis.*`) and flat structured data formats

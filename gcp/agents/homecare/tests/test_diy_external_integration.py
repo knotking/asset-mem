@@ -22,7 +22,8 @@ Override the YouTube integration test query (default remains the faucet example)
     DIY_YOUTUBE_TEST_QUERY='your query' RUN_EXTERNAL_DIY_SEARCH_TESTS=1 uv run pytest tests/test_diy_external_integration.py::test_youtube_search_real_fetch -v -s
 
 The product test also needs ``SERP_API_KEY`` (e.g. in ``.env``). Live YouTube
-tests need ``YOUTUBE_API_KEY`` (YouTube Data API v3). Shared helpers in
+tests prefer ``SERP_API_KEY`` (SerpAPI ``engine=youtube``) and fall back to
+``YOUTUBE_API_KEY`` (YouTube Data API v3). Shared helpers in
 ``tests/diy_live_helpers.py`` call ``load_dotenv()`` on import.
 """
 
@@ -38,17 +39,17 @@ from tests.diy_live_helpers import (
     print_youtube_results,
     requires_external_diy_search,
     requires_serpapi_key,
-    requires_youtube_api_key,
+    requires_youtube_search_key,
 )
 
 pytestmark = pytest.mark.integration_external
 
 
 @requires_external_diy_search
-@requires_youtube_api_key
+@requires_youtube_search_key
 def test_youtube_search_real_fetch() -> None:
-    """Hits YouTube Data API v3 (requires ``YOUTUBE_API_KEY``)."""
-    from property_agent.sub_agents.diy_agent.youtube import youtube_search
+    """Live YouTube search (SerpAPI preferred, YouTube Data API fallback)."""
+    from property_agent.agents.diy_agent.youtube import youtube_search
 
     query = os.environ.get("DIY_YOUTUBE_TEST_QUERY", "").strip() or (
         "Garage Significant paint chipping and scratching on the door surface near the handle. Extensive paint chipping on the door surface and edges. Multiple scratches on the door."
@@ -72,7 +73,7 @@ def test_youtube_search_real_fetch() -> None:
 @requires_serpapi_key
 def test_product_recommendations_real_fetch() -> None:
     """Hits SerpAPI Google Shopping via ``product_recommendations``."""
-    from property_agent.sub_agents.shopping_agent.agent import product_recommendations
+    from property_agent.agents.shopping_agent.agent import product_recommendations
 
     raw = product_recommendations("clogged bathroom sink drain", "DIY")
     assert isinstance(raw, str) and raw.strip()

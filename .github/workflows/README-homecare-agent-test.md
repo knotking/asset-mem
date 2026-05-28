@@ -18,7 +18,7 @@ make test   # pytest tests/ only — no live ADK evals, no Vertex calls
 
 Live integration tests (`integration_external`, `RUN_EXTERNAL_DIY_SEARCH_TESTS=1`) are **not** run.
 
-ADK evals (`make test-eval`) are **not** run in this workflow (use nightly/pre-deploy when added).
+ADK evalsets were removed; this workflow runs **`make test`** only (unit tests).
 
 ## Local equivalent
 
