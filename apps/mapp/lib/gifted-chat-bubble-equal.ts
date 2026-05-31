@@ -27,6 +27,15 @@ function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
   return true;
 }
 
+function agentLifecycleEqual(
+  a: { phase?: string; message?: string; ts?: string } | null | undefined,
+  b: { phase?: string; message?: string; ts?: string } | null | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+  return a.phase === b.phase && a.message === b.message && (a.ts ?? '') === (b.ts ?? '');
+}
+
 function effectiveCreatedAtMillis(
   customData: IMessage['customData'] | undefined,
   giftedCreatedAt: IMessage['createdAt'] | undefined
@@ -79,6 +88,9 @@ export function areGiftedChatBubblePropsEqual(
     return false;
   }
   if (!contentJsonEqual(prevFirestore?.contentJson, nextFirestore?.contentJson)) {
+    return false;
+  }
+  if (!agentLifecycleEqual(prevFirestore?.agentLifecycle, nextFirestore?.agentLifecycle)) {
     return false;
   }
 

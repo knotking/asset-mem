@@ -367,9 +367,12 @@ async def _run_single_optional_agent_async(
                 branch_agent, payload, tool_context
             )
         return _normalize_agent_result(result)
-    except Exception:
+    except Exception as exc:
         branch_failed = True
         logger.exception("checkpoint optional branch failed: %s", name)
+        if name == "service":
+            err = str(exc).strip().replace("\n", " ")[:400]
+            return f"SKIPPED:{err}" if err else "SKIPPED"
         return "SKIPPED"
     finally:
         branch_ms = int((time.monotonic() - branch_start) * 1000)

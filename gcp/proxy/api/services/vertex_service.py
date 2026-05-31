@@ -1,10 +1,11 @@
 import os
 import logging
 import re
+import time
 import vertexai
 from vertexai import agent_engines
 from vertexai.agent_engines import AgentEngine
-from typing import Optional, Dict, Any, List, Callable
+from typing import Optional, Dict, Any, List, Callable, Mapping
 import json
 from google.cloud import pubsub_v1
 from google.cloud import firestore
@@ -42,6 +43,14 @@ from common.observability.logging_context import (
     pubsub_payload_with_correlation,
 )
 from common.token import TokenQuotaExceeded, check_token_quota_or_raise
+from common.lifecycle.events import (
+    PHASE_PROXY_ENGINE_INVOKE,
+    PHASE_PROXY_REQUEST_ACCEPTED,
+    build_lifecycle_payload,
+    extract_lifecycle_payload,
+    is_lifecycle_stream_event,
+    log_lifecycle_payload,
+)
  
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -101,6 +110,69 @@ _CHECKPOINT_PROGRESS_AUTHORS = {
     "checkpoint_analysis_progress",
     "checkpoint_optional_agents_parallel_runner",
 }
+
+
+def _proxy_lifecycle_elapsed_ms(stream_started_at: float) -> int:
+    return int((time.monotonic() - stream_started_at) * 1000)
+
+
+def _agent_lifecycle_firestore_doc(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Persisted subset of lifecycle payload (UI strip only)."""
+    doc: dict[str, Any] = {
+        "phase": str(payload.get("phase") or ""),
+        "message": str(payload.get("message") or ""),
+    }
+    ts = payload.get("ts")
+    if isinstance(ts, str) and ts.strip():
+        doc["ts"] = ts.strip()
+    return doc
+
+
+def _persist_agent_lifecycle_to_message(
+    assistant_message_ref: Any,
+    payload: Mapping[str, Any],
+) -> None:
+    if assistant_message_ref is None:
+        return
+    log_lifecycle_payload(payload)
+    try:
+        assistant_message_ref.set(
+            {
+                "agentLifecycle": _agent_lifecycle_firestore_doc(payload),
+                "updatedAt": firestore.SERVER_TIMESTAMP,
+            },
+            merge=True,
+        )
+    except Exception as exc:
+        logger.warning("Failed to persist agentLifecycle: %s", exc, exc_info=True)
+
+
+def _persist_proxy_lifecycle(
+    *,
+    phase: str,
+    stream_started_at: float,
+    correlation_id: Optional[str],
+    session_id: Optional[str],
+    primary_agent: Optional[str],
+    checkpoint_ids: Optional[List[str]],
+    checkpoint_optional_agents: Optional[List[str]],
+    context_doc_uris: Optional[List[str]],
+    assistant_message_ref: Any,
+    agent_steps_by_name: Mapping[str, Any],
+) -> None:
+    if assistant_message_ref is None or agent_steps_by_name:
+        return
+    payload = build_lifecycle_payload(
+        phase,
+        elapsed_ms=_proxy_lifecycle_elapsed_ms(stream_started_at),
+        correlation_id=correlation_id,
+        session_id=session_id,
+        primary_agent=primary_agent,
+        checkpoint_ids=checkpoint_ids,
+        checkpoint_optional_agents=checkpoint_optional_agents,
+        context_doc_uris=context_doc_uris,
+    )
+    _persist_agent_lifecycle_to_message(assistant_message_ref, payload)
 
 # Authors that emit full checkpoint snapshots — replace, never append.
 _CHECKPOINT_CONTENT_REPLACE_AUTHORS = _CHECKPOINT_PROGRESS_AUTHORS | {
@@ -654,6 +726,8 @@ def _stream_event_kind(event: Dict[str, Any]) -> str:
             name = function_response.get("name") or "?"
             return f"function_response:{name}"
     author = event.get("author")
+    if isinstance(author, str) and author == "homeapp_lifecycle":
+        return "lifecycle"
     if isinstance(author, str) and author in _CHECKPOINT_PROGRESS_AUTHORS:
         return "checkpoint_progress"
     for part in parts:
@@ -929,6 +1003,17 @@ async def stream_agent_answers(
     if correlation_id:
         payload["correlation_id"] = correlation_id
 
+    stream_started_at = time.monotonic()
+    _lifecycle_kwargs = {
+        "stream_started_at": stream_started_at,
+        "correlation_id": correlation_id,
+        "session_id": session_id,
+        "primary_agent": primary_agent,
+        "checkpoint_ids": checkpoint_ids,
+        "checkpoint_optional_agents": checkpoint_optional_agents,
+        "context_doc_uris": context_doc_uris,
+    }
+
     message = json.dumps(payload)
     logger.info(
         "Reasoning Engine stream_query start session_id=%s correlation_id=%s message_bytes=%s %s",
@@ -967,6 +1052,8 @@ async def stream_agent_answers(
         len(checkpoint_optional_agents),
     )
 
+    assistant_message_id = (request.assistant_message_id or "").strip() or None
+
     if user_id and session_id:
         try:
             db_client = firestore.Client()
@@ -980,23 +1067,34 @@ async def stream_agent_answers(
                     .collection("messages")
                 )
 
-                # Order-by createdAt only (no role filter) avoids a composite index on
-                # (role, createdAt). Filter assistant + empty content in code.
-                recent_messages = (
-                    messages_ref.order_by("createdAt", direction=firestore.Query.DESCENDING)
-                    .limit(15)
-                    .stream()
-                )
-
                 selected_doc = None
-                for msg_doc in recent_messages:
-                    data = msg_doc.to_dict() or {}
-                    if data.get("role") != "assistant":
-                        continue
-                    if not data.get("content"):
-                        selected_doc = msg_doc
-                        break
+                if assistant_message_id:
+                    client_doc = messages_ref.document(assistant_message_id).get()
+                    if client_doc.exists:
+                        selected_doc = client_doc
+                    else:
+                        logger.warning(
+                            "assistant_message_id not found; falling back to recent empty assistant user_id=%s chat_id=%s message_id=%s",
+                            user_id,
+                            chat_id,
+                            assistant_message_id,
+                        )
 
+                if selected_doc is None:
+                    # Order-by createdAt only (no role filter) avoids a composite index on
+                    # (role, createdAt). Filter assistant + empty content in code.
+                    recent_messages = (
+                        messages_ref.order_by("createdAt", direction=firestore.Query.DESCENDING)
+                        .limit(15)
+                        .stream()
+                    )
+                    for msg_doc in recent_messages:
+                        data = msg_doc.to_dict() or {}
+                        if data.get("role") != "assistant":
+                            continue
+                        if not data.get("content"):
+                            selected_doc = msg_doc
+                            break
                 if selected_doc:
                     assistant_message_ref = selected_doc.reference
                     existing_data = selected_doc.to_dict() or {}
@@ -1071,6 +1169,13 @@ async def stream_agent_answers(
             logger.warning("Failed to initialize Firestore stream persistence: %s", e, exc_info=True)
             db_client = None
 
+    _persist_proxy_lifecycle(
+        phase=PHASE_PROXY_REQUEST_ACCEPTED,
+        assistant_message_ref=assistant_message_ref,
+        agent_steps_by_name=agent_steps_by_name,
+        **_lifecycle_kwargs,
+    )
+
     def persist_chat_message_state(*, finalize: bool = False) -> None:
         nonlocal message_revision, persist_applied_count, ttf_structured_patch_recorded
         if not assistant_message_ref:
@@ -1109,6 +1214,8 @@ async def stream_agent_answers(
                 updated_at=firestore.SERVER_TIMESTAMP,
                 accumulated_state_delta=accum,
             )
+            if steps_list or finalize:
+                patch_payload["agentLifecycle"] = firestore.DELETE_FIELD
             if content_json_truncated:
                 logger.warning(
                     "contentJson truncated to size budget user_id=%s chat_id=%s message_id=%s revision=%s max_bytes=%s",
@@ -1211,9 +1318,25 @@ async def stream_agent_answers(
     persist_throttle = StreamPersistThrottle(interval_ms=200)
 
     try:
+        _persist_proxy_lifecycle(
+            phase=PHASE_PROXY_ENGINE_INVOKE,
+            assistant_message_ref=assistant_message_ref,
+            agent_steps_by_name=agent_steps_by_name,
+            **_lifecycle_kwargs,
+        )
         for event in reasoning_engine_resource.stream_query(
             user_id=user_id, session_id=session_id, message=message
         ):
+            if is_lifecycle_stream_event(event):
+                lifecycle_payload = extract_lifecycle_payload(event)
+                if lifecycle_payload and not agent_steps_by_name:
+                    _persist_agent_lifecycle_to_message(
+                        assistant_message_ref,
+                        lifecycle_payload,
+                    )
+                stream_event_count += 1
+                continue
+
             inv = event.get("invocation_id")
             if isinstance(inv, str) and inv.strip():
                 stream_invocation_id = inv.strip()

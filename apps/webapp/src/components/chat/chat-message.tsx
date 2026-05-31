@@ -32,6 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
+import { thinkingStatusFromLifecycle } from "@/lib/agent-lifecycle";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import {
   assistantMessageHasDisplayableContent,
@@ -691,7 +692,16 @@ const StructuredResponse = ({
         (diy.recommendedProducts?.products && diy.recommendedProducts.products.length > 0)
     ));
     const hasProviders = allProviders.length > 0;
-    const hasService = !needsClarification && hasProviders;
+    const serviceSearchFailedFlag =
+        String((service as { searchStatus?: string })?.searchStatus ?? "")
+            .trim()
+            .toLowerCase() === "failed";
+    const serviceFailureCopy =
+        typeof (service as { searchError?: string })?.searchError === "string" &&
+        (service as { searchError?: string }).searchError!.trim()
+            ? (service as { searchError: string }).searchError.trim()
+            : "Service provider search did not complete. Please try again.";
+    const hasService = !needsClarification && (hasProviders || serviceSearchFailedFlag);
     const hasCostEstimates = !needsClarification && !!(cost && cost.costEstimates);
     
     parseLog.debug('serviceRecommendations', {
@@ -1232,6 +1242,10 @@ const StructuredResponse = ({
                                         <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
                                     ))}
                                 </div>
+                            ) : serviceSearchFailedFlag ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {serviceFailureCopy}
+                                </p>
                             ) : hasProviders ? (
                                 <p className="text-sm text-muted-foreground italic">
                                     Service providers were found but need additional processing to display full details.
@@ -1597,19 +1611,30 @@ const ChatMessageComponent = ({
 
   /** Text status strip while streaming (tools + gap before first displayable content). Matches mapp. */
   const hasAgentSteps = (message.agentSteps?.length ?? 0) > 0;
+  const lifecycleStatus = useMemo(
+    () => thinkingStatusFromLifecycle(message.agentLifecycle),
+    [message.agentLifecycle],
+  );
+  const showLifecycleStrip =
+    !isUser && !hasDisplayableContent && !!lifecycleStatus && !hasAgentSteps;
   const showThinkingStrip =
     !isUser && !hasDisplayableContent && hasAgentSteps;
+  const showStatusStrip = showLifecycleStrip || showThinkingStrip;
   const thinkingStatus = useDebouncedThinkingStatus(
     showThinkingStrip ? message.agentSteps : null,
     {
       messageContentJson,
     },
   );
-  const thinkingHeader = thinkingStatus.header;
-  const thinkingPreview = thinkingStatus.preview;
-  /** Dots only before proxy emits the first agentSteps row (resolve / first tool call). */
+  const thinkingHeader =
+    (showLifecycleStrip ? lifecycleStatus?.header : null) ??
+    thinkingStatus.header;
+  const thinkingPreview =
+    (showLifecycleStrip ? lifecycleStatus?.preview : null) ??
+    thinkingStatus.preview;
+  /** Dots only before lifecycle or first agentSteps row. */
   const showLoadingIndicator =
-    isLoading && !isUser && !hasDisplayableContent && !showThinkingStrip;
+    isLoading && !isUser && !hasDisplayableContent && !showStatusStrip;
   const fileData = message.file;
 
   const handleCopyClick = () => {
@@ -1781,9 +1806,9 @@ const ChatMessageComponent = ({
               {
                 "rounded-lg": isUser,
                 "bg-muted border":
-                  !isUser && !showThinkingStrip && !showLoadingIndicator && !effectiveStructuredData,
+                  !isUser && !showStatusStrip && !showLoadingIndicator && !effectiveStructuredData,
                 "bg-transparent border-0 shadow-none":
-                  showThinkingStrip ||
+                  showStatusStrip ||
                   showLoadingIndicator ||
                   effectiveStructuredData
               },
@@ -1802,7 +1827,7 @@ const ChatMessageComponent = ({
                     <span className="sr-only">Copy message</span>
                 </Button>
             )}
-            {showThinkingStrip ? (
+            {showStatusStrip ? (
               <AssistantProgressStrip
                 header={thinkingHeader}
                 detail={thinkingPreview}

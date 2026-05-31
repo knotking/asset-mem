@@ -159,3 +159,21 @@ def test_build_fallback_analysis_normalizes_service_branch() -> None:
     local = analysis["serviceResults"]["localPros"]
     assert local["serpAPIResults"][0]["name"] == "Bay Door Co"
     assert local["googleSearchResults"][0]["name"] == "Bay Door Co"
+
+
+def test_build_fallback_analysis_service_skipped_persists_failure() -> None:
+    analysis = build_fallback_analysis(
+        parallel_blob={
+            "checkpoint_parallel_service_result": (
+                "SKIPPED:SerpAPI Maps error: Your account has run out of searches"
+            ),
+        },
+        markdown_source="",
+        checkpoint_results="Issues: garage door paint chipping",
+        property_address="1982 Helena Way, Brentwood, CA",
+        retrieval_search_query="garage door paint chipping repair",
+    )
+    service = analysis["serviceResults"]
+    assert service["searchStatus"] == "failed"
+    assert "temporarily unavailable" in service["searchError"].lower()
+    assert service["localPros"]["serpAPIResults"] == []

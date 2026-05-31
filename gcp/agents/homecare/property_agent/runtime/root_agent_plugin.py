@@ -40,6 +40,11 @@ from property_agent.routing.resolve_turn import (
     resolved_turn_from_state,
 )
 from property_agent.checkpoint.session_input import sync_checkpoint_tool_args_to_state
+from property_agent.observability.lifecycle_events import (
+    PHASE_ENGINE_BEFORE_MODEL,
+    emit_lifecycle_from_callback,
+)
+from property_agent.observability.turn_request_timing import mark
 
 load_dotenv()
 install_auth_uid_logging(level=logging.INFO)
@@ -88,6 +93,12 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
             getattr(callback_context, "agent_name", None),
             getattr(callback_context, "invocation_id", None),
         )
+        mark("before_model_start")
+        emit_lifecycle_from_callback(
+            callback_context,
+            phase=PHASE_ENGINE_BEFORE_MODEL,
+            state_key="_lifecycle_emitted_engine.before_model",
+        )
         try:
             return self.plugin.prepare_before_model_turn(
                 callback_context, llm_request=llm_request
@@ -98,6 +109,8 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                 callback_context,
                 llm_request=llm_request,
             )
+        finally:
+            mark("before_model_end")
 
     def after_model_callback(
         self, callback_context: CallbackContext, llm_response: LlmResponse

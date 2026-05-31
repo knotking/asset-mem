@@ -3,11 +3,14 @@ import { View, Animated } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Sparkles } from 'lucide-react-native';
 import type { AgentStep } from '@homeapp/common/types';
+import type { ThinkingStatus } from '@homeapp/common/lib/agent-display';
 import { useDebouncedThinkingStatus } from '@homeapp/common/hooks/use-debounced-thinking-status';
 import { Text } from '@/components/ui/text';
 
 type Props = {
   steps: AgentStep[];
+  /** Early-turn status from persisted `agentLifecycle` (before agentSteps). */
+  lifecycleStatus?: ThinkingStatus | null;
   /** Structured payload from message `contentJson`. */
   messageContentJson?: Record<string, unknown> | null;
   accordionAnalysis?: Record<string, unknown> | null;
@@ -83,15 +86,17 @@ function AnimatedThinkingText({ text }: { text: string }) {
 
 export function AgentStatus({
   steps,
+  lifecycleStatus,
   messageContentJson,
   accordionAnalysis,
 }: Props) {
-  const { header: headerText, preview: headerPreview } = useDebouncedThinkingStatus(
-    steps,
+  const fromSteps = useDebouncedThinkingStatus(
+    steps?.length ? steps : null,
     { messageContentJson, accordionAnalysis },
   );
+  const { header: headerText, preview: headerPreview } = lifecycleStatus ?? fromSteps;
 
-  if (!steps || steps.length === 0) return null;
+  if ((!steps || steps.length === 0) && !lifecycleStatus) return null;
 
   return (
     <View className="self-start max-w-full flex-row items-start gap-2 rounded-lg border border-border bg-background/50 px-4 py-3 shadow-sm">

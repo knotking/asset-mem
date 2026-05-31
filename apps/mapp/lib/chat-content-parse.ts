@@ -1,4 +1,5 @@
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { serviceSearchFailed } from '@homeapp/common/lib/service-search-status';
 import type { Message, StructuredResponseData } from '@homeapp/common/types';
 
 export type MessageDisplayParts = {
@@ -101,6 +102,7 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
       serviceRecord.nearbyProviders,
     ];
     if (providerArrays.some((arr) => Array.isArray(arr) && arr.length > 0)) return true;
+    if (serviceSearchFailed(serviceRecord)) return true;
   }
 
   const costEstimation = rootRecord.costEstimationResults || analysisRecord.costEstimationResults;

@@ -391,6 +391,7 @@ export default function PropertyDetailsScreen() {
             primaryAgent,
           }
         );
+        const assistantMessageId = assistantMessageRef.id;
 
         const contextDocURIs = [
           ...selectedDocuments.map((doc) => doc.gsURI).filter((uri): uri is string => !!uri),
@@ -425,6 +426,7 @@ export default function PropertyDetailsScreen() {
           searchLocation,
           signal,
           firebaseChatId: selectedSessionId,
+          assistantMessageId,
           onError: (error) => {
             updateDoc(assistantMessageRef, {
               content: `Error: ${error.message}`,

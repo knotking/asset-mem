@@ -126,14 +126,17 @@ function PropertyChatTab({
 
   const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
 
-  const renderBubble = React.useCallback((props: BubbleProps<IMessage>) => {
-    return (
-      <GiftedChatBubble
-        {...props}
-        sessionId={sessionIdRef.current ?? undefined}
-      />
-    );
-  }, []);
+  const renderBubble = React.useCallback(
+    (props: BubbleProps<IMessage>) => {
+      return (
+        <GiftedChatBubble
+          {...props}
+          sessionId={sessionIdRef.current ?? undefined}
+        />
+      );
+    },
+    [],
+  );
 
   const renderChatEmpty = React.useCallback(
     () => (

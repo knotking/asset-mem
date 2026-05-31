@@ -74,6 +74,8 @@ Imports such as `common.token` require the `gcp` directory on `PYTHONPATH`, or a
 
 **Checkpoint stream debugging (local):** Default log level is **`INFO`** (`PROXY_LOG_LEVEL=INFO`). Each Reasoning Engine chunk logs **`stream_chunk`** with author/kind/`analysis_status`; Firestore writes log **`chat_persist`**; completion logs **`stream_chunks`**, **`progress_chunks`**, **`persist_writes`**, and **`revision=start->end`**. Set **`PROXY_LOG_LEVEL=DEBUG`** for full third-party noise.
 
+**Lifecycle status:** `/firebase-agent-stream` persists `agentLifecycle` on the assistant message doc at proxy accept, before Engine `stream_query`, and when Engine emits `author=homeapp_lifecycle` events. Cleared when `agentSteps` are written or the stream finalizes. Clients pass `assistant_message_id` in the request body. Logs: `HOMEAPP_LIFECYCLE phase=…`. See `common/lifecycle/events.py`.
+
 ### LLM token usage (Firestore)
 
 Each completed `stream_query` against the Reasoning Engine increments counters on `llm_token_usage/{userId}`. Token fields come from `usageMetadata` / `usage_metadata` on stream events when present.

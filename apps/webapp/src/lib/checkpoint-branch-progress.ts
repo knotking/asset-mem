@@ -64,6 +64,23 @@ function branchSectionReady(
       typeof c.insuranceInfo === "string" ? c.insuranceInfo.trim() : "";
     return Boolean(warranty || insurance);
   }
+  if (branch === "service") {
+    const s = section as Record<string, unknown>;
+    if (
+      String(s.searchStatus ?? "")
+        .trim()
+        .toLowerCase() === "failed"
+    ) {
+      return true;
+    }
+    const localPros = s.localPros as Record<string, unknown> | undefined;
+    const providerArrays = [
+      localPros?.yelpAPIResults,
+      localPros?.serpAPIResults,
+      localPros?.googleSearchResults,
+    ];
+    return providerArrays.some((arr) => Array.isArray(arr) && arr.length > 0);
+  }
   return Object.keys(section as object).length > 0;
 }
 

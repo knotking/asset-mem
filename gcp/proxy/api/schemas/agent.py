@@ -45,6 +45,10 @@ class AgentRequest(BaseModel):
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval)")
     primary_agent: Optional[Literal["checkpoint", "docs"]] = Field(default=None, description="Primary agent selection for explicit routing: 'checkpoint' for checkpoint queries, 'docs' for document queries")
     checkpoint_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in checkpoint analysis")
+    assistant_message_id: Optional[str] = Field(
+        default=None,
+        description="Firestore assistant message doc id (clients create before streaming)",
+    )
     # Deprecated: use search_location; kept for backward compatibility during client rollout
     location_type: Optional[Literal["address", "location"]] = Field(
         default=None,

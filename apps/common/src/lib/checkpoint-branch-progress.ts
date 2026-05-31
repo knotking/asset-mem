@@ -2,6 +2,7 @@ import {
   CHECKPOINT_OPTIONAL_AGENTS,
   type CheckpointOptionalAgent,
 } from "../types";
+import { serviceSearchFailed } from "./service-search-status";
 
 export type CheckpointBranchStatus = "pending" | "running" | "completed";
 
@@ -55,6 +56,17 @@ function branchSectionReady(
     const insurance =
       typeof c.insuranceInfo === "string" ? c.insuranceInfo.trim() : "";
     return Boolean(warranty || insurance);
+  }
+  if (branch === "service") {
+    const s = section as Record<string, unknown>;
+    if (serviceSearchFailed(s)) return true;
+    const localPros = s.localPros as Record<string, unknown> | undefined;
+    const providerArrays = [
+      localPros?.yelpAPIResults,
+      localPros?.serpAPIResults,
+      localPros?.googleSearchResults,
+    ];
+    return providerArrays.some((arr) => Array.isArray(arr) && arr.length > 0);
   }
   return Object.keys(section as object).length > 0;
 }

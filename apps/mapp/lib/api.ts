@@ -13,6 +13,51 @@ import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
 const log = createLogger('agent');
 
+const AGENT_STATUS_LINE_REGEX = /\*\*.*?Agent\*\* (\w+): (.+)/;
+
+function applyAgentStatusLine(
+  line: string,
+  agentSteps: AgentStep[],
+  onAgentStep?: (step: AgentStep) => void
+): boolean {
+  const match = line.match(AGENT_STATUS_LINE_REGEX);
+  if (!match) {
+    return false;
+  }
+  const status = match[1].toLowerCase() as 'executing' | 'completed' | 'failed';
+  const name = match[2];
+  const existingStepIndex = agentSteps.findIndex((step) => step.name === name);
+  if (existingStepIndex > -1) {
+    agentSteps[existingStepIndex].status = status;
+  } else {
+    agentSteps.push({ name, status });
+  }
+  onAgentStep?.({ name, status });
+  return true;
+}
+
+/** Process one SSE line. */
+function processAgentSseLine(
+  line: string,
+  agentSteps: AgentStep[],
+  handlers: {
+    onAgentStep?: (step: AgentStep) => void;
+    onContent?: (text: string) => void;
+  }
+): void {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return;
+  }
+  if (trimmed.startsWith('STREAM_ERROR:')) {
+    throw new Error(trimmed.substring('STREAM_ERROR:'.length));
+  }
+  if (applyAgentStatusLine(trimmed, agentSteps, handlers.onAgentStep)) {
+    return;
+  }
+  handlers.onContent?.(line);
+}
+
 // Get environment-specific URLs from EAS build configuration
 const extra = Constants.expoConfig?.extra || {};
 
@@ -122,6 +167,8 @@ export interface StreamAgentResponseParams {
   signal?: AbortSignal;
   /** Firebase chat doc id (for correlating with proxy persistence logs). */
   firebaseChatId?: string;
+  /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
+  assistantMessageId?: string;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -142,6 +189,7 @@ export async function streamAgentResponse({
   locationData,
   signal,
   firebaseChatId,
+  assistantMessageId,
   onChunk,
   onAgentStep,
   onComplete,
@@ -200,6 +248,10 @@ export async function streamAgentResponse({
       requestBody.search_location = resolvedSearchLocation;
     }
 
+    if (assistantMessageId) {
+      requestBody.assistant_message_id = assistantMessageId;
+    }
+
     const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
       correlationId,
@@ -228,33 +280,15 @@ export async function streamAgentResponse({
         throw new Error(fullText.substring('STREAM_ERROR:'.length));
       }
 
-      // Parse agent steps and content from full response
-      const agentStatusRegex = /\*\*.*?Agent\*\* (\w+): (.+)/g;
-      let finalAssistantResponse = fullText;
       const agentSteps: AgentStep[] = [];
-
-      // Extract agent steps
-      let match;
-      while ((match = agentStatusRegex.exec(fullText)) !== null) {
-        const status = match[1].toLowerCase() as
-          | 'executing'
-          | 'completed'
-          | 'failed';
-        const name = match[2];
-
-        const existingStepIndex = agentSteps.findIndex((step) => step.name === name);
-        if (existingStepIndex > -1) {
-          agentSteps[existingStepIndex].status = status;
-        } else {
-          agentSteps.push({ name, status });
-        }
-
-        if (onAgentStep) {
-          onAgentStep({ name, status });
-        }
-
-        // Remove agent step markers from final content
-        finalAssistantResponse = finalAssistantResponse.replace(match[0], '');
+      let finalAssistantResponse = '';
+      for (const line of fullText.split('\n')) {
+        processAgentSseLine(line, agentSteps, {
+          onAgentStep,
+          onContent: (text) => {
+            finalAssistantResponse += text;
+          },
+        });
       }
 
       // Send the full response as one chunk
@@ -284,56 +318,35 @@ export async function streamAgentResponse({
     const decoder = new TextDecoder();
     let finalAssistantResponse = '';
     let agentSteps: AgentStep[] = [];
-    const agentStatusRegex = /\*\*.*?Agent\*\* (\w+): (.+)/;
+    let sseLineBuffer = '';
     let chunkCount = 0;
     let byteCount = 0;
+
+    const handlers = {
+      onAgentStep,
+      onContent: (text: string) => {
+        finalAssistantResponse += text;
+        onChunk?.(text);
+      },
+    };
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const rawChunk = decoder.decode(value, { stream: true });
+      sseLineBuffer += decoder.decode(value, { stream: true });
       byteCount += value.byteLength;
       chunkCount += 1;
 
-      // Check for error prefix
-      if (rawChunk.startsWith('STREAM_ERROR:')) {
-        throw new Error(rawChunk.substring('STREAM_ERROR:'.length));
+      const lines = sseLineBuffer.split('\n');
+      sseLineBuffer = lines.pop() ?? '';
+      for (const line of lines) {
+        processAgentSseLine(line, agentSteps, handlers);
       }
+    }
 
-      // Skip empty chunks (just newlines or whitespace)
-      if (!rawChunk || rawChunk.trim().length === 0) {
-        continue;
-      }
-
-      // Parse agent status updates (e.g., "**Agent** Executing: SearchTool")
-      const match = rawChunk.match(agentStatusRegex);
-      if (match) {
-        const status = match[1].toLowerCase() as
-          | 'executing'
-          | 'completed'
-          | 'failed';
-        const name = match[2];
-
-        // Find existing step or create new one
-        const existingStepIndex = agentSteps.findIndex((step) => step.name === name);
-        if (existingStepIndex > -1) {
-          agentSteps[existingStepIndex].status = status;
-        } else {
-          agentSteps.push({ name, status });
-        }
-
-        // Notify callback
-        if (onAgentStep) {
-          onAgentStep({ name, status });
-        }
-      } else {
-        // Regular content chunks
-        finalAssistantResponse += rawChunk;
-        if (onChunk) {
-          onChunk(rawChunk);
-        }
-      }
+    if (sseLineBuffer.length > 0) {
+      processAgentSseLine(sseLineBuffer, agentSteps, handlers);
     }
 
     // Complete

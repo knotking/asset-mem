@@ -263,6 +263,7 @@ uv run python deployment/deploy.py update prod
 - Uploads to staging bucket
 - Creates or updates Reasoning Engine
 - Outputs Reasoning Engine ID
+- Agent Engine scaling uses Vertex defaults (deploy script does not set `min_instances` / `max_instances`)
 
 #### Grant Permissions (First-Time Setup)
 ```bash

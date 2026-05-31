@@ -92,6 +92,9 @@ export type StructuredResponseData = {
     };
     serviceResults?: {
       costEstimates?: string;
+      /** When provider search fails (e.g. SerpAPI quota), backend sets these; UI shows Service accordion with `searchError`. */
+      searchStatus?: 'failed' | 'ok';
+      searchError?: string;
       localPros?: {
         serpAPIResults?: ServiceProvider[];
         googleSearchResults?: ServiceProvider[];

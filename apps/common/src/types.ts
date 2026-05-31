@@ -62,6 +62,13 @@ export type FileAttachment = {
   thumbnailUri?: string; // For video thumbnails
 };
 
+/** Persisted lifecycle strip fields (see gcp/proxy/api/services/vertex_service.py). */
+export type AgentLifecycle = {
+  phase: string;
+  message: string;
+  ts?: string;
+};
+
 export type Message = {
   id: string;
   role: "user" | "assistant";
@@ -81,6 +88,8 @@ export type Message = {
     height?: number;
   };
   agentSteps?: AgentStep[];
+  /** Early-turn status from proxy lifecycle persist (cleared when agentSteps arrive). */
+  agentLifecycle?: AgentLifecycle | null;
   primaryAgent?: PrimaryAgent;
 };
 
@@ -211,9 +220,13 @@ export type StructuredResponseData = {
   };
   serviceResults?: {
     costEstimates?: string;
+    /** Present when provider search failed (e.g. SerpAPI quota). UI shows searchError. */
+    searchStatus?: "failed" | "ok";
+    searchError?: string;
     localPros?: {
       serpAPIResults?: ServiceProvider[];
       yelpAPIResults?: ServiceProvider[];
+      googleSearchResults?: ServiceProvider[];
     };
   };
 

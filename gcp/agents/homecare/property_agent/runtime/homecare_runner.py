@@ -17,6 +17,21 @@ from property_agent.checkpoint.progress_stream import (
     init_checkpoint_progress_queue,
     release_checkpoint_progress_queue,
 )
+from property_agent.observability.lifecycle_events import (
+    PHASE_ENGINE_RUNNER_EXEC,
+    build_lifecycle_adk_event,
+    enqueue_lifecycle_event,
+    lifecycle_context_from_invocation,
+    log_lifecycle_payload,
+)
+from property_agent.observability.turn_request_timing import (
+    begin_turn_for_adk_web,
+    current_turn_timing,
+    emit_summary,
+    increment_event_count,
+    mark,
+    maybe_mark_first_stream_event,
+)
 
 if TYPE_CHECKING:
     from google.adk.agents.invocation_context import InvocationContext
@@ -107,30 +122,72 @@ class HomecareRunner(Runner):
         execute_fn: Callable[[InvocationContext], AsyncGenerator[Event, None]],
         is_live_call: bool = False,
     ) -> AsyncGenerator[Event, None]:
-        if not checkpoint_progress_streaming_enabled():
-            logger.info(
-                "checkpoint progress streaming disabled (HOMEAPP_CHECKPOINT_PROGRESS_RUNNER); "
-                "using stock ADK runner"
+        if current_turn_timing() is None:
+            begin_turn_for_adk_web(
+                session_id=getattr(session, "id", None),
+                user_id=getattr(session, "user_id", None),
+                invocation_id=getattr(invocation_context, "invocation_id", None),
             )
-            async with Aclosing(
-                super()._exec_with_plugin(
-                    invocation_context,
-                    session,
-                    execute_fn,
-                    is_live_call=is_live_call,
-                )
-            ) as agen:
-                async for event in agen:
-                    yield event
-            return
+        mark("runner_exec_start")
+        first_event = True
+        event_count = 0
+        progress_enabled = checkpoint_progress_streaming_enabled()
+        inv_id = str(getattr(invocation_context, "invocation_id", "") or "")
+        ctx = lifecycle_context_from_invocation(invocation_context)
+        if progress_enabled:
+            enqueue_lifecycle_event(
+                invocation_context,
+                phase=PHASE_ENGINE_RUNNER_EXEC,
+                **ctx,
+            )
+        else:
+            runner_lifecycle = build_lifecycle_adk_event(
+                phase=PHASE_ENGINE_RUNNER_EXEC,
+                invocation_id=inv_id,
+                branch=getattr(invocation_context, "branch", None),
+                **ctx,
+            )
+            delta = getattr(getattr(runner_lifecycle, "actions", None), "state_delta", None) or {}
+            payload = delta.get("homeappLifecycle") if isinstance(delta, dict) else None
+            if isinstance(payload, dict):
+                log_lifecycle_payload(payload)
+            yield runner_lifecycle
+            event_count += 1
 
-        progress_queue = init_checkpoint_progress_queue(invocation_context)
-        logger.info(
-            "checkpoint progress streaming enabled invocation_id=%s",
-            getattr(invocation_context, "invocation_id", "") or "",
-        )
+        def _record_event(event: Event) -> Event:
+            nonlocal first_event, event_count
+            if first_event:
+                mark("runner_first_event")
+                first_event = False
+            maybe_mark_first_stream_event(event)
+            increment_event_count()
+            event_count += 1
+            return event
 
         try:
+            if not progress_enabled:
+                logger.info(
+                    "checkpoint progress streaming disabled (HOMEAPP_CHECKPOINT_PROGRESS_RUNNER); "
+                    "using stock ADK runner"
+                )
+                async with Aclosing(
+                    super()._exec_with_plugin(
+                        invocation_context,
+                        session,
+                        execute_fn,
+                        is_live_call=is_live_call,
+                    )
+                ) as agen:
+                    async for event in agen:
+                        yield _record_event(event)
+                return
+
+            progress_queue = init_checkpoint_progress_queue(invocation_context)
+            logger.info(
+                "checkpoint progress streaming enabled invocation_id=%s",
+                getattr(invocation_context, "invocation_id", "") or "",
+            )
+
             async def multiplex_execute(
                 ctx: InvocationContext,
             ) -> AsyncGenerator[Event, None]:
@@ -149,9 +206,15 @@ class HomecareRunner(Runner):
                 )
             ) as agen:
                 async for event in agen:
-                    yield event
+                    yield _record_event(event)
         finally:
-            release_checkpoint_progress_queue(invocation_context)
+            if progress_enabled:
+                release_checkpoint_progress_queue(invocation_context)
+            emit_summary(
+                "adk_web_complete",
+                event_count=event_count,
+                entrypoint="adk_web",
+            )
 
 
 def create_homecare_runner(
