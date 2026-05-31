@@ -13,6 +13,8 @@ import {
 import type { AgentStep, LocationData, PrimaryAgent, SearchLocationInput } from '@/lib/types';
 import { buildAgentSearchLocation } from '@/lib/search-location';
 
+const log = createLogger('agent');
+
 export async function createAgentSession(
   userId: string
 ): Promise<{ agentSessionId?: string; error?: string }> {
