@@ -161,6 +161,20 @@ def test_build_fallback_analysis_normalizes_service_branch() -> None:
     assert local["googleSearchResults"][0]["name"] == "Bay Door Co"
 
 
+def test_build_fallback_analysis_bare_skipped_omits_service_results() -> None:
+    analysis = build_fallback_analysis(
+        parallel_blob={
+            "checkpoint_parallel_service_result": "SKIPPED",
+            "checkpoint_parallel_diy_result": '{"steps": []}',
+        },
+        markdown_source="",
+        checkpoint_results="Issues: garage door paint chipping",
+        property_address="1982 Helena Way, Brentwood, CA",
+        retrieval_search_query="garage door paint chipping repair",
+    )
+    assert "serviceResults" not in analysis
+
+
 def test_build_fallback_analysis_service_skipped_persists_failure() -> None:
     analysis = build_fallback_analysis(
         parallel_blob={

@@ -461,10 +461,10 @@ def _failed_service_results(raw_error: str = "") -> Dict[str, Any]:
 
 def _merge_service_into(analysis: Dict[str, Any], raw: str) -> None:
     text = (raw or "").strip()
-    if not text:
+    if not text or text == "SKIPPED":
         return
-    if text == "SKIPPED" or text.startswith("SKIPPED:"):
-        reason = text[len("SKIPPED:") :].strip() if text.startswith("SKIPPED:") else ""
+    if text.startswith("SKIPPED:"):
+        reason = text[len("SKIPPED:") :].strip()
         analysis["serviceResults"] = _failed_service_results(reason)
         return
     extracted = _extract_service_results_from_branch(text)
