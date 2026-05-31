@@ -8,6 +8,7 @@ on:
     paths:
       - "gcp/proxy/api/**"
       - "gcp/common/**"
+      - "gcp/agent_framework/**"
       - ".github/workflows/deploy-homecare-agent-proxy.yaml"
   workflow_dispatch:
     inputs:
@@ -142,10 +143,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # Stage gcp/common next to the app (gitignored). .gcloudignore forces ./common into the
-      # source upload; otherwise gcloud excludes it and the image misses `import common`.
+      # Stage gcp/common and slim agent_framework contracts (gitignored). .gcloudignore
+      # forces these into the upload; proxy only needs message_patch_v1 + message_patch_types.
       - name: Stage gcp/common for Docker build
         run: rm -rf gcp/proxy/api/common && cp -R gcp/common gcp/proxy/api/common
+
+      - name: Stage agent_framework contracts for Docker build
+        run: bash gcp/proxy/scripts/stage-agent-framework-contracts.sh
 
       # STRIPE_B2C_PRICE_TOKEN_CAPS_JSON is base64 in env_vars (deploy-cloudrun uses comma delimiters).
       - name: Prepare STRIPE_B2C_PRICE_TOKEN_CAPS_JSON for deploy

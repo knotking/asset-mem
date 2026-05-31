@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from agent_framework.contracts.v1 import MessagePatchInputV1
+from agent_framework.contracts.message_patch_types import (
+    MESSAGE_PATCH_SCHEMA_VERSION,
+    MessagePatchInputV1,
+)
 
 # Reasoning Engine state_delta keys merged into assistant message documents.
 STATE_DELTA_MESSAGE_PATCH_KEYS: tuple[str, ...] = (
@@ -104,7 +107,7 @@ def firestore_fields_from_message_patch_input(
         "updatedAt": updated_at,
         "contentMarkdown": patch.content_markdown,
         "contentJson": patch.content_json,
-        "contentSchemaVersion": 2,
+        "contentSchemaVersion": MESSAGE_PATCH_SCHEMA_VERSION,
     }
     if patch.client_routing_hint:
         payload["primaryAgent"] = patch.client_routing_hint
