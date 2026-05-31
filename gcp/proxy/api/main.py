@@ -15,15 +15,18 @@
 import sys
 from pathlib import Path
 
-# Shared code lives in `gcp/common` (import as `common.*`).
+# Shared code: `gcp/common` (import `common.*`) and `gcp/agent_framework` (import `agent_framework.*`).
 # - Local dev: main.py is gcp/proxy/api/main.py → gcp root is parent.parent.
-# - Docker: COPY common next to main.py → gcp root is the app dir.
+# - Docker/CI: staged copies live next to main.py (./common, ./agent_framework).
 _here = Path(__file__).resolve().parent
 for root in (_here.parent.parent, _here):
-    if root and (root / "common").is_dir() and str(root) not in sys.path:
+    if not root:
+        continue
+    has_common = (root / "common").is_dir()
+    has_agent_framework = (root / "agent_framework" / "__init__.py").is_file()
+    if (has_common or has_agent_framework) and str(root) not in sys.path:
         sys.path.insert(0, str(root))
         break
-# agent_framework lives at gcp/agent_framework/ (same sys.path root as common).
 
 import logging
 import os

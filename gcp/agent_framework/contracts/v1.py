@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Protocol
 
+from agent_framework.contracts.message_patch_types import MessagePatchInputV1
 from agent_framework.registry.tool_spec import ToolSpec
 
 PLATFORM_CONTRACTS_VERSION = "v1"
@@ -29,16 +30,6 @@ class HydratedContext:
     recent_turns: list[str]
     retrieved: list[RetrievedSnippet]
     compacted_summary: str | None
-
-
-@dataclass(frozen=True)
-class MessagePatchInputV1:
-    content_markdown: str
-    content_json: dict[str, Any] | None
-    revision: int
-    client_routing_hint: str | None
-    agent_steps: list[dict[str, Any]]
-    analysis_run_id: str | None = None
 
 
 class ContextHydratorV1(Protocol):

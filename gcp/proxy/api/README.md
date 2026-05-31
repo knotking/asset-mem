@@ -70,7 +70,7 @@ See `core/config.py` for the full list of required environment variables.
 
 Imports such as `common.token` require the `gcp` directory on `PYTHONPATH`, or a copy of `gcp/common` next to this app as `gcp/proxy/api/common`. **`main.py` prepends `sys.path`** so that `gcp` is found when you run from `gcp/proxy/api` (parent chain `…/gcp/proxy/api` → `…/gcp`). If you use a flat layout (e.g. Docker with `common/` copied into `/app`), that is detected too.
 
-**Docker / Cloud Run:** GitHub Actions runs **`cp -R gcp/common gcp/proxy/api/common`**, then **`gcloud run deploy --source=gcp/proxy/api`** using **`Dockerfile`** in this directory. **`gcp/proxy/api/.gcloudignore`** forces the staged **`common/`** into the upload (it is listed in `.gitignore` so it is not committed). For a one-shot local build without staging, use **`docker build -f gcp/Dockerfile.proxy gcp`** from the repo root.
+**Docker / Cloud Run:** GitHub Actions stages **`gcp/common`** and a **slim** **`agent_framework/contracts`** slice (message patch wire format only — see **`gcp/proxy/scripts/stage-agent-framework-contracts.sh`**) into **`gcp/proxy/api`**, then **`gcloud run deploy --source=gcp/proxy/api`**. **`gcp/proxy/api/.gcloudignore`** forces staged dirs into the upload. For a full framework copy, use **`docker build -f gcp/Dockerfile.proxy gcp`** from the repo root.
 
 **Checkpoint stream debugging (local):** Default log level is **`INFO`** (`PROXY_LOG_LEVEL=INFO`). Each Reasoning Engine chunk logs **`stream_chunk`** with author/kind/`analysis_status`; Firestore writes log **`chat_persist`**; completion logs **`stream_chunks`**, **`progress_chunks`**, **`persist_writes`**, and **`revision=start->end`**. Set **`PROXY_LOG_LEVEL=DEBUG`** for full third-party noise.
 

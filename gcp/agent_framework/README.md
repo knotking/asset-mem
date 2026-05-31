@@ -528,7 +528,7 @@ Notable test modules:
 ## Deployment notes
 
 - Agent Engine bundles include `agent_framework` as a sibling package (see `gcp/agents/homecare/deployment/agent_engine_bundle.py` and `.github/workflows/deploy-homecare-agent.yaml`).
-- The FastAPI proxy imports `agent_framework.contracts.message_patch_v1` for Firestore persist (`gcp/proxy/api/utils/message_content_persist.py`); the proxy Docker image stages a copy of `gcp/agent_framework` next to the API code.
+- The FastAPI proxy imports `agent_framework.contracts.message_patch_v1` and `message_patch_types` for Firestore persist. CI stages only those contract modules via `gcp/proxy/scripts/stage-agent-framework-contracts.sh` (not the full framework tree).
 - Intended future: extract to a standalone GitHub repo once the public API stabilizes. Until then, dogfood via the monorepo path dependency.
 
 ---

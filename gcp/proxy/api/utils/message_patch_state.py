@@ -17,7 +17,7 @@ from agent_framework.contracts.message_patch_v1 import (
     firestore_fields_from_message_patch_input,
     message_patch_input_from_accumulator,
 )
-from agent_framework.contracts.v1 import MessagePatchInputV1
+from agent_framework.contracts.message_patch_types import MessagePatchInputV1
 
 
 def normalize_revision(value: Any, *, default: int = 0) -> int:
