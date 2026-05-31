@@ -105,6 +105,13 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
       serviceRecord.nearbyProviders,
     ];
     if (providerArrays.some((arr) => Array.isArray(arr) && arr.length > 0)) return true;
+    if (
+      String(serviceRecord.searchStatus ?? "")
+        .trim()
+        .toLowerCase() === "failed"
+    ) {
+      return true;
+    }
   }
 
   const costEstimation = rootRecord.costEstimationResults || analysisRecord.costEstimationResults;

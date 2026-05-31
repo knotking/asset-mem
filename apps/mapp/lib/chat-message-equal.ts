@@ -24,6 +24,15 @@ function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
   return true;
 }
 
+function agentLifecycleEqual(
+  a: Message['agentLifecycle'],
+  b: Message['agentLifecycle'],
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+  return a.phase === b.phase && a.message === b.message && (a.ts ?? '') === (b.ts ?? '');
+}
+
 /** Compare ChatMessage props to skip re-renders when the Firestore message is unchanged. */
 export function areChatMessagePropsEqual(
   prev: ChatMessageCompareProps,
@@ -40,6 +49,7 @@ export function areChatMessagePropsEqual(
   if (prevMsg.content !== nextMsg.content) return false;
   if (prevMsg.primaryAgent !== nextMsg.primaryAgent) return false;
   if (!agentStepsEqual(prevMsg.agentSteps, nextMsg.agentSteps)) return false;
+  if (!agentLifecycleEqual(prevMsg.agentLifecycle, nextMsg.agentLifecycle)) return false;
 
   const prevFile = prevMsg.file;
   const nextFile = nextMsg.file;

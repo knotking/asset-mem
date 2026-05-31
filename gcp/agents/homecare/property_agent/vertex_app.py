@@ -32,6 +32,19 @@ from property_agent.runtime.homecare_runner import HomecareRunner, create_homeca
 from property_agent.runtime.stream_query_multiplex import (
     multiplex_engine_stream_and_progress,
 )
+from property_agent.observability.lifecycle_events import (
+    PHASE_ENGINE_TURN_STARTED,
+    build_lifecycle_engine_dict,
+    context_fields_from_stream_message,
+    log_lifecycle_payload,
+)
+from property_agent.observability.turn_request_timing import (
+    begin_turn_for_engine_stream,
+    emit_summary,
+    increment_event_count,
+    mark,
+    maybe_mark_first_stream_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +85,10 @@ class HomecareAdkApp(AdkApp):
 
     def set_up(self) -> None:
         _log_entrypoint("set_up start type=%s", type(self).__name__)
+        mark("set_up_start")
         super().set_up()
         self._wire_runners_with_property_app()
+        mark("set_up_done")
         runner = self._tmpl_attrs.get("runner")
         _log_entrypoint(
             "set_up done runner=%s progress_streaming=%s",
@@ -85,17 +100,20 @@ class HomecareAdkApp(AdkApp):
         """Agent Engine may leave a stock ADK ``Runner`` after ``super().set_up()``."""
         runner = self._tmpl_attrs.get("runner")
         if isinstance(runner, HomecareRunner):
+            mark("ensure_runner_done")
             return
         if not self._tmpl_attrs.get("runner") or not self._tmpl_attrs.get(
             "session_service"
         ):
             self.set_up()
+            mark("ensure_runner_done")
             return
         _log_entrypoint(
             "replacing stock runner (was %s) with HomecareRunner",
             type(runner).__name__,
         )
         self._wire_runners_with_property_app()
+        mark("ensure_runner_done")
 
     async def async_stream_query(
         self,
@@ -108,30 +126,63 @@ class HomecareAdkApp(AdkApp):
         **kwargs: Any,
     ) -> AsyncIterable[Dict[str, Any]]:
         """Wire ``HomecareRunner`` and multiplex progress at the stream boundary (Plan B)."""
-        self._ensure_homecare_runner()
-        runner = self._tmpl_attrs.get("runner")
-        streaming = checkpoint_progress_streaming_enabled()
-        _log_entrypoint(
-            "async_stream_query runner=%s progress_streaming=%s stream_multiplex=%s",
-            type(runner).__name__ if runner is not None else "none",
-            streaming,
-            streaming,
-        )
-        engine_stream = super().async_stream_query(
-            message=message,
-            user_id=user_id,
+        begin_turn_for_engine_stream(session_id=session_id, user_id=user_id)
+        event_count = 0
+        ctx_fields = context_fields_from_stream_message(message)
+        turn_started = build_lifecycle_engine_dict(
+            phase=PHASE_ENGINE_TURN_STARTED,
             session_id=session_id,
-            session_events=session_events,
-            run_config=run_config,
-            **kwargs,
+            correlation_id=ctx_fields.get("correlation_id"),
+            primary_agent=ctx_fields.get("primary_agent"),
+            checkpoint_ids=ctx_fields.get("checkpoint_ids"),
+            checkpoint_optional_agents=ctx_fields.get("checkpoint_optional_agents"),
+            context_doc_uris=ctx_fields.get("context_doc_uris"),
         )
-        if not streaming:
-            async for event in engine_stream:
-                yield event
-            return
+        started_payload = turn_started.get("actions", {}).get("state_delta", {}).get(
+            "homeappLifecycle"
+        )
+        if isinstance(started_payload, dict):
+            log_lifecycle_payload(started_payload)
+        yield turn_started
+        event_count += 1
+        try:
+            self._ensure_homecare_runner()
+            runner = self._tmpl_attrs.get("runner")
+            streaming = checkpoint_progress_streaming_enabled()
+            _log_entrypoint(
+                "async_stream_query runner=%s progress_streaming=%s stream_multiplex=%s",
+                type(runner).__name__ if runner is not None else "none",
+                streaming,
+                streaming,
+            )
+            mark("adk_stream_start")
+            engine_stream = super().async_stream_query(
+                message=message,
+                user_id=user_id,
+                session_id=session_id,
+                session_events=session_events,
+                run_config=run_config,
+                **kwargs,
+            )
+            if not streaming:
+                async for event in engine_stream:
+                    maybe_mark_first_stream_event(event)
+                    increment_event_count()
+                    event_count += 1
+                    yield event
+                return
 
-        async for event in multiplex_engine_stream_and_progress(engine_stream):
-            yield event
+            async for event in multiplex_engine_stream_and_progress(engine_stream):
+                maybe_mark_first_stream_event(event)
+                increment_event_count()
+                event_count += 1
+                yield event
+        finally:
+            emit_summary(
+                "stream_complete",
+                event_count=event_count,
+                entrypoint="async_stream_query",
+            )
 
     def stream_query(
         self,
@@ -221,3 +272,4 @@ class HomecareAdkApp(AdkApp):
             "HomecareAdkApp checkpoint progress streaming enabled=%s",
             checkpoint_progress_streaming_enabled(),
         )
+        mark("wire_runner_done")

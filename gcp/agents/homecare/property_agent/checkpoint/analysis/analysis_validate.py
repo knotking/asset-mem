@@ -223,6 +223,8 @@ def analysis_has_structured_ui_sections(analysis: Dict[str, Any]) -> bool:
 def _service_results_empty(val: Any) -> bool:
     if not isinstance(val, dict):
         return True
+    if str(val.get("searchStatus") or "").strip().lower() == "failed":
+        return False
     local = val.get("localPros")
     if not isinstance(local, dict):
         return True

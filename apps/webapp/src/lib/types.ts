@@ -64,6 +64,12 @@ export type Message = {
       | "OTHER";
   }[];
   agentSteps?: AgentStep[];
+  /** Early-turn status from proxy lifecycle persist (cleared when agentSteps arrive). */
+  agentLifecycle?: {
+    phase: string;
+    message: string;
+    ts?: string;
+  } | null;
 };
 
 /** DIY-only cost slice from the agent library (under analysis.diyResults). */
@@ -136,6 +142,8 @@ export type StructuredResponseData = {
     };
     serviceResults?: {
       costEstimates?: string;
+      searchStatus?: "failed" | "ok";
+      searchError?: string;
       localPros?: {
         serpAPIResults?: ServiceProvider[];
         yelpAPIResults?: ServiceProvider[];

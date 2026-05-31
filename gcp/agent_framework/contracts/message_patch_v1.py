@@ -22,6 +22,7 @@ FIRESTORE_MESSAGE_PATCH_FIELDS: tuple[str, ...] = (
     "contentJson",
     "analysisRunId",
     "agentSteps",
+    "agentLifecycle",
 )
 
 

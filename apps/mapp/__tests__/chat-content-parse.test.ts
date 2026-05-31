@@ -28,6 +28,20 @@ describe('structuredDataHasVisibleSections', () => {
     ).toBe(false);
   });
 
+  it('returns true when service search failed with searchError', () => {
+    expect(
+      structuredDataHasVisibleSections({
+        analysis: {
+          serviceResults: {
+            searchStatus: 'failed',
+            searchError: 'Service provider search is temporarily unavailable.',
+            localPros: { serpAPIResults: [], googleSearchResults: [] },
+          },
+        },
+      } as never)
+    ).toBe(true);
+  });
+
   it('returns true when checkpointSummary has data', () => {
     expect(
       structuredDataHasVisibleSections({

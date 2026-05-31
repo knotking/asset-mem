@@ -428,9 +428,44 @@ def _merge_coverage_into(analysis: Dict[str, Any], raw: str) -> None:
     analysis["coverageResult"] = {"warrantyInfo": text[:8000], "insuranceInfo": ""}
 
 
+def _user_facing_service_search_error(raw_error: str) -> str:
+    """Map internal tool errors to a short message for contentJson + UI."""
+    err = (raw_error or "").strip()
+    if not err:
+        return "Service provider search did not complete. Please try again."
+    lower = err.lower()
+    if "run out of searches" in lower or "quota" in lower:
+        return (
+            "Service provider search is temporarily unavailable. "
+            "Please try again later."
+        )
+    if "missing api key" in lower or "not available" in lower:
+        return "Service provider search is not configured for this environment."
+    if "no coordinates" in lower:
+        return (
+            "Could not resolve a search location for providers. "
+            "Check the property address or try again."
+        )
+    if len(err) > 280:
+        return err[:277].rstrip() + "…"
+    return err
+
+
+def _failed_service_results(raw_error: str = "") -> Dict[str, Any]:
+    return {
+        "localPros": {"serpAPIResults": [], "googleSearchResults": []},
+        "searchStatus": "failed",
+        "searchError": _user_facing_service_search_error(raw_error),
+    }
+
+
 def _merge_service_into(analysis: Dict[str, Any], raw: str) -> None:
     text = (raw or "").strip()
-    if not text or text == "SKIPPED":
+    if not text:
+        return
+    if text == "SKIPPED" or text.startswith("SKIPPED:"):
+        reason = text[len("SKIPPED:") :].strip() if text.startswith("SKIPPED:") else ""
+        analysis["serviceResults"] = _failed_service_results(reason)
         return
     extracted = _extract_service_results_from_branch(text)
     if isinstance(extracted, dict):

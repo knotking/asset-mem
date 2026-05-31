@@ -12,6 +12,7 @@ The proxy persists assistant output as separate Firestore fields (not fenced JSO
 | `contentJson` | Structured accordion payload (`analysis.*`) |
 | `contentSchemaVersion` | Schema version (expect `2` for new messages) |
 | `agentSteps` | In-flight tool/agent rows for the thinking strip |
+| `agentLifecycle` | Early-turn lifecycle strip (`phase`, `message`); cleared when `agentSteps` arrive |
 | `content` | Legacy fallback; resolver reads `contentMarkdown` first |
 
 User messages set both `content` and `contentMarkdown` on send (`chat/[sessionId]/page.tsx`).
@@ -25,6 +26,7 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/lib/message-content-parts.ts` | `apps/common/src/lib/message-content-parts.ts` |
 | `src/lib/message-display-parts.ts` | `apps/mapp/lib/chat-content-parse.ts` |
 | `src/lib/agent-display.ts` | `apps/common/src/lib/agent-display.ts` |
+| `src/lib/agent-lifecycle.ts` | `apps/common/src/lib/agent-lifecycle-stream.ts` |
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
 
 ## Display resolution flow
@@ -49,6 +51,7 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 
 | State | When |
 |-------|------|
+| **Lifecycle strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentLifecycle` set, no `agentSteps` yet |
 | **Thinking strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentSteps.length > 0` |
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
 | **Structured accordion** | `displayParts.structuredData` set |

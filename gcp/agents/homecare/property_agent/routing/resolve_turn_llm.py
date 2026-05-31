@@ -177,6 +177,16 @@ def call_resolve_turn_llm(
     property_id: Optional[str] = None,
 ) -> Optional[Any]:
     from .schema import ResolvedTurn
+    from property_agent.observability.turn_request_timing import mark, record_duration_ms
+
+    mark("resolve_start")
+    t0 = time.monotonic()
+
+    def _finish_resolve_timing() -> float:
+        elapsed_ms = (time.monotonic() - t0) * 1000
+        record_duration_ms("resolve_ms", elapsed_ms)
+        mark("resolve_end")
+        return elapsed_ms
 
     dialogue = _recent_dialogue(
         session_events, current_invocation_id=current_invocation_id
@@ -193,7 +203,6 @@ def call_resolve_turn_llm(
     )
     prompt = f"{RESOLVE_SYSTEM}\n\nINPUT_JSON:\n{user_blob}\n"
     model = getattr(GLOBAL_GEMINI_MODEL, "model", None) or "gemini-3.1-flash-lite"
-    t0 = time.monotonic()
     try:
         client = _vertex_client()
         response = client.models.generate_content(
@@ -208,22 +217,26 @@ def call_resolve_turn_llm(
         )
     except Exception:
         logger.exception("resolve_turn_llm: generate_content failed")
+        _finish_resolve_timing()
         return None
     raw = _json_from_response(response)
     if not raw:
+        elapsed_ms = _finish_resolve_timing()
         logger.warning(
             "resolve_turn_llm: empty JSON (elapsed_ms=%.0f)",
-            (time.monotonic() - t0) * 1000,
+            elapsed_ms,
         )
         return None
     sanitized = sanitize_llm_payload(raw, user_query=user_query, state=state)
     if not sanitized:
+        _finish_resolve_timing()
         logger.warning("resolve_turn_llm: invalid payload %r", raw)
         return None
     sanitized = apply_primary_agent_constraints(
         sanitized, state=state, user_query=user_query
     )
     resolved = payload_to_resolved(sanitized, state=state, user_query=user_query)
+    elapsed_ms = _finish_resolve_timing()
     logger.info(
         "resolve_turn_llm intent=%s route=%s user_goal=%s query_mode=%s "
         "retrieval_only=%s optional=%r elapsed_ms=%.0f",
@@ -233,7 +246,7 @@ def call_resolve_turn_llm(
         resolved.query_mode,
         sanitized["retrieval_only"],
         sanitized["run_optional_agents"],
-        (time.monotonic() - t0) * 1000,
+        elapsed_ms,
     )
     try:
         from property_agent.metrics.routing_metrics import record_resolve_turn
@@ -242,7 +255,7 @@ def call_resolve_turn_llm(
             intent=str(sanitized.get("intent") or ""),
             route=str(sanitized.get("route") or ""),
             prompt_text=prompt,
-            elapsed_ms=(time.monotonic() - t0) * 1000,
+            elapsed_ms=elapsed_ms,
             executor_skipped=bool(getattr(resolved, "is_casual", False)),
         )
     except Exception:

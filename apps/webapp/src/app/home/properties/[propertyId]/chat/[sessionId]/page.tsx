@@ -386,6 +386,10 @@ export default function PropertyChatSessionPage() {
         content: "",
         primaryAgent,
       });
+      if (!assistantMessageDocId) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         abortControllerRef.current = new AbortController();
@@ -433,6 +437,7 @@ export default function PropertyChatSessionPage() {
           searchLocation,
           signal,
           firebaseChatId: activeSessionId,
+          assistantMessageId: assistantMessageDocId,
         });
       } catch (error: any) {
         if (error.name !== "AbortError") {

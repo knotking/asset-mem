@@ -28,11 +28,13 @@
     "./lib/support": "./src/lib/support.ts",
     "./lib/account-deletion": "./src/lib/account-deletion.ts",
     "./lib/service-providers": "./src/lib/service-providers.ts",
+    "./lib/service-search-status": "./src/lib/service-search-status.ts",
     "./lib/agent-display": "./src/lib/agent-display.ts",
     "./hooks/use-debounced-thinking-status": "./src/hooks/use-debounced-thinking-status.ts",
     "./hooks/use-theme-preference": "./src/hooks/use-theme-preference.ts",
     "./lib/checkpoint-branch-progress": "./src/lib/checkpoint-branch-progress.ts",
     "./lib/correlation-id": "./src/lib/correlation-id.ts",
+    "./lib/agent-lifecycle-stream": "./src/lib/agent-lifecycle-stream.ts",
     "./lib/search-location": "./src/search-location.ts",
     "./lib/message-content-parts": "./src/lib/message-content-parts.ts",
     "./lib/shared-chat": "./src/lib/shared-chat.ts"

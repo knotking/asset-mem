@@ -63,4 +63,20 @@ describe('areGiftedChatBubblePropsEqual', () => {
       )
     ).toBe(false);
   });
+
+  it('returns false when agentLifecycle on Firestore message changes', () => {
+    const withLifecycle = {
+      ...gifted,
+      customData: {
+        ...gifted.customData,
+        firestoreMessage: {
+          ...messageFixtures.partialAssistantMessage,
+          agentLifecycle: { phase: 'proxy.request_accepted', message: 'On it...' },
+        },
+      },
+    };
+    expect(areGiftedChatBubblePropsEqual(bubbleProps(gifted), bubbleProps(withLifecycle))).toBe(
+      false
+    );
+  });
 });

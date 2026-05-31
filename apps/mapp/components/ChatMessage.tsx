@@ -49,12 +49,17 @@ import type {
   Product,
   DiyCostEstimatesSummary,
 } from '@homeapp/common/types';
+import { thinkingStatusFromLifecycle } from '@homeapp/common/lib/agent-lifecycle-stream';
 import {
   flattenServiceProviderRawList,
   isDisplayableServiceProvider,
   isVertexGroundingRedirectUrl,
   stripVertexGroundingUrls,
 } from '@homeapp/common/lib/service-providers';
+import {
+  serviceSearchFailed,
+  serviceSearchFailureMessage,
+} from '@homeapp/common/lib/service-search-status';
 import {
   Accordion,
   AccordionItem,
@@ -718,9 +723,19 @@ const StructuredResponse = React.memo(
     [needsClarification, diy, hasDiyCostInDiy]
   );
 
+  const serviceSearchFailedFlag = useMemo(
+    () => serviceSearchFailed(service as Record<string, unknown> | undefined),
+    [service]
+  );
+  const serviceFailureCopy = useMemo(
+    () => serviceSearchFailureMessage(service as Record<string, unknown> | undefined),
+    [service]
+  );
+
   const hasService = useMemo(
-    () => !needsClarification && allProviders.length > 0,
-    [needsClarification, allProviders]
+    () =>
+      !needsClarification && (allProviders.length > 0 || serviceSearchFailedFlag),
+    [needsClarification, allProviders, serviceSearchFailedFlag]
   );
 
   const hasCostEstimates = useMemo(
@@ -1208,6 +1223,8 @@ const StructuredResponse = React.memo(
                 allProviders.map((provider, index) => (
                   <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
                 ))
+              ) : serviceSearchFailedFlag ? (
+                <Text className="text-sm text-muted-foreground">{serviceFailureCopy}</Text>
               ) : (
                 <Text className="text-sm italic text-muted-foreground">
                   No service providers found for this location.
@@ -1561,10 +1578,20 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
+  const lifecycleStatus = useMemo(
+    () => thinkingStatusFromLifecycle(message.agentLifecycle),
+    [message.agentLifecycle],
+  );
+
   const showEarlyLoading = !isUser && !hasDisplayableContent;
+  const showLifecycleStrip =
+    showEarlyLoading && !!lifecycleStatus && !message.agentSteps?.length;
   const showThinkingStrip =
-    showEarlyLoading && !!message.agentSteps && message.agentSteps.length > 0;
-  const showTypingIndicator = showEarlyLoading && !showThinkingStrip;
+    showEarlyLoading &&
+    !!message.agentSteps &&
+    message.agentSteps.length > 0;
+  const showStatusStrip = showLifecycleStrip || showThinkingStrip;
+  const showTypingIndicator = showEarlyLoading && !showStatusStrip;
   const isStructuredAssistant =
     !isUser &&
     !!displayParts.structuredData &&
@@ -1656,9 +1683,10 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
                 onPress={() => setShowMediaDetail(true)}
               />
             )}
-            {showThinkingStrip ? (
+            {showStatusStrip ? (
               <AgentStatus
-                steps={message.agentSteps!}
+                steps={message.agentSteps ?? []}
+                lifecycleStatus={showLifecycleStrip ? lifecycleStatus : null}
                 messageContentJson={messageContentJson}
               />
             ) : null}

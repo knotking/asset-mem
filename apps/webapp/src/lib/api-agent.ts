@@ -10,10 +10,8 @@ import {
   parseAgentErrorCode,
   truncateId,
 } from '@/lib/logger';
-import { buildAgentSearchLocation } from '@/lib/search-location';
 import type { AgentStep, LocationData, PrimaryAgent, SearchLocationInput } from '@/lib/types';
-
-const log = createLogger('agent');
+import { buildAgentSearchLocation } from '@/lib/search-location';
 
 export async function createAgentSession(
   userId: string
@@ -122,6 +120,8 @@ export interface StreamAgentResponseParams {
   signal?: AbortSignal;
   /** Firebase chat doc id (for correlating with proxy persistence logs). */
   firebaseChatId?: string;
+  /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
+  assistantMessageId?: string;
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -142,6 +142,7 @@ export async function streamAgentResponse({
   locationData,
   signal,
   firebaseChatId,
+  assistantMessageId,
   onChunk,
   onAgentStep,
   onComplete,
@@ -187,6 +188,10 @@ export async function streamAgentResponse({
     );
     if (resolvedSearchLocation) {
       requestBody.search_location = resolvedSearchLocation;
+    }
+
+    if (assistantMessageId) {
+      requestBody.assistant_message_id = assistantMessageId;
     }
 
     const response = await proxyFetchWithAuth(apiUrls.agentSse(), getFirebaseIdTokenForProxy, {

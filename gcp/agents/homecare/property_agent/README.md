@@ -63,3 +63,7 @@ make test         # unit tests under tests/
 ```
 
 **Env:** `RESOLVE_LLM_DISABLED=1` skips the resolver LLM and uses a safe retrieval-only fallback.
+
+**Lifecycle status:** Proxy persists `agentLifecycle` on the assistant Firestore message (`proxy.request_accepted`, `proxy.engine_invoke`, engine phases via `author=homeapp_lifecycle`). Clients read it from the message listener (mapp/webapp). Cloud Logging: `HOMEAPP_LIFECYCLE phase=…`.
+
+**Engine turn timing:** Each turn emits one `HOMEAPP_ENGINE_TURN_TIMING engine_turn_timing: …` line (`HOMEAPP_ENGINE_TURN_TIMING=0` to disable). **Agent Engine** (`entrypoint=async_stream_query`): includes `ensure_runner_ms`, `adk_stream_start_ms`, etc. **`adk web`** (`entrypoint=adk_web`): starts in `HomecareRunner` — look for `reason=adk_web_complete`. Fields are ms from turn start: `runner_exec_start_ms`, `runner_first_event_ms`, `before_model_ms`, `resolve_ms`, `executor_first_model_ms`, `stream_complete_ms`.

@@ -29,6 +29,7 @@ function messageFromGiftedChat(currentMessage: IMessage): Message {
     file: currentMessage.customData?.file,
     agentSteps: currentMessage.customData?.agentSteps,
     primaryAgent: currentMessage.customData?.primaryAgent,
+    agentLifecycle: currentMessage.customData?.firestoreMessage?.agentLifecycle,
   };
 }
 
