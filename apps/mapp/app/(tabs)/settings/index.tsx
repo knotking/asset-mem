@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import Constants from 'expo-constants';
 import { User, CreditCard, Activity, Camera } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
+import { AppVersionFooter } from '@/components/settings/AppVersionFooter';
 import { SettingsHubRow } from '@/components/settings/SettingsHubRow';
 import { useSettingsHubSummaries } from '@/components/settings/useSettingsHubSummaries';
 
@@ -50,11 +50,7 @@ export default function SettingsHubScreen() {
         />
       </View>
 
-      <View className="mt-8 items-center">
-        <Text className="text-xs text-muted-foreground">
-          Version {Constants.expoConfig?.version || '0.0.1'}
-        </Text>
-      </View>
+      <AppVersionFooter />
     </ScrollView>
   );
 }

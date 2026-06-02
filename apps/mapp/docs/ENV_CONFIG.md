@@ -418,15 +418,17 @@ These are built automatically by [app.config.js](apps/mapp/app.config.js):
 
 ### OTA Update not appearing in app
 
-**Cause**: Channel mismatch or update not reaching device.
+**Cause**: Channel mismatch, runtime version mismatch, or update not yet downloaded.
 
 **Solution**:
 
-1. Verify your build's channel matches update channel
-   - Check [eas.json](../eas.json) for build profile's `channel` field
-2. Restart the app completely (force close and reopen)
-3. Check update was published: `eas update:list --channel staging`
-4. Verify app is configured for OTA updates ([app.config.js:82-87](apps/mapp/app.config.js#L82-L87))
+1. Verify your build's channel matches update channel ([eas.json](../eas.json) `channel` per profile).
+2. Verify `APP_VERSION` / runtime matches the published update (see [DEPLOY.md](./DEPLOY.md#issue-3-update-not-appearing-on-device)).
+3. Force close and reopen once or twice, or accept the in-app **Update ready** prompt and tap **Restart**.
+4. Check update was published: `eas update:list --channel staging` (or `prod`).
+5. Confirm on device: Settings → tap **Version** 5× → **OTA** prefix should match Expo → Updates.
+6. OTA UX and force policy: [MOBILE_APP_UPDATE_POLICY.md](./MOBILE_APP_UPDATE_POLICY.md).
+7. Verify [app.config.js](../app.config.js) `updates.url` and `runtimeVersion` (not configurable via Expo Go).
 
 ### Environment variables not updating after OTA
 
@@ -448,6 +450,7 @@ These are built automatically by [app.config.js](apps/mapp/app.config.js):
 | `eas.json`                | EAS build profiles and environment config      | ✅ Yes                |
 | `app.config.js`           | Expo config, loads env vars, builds proxy URLs | ✅ Yes                |
 | `deploy-mapp-update.yaml` | GitHub Actions workflow for OTA updates        | ✅ Yes                |
+| `MOBILE_APP_UPDATE_POLICY.md` | Force OTA/native Firestore policy, Settings OTA ID | ✅ Yes            |
 
 ## Environment URLs Reference
 
