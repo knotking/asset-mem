@@ -24,6 +24,25 @@ export default defineConfig(
     extends: [tseslint.configs.base],
     rules: {
       "no-console": "error",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@homeapp/common",
+              message:
+                "Webapp must not import @homeapp/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@homeapp/common/*"],
+              message:
+                "Webapp must not import @homeapp/common (Firebase App Hosting). Mirror under src/lib or src/hooks and keep in sync — see apps/webapp/docs/CHAT.md.",
+            },
+          ],
+        },
+      ],
     },
   },
   {

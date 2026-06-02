@@ -32,7 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
-import { useAssistantLoadingUi } from "@homeapp/common/hooks/use-assistant-loading-ui";
+import { useAssistantLoadingUi } from "@/hooks/use-assistant-loading-ui";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import {
   assistantMessageHasDisplayableContent,

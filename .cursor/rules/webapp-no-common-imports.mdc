@@ -1,0 +1,32 @@
+---
+description: Webapp must not import @homeapp/common (Firebase App Hosting)
+globs: apps/webapp/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Webapp — no @homeapp/common imports
+
+Firebase App Hosting builds **only** `apps/webapp`. It does **not** bundle `@homeapp/common`, even though the monorepo workspace resolves it locally.
+
+## Do not
+
+```typescript
+// BAD — fails App Hosting deploy
+import { foo } from "@homeapp/common/lib/foo";
+import { useBar } from "@homeapp/common/hooks/use-bar";
+```
+
+## Do instead
+
+1. Mirror the module under `apps/webapp/src/lib/` or `apps/webapp/src/hooks/`.
+2. Add a file header: `Mirrors apps/common/src/... Keep both files in sync.`
+3. Import with `@/` aliases: `import { foo } from "@/lib/foo"`.
+4. Add a row to the sync table in `apps/webapp/docs/CHAT.md` (or the relevant feature doc).
+
+**Source of truth:** `apps/common` for **mapp**; **webapp** keeps local copies for App Hosting.
+
+## Enforcement
+
+- ESLint: `no-restricted-imports` in `apps/webapp/eslint.config.mjs`
+- CI: `apps/webapp/scripts/check-no-common-imports.sh` + `test-webapp.yaml`
+- Before merging webapp changes: `npm run lint` in `apps/webapp`
