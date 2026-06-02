@@ -10,6 +10,7 @@
     "build": "next build && node scripts/fix-firebase-standalone.js",
     "start": "next start",
     "lint": "eslint .",
+    "check:no-common": "bash scripts/check-no-common-imports.sh",
     "typecheck": "tsc --noEmit"
   },
   "overrides": {
