@@ -105,7 +105,8 @@ async def resolve_search_location(
     if source is None:
         if coords is not None:
             source = "device_gps"
-        elif addr and location_type == "address":
+        elif addr:
+            # Default to property address when coords are absent (client may omit search_location).
             source = "property_address"
             label = addr
         else:
@@ -151,6 +152,15 @@ async def resolve_search_location(
             label=addr,
         )
 
+    serpapi = await _resolve_property_address_via_serpapi(addr)
+    if serpapi is not None:
+        return SearchLocation(
+            source="property_address",
+            radius_miles=radius,
+            coordinates=SearchLocationCoordinates(lat=serpapi.lat, lng=serpapi.lng),
+            label=serpapi.label,
+        )
+
     logger.warning("search_location: could not resolve property_address to coordinates")
     return None
 
@@ -176,6 +186,12 @@ async def _reverse_geocode_label(lat: float, lng: float) -> Optional[str]:
     except Exception as e:
         logger.debug("reverse geocode label failed: %s", e)
         return None
+
+
+async def _resolve_property_address_via_serpapi(address: str):
+    from .serpapi_coords import resolve_property_address_via_serpapi
+
+    return await resolve_property_address_via_serpapi(address)
 
 
 async def _geocode_address(address: str) -> Optional[tuple[SearchLocationCoordinates, Optional[str]]]:

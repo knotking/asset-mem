@@ -12,7 +12,9 @@ export function buildAgentSearchLocation(
   input: SearchLocationInput | LocationData | undefined,
   propertyAddress?: string
 ): Record<string, unknown> | undefined {
-  if (!input) {
+  const effectiveInput =
+    input ?? (propertyAddress?.trim() ? defaultSearchLocationInput() : undefined);
+  if (!effectiveInput) {
     return undefined;
   }
 
@@ -20,12 +22,12 @@ export function buildAgentSearchLocation(
   let radiusMiles = DEFAULT_RADIUS_MILES;
   let coordinates: LocationCoordinates | undefined;
 
-  if ('source' in input && input.source) {
-    source = input.source;
-    radiusMiles = input.radiusMiles ?? DEFAULT_RADIUS_MILES;
-    coordinates = input.coordinates;
+  if ('source' in effectiveInput && effectiveInput.source) {
+    source = effectiveInput.source;
+    radiusMiles = effectiveInput.radiusMiles ?? DEFAULT_RADIUS_MILES;
+    coordinates = effectiveInput.coordinates;
   } else {
-    const legacy = input as LocationData;
+    const legacy = effectiveInput as LocationData;
     if (legacy.locationType === 'address' && propertyAddress) {
       source = 'property_address';
       radiusMiles = legacy.locationRadius ?? DEFAULT_RADIUS_MILES;
