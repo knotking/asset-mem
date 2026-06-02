@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
+from .checkpoint_selection import checkpoint_selection_changed
 from .conversational_intent import (
     OPTIONAL_CHECKPOINT_BRANCHES,
     query_requests_full_analysis_replay,
@@ -30,6 +31,11 @@ def apply_turn_intent_guardrails(
     expanded = (expanded_user_query or q).strip()
     out = dict(intent)
     branches = list(out.get("run_optional_agents") or [])
+    if checkpoint_selection_changed(state) and branches:
+        out["user_goal"] = "new_analysis"
+        out["run_optional_agents"] = branches
+        out["reason"] = ((out.get("reason") or "") + " [checkpoint selection changed]").strip()
+        return out
     if query_requests_full_analysis_replay(expanded) or query_requests_full_analysis_replay(q):
         out["user_goal"] = "replay_deliverable"
         out["run_optional_agents"] = []
