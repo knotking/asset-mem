@@ -65,6 +65,30 @@ def _serpapi_api_key() -> Optional[str]:
     return (os.environ.get("SERP_API_KEY") or "").strip() or None
 
 
+def _resolve_search_location_from_property_address(
+    property_address: str,
+    state_sl: Any,
+) -> Optional[SearchLocation]:
+    """City-level coords via SerpAPI when proxy did not geocode property_address."""
+    from property_agent.geo.serpapi_locations import search_location_from_property_address
+
+    radius = 5
+    if isinstance(state_sl, dict):
+        raw_radius = state_sl.get("radius_miles")
+        if isinstance(raw_radius, int):
+            radius = raw_radius
+    try:
+        return search_location_from_property_address(
+            property_address,
+            radius_miles=radius,
+        )
+    except Exception as exc:
+        logger.debug(
+            "serpapi_search: property_address serpapi fallback failed: %s", exc
+        )
+        return None
+
+
 def fetch_serpapi_maps_providers(
     query: str,
     search_location_raw: Any,
@@ -200,6 +224,12 @@ async def serpapi_search(
                 property_address = pa.strip()
 
     resolved = merge_search_location_sources(search_location, state_sl)
+    if resolved is None and property_address:
+        resolved = await to_thread(
+            _resolve_search_location_from_property_address,
+            property_address,
+            state_sl,
+        )
     if resolved is not None:
         maps_result = await to_thread(
             _run_serpapi_maps_search, query, resolved, property_address

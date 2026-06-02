@@ -149,12 +149,12 @@ export default function PropertyChatSessionPage() {
     return () => unsubscribe();
   }, [user, sessionId, toast]);
 
-  // Default to property-address search on new sessions (no silent GPS)
+  // Default to property-address search when unset (no silent GPS)
   useEffect(() => {
-    if (sessionId && !searchLocation && isNewSession) {
+    if (sessionId && !searchLocation) {
       setSearchLocation(defaultSearchLocationInput());
     }
-  }, [sessionId, searchLocation, isNewSession]);
+  }, [sessionId, searchLocation]);
 
   const handleStop = () => {
     if (abortControllerRef.current) {

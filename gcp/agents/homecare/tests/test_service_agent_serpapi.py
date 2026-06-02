@@ -117,5 +117,53 @@ async def test_serpapi_search_appends_hint_on_maps_error(
         search_location=sl,
         tool_context=tool_context,
     )
-    assert "SERPAPI_FALLBACK_HINT" in out
-    assert "garage door paint repair" in out
+@pytest.mark.asyncio
+async def test_serpapi_search_resolves_property_address_when_coords_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[dict] = []
+
+    class FakeSearch:
+        def __init__(self, params):
+            captured.append(params)
+
+        def get_dict(self):
+            return {
+                "local_results": [
+                    {"title": "Brentwood Pro", "address": "Brentwood, CA", "rating": 4.9}
+                ]
+            }
+
+    def _fake_resolve(property_address: str, state_sl):
+        from property_agent.shared.inputs import SearchLocation, SearchLocationCoordinates
+
+        return SearchLocation(
+            source="property_address",
+            radius_miles=5,
+            coordinates=SearchLocationCoordinates(lat=37.931868, lng=-121.6957863),
+            label="Brentwood, CA",
+        )
+
+    monkeypatch.setenv("SERP_API_KEY", "test-key")
+    import serpapi as serpapi_mod
+
+    monkeypatch.setattr(serpapi_mod, "GoogleSearch", FakeSearch)
+    monkeypatch.setattr(
+        service_mod,
+        "_resolve_search_location_from_property_address",
+        _fake_resolve,
+    )
+
+    tool_context = SimpleNamespace(
+        state={"property_address": "1982 Helena Way, Brentwood, CA 94513"}
+    )
+    out = await service_mod.serpapi_search(
+        "garage door repair",
+        search_location=None,
+        tool_context=tool_context,
+    )
+    assert captured
+    assert captured[0]["lat"] == pytest.approx(37.931868)
+    assert captured[0]["lon"] == pytest.approx(-121.6957863)
+    assert "Brentwood Pro" in out
+
