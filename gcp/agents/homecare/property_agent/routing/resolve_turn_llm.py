@@ -21,6 +21,7 @@ from .apply_resolved_turn import (
     payload_to_resolved,
     sanitize_llm_payload,
 )
+from .checkpoint_selection import checkpoint_selection_changed
 from .conversational_intent import (
     DEFAULT_CAPABILITY_OPTIONS,
     LAST_OFFERED_OPTIONS_KEY,
@@ -114,9 +115,11 @@ def _ui_context_blob(
     menu = state.get(LAST_OFFERED_OPTIONS_KEY)
     if not isinstance(menu, list) or not menu:
         menu = list(DEFAULT_CAPABILITY_OPTIONS)
+    cp_ids = state.get("checkpoint_ids") or []
     blob: dict[str, Any] = {
         "primary_agent": state.get("primary_agent"),
-        "checkpoint_ids_count": len(state.get("checkpoint_ids") or []),
+        "checkpoint_ids_count": len(cp_ids),
+        "checkpoint_selection_changed": checkpoint_selection_changed(state),
         "context_doc_uris_count": len(state.get("context_doc_uris") or []),
         "ui_optional_agents": state.get("checkpoint_optional_agents")
         or state.get("_checkpoint_optional_agents_ui"),

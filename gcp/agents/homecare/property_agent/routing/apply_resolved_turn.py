@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
+from .checkpoint_selection import checkpoint_selection_changed
 from .conversational_intent import (
     DEFAULT_CAPABILITY_OPTIONS,
     LAST_OFFERED_OPTIONS_KEY,
@@ -99,8 +100,27 @@ def apply_checkpoint_retrieval_plan(payload: dict[str, Any], *, user_query: str,
         return provider_ctx
     if query_requests_full_analysis_replay(expanded) or query_requests_full_analysis_replay(user_query):
         return {**payload, "retrieval_only": False, "run_optional_agents": [], "user_goal": "replay_deliverable"}
-    if prior_checkpoint_analysis_in_session(state):
+    if prior_checkpoint_analysis_in_session(state) and not checkpoint_selection_changed(state):
         return follow_up_from_resolver(payload, user_query=user_query, state=state)
+    if checkpoint_selection_changed(state) and prior_checkpoint_analysis_in_session(state):
+        requested = (
+            resolve_requested_optional_branches(expanded, state)
+            or resolve_requested_optional_branches(user_query, state)
+            or branches_from_resolver_menu_hints(payload, state)
+            or ui_optional_branches(state)
+        )
+        for branch in branches_mentioned_in_query(expanded) + branches_mentioned_in_query(user_query):
+            if branch not in requested:
+                requested.append(branch)
+        # If the UI changed which checkpoints are selected, we must re-run checkpoint
+        # retrieval/assembly even when the user only asks "are there issues?" (no
+        # optional branches). Otherwise we keep answering from stale session memory.
+        return {
+            **payload,
+            "retrieval_only": False,
+            "run_optional_agents": requested or ui_optional_branches(state),
+            "user_goal": "new_analysis",
+        }
     requested = resolve_requested_optional_branches(expanded, state) or resolve_requested_optional_branches(user_query, state) or branches_from_resolver_menu_hints(payload, state)
     for branch in branches_mentioned_in_query(expanded) + branches_mentioned_in_query(user_query):
         if branch not in requested:

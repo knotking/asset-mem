@@ -39,6 +39,10 @@ from property_agent.checkpoint.timing import (
     mark_synthesis_started,
     record_synthesis_ms,
 )
+from property_agent.routing.checkpoint_selection import (
+    clear_stale_checkpoint_analysis_state,
+    record_checkpoint_ids_analyzed,
+)
 from property_agent.routing.resolve_turn import resolved_turn_from_state
 
 logger = logging.getLogger(__name__)
@@ -116,7 +120,13 @@ async def run_checkpoint_pipeline(
         return "Checkpoint pipeline requires tool context."
 
     begin_checkpoint_request(tool_context.state)
+    clear_stale_checkpoint_analysis_state(tool_context.state)
     run_id = ensure_analysis_run_id(tool_context.state)
+
+    if not checkpoint_ids:
+        state_ids = tool_context.state.get("checkpoint_ids")
+        if isinstance(state_ids, list) and state_ids:
+            checkpoint_ids = [str(x) for x in state_ids if x]
 
     on_branch_complete: BranchCompleteCallback | None = None
     if checkpoint_progress_streaming_enabled():
@@ -302,6 +312,8 @@ async def run_checkpoint_pipeline(
             )
         else:
             apply_tool_context_state_delta(tool_context, final_patch)
+
+    record_checkpoint_ids_analyzed(tool_context.state)
 
     if isinstance(markdown, str) and markdown.strip():
         return markdown.strip()

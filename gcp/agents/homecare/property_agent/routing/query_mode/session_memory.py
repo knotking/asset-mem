@@ -10,6 +10,8 @@ from agent_framework.context.prompt.session_memory import (
     format_session_working_memory_block_from_memory,
 )
 
+from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
+
 from ..optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 
 SESSION_WORKING_MEMORY_SNAPSHOT_KEY = "session_working_memory_snapshot"
@@ -441,6 +443,11 @@ def _build_session_working_memory_from_live(state: Mapping[str, Any]) -> dict[st
         memory["analysis_run_id"] = state.get("analysisRunId")
     if state.get("property_id"):
         memory["property_id"] = state.get("property_id")
+    analyzed_ids = state.get(CHECKPOINT_IDS_ANALYZED_STATE_KEY)
+    if isinstance(analyzed_ids, list) and analyzed_ids:
+        memory[CHECKPOINT_IDS_ANALYZED_STATE_KEY] = [
+            str(x) for x in analyzed_ids if x is not None and str(x).strip()
+        ]
     return memory
 
 def snapshot_session_analysis_context(state: Any) -> None:

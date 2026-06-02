@@ -81,6 +81,7 @@ Critical:
 - primary_agent is the client's active tab: "docs" → prefer user_docs for policy/lease/insurance/document questions;
   "checkpoint" → prefer checkpoint for inspections. checkpoint_ids alone do not override docs mode.
 - ui_optional_agents and prior_full_checkpoint_analysis are hints only — never copy toggles into run_optional_agents.
+- checkpoint_selection_changed=true means the user added/removed checkpoints since the last analysis — prefer user_goal=new_analysis and a fresh run_checkpoint_pipeline, not answer_from_context.
 - Questions like overall condition, what's wrong, should I hire a professional → answer_from_context (even if toggles are on).
 - More details / tell me about a **service provider already listed in prior analysis** → answer_from_context, retrieval_only=true, run_optional_agents=[]; do not set menu_index for provider names.
 - route=none for casual intents; checkpoint for checkpoints/branches; user_docs for document/policy; knowledge_base only if no checkpoint/doc fit.

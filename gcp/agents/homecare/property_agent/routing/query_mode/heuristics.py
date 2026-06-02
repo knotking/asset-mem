@@ -17,6 +17,7 @@ from .provider_context import (
     prior_analysis_has_service_results,
     query_references_known_provider,
 )
+from ..checkpoint_selection import checkpoint_selection_changed
 from .session_memory import (
     _analysis_object_from_state,
     _branch_payload_has_content,
@@ -176,6 +177,8 @@ def should_block_checkpoint_pipeline_for_context_turn(
 ) -> bool:
     """Block checkpoint/retrieval tools when resolve chose session-memory follow-up."""
     if user_goal != "answer_from_context":
+        return False
+    if checkpoint_selection_changed(state):
         return False
     if query_requests_fresh_external_data(user_query):
         return False
