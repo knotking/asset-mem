@@ -16,9 +16,6 @@ jobs:
   lint:
     name: Lint and guardrails
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/webapp
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,16 +25,16 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: apps/webapp/package-lock.json
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
       - name: ESLint (includes no @homeapp/common imports)
-        run: npm run lint
+        run: npm run lint --workspace=nextn
 
       - name: Verify no @homeapp/common imports
+        working-directory: apps/webapp
         run: bash scripts/check-no-common-imports.sh
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck --workspace=nextn
