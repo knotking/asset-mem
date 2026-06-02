@@ -12,10 +12,14 @@ description: >-
 ## Prerequisites
 
 1. **MCP:** Project `.cursor/mcp.json` defines `gcp-cloud-logging` → `https://logging.googleapis.com/mcp`.
-2. **Env (local):** `GCP_PROJECT_ID` and `GCLOUD_ACCESS_TOKEN` — see `.cursor/README.md`.
+2. **Env (local):** `GCP_PROJECT_ID` and OAuth client credentials for `gcp-cloud-logging` — see `.cursor/README.md` (fallback: `GCLOUD_ACCESS_TOKEN`).
 3. **Fallback:** `gcloud logging read` / `gcloud run services logs tail` if MCP is disabled or auth fails.
 
 **Single project per MCP call** — `list_log_entries` fails if multiple resource projects are passed.
+
+**Workspace default (June 2026):** if `gcp-cloud-logging` MCP keeps returning
+`serviceusage.services.use` permission errors despite correct IAM, use direct
+`gcloud logging read` commands as the operational default in this repo.
 
 ## GCP projects and region
 

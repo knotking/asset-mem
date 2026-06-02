@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "gcp-cloud-logging": {
-      "url": "https://logging.googleapis.com/mcp",
-      "headers": {
-        "Authorization": "Bearer ${env:GCLOUD_ACCESS_TOKEN}",
-        "x-goog-user-project": "${env:GCP_PROJECT_ID}"
-      }
-    },
     "firebase": {
       "command": "npx",
       "args": [
