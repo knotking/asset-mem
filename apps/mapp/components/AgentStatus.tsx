@@ -3,14 +3,16 @@ import { View, Animated } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Sparkles } from 'lucide-react-native';
 import type { AgentStep } from '@homeapp/common/types';
-import type { ThinkingStatus } from '@homeapp/common/lib/agent-display';
 import { useDebouncedThinkingStatus } from '@homeapp/common/hooks/use-debounced-thinking-status';
 import { Text } from '@/components/ui/text';
+import TypingIndicator from './TypingIndicator';
 
 type Props = {
   steps: AgentStep[];
-  /** Early-turn status from persisted `agentLifecycle` (before agentSteps). */
-  lifecycleStatus?: ThinkingStatus | null;
+  /** Lifecycle strip header (proxy/engine); omitted when copy suppressed. */
+  lifecycleHeader?: string | null;
+  /** First-turn proxy lifecycle uses wave dots instead of sparkles. */
+  useProxyWaveIndicator?: boolean;
   /** Structured payload from message `contentJson`. */
   messageContentJson?: Record<string, unknown> | null;
   accordionAnalysis?: Record<string, unknown> | null;
@@ -86,25 +88,40 @@ function AnimatedThinkingText({ text }: { text: string }) {
 
 export function AgentStatus({
   steps,
-  lifecycleStatus,
+  lifecycleHeader,
+  useProxyWaveIndicator = false,
   messageContentJson,
   accordionAnalysis,
 }: Props) {
-  const fromSteps = useDebouncedThinkingStatus(
-    steps?.length ? steps : null,
-    { messageContentJson, accordionAnalysis },
-  );
-  const { header: headerText, preview: headerPreview } = lifecycleStatus ?? fromSteps;
+  const hasSteps = (steps?.length ?? 0) > 0;
+  const fromSteps = useDebouncedThinkingStatus(hasSteps ? steps : null, {
+    messageContentJson,
+    accordionAnalysis,
+  });
+  const headerText = hasSteps
+    ? fromSteps.header
+    : (lifecycleHeader?.trim() ?? '');
+  const headerPreview = hasSteps ? fromSteps.preview : null;
 
-  if ((!steps || steps.length === 0) && !lifecycleStatus) return null;
+  const showStrip =
+    hasSteps || !!headerText || useProxyWaveIndicator;
+  if (!showStrip) return null;
 
   return (
     <View className="self-start max-w-full flex-row items-start gap-2 rounded-lg border border-border bg-background/50 px-4 py-3 shadow-sm">
       <View className="mt-0.5 shrink-0">
-        <SparkleAnimation />
+        {useProxyWaveIndicator ? (
+          <TypingIndicator variant="wave" />
+        ) : (
+          <SparkleAnimation />
+        )}
       </View>
       <View className="min-w-0 flex-shrink flex-row items-center gap-1">
-        <AnimatedThinkingText text={headerText} />
+        {headerText ? (
+          <AnimatedThinkingText text={headerText} />
+        ) : useProxyWaveIndicator ? (
+          <View className="h-5" />
+        ) : null}
         {headerPreview ? (
           <Text
             numberOfLines={1}

@@ -32,12 +32,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
-import { thinkingStatusFromLifecycle } from "@/lib/agent-lifecycle";
+import { useAssistantLoadingUi } from "@homeapp/common/hooks/use-assistant-loading-ui";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import {
   assistantMessageHasDisplayableContent,
   getMessageDisplayParts,
 } from "@/lib/message-display-parts";
+import {
+  AssistantBounceDots,
+  AssistantWaveDots,
+} from "@/components/chat/assistant-loading-indicators";
 
 const parseLog = createLogger("parse");
 
@@ -1512,6 +1516,7 @@ type Props = {
   message: Message;
   isLoading?: boolean;
   context?: 'property' | null;
+  priorAssistantTurnCount?: number;
 };
 
 const stripTextTransition = { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const };
@@ -1519,9 +1524,11 @@ const stripTextTransition = { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const };
 function AssistantProgressStrip({
   header,
   detail,
+  useProxyWaveIndicator = false,
 }: {
   header: string;
   detail?: string | null;
+  useProxyWaveIndicator?: boolean;
 }) {
   const textKey = `${header}\u0000${detail ?? ""}`;
   return (
@@ -1529,25 +1536,33 @@ function AssistantProgressStrip({
       layout
       className="flex items-start gap-2 rounded-lg border bg-background/50 px-4 py-3 text-sm shadow-sm"
     >
-      <Sparkles className="h-4 w-4 mt-0.5 shrink-0 animate-pulse text-primary" />
+      <div className="mt-0.5 shrink-0">
+        {useProxyWaveIndicator ? (
+          <AssistantWaveDots />
+        ) : (
+          <Sparkles className="h-4 w-4 animate-pulse text-primary" />
+        )}
+      </div>
       <div className="relative min-w-0 flex-1">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={textKey}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={stripTextTransition}
-            className="flex flex-col min-w-0"
-          >
-            <span className={DISPLAY_TITLE_GRADIENT_CLASS}>
-              {header}
-            </span>
-            {detail ? (
-              <span className="text-xs text-muted-foreground">{detail}</span>
-            ) : null}
-          </motion.div>
-        </AnimatePresence>
+        {header ? (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={textKey}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={stripTextTransition}
+              className="flex flex-col min-w-0"
+            >
+              <span className={DISPLAY_TITLE_GRADIENT_CLASS}>
+                {header}
+              </span>
+              {detail ? (
+                <span className="text-xs text-muted-foreground">{detail}</span>
+              ) : null}
+            </motion.div>
+          </AnimatePresence>
+        ) : null}
       </div>
     </motion.div>
   );
@@ -1557,6 +1572,7 @@ const ChatMessageComponent = ({
   message,
   isLoading = false,
   context,
+  priorAssistantTurnCount = 0,
 }: Props) => {
   const isUser = message.role === "user";
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
@@ -1609,32 +1625,36 @@ const ChatMessageComponent = ({
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
-  /** Text status strip while streaming (tools + gap before first displayable content). Matches mapp. */
-  const hasAgentSteps = (message.agentSteps?.length ?? 0) > 0;
-  const lifecycleStatus = useMemo(
-    () => thinkingStatusFromLifecycle(message.agentLifecycle),
-    [message.agentLifecycle],
-  );
-  const showLifecycleStrip =
-    !isUser && !hasDisplayableContent && !!lifecycleStatus && !hasAgentSteps;
-  const showThinkingStrip =
-    !isUser && !hasDisplayableContent && hasAgentSteps;
-  const showStatusStrip = showLifecycleStrip || showThinkingStrip;
+  const loadingUi = useAssistantLoadingUi({
+    messageId: message.id,
+    role: message.role,
+    agentLifecycle: message.agentLifecycle,
+    agentStepCount: message.agentSteps?.length ?? 0,
+    hasDisplayableContent,
+    isActiveLoading: isLoading && !isUser,
+    priorAssistantTurnCount,
+  });
+  const {
+    showTypingIndicator: showLoadingIndicator,
+    showLifecycleStrip,
+    showThinkingStrip,
+    showStatusStrip,
+    lifecycleHeader,
+    useProxyWaveIndicator,
+    typingIndicatorVariant,
+  } = loadingUi;
   const thinkingStatus = useDebouncedThinkingStatus(
     showThinkingStrip ? message.agentSteps : null,
     {
       messageContentJson,
     },
   );
-  const thinkingHeader =
-    (showLifecycleStrip ? lifecycleStatus?.header : null) ??
-    thinkingStatus.header;
-  const thinkingPreview =
-    (showLifecycleStrip ? lifecycleStatus?.preview : null) ??
-    thinkingStatus.preview;
-  /** Dots only before lifecycle or first agentSteps row. */
-  const showLoadingIndicator =
-    isLoading && !isUser && !hasDisplayableContent && !showStatusStrip;
+  const thinkingHeader = showLifecycleStrip
+    ? lifecycleHeader
+    : thinkingStatus.header;
+  const thinkingPreview = showLifecycleStrip
+    ? null
+    : thinkingStatus.preview;
   const fileData = message.file;
 
   const handleCopyClick = () => {
@@ -1831,23 +1851,15 @@ const ChatMessageComponent = ({
               <AssistantProgressStrip
                 header={thinkingHeader}
                 detail={thinkingPreview}
+                useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
               />
             ) : showLoadingIndicator ? (
                <div className="flex items-center justify-start p-2">
-                <svg width="45" height="24" viewBox="0 0 45 24" fill="currentColor" className="text-muted-foreground">
-                    <circle cx="6.75" cy="12" r="3.75">
-                        <animate attributeName="r" from="3.75" to="3.75" begin="0s" dur="0.8s" values="3.75;5.25;3.75" calcMode="linear" repeatCount="indefinite" />
-                        <animate attributeName="fill-opacity" from="1" to="1" begin="0s" dur="0.8s" values="1;.5;1" calcMode="linear" repeatCount="indefinite" />
-                    </circle>
-                    <circle cx="22.5" cy="12" r="3.75">
-                        <animate attributeName="r" from="3.75" to="3.75" begin="0.2s" dur="0.8s" values="3.75;5.25;3.75" calcMode="linear" repeatCount="indefinite" />
-                        <animate attributeName="fill-opacity" from="1" to="1" begin="0.2s" dur="0.8s" values="1;.5;1" calcMode="linear" repeatCount="indefinite" />
-                    </circle>
-                    <circle cx="38.25" cy="12" r="3.75">
-                        <animate attributeName="r" from="3.75" to="3.75" begin="0.4s" dur="0.8s" values="3.75;5.25;3.75" calcMode="linear" repeatCount="indefinite" />
-                        <animate attributeName="fill-opacity" from="1" to="1" begin="0.4s" dur="0.8s" values="1;.5;1" calcMode="linear" repeatCount="indefinite" />
-                    </circle>
-                </svg>
+                {typingIndicatorVariant === "wave" ? (
+                  <AssistantWaveDots />
+                ) : (
+                  <AssistantBounceDots />
+                )}
                </div>
             ) : effectiveStructuredData ? (
                 <motion.div layout className="flex w-full flex-col gap-3">

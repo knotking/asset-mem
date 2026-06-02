@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/components/chat/chat-message';
 import type { Message } from '@/lib/types';
 import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
+import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
 import { AnimatePresence } from 'framer-motion';
 import { Bot } from 'lucide-react';
 
@@ -55,6 +56,7 @@ export function ChatList({
                 message={message}
                 isLoading={isLoading || (isPlaceholder && assistantHasNoDisplayableContentYet(message))}
                 context={context}
+                priorAssistantTurnCount={countPriorAssistantTurnsInSession(messages, message.id)}
             />
         )
     });
