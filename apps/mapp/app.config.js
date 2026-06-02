@@ -29,6 +29,24 @@ function googleIosUrlScheme(iosClientId) {
 const googleIosUrlSchemeForBuild =
   googleIosUrlScheme(GOOGLE_IOS_CLIENT_ID_BY_ENV[appEnv] ?? GOOGLE_IOS_CLIENT_ID_BY_ENV.staging);
 
+const STORE_URLS_BY_ENV = {
+  prod: {
+    iosStoreUrl: 'https://apps.apple.com/app/id6774020500',
+    androidStoreUrl:
+      'https://play.google.com/store/apps/details?id=com.assetmem.app',
+  },
+  staging: {
+    iosStoreUrl: null,
+    androidStoreUrl: null,
+  },
+  dev: {
+    iosStoreUrl: null,
+    androidStoreUrl: null,
+  },
+};
+
+const storeUrls = STORE_URLS_BY_ENV[appEnv] ?? STORE_URLS_BY_ENV.staging;
+
 module.exports = {
   expo: {
     name: appEnv === 'prod' ? 'AssetMem AI' : `AssetMem AI (${appEnv})`,
@@ -123,6 +141,8 @@ module.exports = {
       billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),
       mobileWebHandoffUrl: buildProxyUrl(proxyBaseUrl, 'auth/mobile-web-handoff'),
       webAppUrl: process.env.WEB_APP_URL,
+      iosStoreUrl: storeUrls.iosStoreUrl ?? undefined,
+      androidStoreUrl: storeUrls.androidStoreUrl ?? undefined,
       supportEmail:
         process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com',
     },

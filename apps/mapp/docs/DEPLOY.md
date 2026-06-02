@@ -12,8 +12,10 @@ Complete guide for deploying the React Native + Expo mobile application using Gi
   - [Local Deployment](#local-deployment)
 - [Build Profiles](#build-profiles)
 - [Deployment Workflows](#deployment-workflows)
+- [In-app updates (OTA UX)](#in-app-updates-ota-ux)
 - [Troubleshooting](#troubleshooting)
 - [Google Sign-In setup](./GOOGLE_SIGN_IN.md) (OAuth client IDs, SHA-1)
+- [Mobile app update policy (force OTA / native)](./MOBILE_APP_UPDATE_POLICY.md)
 
 ## Overview
 
@@ -239,9 +241,13 @@ Message: "Added new dashboard widgets"
 6. Update goes live in minutes
 
 **Update Delivery**:
-- Users get updates on next app restart
-- No app store approval needed
-- Only works for JS/asset changes
+- Updates download on app launch and when returning to foreground (throttled)
+- Optional **Update ready** alert (Later / Restart) when `forceOta` is false in Firestore policy
+- **Restart** applies the bundle immediately via `reloadAsync()`
+- Without the alert, users may need one or two cold starts for the new JS bundle
+- No app store approval needed for OTA; only works for JS/asset changes on the same `runtimeVersion`
+
+See [In-app updates (OTA UX)](#in-app-updates-ota-ux) and [MOBILE_APP_UPDATE_POLICY.md](./MOBILE_APP_UPDATE_POLICY.md).
 
 ### Local Deployment
 
@@ -554,6 +560,52 @@ git push origin main
 # 4. Testers install via link or TestFlight/Play Console
 ```
 
+## In-app updates (OTA UX)
+
+Behavior is implemented in `AppUpdateGate` (root layout) and Settings `AppVersionFooter`.
+
+### Default (soft OTA)
+
+When Firestore `forceOta` is `false` (default) and a new bundle is available:
+
+1. App checks for updates (launch + foreground, ~5 min throttle).
+2. Bundle downloads in the background.
+3. User sees **Update ready** with **Later** or **Restart**.
+
+### Force OTA
+
+When `config/mobileApp.{env}.forceOta` is `true` (see [MOBILE_APP_UPDATE_POLICY.md](./MOBILE_APP_UPDATE_POLICY.md)):
+
+- Full-screen blocker while downloading, then **Restart now** only (no dismiss).
+
+### Force native
+
+When installed native version is below `minimumNativeVersion`:
+
+- Full-screen blocker with **Open app store** until the user updates via the store.
+- Requires a new EAS **build** and store release; OTA cannot replace the binary.
+
+### Verifying OTA on a device (staging or prod)
+
+1. Install a release build (staging APK/IPA or prod) — not Expo Go.
+2. Publish an OTA to that build’s channel (`staging` or `prod`).
+3. Open **Settings** → tap **Version** five times quickly → **OTA** line appears.
+4. First 8 characters match the update in [Expo → Updates](https://expo.dev); tap **OTA** to copy the full ID.
+5. OTA details hide when the app goes to background or is killed; repeat step 3 to show again.
+
+In `__DEV__` (`npm run dev`), the same gesture also shows **Developer update tools** (mock prompts / force blockers).
+
+### What ships via OTA vs build
+
+| Change | OTA | New iOS/Android build |
+|--------|-----|------------------------|
+| JS/UI, `AppUpdateGate`, Settings footer | ✅ | — |
+| Firestore policy values only | ✅ (after rules deploy) | — |
+| New native module / plugin | ❌ | ✅ |
+| `APP_VERSION` / runtime mismatch | ❌ | ✅ |
+
+Deploy [firestore.rules](../../webapp/firestore.rules) so clients can read `config/mobileApp`.
+
 ## Update Channels Explained
 
 Update channels control which OTA updates users receive.
@@ -665,13 +717,22 @@ npx eas-cli credentials
 # 1. Verify device is on correct channel
 # Check app.json and eas.json configuration
 
-# 2. Force app restart (kill and reopen)
+# 2. Force app restart (kill and reopen; may take two cold starts)
 
 # 3. Check update was published
 # https://expo.dev/accounts/[account]/projects/assetmem-staging/updates
 
 # 4. Verify runtime version matches
 # OTA updates only work with matching runtime versions
+
+# 5. In-app: tap Version 5× in Settings to reveal OTA <first 8 of updateId>; tap OTA to copy full ID
+
+# 6. The app now prompts when a downloaded OTA is ready
+# Tap "Restart" on the in-app "Update ready" popup to apply immediately
+
+# Settings → tap Version 5× to reveal OTA ID (tap OTA to copy). __DEV__: same gesture also shows simulate tools
+
+# Force OTA / force native: Firestore config/mobileApp — see MOBILE_APP_UPDATE_POLICY.md
 ```
 
 #### Issue 4: "eas: command not found"
@@ -829,6 +890,7 @@ eas build:configure --check
 
 ## Additional Resources
 
+- **OTA / force update policy**: [MOBILE_APP_UPDATE_POLICY.md](./MOBILE_APP_UPDATE_POLICY.md)
 - **Google Sign-In**: [GOOGLE_SIGN_IN.md](./GOOGLE_SIGN_IN.md) — `iosClientId`, `androidClientId`, SHA-1, EAS credentials
 - **Project Configuration**: [app.json](./app.json)
 - **Build Configuration**: [eas.json](./eas.json)
@@ -876,5 +938,5 @@ eas credentials                              # Manage credentials
 
 ---
 
-**Last Updated**: 2025-11-12
+**Last Updated**: 2026-06-02
 **Maintainer**: AssetMem Team

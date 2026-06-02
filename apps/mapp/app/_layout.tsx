@@ -18,6 +18,7 @@ import { app, auth, db, storage } from '@homeapp/common/firebase';
 import { createAgentSession } from '@/lib/api';
 import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvider';
 import { ThemePreferenceSync } from '@/components/ThemePreferenceSync';
+import { AppUpdateGate } from '@/components/AppUpdateGate';
 import { createLogger } from '@/lib/logger';
 
 const routesLog = createLogger('routes');
@@ -101,11 +102,13 @@ function Routes() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="auth" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="+not-found" />
-    </Stack>
+    <AppUpdateGate enabled={isLoaded}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+    </AppUpdateGate>
   );
 }

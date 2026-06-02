@@ -58,6 +58,12 @@ service cloud.firestore {
       }
     }
 
+    // Mobile app version / OTA policy (read-only for clients; set via Firebase console or scripts)
+    match /config/mobileApp {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Rules for publicly shared chat sessions
     match /sharedChats/{shareId} {
       allow read: if isSharedChatActive(shareId);

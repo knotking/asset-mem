@@ -33,6 +33,13 @@ The HomeApp mobile application is a comprehensive property care tool built with 
 - **State Management**: React Context
 - **Backend Integration**: Firebase (Auth, Firestore, Storage) & Custom Python Backend (GCP)
 
+## Deployment & OTA updates
+
+Release builds use **EAS Update** (staging/prod channels). JS-only changes ship via OTA; native changes need a new EAS build.
+
+- **[DEPLOY.md](docs/DEPLOY.md)** — builds, channels, GitHub Actions, troubleshooting
+- **[MOBILE_APP_UPDATE_POLICY.md](docs/MOBILE_APP_UPDATE_POLICY.md)** — force OTA/native (Firestore), Settings OTA ID (tap Version 5×)
+
 ## Getting Started
 
 1.  **Install Dependencies**:
