@@ -21,6 +21,11 @@ import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysi
 import {
   getInFlightCheckpointProgressFromMessages,
 } from '@homeapp/common/lib/checkpoint-branch-progress';
+import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
+import {
+  assistantMessageHasDisplayableContent,
+  getMessageDisplayParts,
+} from '@/lib/chat-content-parse';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import type {
   FileAttachment,
@@ -119,6 +124,27 @@ function PropertyChatTab({
     return getInFlightCheckpointProgressFromMessages(messages);
   }, [messages]);
 
+  const activeStreamingAssistantId = React.useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const msg = messages[i];
+      if (msg.role !== 'assistant') continue;
+      if (!assistantMessageHasDisplayableContent(getMessageDisplayParts(msg))) {
+        return msg.id;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const priorAssistantTurnCountById = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const msg of messages) {
+      if (msg.role === 'assistant') {
+        map.set(msg.id, countPriorAssistantTurnsInSession(messages, msg.id));
+      }
+    }
+    return map;
+  }, [messages]);
+
   const giftedChatUser = React.useMemo(() => ({ _id: userId }), [userId]);
 
   const sessionIdRef = React.useRef(sessionId);
@@ -128,14 +154,17 @@ function PropertyChatTab({
 
   const renderBubble = React.useCallback(
     (props: BubbleProps<IMessage>) => {
+      const messageId = String(props.currentMessage?._id ?? '');
       return (
         <GiftedChatBubble
           {...props}
           sessionId={sessionIdRef.current ?? undefined}
+          priorAssistantTurnCount={priorAssistantTurnCountById.get(messageId) ?? 0}
+          isActiveLoading={messageId === activeStreamingAssistantId}
         />
       );
     },
-    [],
+    [priorAssistantTurnCountById, activeStreamingAssistantId],
   );
 
   const renderChatEmpty = React.useCallback(

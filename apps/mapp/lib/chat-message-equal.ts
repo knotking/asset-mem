@@ -4,6 +4,8 @@ import { messageCreatedAtMillis } from '@/lib/gifted-chat-utils';
 export interface ChatMessageCompareProps {
   message: Message;
   sessionId?: string;
+  priorAssistantTurnCount?: number;
+  isActiveLoading?: boolean;
 }
 
 function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
@@ -39,6 +41,8 @@ export function areChatMessagePropsEqual(
   next: ChatMessageCompareProps
 ): boolean {
   if (prev.sessionId !== next.sessionId) return false;
+  if (prev.priorAssistantTurnCount !== next.priorAssistantTurnCount) return false;
+  if (prev.isActiveLoading !== next.isActiveLoading) return false;
 
   const prevMsg = prev.message;
   const nextMsg = next.message;

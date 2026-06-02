@@ -35,6 +35,8 @@
     "./lib/checkpoint-branch-progress": "./src/lib/checkpoint-branch-progress.ts",
     "./lib/correlation-id": "./src/lib/correlation-id.ts",
     "./lib/agent-lifecycle-stream": "./src/lib/agent-lifecycle-stream.ts",
+    "./lib/agent-lifecycle-ui": "./src/lib/agent-lifecycle-ui.ts",
+    "./hooks/use-assistant-loading-ui": "./src/hooks/use-assistant-loading-ui.ts",
     "./lib/search-location": "./src/search-location.ts",
     "./lib/message-content-parts": "./src/lib/message-content-parts.ts",
     "./lib/shared-chat": "./src/lib/shared-chat.ts"

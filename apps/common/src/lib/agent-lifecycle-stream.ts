@@ -20,6 +20,37 @@ export type AgentLifecycle = {
   ts?: string;
 };
 
+/** Proxy-only phases (handoff); UI uses wave dots and optional copy on first turn. */
+export const PROXY_LIFECYCLE_PHASES = new Set<string>([
+  "proxy.request_accepted",
+  "proxy.engine_invoke",
+]);
+
+export function isProxyLifecyclePhase(phase: string | undefined | null): boolean {
+  return !!phase && PROXY_LIFECYCLE_PHASES.has(phase);
+}
+
+export const PHASE_ENGINE_BEFORE_MODEL = "engine.before_model";
+
+/** Follow-up bubble wave through proxy + early engine; strip starts at `before_model`. */
+export const PRE_BEFORE_MODEL_LIFECYCLE_PHASES = new Set<string>([
+  ...PROXY_LIFECYCLE_PHASES,
+  "engine.turn_started",
+  "engine.runner_exec",
+]);
+
+export function isPreBeforeModelLifecyclePhase(
+  phase: string | undefined | null,
+): boolean {
+  return !!phase && PRE_BEFORE_MODEL_LIFECYCLE_PHASES.has(phase);
+}
+
+export function isBeforeModelLifecyclePhase(
+  phase: string | undefined | null,
+): boolean {
+  return phase === PHASE_ENGINE_BEFORE_MODEL;
+}
+
 /** Map persisted lifecycle to thinking-strip header (no timing in UI). */
 export function thinkingStatusFromLifecycle(
   lifecycle: AgentLifecycle | null | undefined,

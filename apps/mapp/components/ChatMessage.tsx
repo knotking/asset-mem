@@ -49,7 +49,7 @@ import type {
   Product,
   DiyCostEstimatesSummary,
 } from '@homeapp/common/types';
-import { thinkingStatusFromLifecycle } from '@homeapp/common/lib/agent-lifecycle-stream';
+import { useAssistantLoadingUi } from '@homeapp/common/hooks/use-assistant-loading-ui';
 import {
   flattenServiceProviderRawList,
   isDisplayableServiceProvider,
@@ -90,6 +90,10 @@ const chatLog = createLogger('chat');
 interface ChatMessageProps {
   message: Message;
   sessionId?: string;
+  /** Completed assistant replies before this message in the session. */
+  priorAssistantTurnCount?: number;
+  /** True while this message is the in-flight assistant placeholder. */
+  isActiveLoading?: boolean;
 }
 
 // Helper functions moved outside components
@@ -1552,7 +1556,12 @@ const FilePreview = React.memo(
   }
 );
 
-function ChatMessage({ message, sessionId }: ChatMessageProps) {
+function ChatMessage({
+  message,
+  sessionId,
+  priorAssistantTurnCount = 0,
+  isActiveLoading = false,
+}: ChatMessageProps) {
   const isUser = message.role === 'user';
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
     resolveMessageContentParts(message);
@@ -1578,20 +1587,25 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
-  const lifecycleStatus = useMemo(
-    () => thinkingStatusFromLifecycle(message.agentLifecycle),
-    [message.agentLifecycle],
-  );
-
-  const showEarlyLoading = !isUser && !hasDisplayableContent;
-  const showLifecycleStrip =
-    showEarlyLoading && !!lifecycleStatus && !message.agentSteps?.length;
-  const showThinkingStrip =
-    showEarlyLoading &&
-    !!message.agentSteps &&
-    message.agentSteps.length > 0;
-  const showStatusStrip = showLifecycleStrip || showThinkingStrip;
-  const showTypingIndicator = showEarlyLoading && !showStatusStrip;
+  const loadingUi = useAssistantLoadingUi({
+    messageId: message.id,
+    role: message.role,
+    agentLifecycle: message.agentLifecycle,
+    agentStepCount: message.agentSteps?.length ?? 0,
+    hasDisplayableContent,
+    isActiveLoading: !isUser && isActiveLoading,
+    priorAssistantTurnCount,
+  });
+  const {
+    showTypingIndicator,
+    showLifecycleStrip,
+    showThinkingStrip,
+    showStatusStrip,
+    lifecycleHeader,
+    useProxyWaveIndicator,
+    typingIndicatorVariant,
+  } = loadingUi;
+  const showEarlyLoading = !isUser && !hasDisplayableContent && isActiveLoading;
   const isStructuredAssistant =
     !isUser &&
     !!displayParts.structuredData &&
@@ -1686,13 +1700,14 @@ function ChatMessage({ message, sessionId }: ChatMessageProps) {
             {showStatusStrip ? (
               <AgentStatus
                 steps={message.agentSteps ?? []}
-                lifecycleStatus={showLifecycleStrip ? lifecycleStatus : null}
+                lifecycleHeader={showLifecycleStrip ? lifecycleHeader : null}
+                useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
                 messageContentJson={messageContentJson}
               />
             ) : null}
             {showTypingIndicator ? (
               <View className="p-2">
-                <TypingIndicator />
+                <TypingIndicator variant={typingIndicatorVariant} />
               </View>
             ) : null}
             {hasDisplayableContent ? (

@@ -8,6 +8,8 @@ import ChatMessage from './ChatMessage';
 
 interface CustomBubbleProps extends BubbleProps<IMessage> {
   sessionId?: string;
+  priorAssistantTurnCount?: number;
+  isActiveLoading?: boolean;
 }
 
 /** Matches react-native-gifted-chat default Bubble side margins (see Bubble/styles.js). */
@@ -37,6 +39,8 @@ function GiftedChatBubble({
   currentMessage,
   sessionId,
   position,
+  priorAssistantTurnCount = 0,
+  isActiveLoading = false,
 }: CustomBubbleProps) {
   if (!currentMessage) {
     return null;
@@ -52,7 +56,12 @@ function GiftedChatBubble({
           ? { marginRight: BUBBLE_SIDE_MARGIN }
           : { marginLeft: BUBBLE_SIDE_MARGIN }),
       }}>
-      <ChatMessage message={message} sessionId={sessionId} />
+      <ChatMessage
+        message={message}
+        sessionId={sessionId}
+        priorAssistantTurnCount={priorAssistantTurnCount}
+        isActiveLoading={isActiveLoading}
+      />
     </View>
   );
 }
