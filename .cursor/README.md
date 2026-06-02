@@ -86,26 +86,44 @@ IAM (ask a project admin if calls fail with permission denied):
 
 ### Local auth (each machine)
 
-Application Default Credentials:
+Application Default Credentials (optional if you use OAuth):
 
 ```bash
 gcloud auth application-default login
 ```
 
-Export env vars before starting Cursor (or add to your shell profile). Tokens from ADC expire about every hour — refresh when MCP auth fails:
+If you switch to OAuth for `gcp-cloud-logging`, you won't need `GCLOUD_ACCESS_TOKEN` anymore. Export the OAuth env vars for `gcp-cloud-logging` (or add to your shell profile):
+
+```bash
+export GCP_PROJECT_ID=homegeek-staging
+export GCP_CLOUD_LOGGING_MCP_CLIENT_ID="..."
+export GCP_CLOUD_LOGGING_MCP_CLIENT_SECRET="..."
+```
+
+If you prefer the old bearer-token style setup, refresh when MCP auth fails (ADC tokens expire about every hour):
 
 ```bash
 export GCP_PROJECT_ID=homegeek-staging
 export GCLOUD_ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
 ```
 
-Optional: use a Desktop OAuth client instead of bearer tokens — see [Authenticate to MCP servers](https://docs.cloud.google.com/mcp/authenticate-mcp) and Cursor’s `auth` block in [MCP docs](https://cursor.com/docs/mcp#static-oauth-for-remote-servers). Do not commit client secrets.
+Optional: use a Desktop OAuth client instead of static OAuth client credentials — see [Authenticate to MCP servers](https://docs.cloud.google.com/mcp/authenticate-mcp). Do not commit client secrets.
 
 ### Verify in Cursor
 
 1. Restart Cursor after setting env vars.
 2. **Settings → MCP** — ensure `gcp-cloud-logging` is enabled.
 3. In Agent chat, ask to list MCP tools for `gcp-cloud-logging` or query recent proxy errors (see skill `gcp-logs-homeapp`).
+
+### Workspace note (June 2026)
+
+If `gcp-cloud-logging` MCP repeatedly returns permission errors despite correct IAM
+(`roles/mcp.toolUser`, `roles/serviceusage.serviceUsageConsumer`, logging read role),
+default to direct `gcloud` commands for this workspace.
+
+```bash
+gcloud logging read 'severity>=ERROR' --project=homegeek-staging --limit=50 --order=desc
+```
 
 ### Security (all MCP servers)
 
