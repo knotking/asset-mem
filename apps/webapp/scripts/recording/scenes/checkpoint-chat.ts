@@ -21,7 +21,7 @@ export async function recordCheckpointChat(page: Page): Promise<SceneResult> {
     }
 
     // Navigate to chat tab if not already there
-    console.log("  💬 Switching to Diagnosis Chat tab...");
+    console.log("  💬 Switching to Checkpoint Chat tab...");
     if (!page.url().includes("/chat")) {
       try {
         const chatTab = page

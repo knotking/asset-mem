@@ -1615,12 +1615,6 @@ export async function findAccordions(page: Page): Promise<Array<{
         console.log(`  📋 Found accordion: "${title?.trim() || 'Unknown'}" (expanded: ${isExpanded}, inAssistant: ${isInAssistantMessage})`);
         
         if (
-          titleLower.includes("triage") ||
-          titleLower.includes("clarification") ||
-          titleLower.includes("triage summary")
-        ) {
-          value = "triage";
-        } else if (
           titleLower.includes("coverage") ||
           titleLower.includes("coverage analysis")
         ) {
@@ -1827,14 +1821,14 @@ export async function processAccordion(
 export async function processAllAccordions(
   page: Page,
   options: {
-    order?: string[]; // Order of accordion types to process (e.g., ["triage", "coverage", "diy"])
+    order?: string[]; // Order of accordion types to process (e.g., ["coverage", "diy", "service"])
     collapseAfterScroll?: boolean;
     waitAfterExpand?: number;
     waitAfterScroll?: number;
   } = {}
 ): Promise<void> {
   const {
-    order = ["triage", "coverage", "diy", "service", "cost-estimates"],
+    order = ["coverage", "diy", "service", "cost-estimates"],
     collapseAfterScroll = true,
     waitAfterExpand = 2000,
     waitAfterScroll = 1000,

@@ -16,6 +16,13 @@ export interface RecordingConfig {
     height: number;
     fps: number;
   };
+  /** Subtle click zoom in post-process (keep level low to avoid cropping copy). */
+  zoomEffects: {
+    enabled: boolean;
+    zoomLevel: number;
+    zoomDurationSec: number;
+    minGapBetweenZoomsSec: number;
+  };
   timing: {
     landingPage: number;
     login: number;
@@ -83,6 +90,14 @@ export const config: RecordingConfig = {
     width: 1920,
     height: 1080,
     fps: 30,
+  },
+  zoomEffects: {
+    enabled:
+      process.env.RECORDING_ZOOM_ENABLED === '1' ||
+      process.env.RECORDING_ZOOM_ENABLED?.toLowerCase() === 'true',
+    zoomLevel: Number(process.env.RECORDING_ZOOM_LEVEL) || 1.2,
+    zoomDurationSec: Number(process.env.RECORDING_ZOOM_DURATION_SEC) || 1.0,
+    minGapBetweenZoomsSec: 3.0,
   },
   timing: {
     landingPage: 15000, // 15 seconds

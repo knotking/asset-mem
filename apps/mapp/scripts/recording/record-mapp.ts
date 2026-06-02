@@ -23,7 +23,7 @@ const narrationTexts: Record<string, string> = {
     'View all your properties in one place. The mobile dashboard gives you quick access to property details, recent activity, and easy navigation to manage your home maintenance needs.',
   'Property Details':
     'Explore comprehensive property information including documents, checkpoints, and chat history. Navigate between different tabs to access all property-related features.',
-  Chat: 'Engage with our AI assistant directly from your mobile device. Ask questions about property maintenance, get recommendations, and receive real-time responses with detailed analysis and actionable insights.',
+  Chat: "Engage with our AI assistant directly from your mobile device. Ask questions about your checkpoints and property history, then get guidance grounded in the latest condition changes and timeline context.",
   Timeline:
     "Track your property's condition over time with visual checkpoints. View historical maintenance records, compare different time periods, and monitor changes in your property's condition.",
 };

@@ -2,7 +2,7 @@
 
 🏠 **Transform Your Home Maintenance with AI-Powered Intelligence**
 
-Discover HomeGeek AI, the revolutionary platform that makes property care smarter, easier, and more proactive. Watch how our cutting-edge AI technology transforms the way you manage, diagnose, and maintain your home.
+Discover HomeGeek AI, the revolutionary platform that makes property care smarter, easier, and more proactive. Watch how our checkpoint-first AI platform transforms the way you monitor, compare, and maintain your home.
 
 ## What You'll See in This Demo:
 
@@ -11,10 +11,10 @@ Discover HomeGeek AI, the revolutionary platform that makes property care smarte
 - Track changes with AI-powered before-and-after comparisons
 - Get comprehensive insights and analytics about your property's health
 
-🤖 **AI-Powered Diagnostics**
-- Upload photos of issues and receive instant AI analysis
-- Get detailed recommendations from DIY solutions to professional services
-- Access cost estimates and coverage analysis from your warranties and insurance
+🤖 **Checkpoint Intelligence**
+- Build a visual history of property condition with structured checkpoints
+- Use AI-powered comparisons to detect meaningful changes over time
+- Turn checkpoint insights into practical maintenance priorities
 
 💬 **Smart AI Assistant**
 - Chat with our AI about your property, checkpoints, and maintenance needs
@@ -41,7 +41,7 @@ Discover HomeGeek AI, the revolutionary platform that makes property care smarte
 ✅ **Save Time** - Get instant answers instead of searching through manuals
 ✅ **Save Money** - Make informed decisions with cost comparisons
 ✅ **Stay Proactive** - Track property condition and catch issues early
-✅ **Get Expert Guidance** - AI-powered recommendations from triage to diagnosis
+✅ **Get Expert Guidance** - AI-powered recommendations grounded in checkpoint context
 ✅ **Organize Everything** - All your property information in one place
 
 ---
@@ -60,7 +60,7 @@ Discover HomeGeek AI, the revolutionary platform that makes property care smarte
 
 ---
 
-**Tags:** #HomeMaintenance #AI #PropertyManagement #SmartHome #HomeCare #PropertyDiagnostics #AIAssistant #HomeImprovement #PropertyTracking #MaintenanceApp
+**Tags:** #HomeMaintenance #AI #PropertyManagement #SmartHome #HomeCare #AIAssistant #HomeImprovement #PropertyTracking #CheckpointTracking #MaintenanceApp
 
 ---
 

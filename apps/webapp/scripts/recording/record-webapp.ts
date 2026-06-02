@@ -4,8 +4,6 @@ import { ensureOutputDir, authenticate, saveSession, delay } from "./helpers";
 import { recordLandingPage } from "./scenes/landing-page";
 import { recordLogin } from "./scenes/login";
 import { recordDashboard } from "./scenes/dashboard";
-import { recordExistingChat } from "./scenes/existing-chat";
-import { recordDiagnosisChat } from "./scenes/diagnosis-chat";
 import { recordTimelineCheckpoint } from "./scenes/timeline-checkpoint";
 import { recordTimelineCompare } from "./scenes/timeline-compare";
 import { recordTimelineInsights } from "./scenes/timeline-insights";
@@ -26,9 +24,9 @@ import * as fs from "fs";
 // Narration text for each scene (max 500 characters)
 const narrationTexts: Record<string, string> = {
   "Landing Page":
-    "Welcome to HomeGeek AI, your complete home care platform. Explore real-world use cases from emergency repairs to preventive maintenance. Discover integrated services: AI diagnostics, property checkpoints, document chat, and service discovery. Meet our multi-agent AI system with specialized agents for triage, coverage, DIY, services, and cost analysis. See property checkpoints with visual timelines and AI tracking. Experience intelligent document chat with instant answers.",
+    "Welcome to Asset Mem AI, your complete home care platform. Explore real-world use cases from property condition tracking to preventive maintenance planning. Discover integrated services: AI powered asset checkpoints analysis, checkpoints chat and service discovery. Meet our multi-agent AI system with specialized agents for checkpoint analysis, coverage, DIY, services and cost estimation. See property checkpoints with visual timelines and AI tracking. Experience intelligent checkpoint chat with instant answers.",
   Login:
-    "Access your personalized HomeGeek AI dashboard with secure authentication. Once logged in, you'll unlock a world of intelligent home maintenance tools, from AI-powered diagnostics to comprehensive property tracking. Your journey to smarter home management begins here.",
+    "Access your personalized AssetMem AI dashboard with secure authentication. Once logged in, you'll unlock a world of intelligent home maintenance tools, from AI-powered diagnostics to comprehensive property tracking. Your journey to smarter home management begins here.",
   "Property Onboarding":
     "Watch how easy it is to add a new property to your account! Simply click 'Add New Property', select your property type, and upload documents like inspection reports, insurance papers, or property photos. Our AI instantly analyzes your documents, extracts key information like property address, and creates your property profile automatically. Within seconds, your property is ready for AI-powered maintenance assistance.",
   Dashboard:
@@ -41,12 +39,8 @@ const narrationTexts: Record<string, string> = {
     "Explore the insights dashboard, where data transforms into actionable intelligence. View comprehensive metrics, trends, and analytics about your property's condition. See patterns emerge, identify areas requiring attention, and gain predictive insights.",
   "Checkpoint Chat":
     "Engage with our AI assistant to get instant answers about your checkpoints. Simply ask questions like 'What checkpoints do I have?' or 'What's their current status?' and watch as the AI provides detailed, contextual responses. The assistant understands your property's history, analyzes checkpoint data, and delivers intelligent insights tailored to your specific situation.",
-  "Existing Chat Session":
-    "Dive into a previous conversation with our AI assistants to see how it intelligently handles complex home maintenance queries. Watch as it provides detailed recommendations, analyzes property conditions and coverage and offers actionable insights. This demonstrates the AI's ability to maintain context and deliver personalized guidance.",
-  "Diagnosis Chat":
-    "Experience the full power of our AI diagnosis system! Upload photos of issues, ask questions about home maintenance, and receive comprehensive analysis. The AI examines your property details, considers historical data, and provides intelligent recommendations including DIY solutions, professional service suggestions, and cost estimates. Watch as multiple specialized agents work together—from triage to diagnosis, service recommendations, and cost analysis—delivering complete solutions seamlessly.",
   Details:
-    "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records. Ready to transform how you manage your home? Get started at homegeek.ai. Thank you for watching!",
+    "Navigate to the property details section, your comprehensive information hub. Manage files, review history, and access everything you need to maintain complete control over your property's documentation and records. Ready to transform how you manage your home? Get started at asset-mem.com. Thank you for watching!",
 };
 
 /**
@@ -67,12 +61,10 @@ function promptSceneSelection(): Promise<Set<string>> {
     console.log("  4. Timeline Compare (Compare Checkpoints)");
     console.log("  5. Timeline Insights (View Insights Dashboard)");
     console.log("  6. Checkpoint Chat (Ask about checkpoints)");
-    console.log("  7. Existing Chat Session");
-    console.log("  8. Diagnosis Chat");
-    console.log("  9. Details (Property Details)");
-    console.log("  10. All of the above");
+    console.log("  7. Details (Property Details)");
+    console.log("  8. All of the above");
     console.log(
-      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 10 for all):",
+      "\nEnter scene numbers (comma-separated, e.g., 1,2,3 or 8 for all):",
     );
 
     rl.question("> ", (answer) => {
@@ -81,16 +73,14 @@ function promptSceneSelection(): Promise<Set<string>> {
       const selected = new Set<string>();
       const input = answer.trim().toLowerCase();
 
-      // If user enters 10 or "all", select all scenes
-      if (input === "10" || input === "all") {
+      // If user enters 8 or "all", select all scenes
+      if (input === "8" || input === "all") {
         selected.add("Landing Page");
         selected.add("Property Onboarding");
         selected.add("Timeline Checkpoint");
         selected.add("Timeline Compare");
         selected.add("Timeline Insights");
         selected.add("Checkpoint Chat");
-        selected.add("Existing Chat Session");
-        selected.add("Diagnosis Chat");
         selected.add("Details");
       } else {
         // Parse comma-separated numbers
@@ -116,12 +106,15 @@ function promptSceneSelection(): Promise<Set<string>> {
               selected.add("Checkpoint Chat");
               break;
             case "7":
-              selected.add("Existing Chat Session");
+              selected.add("Details");
               break;
             case "8":
-              selected.add("Diagnosis Chat");
-              break;
-            case "9":
+              selected.add("Landing Page");
+              selected.add("Property Onboarding");
+              selected.add("Timeline Checkpoint");
+              selected.add("Timeline Compare");
+              selected.add("Timeline Insights");
+              selected.add("Checkpoint Chat");
               selected.add("Details");
               break;
           }
@@ -150,6 +143,16 @@ async function main() {
     "\n📝 Note: Login (and Dashboard if needed) will run automatically as prerequisites\n",
   );
 
+  const zoomEnabled =
+    process.argv.includes("--zoom") || config.zoomEffects.enabled;
+  if (zoomEnabled) {
+    console.log("🔍 Click zoom post-processing: enabled\n");
+  } else {
+    console.log(
+      "⏭️  Click zoom post-processing: disabled (pass --zoom or set RECORDING_ZOOM_ENABLED=true to enable)\n",
+    );
+  }
+
   ensureOutputDir();
 
   // Generate timestamp for file names
@@ -161,6 +164,7 @@ async function main() {
   let browser: Browser | null = null;
   let context: BrowserContext | null = null;
   let page: Page | null = null;
+  let zoomTracker: ZoomTracker | null = null;
 
   try {
     // Launch browser with video recording
@@ -307,61 +311,64 @@ async function main() {
       "  ✅ CSS and click indicators injected (applies to all pages)",
     );
 
-    // Initialize zoom tracker for Cursorful-style zoom effects
-    const zoomTracker = new ZoomTracker();
+    // Initialize zoom tracker for Cursorful-style zoom effects (optional)
+    if (zoomEnabled) {
+      zoomTracker = new ZoomTracker();
+      const recordingContext = context;
 
-    // Track clicks using DOM event listeners (captures both Playwright and user clicks)
-    // Playwright's page.click() dispatches real DOM click events, which we capture here
-    await context.addInitScript((startTime: number) => {
-      // Store start time for reference
-      (window as any).__zoomTrackerStartTime = startTime;
+      // Track clicks using DOM event listeners (captures both Playwright and user clicks)
+      // Playwright's page.click() dispatches real DOM click events, which we capture here
+      await context.addInitScript((startTime: number) => {
+        // Store start time for reference
+        (window as any).__zoomTrackerStartTime = startTime;
 
-      // Store click events in a global array that Playwright can read later
-      (window as any).__zoomTrackerClicks =
-        (window as any).__zoomTrackerClicks || [];
+        // Store click events in a global array that Playwright can read later
+        (window as any).__zoomTrackerClicks =
+          (window as any).__zoomTrackerClicks || [];
 
-      // Track all click events in the page (captures programmatic clicks from Playwright too)
-      document.addEventListener(
-        "click",
-        (event: MouseEvent) => {
-          const clickData = {
-            x: event.clientX,
-            y: event.clientY,
-            time: Date.now() - (window as any).__zoomTrackerStartTime,
-          };
-          (window as any).__zoomTrackerClicks.push(clickData);
-        },
-        true,
-      ); // Use capture phase to catch all clicks
-    }, Date.now());
+        // Track all click events in the page (captures programmatic clicks from Playwright too)
+        document.addEventListener(
+          "click",
+          (event: MouseEvent) => {
+            const clickData = {
+              x: event.clientX,
+              y: event.clientY,
+              time: Date.now() - (window as any).__zoomTrackerStartTime,
+            };
+            (window as any).__zoomTrackerClicks.push(clickData);
+          },
+          true,
+        ); // Use capture phase to catch all clicks
+      }, Date.now());
 
-    // Periodically read click events from all pages and track them
-    const clickSyncInterval = setInterval(async () => {
-      try {
-        const pages = context.pages();
-        for (const page of pages) {
-          try {
-            const clicks = await page.evaluate(() => {
-              const clicks = (window as any).__zoomTrackerClicks || [];
-              // Clear the array after reading to avoid duplicates
-              (window as any).__zoomTrackerClicks = [];
-              return clicks;
-            });
+      // Periodically read click events from all pages and track them
+      const clickSyncInterval = setInterval(async () => {
+        try {
+          const pages = recordingContext.pages();
+          for (const page of pages) {
+            try {
+              const clicks = await page.evaluate(() => {
+                const clicks = (window as any).__zoomTrackerClicks || [];
+                // Clear the array after reading to avoid duplicates
+                (window as any).__zoomTrackerClicks = [];
+                return clicks;
+              });
 
-            for (const click of clicks) {
-              zoomTracker.trackClick(click.x, click.y);
+              for (const click of clicks) {
+                zoomTracker!.trackClick(click.x, click.y);
+              }
+            } catch (error) {
+              // Page might be closed, ignore
             }
-          } catch (error) {
-            // Page might be closed, ignore
           }
+        } catch (error) {
+          // Context might be closed, ignore
         }
-      } catch (error) {
-        // Context might be closed, ignore
-      }
-    }, 500); // Sync every 500ms
+      }, 500); // Sync every 500ms
 
-    // Store interval ID for cleanup
-    (context as any).__zoomTrackerInterval = clickSyncInterval;
+      // Store interval ID for cleanup
+      (context as any).__zoomTrackerInterval = clickSyncInterval;
+    }
 
     // Build scenes array with prerequisites first
     const scenes: Array<{ name: string; fn: () => Promise<any> }> = [];
@@ -369,26 +376,23 @@ async function main() {
     // Landing Page is optional - only add if selected
     if (selectedScenes.has("Landing Page")) {
       scenes.push({ name: "Landing Page", fn: () => recordLandingPage(page!) });
-      // Landing Page navigates to login at the end, so Login should follow
     }
 
-    // Login is needed for authenticated scenes or if Landing Page is selected
+    // Login is needed for authenticated scenes
     const scenesNeedingLogin = [
       "Property Onboarding",
       "Timeline Checkpoint",
       "Timeline Compare",
       "Timeline Insights",
       "Checkpoint Chat",
-      "Existing Chat Session",
-      "Diagnosis Chat",
       "Details",
     ];
     const hasScenesNeedingLogin = scenesNeedingLogin.some((sceneName) =>
       selectedScenes.has(sceneName),
     );
 
-    // Add Login if we have authenticated scenes or if Landing Page is selected (it navigates to login)
-    if (hasScenesNeedingLogin || selectedScenes.has("Landing Page")) {
+    // Add Login when later scenes require authentication
+    if (hasScenesNeedingLogin) {
       scenes.push({ name: "Login", fn: () => recordLogin(page!, context!) });
     }
 
@@ -408,8 +412,6 @@ async function main() {
       "Timeline Compare",
       "Timeline Insights",
       "Checkpoint Chat",
-      "Existing Chat Session",
-      "Diagnosis Chat",
       "Details",
     ];
     const hasScenesNeedingDashboard = scenesNeedingDashboard.some((sceneName) =>
@@ -421,13 +423,12 @@ async function main() {
     }
 
     // Add selected scenes in order (excluding Property Onboarding which was already added)
-    // Order: Timeline Checkpoint -> Timeline Compare -> Timeline Insights -> Checkpoint Chat -> Existing Chat Session -> Diagnosis Chat -> Details
+    // Order: Timeline Checkpoint -> Timeline Compare -> Timeline Insights -> Checkpoint Chat -> Details
     // Timeline Checkpoint should run BEFORE Timeline Compare if both are selected
     // Timeline Compare should run BEFORE Timeline Insights
     // Timeline Insights should run AFTER Timeline Compare
     // Checkpoint Chat should run AFTER Timeline Insights
-    // Existing Chat Session should run AFTER Checkpoint Chat and BEFORE Diagnosis Chat
-    // Diagnosis Chat should run AFTER Existing Chat Session
+    // Details should run AFTER Checkpoint Chat
     if (selectedScenes.has("Timeline Checkpoint")) {
       scenes.push({
         name: "Timeline Checkpoint",
@@ -450,18 +451,6 @@ async function main() {
       scenes.push({
         name: "Checkpoint Chat",
         fn: () => recordCheckpointChat(page!),
-      });
-    }
-    if (selectedScenes.has("Existing Chat Session")) {
-      scenes.push({
-        name: "Existing Chat Session",
-        fn: () => recordExistingChat(page!),
-      });
-    }
-    if (selectedScenes.has("Diagnosis Chat")) {
-      scenes.push({
-        name: "Diagnosis Chat",
-        fn: () => recordDiagnosisChat(page!),
       });
     }
     if (selectedScenes.has("Details")) {
@@ -520,27 +509,6 @@ async function main() {
       });
     }
 
-    // Diagnosis Chat (multiple wait cuts - one per agent)
-    const diagIdx = results.findIndex((r) => r.name === "Diagnosis Chat");
-    if (
-      diagIdx >= 0 &&
-      results[diagIdx].result?.waitCuts &&
-      Array.isArray(results[diagIdx].result.waitCuts) &&
-      sceneData[diagIdx]
-    ) {
-      const sceneStart = sceneData[diagIdx].startTime;
-      const cuts = results[diagIdx].result.waitCuts;
-      for (const cut of cuts) {
-        waitCutSegments.push({
-          startSec: sceneStart + cut.startOffsetMs / 1000,
-          endSec: sceneStart + cut.endOffsetMs / 1000,
-        });
-      }
-      console.log(
-        `\n📊 Collected ${cuts.length} wait cut segment(s) from Diagnosis Chat`,
-      );
-    }
-
     // Details (multiple wait cuts - initial navigation and signout)
     const detailsIdx = results.findIndex((r) => r.name === "Details");
     if (
@@ -567,25 +535,27 @@ async function main() {
       await saveSession(context);
 
       // Final sync of click events before closing
-      try {
-        const pages = context.pages();
-        for (const page of pages) {
-          try {
-            const clicks = await page.evaluate(() => {
-              const clicks = (window as any).__zoomTrackerClicks || [];
-              (window as any).__zoomTrackerClicks = [];
-              return clicks;
-            });
+      if (zoomEnabled && zoomTracker) {
+        try {
+          const pages = context.pages();
+          for (const page of pages) {
+            try {
+              const clicks = await page.evaluate(() => {
+                const clicks = (window as any).__zoomTrackerClicks || [];
+                (window as any).__zoomTrackerClicks = [];
+                return clicks;
+              });
 
-            for (const click of clicks) {
-              zoomTracker.trackClick(click.x, click.y);
+              for (const click of clicks) {
+                zoomTracker.trackClick(click.x, click.y);
+              }
+            } catch (error) {
+              // Page might be closed, ignore
             }
-          } catch (error) {
-            // Page might be closed, ignore
           }
+        } catch (error) {
+          // Ignore
         }
-      } catch (error) {
-        // Ignore
       }
 
       // Clean up click sync interval
@@ -623,48 +593,63 @@ async function main() {
       );
     }
 
-    // Apply zoom effects if FFmpeg is available (always use original video; triggers use its timeline)
+    // Apply zoom effects if enabled and FFmpeg is available
     let videoAfterZoom = videoPath;
-    console.log("\n🎬 Processing zoom effects...");
-    try {
-      const triggers = zoomTracker.findZoomTriggers();
-
-      if (triggers.length > 0) {
-        console.log(`  📊 Found ${triggers.length} zoom trigger(s)`);
-
-        // Save events metadata for debugging
-        const eventsPath = path.join(
-          config.outputDir,
-          `zoom-events-${timestamp}.json`,
-        );
-        await zoomTracker.saveEvents(eventsPath);
-        console.log(`  💾 Zoom events saved: ${path.basename(eventsPath)}`);
-
-        const zoomedVideoPath = path.join(
-          config.outputDir,
-          `webapp-recording-zoomed-${timestamp}.webm`,
+    if (zoomEnabled && zoomTracker) {
+      console.log("\n🎬 Processing zoom effects...");
+      try {
+        const triggers = zoomTracker.findZoomTriggers(
+          config.zoomEffects.zoomDurationSec,
+          config.zoomEffects.zoomLevel,
+          config.zoomEffects.minGapBetweenZoomsSec,
+          {
+            width: config.videoSettings.width,
+            height: config.videoSettings.height,
+          },
         );
 
-        await applyZoomEffects(videoPath, zoomedVideoPath, triggers, {
-          videoWidth: config.videoSettings.width,
-          videoHeight: config.videoSettings.height,
-          fps: config.videoSettings.fps,
-        });
+        if (triggers.length > 0) {
+          console.log(`  📊 Found ${triggers.length} zoom trigger(s)`);
 
-        videoAfterZoom = zoomedVideoPath;
-        console.log(
-          `  ✅ Zoomed video saved: ${path.basename(zoomedVideoPath)}`,
+          // Save events metadata for debugging
+          const eventsPath = path.join(
+            config.outputDir,
+            `zoom-events-${timestamp}.json`,
+          );
+          await zoomTracker.saveEvents(eventsPath);
+          console.log(`  💾 Zoom events saved: ${path.basename(eventsPath)}`);
+
+          const zoomedVideoPath = path.join(
+            config.outputDir,
+            `webapp-recording-zoomed-${timestamp}.webm`,
+          );
+
+          await applyZoomEffects(videoPath, zoomedVideoPath, triggers, {
+            videoWidth: config.videoSettings.width,
+            videoHeight: config.videoSettings.height,
+            fps: config.videoSettings.fps,
+          });
+
+          videoAfterZoom = zoomedVideoPath;
+          console.log(
+            `  ✅ Zoomed video saved: ${path.basename(zoomedVideoPath)}`,
+          );
+        } else {
+          console.log(
+            "  ℹ️  No zoom triggers found (need 2+ clicks within 3 seconds)",
+          );
+        }
+      } catch (error) {
+        const err = error as { message?: string; stderr?: string };
+        console.warn(
+          `  ⚠️  Zoom processing failed: ${err.message ?? String(error)}`,
         );
-      } else {
-        console.log(
-          "  ℹ️  No zoom triggers found (need 2+ clicks within 3 seconds)",
-        );
+        if (err.stderr) {
+          const tail = err.stderr.trim().split("\n").slice(-6).join("\n");
+          console.warn(`     FFmpeg: ${tail}`);
+        }
+        console.warn(`     Ensure FFmpeg is installed: brew install ffmpeg`);
       }
-    } catch (error) {
-      console.warn(
-        `  ⚠️  Zoom processing failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      console.warn(`     Make sure FFmpeg is installed: brew install ffmpeg`);
     }
 
     // Remove "waiting for AI response" segments (cut from zoomed video if available, else original)

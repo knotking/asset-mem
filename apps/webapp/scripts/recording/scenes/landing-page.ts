@@ -1,246 +1,127 @@
 import { Page } from "playwright";
 import { config } from "../config";
 import { SceneResult } from "../helpers";
-import {
-  scrollSmoothly,
-  scrollPage,
-  hoverAndWait,
-  delay,
-  clickWithRetry,
-} from "../helpers";
+import { scrollSmoothly, scrollPage, delay } from "../helpers";
+
+/** Time between each nav / CTA click in the landing scene (and zoom trigger spacing). */
+const GAP_BETWEEN_CLICKS_MS =
+  (config.zoomEffects?.minGapBetweenZoomsSec ?? 3) * 1000;
+
+/** Extra pause while each section is on screen (from Use Cases onward). */
+const SECTION_VIEW_DELAY_MS = 4000;
+const AI_AGENTS_EXTRA_DELAY_MS = 2000;
+const TIMELINE_EXTRA_DELAY_MS = 1000;
+
+async function panUseCaseCards(page: Page): Promise<void> {
+  const cards = page.locator("#use-cases .grid > div");
+  const count = await cards.count();
+  if (count <= 2) {
+    await delay(SECTION_VIEW_DELAY_MS);
+    return;
+  }
+
+  console.log(`  📜 Panning through ${count} use case cards...`);
+
+  // 2-col grid: index 2 = row 2, then mid/bottom rows so all cards appear in recording
+  const scrollTargets = [2, Math.min(4, count - 1), count - 1].filter(
+    (index, i, arr) => arr.indexOf(index) === i,
+  );
+  await delay(500);
+  for (const index of scrollTargets) {
+    try {
+      console.log(`  📜 Scrolling to use case card ${index + 1}/${count}...`);
+      await cards.nth(index).scrollIntoViewIfNeeded({ timeout: 3000 });
+      await delay(500);
+    } catch {
+      await scrollPage(page, "down", 350);
+      await delay(1000);
+    }
+  }
+}
 
 export async function recordLandingPage(page: Page): Promise<SceneResult> {
   const startTime = Date.now();
+  let lastClickAt = 0;
+
+  async function waitForClickGap(): Promise<void> {
+    if (lastClickAt === 0) return;
+    const elapsed = Date.now() - lastClickAt;
+    if (elapsed < GAP_BETWEEN_CLICKS_MS) {
+      await delay(GAP_BETWEEN_CLICKS_MS - elapsed);
+    }
+  }
+
+  async function clickNavAnchor(
+    href: string,
+    sectionId: string,
+    label: string,
+    options?: {
+      afterShow?: (page: Page) => Promise<void>;
+      viewDelayMs?: number;
+    },
+  ): Promise<void> {
+    await waitForClickGap();
+    console.log(`  🔘 Clicking on ${label} navigation link...`);
+    try {
+      const link = page.locator(`a[href="${href}"]`).first();
+      await link.waitFor({ state: "visible", timeout: 5000 });
+      await link.hover();
+      await delay(200);
+      await link.click();
+      lastClickAt = Date.now();
+      await delay(800); // smooth scroll
+
+      await page.waitForSelector(sectionId, { timeout: 3000 }).catch(() => {});
+      console.log(`  ⏸️  Showing ${label} section...`);
+      if (options?.afterShow) {
+        await options.afterShow(page);
+      } else {
+        await delay(options?.viewDelayMs ?? SECTION_VIEW_DELAY_MS);
+      }
+      await waitForClickGap();
+    } catch (error) {
+      console.log(
+        `  ⚠️  Could not click ${label} link, using fallback scroll...`,
+      );
+      await scrollSmoothly(page, sectionId);
+      lastClickAt = Date.now();
+      if (options?.afterShow) {
+        await options.afterShow(page);
+      } else {
+        await delay(options?.viewDelayMs ?? SECTION_VIEW_DELAY_MS);
+      }
+      await waitForClickGap();
+    }
+  }
 
   try {
     console.log("🎬 Scene 1: Landing Page");
+    console.log(`  ⏱️  ${GAP_BETWEEN_CLICKS_MS / 1000}s gap between clicks`);
 
-    // Navigate to landing page
     await page.goto(config.baseUrl, { waitUntil: "networkidle" });
-    await delay(1000); // Wait for page to settle
+    await delay(1000);
 
-    // Wait a moment on hero section to show the main content
     console.log("  📜 Showing hero section...");
     await delay(2000);
 
-    // Click on "Use Cases" navigation link
-    console.log("  🔘 Clicking on Use Cases navigation link...");
-    try {
-      const useCasesLink = page.locator('a[href="#use-cases"]').first();
-      await useCasesLink.waitFor({ state: "visible", timeout: 5000 });
-      await useCasesLink.hover();
-      await delay(500);
-      await useCasesLink.click();
-      await delay(2000); // Wait for smooth scroll to complete
-      
-      // Wait at Use Cases section
-      await page.waitForSelector("#use-cases", { timeout: 3000 }).catch(() => {});
-      console.log("  ⏸️  Showing Use Cases section...");
-      await delay(3000);
-    } catch (error) {
-      console.log("  ⚠️  Could not click Use Cases link, using fallback scroll...");
-      await scrollSmoothly(page, "#use-cases");
-      await delay(3000);
-    }
+    await clickNavAnchor("#use-cases", "#use-cases", "Use Cases", {
+      afterShow: panUseCaseCards,
+    });
+    await clickNavAnchor("#features", "#features", "Features");
+    await clickNavAnchor("#ai-agents", "#ai-agents", "AI Agents", {
+      viewDelayMs: SECTION_VIEW_DELAY_MS + AI_AGENTS_EXTRA_DELAY_MS,
+    });
+    await clickNavAnchor("#timeline-feature", "#timeline-feature", "Timeline", {
+      viewDelayMs: SECTION_VIEW_DELAY_MS + TIMELINE_EXTRA_DELAY_MS,
+    });
+    await clickNavAnchor("#how-it-works", "#how-it-works", "How It Works");
 
-    // Click on "Features" navigation link
-    console.log("  🔘 Clicking on Features navigation link...");
-    try {
-      const featuresLink = page.locator('a[href="#features"]').first();
-      await featuresLink.waitFor({ state: "visible", timeout: 5000 });
-      await featuresLink.hover();
-      await delay(500);
-      await featuresLink.click();
-      await delay(2000); // Wait for smooth scroll to complete
-      
-      // Wait at Features section
-      await page.waitForSelector("#features", { timeout: 3000 }).catch(() => {});
-      console.log("  ⏸️  Showing Features section...");
-      await delay(3000);
-    } catch (error) {
-      console.log("  ⚠️  Could not click Features link, using fallback scroll...");
-      await scrollSmoothly(page, "#features");
-      await delay(3000);
-    }
-
-    // Click on "AI Agents" navigation link
-    console.log("  🔘 Clicking on AI Agents navigation link...");
-    try {
-      const aiAgentsLink = page.locator('a[href="#ai-agents"]').first();
-      await aiAgentsLink.waitFor({ state: "visible", timeout: 5000 });
-      await aiAgentsLink.hover();
-      await delay(500);
-      await aiAgentsLink.click();
-      await delay(2000); // Wait for smooth scroll to complete
-      
-      // Wait at AI Agents section
-      await page.waitForSelector("#ai-agents", { timeout: 3000 }).catch(() => {});
-      console.log("  ⏸️  Showing AI Agents section...");
-      await delay(3000);
-    } catch (error) {
-      console.log("  ⚠️  Could not click AI Agents link, using fallback scroll...");
-      await scrollSmoothly(page, "#ai-agents");
-      await delay(3000);
-    }
-
-    // Click on "Timeline" navigation link
-    console.log("  🔘 Clicking on Timeline navigation link...");
-    try {
-      const timelineLink = page.locator('a[href="#timeline-feature"]').first();
-      await timelineLink.waitFor({ state: "visible", timeout: 5000 });
-      await timelineLink.hover();
-      await delay(500);
-      await timelineLink.click();
-      await delay(2000); // Wait for smooth scroll to complete
-      
-      // Wait at Timeline section
-      await page.waitForSelector("#timeline-feature", { timeout: 3000 }).catch(() => {});
-      console.log("  ⏸️  Showing Timeline section...");
-      await delay(3000);
-    } catch (error) {
-      console.log("  ⚠️  Could not click Timeline link, using fallback scroll...");
-      await scrollSmoothly(page, "#timeline-feature");
-      await delay(3000);
-    }
-
-    // Click on "How It Works" navigation link
-    console.log("  🔘 Clicking on How It Works navigation link...");
-    try {
-      const howItWorksLink = page.locator('a[href="#how-it-works"]').first();
-      await howItWorksLink.waitFor({ state: "visible", timeout: 5000 });
-      await howItWorksLink.hover();
-      await delay(500);
-      await howItWorksLink.click();
-      await delay(2000); // Wait for smooth scroll to complete
-      
-      // Wait at How It Works section
-      await page.waitForSelector("#how-it-works", { timeout: 3000 }).catch(() => {});
-      console.log("  ⏸️  Showing How It Works section...");
-      await delay(3000);
-    } catch (error) {
-      console.log("  ⚠️  Could not click How It Works link, using fallback scroll...");
-      await scrollSmoothly(page, "#how-it-works");
-      await delay(3000);
-    }
-
-    // Scroll down slightly to show CTA section (after How It Works)
     console.log("  📜 Scrolling to CTA section...");
     await scrollPage(page, "down", 600);
-    await delay(2000);
-
-    // Final wait to show CTA section clearly
+    await delay(1000);
     console.log("  ⏸️  Showing CTA section...");
-    await delay(3000);
-
-    // Scroll back up to top to prepare for button click
-    console.log("  📜 Scrolling back to top...");
-    try {
-      const homeLink = page.locator('a[href="#"], text="Home"').first();
-      await homeLink.waitFor({ state: "visible", timeout: 3000 });
-      await homeLink.hover();
-      await delay(500);
-      await homeLink.click();
-      await delay(2000);
-    } catch (error) {
-      // Fallback to smooth scroll
-      await page.evaluate(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
-      await delay(2000);
-    }
-
-    // Click on "Sign In" button (or "Dashboard" if logged in)
-    console.log("  🔘 Clicking on Sign In button...");
-    let clicked = false;
-
-    // Try to find and click "Sign In" button (or "Dashboard" if user is logged in)
-    const signInSelectors = [
-      'text="Sign In"',
-      'text="Sign in"',
-      'a[href="/login"]',
-      'a[href*="/login"]',
-      'button:has-text("Sign In")',
-      'button:has-text("Sign in")',
-      // Also check for Dashboard button (in case user is logged in)
-      'text="Dashboard"',
-      'a[href="/home"]',
-      'a[href*="/home"]',
-      config.selectors.landing.loginButton,
-      config.selectors.landing.getStartedButton,
-    ];
-
-    for (const selector of signInSelectors) {
-      try {
-        const button = page.locator(selector).first();
-        if (await button.isVisible({ timeout: 3000 })) {
-          console.log(`  🖱️  Found button with selector: ${selector}`);
-          await button.hover();
-          await delay(500);
-          // Click the button (clickWithRetry will handle retries if needed)
-          await button.click();
-          clicked = true;
-          console.log("  ✅ Clicked Sign In/Dashboard button");
-          break;
-        }
-      } catch (error) {
-        // Try using clickWithRetry as fallback
-        try {
-          const success = await clickWithRetry(page, selector, 2, 3000);
-          if (success) {
-            clicked = true;
-            console.log(
-              `  ✅ Clicked Sign In/Dashboard button using retry (${selector})`
-            );
-            break;
-          }
-        } catch (retryError) {
-          continue;
-        }
-      }
-    }
-
-    if (!clicked) {
-      console.log(
-        "  ⚠️  Could not find Sign In/Dashboard button, trying alternative approach..."
-      );
-      // Try using the configured selectors
-      try {
-        const loginButton = page
-          .locator(config.selectors.landing.loginButton)
-          .first();
-        const getStartedButton = page
-          .locator(config.selectors.landing.getStartedButton)
-          .first();
-
-        if (await loginButton.isVisible({ timeout: 2000 })) {
-          await loginButton.click();
-          clicked = true;
-          console.log("  ✅ Clicked Sign In button");
-        } else if (await getStartedButton.isVisible({ timeout: 2000 })) {
-          await getStartedButton.click();
-          clicked = true;
-          console.log("  ✅ Clicked Get Started button");
-        }
-      } catch (error) {
-        console.log("  ⚠️  Could not click button, continuing...");
-      }
-    }
-
-    // If we clicked, wait for navigation to login page or dashboard
-    if (clicked) {
-      console.log("  ⏳ Waiting for navigation...");
-      try {
-        // Wait for either login or home page
-        await Promise.race([
-          page.waitForURL("**/login**", { timeout: 5000 }),
-          page.waitForURL("**/home**", { timeout: 5000 }),
-        ]).catch(() => {});
-        await page.waitForLoadState("networkidle");
-        await delay(1000);
-      } catch (error) {
-        console.log("  ⚠️  Navigation timeout, continuing...");
-      }
-    }
+    await delay(SECTION_VIEW_DELAY_MS);
+    await waitForClickGap();
 
     const duration = Date.now() - startTime;
     console.log(`✅ Scene 1 completed in ${(duration / 1000).toFixed(1)}s`);

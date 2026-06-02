@@ -43,6 +43,10 @@ RECORDING_EMAIL=your-test-account@example.com
 RECORDING_PASSWORD=your-password
 RECORDING_BASE_URL=https://homegeek.ai
 RECORDING_OUTPUT_DIR=./recordings
+# Optional: post-process click zoom effects (off by default)
+# RECORDING_ZOOM_ENABLED=true
+# RECORDING_ZOOM_LEVEL=1.2
+# RECORDING_ZOOM_DURATION_SEC=1.0
 ```
 
 **Important**: Add `.env.recording` to `.gitignore` to avoid committing credentials.
@@ -71,6 +75,12 @@ This will:
 2. Navigate through all scenes
 3. Record video automatically
 4. Save video to `recordings/` directory
+
+Click zoom post-processing is **off by default**. Enable with `--zoom` or `RECORDING_ZOOM_ENABLED=true` in `.env.recording`:
+
+```bash
+npm run record:webapp -- --zoom
+```
 
 ### Record Mobile Emulation
 

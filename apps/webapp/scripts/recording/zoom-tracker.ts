@@ -48,14 +48,41 @@ export class ZoomTracker {
     return [...this.clickEvents];
   }
 
+  /** Restore clicks from a saved zoom-events JSON (for re-processing). */
+  loadRecordedEvents(
+    events: Array<{ x: number; y: number; time: number }>
+  ): void {
+    this.clickEvents = events.map((e) => ({
+      x: e.x,
+      y: e.y,
+      time: e.time,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
+  /** Keep zoom centered on the click; only clamp so the crop stays on-screen. */
+  private clampZoomCenterToViewport(
+    x: number,
+    y: number,
+    viewport: { width: number; height: number },
+    zoomLevel: number
+  ): { x: number; y: number } {
+    const halfW = viewport.width / zoomLevel / 2;
+    const halfH = viewport.height / zoomLevel / 2;
+    return {
+      x: Math.max(halfW, Math.min(x, viewport.width - halfW)),
+      y: Math.max(halfH, Math.min(y, viewport.height - halfH)),
+    };
+  }
+
   /**
-   * Find zoom triggers - each single click triggers a zoom effect
-   * The zoom is centered on the click position and lasts for zoomDuration seconds
+   * Find zoom triggers - each click gets a subtle zoom centered on that click.
    */
   findZoomTriggers(
-    zoomDuration: number = 1.5,
-    zoomLevel: number = 1.8,
-    minGapBetweenZooms: number = 2.0 // minimum seconds between zoom triggers
+    zoomDuration: number = 1.0,
+    zoomLevel: number = 1.2,
+    minGapBetweenZooms: number = 2.0,
+    viewport: { width: number; height: number } = { width: 1920, height: 1080 }
   ): ZoomTrigger[] {
     const triggers: ZoomTrigger[] = [];
     const events = this.getEvents();
@@ -64,26 +91,32 @@ export class ZoomTracker {
       return triggers;
     }
 
-    // Each click triggers a zoom effect
-    let lastZoomEndTime = -minGapBetweenZooms; // Allow first click to trigger zoom
+    // Each click triggers a zoom effect (min gap measured click-to-click)
+    let lastZoomClickTime = -minGapBetweenZooms;
     
     for (const event of events) {
       const clickTime = event.time / 1000; // convert to seconds
       
-      // Skip if too close to the last zoom (avoid overlapping zooms)
-      if (clickTime < lastZoomEndTime + minGapBetweenZooms) {
+      if (clickTime < lastZoomClickTime + minGapBetweenZooms) {
         continue;
       }
+
+      const center = this.clampZoomCenterToViewport(
+        event.x,
+        event.y,
+        viewport,
+        zoomLevel
+      );
 
       triggers.push({
         startTime: clickTime,
         endTime: clickTime + zoomDuration,
-        centerX: event.x,
-        centerY: event.y,
+        centerX: center.x,
+        centerY: center.y,
         zoomLevel,
       });
 
-      lastZoomEndTime = clickTime + zoomDuration;
+      lastZoomClickTime = clickTime;
     }
 
     return triggers;
