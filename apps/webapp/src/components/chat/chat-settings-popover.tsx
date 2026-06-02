@@ -25,6 +25,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createLogger } from "@/lib/logger";
+import { useToast } from "@/hooks/use-toast";
 
 const chatLog = createLogger("chat");
 
@@ -70,6 +71,7 @@ export function ChatSettingsPopover({
   propertyAddress,
   initialTab = 'agent',
 }: ChatSettingsPopoverProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'agent' | 'location'>(initialTab);
   const [locationSource, setLocationSource] = useState<SearchLocationSource>(
     searchLocation?.source || 'property_address'
@@ -97,7 +99,11 @@ export function ChatSettingsPopover({
   const handleGetCurrentLocation = () => {
     setIsGettingLocation(true);
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      toast({
+        variant: 'destructive',
+        title: 'Location unavailable',
+        description: 'Geolocation is not supported by your browser.',
+      });
       setIsGettingLocation(false);
       return;
     }
@@ -118,7 +124,11 @@ export function ChatSettingsPopover({
       },
       (error) => {
         chatLog.error('location.failed', undefined, error);
-        alert('Failed to get current location');
+        toast({
+          variant: 'destructive',
+          title: 'Location failed',
+          description: 'Failed to get current location. Check permissions and try again.',
+        });
         setIsGettingLocation(false);
       }
     );

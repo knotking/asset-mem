@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -29,12 +39,16 @@ export function CheckpointDetailDialog() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Reset edit mode when dialog closes
   useEffect(() => {
     if (!selectedCheckpoint) {
       setIsEditing(false);
       setEditedName('');
+      setIsDeleteDialogOpen(false);
+      setIsDeleting(false);
     }
   }, [selectedCheckpoint]);
 
@@ -100,23 +114,25 @@ export function CheckpointDetailDialog() {
     }
   };
 
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this checkpoint? This action cannot be undone.')) {
-      try {
-        await deleteCheckpoint(checkpoint.id);
-        toast({
-          title: 'Checkpoint Deleted',
-          description: 'The checkpoint has been successfully deleted.',
-        });
-        setSelectedCheckpoint(null);
-      } catch (error) {
-        checkpointLog.error('checkpoint.delete.failed', undefined, error);
-        toast({
-          title: 'Deletion Failed',
-          description: 'Failed to delete checkpoint. Please try again.',
-          variant: 'destructive',
-        });
-      }
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteCheckpoint(checkpoint.id);
+      toast({
+        title: 'Checkpoint Deleted',
+        description: 'The checkpoint has been successfully deleted.',
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedCheckpoint(null);
+    } catch (error) {
+      checkpointLog.error('checkpoint.delete.failed', undefined, error);
+      toast({
+        title: 'Deletion Failed',
+        description: 'Failed to delete checkpoint. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -125,6 +141,7 @@ export function CheckpointDetailDialog() {
   };
 
   return (
+    <>
     <Dialog open={!!selectedCheckpoint} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -351,7 +368,7 @@ export function CheckpointDetailDialog() {
             <Button variant="outline" onClick={handleClose}>
               Close
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </Button>
@@ -359,6 +376,36 @@ export function CheckpointDetailDialog() {
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog
+      open={isDeleteDialogOpen}
+      onOpenChange={(open) => {
+        if (!open && !isDeleting) {
+          setIsDeleteDialogOpen(false);
+        }
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete checkpoint?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete &quot;{checkpoint.name}&quot;. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            disabled={isDeleting}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
