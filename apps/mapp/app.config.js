@@ -15,9 +15,9 @@ const appEnv = process.env.APP_ENV || 'dev';
 
 /** iOS URL scheme for @react-native-google-signin/google-signin — keep in sync with firebase-config iosClientId per env. */
 const GOOGLE_IOS_CLIENT_ID_BY_ENV = {
-  dev: '291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com',
-  staging: '291418967332-jrt9s4laorjff7lk7oghitpi5eckg4up.apps.googleusercontent.com',
-  prod: '686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com',
+  dev: '291418967332-42nd4f964tf4fn418ujhpm8sts2ca5kq.apps.googleusercontent.com',
+  staging: '291418967332-k75961692hifn2d107agkknl4as4fa4q.apps.googleusercontent.com',
+  prod: '686746113874-ubpn67uvhogvsvfgn5fkkvm6kj2lcfu4.apps.googleusercontent.com',
 };
 
 function googleIosUrlScheme(iosClientId) {
@@ -26,14 +26,14 @@ function googleIosUrlScheme(iosClientId) {
   return `com.googleusercontent.apps.${iosClientId.slice(0, -suffix.length)}`;
 }
 
-const googleIosUrlSchemeForBuild =
-  googleIosUrlScheme(GOOGLE_IOS_CLIENT_ID_BY_ENV[appEnv] ?? GOOGLE_IOS_CLIENT_ID_BY_ENV.staging);
+const googleIosUrlSchemeForBuild = googleIosUrlScheme(
+  GOOGLE_IOS_CLIENT_ID_BY_ENV[appEnv] ?? GOOGLE_IOS_CLIENT_ID_BY_ENV.staging
+);
 
 const STORE_URLS_BY_ENV = {
   prod: {
     iosStoreUrl: 'https://apps.apple.com/app/id6774020500',
-    androidStoreUrl:
-      'https://play.google.com/store/apps/details?id=com.assetmem.app',
+    androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.assetmem.app',
   },
   staging: {
     iosStoreUrl: null,
@@ -71,10 +71,14 @@ module.exports = {
       usesAppleSignIn: true,
       bundleIdentifier: process.env.IOS_BUNDLE_ID || 'com.assetmem.staging',
       infoPlist: {
-        NSCameraUsageDescription: 'This app needs access to your camera to take photos and record videos for property documentation.',
-        NSMicrophoneUsageDescription: 'This app needs access to your microphone to record videos with audio.',
-        NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select photos and videos for property documentation.',
-        NSPhotoLibraryAddUsageDescription: 'This app needs access to save photos and videos to your photo library.',
+        NSCameraUsageDescription:
+          'This app needs access to your camera to take photos and record videos for property documentation.',
+        NSMicrophoneUsageDescription:
+          'This app needs access to your microphone to record videos with audio.',
+        NSPhotoLibraryUsageDescription:
+          'This app needs access to your photo library to select photos and videos for property documentation.',
+        NSPhotoLibraryAddUsageDescription:
+          'This app needs access to save photos and videos to your photo library.',
         ITSAppUsesNonExemptEncryption: false,
       },
     },
@@ -99,8 +103,10 @@ module.exports = {
       [
         'expo-image-picker',
         {
-          photosPermission: 'This app needs access to your photo library to select photos and videos for property documentation.',
-          cameraPermission: 'This app needs access to your camera to take photos and record videos for property documentation.',
+          photosPermission:
+            'This app needs access to your photo library to select photos and videos for property documentation.',
+          cameraPermission:
+            'This app needs access to your camera to take photos and record videos for property documentation.',
         },
       ],
       [
@@ -128,8 +134,7 @@ module.exports = {
       appEnv,
       /** When true, emit debug/info logs in release builds (see lib/logger.ts). */
       debugLogs:
-        process.env.EXPO_PUBLIC_DEBUG_LOGS === 'true' ||
-        process.env.EXPO_PUBLIC_DEBUG_LOGS === '1',
+        process.env.EXPO_PUBLIC_DEBUG_LOGS === 'true' || process.env.EXPO_PUBLIC_DEBUG_LOGS === '1',
       agentSessionUrl: buildProxyUrl(proxyBaseUrl, 'agent-session'),
       agentSseUrl: buildProxyUrl(proxyBaseUrl, 'firebase-agent-stream'),
       ragFileUploadUrl: buildProxyUrl(proxyBaseUrl, 'rag-file-upload'),
@@ -143,8 +148,7 @@ module.exports = {
       webAppUrl: process.env.WEB_APP_URL,
       iosStoreUrl: storeUrls.iosStoreUrl ?? undefined,
       androidStoreUrl: storeUrls.androidStoreUrl ?? undefined,
-      supportEmail:
-        process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com',
+      supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@asset-mem.com',
     },
     runtimeVersion: {
       policy: 'appVersion',
