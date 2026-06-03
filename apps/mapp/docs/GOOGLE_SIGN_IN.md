@@ -77,11 +77,31 @@ The config plugin sets the reversed client ID URL scheme required by the native 
 
 No custom URI scheme or redirect URI configuration is required for this SDK (unlike browser-based `expo-auth-session`).
 
-### 1.5 Production checklist
+### 1.5 OAuth consent screen (app name on the sign-in UI)
+
+Native Google Sign-In shows the **OAuth consent screen app name**, not `expo.name` from [app.config.js](../app.config.js). If the name was never set, Google shows a placeholder like **`project-291418967332`** (project number) instead of **AssetMem AI**.
+
+Configure **per Google Cloud project** (same project as the OAuth client IDs in `firebase-config.ts`):
+
+| `appEnv` | Firebase / GCP project | Project number (example placeholder) |
+| -------- | ---------------------- | ------------------------------------ |
+| `dev`, `staging` | `homegeek-staging` | `291418967332` |
+| `prod` | `homegeek-prod` | `686746113874` |
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → select **`homegeek-staging`** or **`homegeek-prod`**.
+2. **APIs & Services** → **OAuth consent screen** (or open `…/apis/credentials/consent?project=homegeek-staging`).
+3. **Edit app** → set **App name** to **`AssetMem AI`** (match store branding).
+4. Set **User support email**, **Developer contact**, and upload an **App logo** (120×120 recommended).
+5. **Save**. No app rebuild required; the next sign-in should show the new name.
+
+For **External** user type and users outside your team, complete verification and **Publish app** when you are ready for production traffic. In **Testing** mode the correct app name still appears; only who can sign in is restricted (see [§4](#oauth-consent-screen-testing-mode)).
+
+### 1.6 Production checklist
 
 - [ ] `webClientId` — prod web OAuth client  
 - [ ] `iosClientId` — iOS app with **prod** bundle ID + `app.config.js` iosUrlScheme for `prod`  
 - [ ] `androidClientId` — Android app with **prod** package + prod SHA-1(s)  
+- [ ] OAuth consent screen **App name** + logo on **`homegeek-prod`** (and **`homegeek-staging`** for dev/staging builds)
 
 ---
 
@@ -140,7 +160,7 @@ EAS builds pick up the config plugin automatically on the next build.
 
 ### OAuth consent screen (Testing mode)
 
-Add test users under Google Cloud → **OAuth consent screen** → **Test users**, or publish the app.
+Add test users under Google Cloud → **OAuth consent screen** → **Test users**, or publish the app. Set the **App name** on the consent screen so the native picker does not show `project-<number>` (see [§1.5](#15-oauth-consent-screen-app-name-on-the-sign-in-ui)).
 
 ---
 
@@ -154,6 +174,7 @@ Add test users under Google Cloud → **OAuth consent screen** → **Test users*
 
 | Symptom | Likely fix |
 | ------- | ---------- |
+| Sign-in UI shows **`project-291418967332`** (or similar) instead of app name | **OAuth consent screen** → **App name** = `AssetMem AI` on the GCP project for your build (`homegeek-staging` vs `homegeek-prod`) — [§1.5](#15-oauth-consent-screen-app-name-on-the-sign-in-ui) |
 | Android `DEVELOPER_ERROR` | Wrong package in Firebase, or missing SHA-1 for the keystore that signed the APK |
 | `androidClientId` / config error in app | Set Android OAuth client ID in `firebase-config.ts` |
 | Sign-in works on web, not mapp | `webClientId` must be the **Web** client; Android verified via package + SHA-1 |
