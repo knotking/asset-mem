@@ -445,10 +445,16 @@ export default function PropertyChatSessionPage() {
             error instanceof Error
               ? error.message
               : "An unknown error occurred.";
+          const isQuota =
+            /monthly ai token limit|monthly ai usage limit|TOKEN_QUOTA_EXCEEDED/i.test(
+              errorMessage
+            );
           toast({
             variant: "destructive",
-            title: "Error",
-            description: `Failed to get a response from the AI. ${errorMessage}`,
+            title: isQuota ? "Monthly AI limit reached" : "Error",
+            description: isQuota
+              ? errorMessage
+              : `Failed to get a response from the AI. ${errorMessage}`,
           });
           if (assistantMessageDocId && user) {
             const assistantDocRef = doc(

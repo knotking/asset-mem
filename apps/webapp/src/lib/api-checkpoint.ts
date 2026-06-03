@@ -6,6 +6,7 @@ import { apiUrls } from "./utils";
 import { proxyFetchWithAuth } from "./correlation-id";
 import { getFirebaseIdTokenForProxy } from "./proxy-auth";
 import { createLogger, parseAgentErrorCode, truncateId } from "./logger";
+import { planLimitMessageForErrorCode } from "./plan-limit-errors";
 
 const log = createLogger("checkpoint");
 
@@ -40,15 +41,9 @@ export async function analyzeCheckpoint(input: AnalyzeCheckpointInput) {
     const body = await response.text();
     const code = parseAgentErrorCode(body);
     log.error("analysis.failed", { status: response.status, code });
-    if (code === "CHECKPOINT_QUOTA_EXCEEDED") {
-      throw new Error(
-        "Monthly checkpoint limit reached. Upgrade your plan or wait until next month.",
-      );
-    }
-    if (code === "TOKEN_QUOTA_EXCEEDED") {
-      throw new Error(
-        "Monthly AI token limit reached. Upgrade your plan or wait until next month.",
-      );
+    const quotaMessage = planLimitMessageForErrorCode(code);
+    if (quotaMessage) {
+      throw new Error(quotaMessage);
     }
     throw new Error(`Failed to trigger analysis: ${response.statusText}`);
   }
@@ -84,7 +79,13 @@ export async function compareCheckpoints(input: CompareCheckpointsInput) {
   );
 
   if (!response.ok) {
-    log.error("comparison.failed", { status: response.status });
+    const body = await response.text();
+    const code = parseAgentErrorCode(body);
+    log.error("comparison.failed", { status: response.status, code });
+    const quotaMessage = planLimitMessageForErrorCode(code);
+    if (quotaMessage) {
+      throw new Error(quotaMessage);
+    }
     throw new Error(`Failed to compare checkpoints: ${response.statusText}`);
   }
 

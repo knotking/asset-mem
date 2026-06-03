@@ -441,8 +441,11 @@ export default function PropertyDetailsScreen() {
         }
 
         chatLog.error('message.send.failed', undefined, error);
+        const errMsg = error instanceof Error ? error.message : 'Unknown error';
         setErrorMessage(
-          `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`
+          /monthly ai token limit|monthly ai usage limit/i.test(errMsg)
+            ? errMsg
+            : `Failed to send message: ${errMsg}`
         );
         setErrorAlertOpen(true);
         setMessage(userMessage);

@@ -265,7 +265,7 @@ export async function streamAgentResponse({
       log.error('stream.httpError', { status: response.status, code });
       throw new Error(
         code === 'TOKEN_QUOTA_EXCEEDED'
-          ? 'Monthly AI usage limit reached.'
+          ? 'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
           : `Failed to stream response, status: ${response.status}`
       );
     }
@@ -435,6 +435,17 @@ export async function queueExtractDocInfo(
 
   if (!response.ok) {
     const errorBody = await response.text();
+    const code = parseAgentErrorCode(errorBody);
+    if (code === 'DOCUMENT_QUOTA_EXCEEDED') {
+      throw new Error(
+        'Monthly document limit reached. Upgrade your plan or wait until next month.'
+      );
+    }
+    if (code === 'TOKEN_QUOTA_EXCEEDED') {
+      throw new Error(
+        'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
+      );
+    }
     throw new Error(
       `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`
     );
@@ -467,6 +478,14 @@ export async function postFileToAgent(
     if (!response.ok) {
       const errorBody = await response.text();
       log.warn('rag.upload.failed', { status: response.status });
+      const code = parseAgentErrorCode(errorBody);
+      if (code === 'DOCUMENT_QUOTA_EXCEEDED') {
+        return {
+          success: false,
+          error:
+            'Monthly document limit reached. Upgrade your plan or wait until next month.',
+        };
+      }
       // Don't throw - RAG failures shouldn't block document upload
       return { success: false, error: errorBody };
     }
@@ -583,6 +602,12 @@ export async function compareCheckpoints(
 
     if (!response.ok) {
       const errorBody = await response.text();
+      const code = parseAgentErrorCode(errorBody);
+      if (code === 'TOKEN_QUOTA_EXCEEDED') {
+        throw new Error(
+          'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
+        );
+      }
       throw new Error(
         `Failed to compare checkpoints, status: ${response.status}, body: ${errorBody}`
       );

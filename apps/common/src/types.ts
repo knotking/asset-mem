@@ -380,6 +380,10 @@ export type Checkpoint = {
   areaDescription?: string; // Detailed description of the detected area/asset
   tags?: string[]; // e.g., ["monthly", "winter", "pre-storm"]
   analysisStatus?: "pending" | "processing" | "completed" | "failed";
+  /** Client or worker: user-facing reason when analysisStatus is failed */
+  analysisFailureSummary?: string;
+  analysisQuotaExceeded?: boolean;
+  analysisCreationQuotaExceeded?: boolean;
   skipComparison?: boolean; // Opt-out of automatic comparison
   aiAnalysis?: CheckpointAnalysis;
   visualDiff?: VisualDiffAnalysis;

@@ -36,6 +36,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
+import { getDocumentAnalysisFailureMessage } from "@/lib/plan-limit-errors";
 import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
 import { postFileToAgent } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
@@ -348,21 +349,40 @@ export function UploadDocumentsDialog({
             }
           })(),
         ]);
+        return "ok" as const;
       } catch (error) {
         uploadLog.error("file.process.failed", { name: file.name }, error);
         await updateDoc(doc(db, "users", user.uid, "docs", docId), {
           status: "failed",
-          summary: "Analysis failed for this document.",
+          summary: getDocumentAnalysisFailureMessage(error),
         });
+        return "failed" as const;
       }
     });
 
-    await Promise.all(analysisPromises);
-
-    toast({
-      title: "Processing Complete",
-      description: "All documents have been analyzed.",
-    });
+    const outcomes = await Promise.all(analysisPromises);
+    const failedCount = outcomes.filter((o) => o === "failed").length;
+    const total = newDocRefs.length;
+    const succeeded = total - failedCount;
+    if (failedCount === 0) {
+      toast({
+        title: "Processing complete",
+        description: "All documents have been analyzed.",
+      });
+    } else if (succeeded === 0) {
+      toast({
+        variant: "destructive",
+        title: "Upload finished with errors",
+        description:
+          "No documents could be analyzed. Check each file for details (for example, monthly plan limits).",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Processing finished with errors",
+        description: `${succeeded} of ${total} documents analyzed; ${failedCount} failed. Open property details for details.`,
+      });
+    }
     setIsUploading(false);
   };
 

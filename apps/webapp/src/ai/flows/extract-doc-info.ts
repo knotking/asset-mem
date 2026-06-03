@@ -43,17 +43,13 @@ export async function queueExtractDocInfo(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    const { parseAgentErrorCode } = await import("@/lib/logger");
-    const code = parseAgentErrorCode(errorBody);
-    if (code === "DOCUMENT_QUOTA_EXCEEDED") {
-      throw new Error(
-        "Monthly document limit reached. Upgrade your plan or wait until next month.",
-      );
-    }
-    if (code === "TOKEN_QUOTA_EXCEEDED") {
-      throw new Error(
-        "Monthly AI token limit reached. Upgrade your plan or wait until next month.",
-      );
+    const { planLimitMessageForErrorCode, parsePlanLimitErrorCode } =
+      await import("@/lib/plan-limit-errors");
+    const quotaMessage = planLimitMessageForErrorCode(
+      parsePlanLimitErrorCode(errorBody),
+    );
+    if (quotaMessage) {
+      throw new Error(quotaMessage);
     }
     throw new Error(
       `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`,

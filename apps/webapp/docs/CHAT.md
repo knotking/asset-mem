@@ -33,6 +33,7 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/hooks/use-follow-up-lifecycle-strip-delay.ts` | `apps/common/src/hooks/use-follow-up-lifecycle-strip-delay.ts` |
 | `src/hooks/use-assistant-loading-ui.ts` | `apps/common/src/hooks/use-assistant-loading-ui.ts` |
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
+| `src/lib/plan-limit-errors.ts` | `apps/common/src/lib/document-analysis-errors.ts` |
 
 ## Display resolution flow
 

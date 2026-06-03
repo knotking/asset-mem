@@ -3,6 +3,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Camera, Video } from 'lucide-react';
+import {
+  checkpointFailureBadgeLabel,
+  getCheckpointAnalysisFailureMessage,
+} from '@/lib/plan-limit-errors';
 import { Checkpoint } from '@/lib/types';
 import { format } from 'date-fns';
 import Image from 'next/image';
@@ -36,7 +40,13 @@ export function CheckpointCard({
   // Determine overall condition from analysis
   const getConditionBadge = () => {
     if (analysisFailed) {
-      return <Badge variant="destructive">Analysis Failed</Badge>;
+      const label = checkpointFailureBadgeLabel(checkpoint);
+      const title = getCheckpointAnalysisFailureMessage(checkpoint);
+      return (
+        <Badge variant="destructive" title={title}>
+          {label === 'Plan limit' ? 'Plan limit' : 'Analysis failed'}
+        </Badge>
+      );
     }
     if (isAnalyzing) {
       return <Badge variant="outline" className="border-blue-300 text-blue-700"><Clock className="h-3 w-3 mr-1 animate-spin" />Analyzing</Badge>;

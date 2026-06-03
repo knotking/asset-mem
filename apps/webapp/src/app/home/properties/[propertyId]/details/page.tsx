@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
 import { createLogger } from '@/lib/logger';
+import { getFailedDocumentSummary } from '@/lib/plan-limit-errors';
 
 const propertyLog = createLogger('property');
 
@@ -44,6 +45,7 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
     }
     
     const Icon = docTypeIcons[doc.documentType || 'OTHER'] || FileIcon;
+    const failureSummary = getFailedDocumentSummary(doc);
 
     return (
         <Card className="group transition-shadow hover:shadow-lg">
@@ -67,6 +69,8 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
                                     <Sparkles className="h-4 w-4 animate-spin text-primary" />
                                     <span>Analyzing...</span>
                                 </div>
+                            ) : failureSummary ? (
+                                <p className="mt-2 text-sm text-destructive">{failureSummary}</p>
                             ) : (
                                 <div className="mt-2 space-y-1 text-sm">
                                     {doc.keyEntities && doc.keyEntities.length > 0 ? (

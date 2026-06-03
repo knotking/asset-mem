@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getDocumentAnalysisFailureMessage } from '../lib/document-analysis-errors';
 import { createLogger } from '../lib/logger';
 
 const uploadLog = createLogger('upload');
@@ -183,8 +184,37 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                         storagePath: storageRef.fullPath,
                       });
                     } catch (error) {
-                      uploadLog.warn('file.analysis.failed', { name: doc.name, cause: error instanceof Error ? error.message : String(error) });
-                      analysisResult.summary = 'Analysis failed';
+                      const failureMessage = getDocumentAnalysisFailureMessage(error);
+                      uploadLog.warn('file.analysis.failed', {
+                        name: doc.name,
+                        cause: failureMessage,
+                      });
+                      setUploadingDocs((prev) =>
+                        prev.map((d) =>
+                          d.id === doc.id
+                            ? {
+                                ...d,
+                                status: 'failed',
+                                error: failureMessage,
+                                summary: failureMessage,
+                              }
+                            : d
+                        )
+                      );
+                      if (onComplete) {
+                        onComplete({
+                          ...doc,
+                          status: 'failed',
+                          error: failureMessage,
+                          summary: failureMessage,
+                          downloadURL,
+                          storagePath: storageRef.fullPath,
+                          gsURI,
+                          progress: 100,
+                        });
+                      }
+                      resolve();
+                      return;
                     }
                   }
 

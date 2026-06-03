@@ -10,6 +10,10 @@ import {
   parseAgentErrorCode,
   truncateId,
 } from '@/lib/logger';
+import {
+  planLimitMessageForErrorCode,
+  TOKEN_QUOTA_USER_MESSAGE,
+} from '@/lib/plan-limit-errors';
 import type { AgentStep, LocationData, PrimaryAgent, SearchLocationInput } from '@/lib/types';
 import { buildAgentSearchLocation } from '@/lib/search-location';
 
@@ -93,6 +97,10 @@ export async function postFileToAgent(
     if (!response.ok) {
       const errorBody = await response.text();
       log.warn('rag.upload.failed', { status: response.status });
+      const quotaMessage = planLimitMessageForErrorCode(parseAgentErrorCode(errorBody));
+      if (quotaMessage) {
+        throw new Error(quotaMessage);
+      }
       throw new Error(`Failed to post file, status: ${response.status}, body: ${errorBody}`);
     }
     const result = await response.json();
@@ -102,7 +110,7 @@ export async function postFileToAgent(
     log.error('rag.upload.error', undefined, error);
     const errorMessage =
       error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, error: `Failed to process file: ${errorMessage}` };
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -209,7 +217,7 @@ export async function streamAgentResponse({
       log.error('stream.httpError', { status: response.status, code });
       throw new Error(
         code === 'TOKEN_QUOTA_EXCEEDED'
-          ? 'Monthly AI usage limit reached.'
+          ? TOKEN_QUOTA_USER_MESSAGE
           : `Failed to stream response, status: ${response.status}`
       );
     }

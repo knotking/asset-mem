@@ -18,6 +18,7 @@ import { Calendar, MapPin, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { compareCheckpoints } from '@/lib/api-checkpoint';
+import { getPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -44,6 +45,7 @@ export function CheckpointComparisonDialog({
 }: CheckpointComparisonDialogProps) {
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<VisualDiffAnalysis | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
 
   // Determine which is older (before) and which is newer (after)
   const date1 = toDate(checkpoint1.createdAt);
@@ -75,6 +77,7 @@ export function CheckpointComparisonDialog({
     }
 
     setIsComparing(true);
+    setComparisonError(null);
     try {
       const result = await compareCheckpoints({
         image1Url: image1.gsURI,
@@ -87,6 +90,8 @@ export function CheckpointComparisonDialog({
       setComparisonResult(result);
     } catch (error) {
       checkpointLog.error('comparison.failed', undefined, error);
+      setComparisonError(getPlanLimitFailureMessage(error));
+      setComparisonResult(null);
     } finally {
       setIsComparing(false);
     }
@@ -214,6 +219,12 @@ export function CheckpointComparisonDialog({
             <div className="flex items-center justify-center gap-3 rounded-lg border bg-blue-50 p-8">
               <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
               <p className="text-blue-900">Analyzing differences...</p>
+            </div>
+          )}
+
+          {comparisonError && !isComparing && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              {comparisonError}
             </div>
           )}
 
