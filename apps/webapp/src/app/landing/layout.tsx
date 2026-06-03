@@ -1,12 +1,9 @@
 import { Metadata } from 'next';
-import { buildPageMetadata } from '@/lib/metadata-shared';
-import { SITE_NAME, SITE_TAGLINE } from '@/lib/site';
+import { buildPageMetadata, LANDING_PAGE_METADATA } from '@/lib/metadata-shared';
 
 export const metadata: Metadata = buildPageMetadata({
-  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-  description:
-    'Get instant property diagnostics, maintenance guidance, and expert recommendations powered by advanced AI technology.',
-  path: '/',
+  ...LANDING_PAGE_METADATA,
+  path: '/landing',
 });
 
 export default function LandingLayout({

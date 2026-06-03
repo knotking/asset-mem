@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
-import { getSiteUrl, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME } from '@/lib/site';
+import { getSiteUrl, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TAGLINE } from '@/lib/site';
+
+/** Homepage and `/landing` copy — set `path` per route. */
+export const LANDING_PAGE_METADATA = {
+  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+  description:
+    'Get instant property diagnostics, maintenance guidance, and expert recommendations powered by advanced AI technology.',
+} as const;
 
 type BuildPageMetadataOptions = {
   title?: string;
@@ -44,6 +51,14 @@ export function buildPageMetadata(options: BuildPageMetadataOptions = {}): Metad
       description,
       images: ['/opengraph-image'],
     },
-    ...(options.noIndex ? { robots: { index: false, follow: false } } : {}),
+    ...(options.noIndex
+      ? {
+          robots: {
+            index: false,
+            follow: false,
+            googleBot: { index: false, follow: false },
+          },
+        }
+      : {}),
   };
 }
