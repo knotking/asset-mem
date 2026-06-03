@@ -1,14 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
+import { buildPageMetadata } from '@/lib/metadata-shared';
 
-export const metadata: Metadata = {
-  title: "Shared chat — AssetMem AI",
-  description: "Read-only shared property assistant conversation.",
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
-  },
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Shared chat — AssetMem AI',
+  description: 'Read-only shared property assistant conversation.',
+  path: '/share',
+  noIndex: true,
+});
 
 export default function ShareLayout({
   children,

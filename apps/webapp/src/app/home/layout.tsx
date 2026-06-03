@@ -1,19 +1,18 @@
-'use client';
+import type { Metadata } from 'next';
+import { buildPageMetadata } from '@/lib/metadata-shared';
+import HomeLayoutClient from './home-layout-client';
 
-import { Header } from '@/components/layout/header';
-import { LlmTokenUsageProvider } from '@/contexts/llm-token-usage-context';
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Dashboard — AssetMem AI',
+  description: 'Signed-in AssetMem AI workspace. Not intended for public indexing.',
+  path: '/home',
+  noIndex: true,
+});
 
 export default function HomeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex h-screen w-full flex-col bg-background">
-      <LlmTokenUsageProvider>
-        <Header />
-        <main className="flex-1 overflow-auto">{children}</main>
-      </LlmTokenUsageProvider>
-    </div>
-  );
+  return <HomeLayoutClient>{children}</HomeLayoutClient>;
 }
