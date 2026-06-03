@@ -34,6 +34,7 @@ const firebaseConfigs: Record<Environment, FirebaseOptions> = {
     storageBucket: "homegeek-prod.firebasestorage.app",
     messagingSenderId: "686746113874",
     appId: "1:686746113874:web:2e470647c709a56f4a4c8b",
+    measurementId: "G-5JVQWY3M0E",
   },
 };
 

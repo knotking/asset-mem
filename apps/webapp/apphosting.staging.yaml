@@ -29,11 +29,11 @@ env:
       - BUILD
       - RUNTIME
   # Optional: GA4 for staging smoke tests
-  # - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
-  #   value: G-XXXXXXXXXX
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
+  - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
+    value: G-M3VECYV1FM
+    availability:
+      - BUILD
+      - RUNTIME
   - variable: NEXT_PUBLIC_DEBUG_LOGS
     value: "true"
     availability:

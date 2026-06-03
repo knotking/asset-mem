@@ -29,12 +29,12 @@ env:
     availability:
       - BUILD
       - RUNTIME
-  # GA4 — uncomment and set before Product Hunt (see docs/deployment/PRODUCT_HUNT_LAUNCH.md §2.1)
-  # - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
-  #   value: G-XXXXXXXXXX
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
+  # GA4 — see docs/deployment/PRODUCT_HUNT_LAUNCH.md §2.1
+  - variable: NEXT_PUBLIC_GA_MEASUREMENT_ID
+    value: G-5JVQWY3M0E
+    availability:
+      - BUILD
+      - RUNTIME
 runConfig:
   # Production can scale higher
   maxInstances: 1

@@ -59,6 +59,7 @@ const firebaseConfigs: Record<Environment, FirebaseConfigWithClient> = {
     storageBucket: "homegeek-prod.firebasestorage.app",
     messagingSenderId: "686746113874",
     appId: "1:686746113874:web:2e470647c709a56f4a4c8b",
+    measurementId: "G-5JVQWY3M0E",
     webClientId:
       "686746113874-b0002g07rkbatcdv45et44avs3p4hpbk.apps.googleusercontent.com",
     iosClientId:
