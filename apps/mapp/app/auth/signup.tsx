@@ -130,12 +130,14 @@ export default function SignupScreen() {
 
           {authExtrasReady ? (
             <>
+              {Platform.OS === 'ios' && (
+                <AppleSignInButton
+                  disabled={state.loading}
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                />
+              )}
               <GoogleSignInButton
-                disabled={state.loading}
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-              />
-              <AppleSignInButton
                 disabled={state.loading}
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}

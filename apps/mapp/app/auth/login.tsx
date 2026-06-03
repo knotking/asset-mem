@@ -1,5 +1,5 @@
 import React, { useReducer } from 'react';
-import { View, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { auth } from '@homeapp/common/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { Link, useRouter } from 'expo-router';
@@ -134,12 +134,14 @@ export default function LoginScreen() {
 
           {authExtrasReady ? (
             <>
+              {Platform.OS === 'ios' && (
+                <AppleSignInButton
+                  disabled={state.loading}
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                />
+              )}
               <GoogleSignInButton
-                disabled={state.loading}
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-              />
-              <AppleSignInButton
                 disabled={state.loading}
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
