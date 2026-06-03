@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated } from 'react-native';
+import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -39,6 +39,10 @@ import { CheckpointAnalysisModal } from './CheckpointAnalysisModal';
 import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
 
+import {
+  checkpointFailureBadgeLabel,
+  getPlanLimitFailureMessage,
+} from '@homeapp/common/lib/document-analysis-errors';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
 
@@ -525,7 +529,9 @@ function CheckpointCard({
                 {checkpoint.analysisStatus === 'failed' && (
                   <View className="flex-row items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5">
                     <Icon as={AlertCircle} size={10} className="text-destructive" />
-                    <Text className="text-[10px] font-medium text-destructive">Failed</Text>
+                    <Text className="text-[10px] font-medium text-destructive">
+                      {checkpointFailureBadgeLabel(checkpoint)}
+                    </Text>
                   </View>
                 )}
                 {checkpoint.analysisStatus === 'completed' &&
@@ -670,12 +676,14 @@ export function PropertyCheckpointsTab({
           propertyId: property.id,
         }).catch((err) => {
           checkpointLog.error('checkpoint.analysis.publish.failed', undefined, err);
-          // Update status to failed if publish fails
+          const message = getPlanLimitFailureMessage(err);
           updateCheckpoint(id, {
             analysisStatus: 'failed',
+            analysisFailureSummary: message,
           }).catch((updateErr) => {
             checkpointLog.error('checkpoint.statusFailedUpdate.failed', undefined, updateErr);
           });
+          Alert.alert('Checkpoint analysis unavailable', message);
         });
       } else {
         // No image to analyze, mark as completed

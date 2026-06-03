@@ -36,6 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { getCheckpointAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
 import { AnalysisResults } from './AnalysisResults';
 import { Separator } from '@/components/ui/separator';
 
@@ -320,10 +321,10 @@ export function CheckpointDetailModal({
                 <View className="gap-3">
                   <View className="flex-row items-center gap-2">
                     <Icon as={AlertTriangle} size={20} className="text-destructive" />
-                    <Text className="font-medium text-destructive">Analysis Failed</Text>
+                    <Text className="font-medium text-destructive">Analysis unavailable</Text>
                   </View>
                   <Text className="text-sm text-muted-foreground">
-                    Unable to analyze this checkpoint. Please try again later.
+                    {getCheckpointAnalysisFailureMessage(checkpoint)}
                   </Text>
                 </View>
               )}

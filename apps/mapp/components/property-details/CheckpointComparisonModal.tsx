@@ -11,6 +11,7 @@ import { compareCheckpoints, CompareCheckpointsOutput } from '../../lib/api';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { Timestamp } from 'firebase/firestore';
 import { ActivityIndicator } from 'react-native';
+import { getPlanLimitFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -32,6 +33,7 @@ export function CheckpointComparisonModal({
     const { updateCheckpoint } = useCheckpoint();
     const [loading, setLoading] = React.useState(false);
     const [analysis, setAnalysis] = React.useState<CompareCheckpointsOutput | null>(null);
+    const [comparisonError, setComparisonError] = React.useState<string | null>(null);
 
     const normalizeAnalysis = React.useCallback(
         (input: Partial<CompareCheckpointsOutput> | null | undefined): CompareCheckpointsOutput | null => {
@@ -87,6 +89,7 @@ export function CheckpointComparisonModal({
 
             const fetchAnalysis = async () => {
                 setLoading(true);
+                setComparisonError(null);
                 try {
                     const image1 = before.media?.[0];
                     const image2 = after.media?.[0];
@@ -127,6 +130,8 @@ export function CheckpointComparisonModal({
                     }
                 } catch (e) {
                     checkpointLog.error('comparison.failed', undefined, e);
+                    setComparisonError(getPlanLimitFailureMessage(e));
+                    setAnalysis(null);
                 } finally {
                     setLoading(false);
                 }
@@ -250,6 +255,8 @@ export function CheckpointComparisonModal({
                                     </View>
                                 )}
                             </View>
+                        ) : comparisonError ? (
+                            <Text className="text-sm text-destructive">{comparisonError}</Text>
                         ) : (
                             <Text className="text-sm text-muted-foreground">
                                 Unable to generate analysis. Please try again later.

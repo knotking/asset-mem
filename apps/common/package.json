@@ -39,7 +39,8 @@
     "./hooks/use-assistant-loading-ui": "./src/hooks/use-assistant-loading-ui.ts",
     "./lib/search-location": "./src/search-location.ts",
     "./lib/message-content-parts": "./src/lib/message-content-parts.ts",
-    "./lib/shared-chat": "./src/lib/shared-chat.ts"
+    "./lib/shared-chat": "./src/lib/shared-chat.ts",
+    "./lib/document-analysis-errors": "./src/lib/document-analysis-errors.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

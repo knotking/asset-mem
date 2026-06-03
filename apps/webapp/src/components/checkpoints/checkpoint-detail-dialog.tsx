@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
+import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -65,6 +66,9 @@ export function CheckpointDetailDialog() {
   const analysis = checkpoint.aiAnalysis;
   const isAnalyzing = checkpoint.analysisStatus === 'processing' || checkpoint.analysisStatus === 'pending';
   const analysisFailed = checkpoint.analysisStatus === 'failed';
+  const analysisFailureMessage = analysisFailed
+    ? getCheckpointAnalysisFailureMessage(checkpoint)
+    : '';
   const isAnalyzed = checkpoint.analysisStatus === 'completed' && hasAnalysis;
 
   const handleStartEdit = () => {
@@ -329,8 +333,8 @@ export function CheckpointDetailDialog() {
             <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
               <AlertCircle className="h-5 w-5 text-red-600" />
               <div>
-                <p className="font-medium text-red-900">Analysis Failed</p>
-                <p className="text-sm text-red-700">Unable to analyze this checkpoint</p>
+                <p className="font-medium text-red-900">Analysis unavailable</p>
+                <p className="text-sm text-red-700">{analysisFailureMessage}</p>
               </div>
             </div>
           )}

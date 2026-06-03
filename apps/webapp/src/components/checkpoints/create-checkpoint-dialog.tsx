@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -111,7 +112,8 @@ export function CreateCheckpointDialog({
   onOpenChange,
   onCheckpointCreated,
 }: CreateCheckpointDialogProps) {
-  const { createCheckpoint, setSelectedCheckpoint, checkpoints } = useCheckpoint();
+  const { createCheckpoint, updateCheckpoint, setSelectedCheckpoint, checkpoints } =
+    useCheckpoint();
   const { user } = useAuth();
   const { property } = useProperty();
   const { toast } = useToast();
@@ -199,7 +201,16 @@ export function CreateCheckpointDialog({
           });
         } catch (error) {
           checkpointLog.error('checkpoint.analysis.trigger.failed', undefined, error);
-          // Don't show error to user - analysis will happen eventually
+          const message = getPlanLimitFailureMessage(error);
+          await updateCheckpoint(result.id, {
+            analysisStatus: 'failed',
+            analysisFailureSummary: message,
+          });
+          toast({
+            variant: 'destructive',
+            title: 'Checkpoint analysis unavailable',
+            description: message,
+          });
         }
       }
 

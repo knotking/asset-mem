@@ -37,6 +37,10 @@ import { createLogger } from '@/lib/logger';
 
 const propertyLog = createLogger('property');
 const uploadLog = createLogger('upload');
+import {
+  getDocumentAnalysisFailureMessage,
+  getFailedDocumentSummary,
+} from '@homeapp/common/lib/document-analysis-errors';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
@@ -180,44 +184,61 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
             summary: 'Processing...',
           });
 
-          const [queueResult, ragResult] = await Promise.allSettled([
-            queueExtractDocInfo({
-              docId: docRef.id,
-              docUrl: gsURI,
-              contentType: doc.mimeType,
-              userId: user.uid,
-            }),
-            postFileToAgent(gsURI, user.uid),
-          ]);
+          try {
+            const [queueResult, ragResult] = await Promise.allSettled([
+              queueExtractDocInfo({
+                docId: docRef.id,
+                docUrl: gsURI,
+                contentType: doc.mimeType,
+                userId: user.uid,
+              }),
+              postFileToAgent(gsURI, user.uid),
+            ]);
 
-          if (ragResult.status === 'rejected') {
-            uploadLog.warn('rag.failed');
+            if (ragResult.status === 'rejected') {
+              uploadLog.warn('rag.failed');
+            }
+
+            if (queueResult.status === 'rejected') {
+              uploadLog.warn('analysis.queue.failed');
+              throw queueResult.reason;
+            }
+
+            const data = await waitForUserDocAnalysis(db, user.uid, docRef.id);
+            if (data.status === 'failed') {
+              throw new Error(
+                typeof data.summary === 'string' ? data.summary : 'Document analysis failed'
+              );
+            }
+
+            return {
+              documentType: typeof data.documentType === 'string' ? data.documentType : 'OTHER',
+              propertyAddress:
+                typeof data.propertyAddress === 'string' ? data.propertyAddress : 'N/A',
+              keyEntities: Array.isArray(data.keyEntities) ? data.keyEntities : [],
+              summary: typeof data.summary === 'string' ? data.summary : 'No summary available',
+              firestoreDocId: docRef.id,
+            };
+          } catch (error) {
+            const summary = getDocumentAnalysisFailureMessage(error);
+            await updateDoc(docRef, { status: 'failed', summary });
+            throw error;
           }
-
-          if (queueResult.status === 'rejected') {
-            uploadLog.warn('analysis.queue.failed');
-            throw queueResult.reason;
-          }
-
-          const data = await waitForUserDocAnalysis(db, user.uid, docRef.id);
-          if (data.status === 'failed') {
-            throw new Error(
-              typeof data.summary === 'string' ? data.summary : 'Document analysis failed'
-            );
-          }
-
-          return {
-            documentType: typeof data.documentType === 'string' ? data.documentType : 'OTHER',
-            propertyAddress:
-              typeof data.propertyAddress === 'string' ? data.propertyAddress : 'N/A',
-            keyEntities: Array.isArray(data.keyEntities) ? data.keyEntities : [],
-            summary: typeof data.summary === 'string' ? data.summary : 'No summary available',
-            firestoreDocId: docRef.id,
-          };
         },
         onComplete: async (completedDoc) => {
           try {
             if (!completedDoc.firestoreDocId) {
+              removeUploadingDoc(completedDoc.id);
+              return;
+            }
+
+            if (completedDoc.status === 'failed') {
+              const failureMessage =
+                completedDoc.error ||
+                completedDoc.summary ||
+                getDocumentAnalysisFailureMessage(new Error('Document analysis failed'));
+              setErrorMessage(failureMessage);
+              setErrorAlertOpen(true);
               removeUploadingDoc(completedDoc.id);
               return;
             }
@@ -541,13 +562,40 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
                           )}
 
                           {isUploading && uploadDoc?.status === 'failed' && (
-                            <View className="mt-2 flex-row items-center gap-1">
+                            <View className="mt-2 flex-row items-start gap-1">
                               <Icon as={AlertCircle} size={16} className="text-destructive" />
-                              <Text className="text-xs text-destructive">
-                                {uploadDoc.error || 'Upload failed'}
+                              <Text className="flex-1 text-xs text-destructive">
+                                {uploadDoc.error || uploadDoc.summary || 'Upload failed'}
                               </Text>
                             </View>
                           )}
+
+                          {!isUploading && doc.status === 'analyzing' && (
+                            <View className="mt-2 flex-row items-center gap-1">
+                              <RotatingSparkles size={16} color="#3B82F6" />
+                              <Text className="text-xs text-muted-foreground">Analyzing...</Text>
+                            </View>
+                          )}
+
+                          {!isUploading &&
+                            (() => {
+                              const failureSummary = getFailedDocumentSummary(
+                                doc as Document
+                              );
+                              if (!failureSummary) return null;
+                              return (
+                                <View className="mt-2 flex-row items-start gap-1">
+                                  <Icon
+                                    as={AlertCircle}
+                                    size={16}
+                                    className="text-destructive"
+                                  />
+                                  <Text className="flex-1 text-xs text-destructive">
+                                    {failureSummary}
+                                  </Text>
+                                </View>
+                              );
+                            })()}
                         </View>
 
                         <Pressable
