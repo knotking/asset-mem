@@ -201,9 +201,11 @@ jobs:
           echo "App slug: $APP_SLUG"
           echo "Expo Project ID: $EXPO_PROJECT_ID"
           echo "Proxy Base URL: $PROXY_BASE_URL"
-          eas update --channel ${{ needs.validate.outputs.channel }} --message "${{ needs.validate.outputs.message }}" --non-interactive
+          # Message via env — commit bodies with "quotes" break inline --message "..."
+          eas update --channel ${{ needs.validate.outputs.channel }} --message "$EAS_UPDATE_MESSAGE" --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_UPDATE_MESSAGE: ${{ needs.validate.outputs.message }}
           APP_ENV: ${{ env.APP_ENV }}
           APP_SLUG: ${{ env.APP_SLUG }}
           PROXY_BASE_URL: ${{ env.PROXY_BASE_URL }}
