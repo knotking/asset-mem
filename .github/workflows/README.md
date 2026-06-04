@@ -86,6 +86,11 @@ Destroys an environment and optionally deletes the GCP project.
 
 ### Application Deployment
 
+#### [deploy-orchestrator.yaml](deploy-orchestrator.yaml)
+Triggers one or more deploy workflows from a single manual run (choose **environment**, **preset** or individual workflows).
+
+See [README-deploy-orchestrator.md](README-deploy-orchestrator.md).
+
 #### [deploy-homecare-agent-proxy.yaml](deploy-homecare-agent-proxy.yaml)
 Deploys the homecare agent proxy to Cloud Run.
 
