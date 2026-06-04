@@ -30,7 +30,14 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeCheckpoint } from '@/lib/api-checkpoint';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
+import {
+  CHECKPOINT_QUOTA_USER_MESSAGE,
+  getPlanLimitFailureMessage,
+  isAtPlanLimit,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+} from '@/lib/plan-limit-errors';
+import { useLlmTokenUsage } from '@/contexts/llm-token-usage-context';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -117,6 +124,14 @@ export function CreateCheckpointDialog({
   const { user } = useAuth();
   const { property } = useProperty();
   const { toast } = useToast();
+  const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
+  const checkpointLimitMessage = planLimitBlockMessage(
+    'checkpoint',
+    checkpointsLimit,
+  );
+  const checkpointLimitHint = planLimitUsageHint('checkpoint', checkpointsLimit);
+  const createBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(checkpointsLimit, 1);
 
   const [name, setName] = useState('');
   const [assetType, setAssetType] = useState<'real_estate' | 'vehicle' | 'appliance' | 'other'>('real_estate');
@@ -144,6 +159,15 @@ export function CreateCheckpointDialog({
         title: 'Media Required',
         description: 'Please upload at least one photo or video.',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+      toast({
+        variant: 'destructive',
+        title: 'Monthly checkpoint limit reached',
+        description: CHECKPOINT_QUOTA_USER_MESSAGE,
       });
       return;
     }
@@ -357,13 +381,28 @@ export function CreateCheckpointDialog({
             </Label>
             <FileUploadZone onFilesChange={setFiles} maxFiles={10} />
           </div>
+          {(checkpointLimitHint || checkpointLimitMessage) && (
+            <p
+              className={cn(
+                'text-sm',
+                checkpointLimitMessage
+                  ? 'text-destructive'
+                  : 'text-muted-foreground',
+              )}
+            >
+              {checkpointLimitMessage ?? checkpointLimitHint}
+            </p>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={isCreating}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isCreating}>
+          <Button
+            onClick={handleCreate}
+            disabled={isCreating || createBlockedByLimit}
+          >
             {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isCreating ? 'Creating...' : 'Create Checkpoint'}
           </Button>

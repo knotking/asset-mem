@@ -40,9 +40,15 @@ import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
 
 import {
+  CHECKPOINT_QUOTA_USER_MESSAGE,
   checkpointFailureBadgeLabel,
   getPlanLimitFailureMessage,
 } from '@homeapp/common/lib/document-analysis-errors';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+} from '@homeapp/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
 
@@ -592,6 +598,8 @@ export function PropertyCheckpointsTab({
     deleteCheckpoint,
   } = useCheckpoint();
   const { user } = useAuth();
+  const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
+  const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
   const { property } = useProperty();
   
   // Sub-tab state
@@ -621,6 +629,11 @@ export function PropertyCheckpointsTab({
     mediaAsset: ImagePicker.ImagePickerAsset;
     mediaType: 'image' | 'video';
   }) => {
+    if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+      Alert.alert('Monthly checkpoint limit reached', CHECKPOINT_QUOTA_USER_MESSAGE);
+      return;
+    }
+
     try {
       const result = await createCheckpoint(
         {
@@ -853,7 +866,19 @@ export function PropertyCheckpointsTab({
           <Text className="mb-3 text-center text-sm text-muted-foreground">
             Create your first checkpoint to start tracking changes over time.
           </Text>
-          <Button onPress={() => setIsCreateModalVisible(true)} className="w-full">
+          <Button
+            onPress={() => {
+              if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
+                Alert.alert(
+                  'Monthly checkpoint limit reached',
+                  CHECKPOINT_QUOTA_USER_MESSAGE,
+                );
+                return;
+              }
+              setIsCreateModalVisible(true);
+            }}
+            className="w-full"
+          >
             <View className="flex-row items-center gap-2">
               <Icon as={Plus} size={20} className="text-primary-foreground" />
               <Text className="text-primary-foreground">Create Checkpoint</Text>
