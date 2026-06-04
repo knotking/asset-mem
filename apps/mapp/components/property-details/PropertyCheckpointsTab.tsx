@@ -791,12 +791,9 @@ export function PropertyCheckpointsTab({
 
   const handleContinueFromProcessing = () => {
     setIsProcessingModalVisible(false);
-    // Switch to 'checkpoints' tab after creating a checkpoint
     setActiveSubTab('checkpoints');
-    // Auto-select the newly created checkpoint
-    if (newCheckpointId) {
-      setSelectedForActions([newCheckpointId]);
-    }
+    setSelectedForActions([]);
+    setIsSelectionMode(false);
   };
 
   const handleCheckpointPress = (checkpoint: Checkpoint) => {
