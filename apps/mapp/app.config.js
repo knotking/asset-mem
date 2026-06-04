@@ -60,11 +60,6 @@ module.exports = {
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     privacy: 'hidden',
-    splash: {
-      image: './assets/images/splash.png',
-      resizeMode: 'cover',
-      backgroundColor: '#1a2332',
-    },
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
@@ -96,6 +91,23 @@ module.exports = {
       favicon: './assets/images/favicon.png',
     },
     plugins: [
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#1a2332',
+          image: './assets/images/splash.png',
+          imageWidth: 100,
+          resizeMode: 'contain',
+          ios: {
+            backgroundColor: '#1a2332',
+            image: './assets/images/splash.png',
+          },
+          android: {
+            backgroundColor: '#1a2332',
+            image: './assets/images/splash.png',
+          },
+        },
+      ],
       'expo-router',
       'expo-apple-authentication',
       'expo-web-browser',
