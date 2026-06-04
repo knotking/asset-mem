@@ -14,6 +14,72 @@ export const CHECKPOINT_QUOTA_USER_MESSAGE =
 export const TOKEN_QUOTA_USER_MESSAGE =
   "Monthly AI token limit reached. Upgrade your plan or wait until next month.";
 
+export type PlanLimitSlice = {
+  used: number;
+  limit: number;
+  unlimited: boolean;
+};
+
+/** True when adding `countToAdd` creations would exceed the monthly cap. */
+export function isAtPlanLimit(
+  slice: PlanLimitSlice | null,
+  countToAdd = 1,
+): boolean {
+  if (!slice || slice.unlimited) return false;
+  return slice.used + countToAdd > slice.limit;
+}
+
+export function planLimitBlockMessage(
+  kind: "document" | "checkpoint",
+  slice: PlanLimitSlice | null,
+): string | null {
+  if (!slice || slice.unlimited) return null;
+  if (isAtPlanLimit(slice, 1)) {
+    return kind === "document"
+      ? DOCUMENT_QUOTA_USER_MESSAGE
+      : CHECKPOINT_QUOTA_USER_MESSAGE;
+  }
+  return null;
+}
+
+export function planLimitUsageHint(
+  kind: "document" | "checkpoint",
+  slice: PlanLimitSlice | null,
+): string | null {
+  if (!slice || slice.unlimited) return null;
+  const label = kind === "document" ? "documents" : "checkpoints";
+  return `${slice.used} of ${slice.limit} ${label} used this month`;
+}
+
+export function compareCheckpointsFailureMessage(
+  status: number,
+  body: string,
+): string {
+  const quota = planLimitMessageForErrorCode(parsePlanLimitErrorCode(body));
+  if (quota) return quota;
+  const lower = body.toLowerCase();
+  if (
+    status === 404 ||
+    lower.includes("not_found") ||
+    lower.includes("not found") ||
+    lower.includes("gemini-3.1")
+  ) {
+    return "Checkpoint comparison is temporarily unavailable. Please try again shortly.";
+  }
+  if (status >= 500) {
+    return "Checkpoint comparison could not be completed. Please try again later.";
+  }
+  return defaultPlanLimitFailureMessage("comparison");
+}
+
+export function isDocumentQuotaMessage(message: string | undefined): boolean {
+  if (!message?.trim()) return false;
+  return (
+    normalizePlanLimitErrorMessage(message.trim()) ===
+    DOCUMENT_QUOTA_USER_MESSAGE
+  );
+}
+
 /** Parse proxy/agent error bodies for known codes (e.g. TOKEN_QUOTA_EXCEEDED). */
 export function parsePlanLimitErrorCode(body: string): string | undefined {
   if (!body) return undefined;

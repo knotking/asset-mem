@@ -36,7 +36,15 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { queueExtractDocInfo } from "@/ai/flows/extract-doc-info";
-import { getDocumentAnalysisFailureMessage } from "@/lib/plan-limit-errors";
+import {
+  DOCUMENT_QUOTA_USER_MESSAGE,
+  getDocumentAnalysisFailureMessage,
+  isAtPlanLimit,
+  isDocumentQuotaMessage,
+  planLimitBlockMessage,
+  planLimitUsageHint,
+} from "@/lib/plan-limit-errors";
+import { useLlmTokenUsage } from "@/contexts/llm-token-usage-context";
 import { waitForUserDocAnalysis } from "@/lib/wait-user-doc-analysis";
 import { postFileToAgent } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
@@ -86,6 +94,11 @@ export function UploadDocumentsDialog({
   const onOpenChange = controlledOnOpenChange ?? contextOnClose;
 
   const { confirm: confirmAddressUpdate } = useAddressConfirmation();
+  const { documentsLimit, limitsLoading } = useLlmTokenUsage();
+  const documentLimitMessage = planLimitBlockMessage("document", documentsLimit);
+  const documentLimitHint = planLimitUsageHint("document", documentsLimit);
+  const uploadBlockedByLimit =
+    !limitsLoading && isAtPlanLimit(documentsLimit, Math.max(files.length, 1));
 
   // Effect to handle opening for new property flow
   useEffect(() => {
@@ -188,6 +201,15 @@ export function UploadDocumentsDialog({
   const handleUploadAndAnalyze = async () => {
     if (!user || files.length === 0) return;
 
+    if (!limitsLoading && isAtPlanLimit(documentsLimit, files.length)) {
+      toast({
+        variant: "destructive",
+        title: "Monthly document limit reached",
+        description: DOCUMENT_QUOTA_USER_MESSAGE,
+      });
+      return;
+    }
+
     setIsUploading(true);
     onOpenChange(false); // Close the dialog immediately
     toast({
@@ -287,73 +309,82 @@ export function UploadDocumentsDialog({
         });
 
         const idToken = await user.getIdToken();
-        await Promise.all([
-          postFileToAgent(gsURI, user.uid),
-          (async () => {
-            const queued = await queueExtractDocInfo(
-              {
-                docId,
-                docUrl: gsURI,
-                contentType: file.type,
-                userId: user.uid,
-              },
-              idToken
-            );
-            if (!queued.ok) {
-              throw new Error(
-                queued.error ?? "Document analysis was not accepted"
-              );
-            }
-            if (queued.status !== "accepted") {
-              throw new Error(queued.message || "Document analysis was not accepted");
-            }
-            const docSnap = await waitForUserDocAnalysis(db, user.uid, docId);
-            if (docSnap.status === "failed") {
-              throw new Error(
-                typeof docSnap.summary === "string"
-                  ? docSnap.summary
-                  : "Document analysis failed"
-              );
-            }
-            const result = docSnap as {
-              propertyAddress?: string;
-              documentType?: string;
-            };
-            if (
-              currentPropertyId &&
-              result.propertyAddress &&
-              result.propertyAddress !== "N/A"
-            ) {
-              const propRef = doc(
-                db,
-                "users",
-                user.uid,
-                "properties",
-                currentPropertyId
-              );
-              const propSnap = await getDoc(propRef);
+        const ragResult = await postFileToAgent(gsURI, user.uid);
+        const queued = await queueExtractDocInfo(
+          {
+            docId,
+            docUrl: gsURI,
+            contentType: file.type,
+            userId: user.uid,
+          },
+          idToken,
+        );
 
-              if (isNewPropertyFlow) {
+        const quotaMessage =
+          (!queued.ok && queued.error) ||
+          (ragResult.error && isDocumentQuotaMessage(ragResult.error))
+            ? queued.error ?? ragResult.error ?? DOCUMENT_QUOTA_USER_MESSAGE
+            : null;
+        if (quotaMessage) {
+          throw new Error(quotaMessage);
+        }
+        if (!queued.ok) {
+          throw new Error(
+            queued.error ?? "Document analysis was not accepted",
+          );
+        }
+        if (!ragResult.success) {
+          uploadLog.warn("rag.upload.failed", { error: ragResult.error });
+        }
+
+        if (queued.status !== "accepted") {
+          throw new Error(queued.message || "Document analysis was not accepted");
+        }
+        const docSnap = await waitForUserDocAnalysis(db, user.uid, docId);
+        if (docSnap.status === "failed") {
+          throw new Error(
+            typeof docSnap.summary === "string"
+              ? docSnap.summary
+              : "Document analysis failed",
+          );
+        }
+        const result = docSnap as {
+          propertyAddress?: string;
+          documentType?: string;
+        };
+        if (
+          currentPropertyId &&
+          result.propertyAddress &&
+          result.propertyAddress !== "N/A"
+        ) {
+          const propRef = doc(
+            db,
+            "users",
+            user.uid,
+            "properties",
+            currentPropertyId,
+          );
+          const propSnap = await getDoc(propRef);
+
+          if (isNewPropertyFlow) {
+            await updateDoc(propRef, {
+              name: result.propertyAddress,
+              address: result.propertyAddress,
+            });
+          } else if (propSnap.exists()) {
+            const propData = propSnap.data() as Property;
+            if (propData.address !== result.propertyAddress) {
+              const shouldUpdate = await confirmAddressUpdate(
+                result.propertyAddress,
+              );
+              if (shouldUpdate) {
                 await updateDoc(propRef, {
-                  name: result.propertyAddress,
                   address: result.propertyAddress,
                 });
-              } else if (propSnap.exists()) {
-                const propData = propSnap.data() as Property;
-                if (propData.address !== result.propertyAddress) {
-                  const shouldUpdate = await confirmAddressUpdate(
-                    result.propertyAddress
-                  );
-                  if (shouldUpdate) {
-                    await updateDoc(propRef, {
-                      address: result.propertyAddress,
-                    });
-                  }
-                }
               }
             }
-          })(),
-        ]);
+          }
+        }
         return "ok" as const;
       } catch (error) {
         uploadLog.error("file.process.failed", { name: file.name }, error);
@@ -522,6 +553,13 @@ export function UploadDocumentsDialog({
                 Take Photo
               </Button>
             </div>
+            {(documentLimitHint || documentLimitMessage) && (
+              <p
+                className={`text-sm ${documentLimitMessage ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {documentLimitMessage ?? documentLimitHint}
+              </p>
+            )}
           </div>
 
           <DialogFooter>
@@ -530,7 +568,9 @@ export function UploadDocumentsDialog({
             </Button>
             <Button
               onClick={handleUploadAndAnalyze}
-              disabled={files.length === 0 || isUploading}
+              disabled={
+                files.length === 0 || isUploading || uploadBlockedByLimit
+              }
             >
               {isUploading
                 ? "Uploading..."

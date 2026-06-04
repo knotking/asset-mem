@@ -38,9 +38,16 @@ import { createLogger } from '@/lib/logger';
 const propertyLog = createLogger('property');
 const uploadLog = createLogger('upload');
 import {
+  DOCUMENT_QUOTA_USER_MESSAGE,
   getDocumentAnalysisFailureMessage,
   getFailedDocumentSummary,
+  isDocumentQuotaMessage,
 } from '@homeapp/common/lib/document-analysis-errors';
+import {
+  isAtPlanLimit,
+  planLimitBlockMessage,
+} from '@homeapp/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
@@ -54,6 +61,8 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
   const { user } = useAuth();
   const { db, storage } = useFirebase();
   const { uploadingDocs, uploadDocuments, removeUploadingDoc } = useDocumentUpload();
+  const { documentsLimit, limitsLoading } = useLlmTokenUsage();
+  const documentLimitMessage = planLimitBlockMessage('document', documentsLimit);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
   const [successAlertOpen, setSuccessAlertOpen] = React.useState(false);
@@ -164,6 +173,13 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
       if (result.canceled || !result.assets) {
         return;
       }
+
+      if (!limitsLoading && isAtPlanLimit(documentsLimit, result.assets.length)) {
+        setErrorMessage(DOCUMENT_QUOTA_USER_MESSAGE);
+        setErrorAlertOpen(true);
+        return;
+      }
+
       uploadLog.debug('picker.result');
 
       // Start uploading using the common hook
@@ -185,23 +201,28 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
           });
 
           try {
-            const [queueResult, ragResult] = await Promise.allSettled([
-              queueExtractDocInfo({
+            const ragResult = await postFileToAgent(gsURI, user.uid);
+            let queueExtractError: unknown;
+            try {
+              await queueExtractDocInfo({
                 docId: docRef.id,
                 docUrl: gsURI,
                 contentType: doc.mimeType,
                 userId: user.uid,
-              }),
-              postFileToAgent(gsURI, user.uid),
-            ]);
-
-            if (ragResult.status === 'rejected') {
-              uploadLog.warn('rag.failed');
+              });
+            } catch (err) {
+              queueExtractError = err;
             }
 
-            if (queueResult.status === 'rejected') {
-              uploadLog.warn('analysis.queue.failed');
-              throw queueResult.reason;
+            if (queueExtractError) {
+              const queueMsg = getDocumentAnalysisFailureMessage(queueExtractError);
+              throw new Error(queueMsg);
+            }
+            if (ragResult.error && isDocumentQuotaMessage(ragResult.error)) {
+              throw new Error(ragResult.error);
+            }
+            if (!ragResult.success) {
+              uploadLog.warn('rag.upload.failed', { error: ragResult.error });
             }
 
             const data = await waitForUserDocAnalysis(db, user.uid, docRef.id);
@@ -499,6 +520,9 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
             </Button>
           </View>
         </CardHeader>
+        {documentLimitMessage ? (
+          <Text className="px-6 pb-2 text-sm text-destructive">{documentLimitMessage}</Text>
+        ) : null}
         {documentsLoading ? (
           <CardContent>
             <ActivityIndicator />

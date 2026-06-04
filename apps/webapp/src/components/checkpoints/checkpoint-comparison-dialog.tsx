@@ -18,7 +18,7 @@ import { Calendar, MapPin, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { compareCheckpoints } from '@/lib/api-checkpoint';
-import { getPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
+import { getPlanLimitFailureMessage, defaultPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
@@ -90,7 +90,12 @@ export function CheckpointComparisonDialog({
       setComparisonResult(result);
     } catch (error) {
       checkpointLog.error('comparison.failed', undefined, error);
-      setComparisonError(getPlanLimitFailureMessage(error));
+      const message = getPlanLimitFailureMessage(error);
+      setComparisonError(
+        message === defaultPlanLimitFailureMessage('generic')
+          ? defaultPlanLimitFailureMessage('comparison')
+          : message,
+      );
       setComparisonResult(null);
     } finally {
       setIsComparing(false);

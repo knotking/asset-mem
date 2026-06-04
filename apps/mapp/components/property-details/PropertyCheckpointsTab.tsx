@@ -866,6 +866,11 @@ export function PropertyCheckpointsTab({
           <Text className="mb-3 text-center text-sm text-muted-foreground">
             Create your first checkpoint to start tracking changes over time.
           </Text>
+          {checkpointLimitMessage ? (
+            <Text className="mb-2 text-center text-sm text-destructive">
+              {checkpointLimitMessage}
+            </Text>
+          ) : null}
           <Button
             onPress={() => {
               if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {

@@ -5,7 +5,13 @@ import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
 import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
-import { getDocumentAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
+import {
+  DOCUMENT_QUOTA_USER_MESSAGE,
+  getDocumentAnalysisFailureMessage,
+  isDocumentQuotaMessage,
+} from '@homeapp/common/lib/document-analysis-errors';
+import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { createLogger } from '@/lib/logger';
 
@@ -29,6 +35,7 @@ export function useDocumentAutoUpload({
   clearFilesParam,
 }: UseDocumentAutoUploadParams) {
   const { uploadDocuments, removeUploadingDoc } = useDocumentUpload();
+  const { documentsLimit, limitsLoading } = useLlmTokenUsage();
   const hasUploadedFilesRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -44,6 +51,11 @@ export function useDocumentAutoUpload({
       try {
         const parsedFiles = JSON.parse(files);
         if (!parsedFiles || parsedFiles.length === 0) return;
+
+        if (!limitsLoading && isAtPlanLimit(documentsLimit, parsedFiles.length)) {
+          Alert.alert('Monthly document limit reached', DOCUMENT_QUOTA_USER_MESSAGE);
+          return;
+        }
 
         uploadLog.info('batch.start', { count: parsedFiles.length });
 
@@ -72,23 +84,27 @@ export function useDocumentAutoUpload({
             });
 
             try {
-              const [queueResult, ragResult] = await Promise.allSettled([
-                queueExtractDocInfo({
+              const ragResult = await postFileToAgent(gsURI, userId);
+              let queueExtractError: unknown;
+              try {
+                await queueExtractDocInfo({
                   docId: docRef.id,
                   docUrl: gsURI,
                   contentType: doc.mimeType,
                   userId,
-                }),
-                postFileToAgent(gsURI, userId),
-              ]);
-
-              if (ragResult.status === 'rejected') {
-                uploadLog.warn('rag.failed');
+                });
+              } catch (err) {
+                queueExtractError = err;
               }
 
-              if (queueResult.status === 'rejected') {
-                uploadLog.warn('analysis.queue.failed');
-                throw queueResult.reason;
+              if (queueExtractError) {
+                throw new Error(getDocumentAnalysisFailureMessage(queueExtractError));
+              }
+              if (ragResult.error && isDocumentQuotaMessage(ragResult.error)) {
+                throw new Error(ragResult.error);
+              }
+              if (!ragResult.success) {
+                uploadLog.warn('rag.upload.failed', { error: ragResult.error });
               }
 
               const data = await waitForUserDocAnalysis(db, userId, docRef.id);
@@ -162,5 +178,16 @@ export function useDocumentAutoUpload({
     };
 
     startUpload();
-  }, [userId, propertyId, files, storage, db, uploadDocuments, removeUploadingDoc, clearFilesParam]);
+  }, [
+    userId,
+    propertyId,
+    files,
+    storage,
+    db,
+    uploadDocuments,
+    removeUploadingDoc,
+    clearFilesParam,
+    documentsLimit,
+    limitsLoading,
+  ]);
 }
