@@ -26,7 +26,7 @@ from common.observability.constants import (
 )
 from common.observability.logging_helper import log_event, log_exception
 from common.observability.base import get_tracer
-from common.observability.metrics_helper import record_histogram
+from common.observability.metrics_helper import coerce_finite_float, record_histogram
 from common.observability.logging_context import (
     install_auth_uid_logging_if_needed,
     pubsub_payload_with_correlation,
@@ -370,20 +370,14 @@ def pubsub_checkpoint_analysis(request, context):
                     for damage_type, score in damage_scores.items():
                         checkpoint.record_damage_score(damage_type, score, attributes)
             
-                # Record cost estimates if available
+                # Record cost estimates if available (coerce — Gemini may return non-numeric values)
                 if cost_estimates:
-                    if cost_estimates.get("repairs_immediate", 0) > 0:
-                        checkpoint.record_cost_estimate(
-                            "repairs_immediate",
-                            cost_estimates["repairs_immediate"],
-                            attributes
-                        )
-                    if cost_estimates.get("maintenance_annual", 0) > 0:
-                        checkpoint.record_cost_estimate(
-                            "maintenance_annual",
-                            cost_estimates["maintenance_annual"],
-                            attributes
-                        )
+                    for cost_type in ("repairs_immediate", "maintenance_annual"):
+                        amount = coerce_finite_float(cost_estimates.get(cost_type))
+                        if amount is not None and amount > 0:
+                            checkpoint.record_cost_estimate(
+                                cost_type, amount, attributes
+                            )
             
                 # Record issue counts by severity
                 for severity, count in issues_by_severity.items():

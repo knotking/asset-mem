@@ -40,10 +40,13 @@ try:
             try:
                 super()._batch_write(series)
             except google_api_exceptions.InvalidArgument as e:
-                if "maximum sampling period" in str(e).lower():
-                    logger.debug(
-                        "Skipped Cloud Monitoring batch (sampling interval): %s", e
-                    )
+                msg = str(e).lower()
+                if (
+                    "maximum sampling period" in msg
+                    or "doublevalue" in msg
+                    or "missing field points" in msg
+                ):
+                    logger.debug("Skipped Cloud Monitoring batch (benign): %s", e)
                     return
                 raise
 
