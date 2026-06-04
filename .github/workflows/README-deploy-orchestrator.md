@@ -18,44 +18,48 @@ These stay separate (different inputs or high risk):
 - [apply-operations-config.yaml](apply-operations-config.yaml)
 - Test workflows (`test-*.yaml`)
 
+## Branch for child workflows
+
+Use GitHub’s **Use workflow from** branch dropdown at the top of the Run workflow dialog. Child workflows are dispatched on that same ref (`github.ref_name`).
+
 ## Inputs
 
 | Input | Description |
 |-------|-------------|
-| **environment** | `staging` or `prod` — passed to every child workflow |
-| **git_ref** | Branch or tag children use (default `main`) |
-| **deploy_preset** | `custom`, `all`, `backend`, `workers`, or `frontend` |
-| **deploy_*** booleans | Used only when preset is **custom** |
-| **agent_action** | `update` or `create` for the Vertex agent workflow |
-| **mapp_platform** | `all`, `ios`, or `android` when mapp build is selected |
+| **environment** | `staging` or `prod` |
+| **deploy_*** checkboxes | Enable each workflow to trigger (group shown in the input description) |
 
-### Presets
+GitHub allows at most **10** `workflow_dispatch` inputs, so the UI uses checkboxes only (no preset selector). Inputs are ordered **Backend → Workers → Frontend**; descriptions are prefixed with the group name.
 
-| Preset | Workflows triggered |
-|--------|---------------------|
-| **all** | Agent, proxy, all four workers, webapp, mapp build, mapp update |
-| **backend** | Agent, proxy |
-| **workers** | Checkpoint analysis, checkpoint metrics, document analysis, user docs |
-| **frontend** | Webapp, mapp build, mapp update |
-| **custom** | Only workflows whose boolean is checked |
+| Checkbox | Group |
+|----------|--------|
+| deploy_homecare_agent | Backend |
+| deploy_homecare_agent_proxy | Backend |
+| deploy_checkpoint_analysis | Workers |
+| deploy_checkpoint_metrics | Workers |
+| deploy_document_analysis | Workers |
+| deploy_pubsub_user_docs | Workers |
+| deploy_webapp | Frontend |
+| deploy_mapp_build | Frontend |
+| deploy_mapp_update | Frontend |
+
+**Defaults when dispatched from the orchestrator:** agent `action=update`, mapp build `platform=all`. For `create` or `ios`/`android`, run [deploy-homecare-agent.yaml](deploy-homecare-agent.yaml) or [deploy-mapp-build.yaml](deploy-mapp-build.yaml) directly.
 
 ## Permissions
 
-The orchestrator job needs `actions: write` to call `createWorkflowDispatch`. Child workflows still use their own `environment:` protection rules.
+The orchestrator needs `actions: write`. Child workflows still use their own `environment:` protection rules.
 
 ## Monitoring
 
-After the orchestrator finishes, open **Actions** and filter by the workflow names listed in the job summary. The orchestrator does not wait for children to complete.
+Check the job summary for workflows grouped by Backend / Workers / Frontend. The orchestrator does not wait for children to finish.
 
 ## CLI equivalent
 
 ```bash
-gh workflow run deploy-orchestrator.yaml \
+gh workflow run deploy-orchestrator.yaml --ref my-branch \
   -f environment=staging \
-  -f git_ref=main \
-  -f deploy_preset=backend \
-  -f agent_action=update \
-  -f mapp_platform=all
+  -f deploy_homecare_agent=true \
+  -f deploy_homecare_agent_proxy=true
 ```
 
-For custom selection, set `deploy_preset=custom` and pass `-f deploy_homecare_agent=true`, etc.
+Enable only the workflows you need (`-f deploy_webapp=true`, etc.).

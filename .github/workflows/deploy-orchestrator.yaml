@@ -1,98 +1,65 @@
 name: Deploy Orchestrator
 
 # Triggers selected deploy-*.yaml workflows via the Actions API.
-# Each child run is independent (own logs, environment approvals, concurrency).
-# Excludes create/destroy-environment and apply-operations-config (different inputs).
+# Child workflows use the branch from "Use workflow from" (github.ref_name).
+# GitHub allows 10 workflow_dispatch inputs: environment + nine workflow checkboxes.
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target environment for all selected deploy workflows"
+        description: "Target environment for selected deploy workflows"
         required: true
         default: staging
         type: choice
         options:
           - staging
           - prod
-      git_ref:
-        description: "Git ref (branch or tag) child workflows run against"
-        required: true
-        default: main
-        type: string
-      deploy_preset:
-        description: "Quick-select a group; use Custom to pick individual workflows below"
-        required: true
-        default: custom
-        type: choice
-        options:
-          - custom
-          - all
-          - backend
-          - workers
-          - frontend
       deploy_homecare_agent:
-        description: "Vertex AI homecare agent (deploy-homecare-agent.yaml)"
+        description: "Backend — Vertex AI homecare agent (action=update; run deploy-homecare-agent.yaml alone for create)"
         required: false
         default: false
         type: boolean
       deploy_homecare_agent_proxy:
-        description: "Cloud Run proxy (deploy-homecare-agent-proxy.yaml)"
-        required: false
-        default: false
-        type: boolean
-      deploy_webapp:
-        description: "Firebase App Hosting webapp (deploy-webapp-apphosting.yaml)"
+        description: "Backend — Cloud Run homecare agent proxy"
         required: false
         default: false
         type: boolean
       deploy_checkpoint_analysis:
-        description: "Checkpoint analysis worker (deploy-checkpoint-analysis.yaml)"
+        description: "Workers — checkpoint analysis Cloud Function"
         required: false
         default: false
         type: boolean
       deploy_checkpoint_metrics:
-        description: "Checkpoint metrics worker (deploy-checkpoint-metrics.yaml)"
+        description: "Workers — checkpoint metrics Cloud Function"
         required: false
         default: false
         type: boolean
       deploy_document_analysis:
-        description: "Document analysis worker (deploy-document-analysis.yaml)"
+        description: "Workers — document analysis Cloud Function"
         required: false
         default: false
         type: boolean
       deploy_pubsub_user_docs:
-        description: "User docs Pub/Sub worker (deploy-pubsub-user-docs.yaml)"
+        description: "Workers — Pub/Sub user docs Cloud Function"
+        required: false
+        default: false
+        type: boolean
+      deploy_webapp:
+        description: "Frontend — Firebase App Hosting webapp"
         required: false
         default: false
         type: boolean
       deploy_mapp_build:
-        description: "EAS native build (deploy-mapp-build.yaml)"
+        description: "Frontend — EAS native build (platform=all; run deploy-mapp-build.yaml alone for ios/android)"
         required: false
         default: false
         type: boolean
       deploy_mapp_update:
-        description: "EAS OTA update (deploy-mapp-update.yaml)"
+        description: "Frontend — EAS OTA update"
         required: false
         default: false
         type: boolean
-      agent_action:
-        description: "Homecare agent deploy action (only when agent is selected)"
-        required: true
-        default: update
-        type: choice
-        options:
-          - update
-          - create
-      mapp_platform:
-        description: "Mapp EAS build platform (only when mapp build is selected)"
-        required: true
-        default: all
-        type: choice
-        options:
-          - all
-          - ios
-          - android
 
 permissions:
   contents: read
@@ -112,122 +79,114 @@ jobs:
         id: dispatch
         env:
           DEPLOY_ENV: ${{ github.event.inputs.environment }}
-          GIT_REF: ${{ github.event.inputs.git_ref }}
-          DEPLOY_PRESET: ${{ github.event.inputs.deploy_preset }}
-          AGENT_ACTION: ${{ github.event.inputs.agent_action }}
-          MAPP_PLATFORM: ${{ github.event.inputs.mapp_platform }}
+          GIT_REF: ${{ github.ref_name }}
           FLAG_AGENT: ${{ github.event.inputs.deploy_homecare_agent }}
           FLAG_PROXY: ${{ github.event.inputs.deploy_homecare_agent_proxy }}
-          FLAG_WEBAPP: ${{ github.event.inputs.deploy_webapp }}
           FLAG_CP_ANALYSIS: ${{ github.event.inputs.deploy_checkpoint_analysis }}
           FLAG_CP_METRICS: ${{ github.event.inputs.deploy_checkpoint_metrics }}
           FLAG_DOC_ANALYSIS: ${{ github.event.inputs.deploy_document_analysis }}
           FLAG_USER_DOCS: ${{ github.event.inputs.deploy_pubsub_user_docs }}
+          FLAG_WEBAPP: ${{ github.event.inputs.deploy_webapp }}
           FLAG_MAPP_BUILD: ${{ github.event.inputs.deploy_mapp_build }}
           FLAG_MAPP_UPDATE: ${{ github.event.inputs.deploy_mapp_update }}
         with:
           script: |
-            const preset = process.env.DEPLOY_PRESET;
             const env = process.env.DEPLOY_ENV;
             const ref = process.env.GIT_REF;
-            const agentAction = process.env.AGENT_ACTION;
-            const mappPlatform = process.env.MAPP_PLATFORM;
-
             const flag = (name) => process.env[name] === 'true';
 
             const workflows = [
               {
+                key: 'agent',
+                group: 'Backend',
+                enabled: flag('FLAG_AGENT'),
                 id: 'deploy-homecare-agent.yaml',
                 label: 'Homecare Agent',
-                group: 'backend',
-                customFlag: flag('FLAG_AGENT'),
-                inputs: { environment: env, action: agentAction },
+                inputs: { environment: env, action: 'update' },
               },
               {
+                key: 'proxy',
+                group: 'Backend',
+                enabled: flag('FLAG_PROXY'),
                 id: 'deploy-homecare-agent-proxy.yaml',
                 label: 'Homecare Agent Proxy',
-                group: 'backend',
-                customFlag: flag('FLAG_PROXY'),
                 inputs: { environment: env },
               },
               {
+                key: 'checkpoint-analysis',
+                group: 'Workers',
+                enabled: flag('FLAG_CP_ANALYSIS'),
                 id: 'deploy-checkpoint-analysis.yaml',
                 label: 'Checkpoint Analysis',
-                group: 'workers',
-                customFlag: flag('FLAG_CP_ANALYSIS'),
                 inputs: { environment: env },
               },
               {
+                key: 'checkpoint-metrics',
+                group: 'Workers',
+                enabled: flag('FLAG_CP_METRICS'),
                 id: 'deploy-checkpoint-metrics.yaml',
                 label: 'Checkpoint Metrics',
-                group: 'workers',
-                customFlag: flag('FLAG_CP_METRICS'),
                 inputs: { environment: env },
               },
               {
+                key: 'document-analysis',
+                group: 'Workers',
+                enabled: flag('FLAG_DOC_ANALYSIS'),
                 id: 'deploy-document-analysis.yaml',
                 label: 'Document Analysis',
-                group: 'workers',
-                customFlag: flag('FLAG_DOC_ANALYSIS'),
                 inputs: { environment: env },
               },
               {
+                key: 'user-docs',
+                group: 'Workers',
+                enabled: flag('FLAG_USER_DOCS'),
                 id: 'deploy-pubsub-user-docs.yaml',
                 label: 'Pub/Sub User Docs',
-                group: 'workers',
-                customFlag: flag('FLAG_USER_DOCS'),
                 inputs: { environment: env },
               },
               {
+                key: 'webapp',
+                group: 'Frontend',
+                enabled: flag('FLAG_WEBAPP'),
                 id: 'deploy-webapp-apphosting.yaml',
                 label: 'Webapp App Hosting',
-                group: 'frontend',
-                customFlag: flag('FLAG_WEBAPP'),
                 inputs: { environment: env },
               },
               {
+                key: 'mapp-build',
+                group: 'Frontend',
+                enabled: flag('FLAG_MAPP_BUILD'),
                 id: 'deploy-mapp-build.yaml',
                 label: 'Mapp EAS Build',
-                group: 'frontend',
-                customFlag: flag('FLAG_MAPP_BUILD'),
-                inputs: { environment: env, platform: mappPlatform },
+                inputs: { environment: env, platform: 'all' },
               },
               {
+                key: 'mapp-update',
+                group: 'Frontend',
+                enabled: flag('FLAG_MAPP_UPDATE'),
                 id: 'deploy-mapp-update.yaml',
                 label: 'Mapp EAS Update',
-                group: 'frontend',
-                customFlag: flag('FLAG_MAPP_UPDATE'),
                 inputs: { environment: env },
               },
             ];
 
-            const presetGroups = {
-              all: ['backend', 'workers', 'frontend'],
-              backend: ['backend'],
-              workers: ['workers'],
-              frontend: ['frontend'],
-            };
-
-            function selected(w) {
-              if (preset === 'custom') return w.customFlag;
-              const groups = presetGroups[preset];
-              if (!groups) return w.customFlag;
-              return groups.includes(w.group);
-            }
-
-            const toRun = workflows.filter(selected);
+            const toRun = workflows.filter((w) => w.enabled);
             if (toRun.length === 0) {
-              core.setFailed(
-                'No workflows selected. Set deploy_preset to a group or enable at least one workflow (custom preset).'
-              );
+              core.setFailed('No workflows selected. Enable at least one deploy checkbox.');
               return;
             }
 
-            core.info(`Environment: ${env}, ref: ${ref}, preset: ${preset}`);
-            const triggered = [];
+            core.info(`Environment: ${env}, ref (Use workflow from): ${ref}`);
+            for (const group of ['Backend', 'Workers', 'Frontend']) {
+              const selected = toRun.filter((w) => w.group === group);
+              if (selected.length) {
+                core.info(`${group}: ${selected.map((w) => w.label).join(', ')}`);
+              }
+            }
 
+            const triggered = [];
             for (const w of toRun) {
-              core.info(`Dispatching ${w.id} (${w.label})…`);
+              core.info(`Dispatching ${w.id} (${w.label}) on ref ${ref}…`);
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -235,20 +194,32 @@ jobs:
                 ref,
                 inputs: w.inputs,
               });
-              triggered.push({ id: w.id, label: w.label });
+              triggered.push(w);
             }
+
+            const byGroup = (group) =>
+              triggered.filter((w) => w.group === group).map((w) => w.label);
 
             core.summary.addHeading('Deploy orchestrator');
             core.summary.addTable([
               [{ data: 'Setting', header: true }, { data: 'Value', header: true }],
               ['Environment', env],
-              ['Git ref', ref],
-              ['Preset', preset],
+              ['Git ref (Use workflow from)', ref],
             ]);
+            for (const group of ['Backend', 'Workers', 'Frontend']) {
+              const labels = byGroup(group);
+              if (labels.length) {
+                core.summary.addRaw(`\n**${group}:** ${labels.join(', ')}\n`);
+              }
+            }
             core.summary.addHeading('Triggered workflows', 3);
             core.summary.addTable([
-              [{ data: 'Workflow file', header: true }, { data: 'Name', header: true }],
-              ...triggered.map((t) => [t.id, t.label]),
+              [
+                { data: 'Group', header: true },
+                { data: 'Workflow file', header: true },
+                { data: 'Name', header: true },
+              ],
+              ...triggered.map((t) => [t.group, t.id, t.label]),
             ]);
             core.summary.addRaw(
               '\nOpen the [Actions](https://github.com/' +
@@ -260,7 +231,4 @@ jobs:
             await core.summary.write();
 
             core.setOutput('count', String(triggered.length));
-            core.setOutput(
-              'workflows',
-              triggered.map((t) => t.id).join(',')
-            );
+            core.setOutput('workflows', triggered.map((t) => t.id).join(','));
