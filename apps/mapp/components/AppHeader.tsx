@@ -52,8 +52,8 @@ export default function AppHeader() {
       className="flex-row items-center justify-between bg-card px-3 pb-3 shadow-sm"
       style={{ paddingTop: insets.top + 12 }}>
       <View className="min-w-0 flex-1 flex-row items-center gap-1.5 pr-2">
-        <AssetMemBrandIcon size="sm" />
-        <Text className="text-lg font-bold text-foreground" numberOfLines={1}>
+        <AssetMemBrandIcon size="sm" className="shrink-0" />
+        <Text className="shrink-0 text-lg font-bold leading-normal text-foreground">
           AssetMem AI
         </Text>
       </View>

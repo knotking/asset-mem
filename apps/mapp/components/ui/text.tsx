@@ -68,6 +68,7 @@ function Text({
   className,
   asChild = false,
   variant = 'default',
+  style,
   ...props
 }: React.ComponentProps<typeof RNText> &
   TextVariantProps &
@@ -79,6 +80,11 @@ function Text({
   return (
     <Component
       className={cn(textVariants({ variant }), textClass, className)}
+      style={
+        Platform.OS === 'android'
+          ? [{ includeFontPadding: false }, style]
+          : style
+      }
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}

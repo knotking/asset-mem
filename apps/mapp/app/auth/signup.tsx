@@ -128,7 +128,9 @@ export default function SignupScreen() {
         showsVerticalScrollIndicator={false}>
         <View className="flex-1 items-center justify-center p-4">
           <AssetMemBrandIcon size="lg" className="mb-6" />
-          <Text className="mb-2 text-2xl font-bold">Create Account</Text>
+          <Text className="mb-2 w-full text-center text-2xl font-bold leading-normal text-foreground">
+            Create Account
+          </Text>
           <Text className="mb-8 text-base text-gray-500">Sign up to get started</Text>
 
           {authExtrasReady ? (
