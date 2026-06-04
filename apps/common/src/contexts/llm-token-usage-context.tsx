@@ -7,7 +7,15 @@ import React, {
 } from "react";
 import { doc, onSnapshot, type Firestore } from "firebase/firestore";
 import { createLogger } from "../lib/logger";
-import { FREE_PLAN_TOKENS_PER_MONTH } from "../lib/plan-defaults";
+import {
+  FREE_PLAN_CHECKPOINTS_PER_MONTH,
+  FREE_PLAN_DOCUMENTS_PER_MONTH,
+  FREE_PLAN_TOKENS_PER_MONTH,
+} from "../lib/plan-defaults";
+import {
+  type PlanLimitSlice,
+  toDisplayPlanLimit,
+} from "../lib/plan-limit-slice";
 import { proxyFetchWithAuth, type GetFirebaseIdToken } from "../lib/correlation-id";
 
 const quotaLog = createLogger("quota");
@@ -23,6 +31,8 @@ function formatUpdatedAt(value: unknown): string | null {
   }
   return null;
 }
+
+export type { PlanLimitSlice } from "../lib/plan-limit-slice";
 
 export type LlmTokenUsageSnapshot = {
   loading: boolean;
@@ -40,11 +50,21 @@ export type LlmTokenUsageSnapshot = {
   monthlyLimit: number | null;
   effectiveMonthlyLimit: number | null;
   proxyDefaultLimit: "pending" | number | null;
+  limitsLoading: boolean;
+  documentsLimit: PlanLimitSlice | null;
+  checkpointsLimit: PlanLimitSlice | null;
 };
 
 const empty: Omit<
   LlmTokenUsageSnapshot,
-  "loading" | "error" | "monthlyLimit" | "effectiveMonthlyLimit" | "proxyDefaultLimit"
+  | "loading"
+  | "error"
+  | "monthlyLimit"
+  | "effectiveMonthlyLimit"
+  | "proxyDefaultLimit"
+  | "limitsLoading"
+  | "documentsLimit"
+  | "checkpointsLimit"
 > = {
   inputTokens: 0,
   outputTokens: 0,
@@ -82,6 +102,12 @@ function useLlmTokenUsageSubscription(
   const [proxyDefaultLimit, setProxyDefaultLimit] = useState<
     "pending" | number | null
   >("pending");
+  const [documentsLimit, setDocumentsLimit] = useState<PlanLimitSlice | null>(
+    null,
+  );
+  const [checkpointsLimit, setCheckpointsLimit] = useState<PlanLimitSlice | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!userId || !db) {
@@ -91,6 +117,8 @@ function useLlmTokenUsageSubscription(
       setMonthlyLimit(null);
       setPrefsLoaded(false);
       setProxyDefaultLimit("pending");
+      setDocumentsLimit(null);
+      setCheckpointsLimit(null);
       return;
     }
 
@@ -170,16 +198,20 @@ function useLlmTokenUsageSubscription(
   }, [userId, db]);
 
   useEffect(() => {
-    if (!userId || !prefsLoaded || monthlyLimit != null) {
+    if (!userId || !prefsLoaded) {
       return;
     }
     if (!tokenQuotaStatusUrl?.trim()) {
-      setProxyDefaultLimit("pending");
+      if (monthlyLimit == null) {
+        setProxyDefaultLimit("pending");
+      }
       return;
     }
 
     let cancelled = false;
-    setProxyDefaultLimit("pending");
+    if (monthlyLimit == null) {
+      setProxyDefaultLimit("pending");
+    }
 
     (async () => {
       try {
@@ -190,18 +222,36 @@ function useLlmTokenUsageSubscription(
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const data = (await res.json()) as { max_tokens?: unknown };
-        const raw = data.max_tokens;
-        const cap =
-          typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+        const data = (await res.json()) as {
+          max_tokens?: unknown;
+          documents?: { used?: number; limit?: number; unlimited?: boolean };
+          checkpoints?: { used?: number; limit?: number; unlimited?: boolean };
+        };
         if (cancelled) return;
-        setProxyDefaultLimit(cap > 0 ? cap : null);
+
+        if (monthlyLimit == null) {
+          const raw = data.max_tokens;
+          const cap =
+            typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+          setProxyDefaultLimit(cap > 0 ? cap : null);
+        }
+
+        setDocumentsLimit(
+          toDisplayPlanLimit(data.documents, FREE_PLAN_DOCUMENTS_PER_MONTH),
+        );
+        setCheckpointsLimit(
+          toDisplayPlanLimit(data.checkpoints, FREE_PLAN_CHECKPOINTS_PER_MONTH),
+        );
       } catch (err) {
         if (!cancelled) {
           quotaLog.warn("tokenQuotaStatus.fetch.failed", {
             cause: err instanceof Error ? err.message : String(err),
           });
-          setProxyDefaultLimit(null);
+          if (monthlyLimit == null) {
+            setProxyDefaultLimit(null);
+          }
+          setDocumentsLimit(null);
+          setCheckpointsLimit(null);
         }
       }
     })();
@@ -224,6 +274,10 @@ function useLlmTokenUsageSubscription(
     return envDefault ?? FREE_PLAN_TOKENS_PER_MONTH;
   }, [monthlyLimit, proxyDefaultLimit, envDefault]);
 
+  const limitsLoading =
+    Boolean(userId) &&
+    (!prefsLoaded || (monthlyLimit == null && proxyDefaultLimit === "pending"));
+
   return {
     loading,
     error,
@@ -231,6 +285,9 @@ function useLlmTokenUsageSubscription(
     monthlyLimit,
     effectiveMonthlyLimit,
     proxyDefaultLimit,
+    limitsLoading,
+    documentsLimit,
+    checkpointsLimit,
   };
 }
 
