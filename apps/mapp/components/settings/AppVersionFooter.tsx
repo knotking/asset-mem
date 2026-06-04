@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { View, Pressable } from 'react-native';
-import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import * as Updates from 'expo-updates';
 import { Text } from '@/components/ui/text';
 import { useAppUpdateDevControls } from '@/components/AppUpdateGate';
+import { getNativeAppVersion, getNativeBuildVersion } from '@/lib/native-app-version';
 import { otaUpdateShortId } from '@/lib/ota-update-display';
 import { isOtaDevMockAvailable, showOtaUpdateReadyPrompt } from '@/lib/ota-update-prompt';
 import { useSecretTapReveal } from '@/lib/use-secret-tap';
@@ -14,7 +14,8 @@ const MOCK_OTA_UPDATE_ID = '00000000-0000-4000-8000-000000000001';
 const VERSION_DETAIL_TAPS = 5;
 
 export function AppVersionFooter() {
-  const appVersion = Constants.expoConfig?.version || '0.0.1';
+  const appVersion = getNativeAppVersion();
+  const buildVersion = getNativeBuildVersion();
   const devMock = isOtaDevMockAvailable();
   const devControls = useAppUpdateDevControls();
   const { revealed: detailsOpen, onSecretTap } = useSecretTapReveal({
@@ -56,12 +57,16 @@ export function AppVersionFooter() {
         onPress={handleVersionPress}
         accessibilityRole="button"
         accessibilityLabel={`App version ${appVersion}`}
-        accessibilityHint={`Tap ${VERSION_DETAIL_TAPS} times quickly to show OTA details`}>
+        accessibilityHint={`Tap ${VERSION_DETAIL_TAPS} times quickly to show build and OTA details`}>
         <Text className="text-xs text-muted-foreground">Version {appVersion}</Text>
       </Pressable>
 
       {detailsOpen ? (
         <>
+          <Text className="text-xs text-muted-foreground">
+            {buildVersion ? `Build ${buildVersion}` : 'Build —'}
+          </Text>
+
           <Pressable
             onPress={handleCopyUpdateId}
             disabled={!updateId}
