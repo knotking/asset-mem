@@ -18,24 +18,25 @@ logger = logging.getLogger(__name__)
 
 # Initialize Google Gen AI Client with Vertex AI
 PROJECT_ID = None
-LOCATION = None
 client = None
 
 def _initialize_client():
     """Initialize the Gemini client if not already initialized."""
-    global client, PROJECT_ID, LOCATION
+    global client, PROJECT_ID
     if client is None:
         import os
         PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-        LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
         
         try:
             client = genai.Client(
                 vertexai=True,
                 project=PROJECT_ID,
-                location=LOCATION
+                location="global",
             )
-            logger.info(f"Google Gen AI SDK initialized for comparison in {LOCATION}")
+            logger.info(
+                "Google Gen AI SDK initialized for comparison (project=%s, location=global)",
+                PROJECT_ID,
+            )
         except Exception as e:
             logger.error(f"Failed to initialize Google Gen AI SDK for comparison: {e}")
             client = None

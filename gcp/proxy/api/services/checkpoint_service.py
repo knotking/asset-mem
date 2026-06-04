@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 # Configuration
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 CHECKPOINT_ANALYSIS_TOPIC = os.environ.get("CHECKPOINT_ANALYSIS_TOPIC", "checkpoint-analysis-topic")
-LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
 
 if not PROJECT_ID:
     logger.warning("GCP_PROJECT_ID not set, checkpoint analysis publishing may fail")
@@ -39,8 +38,11 @@ def _initialize_genai_client():
     global genai_client
     if genai_client is None:
         try:
-            genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-            logger.info(f"Google Gen AI SDK initialized for checkpoint comparison in {LOCATION}")
+            genai_client = genai.Client(vertexai=True, project=PROJECT_ID, location="global")
+            logger.info(
+                "Google Gen AI SDK initialized for checkpoint comparison (project=%s, location=global)",
+                PROJECT_ID,
+            )
         except Exception as e:
             logger.exception("Failed to initialize Google Gen AI SDK: %s", e)
             genai_client = None
