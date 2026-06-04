@@ -1,5 +1,6 @@
 import React, { useReducer } from 'react';
 import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '@homeapp/common/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { Link, useRouter } from 'expo-router';
@@ -120,6 +121,7 @@ export default function LoginScreen() {
   };
 
   return (
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView
       behavior="padding"
       keyboardVerticalOffset={0}
@@ -221,5 +223,6 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

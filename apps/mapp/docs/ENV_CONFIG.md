@@ -334,6 +334,7 @@ OTA bundle published with URLs
 | `ANDROID_PACKAGE` | Android package  | `com.assetmem.staging` | `eas.json`              |
 | `EXPO_PROJECT_ID` | Expo project ID  | (set in eas.json)        | `eas.json`              |
 | `APP_ENV`         | Environment name | (not set)                | `eas.json` (production) |
+| `EXPO_PUBLIC_ANDROID_IMMERSIVE` | Hide Android status + nav bars app-wide (swipe edges to reveal) | `true` (set `false` to disable) | `.env` (local dev only) |
 
 ### Constructed URLs (in expo.extra)
 

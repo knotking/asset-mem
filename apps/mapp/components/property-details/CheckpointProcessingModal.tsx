@@ -4,7 +4,6 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { CheckCircle, Loader2, Eye } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CheckpointProcessingModalProps {
   visible: boolean;
@@ -26,7 +25,6 @@ export function CheckpointProcessingModal({
   onViewCheckpoint,
   onContinue,
 }: CheckpointProcessingModalProps) {
-  const insets = useSafeAreaInsets();
   const [countdown, setCountdown] = React.useState(4);
   
   // Animation values

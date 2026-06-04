@@ -264,7 +264,9 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
       onRequestClose={onClose}>
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border bg-background px-4 py-3">
+        <View
+          className="flex-row items-center justify-between border-b border-border bg-background px-4"
+          style={{ paddingTop: Math.max(insets.top, 12), paddingBottom: 12 }}>
           <Text className="text-lg font-semibold text-foreground">New Checkpoint</Text>
           <Button onPress={onClose} variant="ghost" size="icon" disabled={loading}>
             <Icon as={X} size={24} className="text-foreground" />

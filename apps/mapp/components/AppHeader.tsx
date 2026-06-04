@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
@@ -38,6 +39,7 @@ function ThemeToggle() {
 }
 
 export default function AppHeader() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -46,7 +48,9 @@ export default function AppHeader() {
   };
 
   return (
-    <View className="flex-row items-center justify-between bg-card px-3 py-3 pt-12 shadow-sm">
+    <View
+      className="flex-row items-center justify-between bg-card px-3 pb-3 shadow-sm"
+      style={{ paddingTop: insets.top + 12 }}>
       <View className="min-w-0 flex-1 flex-row items-center gap-1.5 pr-2">
         <AssetMemBrandIcon size="sm" />
         <Text className="text-lg font-bold text-foreground" numberOfLines={1}>

@@ -122,6 +122,13 @@ module.exports = {
             { iosUrlScheme: googleIosUrlSchemeForBuild },
           ]
         : '@react-native-google-signin/google-signin',
+      [
+        'expo-navigation-bar',
+        {
+          enforceContrast: false,
+          barStyle: 'light',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
