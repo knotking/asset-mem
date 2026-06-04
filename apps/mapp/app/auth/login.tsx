@@ -6,7 +6,8 @@ import { Link, useRouter } from 'expo-router';
 import { AuthDivider } from '@/components/auth/AuthDivider';
 import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { Home, Eye, EyeOff, Loader2 } from 'lucide-react-native';
+import { Eye, EyeOff, Loader2 } from 'lucide-react-native';
+import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 
 import { Button } from '../../components/ui/button';
 import { Icon } from '../../components/ui/icon';
@@ -128,7 +129,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View className="flex-1 items-center justify-center p-4">
-          <Icon as={Home} size={48} className="mb-6 text-foreground" />
+          <AssetMemBrandIcon size="lg" className="mb-6" />
           <Text className="mb-2 text-2xl font-bold">Welcome Back</Text>
           <Text className="mb-8 text-base text-gray-500">Sign in to manage your properties</Text>
 

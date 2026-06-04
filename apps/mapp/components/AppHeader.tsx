@@ -3,7 +3,8 @@ import { View } from 'react-native';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
-import { Home, Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
+import { Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
+import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
@@ -41,7 +42,7 @@ export default function AppHeader() {
   return (
     <View className="flex-row items-center justify-between bg-card px-3 py-3 pt-12 shadow-sm">
       <View className="min-w-0 flex-1 flex-row items-center gap-1.5 pr-2">
-        <Icon as={Home} size={22} className="shrink-0 text-foreground" />
+        <AssetMemBrandIcon size="sm" />
         <Text className="text-lg font-bold text-foreground" numberOfLines={1}>
           AssetMem AI
         </Text>

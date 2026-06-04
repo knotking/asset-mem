@@ -19,7 +19,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   User,
-  Bot,
   FileText,
   ShieldCheck,
   Stethoscope,
@@ -303,7 +302,7 @@ const MessageAvatar = React.memo(({ role }: { role: 'user' | 'assistant' }) => {
         isUser ? 'bg-primary' : 'bg-secondary'
       }`}>
       <Icon
-        as={isUser ? User : Bot}
+        as={isUser ? User : Sparkles}
         size={16}
         className={isUser ? 'text-primary-foreground' : 'text-secondary-foreground'}
       />

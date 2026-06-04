@@ -9,7 +9,8 @@ import {
   type BubbleProps,
   type InputToolbarProps,
 } from 'react-native-gifted-chat';
-import { MessageSquare, ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
+import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useMessages } from '@homeapp/common/contexts/messages-context';
 import {
   transformMessagesToGiftedChatCached,
@@ -181,9 +182,7 @@ function PropertyChatTab({
               : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
         }}>
         <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-muted">
-            <Icon as={MessageSquare} size={32} className="text-muted-foreground" />
-          </View>
+          <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
           <Text className="mb-2 text-center text-xl font-semibold text-foreground">
             Start a Conversation
           </Text>

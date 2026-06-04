@@ -10,7 +10,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Text } from '../../components/ui/text';
 import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert';
-import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2, Home } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react-native';
+import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { Icon } from '../../components/ui/icon';
 import { createLogger } from '@/lib/logger';
 
@@ -124,7 +125,7 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View className="flex-1 items-center justify-center p-4">
-          <Icon as={Home} size={48} className="mb-6 text-foreground" />
+          <AssetMemBrandIcon size="lg" className="mb-6" />
           <Text className="mb-2 text-2xl font-bold">Create Account</Text>
           <Text className="mb-8 text-base text-gray-500">Sign up to get started</Text>
 

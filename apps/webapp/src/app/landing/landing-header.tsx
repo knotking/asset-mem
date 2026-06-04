@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
+import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 
 // Dark theme - landing page only
 const LANDING_COLORS = {
@@ -28,14 +29,12 @@ export function LandingHeader({ activeSection, onNavClick, onButtonClick }: Land
       <div className="container mx-auto px-4" style={{ maxWidth: '1400px' }}>
         <div className="flex h-20 items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group" onClick={(e) => onNavClick(e, '#')}>
-            <div
-              className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform"
-              style={{ background: `linear-gradient(to right bottom, ${LANDING_COLORS.primary}, rgba(34, 211, 238, 0.6))` }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: LANDING_COLORS.white }}>
-                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path>
-              </svg>
-            </div>
+            <AssetMemBrandIcon
+              variant="mark"
+              size="md"
+              markTheme="landing"
+              className="group-hover:scale-105 transition-transform"
+            />
             <span className="text-2xl font-light tracking-tight" style={{ color: LANDING_COLORS.foreground }}>
               AssetMem <span className="font-bold">AI</span>
             </span>

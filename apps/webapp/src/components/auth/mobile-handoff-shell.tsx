@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 
 type MobileHandoffShellProps = {
   variant: 'loading' | 'error';
@@ -49,7 +50,7 @@ export function MobileHandoffShell({
             {isLoading ? (
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             ) : (
-              <Bot className="h-6 w-6 text-destructive" />
+              <AlertCircle className="h-6 w-6 text-destructive" />
             )}
           </div>
           <div className="space-y-1.5">
@@ -77,7 +78,7 @@ export function MobileHandoffShell({
               className="mx-auto flex items-center justify-center gap-2 text-xs text-muted-foreground"
               aria-live="polite"
             >
-              <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <AssetMemBrandIcon size="xs" />
               <span>AssetMem AI</span>
             </div>
           </CardContent>

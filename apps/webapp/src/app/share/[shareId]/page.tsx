@@ -10,7 +10,8 @@ import { isSharedChatExpired } from '@/lib/shared-chat';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, ExternalLink, Share2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
+import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createLogger } from '@/lib/logger';
@@ -29,7 +30,7 @@ function SharedChatHeader({ sessionName }: { sessionName: string | null }) {
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b bg-background px-4">
             <div className="flex items-center gap-2 min-w-0">
-                <Bot className="h-7 w-7 text-primary shrink-0" />
+                <AssetMemBrandIcon size="sm" />
                 <div className="flex flex-col min-w-0">
                     <h1 className="text-lg font-semibold text-foreground">AssetMem AI</h1>
                     {sessionName ? (
