@@ -37,7 +37,7 @@ export function TokenUsageToolbar() {
     return null;
   }
 
-  const goSettings = () => router.push('/home/settings');
+  const goSettings = () => router.push('/home/settings?tab=usage');
 
   if (effectiveMonthlyLimit == null || effectiveMonthlyLimit <= 0) {
     return (
