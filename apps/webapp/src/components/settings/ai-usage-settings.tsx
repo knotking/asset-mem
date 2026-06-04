@@ -1,6 +1,9 @@
 "use client";
 
-import { useLlmTokenUsage } from "@/contexts/llm-token-usage-context";
+import {
+  useLlmTokenUsage,
+  type PlanLimitSlice,
+} from "@/contexts/llm-token-usage-context";
 import {
   Card,
   CardContent,
@@ -18,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { formatTokensCompact, formatTokensFull } from "@/lib/format-tokens";
 import { FREE_PLAN_LIMITS } from "@/lib/plan-limits-public";
+import { cn } from "@/lib/utils";
 
 const nf = new Intl.NumberFormat("en-US");
 
@@ -47,6 +51,51 @@ function StatRow({
   );
 }
 
+function SectionHeading({
+  title,
+  subtitle,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex flex-col gap-0.5 sm:col-span-2', className)}>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </span>
+      {subtitle ? (
+        <span className="text-[10px] text-muted-foreground">{subtitle}</span>
+      ) : null}
+    </div>
+  );
+}
+
+function GroupHeading({ title }: { title: string }) {
+  return (
+    <div className="sm:col-span-2">
+      <span className="text-[11px] font-medium text-muted-foreground">{title}</span>
+    </div>
+  );
+}
+
+function formatCreationQuota(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+): { value: string; hint: string } {
+  if (slice) {
+    return {
+      value: `${nf.format(slice.used)} / ${nf.format(slice.limit)}`,
+      hint: `${slice.used} used this month; plan allows ${slice.limit} per month.`,
+    };
+  }
+  return {
+    value: nf.format(periodCount),
+    hint: "Plan limit unavailable — see Plan & billing or refresh later.",
+  };
+}
+
 export function AiUsageSettings() {
   const {
     loading,
@@ -66,9 +115,10 @@ export function AiUsageSettings() {
     proxyDefaultLimit,
     periodDocumentCreations,
     periodCheckpointCreations,
+    documentCreations,
+    checkpointCreations,
     documentsLimit,
     checkpointsLimit,
-    limitsLoading,
   } = useLlmTokenUsage();
 
   const monthlyCap =
@@ -77,8 +127,19 @@ export function AiUsageSettings() {
     monthlyCap > 0
       ? Math.min(100, Math.round((100 * periodTotalTokens) / monthlyCap))
       : null;
+  const documentsQuota = formatCreationQuota(
+    documentsLimit,
+    periodDocumentCreations,
+  );
+  const checkpointsQuota = formatCreationQuota(
+    checkpointsLimit,
+    periodCheckpointCreations,
+  );
+  const monthSubtitle = quotaPeriodKey
+    ? `Billing period ${quotaPeriodKey} (UTC). Counters reset at month rollover.`
+    : "Billing period not set yet.";
 
-  if (loading || limitsLoading) {
+  if (loading) {
     return (
       <Card>
         <CardHeader>
@@ -165,100 +226,85 @@ export function AiUsageSettings() {
 
         <TooltipProvider delayDuration={300}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              This month — quota
-            </div>
+            <SectionHeading title="This month" subtitle={monthSubtitle} />
+            <GroupHeading title="Tokens" />
             <StatRow
-              label="Billing period"
-              hint="Year-month label. Counters reset when the server records the first usage in a new month."
-              value={quotaPeriodKey ?? "—"}
-            />
-            <StatRow
-              label="Tokens this month"
-              hint={`Total tokens counted toward your monthly quota for this month. Exact: ${formatTokensFull(periodTotalTokens)}.`}
-              value={formatTokensCompact(periodTotalTokens)}
-            />
-            <StatRow
-              label="Input tokens (month)"
-              hint={`Input tokens recorded this month. Exact: ${formatTokensFull(periodInputTokens)}.`}
-              value={formatTokensCompact(periodInputTokens)}
-            />
-            <StatRow
-              label="Output tokens (month)"
-              hint={`Output tokens recorded this month. Exact: ${formatTokensFull(periodOutputTokens)}.`}
-              value={formatTokensCompact(periodOutputTokens)}
-            />
-            <StatRow
-              label="Documents this month"
-              hint="Queued document extractions and RAG file imports (each file counts once)."
-              value={nf.format(periodDocumentCreations)}
-            />
-            <StatRow
-              label="Document limit"
-              hint={
-                documentsLimit
-                  ? `Enforced when queuing analysis or RAG import. ${documentsLimit.used} of ${documentsLimit.limit} used.`
-                  : "Could not load from proxy; see Plan & billing for subscription caps."
-              }
-              value={
-                documentsLimit
-                  ? `${nf.format(documentsLimit.used)} / ${nf.format(documentsLimit.limit)}`
-                  : "—"
-              }
-            />
-            <StatRow
-              label="Checkpoint AI this month"
-              hint="Checkpoint analyses queued through the proxy."
-              value={nf.format(periodCheckpointCreations)}
-            />
-            <StatRow
-              label="Checkpoint limit"
-              hint={
-                checkpointsLimit
-                  ? `Enforced when starting checkpoint analysis. ${checkpointsLimit.used} of ${checkpointsLimit.limit} used.`
-                  : "Could not load from proxy; see Plan & billing for subscription caps."
-              }
-              value={
-                checkpointsLimit
-                  ? `${nf.format(checkpointsLimit.used)} / ${nf.format(checkpointsLimit.limit)}`
-                  : "—"
-              }
-            />
-            <StatRow
-              label="Your monthly limit"
+              label="Limit"
               hint={
                 monthlyLimit != null
-                  ? `Exact: ${formatTokensFull(monthlyCap)}.`
-                  : `${proxyDefaultLimit === "pending" ? " Checking..." : ""} Exact: ${formatTokensFull(monthlyCap)}.`
+                  ? `Exact: ${formatTokensFull(monthlyCap)}. Matches the ring above.`
+                  : `${proxyDefaultLimit === "pending" ? "Checking proxy… " : ""}Exact: ${formatTokensFull(monthlyCap)}.`
               }
               value={formatTokensCompact(monthlyCap)}
             />
-            <div className="sm:col-span-2 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              All time
-            </div>
             <StatRow
-              label="Total tokens"
-              hint={`Total token count as recorded by the backend (input + output when both are available). Exact: ${formatTokensFull(totalTokens)}.`}
+              label="Used"
+              hint={`Counted toward your monthly quota. Exact: ${formatTokensFull(periodTotalTokens)}.`}
+              value={formatTokensCompact(periodTotalTokens)}
+            />
+            <StatRow
+              label="Input"
+              hint={`Exact: ${formatTokensFull(periodInputTokens)}.`}
+              value={formatTokensCompact(periodInputTokens)}
+            />
+            <StatRow
+              label="Output"
+              hint={`Exact: ${formatTokensFull(periodOutputTokens)}.`}
+              value={formatTokensCompact(periodOutputTokens)}
+            />
+            <GroupHeading title="Creations" />
+            <StatRow
+              label="Documents AI"
+              hint={`Extractions and RAG imports (one per file). ${documentsQuota.hint}`}
+              value={documentsQuota.value}
+            />
+            <StatRow
+              label="Checkpoint AI"
+              hint={`Analyses queued through the proxy. ${checkpointsQuota.hint}`}
+              value={checkpointsQuota.value}
+            />
+
+            <SectionHeading
+              title="All time"
+              subtitle="Lifetime totals since you started using AI features."
+              className="mt-6"
+            />
+            <GroupHeading title="Tokens" />
+            <StatRow
+              label="Total"
+              hint={`Exact: ${formatTokensFull(totalTokens)}.`}
               value={formatTokensCompact(totalTokens)}
             />
             <StatRow
-              label="Input tokens"
-              hint={`Tokens sent to the model (prompts, context, including multimodal). Exact: ${formatTokensFull(inputTokens)}.`}
+              label="Input"
+              hint={`Exact: ${formatTokensFull(inputTokens)}.`}
               value={formatTokensCompact(inputTokens)}
             />
             <StatRow
-              label="Output tokens"
-              hint={`Tokens generated in model responses. Exact: ${formatTokensFull(outputTokens)}.`}
+              label="Output"
+              hint={`Exact: ${formatTokensFull(outputTokens)}.`}
               value={formatTokensCompact(outputTokens)}
             />
+            <GroupHeading title="Creations" />
+            <StatRow
+              label="Documents AI"
+              hint="Lifetime document extractions and RAG imports (one per file)."
+              value={nf.format(documentCreations)}
+            />
+            <StatRow
+              label="Checkpoint AI"
+              hint="Lifetime checkpoint analyses queued through the proxy."
+              value={nf.format(checkpointCreations)}
+            />
+            <GroupHeading title="Activity" />
             <StatRow
               label="Chat agent streams"
-              hint="Number of completed agent streaming runs through the app proxy."
+              hint="Completed agent runs through the app proxy."
               value={nf.format(agentStreamCount)}
             />
             <StatRow
               label="Background AI calls"
-              hint="Number of Gemini API calls from workers (e.g. checkpoint analysis and embeddings)."
+              hint="Worker Gemini calls (checkpoint analysis, embeddings, etc.)."
               value={nf.format(workerLlmCallCount)}
             />
           </div>
