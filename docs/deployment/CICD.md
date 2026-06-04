@@ -28,6 +28,7 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 │  │  - deploy-checkpoint-analysis.yaml             │    │
 │  │  - deploy-checkpoint-metrics.yaml              │    │
 │  │  - deploy-pubsub-user-docs.yaml                │    │
+│  │  - deploy-orchestrator.yaml (meta-dispatch)    │    │
 │  └────────────────────────────────────────────────┘    │
 │                          │                              │
 │                          │ Workload Identity            │
@@ -52,6 +53,18 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 ```
 
 ## Workflows
+
+### Deploy orchestrator (multi-workflow)
+
+**File**: `.github/workflows/deploy-orchestrator.yaml`
+
+**Triggers**: Manual `workflow_dispatch` only.
+
+Starts selected `deploy-*.yaml` workflows via the GitHub Actions API. Choose **staging** or **prod**, a **git ref** (default `main`), and either a **preset** (`all`, `backend`, `workers`, `frontend`) or individual workflow toggles (**custom** preset).
+
+Does not wait for child runs to finish; each child keeps its own GitHub Environment approvals and logs. Not used for `create-environment`, `destroy-environment`, or `apply-operations-config`.
+
+Details: [.github/workflows/README-deploy-orchestrator.md](../../.github/workflows/README-deploy-orchestrator.md).
 
 ### 1. Web Application Deployment
 
