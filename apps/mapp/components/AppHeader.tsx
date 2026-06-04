@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
@@ -38,6 +39,11 @@ function ThemeToggle() {
 
 export default function AppHeader() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  const openAccountSettings = () => {
+    router.navigate('/(tabs)/settings/account');
+  };
 
   return (
     <View className="flex-row items-center justify-between bg-card px-3 py-3 pt-12 shadow-sm">
@@ -54,11 +60,19 @@ export default function AppHeader() {
           <Icon as={Bell} size={20} className="text-muted-foreground" />
         </Button>
         {user ? (
-          <UserProfileAvatar
-            user={user}
-            className="ml-0.5 size-8"
-            fallbackTextClassName="text-xs"
-          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-0.5 h-8 w-8 min-w-8 rounded-full p-0"
+            onPress={openAccountSettings}
+            accessibilityLabel="Open account settings"
+            accessibilityRole="button">
+            <UserProfileAvatar
+              user={user}
+              className="size-8"
+              fallbackTextClassName="text-xs"
+            />
+          </Button>
         ) : (
           <View className="ml-0.5 size-8 rounded-full bg-secondary" />
         )}
