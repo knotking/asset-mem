@@ -60,7 +60,7 @@ HomeApp uses GitHub Actions for automated CI/CD workflows with:
 
 **Triggers**: Manual `workflow_dispatch` only.
 
-Starts selected `deploy-*.yaml` workflows via the GitHub Actions API. Choose **staging** or **prod**, a **git ref** (default `main`), and either a **preset** (`all`, `backend`, `workers`, `frontend`) or individual workflow toggles (**custom** preset).
+Starts selected `deploy-*.yaml` workflows via the GitHub Actions API. Choose **staging** or **prod**, enable per-workflow checkboxes (grouped Backend / Workers / Frontend in input descriptions), and the branch via **Use workflow from** (child runs use the same ref).
 
 Does not wait for child runs to finish; each child keeps its own GitHub Environment approvals and logs. Not used for `create-environment`, `destroy-environment`, or `apply-operations-config`.
 
