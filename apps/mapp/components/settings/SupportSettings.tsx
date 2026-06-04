@@ -60,7 +60,7 @@ export function SupportSettings() {
   };
 
   return (
-    <Card>
+    <Card className="mb-4">
       <CardHeader>
         <View className="flex-row items-center gap-2">
           <Icon as={LifeBuoy} className="size-5 text-foreground" />
