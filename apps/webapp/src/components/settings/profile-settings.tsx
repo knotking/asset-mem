@@ -11,10 +11,11 @@ import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import {
-  DEFAULT_DISPLAY_LABEL,
   DISPLAY_NAME_MAX_LENGTH,
-  getUserDisplayLabel,
+  displayNameFromEmail,
+  getProfileDisplayPresentation,
 } from '@/lib/user-display';
+import { cn } from '@/lib/utils';
 
 export function ProfileSettings() {
   const { user } = useAuth();
@@ -28,7 +29,8 @@ export function ProfileSettings() {
   }
 
   const savedName = user.displayName?.trim() ?? '';
-  const displayLabel = getUserDisplayLabel(user.displayName);
+  const profileDisplay = getProfileDisplayPresentation(user);
+  const inputPlaceholder = displayNameFromEmail(user.email) ?? 'Your name';
 
   const handleStartEdit = () => {
     setEditedName(savedName);
@@ -106,7 +108,7 @@ export function ProfileSettings() {
                 <Input
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  placeholder={DEFAULT_DISPLAY_LABEL}
+                  placeholder={inputPlaceholder}
                   disabled={saving}
                   autoFocus
                   maxLength={DISPLAY_NAME_MAX_LENGTH}
@@ -150,7 +152,14 @@ export function ProfileSettings() {
               </div>
             ) : (
               <div className="flex items-center gap-1">
-                <p className="text-lg font-medium truncate">{displayLabel}</p>
+                <p
+                  className={cn(
+                    'truncate text-lg font-medium',
+                    profileDisplay.isUnset && 'text-muted-foreground',
+                  )}
+                >
+                  {profileDisplay.label}
+                </p>
                 <Button
                   type="button"
                   variant="ghost"
