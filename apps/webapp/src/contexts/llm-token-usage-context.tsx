@@ -49,6 +49,8 @@ export type LlmTokenUsageSnapshot = {
   periodOutputTokens: number;
   periodDocumentCreations: number;
   periodCheckpointCreations: number;
+  documentCreations: number;
+  checkpointCreations: number;
   monthlyLimit: number | null;
   /** Resolved cap for UI: Firestore prefs, else proxy /token-quota-status */
   effectiveMonthlyLimit: number | null;
@@ -83,6 +85,8 @@ const empty: Omit<
   periodOutputTokens: 0,
   periodDocumentCreations: 0,
   periodCheckpointCreations: 0,
+  documentCreations: 0,
+  checkpointCreations: 0,
 };
 
 function toDisplayPlanLimit(
@@ -153,6 +157,10 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
             typeof d.periodDocumentCreations === 'number' ? d.periodDocumentCreations : 0,
           periodCheckpointCreations:
             typeof d.periodCheckpointCreations === 'number' ? d.periodCheckpointCreations : 0,
+          documentCreations:
+            typeof d.documentCreations === 'number' ? d.documentCreations : 0,
+          checkpointCreations:
+            typeof d.checkpointCreations === 'number' ? d.checkpointCreations : 0,
         });
       },
       (err) => {
@@ -192,7 +200,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
   }, [userId]);
 
   useEffect(() => {
-    if (!userId || !prefsLoaded) {
+    if (!userId) {
       return;
     }
 
@@ -252,7 +260,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     return () => {
       cancelled = true;
     };
-  }, [userId, prefsLoaded, monthlyLimit]);
+  }, [userId, monthlyLimit]);
 
   const freeTokenLimit = FREE_PLAN_LIMITS.tokensPerMonth ?? 1_000_000;
 

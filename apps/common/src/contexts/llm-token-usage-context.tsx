@@ -47,6 +47,10 @@ export type LlmTokenUsageSnapshot = {
   periodTotalTokens: number;
   periodInputTokens: number;
   periodOutputTokens: number;
+  periodDocumentCreations: number;
+  periodCheckpointCreations: number;
+  documentCreations: number;
+  checkpointCreations: number;
   monthlyLimit: number | null;
   effectiveMonthlyLimit: number | null;
   proxyDefaultLimit: "pending" | number | null;
@@ -76,6 +80,10 @@ const empty: Omit<
   periodTotalTokens: 0,
   periodInputTokens: 0,
   periodOutputTokens: 0,
+  periodDocumentCreations: 0,
+  periodCheckpointCreations: 0,
+  documentCreations: 0,
+  checkpointCreations: 0,
 };
 
 export type LlmTokenUsageProviderProps = {
@@ -159,6 +167,20 @@ function useLlmTokenUsageSubscription(
             typeof d.periodOutputTokens === "number"
               ? d.periodOutputTokens
               : 0,
+          periodDocumentCreations:
+            typeof d.periodDocumentCreations === "number"
+              ? d.periodDocumentCreations
+              : 0,
+          periodCheckpointCreations:
+            typeof d.periodCheckpointCreations === "number"
+              ? d.periodCheckpointCreations
+              : 0,
+          documentCreations:
+            typeof d.documentCreations === "number" ? d.documentCreations : 0,
+          checkpointCreations:
+            typeof d.checkpointCreations === "number"
+              ? d.checkpointCreations
+              : 0,
         });
       },
       (err) => {
@@ -198,7 +220,7 @@ function useLlmTokenUsageSubscription(
   }, [userId, db]);
 
   useEffect(() => {
-    if (!userId || !prefsLoaded) {
+    if (!userId) {
       return;
     }
     if (!tokenQuotaStatusUrl?.trim()) {
@@ -259,7 +281,7 @@ function useLlmTokenUsageSubscription(
     return () => {
       cancelled = true;
     };
-  }, [userId, prefsLoaded, monthlyLimit, tokenQuotaStatusUrl, getIdToken]);
+  }, [userId, monthlyLimit, tokenQuotaStatusUrl, getIdToken]);
 
   const effectiveMonthlyLimit = useMemo(() => {
     if (monthlyLimit != null && monthlyLimit > 0) {

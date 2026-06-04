@@ -5,7 +5,10 @@ import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import {
+  useLlmTokenUsage,
+  type PlanLimitSlice,
+} from '@homeapp/common/contexts/llm-token-usage-context';
 import { formatTokensCompact, formatTokensFull } from '@homeapp/common/lib/format-tokens';
 import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
 import { cn } from '@/lib/utils';
@@ -22,6 +25,57 @@ function StatRow({ label, value, hint }: { label: string; value: string; hint?: 
       ) : null}
     </View>
   );
+}
+
+function UsageSection({
+  title,
+  subtitle,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <View className={cn('gap-3', className)}>
+      <View className="gap-0.5">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text className="text-[10px] text-muted-foreground">{subtitle}</Text>
+        ) : null}
+      </View>
+      <View className="gap-3">{children}</View>
+    </View>
+  );
+}
+
+function UsageGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View className="gap-2">
+      <Text className="text-[11px] font-medium text-muted-foreground">{title}</Text>
+      <View className="gap-2">{children}</View>
+    </View>
+  );
+}
+
+function formatCreationQuota(
+  slice: PlanLimitSlice | null,
+  periodCount: number,
+): { value: string; hint: string } {
+  if (slice) {
+    return {
+      value: `${nf.format(slice.used)} / ${nf.format(slice.limit)}`,
+      hint: `${slice.used} used this month; plan allows ${slice.limit} per month.`,
+    };
+  }
+  return {
+    value: nf.format(periodCount),
+    hint: 'Plan limit unavailable — open Plan & billing or refresh later.',
+  };
 }
 
 export function AiUsageSettings() {
@@ -41,6 +95,12 @@ export function AiUsageSettings() {
     monthlyLimit,
     effectiveMonthlyLimit,
     proxyDefaultLimit,
+    periodDocumentCreations,
+    periodCheckpointCreations,
+    documentCreations,
+    checkpointCreations,
+    documentsLimit,
+    checkpointsLimit,
   } = useLlmTokenUsage();
 
   if (loading) {
@@ -81,6 +141,11 @@ export function AiUsageSettings() {
   const monthlyCap = effectiveMonthlyLimit ?? FREE_PLAN_TOKENS_PER_MONTH;
   const pctUsed =
     monthlyCap > 0 ? Math.min(100, Math.round((100 * periodTotalTokens) / monthlyCap)) : null;
+  const documentsQuota = formatCreationQuota(documentsLimit, periodDocumentCreations);
+  const checkpointsQuota = formatCreationQuota(checkpointsLimit, periodCheckpointCreations);
+  const monthSubtitle = quotaPeriodKey
+    ? `Billing period ${quotaPeriodKey} (UTC). Counters reset at month rollover.`
+    : 'Billing period not set yet.';
 
   return (
     <Card>
@@ -126,55 +191,93 @@ export function AiUsageSettings() {
           </View>
         ) : null}
 
-        <Text className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          This month — quota
-        </Text>
-        <StatRow label="Billing period" value={quotaPeriodKey ?? '—'} />
-        <StatRow
-          label="Tokens this month"
-          value={formatTokensCompact(periodTotalTokens)}
-          hint={`Exact: ${formatTokensFull(periodTotalTokens)}.`}
-        />
-        <StatRow
-          label="Input tokens (month)"
-          value={formatTokensCompact(periodInputTokens)}
-          hint={`Exact: ${formatTokensFull(periodInputTokens)}.`}
-        />
-        <StatRow
-          label="Output tokens (month)"
-          value={formatTokensCompact(periodOutputTokens)}
-          hint={`Exact: ${formatTokensFull(periodOutputTokens)}.`}
-        />
-        <StatRow
-          label="Your monthly limit"
-          value={formatTokensCompact(monthlyCap)}
-          hint={
-            monthlyLimit != null
-              ? `Exact: ${formatTokensFull(monthlyCap)}.`
-              : `${proxyDefaultLimit === 'pending' ? ' Waiting for proxy response.' : ''} Exact: ${formatTokensFull(monthlyCap)}.`
-          }
-        />
+        <UsageSection title="This month" subtitle={monthSubtitle}>
+          <UsageGroup title="Tokens">
+            <StatRow
+              label="Limit"
+              value={formatTokensCompact(monthlyCap)}
+              hint={
+                monthlyLimit != null
+                  ? `Exact: ${formatTokensFull(monthlyCap)}. Matches the ring above.`
+                  : `${proxyDefaultLimit === 'pending' ? 'Waiting for proxy. ' : ''}Exact: ${formatTokensFull(monthlyCap)}.`
+              }
+            />
+            <StatRow
+              label="Used"
+              value={formatTokensCompact(periodTotalTokens)}
+              hint={`Counted toward your monthly quota. Exact: ${formatTokensFull(periodTotalTokens)}.`}
+            />
+            <StatRow
+              label="Input"
+              value={formatTokensCompact(periodInputTokens)}
+              hint={`Exact: ${formatTokensFull(periodInputTokens)}.`}
+            />
+            <StatRow
+              label="Output"
+              value={formatTokensCompact(periodOutputTokens)}
+              hint={`Exact: ${formatTokensFull(periodOutputTokens)}.`}
+            />
+          </UsageGroup>
+          <UsageGroup title="Creations">
+            <StatRow
+              label="Documents AI"
+              value={documentsQuota.value}
+              hint={`Extractions and RAG imports (one per file). ${documentsQuota.hint}`}
+            />
+            <StatRow
+              label="Checkpoint AI"
+              value={checkpointsQuota.value}
+              hint={`Analyses queued through the proxy. ${checkpointsQuota.hint}`}
+            />
+          </UsageGroup>
+        </UsageSection>
 
-        <Text className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          All time
-        </Text>
-        <StatRow
-          label="Total tokens"
-          value={formatTokensCompact(totalTokens)}
-          hint={`Exact: ${formatTokensFull(totalTokens)}.`}
-        />
-        <StatRow
-          label="Input tokens"
-          value={formatTokensCompact(inputTokens)}
-          hint={`Exact: ${formatTokensFull(inputTokens)}.`}
-        />
-        <StatRow
-          label="Output tokens"
-          value={formatTokensCompact(outputTokens)}
-          hint={`Exact: ${formatTokensFull(outputTokens)}.`}
-        />
-        <StatRow label="Chat agent streams" value={nf.format(agentStreamCount)} />
-        <StatRow label="Background AI calls" value={nf.format(workerLlmCallCount)} />
+        <UsageSection
+          title="All time"
+          subtitle="Lifetime totals since you started using AI features."
+          className="mt-6">
+          <UsageGroup title="Tokens">
+            <StatRow
+              label="Total"
+              value={formatTokensCompact(totalTokens)}
+              hint={`Exact: ${formatTokensFull(totalTokens)}.`}
+            />
+            <StatRow
+              label="Input"
+              value={formatTokensCompact(inputTokens)}
+              hint={`Exact: ${formatTokensFull(inputTokens)}.`}
+            />
+            <StatRow
+              label="Output"
+              value={formatTokensCompact(outputTokens)}
+              hint={`Exact: ${formatTokensFull(outputTokens)}.`}
+            />
+          </UsageGroup>
+          <UsageGroup title="Creations">
+            <StatRow
+              label="Documents AI"
+              value={nf.format(documentCreations)}
+              hint="Lifetime document extractions and RAG imports (one per file)."
+            />
+            <StatRow
+              label="Checkpoint AI"
+              value={nf.format(checkpointCreations)}
+              hint="Lifetime checkpoint analyses queued through the proxy."
+            />
+          </UsageGroup>
+          <UsageGroup title="Activity">
+            <StatRow
+              label="Chat agent streams"
+              value={nf.format(agentStreamCount)}
+              hint="Completed agent runs through the app proxy."
+            />
+            <StatRow
+              label="Background AI calls"
+              value={nf.format(workerLlmCallCount)}
+              hint="Worker Gemini calls (checkpoint analysis, embeddings, etc.)."
+            />
+          </UsageGroup>
+        </UsageSection>
 
         {updatedAt ? (
           <Text className="text-xs text-muted-foreground">Last updated: {updatedAt}</Text>
