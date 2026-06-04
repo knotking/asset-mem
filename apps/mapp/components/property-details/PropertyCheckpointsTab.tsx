@@ -54,6 +54,15 @@ import { createLogger } from '@/lib/logger';
 
 const checkpointLog = createLogger('checkpoint');
 import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
+import {
+  formatMetricsHeadlineDisplay,
+  getMetricsHeadlineScore,
+  getMetricsStatus,
+  INSIGHTS_MISSING_SUMMARY_HINT,
+  INSIGHTS_MISSING_SUMMARY_MESSAGE,
+  resolveInsightsViewState,
+} from '@homeapp/common/lib/checkpoint-metrics-display';
+import type { PropertyCheckpointIssueRow } from '@homeapp/common/types';
 
 type IssueSeverity = 'critical' | 'major' | 'moderate' | 'minor';
 type IssueRow = {
@@ -199,14 +208,15 @@ function PropertyMetricsCard({
   checkpoints: Checkpoint[];
   onOpenIssues: () => void;
 }) {
-  const { metrics, loading } = usePropertyCheckpointMetrics();
+  const { metrics, loading, summaryExists } = usePropertyCheckpointMetrics();
+  const viewState = resolveInsightsViewState({ loading, summaryExists });
 
   // Crossfade skeleton -> content to avoid a "pop" when metrics arrives.
-  const contentOpacity = React.useRef(new Animated.Value(metrics ? 1 : 0)).current;
-  const skeletonOpacity = React.useRef(new Animated.Value(metrics ? 0 : 1)).current;
+  const contentOpacity = React.useRef(new Animated.Value(viewState === 'ready' ? 1 : 0)).current;
+  const skeletonOpacity = React.useRef(new Animated.Value(viewState === 'loading' ? 1 : 0)).current;
 
   React.useEffect(() => {
-    const hasMetrics = !!metrics && !loading;
+    const hasMetrics = viewState === 'ready';
     Animated.parallel([
       Animated.timing(contentOpacity, {
         toValue: hasMetrics ? 1 : 0,
@@ -219,10 +229,9 @@ function PropertyMetricsCard({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [metrics, loading, contentOpacity, skeletonOpacity]);
+  }, [viewState, contentOpacity, skeletonOpacity]);
 
-  // Still keep layout stable: always render the same card footprint, and fade between layers.
-  if (!metrics) {
+  if (viewState === 'loading') {
     return (
       <Animated.View style={{ opacity: skeletonOpacity }}>
         <PropertyInsightsSkeletonCard />
@@ -230,11 +239,29 @@ function PropertyMetricsCard({
     );
   }
 
-  const latest = metrics.overall?.latest_score;
+  if (viewState === 'missing_summary') {
+    return (
+      <Card className="mb-4">
+        <View className="p-4">
+          <Text className="text-lg font-semibold text-foreground">Property Health Insights</Text>
+          <Text className="mt-2 text-sm text-muted-foreground">{INSIGHTS_MISSING_SUMMARY_MESSAGE}</Text>
+          <Text className="mt-1 text-xs text-muted-foreground">{INSIGHTS_MISSING_SUMMARY_HINT}</Text>
+        </View>
+      </Card>
+    );
+  }
+
+  if (!metrics) {
+    return null;
+  }
+
+  const status = getMetricsStatus(metrics);
+  const headlineScore = getMetricsHeadlineScore(metrics);
   const issues = metrics.issues?.total_by_severity;
   const rate = metrics.deterioration?.rate_points_per_day;
   const trend = metrics.deterioration?.trend;
   const considered = metrics.window?.checkpoints_considered;
+  const scored = metrics.window?.checkpoints_with_score ?? 0;
 
   return (
     <View className="mb-4">
@@ -261,9 +288,11 @@ function PropertyMetricsCard({
             <View>
               <Text className="mb-3 text-sm font-semibold text-muted-foreground">Overall Condition</Text>
               {(() => {
-                const latestScore = typeof latest === 'number' && Number.isFinite(latest)
-                  ? Math.max(0, Math.min(100, latest))
-                  : 0;
+                const latestScoreDisplay = formatMetricsHeadlineDisplay(headlineScore);
+                const latestScoreNum =
+                  headlineScore !== null && Number.isFinite(headlineScore)
+                    ? Math.max(0, Math.min(100, headlineScore))
+                    : null;
                 
                 const getTrendIcon = () => {
                   switch (trend) {
@@ -291,12 +320,20 @@ function PropertyMetricsCard({
                   }
                 };
 
-                const getScoreColor = (score: number) => {
+                const getScoreColor = (display: string) => {
+                  if (display === '—') return 'text-muted-foreground';
+                  const score = Number(display);
                   if (score >= 80) return 'text-green-600';
                   if (score >= 60) return 'text-yellow-600';
                   if (score >= 40) return 'text-orange-600';
                   return 'text-red-600';
                 };
+
+                const showTrendBadge =
+                  trend !== 'unknown' &&
+                  scored >= 2 &&
+                  typeof rate === 'number' &&
+                  Number.isFinite(rate);
 
                 const trendLabelDisplay =
                   trend === 'improving'
@@ -309,27 +346,45 @@ function PropertyMetricsCard({
 
                 const deteriorationRate = typeof rate === 'number' && Number.isFinite(rate) ? rate : 0;
                 const trendData = metrics.overall?.trend || [];
+                const statusSubcopy =
+                  status === 'pending_analysis'
+                    ? 'Scores appear after AI analysis finishes.'
+                    : status === 'partial'
+                      ? `Based on ${scored} of ${considered ?? 0} recent checkpoints`
+                      : status === 'ready'
+                        ? 'Property health index (0–100), average of recent checkpoints'
+                        : '';
 
                 return (
                   <>
                     <View className="flex-row items-end gap-3">
-                      <Text className={`text-5xl font-bold ${getScoreColor(latestScore)}`}>
-                        {latestScore.toFixed(0)}
+                      <Text className={`text-5xl font-bold ${getScoreColor(latestScoreDisplay)}`}>
+                        {latestScoreDisplay}
                       </Text>
-                      <View className="mb-2">
-                        <View className="flex-row items-center gap-1 rounded-full border border-border bg-card px-2 py-1">
-                          {getTrendIcon()}
-                          <Text className={`text-xs ${getTrendColor()}`}>
-                            {trendLabelDisplay}
-                          </Text>
+                      {showTrendBadge && (
+                        <View className="mb-2">
+                          <View className="flex-row items-center gap-1 rounded-full border border-border bg-card px-2 py-1">
+                            {getTrendIcon()}
+                            <Text className={`text-xs ${getTrendColor()}`}>
+                              {trendLabelDisplay}
+                            </Text>
+                          </View>
+                          {deteriorationRate !== 0 && (
+                            <Text className="mt-1 text-xs text-muted-foreground">
+                              {Math.abs(deteriorationRate).toFixed(2)} pts/day
+                            </Text>
+                          )}
                         </View>
-                        {deteriorationRate !== 0 && (
-                          <Text className="mt-1 text-xs text-muted-foreground">
-                            {Math.abs(deteriorationRate).toFixed(2)} pts/day
-                          </Text>
-                        )}
-                      </View>
+                      )}
                     </View>
+                    {statusSubcopy ? (
+                      <Text className="mt-2 text-xs text-muted-foreground">{statusSubcopy}</Text>
+                    ) : null}
+                    {latestScoreNum === null && status !== 'pending_analysis' ? (
+                      <Text className="mt-1 text-xs text-muted-foreground">
+                        No condition score yet for recent checkpoints.
+                      </Text>
+                    ) : null}
 
                     {/* Trend Chart (Mini) */}
                     {trendData.length > 0 && (
@@ -439,12 +494,12 @@ function PropertyMetricsCard({
               </View>
             )}
 
-            {false && (
+            {true && (
               <View className="mt-3 rounded-lg border border-border bg-card p-3">
                 <Text className="text-sm font-semibold text-foreground">How to read this</Text>
                 <View className="mt-2 gap-1">
                   <Text className="text-xs text-muted-foreground">
-                    - Overall condition is a 0–100 score estimated by AI from your recent checkpoint
+                    - Overall condition is a 0–100 index averaged across your recent checkpoint
                     photos.
                   </Text>
                   <Text className="text-xs text-muted-foreground">
@@ -601,7 +656,8 @@ export function PropertyCheckpointsTab({
   const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
   const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
   const { property } = useProperty();
-  
+  const { metrics: propertyMetrics } = usePropertyCheckpointMetrics();
+
   // Sub-tab state
   const [activeSubTab, setActiveSubTab] = React.useState<'checkpoints' | 'insights'>('checkpoints');
   
@@ -1100,7 +1156,19 @@ export function PropertyCheckpointsTab({
               </View>
 
               {(() => {
-                const rows = normalizeIssuesFromCheckpoints(checkpoints, 12);
+                const fromSummary: IssueRow[] = (propertyMetrics?.issues?.recent ?? []).map(
+                  (r: PropertyCheckpointIssueRow) => ({
+                    severity: r.severity,
+                    description: r.description,
+                    checkpointId: r.checkpointId,
+                    checkpointName: r.checkpointName,
+                    createdAt: new Date(r.createdAt),
+                  })
+                );
+                const rows =
+                  fromSummary.length > 0
+                    ? fromSummary
+                    : normalizeIssuesFromCheckpoints(checkpoints, 12);
                 const filtered =
                   issuesFilter === 'all' ? rows : rows.filter((r) => r.severity === issuesFilter);
                 if (filtered.length === 0) {

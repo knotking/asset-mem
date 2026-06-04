@@ -11,11 +11,13 @@ export function usePropertyCheckpointMetrics() {
   const { property } = useProperty();
 
   const [metrics, setMetrics] = React.useState<PropertyCheckpointMetrics | null>(null);
+  const [summaryExists, setSummaryExists] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user || !property) {
       setMetrics(null);
+      setSummaryExists(false);
       setLoading(false);
       return;
     }
@@ -25,16 +27,18 @@ export function usePropertyCheckpointMetrics() {
     const unsub = onSnapshot(
       ref,
       (snap) => {
-        setMetrics((snap.data() as PropertyCheckpointMetrics) || null);
+        setSummaryExists(snap.exists());
+        setMetrics(snap.exists() ? (snap.data() as PropertyCheckpointMetrics) : null);
         setLoading(false);
       },
-      () => setLoading(false)
+      () => {
+        setSummaryExists(false);
+        setLoading(false);
+      }
     );
 
     return () => unsub();
   }, [db, user, property]);
 
-  return { metrics, loading };
+  return { metrics, loading, summaryExists };
 }
-
-

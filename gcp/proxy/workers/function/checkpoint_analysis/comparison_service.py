@@ -110,25 +110,12 @@ def find_previous_checkpoint(
                     logger.info(f"Found previous checkpoint by location '{search_loc}': {doc.id}")
                     return checkpoint_data
         
-        # If no location match found, try querying recent checkpoints (without location filter)
-        # This is a fallback for cases where location wasn't detected
-        query = (
-            checkpoints_ref.where(filter=FieldFilter("createdAt", ">", min_date))
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(10)  # Get last 10 to have options
+        logger.info(
+            "comparison.skipped.no_prior_in_area property=%s checkpoint=%s locations=%s",
+            property_id,
+            current_checkpoint_id,
+            search_locations,
         )
-        
-        docs = list(query.stream())
-        
-        # Exclude current checkpoint
-        for doc in docs:
-            if doc.id != current_checkpoint_id:
-                checkpoint_data = doc.to_dict()
-                checkpoint_data["id"] = doc.id
-                logger.info(f"Found recent checkpoint (fallback): {doc.id}")
-                return checkpoint_data
-        
-        logger.info("No previous checkpoint found for comparison")
         return None
         
     except Exception as e:

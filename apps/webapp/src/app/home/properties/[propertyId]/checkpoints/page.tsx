@@ -44,18 +44,6 @@ export default function PropertyCheckpointsPage() {
     setIsComparisonOpen(true);
   };
 
-  // Stats for footer
-  const totalCheckpoints = checkpoints.length;
-  const totalPhotos = checkpoints.reduce((sum, cp) => sum + cp.media.length, 0);
-  const uniqueLocations = new Set(checkpoints.map((cp) => cp.location).filter(Boolean)).size;
-  const goodCondition = checkpoints.filter(
-    (cp) =>
-      cp.aiAnalysis && (!cp.aiAnalysis.issues || cp.aiAnalysis.issues.length === 0)
-  ).length;
-  const needsAttention = checkpoints.filter(
-    (cp) => cp.aiAnalysis && cp.aiAnalysis.issues && cp.aiAnalysis.issues.length > 0
-  ).length;
-
     return (
     <div className="flex h-full flex-col min-h-0">
       <div className="flex-1 overflow-y-auto p-6 md:p-8 min-h-0">
@@ -147,19 +135,6 @@ export default function PropertyCheckpointsPage() {
         </div>
       </div>
 
-      {/* Stats Footer */}
-      <footer className="sticky bottom-0 border-t bg-background/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl p-4">
-          <div className="flex gap-4">
-            <StatItem value={totalCheckpoints} label="Total" />
-            <StatItem value={totalPhotos} label="Photos" />
-            <StatItem value={uniqueLocations} label="Locations" />
-            <StatItem value={goodCondition} label="Good" />
-            <StatItem value={needsAttention} label="Needs Attention" />
-                </div>
-                </div>
-            </footer>
-
       {/* Dialogs */}
       <CreateCheckpointDialog 
         open={isCreateDialogOpen} 
@@ -179,11 +154,3 @@ export default function PropertyCheckpointsPage() {
     );
 }
 
-function StatItem({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex-1 rounded-lg border bg-card px-4 py-3 text-center">
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-sm text-muted-foreground">{label}</p>
-    </div>
-  );
-}
