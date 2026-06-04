@@ -21,6 +21,7 @@ import { ThemeToggle } from './theme-toggle';
 import { TokenUsageToolbar } from './token-usage-toolbar';
 import { SupportDialog } from '@/components/support/support-dialog';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { getUserDisplayLabel } from '@/lib/user-display';
 
 export function Header() {
   const { user, loading, signingOut, logout } = useAuth();
@@ -71,7 +72,9 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2 h-9">
                         <UserProfileAvatar user={user} className="h-6 w-6" />
-                        <span className="hidden sm:inline-block">{user.displayName || user.email}</span>
+                        <span className="hidden sm:inline-block truncate max-w-[12rem]">
+                          {getUserDisplayLabel(user)}
+                        </span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

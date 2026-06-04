@@ -44,7 +44,7 @@ export function useSettingsHubSummaries() {
     );
   }, [user]);
 
-  const accountSubtitle = user ? getUserDisplayLabel(user.displayName) : undefined;
+  const accountSubtitle = user ? getUserDisplayLabel(user) : undefined;
 
   const status = (billingSummary?.subscriptionStatus || '').toLowerCase();
   const isPaid = status === 'active' || status === 'trialing';

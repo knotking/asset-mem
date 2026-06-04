@@ -4,10 +4,11 @@ import { updateProfile } from 'firebase/auth';
 import { ChevronRight, Loader2 } from 'lucide-react-native';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import {
-  DEFAULT_DISPLAY_LABEL,
   DISPLAY_NAME_MAX_LENGTH,
-  getUserDisplayLabel,
+  displayNameFromEmail,
+  getProfileDisplayPresentation,
 } from '@homeapp/common/lib/user-display';
+import { cn } from '@/lib/utils';
 import { UserProfileAvatar } from '@/components/UserProfileAvatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +38,9 @@ export function ProfileSettings() {
   }
 
   const savedName = user.displayName?.trim() ?? '';
-  const displayLabel = getUserDisplayLabel(user.displayName);
+  const profileDisplay = getProfileDisplayPresentation(user);
+  const inputPlaceholder =
+    displayNameFromEmail(user.email) ?? 'Your name';
 
   const handleOpenEdit = () => {
     setEditedName(savedName);
@@ -102,12 +105,19 @@ export function ProfileSettings() {
               <Pressable
                 onPress={handleOpenEdit}
                 accessibilityRole="button"
-                accessibilityLabel={`Edit display name, currently ${displayLabel}`}
+                accessibilityLabel={`Edit display name, currently ${profileDisplay.label}`}
                 className="flex-row items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2.5 active:opacity-80">
                 <View className="min-w-0 flex-1 pr-2">
                   <Text className="text-xs text-muted-foreground">Display name</Text>
-                  <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                    {displayLabel}
+                  <Text
+                    className={cn(
+                      'text-base font-semibold',
+                      profileDisplay.isUnset
+                        ? 'text-muted-foreground'
+                        : 'text-foreground'
+                    )}
+                    numberOfLines={1}>
+                    {profileDisplay.label}
                   </Text>
                 </View>
                 <Icon as={ChevronRight} size={18} className="shrink-0 text-muted-foreground" />
@@ -134,7 +144,7 @@ export function ProfileSettings() {
             <Input
               value={editedName}
               onChangeText={setEditedName}
-              placeholder={DEFAULT_DISPLAY_LABEL}
+              placeholder={inputPlaceholder}
               autoFocus
               editable={!saving}
               maxLength={DISPLAY_NAME_MAX_LENGTH}
@@ -142,7 +152,8 @@ export function ProfileSettings() {
               returnKeyType="done"
             />
             <Text className="text-xs text-muted-foreground">
-              Leave blank to use the default label ({DEFAULT_DISPLAY_LABEL}).
+              Optional. Leave blank to clear your name; settings and the header can suggest one
+              from your email until you add a name.
             </Text>
           </View>
 
