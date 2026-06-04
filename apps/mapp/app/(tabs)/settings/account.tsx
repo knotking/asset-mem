@@ -8,8 +8,6 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { SettingsSubScreen } from '@/components/settings/SettingsSubScreen';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
-import { SupportSettings } from '@/components/settings/SupportSettings';
-import { LegalSettings } from '@/components/settings/LegalSettings';
 import { AccountDeletionSettings } from '@/components/settings/AccountDeletionSettings';
 import { createLogger } from '@/lib/logger';
 
@@ -31,12 +29,6 @@ export default function SettingsAccountScreen() {
   return (
     <SettingsSubScreen title="Account">
       <ProfileSettings />
-
-      <View className="mb-4">
-        <SupportSettings />
-      </View>
-
-      <LegalSettings />
 
       <AccountDeletionSettings />
 

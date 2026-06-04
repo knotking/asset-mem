@@ -1,30 +1,21 @@
 import * as React from 'react';
 import { View } from 'react-native';
-import { FileText, Scale, UserX } from 'lucide-react-native';
+import { FileText, Scale } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  getAccountDeletionHelpUrl,
-  getPrivacyPolicyUrl,
-  getTermsOfServiceUrl,
-} from '@/lib/legal-urls';
+import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/lib/legal-urls';
 import { openExternalWebUrl } from '@/lib/open-external-url';
 import { createLogger } from '@/lib/logger';
 
 const legalLog = createLogger('legal');
 
 export function LegalSettings() {
-  const [opening, setOpening] = React.useState<'privacy' | 'terms' | 'deletion' | null>(null);
+  const [opening, setOpening] = React.useState<'privacy' | 'terms' | null>(null);
 
-  const openUrl = async (kind: 'privacy' | 'terms' | 'deletion') => {
-    const url =
-      kind === 'privacy'
-        ? getPrivacyPolicyUrl()
-        : kind === 'terms'
-          ? getTermsOfServiceUrl()
-          : getAccountDeletionHelpUrl();
+  const openUrl = async (kind: 'privacy' | 'terms') => {
+    const url = kind === 'privacy' ? getPrivacyPolicyUrl() : getTermsOfServiceUrl();
     setOpening(kind);
     try {
       await openExternalWebUrl(url);
@@ -64,16 +55,6 @@ export function LegalSettings() {
           <Icon as={Scale} size={18} className="text-foreground" />
           <Text className="text-sm font-medium text-foreground">
             {opening === 'terms' ? 'Opening…' : 'Terms of Service'}
-          </Text>
-        </Button>
-        <Button
-          variant="outline"
-          className="flex-row items-center justify-start gap-2"
-          disabled={opening !== null}
-          onPress={() => void openUrl('deletion')}>
-          <Icon as={UserX} size={18} className="text-foreground" />
-          <Text className="text-sm font-medium text-foreground">
-            {opening === 'deletion' ? 'Opening…' : 'Account deletion'}
           </Text>
         </Button>
       </CardContent>

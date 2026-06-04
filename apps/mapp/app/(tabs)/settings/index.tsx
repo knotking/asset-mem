@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, CreditCard, Activity, Camera } from 'lucide-react-native';
+import { User, LifeBuoy, CreditCard, Activity, Camera } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { AppVersionFooter } from '@/components/settings/AppVersionFooter';
 import { SettingsHubRow } from '@/components/settings/SettingsHubRow';
@@ -11,6 +11,7 @@ export default function SettingsHubScreen() {
   const router = useRouter();
   const {
     accountSubtitle,
+    helpSubtitle,
     billingSubtitle,
     usageSubtitle,
     checkpointsSubtitle,
@@ -47,6 +48,12 @@ export default function SettingsHubScreen() {
           title="Checkpoints"
           subtitle={checkpointsSubtitle}
           onPress={() => router.navigate('/(tabs)/settings/checkpoints')}
+        />
+        <SettingsHubRow
+          icon={LifeBuoy}
+          title="Help & support"
+          subtitle={helpSubtitle}
+          onPress={() => router.navigate('/(tabs)/settings/help')}
         />
       </View>
 
