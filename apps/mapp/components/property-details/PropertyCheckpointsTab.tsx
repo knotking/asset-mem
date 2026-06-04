@@ -48,6 +48,8 @@ import {
   isAtPlanLimit,
   planLimitBlockMessage,
 } from '@homeapp/common/lib/plan-limit-slice';
+import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
+import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
@@ -536,6 +538,10 @@ function CheckpointCard({
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
   const isVideo = !!media0?.contentType?.startsWith('video/');
   const date = checkpoint.createdAt?.toDate ? checkpoint.createdAt.toDate() : new Date();
+  const conditionBadge = getCheckpointListConditionBadge(checkpoint);
+  const conditionBadgeStyles = conditionBadge
+    ? checkpointListBadgeStyles(conditionBadge.variant)
+    : null;
 
   return (
     <Card className={`p-2 ${isSelected ? 'border-primary bg-primary/5' : ''}`}>
@@ -595,15 +601,11 @@ function CheckpointCard({
                     </Text>
                   </View>
                 )}
-                {checkpoint.analysisStatus === 'completed' &&
-                  checkpoint.aiAnalysis?.issues &&
-                  checkpoint.aiAnalysis.issues.length > 0 && (
-                    <View className="rounded-full bg-destructive/10 px-2 py-0.5">
-                      <Text className="text-[10px] font-medium text-destructive">
-                        Issue Detected
-                      </Text>
-                    </View>
-                  )}
+                {conditionBadge && conditionBadgeStyles && (
+                  <View className={conditionBadgeStyles.containerClass}>
+                    <Text className={conditionBadgeStyles.textClass}>{conditionBadge.label}</Text>
+                  </View>
+                )}
               </View>
             </View>
 
