@@ -15,7 +15,9 @@ export default function AddNewProperty({ onPress }: AddNewPropertyProps) {
         <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-secondary">
           <Icon as={Plus} size={24} className="text-secondary-foreground" />
         </View>
-        <Text className="text-base font-semibold text-foreground">Add New Property</Text>
+        <Text className="w-full text-center text-base font-semibold leading-normal text-foreground">
+          Add New Property
+        </Text>
         <Text className="text-center text-sm text-muted-foreground">
           Upload documents for a new property
         </Text>

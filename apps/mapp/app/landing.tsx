@@ -160,10 +160,18 @@ export default function LandingPage() {
           <View style={{ alignItems: 'center' }}>
             {/* Logo/Brand */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
-              <View style={{ marginRight: 12 }}>
+              <View style={{ marginRight: 12, flexShrink: 0 }}>
                 <AssetMemBrandIcon variant="mark" size="md" markTheme="landing" />
               </View>
-              <Text style={{ fontSize: 24, fontWeight: '300', color: LANDING_COLORS.foreground }}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.foreground,
+                  lineHeight: 32,
+                  flexShrink: 0,
+                  includeFontPadding: false,
+                }}>
                 AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
               </Text>
             </View>
@@ -1288,10 +1296,18 @@ export default function LandingPage() {
           }}>
           <View style={{ alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-              <View style={{ marginRight: 10 }}>
+              <View style={{ marginRight: 10, flexShrink: 0 }}>
                 <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" />
               </View>
-              <Text style={{ fontSize: 18, fontWeight: '300', color: LANDING_COLORS.foreground }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: '300',
+                  color: LANDING_COLORS.foreground,
+                  lineHeight: 24,
+                  flexShrink: 0,
+                  includeFontPadding: false,
+                }}>
                 AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
               </Text>
             </View>
