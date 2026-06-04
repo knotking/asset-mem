@@ -456,6 +456,10 @@ export type UserPreferences = {
   theme?: ThemePreference;
   /** Optional per-user monthly token cap (server-enforced; overrides free tier / Stripe defaults). */
   monthlyTokenLimit?: number;
+  /** Property used for home onboarding steps (pinned on first create). */
+  onboardingPropertyId?: string;
+  onboardingChecklistDismissed?: boolean;
+  onboardingChatOpened?: boolean;
   updatedAt?: Timestamp;
 };
 

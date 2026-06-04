@@ -118,7 +118,20 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        setProperties(newProperties);
+        setProperties((prevProperties) => {
+          const prevById = new Map(prevProperties.map((prop) => [prop.id, prop]));
+          return newProperties.map((prop) => {
+            const prev = prevById.get(prop.id);
+            if (!prev) {
+              return prop;
+            }
+            return {
+              ...prop,
+              docs: prev.docs ?? prop.docs,
+              checks: prev.checks ?? prop.checks,
+            };
+          });
+        });
         setLoading(false);
         setError(null);
       },

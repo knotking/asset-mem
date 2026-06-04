@@ -55,6 +55,7 @@ import type { Property } from "@/lib/types";
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
 import { useAddressConfirmation } from "@/contexts/address-confirmation-context";
 import { useSession } from "@/contexts/session-context";
+import { usePreferences } from "@/contexts/preferences-context";
 import {
   PROPERTY_TYPES,
   getSubTypesForType,
@@ -90,6 +91,7 @@ export function UploadDocumentsDialog({
 
   const { isOpen: contextIsOpen, onClose: contextOnClose } = useUploadDialog();
   const { createPropertyDraftSession } = useSession();
+  const { preferences, updatePreferences } = usePreferences();
   const open = controlledOpen ?? contextIsOpen;
   const onOpenChange = controlledOnOpenChange ?? contextOnClose;
 
@@ -245,6 +247,10 @@ export function UploadDocumentsDialog({
       );
       currentPropertyId = propRef.id;
       trackFirstPropertyCreated();
+
+      if (!preferences?.onboardingPropertyId) {
+        await updatePreferences({ onboardingPropertyId: currentPropertyId });
+      }
 
       // Eagerly create the draft session for the new property
       createPropertyDraftSession(user.uid, currentPropertyId).catch(() => {});

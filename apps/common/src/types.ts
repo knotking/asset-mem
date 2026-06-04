@@ -510,6 +510,12 @@ export function parseThemePreference(
 export type UserPreferences = {
   checkpointComparison?: CheckpointComparisonPreferences;
   theme?: ThemePreference;
+  /** Property used for home onboarding steps (pinned on first create). */
+  onboardingPropertyId?: string;
+  /** User hid the home onboarding checklist. */
+  onboardingChecklistDismissed?: boolean;
+  /** User opened AI Chat from the onboarding checklist. */
+  onboardingChatOpened?: boolean;
   updatedAt?: Timestamp;
 };
 

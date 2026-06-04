@@ -3,7 +3,10 @@ import { Alert } from 'react-native';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
-import { useDocumentUpload } from '@homeapp/common/contexts/document-upload-context';
+import {
+  useDocumentUpload,
+  type DocumentPickerAsset,
+} from '@homeapp/common/contexts/document-upload-context';
 import { queueExtractDocInfo, postFileToAgent } from '@/lib/api';
 import {
   DOCUMENT_QUOTA_USER_MESSAGE,
@@ -13,17 +16,51 @@ import {
 import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
+import { isPlaceholderPropertyAddress } from '@/lib/property-address-placeholder';
+import {
+  clearPendingPropertyUpload,
+  consumePendingPropertyUpload,
+  peekPendingPropertyUpload,
+} from '@/lib/pending-property-upload';
 import { createLogger } from '@/lib/logger';
 
 const uploadLog = createLogger('upload');
 
+/** Survives Strict Mode remounts so limit alerts are not shown twice in quick succession. */
+let lastDocumentLimitAlertKey: string | null = null;
+let lastDocumentLimitAlertAt = 0;
+
+function alertDocumentLimitOnce(propertyId: string): void {
+  const key = propertyId;
+  const now = Date.now();
+  if (lastDocumentLimitAlertKey === key && now - lastDocumentLimitAlertAt < 2500) {
+    return;
+  }
+  lastDocumentLimitAlertKey = key;
+  lastDocumentLimitAlertAt = now;
+  Alert.alert('Monthly document limit reached', DOCUMENT_QUOTA_USER_MESSAGE);
+}
+
 interface UseDocumentAutoUploadParams {
-  files: string | undefined;
+  files: string | string[] | undefined;
   userId: string | undefined;
-  propertyId: string;
+  propertyId: string | undefined;
   db: Firestore;
   storage: FirebaseStorage;
   clearFilesParam: () => void;
+}
+
+function parseFilesParam(files: string | string[] | undefined): DocumentPickerAsset[] | null {
+  const raw = Array.isArray(files) ? files[0] : files;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as DocumentPickerAsset[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed;
+  } catch {
+    uploadLog.warn('files.param.parse.failed');
+    return null;
+  }
 }
 
 export function useDocumentAutoUpload({
@@ -36,37 +73,51 @@ export function useDocumentAutoUpload({
 }: UseDocumentAutoUploadParams) {
   const { uploadDocuments, removeUploadingDoc } = useDocumentUpload();
   const { documentsLimit, limitsLoading } = useLlmTokenUsage();
-  const hasUploadedFilesRef = React.useRef(false);
+  const handledForPropertyRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    if (!userId || !propertyId || !files) return;
+    if (!userId || !propertyId || propertyId === 'new-property') {
+      return;
+    }
 
-    // Prevent duplicate uploads on remount/refresh
-    if (hasUploadedFilesRef.current) {
+    if (handledForPropertyRef.current === propertyId) {
       uploadLog.debug('batch.skipped.duplicate');
+      return;
+    }
+
+    if (limitsLoading) {
+      return;
+    }
+
+    const routeFiles = parseFilesParam(files);
+    const pendingPeek = peekPendingPropertyUpload(propertyId);
+    const assets = pendingPeek ?? routeFiles;
+    if (!assets || assets.length === 0) {
+      return;
+    }
+
+    if (isAtPlanLimit(documentsLimit, assets.length)) {
+      consumePendingPropertyUpload(propertyId);
+      clearPendingPropertyUpload(propertyId);
+      clearFilesParam();
+      handledForPropertyRef.current = propertyId;
+      alertDocumentLimitOnce(propertyId);
       return;
     }
 
     const startUpload = async () => {
       try {
-        const parsedFiles = JSON.parse(files);
-        if (!parsedFiles || parsedFiles.length === 0) return;
-
-        if (!limitsLoading && isAtPlanLimit(documentsLimit, parsedFiles.length)) {
-          Alert.alert('Monthly document limit reached', DOCUMENT_QUOTA_USER_MESSAGE);
+        const filesToUpload = consumePendingPropertyUpload(propertyId) ?? routeFiles;
+        if (!filesToUpload || filesToUpload.length === 0) {
           return;
         }
 
-        uploadLog.info('batch.start', { count: parsedFiles.length });
+        uploadLog.info('batch.start', { count: filesToUpload.length, propertyId });
 
-        // Mark as uploaded to prevent duplicates
-        hasUploadedFilesRef.current = true;
-
-        // Clear the files parameter from route to prevent re-upload on remount
+        handledForPropertyRef.current = propertyId;
         clearFilesParam();
 
-        // Start uploading using the common hook
-        await uploadDocuments(parsedFiles, {
+        await uploadDocuments(filesToUpload, {
           userId,
           storage,
           onAnalyze: async (doc, gsURI, meta) => {
@@ -140,7 +191,9 @@ export function useDocumentAutoUpload({
                   completedDoc.error ||
                   completedDoc.summary ||
                   'Document analysis could not be completed.';
-                Alert.alert('Document upload', failureMessage);
+                if (!isDocumentQuotaMessage(failureMessage)) {
+                  Alert.alert('Document upload', failureMessage);
+                }
                 removeUploadingDoc(completedDoc.id);
                 return;
               }
@@ -150,14 +203,14 @@ export function useDocumentAutoUpload({
               if (
                 completedDoc.propertyAddress &&
                 completedDoc.propertyAddress !== 'N/A' &&
-                completedDoc.propertyAddress !== 'Processing...'
+                !isPlaceholderPropertyAddress(completedDoc.propertyAddress)
               ) {
                 const propertyRef = doc(db, 'users', userId, 'properties', propertyId);
                 const propertyDoc = await getDoc(propertyRef);
                 const propertyData = propertyDoc.data();
                 const currentAddress = propertyData?.address;
 
-                if (currentAddress === 'Processing...') {
+                if (isPlaceholderPropertyAddress(currentAddress)) {
                   await updateDoc(propertyRef, {
                     address: completedDoc.propertyAddress,
                     name: completedDoc.propertyAddress,
@@ -174,6 +227,7 @@ export function useDocumentAutoUpload({
         });
       } catch (error) {
         uploadLog.error('batch.failed', undefined, error);
+        handledForPropertyRef.current = null;
       }
     };
 

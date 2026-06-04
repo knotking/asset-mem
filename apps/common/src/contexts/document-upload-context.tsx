@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { getDocumentAnalysisFailureMessage } from '../lib/document-analysis-errors';
 import { createLogger } from '../lib/logger';
@@ -32,8 +32,37 @@ export type DocumentPickerAsset = {
   size?: number;
 };
 
+function mergeUploadingDocs(
+  prev: UploadingDocument[],
+  assets: DocumentPickerAsset[]
+): UploadingDocument[] {
+  const existingUris = new Set(prev.map((doc) => doc.uri));
+  const stamp = Date.now();
+  const toAdd: UploadingDocument[] = [];
+
+  assets.forEach((asset, index) => {
+    if (existingUris.has(asset.uri)) {
+      return;
+    }
+    existingUris.add(asset.uri);
+    toAdd.push({
+      id: `doc-${stamp}-${index}`,
+      name: asset.name,
+      uri: asset.uri,
+      mimeType: asset.mimeType || 'application/octet-stream',
+      size: asset.size || 0,
+      progress: 0,
+      status: 'uploading',
+    });
+  });
+
+  return [...prev, ...toAdd];
+}
+
 interface DocumentUploadContextType {
   uploadingDocs: UploadingDocument[];
+  /** Show in-progress rows before upload starts (e.g. right after navigation). */
+  primeUploadingDocuments: (assets: DocumentPickerAsset[]) => void;
   uploadDocuments: (
     assets: DocumentPickerAsset[],
     options: {
@@ -62,14 +91,36 @@ const DocumentUploadContext = createContext<DocumentUploadContextType | undefine
 
 export const DocumentUploadProvider = ({ children }: { children: React.ReactNode }) => {
   const [uploadingDocs, setUploadingDocs] = useState<UploadingDocument[]>([]);
+  const uploadingDocsRef = useRef<UploadingDocument[]>([]);
+
+  const syncUploadingDocs = useCallback(
+    (updater: (prev: UploadingDocument[]) => UploadingDocument[]) => {
+      setUploadingDocs((prev) => {
+        const next = updater(prev);
+        uploadingDocsRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const removeUploadingDoc = useCallback((docId: string) => {
-    setUploadingDocs((prev) => prev.filter((doc) => doc.id !== docId));
-  }, []);
+    syncUploadingDocs((prev) => prev.filter((doc) => doc.id !== docId));
+  }, [syncUploadingDocs]);
 
   const clearUploadingDocs = useCallback(() => {
-    setUploadingDocs([]);
-  }, []);
+    syncUploadingDocs(() => []);
+  }, [syncUploadingDocs]);
+
+  const primeUploadingDocuments = useCallback(
+    (assets: DocumentPickerAsset[]) => {
+      if (assets.length === 0) {
+        return;
+      }
+      syncUploadingDocs((prev) => mergeUploadingDocs(prev, assets));
+    },
+    [syncUploadingDocs]
+  );
 
   const uploadDocuments = useCallback(
     async (
@@ -93,25 +144,17 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
     ) => {
       const { userId, storage, onAnalyze, onComplete } = options;
 
-      // Create uploading document objects
-      const newDocs: UploadingDocument[] = assets.map((asset, index) => ({
-        id: `doc-${Date.now()}-${index}`,
-        name: asset.name,
-        uri: asset.uri,
-        mimeType: asset.mimeType || 'application/octet-stream',
-        size: asset.size || 0,
-        progress: 0,
-        status: 'uploading' as const,
-      }));
+      syncUploadingDocs((prev) => mergeUploadingDocs(prev, assets));
 
-      // Add to state
-      setUploadingDocs((prev) => [...prev, ...newDocs]);
+      const docsToProcess = assets
+        .map((asset) => uploadingDocsRef.current.find((doc) => doc.uri === asset.uri))
+        .filter((doc): doc is UploadingDocument => !!doc);
 
       // Upload each document
-      for (const doc of newDocs) {
+      for (const doc of docsToProcess) {
         try {
           // Update progress to show it started
-          setUploadingDocs((prev) =>
+          syncUploadingDocs((prev) =>
             prev.map((d) => (d.id === doc.id ? { ...d, progress: 1 } : d))
           );
 
@@ -135,13 +178,13 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
               'state_changed',
               (snapshot) => {
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadingDocs((prev) =>
+                syncUploadingDocs((prev) =>
                   prev.map((d) => (d.id === doc.id ? { ...d, progress } : d))
                 );
               },
               (error) => {
                 uploadLog.error('file.upload.failed', { name: doc.name }, error);
-                setUploadingDocs((prev) =>
+                syncUploadingDocs((prev) =>
                   prev.map((d) =>
                     d.id === doc.id ? { ...d, status: 'failed', error: error.message } : d
                   )
@@ -154,7 +197,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                   const gsURI = `gs://${storageRef.bucket}/${storageRef.fullPath}`;
 
                   // Update status to analyzing
-                  setUploadingDocs((prev) =>
+                  syncUploadingDocs((prev) =>
                     prev.map((d) =>
                       d.id === doc.id
                         ? {
@@ -189,7 +232,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                         name: doc.name,
                         cause: failureMessage,
                       });
-                      setUploadingDocs((prev) =>
+                      syncUploadingDocs((prev) =>
                         prev.map((d) =>
                           d.id === doc.id
                             ? {
@@ -229,7 +272,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                     ...analysisResult,
                   };
 
-                  setUploadingDocs((prev) =>
+                  syncUploadingDocs((prev) =>
                     prev.map((d) => (d.id === doc.id ? completedDoc : d))
                   );
 
@@ -241,7 +284,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
                   resolve();
                 } catch (error) {
                   uploadLog.error('file.process.failed', { name: doc.name }, error);
-                  setUploadingDocs((prev) =>
+                  syncUploadingDocs((prev) =>
                     prev.map((d) =>
                       d.id === doc.id ? { ...d, status: 'failed', error: 'Processing failed' } : d
                     )
@@ -253,7 +296,7 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
           });
         } catch (error) {
           uploadLog.error('file.upload.failed', { name: doc.name }, error);
-          setUploadingDocs((prev) =>
+          syncUploadingDocs((prev) =>
             prev.map((d) =>
               d.id === doc.id
                 ? {
@@ -267,13 +310,14 @@ export const DocumentUploadProvider = ({ children }: { children: React.ReactNode
         }
       }
     },
-    []
+    [syncUploadingDocs]
   );
 
   return (
     <DocumentUploadContext.Provider
       value={{
         uploadingDocs,
+        primeUploadingDocuments,
         uploadDocuments,
         removeUploadingDoc,
         clearUploadingDocs,
