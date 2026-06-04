@@ -48,6 +48,8 @@ import {
   planLimitBlockMessage,
 } from '@homeapp/common/lib/plan-limit-slice';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { isPlaceholderPropertyAddress } from '@/lib/property-address-placeholder';
+import { mergePropertyDocuments } from '@/lib/merge-property-documents';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
@@ -267,14 +269,14 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
             if (
               completedDoc.propertyAddress &&
               completedDoc.propertyAddress !== 'N/A' &&
-              completedDoc.propertyAddress !== 'Processing...'
+              !isPlaceholderPropertyAddress(completedDoc.propertyAddress)
             ) {
               const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
               const propertyDoc = await getDoc(propertyRef);
               const propertyData = propertyDoc.data();
               const currentAddress = propertyData?.address;
 
-              if (currentAddress === 'Processing...') {
+              if (isPlaceholderPropertyAddress(currentAddress)) {
                 await updateDoc(propertyRef, {
                   address: completedDoc.propertyAddress,
                   name: completedDoc.propertyAddress,
@@ -523,7 +525,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
         {documentLimitMessage ? (
           <Text className="px-6 pb-2 text-sm text-destructive">{documentLimitMessage}</Text>
         ) : null}
-        {documentsLoading ? (
+        {documentsLoading && uploadingDocs.length === 0 ? (
           <CardContent>
             <ActivityIndicator />
           </CardContent>
@@ -531,12 +533,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
           <CardContent className="space-y-3 border-t border-border pt-4">
             {/* Merged Documents List - Optimistic UI with Overlay */}
             {(() => {
-              // Create a merged list - show ALL documents (uploading + existing)
-              // No name-based filtering to allow duplicate filenames
-              const mergedDocs = [
-                ...uploadingDocs.map((doc) => ({ ...doc, source: 'uploading' as const })),
-                ...documents.map((doc) => ({ ...doc, source: 'firestore' as const })),
-              ];
+              const mergedDocs = mergePropertyDocuments(uploadingDocs, documents);
 
               return mergedDocs.map((doc) => {
                 const isUploading = doc.source === 'uploading';

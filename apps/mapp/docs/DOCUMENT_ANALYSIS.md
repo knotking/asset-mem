@@ -11,6 +11,13 @@ When users upload documents to create a new property, the system automatically:
 3. **Extracts Key Information**: Identifies important entities like policy numbers, dates, amounts
 4. **Generates Summaries**: Creates concise one-sentence summaries of each document
 
+### Entry flow (aligned with webapp)
+
+- Home shows `HomeOnboardingChecklist` until the user has a property with at least one document.
+- **Add New Property** opens `AddPropertyModal` on the home screen (no navigation until upload succeeds; legacy `id=new-property` URLs redirect home and reopen the modal).
+- After upload, files are passed via `setPendingPropertyUpload` (not route params) and the app `replace`s to the real property id; `useDocumentAutoUpload` consumes the pending batch.
+- New properties use placeholder address `Pending address...` until analysis completes.
+
 ## Architecture
 
 ### Components

@@ -1,7 +1,7 @@
 import { Text } from '@/components/ui/text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { ScrollView, View, Pressable } from 'react-native';
+import { ScrollView, View, Pressable, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
@@ -61,32 +61,69 @@ import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/chec
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
+import PropertyListSkeleton from '@/components/PropertyListSkeleton';
+import { peekPendingPropertyUpload } from '@/lib/pending-property-upload';
+import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
+import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import { ONBOARDING_CHAT_OPEN_PARAM } from '@homeapp/common/lib/home-onboarding';
+
+function normalizeRouteParam(value: string | string[] | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export default function PropertyDetailsScreen() {
-  const {
-    id,
-    new: isNew,
-    files,
-    tab,
-    sessionId,
-  } = useLocalSearchParams<{
-    id: string;
-    new?: string;
-    files?: string;
-    tab?: string;
-    sessionId?: string;
+  const params = useLocalSearchParams<{
+    id: string | string[];
+    new?: string | string[];
+    files?: string | string[];
+    tab?: string | string[];
+    sessionId?: string | string[];
+    fromOnboardingChecklist?: string | string[];
   }>();
+  const propertyId = normalizeRouteParam(params.id);
+  const isNew = normalizeRouteParam(params.new);
+  const files = params.files;
+  const tab = normalizeRouteParam(params.tab);
+  const sessionId = normalizeRouteParam(params.sessionId);
+  const fromOnboardingChecklist = normalizeRouteParam(params.fromOnboardingChecklist);
+
   const { properties } = usePropertiesList();
   const { draftsByProperty, createPropertyDraftSession, sessionsByProperty } = useSession();
-  const { documents } = useProperty();
+  const { documents, property: firestoreProperty, isLoading: isPropertyLoading } = useProperty();
   const { user } = useAuth();
+  const { updatePreferences } = usePreferences();
   const { db, storage } = useFirebase();
   const router = useRouter();
+  const isNewPropertyFlow = propertyId === 'new-property';
+
+  React.useEffect(() => {
+    if (isNewPropertyFlow) {
+      router.replace({
+        pathname: '/home',
+        params: { openAddProperty: '1' },
+      });
+    }
+  }, [isNewPropertyFlow, router]);
 
   // Tab state
   const [activeTab, setActiveTab] = React.useState<PropertyScreenTab>(() =>
-    parsePropertyScreenTab(tab, isNew === 'true')
+    parsePropertyScreenTab(tab, isNew === 'true', propertyId)
   );
+
+  React.useEffect(() => {
+    if (fromOnboardingChecklist !== '1' || activeTab !== 'chat') {
+      return;
+    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      void updatePreferences({ onboardingChatOpened: true }).then(() => {
+        router.setParams({
+          [ONBOARDING_CHAT_OPEN_PARAM]: undefined,
+        } as Record<string, string | undefined>);
+      });
+    });
+    return () => task.cancel();
+  }, [fromOnboardingChecklist, activeTab, updatePreferences, router]);
 
   // Drawer state
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
@@ -129,7 +166,7 @@ export default function PropertyDetailsScreen() {
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Custom hooks
-  const { selectedSessionId, setSelectedSessionId } = useSessionSelection(id, sessionId);
+  const { selectedSessionId, setSelectedSessionId } = useSessionSelection(propertyId ?? '', sessionId);
   const { fileAttachment, uploadAsset, uploadDocument, removeAttachment, setFileAttachment } =
     useFileUpload(storage, user?.uid);
 
@@ -137,7 +174,7 @@ export default function PropertyDetailsScreen() {
   useDocumentAutoUpload({
     files,
     userId: user?.uid,
-    propertyId: id,
+    propertyId,
     db,
     storage,
     clearFilesParam: () => router.setParams({ files: undefined } as any),
@@ -352,7 +389,7 @@ export default function PropertyDetailsScreen() {
           })}`;
           await updateDoc(sessionRef, {
             name: newName,
-            propertyId: id,
+            propertyId: propertyId!,
           });
         }
 
@@ -398,7 +435,7 @@ export default function PropertyDetailsScreen() {
           ...(fileData?.gsURI ? [fileData.gsURI] : []),
         ];
 
-        const currentProperty = properties.find((p: any) => p.id === id);
+        const currentProperty = properties.find((p) => p.id === propertyId);
         const propertyAddress = currentProperty?.address;
 
         abortControllerRef.current = new AbortController();
@@ -417,7 +454,7 @@ export default function PropertyDetailsScreen() {
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress,
-          propertyId: id,
+          propertyId: propertyId!,
           primaryAgent,
           checkpointOptionalAgents:
             selectedCheckpointOptionalAgents.length > 0
@@ -463,7 +500,7 @@ export default function PropertyDetailsScreen() {
       fileAttachment,
       db,
       storage,
-      id,
+      propertyId,
       selectedDocuments,
       selectedCheckpoints,
       properties,
@@ -507,9 +544,42 @@ export default function PropertyDetailsScreen() {
     });
   };
 
-  const property = properties.find((p: any) => p.id === id);
+  if (isNewPropertyFlow) {
+    return null;
+  }
+
+  if (!propertyId) {
+    return null;
+  }
+
+  const pendingUpload = propertyId ? peekPendingPropertyUpload(propertyId) : null;
+  const listProperty = properties.find((p) => p.id === propertyId);
+  let property =
+    listProperty ??
+    (firestoreProperty?.id === propertyId ? firestoreProperty : null);
+
+  if (
+    !property &&
+    propertyId &&
+    (pendingUpload?.length || isNew === 'true' || isPropertyLoading)
+  ) {
+    property = {
+      id: propertyId,
+      name: firestoreProperty?.name ?? 'New Property',
+      address: firestoreProperty?.address ?? PENDING_PROPERTY_ADDRESS,
+      userId: user?.uid,
+    };
+  }
 
   if (!property) {
+    if (isNew === 'true' || isPropertyLoading) {
+      return (
+        <>
+          <Stack.Screen options={{ headerShown: false }} />
+          <PropertyListSkeleton />
+        </>
+      );
+    }
     return (
       <SafeAreaView className="flex-1 bg-light-background-alt" edges={['top', 'left', 'right']}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -526,7 +596,8 @@ export default function PropertyDetailsScreen() {
   return (
     <CheckpointProvider>
       <PropertyDetailsScreenContent
-        id={id}
+        id={propertyId}
+        property={property}
         properties={properties}
         documents={documents}
         selectedDocuments={selectedDocuments}
@@ -593,6 +664,7 @@ export default function PropertyDetailsScreen() {
 // Inner component that can use useCheckpoint hook
 function PropertyDetailsScreenContent({
   id,
+  property,
   properties,
   documents,
   selectedDocuments,
@@ -654,7 +726,6 @@ function PropertyDetailsScreenContent({
 }: any) {
   const { checkpoints } = useCheckpoint();
   const { savedProviders } = useSavedServiceProviders();
-  const property = properties.find((p: any) => p.id === id);
 
   // Smart checkpoint selection: Auto-select when checkpoint agent is active
   React.useEffect(() => {
@@ -697,20 +768,6 @@ function PropertyDetailsScreenContent({
     hasManuallyInteracted,
     setSelectedCheckpoints,
   ]);
-
-  if (!property) {
-    return (
-      <SafeAreaView className="flex-1 bg-light-background-alt" edges={['top', 'left', 'right']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-foreground">Property not found</Text>
-          <Button onPress={() => router.back()} variant="default" className="mt-4">
-            <Text className="text-primary-foreground">Go Back</Text>
-          </Button>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <PushDrawer

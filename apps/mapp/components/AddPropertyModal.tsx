@@ -15,6 +15,10 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
+import { DOCUMENT_QUOTA_USER_MESSAGE } from '@homeapp/common/lib/document-analysis-errors';
+import { isAtPlanLimit } from '@homeapp/common/lib/plan-limit-slice';
+import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
 import { createLogger } from '@/lib/logger';
 
 const propertyLog = createLogger('property');
@@ -29,6 +33,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
   const { user } = useAuth();
   const { db } = useFirebase();
   const { createPropertyDraftSession } = useSession();
+  const { documentsLimit, limitsLoading } = useLlmTokenUsage();
   const [selectedFiles, setSelectedFiles] = React.useState<any[]>([]);
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -164,6 +169,11 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       return;
     }
 
+    if (!limitsLoading && isAtPlanLimit(documentsLimit, selectedFiles.length)) {
+      setErrorMessage(DOCUMENT_QUOTA_USER_MESSAGE);
+      return;
+    }
+
     setIsCreating(true);
 
     try {
@@ -177,7 +187,7 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       const propertyData: any = {
         userId: user.uid,
         name: propertyName,
-        address: 'Processing...', // Will be updated from document analysis
+        address: PENDING_PROPERTY_ADDRESS,
         createdAt: serverTimestamp(),
       };
 
@@ -201,11 +211,10 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
         propertyLog.warn('draft.failed', { cause: err instanceof Error ? err.message : String(err) });
       });
 
-      // Close modal and navigate immediately with selected files
       const filesToUpload = [...selectedFiles];
       setSelectedFiles([]);
       setIsCreating(false);
-      onClose();
+      // Parent handles navigation on success — do not call onClose() (that pops back to home).
       onSuccess(propRef.id, filesToUpload);
     } catch (error) {
       propertyLog.error('create.failed', undefined, error);
@@ -397,16 +406,16 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
               onPress={handleClose}
               disabled={isCreating}
               variant="outline"
-              className="flex-1"
+              className="flex-1 items-center justify-center"
               size="lg">
-              <Text className="font-semibold text-foreground">Cancel</Text>
+              <Text className="w-full text-center font-semibold text-foreground">Cancel</Text>
             </Button>
             <Button
               onPress={handleUploadDocuments}
               disabled={selectedFiles.length === 0 || isCreating}
-              className="flex-1"
+              className="flex-1 items-center justify-center"
               size="lg">
-              <Text className="font-semibold text-primary-foreground">
+              <Text className="w-full text-center font-semibold text-primary-foreground">
                 {isCreating
                   ? 'Uploading...'
                   : `Upload ${selectedFiles.length} Document${selectedFiles.length !== 1 ? 's' : ''}`}

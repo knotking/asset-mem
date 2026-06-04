@@ -34,6 +34,7 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/hooks/use-assistant-loading-ui.ts` | `apps/common/src/hooks/use-assistant-loading-ui.ts` |
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
 | `src/lib/plan-limit-errors.ts` | `apps/common/src/lib/document-analysis-errors.ts` |
+| `src/lib/home-onboarding.ts` | `apps/common/src/lib/home-onboarding.ts` |
 
 ## Display resolution flow
 

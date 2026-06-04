@@ -21,7 +21,9 @@ import {
   getInFlightCheckpointProgressFromMessages,
 } from "@/lib/checkpoint-branch-progress";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { usePreferences } from "@/contexts/preferences-context";
+import { ONBOARDING_CHAT_OPEN_PARAM } from "@/lib/home-onboarding";
 import { db, storage } from "@/lib/firebase";
 import {
   ref,
@@ -71,8 +73,12 @@ export default function PropertyChatSessionPage() {
   const { user, authPending } = useRequireAuth();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const { updatePreferences } = usePreferences();
   const propertyId = params.propertyId as string;
   const sessionId = params.sessionId as string;
+  const fromOnboardingChecklist =
+    searchParams.get(ONBOARDING_CHAT_OPEN_PARAM) === "1";
 
   const {
     documents: contextDocuments,
@@ -97,6 +103,24 @@ export default function PropertyChatSessionPage() {
   const [searchLocation, setSearchLocation] = useState<SearchLocationInput | undefined>(
     undefined
   );
+
+  useEffect(() => {
+    if (!fromOnboardingChecklist || !propertyId || !sessionId) {
+      return;
+    }
+    const frameId = requestAnimationFrame(() => {
+      void updatePreferences({ onboardingChatOpened: true }).then(() => {
+        router.replace(`/home/properties/${propertyId}/chat/${sessionId}`);
+      });
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [
+    fromOnboardingChecklist,
+    propertyId,
+    sessionId,
+    updatePreferences,
+    router,
+  ]);
 
   // Fetch messages for the session
   useEffect(() => {
