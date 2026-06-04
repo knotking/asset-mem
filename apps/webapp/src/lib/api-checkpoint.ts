@@ -6,7 +6,10 @@ import { apiUrls } from "./utils";
 import { proxyFetchWithAuth } from "./correlation-id";
 import { getFirebaseIdTokenForProxy } from "./proxy-auth";
 import { createLogger, parseAgentErrorCode, truncateId } from "./logger";
-import { planLimitMessageForErrorCode } from "./plan-limit-errors";
+import {
+  compareCheckpointsFailureMessage,
+  planLimitMessageForErrorCode,
+} from "./plan-limit-errors";
 
 const log = createLogger("checkpoint");
 
@@ -86,7 +89,7 @@ export async function compareCheckpoints(input: CompareCheckpointsInput) {
     if (quotaMessage) {
       throw new Error(quotaMessage);
     }
-    throw new Error(`Failed to compare checkpoints: ${response.statusText}`);
+    throw new Error(compareCheckpointsFailureMessage(response.status, body));
   }
 
   log.info("comparison.complete");

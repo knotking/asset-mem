@@ -8,6 +8,10 @@ import type {
   SearchLocationInput,
 } from '@homeapp/common/types';
 import { createCorrelationId, proxyFetchWithAuth } from '@homeapp/common/lib/correlation-id';
+import {
+  compareCheckpointsFailureMessage,
+  planLimitMessageForErrorCode,
+} from '@homeapp/common/lib/document-analysis-errors';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger, parseAgentErrorCode, truncateId } from '@/lib/logger';
 
@@ -603,13 +607,12 @@ export async function compareCheckpoints(
     if (!response.ok) {
       const errorBody = await response.text();
       const code = parseAgentErrorCode(errorBody);
-      if (code === 'TOKEN_QUOTA_EXCEEDED') {
-        throw new Error(
-          'Monthly AI token limit reached. Upgrade your plan or wait until next month.'
-        );
+      const quotaMessage = planLimitMessageForErrorCode(code);
+      if (quotaMessage) {
+        throw new Error(quotaMessage);
       }
       throw new Error(
-        `Failed to compare checkpoints, status: ${response.status}, body: ${errorBody}`
+        compareCheckpointsFailureMessage(response.status, errorBody)
       );
     }
 
