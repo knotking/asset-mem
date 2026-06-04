@@ -29,7 +29,7 @@ Document: `config/mobileApp`
 | `iosStoreUrl` / `androidStoreUrl` | Override defaults from [app.config.js](../app.config.js) `extra` |
 | `message` | Optional body text on the native blocker |
 
-**Native version** = App Store / Play version (`Constants.nativeAppVersion`).  
+**Native version** = App Store / Play version (`Application.nativeApplicationVersion` via `getNativeAppVersion()`).  
 **OTA** = same `runtimeVersion` / `APP_VERSION` channel only.
 
 ## Behavior
@@ -44,13 +44,14 @@ Deploy Firestore rules after changing [firestore.rules](../../webapp/firestore.r
 
 | UI | When |
 |----|------|
-| **Version** `x.y.z` | Always visible at bottom of Settings |
-| **OTA** `xxxxxxxx · tap to copy` | After **5 quick taps** on Version |
+| **Version** `x.y.z` | Always visible at bottom of Settings (native `versionName` when available) |
+| **Build** `n` | After **5 quick taps** on Version (native `CFBundleVersion` / `versionCode`) |
+| **OTA** `xxxxxxxx · tap to copy` | Same gesture; tap OTA line to copy full update ID |
 | Developer simulate tools | Same gesture, **`__DEV__` only** (`npm run dev`) |
 
 The OTA line shows the running bundle’s `Updates.updateId` (staging and prod builds alike). If no OTA has been applied yet, it shows **OTA —**.
 
-**Privacy / UX:** OTA details **hide** when the app goes to background/inactive or is fully closed. Users must tap Version 5× again to reveal them.
+**Privacy / UX:** Build and OTA details **hide** when the app goes to background/inactive or is fully closed. Users must tap Version 5× again to reveal them.
 
 ## Dev mocks
 

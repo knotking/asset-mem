@@ -725,12 +725,12 @@ npx eas-cli credentials
 # 4. Verify runtime version matches
 # OTA updates only work with matching runtime versions
 
-# 5. In-app: tap Version 5× in Settings to reveal OTA <first 8 of updateId>; tap OTA to copy full ID
+# 5. In-app: tap Version 5× in Settings to reveal Build + OTA <first 8 of updateId>; tap OTA to copy full ID
 
 # 6. The app now prompts when a downloaded OTA is ready
 # Tap "Restart" on the in-app "Update ready" popup to apply immediately
 
-# Settings → tap Version 5× to reveal OTA ID (tap OTA to copy). __DEV__: same gesture also shows simulate tools
+# Settings → tap Version 5× to reveal Build + OTA ID (tap OTA to copy). __DEV__: same gesture also shows simulate tools
 
 # Force OTA / force native: Firestore config/mobileApp — see MOBILE_APP_UPDATE_POLICY.md
 ```
