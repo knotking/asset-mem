@@ -95,6 +95,33 @@ export function defaultCheckpointAnalysisFailureMessage(): string {
   return defaultPlanLimitFailureMessage('checkpoint');
 }
 
+/** User-facing message for failed compare-checkpoints HTTP responses. */
+export function compareCheckpointsFailureMessage(
+  status: number,
+  body: string,
+): string {
+  const quota = planLimitMessageForErrorCode(parseAgentErrorCode(body));
+  if (quota) return quota;
+  const lower = body.toLowerCase();
+  if (
+    status === 404 ||
+    lower.includes('not_found') ||
+    lower.includes('not found') ||
+    lower.includes('gemini-3.1')
+  ) {
+    return 'Checkpoint comparison is temporarily unavailable. Please try again shortly.';
+  }
+  if (status >= 500) {
+    return 'Checkpoint comparison could not be completed. Please try again later.';
+  }
+  return defaultPlanLimitFailureMessage('comparison');
+}
+
+export function isDocumentQuotaMessage(message: string | undefined): boolean {
+  if (!message?.trim()) return false;
+  return normalizePlanLimitErrorMessage(message.trim()) === DOCUMENT_QUOTA_USER_MESSAGE;
+}
+
 export function defaultPlanLimitFailureMessage(
   kind: 'document' | 'checkpoint' | 'comparison' | 'generic'
 ): string {
