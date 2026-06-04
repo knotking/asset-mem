@@ -13,10 +13,12 @@ export interface QueueExtractDocInfoInput {
 }
 
 export interface QueueExtractDocInfoResult {
+  ok: boolean;
   status: string;
   message?: string;
   docId: string;
   messageId?: string;
+  error?: string;
 }
 
 export async function queueExtractDocInfo(
@@ -49,12 +51,21 @@ export async function queueExtractDocInfo(
       parsePlanLimitErrorCode(errorBody),
     );
     if (quotaMessage) {
-      throw new Error(quotaMessage);
+      return {
+        ok: false,
+        status: "quota_exceeded",
+        docId: input.docId,
+        error: quotaMessage,
+      };
     }
     throw new Error(
       `Failed to queue document analysis, status: ${response.status}, body: ${errorBody}`,
     );
   }
 
-  return (await response.json()) as QueueExtractDocInfoResult;
+  const payload = (await response.json()) as Omit<
+    QueueExtractDocInfoResult,
+    "ok"
+  >;
+  return { ok: true, ...payload };
 }

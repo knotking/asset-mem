@@ -299,6 +299,11 @@ export function UploadDocumentsDialog({
               },
               idToken
             );
+            if (!queued.ok) {
+              throw new Error(
+                queued.error ?? "Document analysis was not accepted"
+              );
+            }
             if (queued.status !== "accepted") {
               throw new Error(queued.message || "Document analysis was not accepted");
             }
