@@ -35,7 +35,6 @@ import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
 import { CheckpointDetailModal } from './CheckpointDetailModal';
 import { CheckpointComparisonModal } from './CheckpointComparisonModal';
-import { CheckpointAnalysisModal } from './CheckpointAnalysisModal';
 import { CheckpointProcessingModal } from './CheckpointProcessingModal';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -672,7 +671,6 @@ export function PropertyCheckpointsTab({
   const [selectedForActions, setSelectedForActions] = React.useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
   const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
-  const [isAnalysisModalVisible, setIsAnalysisModalVisible] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   
   // Processing feedback state
@@ -846,12 +844,6 @@ export function PropertyCheckpointsTab({
     }
   };
   
-  const handleAnalyze = () => {
-    if (selectedForActions.length > 0) {
-      setIsAnalysisModalVisible(true);
-    }
-  };
-  
   const handleDeleteSelected = () => {
     if (selectedForActions.length > 0) {
       setIsDeleteConfirmOpen(true);
@@ -1001,28 +993,29 @@ export function PropertyCheckpointsTab({
                   <Text className="text-xs text-muted-foreground">Clear</Text>
                 </Button>
               </View>
+              <Text className="mt-1 text-xs text-muted-foreground">
+                {selectedForActions.length === 2
+                  ? 'Ready to compare'
+                  : 'Select 2 checkpoints to compare'}
+              </Text>
               <View className="mt-2 flex-row gap-2">
                 <Button
                   size="sm"
                   onPress={handleCompare}
                   disabled={selectedForActions.length !== 2}
                   className="flex-1">
-                  <Text className="text-xs text-primary-foreground">Compare (2)</Text>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onPress={handleAnalyze}
-                  disabled={selectedForActions.length === 0}
-                  className="flex-1">
-                  <Text className="text-xs text-foreground">Analyze</Text>
+                  <View className="flex-row items-center justify-center gap-1">
+                    <Icon as={ArrowRightLeft} size={14} className="text-primary-foreground" />
+                    <Text className="text-xs text-primary-foreground">Compare</Text>
+                  </View>
                 </Button>
                 <Button
                   size="sm"
                   variant="destructive"
                   onPress={handleDeleteSelected}
-                  disabled={selectedForActions.length === 0}>
-                  <Icon as={X} size={14} className="text-destructive-foreground" />
+                  disabled={selectedForActions.length === 0}
+                  className="flex-1">
+                  <Text className="text-xs text-destructive-foreground">Delete</Text>
                 </Button>
               </View>
             </View>
@@ -1036,27 +1029,19 @@ export function PropertyCheckpointsTab({
                 <View className="flex-1">
                   <View className="flex-row items-center justify-between mb-1">
                     <Text className="text-sm font-medium text-foreground">
-                      Compare & Analyze Checkpoints
+                      Compare checkpoints
                     </Text>
                     <Button
                       size="sm"
                       variant="outline"
                       onPress={() => setIsSelectionMode(true)}
                       className="h-7">
-                      <Text className="text-xs text-foreground">Select</Text>
+                      <Text className="text-xs text-foreground">Compare</Text>
                     </Button>
                   </View>
-                  <Text className="text-xs text-muted-foreground mb-2">
-                    Select checkpoints to compare changes or analyze trends. You can also long-press any checkpoint.
+                  <Text className="text-xs text-muted-foreground">
+                    Select two checkpoints to compare photos. Long-press a checkpoint to select.
                   </Text>
-                  <View className="flex-row gap-2 mt-1">
-                    <View className="flex-row items-center gap-1">
-                      <Icon as={ArrowRightLeft} size={12} className="text-primary" />
-                      <Text className="text-xs text-muted-foreground">Compare 2 checkpoints</Text>
-                    </View>
-                    <Text className="text-xs text-muted-foreground">•</Text>
-                    <Text className="text-xs text-muted-foreground">Analyze multiple</Text>
-                  </View>
                 </View>
               </View>
             </View>
@@ -1273,11 +1258,6 @@ export function PropertyCheckpointsTab({
         onClose={() => setIsComparisonModalVisible(false)}
       />
 
-      <CheckpointAnalysisModal
-        visible={isAnalysisModalVisible}
-        checkpoints={checkpoints.filter(c => selectedForActions.includes(c.id))}
-        onClose={() => setIsAnalysisModalVisible(false)}
-      />
     </>
   );
 }
