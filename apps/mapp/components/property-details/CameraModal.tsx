@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { X, SwitchCamera, Zap, ZapOff, Plus, Minus, Settings, Mic, MicOff } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAndroidImmersiveMode } from '@/hooks/useAndroidImmersiveMode';
 import { createLogger } from '@/lib/logger';
 
 const cameraLog = createLogger('camera');
@@ -52,6 +54,8 @@ const defaultSettings: CameraSettings = {
 };
 
 export function CameraModal({ visible, onClose, onVideoRecorded, settings = {} }: CameraModalProps) {
+  const insets = useSafeAreaInsets();
+  useAndroidImmersiveMode(Platform.OS === 'android' && visible);
   const mergedSettings = { ...defaultSettings, ...settings };
 
   const cameraRef = React.useRef<CameraView>(null);
@@ -209,7 +213,7 @@ export function CameraModal({ visible, onClose, onVideoRecorded, settings = {} }
           <View
             style={{
               position: 'absolute',
-              top: 50,
+              top: insets.top + 12,
               left: 0,
               right: 0,
               flexDirection: 'row',
@@ -458,7 +462,7 @@ export function CameraModal({ visible, onClose, onVideoRecorded, settings = {} }
           <View
             style={{
               position: 'absolute',
-              bottom: 40,
+              bottom: Math.max(insets.bottom, 16) + 24,
               left: 0,
               right: 0,
               alignItems: 'center',

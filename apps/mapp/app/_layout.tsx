@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
+import { Platform } from 'react-native';
 import { FirebaseProvider } from '@homeapp/common/contexts/firebase-context';
 import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth-context';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list-context';
@@ -20,6 +21,10 @@ import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvide
 import { ThemePreferenceSync } from '@/components/ThemePreferenceSync';
 import { AppUpdateGate } from '@/components/AppUpdateGate';
 import { createLogger } from '@/lib/logger';
+import {
+  ANDROID_IMMERSIVE_ENABLED,
+  useAndroidImmersiveMode,
+} from '@/hooks/useAndroidImmersiveMode';
 
 const routesLog = createLogger('routes');
 
@@ -30,10 +35,12 @@ export {
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  const androidImmersive = Platform.OS === 'android' && ANDROID_IMMERSIVE_ENABLED;
+  useAndroidImmersiveMode(androidImmersive);
 
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'dark']}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} hidden={androidImmersive} />
       <FirebaseProvider app={app} auth={auth} db={db} storage={storage}>
         <AuthProvider>
           <PreferencesProvider>

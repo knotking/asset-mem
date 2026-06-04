@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Image, Animated, TouchableOpacity, Linking, Text as RNText } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { Text } from '../components/ui/text';
@@ -142,6 +143,7 @@ export default function LandingPage() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
     <ScrollView
       style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
       contentContainerStyle={{ flexGrow: 1 }}
@@ -151,7 +153,7 @@ export default function LandingPage() {
         <View
           style={{
             backgroundColor: LANDING_COLORS.background,
-            paddingTop: 60,
+            paddingTop: 20,
             paddingBottom: 40,
             paddingHorizontal: 20,
           }}>
@@ -1305,5 +1307,6 @@ export default function LandingPage() {
         </View>
       </Animated.View>
     </ScrollView>
+    </SafeAreaView>
   );
 }

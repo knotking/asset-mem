@@ -145,7 +145,9 @@ export function CheckpointDetailModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+        <View
+          className="flex-row items-center justify-between border-b border-border px-4"
+          style={{ paddingTop: Math.max(insets.top, 12), paddingBottom: 12 }}>
           <View className="flex-1 flex-row items-center gap-2">
             <View className="flex-1">
               <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
@@ -161,7 +163,9 @@ export function CheckpointDetailModal({
           </Button>
         </View>
 
-        <ScrollView className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           {/* Media Carousel */}
           <View className="h-72 w-full bg-muted">
             {mediaList.length > 0 ? (

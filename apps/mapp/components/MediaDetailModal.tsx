@@ -84,7 +84,9 @@ export function MediaDetailModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+        <View
+          className="flex-row items-center justify-between border-b border-border px-4"
+          style={{ paddingTop: Math.max(insets.top, 12), paddingBottom: 12 }}>
           <View className="flex-1">
             <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
               {file.name || 'Media Attachment'}

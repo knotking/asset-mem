@@ -190,3 +190,8 @@ node_modules
 gcp/agents/homecare/web-log.txt
 .adk
 .cursor-control
+
+# Accidental Expo prebuild output when `expo run:*` is invoked from repo root (mapp lives under apps/mapp/)
+/android/
+/ios/
+/app.json
