@@ -5,6 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Activity } from 'lucide-react';
 import { usePropertyCheckpointMetrics } from '@/hooks/use-property-checkpoint-metrics';
+import {
+  formatMetricsHeadlineDisplay,
+  getMetricsHeadlineScore,
+  getMetricsStatus,
+  INSIGHTS_MISSING_SUMMARY_HINT,
+  INSIGHTS_MISSING_SUMMARY_MESSAGE,
+  resolveInsightsViewState,
+} from '@/lib/checkpoint-metrics-display';
 import { format } from 'date-fns';
 import type { PropertyCheckpointMetrics } from '@/lib/types';
 
@@ -16,19 +24,43 @@ function toDate(value: PropertyCheckpointMetrics['updatedAt']): Date {
 }
 
 export function MetricsDashboard() {
-  const { metrics, loading } = usePropertyCheckpointMetrics();
+  const { metrics, loading, summaryExists } = usePropertyCheckpointMetrics();
+  const viewState = resolveInsightsViewState({ loading, summaryExists });
 
-  if (loading) {
+  if (viewState === 'loading') {
     return <MetricsDashboardSkeleton />;
   }
 
-  if (!metrics || !metrics.overall) {
+  if (viewState === 'missing_summary') {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Property Health Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>{INSIGHTS_MISSING_SUMMARY_MESSAGE}</p>
+          <p className="text-xs">{INSIGHTS_MISSING_SUMMARY_HINT}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!metrics) {
     return null;
   }
 
-  const latestScore = metrics.overall.latest_score ?? 0;
+  const status = getMetricsStatus(metrics);
+  const headlineScore = getMetricsHeadlineScore(metrics);
+  const headlineDisplay = formatMetricsHeadlineDisplay(headlineScore);
   const trend = metrics.deterioration?.trend || 'unknown';
-  const deteriorationRate = metrics.deterioration?.rate_points_per_day ?? 0;
+  const deteriorationRate = metrics.deterioration?.rate_points_per_day ?? null;
+  const scored = metrics.window?.checkpoints_with_score ?? 0;
+  const considered = metrics.window?.checkpoints_considered ?? 0;
+  const showTrendBadge =
+    trend !== 'unknown' && scored >= 2 && metrics.deterioration?.rate_points_per_day != null;
 
   const getTrendIcon = () => {
     switch (trend) {
@@ -56,12 +88,25 @@ export function MetricsDashboard() {
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (display: string) => {
+    if (display === '—') return 'text-muted-foreground';
+    const score = Number(display);
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     if (score >= 40) return 'text-orange-600';
     return 'text-red-600';
   };
+
+  const statusSubcopy =
+    status === 'pending_analysis'
+      ? 'Scores appear after AI analysis finishes.'
+      : status === 'partial'
+        ? `Based on ${scored} of ${considered} recent checkpoints`
+        : status === 'ready'
+          ? 'Property health index (0–100), average of recent checkpoints'
+          : status === 'no_checkpoints'
+            ? 'Create a checkpoint to start tracking property health.'
+            : '';
 
   return (
     <Card className="mb-6">
@@ -69,34 +114,47 @@ export function MetricsDashboard() {
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
           Property Health Insights
+          {status === 'partial' && (
+            <Badge variant="secondary" className="text-xs font-normal">
+              Partial data
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Overall Condition */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Overall Condition</h3>
             <div className="flex items-end gap-3">
-              <div className={`text-5xl font-bold ${getScoreColor(latestScore)}`}>
-                {latestScore.toFixed(0)}
+              <div className={`text-5xl font-bold ${getScoreColor(headlineDisplay)}`}>
+                {headlineDisplay}
               </div>
-              <div className="mb-2">
-                <Badge variant="outline" className="flex items-center gap-1">
-                  {getTrendIcon()}
-                  <span className={getTrendColor()}>
-                    {trend.charAt(0).toUpperCase() + trend.slice(1)}
-                  </span>
-                </Badge>
-                {deteriorationRate !== 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {Math.abs(deteriorationRate).toFixed(2)} pts/day
-                  </p>
-                )}
-              </div>
+              {showTrendBadge && (
+                <div className="mb-2">
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    {getTrendIcon()}
+                    <span className={getTrendColor()}>
+                      {trend.charAt(0).toUpperCase() + trend.slice(1)}
+                    </span>
+                  </Badge>
+                  {deteriorationRate !== 0 && deteriorationRate != null && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {Math.abs(deteriorationRate).toFixed(2)} pts/day
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+            {statusSubcopy && (
+              <p className="mt-2 text-xs text-muted-foreground">{statusSubcopy}</p>
+            )}
+            {scored < 2 && status !== 'no_checkpoints' && status !== 'pending_analysis' && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add another scored checkpoint to see change rate.
+              </p>
+            )}
 
-            {/* Trend Chart (Mini) */}
-            {metrics.overall.trend && metrics.overall.trend.length > 0 && (
+            {metrics.overall?.trend && metrics.overall.trend.length > 0 && (
               <div className="mt-4">
                 <div className="flex h-16 items-end gap-1">
                   {metrics.overall.trend.slice(-12).map((point, idx) => {
@@ -112,13 +170,13 @@ export function MetricsDashboard() {
                   })}
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Trend over last {metrics.overall.trend.length} checkpoints
+                  Trend over last {metrics.overall.trend.length} checkpoint
+                  {metrics.overall.trend.length !== 1 ? 's' : ''}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Issues Breakdown */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Issues by Severity</h3>
             {metrics.issues ? (
@@ -132,7 +190,6 @@ export function MetricsDashboard() {
                     {metrics.issues.total_by_severity.critical}
                   </Badge>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-orange-600" />
@@ -142,7 +199,6 @@ export function MetricsDashboard() {
                     {metrics.issues.total_by_severity.major}
                   </Badge>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -152,7 +208,6 @@ export function MetricsDashboard() {
                     {metrics.issues.total_by_severity.moderate}
                   </Badge>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-blue-600" />
@@ -162,10 +217,10 @@ export function MetricsDashboard() {
                     {metrics.issues.total_by_severity.minor}
                   </Badge>
                 </div>
-
                 <div className="mt-4 rounded-lg border bg-muted p-3">
-                  <p className="text-sm font-semibold">
-                    Total Issues: {metrics.issues.total}
+                  <p className="text-sm font-semibold">Total detections: {metrics.issues.total}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Across recent checkpoints (may include repeat findings).
                   </p>
                 </div>
               </div>
@@ -175,16 +230,10 @@ export function MetricsDashboard() {
           </div>
         </div>
 
-        {/* Metadata */}
         {metrics.updatedAt && (
-          <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-            Last updated: {format(
-              toDate(metrics.updatedAt),
-              'PPp'
-            )}
-            {metrics.window && (
-              <> · Based on {metrics.window.checkpoints_considered} checkpoints</>
-            )}
+          <div className="mt-4 border-t pt-4 text-xs text-muted-foreground">
+            Last updated: {format(toDate(metrics.updatedAt), 'PPp')}
+            {considered > 0 && <> · Based on {considered} checkpoints</>}
           </div>
         )}
       </CardContent>
@@ -217,4 +266,3 @@ function MetricsDashboardSkeleton() {
     </Card>
   );
 }
-

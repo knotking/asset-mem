@@ -6,6 +6,11 @@ from firebase_admin import firestore
 
 logger = logging.getLogger(__name__)
 
+METRICS_VERSION = 2
+MAX_CHECKPOINTS = 60
+TREND_POINTS = 12
+ISSUES_RECENT_MAX = 50
+
 
 def _safe_float(v: Any) -> Optional[float]:
     try:
@@ -24,8 +29,6 @@ def _extract_overall_condition(ai_analysis: Dict[str, Any]) -> Optional[float]:
     if overall is not None:
         return overall
 
-    # Fallback: some analyses may not provide an explicit "overall".
-    # Derive it as the mean of numeric component scores when available.
     vals: List[float] = []
     if isinstance(condition_scores, dict):
         for k, v in condition_scores.items():
@@ -40,7 +43,6 @@ def _extract_overall_condition(ai_analysis: Dict[str, Any]) -> Optional[float]:
 
 
 def _extract_issues_by_severity(ai_analysis: Dict[str, Any]) -> Dict[str, int]:
-    # Prefer worker-computed `issues_by_severity`
     issues_by_sev = ai_analysis.get("issues_by_severity")
     if isinstance(issues_by_sev, dict):
         out = {"critical": 0, "major": 0, "moderate": 0, "minor": 0}
@@ -51,7 +53,6 @@ def _extract_issues_by_severity(ai_analysis: Dict[str, Any]) -> Dict[str, int]:
                 out[k] = 0
         return out
 
-    # Fallback: infer from `issues` list
     issues = ai_analysis.get("issues") or []
     out = {"critical": 0, "major": 0, "moderate": 0, "minor": 0}
     for issue in issues:
@@ -65,15 +66,76 @@ def _extract_issues_by_severity(ai_analysis: Dict[str, Any]) -> Dict[str, int]:
     return out
 
 
+def _checkpoint_datetime(created_at: Any) -> Optional[datetime]:
+    if hasattr(created_at, "to_datetime"):
+        dt = created_at.to_datetime()
+    elif hasattr(created_at, "seconds"):
+        dt = datetime.fromtimestamp(created_at.seconds, tz=timezone.utc)
+    elif isinstance(created_at, datetime):
+        dt = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    else:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _issue_rows_from_checkpoint(c: Dict[str, Any]) -> List[Dict[str, Any]]:
+    ai = c.get("aiAnalysis") or {}
+    issues = ai.get("issues") or []
+    if not issues:
+        return []
+    created_at = _checkpoint_datetime(c.get("createdAt"))
+    created_iso = created_at.isoformat() if created_at else datetime.now(timezone.utc).isoformat()
+    name = c.get("name") or "Untitled Checkpoint"
+    rows: List[Dict[str, Any]] = []
+    for issue in issues:
+        if isinstance(issue, str):
+            rows.append(
+                {
+                    "severity": "minor",
+                    "description": issue,
+                    "checkpointId": c.get("id", ""),
+                    "checkpointName": name,
+                    "createdAt": created_iso,
+                }
+            )
+        elif isinstance(issue, dict):
+            sev = (issue.get("severity") or "minor").lower()
+            if sev not in ("critical", "major", "moderate", "minor"):
+                sev = "minor"
+            desc = str(
+                issue.get("description") or issue.get("text") or issue.get("title") or "Issue detected"
+            )
+            rows.append(
+                {
+                    "severity": sev,
+                    "description": desc,
+                    "checkpointId": c.get("id", ""),
+                    "checkpointName": name,
+                    "createdAt": created_iso,
+                }
+            )
+    return rows
+
+
+def _compute_status(considered: int, with_score: int) -> str:
+    if considered == 0:
+        return "no_checkpoints"
+    if with_score == 0:
+        return "pending_analysis"
+    if with_score < considered:
+        return "partial"
+    return "ready"
+
+
 def compute_property_metrics_from_checkpoints(
     checkpoint_docs: List[Dict[str, Any]],
-    trend_points: int = 12,
+    trend_points: int = TREND_POINTS,
 ) -> Dict[str, Any]:
     """
-    Compute a compact metrics summary suitable for mobile consumption.
-    Expects checkpoint_docs as a list of checkpoint dicts (including `createdAt` and `aiAnalysis`).
+    Compute v2 property metrics summary from checkpoint documents.
     """
-    # Sort ascending by createdAt where possible (for trends)
     def _sort_key(c: Dict[str, Any]) -> Tuple[int, str]:
         created_at = c.get("createdAt")
         if hasattr(created_at, "seconds"):
@@ -84,12 +146,7 @@ def compute_property_metrics_from_checkpoints(
     completed = [c for c in ordered if (c.get("analysisStatus") == "completed" or c.get("aiAnalysis"))]
 
     issues_total = {"critical": 0, "major": 0, "moderate": 0, "minor": 0}
-    overall_trend: List[Dict[str, Any]] = []
-
-    last_overall: Optional[float] = None
-    last_overall_time: Optional[datetime] = None
-    prev_overall: Optional[float] = None
-    prev_overall_time: Optional[datetime] = None
+    scored_checkpoints: List[Tuple[Dict[str, Any], float, datetime]] = []
 
     for c in completed:
         ai = c.get("aiAnalysis") or {}
@@ -98,40 +155,45 @@ def compute_property_metrics_from_checkpoints(
             issues_total[k] += int(v or 0)
 
         overall = _extract_overall_condition(ai)
-        created_at = c.get("createdAt")
-        dt: Optional[datetime] = None
-        if hasattr(created_at, "to_datetime"):
-            dt = created_at.to_datetime()
-        elif hasattr(created_at, "seconds"):
-            dt = datetime.fromtimestamp(created_at.seconds, tz=timezone.utc)
-        elif isinstance(created_at, datetime):
-            dt = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
-
+        dt = _checkpoint_datetime(c.get("createdAt"))
         if overall is not None and dt is not None:
-            overall_trend.append(
-                {
-                    "t": dt.isoformat(),
-                    "score": overall,
-                }
-            )
-            # Track last two points for deterioration rate
-            prev_overall, prev_overall_time = last_overall, last_overall_time
-            last_overall, last_overall_time = overall, dt
+            scored_checkpoints.append((c, overall, dt))
 
+    checkpoints_with_score = len(scored_checkpoints)
+    checkpoints_considered = len(completed)
+    status = _compute_status(checkpoints_considered, checkpoints_with_score)
+
+    overall_trend: List[Dict[str, Any]] = []
+    for c, score, dt in scored_checkpoints:
+        overall_trend.append(
+            {
+                "t": dt.isoformat(),
+                "score": score,
+                "checkpointId": c.get("id", ""),
+            }
+        )
     overall_trend = overall_trend[-trend_points:]
+
+    headline_value: Optional[float] = None
+    headline_source: Optional[str] = None
+    latest_checkpoint_id: Optional[str] = None
+    latest_checkpoint_score: Optional[float] = None
+
+    if scored_checkpoints:
+        headline_value = sum(s for _, s, _ in scored_checkpoints) / float(len(scored_checkpoints))
+        headline_source = "weighted_mean"
+        last_c, last_score, _ = scored_checkpoints[-1]
+        latest_checkpoint_id = last_c.get("id")
+        latest_checkpoint_score = last_score
 
     deterioration_rate = None
     deterioration_trend = "unknown"
-    if (
-        prev_overall is not None
-        and last_overall is not None
-        and prev_overall_time is not None
-        and last_overall_time is not None
-    ):
-        days = (last_overall_time - prev_overall_time).total_seconds() / 86400.0
+    if len(scored_checkpoints) >= 2:
+        prev_c, prev_score, prev_dt = scored_checkpoints[-2]
+        last_c, last_score, last_dt = scored_checkpoints[-1]
+        days = (last_dt - prev_dt).total_seconds() / 86400.0
         if days > 0:
-            # Positive means deterioration (score decreased)
-            deterioration_rate = (prev_overall - last_overall) / days
+            deterioration_rate = (prev_score - last_score) / days
             if deterioration_rate > 0.05:
                 deterioration_trend = "deteriorating"
             elif deterioration_rate < -0.05:
@@ -139,20 +201,41 @@ def compute_property_metrics_from_checkpoints(
             else:
                 deterioration_trend = "stable"
 
+    issues_recent: List[Dict[str, Any]] = []
+    for c in reversed(completed):
+        issues_recent.extend(_issue_rows_from_checkpoint(c))
+    issues_recent.sort(key=lambda r: r.get("createdAt", ""), reverse=True)
+    issues_recent = issues_recent[:ISSUES_RECENT_MAX]
+
+    headline = None
+    if headline_value is not None:
+        headline = {
+            "value": headline_value,
+            "source": headline_source,
+            "latest_checkpoint_id": latest_checkpoint_id,
+            "latest_checkpoint_score": latest_checkpoint_score,
+        }
+
     return {
-        "version": 1,
+        "version": METRICS_VERSION,
         "updatedAt": firestore.SERVER_TIMESTAMP,
+        "status": status,
         "window": {
-            "checkpoints_considered": len(completed),
+            "max_checkpoints": MAX_CHECKPOINTS,
+            "checkpoints_considered": checkpoints_considered,
+            "checkpoints_with_score": checkpoints_with_score,
             "trend_points": len(overall_trend),
         },
         "overall": {
-            "latest_score": last_overall,
+            "headline": headline,
             "trend": overall_trend,
+            # v1 compat for one release
+            "latest_score": latest_checkpoint_score,
         },
         "issues": {
             "total_by_severity": issues_total,
             "total": sum(issues_total.values()),
+            "recent": issues_recent,
         },
         "deterioration": {
             "rate_points_per_day": deterioration_rate,
@@ -165,11 +248,10 @@ def aggregate_property_metrics(
     db: firestore.Client,
     user_id: str,
     property_id: str,
-    limit_checkpoints: int = 60,
+    limit_checkpoints: int = MAX_CHECKPOINTS,
 ) -> Dict[str, Any]:
     """
     Reads recent checkpoints for a property, computes metrics, and writes a summary doc.
-    Returns the metrics payload that was written.
     """
     checkpoints_ref = (
         db.collection("users")
@@ -200,7 +282,5 @@ def aggregate_property_metrics(
         .collection("metrics")
         .document("summary")
     )
-    metrics_ref.set(metrics, merge=True)
+    metrics_ref.set(metrics)
     return metrics
-
-

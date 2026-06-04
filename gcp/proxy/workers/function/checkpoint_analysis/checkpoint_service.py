@@ -115,8 +115,17 @@ def analyze_checkpoint_image(
             },
             "condition_scores": {
                 "type": "object",
-                "description": "Condition scores (0-100) for various components. 100 = perfect, 0 = completely damaged. Include all visible/apparent components.",
-                "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100}
+                "description": "Condition scores (0-100). overall is required; add component scores when visible.",
+                "properties": {
+                    "overall": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "description": "Overall visible condition (100 = perfect, 0 = failed)",
+                    }
+                },
+                "required": ["overall"],
+                "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100},
             },
             "damage_scores": {
                 "type": "object",
@@ -151,28 +160,32 @@ def analyze_checkpoint_image(
 
     contents = [prompt, media_part]
 
-    logger.info(f"Sending checkpoint {media_type} to Gemini for analysis...")
-    response = client.models.generate_content(
-        model="gemini-3.1-flash-lite",
-        contents=contents,
-        config={
-            "temperature": 0.4,
-            "top_p": 0.95,
-            "max_output_tokens": 2048,
-            "response_mime_type": "application/json",
-            "response_schema": response_schema
-        }
-    )
-    if usage_sink is not None:
-        accumulate_google_genai_generate_response(usage_sink, response)
+    def _request_analysis(temperature: float):
+        logger.info(f"Sending checkpoint {media_type} to Gemini for analysis (temp={temperature})...")
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=contents,
+            config={
+                "temperature": temperature,
+                "top_p": 0.95,
+                "max_output_tokens": 2048,
+                "response_mime_type": "application/json",
+                "response_schema": response_schema,
+            },
+        )
+        if usage_sink is not None:
+            accumulate_google_genai_generate_response(usage_sink, response)
+        return json.loads(response.text)
 
-    result_json = json.loads(response.text)
+    result_json = _request_analysis(0.4)
     logger.info("Checkpoint analysis complete")
 
-    # Validate that required structured fields are present (schema should enforce this, but validate anyway)
-    if "condition_scores" not in result_json or not result_json["condition_scores"]:
-        logger.warning("Gemini did not return condition_scores, using empty dict")
-        result_json["condition_scores"] = {}
+    if "condition_scores" not in result_json or not result_json.get("condition_scores"):
+        logger.warning("Gemini did not return condition_scores; retrying once")
+        result_json = _request_analysis(0.2)
+        if "condition_scores" not in result_json or not result_json.get("condition_scores"):
+            logger.warning("Gemini still missing condition_scores after retry, using empty dict")
+            result_json["condition_scores"] = {}
     
     if "damage_scores" not in result_json or not result_json["damage_scores"]:
         logger.warning("Gemini did not return damage_scores, using empty dict")
@@ -200,12 +213,20 @@ def analyze_checkpoint_image(
             for issue in issues_list
         ] if issues_list else []
 
+    from condition_scores import normalize_condition_scores
+
+    condition_scores, score_status = normalize_condition_scores(
+        result_json.get("condition_scores", {}),
+        issues=issues,
+    )
+
     result = {
         "summary": result_json["summary"],
         "conditions": result_json["conditions"],
         "detectedItems": result_json["detectedItems"],
         "issues": issues,
-        "condition_scores": result_json.get("condition_scores", {}),
+        "condition_scores": condition_scores,
+        "score_status": score_status,
         "damage_scores": result_json.get("damage_scores", {}),
         "cost_estimates": result_json.get("cost_estimates", {
             "repairs_immediate": 0,

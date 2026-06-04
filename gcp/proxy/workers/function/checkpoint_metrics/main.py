@@ -80,7 +80,16 @@ def pubsub_checkpoint_metrics_aggregate(request, context):
             metrics = aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
             duration_ms = (time.time() - start) * 1000
             logger.info(
-                f"Aggregated metrics for user={user_id} property={property_id} (checkpoint={checkpoint_id}) in {duration_ms:.1f}ms"
+                "metrics.summary.write user=%s property=%s checkpoint=%s status=%s "
+                "considered=%s with_score=%s duration_ms=%.1f reason=%s",
+                user_id,
+                property_id,
+                checkpoint_id,
+                metrics.get("status"),
+                metrics.get("window", {}).get("checkpoints_considered"),
+                metrics.get("window", {}).get("checkpoints_with_score"),
+                duration_ms,
+                reason,
             )
             _publish_result(
                 {

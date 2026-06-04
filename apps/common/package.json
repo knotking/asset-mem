@@ -41,7 +41,8 @@
     "./lib/message-content-parts": "./src/lib/message-content-parts.ts",
     "./lib/shared-chat": "./src/lib/shared-chat.ts",
     "./lib/document-analysis-errors": "./src/lib/document-analysis-errors.ts",
-    "./lib/plan-limit-slice": "./src/lib/plan-limit-slice.ts"
+    "./lib/plan-limit-slice": "./src/lib/plan-limit-slice.ts",
+    "./lib/checkpoint-metrics-display": "./src/lib/checkpoint-metrics-display.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

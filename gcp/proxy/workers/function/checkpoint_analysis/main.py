@@ -209,8 +209,9 @@ def pubsub_checkpoint_analysis(request, context):
                     existing_location = existing.get("location")
                     existing_name = existing.get("name")
             
-                # Extract condition and damage scores from analysis result
+                # Extract condition and damage scores from analysis result (normalized in checkpoint_service)
                 condition_scores = analysis_result.get("condition_scores", {})
+                score_status = analysis_result.get("score_status", "unavailable")
                 damage_scores = analysis_result.get("damage_scores", {})
                 cost_estimates = analysis_result.get("cost_estimates", {})
                 issues = analysis_result.get("issues", [])
@@ -236,6 +237,7 @@ def pubsub_checkpoint_analysis(request, context):
                         "detectedItems": analysis_result["detectedItems"],
                         "issues": issues_for_firestore,  # Now includes severity
                         "condition_scores": condition_scores,
+                        "score_status": score_status,
                         "damage_scores": damage_scores,
                         "cost_estimates": cost_estimates,
                         "issues_by_severity": issues_by_severity,
@@ -469,16 +471,12 @@ def pubsub_checkpoint_analysis(request, context):
                                     }
                                 }
             
+                                comparison_update["visualDiff"]["summary"] = comparison_result.get(
+                                    "summary", ""
+                                )
+                                comparison_update["visualDiff"]["matchReason"] = "same_location"
                                 checkpoint_ref.update(comparison_update)
                                 logger.info(f"Successfully updated checkpoint {checkpoint_id} with comparison results")
-            
-                                # Trigger async metrics aggregation after comparison as well (deterioration trends, etc.)
-                                _publish_metrics_aggregate_event(
-                                    user_id=user_id,
-                                    property_id=property_id,
-                                    checkpoint_id=checkpoint_id,
-                                    reason="checkpoint.comparison.completed",
-                                )
             
                                 # Log comparison completion
                                 checkpoint.log_comparison_completed(
@@ -643,6 +641,12 @@ def pubsub_checkpoint_analysis(request, context):
                         "analysisStatus": "failed"
                     })
                     logger.info(f"Updated checkpoint {checkpoint_id} status to failed")
+                    _publish_metrics_aggregate_event(
+                        user_id=user_id,
+                        property_id=property_id,
+                        checkpoint_id=checkpoint_id,
+                        reason="checkpoint.analysis.failed",
+                    )
                 except Exception as update_error:
                     logger.error(f"Failed to update checkpoint status to failed: {update_error}", exc_info=True)
             

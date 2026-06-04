@@ -409,11 +409,13 @@ export type CheckpointAnalysis = {
 export type VisualDiffAnalysis = {
   id: string;
   status: "processing" | "completed" | "failed";
-  comparedWithCheckpointId?: string; // ID of the checkpoint this was compared with
-  semanticChanges: string[]; // Gemini-generated descriptions
-  heatmapUrl?: string; // URL to the generated overlay image
-  regions: ChangeRegion[]; // Bounding boxes from Gemini
-  similarityScore: number; // 0-1 score
+  comparedWithCheckpointId?: string;
+  summary?: string;
+  semanticChanges: string[];
+  heatmapUrl?: string;
+  regions: ChangeRegion[];
+  similarityScore: number;
+  matchReason?: "same_location" | "same_detected_asset" | "manual";
   completedAt: Timestamp;
 };
 
@@ -457,17 +459,40 @@ export type UserPreferences = {
   updatedAt?: Timestamp;
 };
 
-// Property-level checkpoint analytics (written by backend aggregator for mobile consumption)
+export type PropertyCheckpointMetricsStatus =
+  | "no_checkpoints"
+  | "pending_analysis"
+  | "partial"
+  | "ready"
+  | "stale";
+
+export type PropertyCheckpointIssueRow = {
+  severity: "critical" | "major" | "moderate" | "minor";
+  description: string;
+  checkpointId: string;
+  checkpointName: string;
+  createdAt: string;
+};
+
 export type PropertyCheckpointMetrics = {
   version: number;
   updatedAt?: Timestamp;
+  status?: PropertyCheckpointMetricsStatus;
   window?: {
+    max_checkpoints?: number;
     checkpoints_considered: number;
+    checkpoints_with_score?: number;
     trend_points: number;
   };
   overall?: {
-    latest_score: number | null;
-    trend: Array<{ t: string; score: number }>;
+    headline?: {
+      value: number | null;
+      source: "weighted_mean" | "latest_checkpoint" | null;
+      latest_checkpoint_id: string | null;
+      latest_checkpoint_score: number | null;
+    } | null;
+    latest_score?: number | null;
+    trend: Array<{ t: string; score: number; checkpointId?: string }>;
   };
   issues?: {
     total_by_severity: {
@@ -477,6 +502,7 @@ export type PropertyCheckpointMetrics = {
       minor: number;
     };
     total: number;
+    recent?: PropertyCheckpointIssueRow[];
   };
   deterioration?: {
     rate_points_per_day: number | null;

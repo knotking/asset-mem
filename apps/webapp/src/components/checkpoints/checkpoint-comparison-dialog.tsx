@@ -20,6 +20,8 @@ import Image from 'next/image';
 import { compareCheckpoints } from '@/lib/api-checkpoint';
 import { getPlanLimitFailureMessage, defaultPlanLimitFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
+import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { Timestamp } from 'firebase/firestore';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -43,6 +45,7 @@ export function CheckpointComparisonDialog({
   checkpoint1,
   checkpoint2,
 }: CheckpointComparisonDialogProps) {
+  const { updateCheckpoint } = useCheckpoint();
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<VisualDiffAnalysis | null>(null);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
@@ -54,12 +57,18 @@ export function CheckpointComparisonDialog({
     ? [checkpoint1, checkpoint2]
     : [checkpoint2, checkpoint1];
 
-  // Check if there's already a visual diff
   useEffect(() => {
-    if (afterCheckpoint.visualDiff) {
-      setComparisonResult(afterCheckpoint.visualDiff);
+    if (!open) {
+      setComparisonError(null);
+      return;
     }
-  }, [afterCheckpoint]);
+    const diff = afterCheckpoint.visualDiff;
+    if (diff?.comparedWithCheckpointId === beforeCheckpoint.id) {
+      setComparisonResult(diff);
+      return;
+    }
+    setComparisonResult(null);
+  }, [open, afterCheckpoint.id, beforeCheckpoint.id, afterCheckpoint.visualDiff]);
 
   const handleCompare = async () => {
     const image1 = beforeCheckpoint.media?.[0];
@@ -79,15 +88,36 @@ export function CheckpointComparisonDialog({
     setIsComparing(true);
     setComparisonError(null);
     try {
-      const result = await compareCheckpoints({
+      const result = (await compareCheckpoints({
         image1Url: image1.gsURI,
         image2Url: image2.gsURI,
         contentType1: image1.contentType,
         contentType2: image2.contentType,
         location: afterCheckpoint.location,
-      });
+      })) as VisualDiffAnalysis & { summary?: string };
 
-      setComparisonResult(result);
+      const visualDiff: VisualDiffAnalysis = {
+        id: `diff_${Date.now()}`,
+        status: 'completed',
+        comparedWithCheckpointId: beforeCheckpoint.id,
+        summary: result.summary ?? '',
+        semanticChanges: result.semanticChanges ?? [],
+        regions: (result.regions ?? []).map((r: VisualDiffAnalysis['regions'][0], i: number) => ({
+          id: `region_${i}`,
+          bbox: r.bbox ?? { x: 0, y: 0, width: 0, height: 0 },
+          changeType: r.changeType as 'added' | 'removed' | 'modified',
+          severity: r.severity as 'minor' | 'moderate' | 'major' | 'critical',
+          confidence: r.confidence ?? 0.5,
+          description: r.description ?? '',
+          changePercentage: 0,
+        })),
+        similarityScore: result.similarityScore ?? 0,
+        matchReason: 'manual',
+        completedAt: Timestamp.now(),
+      };
+
+      await updateCheckpoint(afterCheckpoint.id, { visualDiff });
+      setComparisonResult(visualDiff);
     } catch (error) {
       checkpointLog.error('comparison.failed', undefined, error);
       const message = getPlanLimitFailureMessage(error);

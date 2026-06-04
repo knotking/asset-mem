@@ -89,6 +89,7 @@ webapp → @homeapp/common → Firebase/Firestore
     - Overall condition score with trend
     - Issues breakdown by severity
     - Mini trend chart
+    - **V2 spec (planned):** [PROPERTY_HEALTH_INSIGHTS_V2.md](./PROPERTY_HEALTH_INSIGHTS_V2.md) — headline score, UI states, single issue source
 
 11. **CheckpointSettings** (`components/settings/checkpoint-settings.tsx`)
     - Configure automatic comparison preferences

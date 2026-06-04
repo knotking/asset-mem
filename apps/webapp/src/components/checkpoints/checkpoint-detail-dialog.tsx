@@ -31,17 +31,20 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useToast } from '@/hooks/use-toast';
 import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
+import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
 
 const checkpointLog = createLogger('checkpoint');
 
 export function CheckpointDetailDialog() {
-  const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint, updateCheckpoint } = useCheckpoint();
+  const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint, updateCheckpoint, checkpoints } =
+    useCheckpoint();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Reset edit mode when dialog closes
   useEffect(() => {
@@ -70,6 +73,9 @@ export function CheckpointDetailDialog() {
     ? getCheckpointAnalysisFailureMessage(checkpoint)
     : '';
   const isAnalyzed = checkpoint.analysisStatus === 'completed' && hasAnalysis;
+  const comparisonBefore = checkpoint.visualDiff?.comparedWithCheckpointId
+    ? checkpoints.find((c) => c.id === checkpoint.visualDiff?.comparedWithCheckpointId)
+    : undefined;
 
   const handleStartEdit = () => {
     setEditedName(checkpoint.name);
@@ -356,11 +362,18 @@ export function CheckpointDetailDialog() {
                 <div className="flex-1">
                   <p className="font-medium">Comparison Available</p>
                   <p className="text-sm text-muted-foreground">
-                    This checkpoint has been compared with a previous one
+                    {comparisonBefore
+                      ? `Compared with ${comparisonBefore.name}`
+                      : 'This checkpoint has been compared with a previous one'}
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  View Comparison
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!comparisonBefore}
+                  onClick={() => setIsComparisonOpen(true)}
+                >
+                  View comparison
                 </Button>
               </div>
             </>
@@ -409,6 +422,15 @@ export function CheckpointDetailDialog() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {isComparisonOpen && comparisonBefore && (
+      <CheckpointComparisonDialog
+        open={isComparisonOpen}
+        onOpenChange={setIsComparisonOpen}
+        checkpoint1={comparisonBefore}
+        checkpoint2={checkpoint}
+      />
+    )}
     </>
   );
 }
