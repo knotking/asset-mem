@@ -15,8 +15,8 @@ import {
   DollarSign,
   Clock,
   ArrowRight,
-  Home,
 } from 'lucide-react-native';
+import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 
 // Dark theme - landing page only (matching webapp)
 const LANDING_COLORS = {
@@ -158,17 +158,8 @@ export default function LandingPage() {
           <View style={{ alignItems: 'center' }}>
             {/* Logo/Brand */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  backgroundColor: LANDING_COLORS.primary,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: 12,
-                }}>
-                <Icon as={Home} size={20} style={{ color: LANDING_COLORS.white }} />
+              <View style={{ marginRight: 12 }}>
+                <AssetMemBrandIcon variant="mark" size="md" markTheme="landing" />
               </View>
               <Text style={{ fontSize: 24, fontWeight: '300', color: LANDING_COLORS.foreground }}>
                 AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
@@ -1295,17 +1286,8 @@ export default function LandingPage() {
           }}>
           <View style={{ alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  backgroundColor: LANDING_COLORS.primary,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: 10,
-                }}>
-                <Icon as={Home} size={16} style={{ color: LANDING_COLORS.white }} />
+              <View style={{ marginRight: 10 }}>
+                <AssetMemBrandIcon variant="mark" size="sm" markTheme="landing" />
               </View>
               <Text style={{ fontSize: 18, fontWeight: '300', color: LANDING_COLORS.foreground }}>
                 AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>

@@ -8,7 +8,7 @@ import type { Message } from '@/lib/types';
 import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
 import { AnimatePresence } from 'framer-motion';
-import { Bot } from 'lucide-react';
+import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 
 type Props = {
   messages: Message[];
@@ -71,7 +71,7 @@ export function ChatList({
       {isEmpty ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
           <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80">
-            <Bot className="h-12 w-12 text-muted-foreground mb-4" />
+            <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">Start a Conversation</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
               Ask questions about this property&apos;s documents, services, and history

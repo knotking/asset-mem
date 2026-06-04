@@ -5,7 +5,7 @@ import React, { useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Bell, Settings, LogOut, LifeBuoy, Loader2 } from 'lucide-react';
+import { Bell, Settings, LogOut, LifeBuoy, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import {
@@ -20,6 +20,7 @@ import { Skeleton } from '../ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
 import { TokenUsageToolbar } from './token-usage-toolbar';
 import { SupportDialog } from '@/components/support/support-dialog';
+import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 
 export function Header() {
   const { user, loading, signingOut, logout } = useAuth();
@@ -42,7 +43,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 flex h-14 min-h-14 items-center justify-between gap-3 border-b bg-background px-3 sm:gap-4 sm:px-6">
       <div className="flex min-w-0 shrink items-center gap-2">
-        <Bot className="h-7 w-7 shrink-0 text-primary" />
+        <AssetMemBrandIcon size="sm" />
         <h1 className="truncate text-lg font-bold text-foreground sm:text-xl">AssetMem AI</h1>
       </div>
       <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2">
