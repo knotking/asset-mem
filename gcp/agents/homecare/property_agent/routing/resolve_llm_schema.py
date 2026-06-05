@@ -6,14 +6,44 @@ from typing import Any
 
 from .conversational_intent import DEFAULT_CAPABILITY_OPTIONS, OPTIONAL_CHECKPOINT_BRANCHES
 
+_FOCUS_BRANCH_ENUM = [
+    "checkpoint",
+    "coverage",
+    "diy",
+    "service",
+    "cost",
+    "documents",
+]
+
 RESOLVE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
+        "discourse_act": {
+            "type": "string",
+            "enum": [
+                "greeting",
+                "capabilities",
+                "closure",
+                "accept_offer",
+                "explain_prior",
+                "new_work",
+                "replay_report",
+                "provider_detail",
+            ],
+            "description": "Turn semantics — primary routing signal (NLU-first).",
+        },
+        "focus_branch": {
+            "anyOf": [
+                {"type": "null"},
+                {"type": "string", "enum": _FOCUS_BRANCH_ENUM},
+            ],
+            "description": "Which prior branch to ground explain_prior (e.g. cost for pro pricing questions).",
+        },
         "intent": {
             "type": "string",
             "enum": ["greeting", "capabilities", "acknowledgment", "substantive"],
-            "description": "Whether this turn needs tools or is casual chat.",
+            "description": "Legacy intent; derive from discourse_act when possible.",
         },
         "route": {
             "type": "string",
@@ -55,6 +85,7 @@ RESOLVE_SCHEMA: dict[str, Any] = {
         },
     },
     "required": [
+        "discourse_act",
         "intent",
         "route",
         "expanded_user_query",
@@ -64,32 +95,55 @@ RESOLVE_SCHEMA: dict[str, Any] = {
 }
 
 RESOLVE_SYSTEM = """You are the routing resolver for a property-care AI assistant.
-Output JSON only.
-Capability menu order (when user says "first one", "4th one", "how about cost", etc.):
+Output JSON only. discourse_act is the primary signal for turn meaning.
+
+discourse_act (required):
+- greeting: hi/hello only — no property task.
+- capabilities: what can you do / what do you suggest — no tools.
+- closure: thanks / that's helpful / got it — user closes topic; NOT accept_offer.
+- accept_offer: short yes/ok/sure when assistant offered an action OR pending_user_action is set.
+- explain_prior: clarify/compare existing analysis (why is pro expensive, explain DIY steps) — NO new branches.
+- new_work: fresh retrieval or optional branch run (find providers, run cost analysis, how about cost).
+- replay_report: show full prior structured report again.
+- provider_detail: more about a service provider already listed in prior analysis.
+
+focus_branch (optional, for explain_prior):
+- cost: pro pricing vs DIY, why expensive, cost comparison — even if user says "professional".
+- diy: steps, how to fix yourself.
+- service: questions about listed providers (not new provider search).
+- coverage / checkpoint / documents when clearly about that section.
+- null only if genuinely ambiguous.
+
+Capability menu order (ordinal picks — deterministic):
 0 checkpoints, 1 documents, 2 coverage, 3 diy, 4 service, 5 cost.
-Intent:
-- greeting: hi/hello/good morning only — no property task.
-- capabilities: "what can you do", "what do you suggest", unsure what to ask — no tools.
-- acknowledgment: thanks/got it/looks good ONLY when user does NOT ask for new work.
-- substantive: any property task (checkpoints, docs, coverage, diy, service, cost, show notes, etc.).
-User goals (checkpoint turns — post-processing enforces; set user_goal to match your intent):
-- answer_from_context: interpretive follow-up, summary, advisory, show/list notes — answer from session; no new optional branches.
-- new_analysis: user explicitly requests coverage/diy/service/cost analysis or "analyse checkpoints".
-- replay_deliverable: user asks to see the full prior structured report again.
-Critical:
-- "yes do cost analysis", "how about cost?", "I mean coverage", "4th one" → substantive, user_goal=new_analysis.
-- primary_agent is the client's active tab: "docs" → prefer user_docs for policy/lease/insurance/document questions;
-  "checkpoint" → prefer checkpoint for inspections. checkpoint_ids alone do not override docs mode.
-- ui_optional_agents and prior_full_checkpoint_analysis are hints only — never copy toggles into run_optional_agents.
-- checkpoint_selection_changed=true means the user added/removed checkpoints since the last analysis — prefer user_goal=new_analysis and a fresh run_checkpoint_pipeline, not answer_from_context.
-- Questions like overall condition, what's wrong, should I hire a professional → answer_from_context (even if toggles are on).
-- More details / tell me about a **service provider already listed in prior analysis** → answer_from_context, retrieval_only=true, run_optional_agents=[]; do not set menu_index for provider names.
-- route=none for casual intents OR general property questions that need no checkpoint/doc retrieval; checkpoint for checkpoints/branches; user_docs for document/policy.
-- Expand indexical/menu picks into a concrete expanded_user_query for tools.
-When property_analysis.branches_completed is non-empty (G3):
-- Explain/clarify questions ("explain DIY steps", "why is cost high") → user_goal=answer_from_context, run_optional_agents=[].
-- Only set new_analysis + branches when the user explicitly requests a fresh branch run or branches_completed lacks that branch.
-- replay_deliverable when user wants the full report shown again (prose summary only; UI shows accordions).
+
+Mapping discourse_act → fields:
+- greeting/capabilities/closure → route=none, run_optional_agents=[], retrieval_only=true.
+- explain_prior → user_goal=answer_from_context, run_optional_agents=[], retrieval_only=true, route=checkpoint or none.
+- provider_detail → user_goal=answer_from_context, run_optional_agents=[], retrieval_only=true.
+- accept_offer → substantive; expand pending/offer into expanded_user_query; set branches if offered.
+- new_work → user_goal=new_analysis when branches requested; else retrieval as needed.
+- replay_report → user_goal=replay_deliverable.
+
+Critical NLU rules:
+- "why is professional so expensive" after cost/DIY → explain_prior, focus_branch=cost, NOT service, run_optional_agents=[].
+- "professional" in advisory/compare questions ≠ service branch unless user asks for new providers.
+- accept_offer: "yes", "ok", "sure" + pending_user_action or assistant question in recent_dialogue.
+- closure vs accept_offer: thanks/that's helpful = closure; bare yes after offer = accept_offer.
+- primary_agent tab hint: docs → user_docs for policy/lease; checkpoint → checkpoint for inspections.
+- Never copy ui_optional_agents into run_optional_agents.
+- checkpoint_selection_changed=true → prefer new_work / new_analysis, not explain_prior.
+- analysis_digest shows branches_completed — do not re-run completed branches for explain_prior.
+
+Intent (legacy, align with discourse_act):
+- greeting, capabilities, acknowledgment (closure maps to acknowledgment intent).
+
+When property_analysis.branches_completed is non-empty:
+- explain_prior for clarify questions; new_work only for explicit fresh branch requests.
+
+Long sessions:
+- conversation_summary in ui_context summarizes older turns; use with recent_dialogue.
+- chat_intent client hint biases routing but discourse_act wins.
 """
 
 CHECKPOINT_QUERY_HINTS = (

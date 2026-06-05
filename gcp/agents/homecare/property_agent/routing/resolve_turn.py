@@ -24,11 +24,15 @@ from property_agent.context.homecare_hydrator_v1 import (
     hydrate_session_context_sync,
 )
 
+from .analysis_digest import focus_snippet_for_branch
+from .conversation_summary import conversation_summary_from_state
+from .nlu_first_resolve import nlu_first_resolve_enabled
 from .query_mode import (
     SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
     should_answer_provider_from_context,
     snapshot_session_analysis_context,
 )
+RESOLVE_RECENT_DIALOGUE_STATE_KEY = "_resolve_recent_dialogue"
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +61,22 @@ def resolve_turn(
     return resolve_turn_llm(ctx, llm_request=llm_request)
 
 
+def is_executor_conversational_turn(resolved: ResolvedTurn) -> bool:
+    """True when routing tools should be blocked (plain-text executor only).
+
+    ``route=none`` means no dedicated retrieval surface — not conversational by itself.
+    """
+    if resolved.is_casual:
+        return True
+    if resolved.run_optional_agents:
+        return False
+    if resolved.user_goal in ("new_analysis", "replay_deliverable") and not resolved.retrieval_only:
+        return False
+    if resolved.retrieval_only and resolved.user_goal == "answer_from_context":
+        return True
+    return False
+
+
 def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
     """Persist resolve output and sync checkpoint_optional_agents for tools."""
     if state is None or not hasattr(state, "__setitem__"):
@@ -66,15 +86,14 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
     if resolved.expanded_user_query:
         state["user_query"] = resolved.expanded_user_query
 
-    if resolved.is_casual or resolved.route == "none":
-        state[CONVERSATIONAL_TURN_STATE_KEY] = True
+    state[CONVERSATIONAL_TURN_STATE_KEY] = is_executor_conversational_turn(resolved)
+
+    if resolved.is_casual:
         state["_saved_checkpoint_optional_agents"] = state.get(
             "checkpoint_optional_agents"
         )
         state["checkpoint_optional_agents"] = []
         return
-
-    state[CONVERSATIONAL_TURN_STATE_KEY] = False
 
     if resolved.route == "user_docs":
         _clear_checkpoint_passthrough_stash(state)
@@ -158,6 +177,15 @@ def _should_inject_session_working_memory(
     return False
 
 
+def _should_inject_recent_dialogue(resolved: ResolvedTurn) -> bool:
+    if not nlu_first_resolve_enabled():
+        return False
+    act = resolved.discourse_act
+    if act in ("explain_prior", "accept_offer", "provider_detail"):
+        return True
+    return resolved.user_goal == "answer_from_context"
+
+
 def format_resolved_turn_block_with_memory(
     resolved: ResolvedTurn,
     *,
@@ -173,6 +201,18 @@ def format_resolved_turn_block_with_memory(
         memory = render_hydrated_context(hydrated)
         if memory:
             extra.append(memory)
+    if state is not None and _should_inject_recent_dialogue(resolved):
+        dialogue = state.get(RESOLVE_RECENT_DIALOGUE_STATE_KEY)
+        if isinstance(dialogue, str) and dialogue.strip():
+            extra.append(f"[RECENT_DIALOGUE]\n{dialogue}\n[/RECENT_DIALOGUE]")
+    if state is not None and resolved.focus_branch:
+        snippet = focus_snippet_for_branch(state, resolved.focus_branch)
+        if snippet:
+            extra.append(f"[FOCUS_SNIPPET]\n{snippet}\n[/FOCUS_SNIPPET]")
+    if state is not None and nlu_first_resolve_enabled():
+        summary = conversation_summary_from_state(state)
+        if summary:
+            extra.append(f"[CONVERSATION_SUMMARY]\n{summary}\n[/CONVERSATION_SUMMARY]")
     return _platform_format_resolved_turn_block(
         resolved,
         extra_blocks=extra or None,

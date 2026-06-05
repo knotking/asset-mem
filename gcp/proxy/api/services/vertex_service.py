@@ -988,7 +988,12 @@ async def stream_agent_answers(
     if checkpoint_optional_agents:
         payload["checkpoint_optional_agents"] = checkpoint_optional_agents
         logger.info(f"Including checkpoint_optional_agents in payload: {checkpoint_optional_agents}")
-    
+
+    chat_intent = getattr(request, "chat_intent", None)
+    if chat_intent:
+        payload["chat_intent"] = chat_intent
+        logger.info("Including chat_intent in payload: %s", chat_intent)
+
     # property_address: identity/context only (which property, docs)
     if property_address:
         payload["property_address"] = property_address

@@ -74,6 +74,10 @@ import {
   getMessageDisplayParts,
   structuredDataHasVisibleSections,
 } from '@/lib/chat-content-parse';
+import {
+  getSuggestedActionsFromContentJson,
+  type SuggestedAction,
+} from '@homeapp/common/lib/suggested-actions';
 import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
@@ -101,6 +105,8 @@ interface ChatMessageProps {
   isActiveLoading?: boolean;
   /** Hide context when it matches the previous user message. */
   hideRepeatedContextRefs?: boolean;
+  onSuggestedAction?: (action: SuggestedAction) => void;
+  isSendDisabled?: boolean;
 }
 
 // Helper functions moved outside components
@@ -1656,6 +1662,8 @@ function ChatMessage({
   priorAssistantTurnCount = 0,
   isActiveLoading = false,
   hideRepeatedContextRefs = false,
+  onSuggestedAction,
+  isSendDisabled = false,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
@@ -1675,6 +1683,11 @@ function ChatMessage({
   const displayParts = useMemo(
     () => getMessageDisplayParts(message),
     [message, messageMarkdown, messageContentJson]
+  );
+
+  const suggestedActions = useMemo(
+    () => getSuggestedActionsFromContentJson(messageContentJson),
+    [messageContentJson]
   );
 
   const hasDisplayableContent = useMemo(() => {
@@ -1851,6 +1864,23 @@ function ChatMessage({
             </View>
           )}
         </Pressable>
+
+        {!isUser &&
+        !showTypingIndicator &&
+        suggestedActions.length > 0 &&
+        onSuggestedAction ? (
+          <View className="mt-2 flex-row flex-wrap gap-2">
+            {suggestedActions.map((action) => (
+              <Pressable
+                key={`${message.id}-${action.label}`}
+                disabled={isSendDisabled}
+                onPress={() => onSuggestedAction(action)}
+                className="rounded-md border border-border bg-background px-3 py-2 disabled:opacity-50">
+                <Text className="text-left text-sm text-foreground">{action.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         {copyStatus && (
           <View className="mt-2">

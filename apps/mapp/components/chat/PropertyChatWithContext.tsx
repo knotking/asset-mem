@@ -139,7 +139,10 @@ function PropertyChatInner(props: Props) {
   }, [primaryAgent, readySelectedCheckpoints, readySelectedDocuments, pendingContext]);
 
   const runSend = React.useCallback(
-    async (text: string) => {
+    async (
+      text: string,
+      options?: { chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report' }
+    ) => {
       if (!userId || !sessionId || isSending) return;
 
       const sendInput = {
@@ -220,6 +223,7 @@ function PropertyChatInner(props: Props) {
           userId,
           agentSessionId,
           userQuery: text.trim(),
+          chatIntent: options?.chatIntent,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress,
@@ -283,6 +287,13 @@ function PropertyChatInner(props: Props) {
     (messages: IMessage[]) => {
       if (messages.length === 0) return;
       void runSend(messages[0].text ?? '');
+    },
+    [runSend]
+  );
+
+  const handleSuggestedAction = React.useCallback(
+    (action: import('@homeapp/common/lib/suggested-actions').SuggestedAction) => {
+      void runSend(action.userQuery, { chatIntent: action.chatIntent });
     },
     [runSend]
   );
@@ -497,6 +508,7 @@ function PropertyChatInner(props: Props) {
         onSearchLocationChange={onSearchLocationChange}
         propertyAddress={propertyAddress}
         onSend={handleGiftedChatSend}
+        onSuggestedAction={handleSuggestedAction}
         onOpenAddContext={() => setAddContextVisible(true)}
         contextChipStrip={
           <ChatContextChipStrip

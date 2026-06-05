@@ -157,11 +157,11 @@ Turn routing is distributed across three layers (see [`property_agent/ARCHITECTU
 
 | Layer | Owns |
 | ----- | ---- |
-| **1 — Resolve** | Intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` inject |
+| **1 — Resolve** | `discourse_act`, `focus_branch`, intent, route, `user_goal`, pending offers, `[RESOLVED_TURN]` + dialogue/focus inject |
 | **2 — Executor** | History-first markdown vs tool call |
-| **3 — Guards** | Block tools on casual/context turns; merge optional branches from state + query heuristics |
+| **3 — Guards** | Thin invariants: block tools on `explain_prior` / closure; no UI toggle merge on context turns |
 
-Resolve hints are **not** final authority — `apply_resolved_turn_to_state` and `before_tool_callback` can override `run_optional_agents` and block pipeline runs.
+NLU-first resolve is **on by default** (resolve turn-semantics JSON is the semantic SSOT). Set `HOMEAPP_NLU_FIRST_RESOLVE=0` for legacy regex post-processing. Pending affirmations: `pending_user_action` + after-agent `pending_offer_extract`.
 
 ### `run_checkpoint_pipeline` (internal)
 

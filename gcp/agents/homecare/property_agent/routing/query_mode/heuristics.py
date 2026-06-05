@@ -176,8 +176,17 @@ def should_block_checkpoint_pipeline_for_context_turn(
     query_mode: str,
     resolved_route: str = "",
     tool_name: str = "",
+    discourse_act: str = "",
 ) -> bool:
     """Block checkpoint/retrieval tools when resolve chose session-memory follow-up."""
+    from ..nlu_first_resolve import nlu_first_resolve_enabled
+
+    if nlu_first_resolve_enabled() and discourse_act in (
+        "explain_prior",
+        "provider_detail",
+        "closure",
+    ):
+        return True
     if user_goal != "answer_from_context":
         return False
     if checkpoint_selection_changed(state):

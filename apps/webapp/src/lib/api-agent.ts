@@ -137,6 +137,7 @@ export interface StreamAgentResponseParams {
   firebaseChatId?: string;
   /** Firestore assistant message doc id (lifecycle + agentSteps persistence). */
   assistantMessageId?: string;
+  chatIntent?: 'discuss_report' | 'new_analysis' | 'replay_report';
   onChunk?: (content: string) => void;
   onAgentStep?: (step: AgentStep) => void;
   onComplete?: (finalResponse: string, agentSteps: AgentStep[]) => void;
@@ -158,6 +159,7 @@ export async function streamAgentResponse({
   signal,
   firebaseChatId,
   assistantMessageId,
+  chatIntent,
   onChunk,
   onAgentStep,
   onComplete,
@@ -207,6 +209,10 @@ export async function streamAgentResponse({
 
     if (assistantMessageId) {
       requestBody.assistant_message_id = assistantMessageId;
+    }
+
+    if (chatIntent) {
+      requestBody.chat_intent = chatIntent;
     }
 
     const response = await proxyFetchWithAuth(apiUrls.agentSse(), getFirebaseIdTokenForProxy, {

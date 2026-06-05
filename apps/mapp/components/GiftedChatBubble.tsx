@@ -11,6 +11,10 @@ interface CustomBubbleProps extends BubbleProps<IMessage> {
   priorAssistantTurnCount?: number;
   isActiveLoading?: boolean;
   hideRepeatedContextRefs?: boolean;
+  onSuggestedAction?: (
+    action: import('@homeapp/common/lib/suggested-actions').SuggestedAction
+  ) => void;
+  isSendDisabled?: boolean;
 }
 
 /** Matches react-native-gifted-chat default Bubble side margins (see Bubble/styles.js). */
@@ -43,6 +47,8 @@ function GiftedChatBubble({
   priorAssistantTurnCount = 0,
   isActiveLoading = false,
   hideRepeatedContextRefs = false,
+  onSuggestedAction,
+  isSendDisabled = false,
 }: CustomBubbleProps) {
   if (!currentMessage) {
     return null;
@@ -64,6 +70,8 @@ function GiftedChatBubble({
         priorAssistantTurnCount={priorAssistantTurnCount}
         isActiveLoading={isActiveLoading}
         hideRepeatedContextRefs={hideRepeatedContextRefs}
+        onSuggestedAction={onSuggestedAction}
+        isSendDisabled={isSendDisabled}
       />
     </View>
   );

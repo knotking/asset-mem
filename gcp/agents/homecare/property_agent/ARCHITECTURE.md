@@ -28,13 +28,17 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 
 ## Routing control plane
 
-Turn routing is distributed across three layers. Resolve hints are **not** final authority — layers 1 and 3 can override executor tool choice.
+Turn routing is distributed across three layers. **NLU-first resolve is on by default** (`discourse_act` is the semantic SSOT); set `HOMEAPP_NLU_FIRST_RESOLVE=0` to use legacy regex post-processing.
 
 | Layer | Owns | Key files |
 |-------|------|-----------|
-| **1 — Resolve** | Intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` inject | `routing/resolve_turn_llm.py`, `routing/resolve_turn.py`, `agent_framework/routing/resolve_pipeline.py` |
+| **1 — Resolve** | `discourse_act`, `focus_branch`, intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` + `[RECENT_DIALOGUE]` / `[FOCUS_SNIPPET]` inject | `routing/resolve_turn_llm.py`, `routing/resolve_llm_schema.py`, `routing/nlu_first_resolve.py`, `routing/pending_user_action.py`, `routing/resolve_turn.py` |
 | **2 — Executor** | History-first markdown vs tool call | `prompts.py`, `registry.py` |
-| **3 — Guards** | Block tools on casual/context turns; merge optional branches from state + query heuristics | `routing/conversational_callbacks.py`, `runtime/root_agent_plugin.py` (`before_tool_callback`), `routing/query_mode/` |
+| **3 — Guards** | Block tools on casual/context turns; thin invariants (selection changed, UI toggle block on `explain_prior`) | `routing/conversational_callbacks.py`, `routing/apply_resolved_turn.py` (`apply_thin_invariants`), `runtime/root_agent_plugin.py` |
+
+**NLU discourse acts:** `accept_offer`, `explain_prior`, `new_work`, `closure`, `provider_detail`, `replay_report`, plus casual `greeting` / `capabilities`. Pending offers: `pending_user_action` + `pending_offer_extract` (after-agent micro-LLM). Long sessions: `conversation_summary` (after-agent micro-LLM when dialogue grows). Client chips: `contentJson.suggestedActions` + optional `chat_intent` on send.
+
+**Tool blocking:** `conversational_turn` follows `is_executor_conversational_turn` (casual or context-only substantive turns) — not `route=none`. `accept_offer` with `run_optional_agents` keeps tools enabled; `normalize_substantive_route` promotes `route=checkpoint` when branch work is requested.
 
 See [`docs/ORCHESTRATOR_V2_PLAN.md`](../docs/ORCHESTRATOR_V2_PLAN.md) for the end-to-end flow.
 

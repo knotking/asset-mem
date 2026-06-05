@@ -53,6 +53,10 @@ class AgentRequest(BaseModel):
         default=None,
         description="Firestore assistant message doc id (clients create before streaming)",
     )
+    chat_intent: Optional[Literal["discuss_report", "new_analysis", "replay_report"]] = Field(
+        default=None,
+        description="Optional client hint for resolve NLU (discuss_report, new_analysis, replay_report)",
+    )
     # Deprecated: use search_location; kept for backward compatibility during client rollout
     location_type: Optional[Literal["address", "location"]] = Field(
         default=None,

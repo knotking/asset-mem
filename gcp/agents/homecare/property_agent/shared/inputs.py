@@ -4,6 +4,7 @@ from typing import List, Optional, Literal
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
 PrimaryAgent = Literal["checkpoint", "docs"]
 SearchLocationSource = Literal["property_address", "device_gps"]
+ChatIntentHint = Literal["discuss_report", "new_analysis", "replay_report"]
 
 DEFAULT_CHECKPOINT_OPTIONAL_AGENTS: List[CheckpointOptionalAgent] = []
 
@@ -76,6 +77,14 @@ class DiagnosisInput(BaseModel):
     search_location: Optional[SearchLocation] = Field(
         default=None,
         description="Unified search/market location for service, cost, DIY, and shopping.",
+    )
+    chat_intent: Optional[ChatIntentHint] = Field(
+        default=None,
+        description=(
+            "Optional client hint for resolve: discuss_report biases explain_prior; "
+            "new_analysis biases fresh branch work; replay_report biases full report replay. "
+            "Resolve discourse_act still wins."
+        ),
     )
 
     class Config:

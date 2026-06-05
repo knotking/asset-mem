@@ -1,7 +1,8 @@
 
 
 import { cn } from "@/lib/utils";
-import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary, SaveServiceProviderMeta } from "@/lib/types";
+import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary, SaveServiceProviderMeta, SuggestedAction } from "@/lib/types";
+import { getSuggestedActionsFromContentJson } from "@homeapp/common/lib/suggested-actions";
 import { useSavedServiceProviders } from "@/contexts/saved-service-providers-context";
 import { buildServiceProviderDedupeKey } from "@/lib/saved-service-provider-dedupe";
 import {
@@ -1520,6 +1521,8 @@ type Props = {
   context?: 'property' | null;
   priorAssistantTurnCount?: number;
   hideRepeatedContextRefs?: boolean;
+  onSuggestedAction?: (action: SuggestedAction) => void;
+  isSendDisabled?: boolean;
 };
 
 const stripTextTransition = { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const };
@@ -1577,6 +1580,8 @@ const ChatMessageComponent = ({
   context,
   priorAssistantTurnCount = 0,
   hideRepeatedContextRefs = false,
+  onSuggestedAction,
+  isSendDisabled = false,
 }: Props) => {
   const isUser = message.role === "user";
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
@@ -1622,6 +1627,11 @@ const ChatMessageComponent = ({
   const displayParts = useMemo(
     () => getMessageDisplayParts(message),
     [message, messageMarkdown, messageContentJson]
+  );
+
+  const suggestedActions = useMemo(
+    () => getSuggestedActionsFromContentJson(messageContentJson),
+    [messageContentJson]
   );
 
   const hasDisplayableContent = useMemo(() => {
@@ -1984,6 +1994,26 @@ const ChatMessageComponent = ({
                 renderAssistantMessageBody()
             )}
           </div>
+          {!isUser &&
+          !showLoadingIndicator &&
+          suggestedActions.length > 0 &&
+          onSuggestedAction ? (
+            <div className="mt-2 flex w-full flex-wrap gap-2">
+              {suggestedActions.map((action) => (
+                <Button
+                  key={`${message.id}-${action.label}`}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-auto whitespace-normal px-3 py-2 text-left text-sm"
+                  disabled={isSendDisabled}
+                  onClick={() => onSuggestedAction(action)}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
           {messageTimeLabel ? (
             <p className={cn("mt-1 text-xs text-muted-foreground", isUser && "text-right")}>
               {messageTimeLabel}

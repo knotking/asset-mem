@@ -104,7 +104,12 @@ function PropertyChatComposerInner(
   const [cameraInitialMode, setCameraInitialMode] = React.useState<"photo" | "video">("photo");
   const cameraFlowResolveRef = React.useRef<((success: boolean) => void) | null>(null);
   const docInputRef = React.useRef<HTMLInputElement>(null);
-  const runSendRef = React.useRef<(text: string) => Promise<void>>(async () => {});
+  const runSendRef = React.useRef<
+    (
+      text: string,
+      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+    ) => Promise<void>
+  >(async () => {});
 
   const selectedCheckpointIds = React.useMemo(
     () => new Set(readySelectedCheckpoints.map((c) => c.id!)),
@@ -128,7 +133,10 @@ function PropertyChatComposerInner(
   }, [props.primaryAgent, readySelectedCheckpoints, readySelectedDocuments, pendingContext]);
 
   const runSend = React.useCallback(
-    async (content: string) => {
+    async (
+      content: string,
+      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+    ) => {
       if (!user || props.isLoading) return;
 
       const sendInput = {
@@ -221,6 +229,7 @@ function PropertyChatComposerInner(
           userId: user.uid,
           agentSessionId,
           userQuery: content.trim(),
+          chatIntent: options?.chatIntent,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
           propertyAddress: props.propertyAddress,
@@ -270,8 +279,11 @@ function PropertyChatComposerInner(
   runSendRef.current = runSend;
 
   React.useImperativeHandle(props.composerRef, () => ({
-    send: (text: string) => {
-      void runSendRef.current(text);
+    send: (
+      text: string,
+      options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+    ) => {
+      void runSendRef.current(text, options);
     },
   }));
 
@@ -598,7 +610,10 @@ function PropertyChatComposerInner(
 }
 
 export type PropertyChatComposerHandle = {
-  send: (text: string) => void;
+  send: (
+    text: string,
+    options?: { chatIntent?: "discuss_report" | "new_analysis" | "replay_report" }
+  ) => void;
 };
 
 export const PropertyChatComposer = React.forwardRef<

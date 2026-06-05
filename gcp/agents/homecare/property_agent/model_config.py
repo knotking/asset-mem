@@ -40,6 +40,13 @@ class Gemini3(Gemini):
 # ADK agents (root executor, checkpoint branches, synthesis): fast routing + streaming.
 GLOBAL_GEMINI_MODEL = Gemini3(model="gemini-3.1-flash-lite")
 
+GLOBAL_FLASH_LITE_MODEL_NAME: str = GLOBAL_GEMINI_MODEL.model
+
+
+def global_flash_lite_client_and_model() -> tuple[Client, str]:
+    """Vertex ``location=global`` client + ``gemini-3.1-flash-lite`` for routing micro-LLMs."""
+    return GLOBAL_GEMINI_MODEL.api_client, GLOBAL_GEMINI_MODEL.model
+
 
 @lru_cache(maxsize=1)
 def _legacy_vertex_genai_client() -> genai.Client:

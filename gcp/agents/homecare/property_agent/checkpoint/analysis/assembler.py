@@ -252,10 +252,17 @@ def build_message_patch_from_analysis(
 ) -> Dict[str, Any]:
     """Build V2 state_delta message patch keys for the proxy."""
     from property_agent.bindings.message_patch import build_state_delta_message_patch
+    from property_agent.routing.suggested_actions import (
+        merge_suggested_actions_into_content_json,
+    )
 
+    content_json = merge_suggested_actions_into_content_json(
+        {"analysis": analysis},
+        analysis,
+    )
     return build_state_delta_message_patch(
         content_markdown=render_markdown(analysis),
-        content_json={"analysis": analysis},
+        content_json=content_json,
         analysis_run_id=analysis_run_id,
         branch_completed=branch_completed,
     )

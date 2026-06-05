@@ -62,7 +62,7 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
     root_agent_description: str = "Agent that manages and executes homecare-related tasks."
 
     @property
-    def global_gemini_model(self) -> str:
+    def global_gemini_model(self) -> Any:
         return self.plugin.global_gemini_model
 
     @property
@@ -154,11 +154,52 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
             "checkpoint_parallel_results"
         ):
             snapshot_session_analysis_context(callback_context.state)
+        self._maybe_extract_pending_offer(callback_context)
+        self._maybe_update_conversation_summary(callback_context)
         self.plugin.prune_heavy_checkpoint_state(callback_context.state)
         await self.plugin.ingest_invocation_to_memory_bank(
             callback_context,
             agent_name=self.plugin.property_agent_name,
             include_checkpoint_facts=True,
+        )
+
+    def _maybe_update_conversation_summary(self, callback_context: CallbackContext) -> None:
+        from property_agent.routing.conversation_summary import (
+            maybe_update_conversation_summary,
+        )
+        from agent_framework.routing.resolved_turn import session_events
+
+        maybe_update_conversation_summary(
+            callback_context.state,
+            session_events(callback_context),
+        )
+
+    def _maybe_extract_pending_offer(self, callback_context: CallbackContext) -> None:
+        from property_agent.routing.nlu_first_resolve import nlu_first_resolve_enabled
+        from property_agent.routing.pending_offer_extract import (
+            maybe_set_pending_from_assistant_reply,
+        )
+        from property_agent.routing.recent_dialogue import recent_dialogue
+        from agent_framework.routing.resolved_turn import session_events
+
+        if not nlu_first_resolve_enabled():
+            return
+        events = session_events(callback_context)
+        dialogue = recent_dialogue(events, max_chars=1200)
+        if not dialogue:
+            return
+        assistant_lines = [
+            line[11:].strip()
+            for line in dialogue.splitlines()
+            if line.startswith("assistant:")
+        ]
+        if not assistant_lines:
+            return
+        uq = resolve_user_query_from_state(callback_context.state)
+        maybe_set_pending_from_assistant_reply(
+            callback_context.state,
+            assistant_text=assistant_lines[-1],
+            user_query=uq,
         )
 
     def before_tool_callback(
@@ -204,11 +245,24 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                 resolved = resolved_turn_from_state(tool_context.state)
                 if resolved is not None:
                     branches.extend(resolved.run_optional_agents or [])
-                branches.extend(branches_mentioned_in_query(uq))
-                state_branches = tool_context.state.get("checkpoint_optional_agents") or []
-                for branch in state_branches:
-                    if branch not in branches:
-                        branches.append(branch)
+                from property_agent.routing.nlu_first_resolve import (
+                    nlu_first_resolve_enabled,
+                    should_block_ui_optional_merge,
+                )
+
+                block_ui = (
+                    nlu_first_resolve_enabled()
+                    and resolved is not None
+                    and should_block_ui_optional_merge(resolved.to_dict())
+                )
+                if not block_ui:
+                    branches.extend(branches_mentioned_in_query(uq))
+                    state_branches = tool_context.state.get(
+                        "checkpoint_optional_agents"
+                    ) or []
+                    for branch in state_branches:
+                        if branch not in branches:
+                            branches.append(branch)
                 if branches:
                     args["checkpoint_optional_agents"] = branches
             sync_checkpoint_tool_args_to_state(tool_context.state, args)

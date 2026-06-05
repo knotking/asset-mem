@@ -7,12 +7,14 @@ from types import SimpleNamespace
 
 from google.genai import types
 
+from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
 from property_agent.routing.resolve_turn import (
     RESOLVED_TURN_STATE_KEY,
     ResolvedTurn,
     apply_resolved_turn_to_state,
     format_resolved_turn_block,
     inject_resolved_turn_into_llm_request,
+    is_executor_conversational_turn,
 )
 
 
@@ -74,6 +76,53 @@ def test_apply_resolved_clears_checkpoint_stash_on_retrieval_only_non_context() 
         ),
     )
     assert state["checkpoint_analysis"] is None
+
+
+def test_accept_offer_route_none_with_service_not_conversational() -> None:
+    state = {"checkpoint_optional_agents": ["coverage", "diy", "service", "cost"]}
+    resolved = ResolvedTurn(
+        intent="substantive",
+        route="none",
+        expanded_user_query="Yes, find local service providers for the garage door repair.",
+        retrieval_only=False,
+        run_optional_agents=["service"],
+        user_goal="new_analysis",
+        discourse_act="accept_offer",
+        query_mode="branch_explicit",
+    )
+    assert is_executor_conversational_turn(resolved) is False
+    apply_resolved_turn_to_state(state, resolved)
+    assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
+    assert state["checkpoint_optional_agents"] == ["service"]
+
+
+def test_explain_prior_route_none_stays_conversational() -> None:
+    state: dict = {}
+    resolved = ResolvedTurn(
+        intent="substantive",
+        route="none",
+        expanded_user_query="Why is professional service so expensive?",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        discourse_act="explain_prior",
+        focus_branch="cost",
+    )
+    assert is_executor_conversational_turn(resolved) is True
+    apply_resolved_turn_to_state(state, resolved)
+    assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is True
+    assert state["checkpoint_optional_agents"] == []
+
+
+def test_greeting_route_none_stays_conversational() -> None:
+    resolved = ResolvedTurn(
+        intent="greeting",
+        route="none",
+        expanded_user_query="hello",
+        retrieval_only=True,
+        discourse_act="greeting",
+    )
+    assert is_executor_conversational_turn(resolved) is True
 
 
 def test_apply_resolved_sets_optional_branches() -> None:
