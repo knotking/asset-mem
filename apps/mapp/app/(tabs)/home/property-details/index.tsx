@@ -15,6 +15,7 @@ import {
   Camera,
   Clock,
   Users,
+  BookOpen,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
@@ -813,6 +814,13 @@ function PropertyDetailsScreenContent({
                         </Text>
                       </View>
                       <View className="shrink-0 flex-row items-center gap-1.5">
+                        <Button
+                          onPress={() => router.navigate('/(tabs)/settings/faq')}
+                          variant="ghost"
+                          size="icon"
+                          accessibilityLabel="FAQ & guides">
+                          <Icon as={BookOpen} size={20} className="text-foreground" />
+                        </Button>
                         <TokenUsageBar matchActionIconSize />
                         {activeTab === 'chat' && (
                           <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
@@ -1054,8 +1062,8 @@ function PropertyDetailsScreenContent({
                         onRecordVideo={handleRecordVideo}
                         onSelectFromLibrary={handleSelectFromLibrary}
                         onSelectFiles={handleSelectFiles}
-        searchLocation={searchLocation}
-        onSearchLocationChange={setSearchLocation}
+                        searchLocation={searchLocation}
+                        onSearchLocationChange={setSearchLocation}
                         propertyAddress={property?.address}
                         onSend={handleGiftedChatSend}
                       />

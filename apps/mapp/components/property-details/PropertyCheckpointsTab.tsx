@@ -30,6 +30,7 @@ import {
 } from '@homeapp/common/contexts/checkpoint-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
+import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { Checkpoint } from '@homeapp/common/types';
 import { format } from 'date-fns';
 import { CreateCheckpointModal } from './CreateCheckpointModal';
@@ -657,6 +658,7 @@ export function PropertyCheckpointsTab({
   const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
   const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
   const { property } = useProperty();
+  const { updatePreferences } = usePreferences();
   const { metrics: propertyMetrics } = usePropertyCheckpointMetrics();
 
   // Sub-tab state
@@ -837,6 +839,7 @@ export function PropertyCheckpointsTab({
 
   const handleCompare = () => {
     if (selectedForActions.length === 2) {
+      void updatePreferences({ discoveryCompareDone: true });
       setIsComparisonModalVisible(true);
     }
   };

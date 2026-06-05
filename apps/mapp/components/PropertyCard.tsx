@@ -40,6 +40,7 @@ import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { createLogger } from '@/lib/logger';
+import { PROPERTY_STAT_LABELS } from '@homeapp/common/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
 
@@ -258,26 +259,51 @@ export default function PropertyCard({
 
           <CardContent className="pt-0">
             <View className="flex-row gap-2">
-              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+              <View className="min-w-0 flex-1 items-center rounded-lg bg-muted/50 px-2 py-2">
                 <View className="h-5 w-5 items-center justify-center">
                   <Icon as={FileText} size={20} className="text-info" />
                 </View>
-                <Text className="text-sm font-semibold text-foreground">{docsCount}</Text>
-                <Text className="text-xs text-muted-foreground">Docs</Text>
+                <Text className="text-center text-sm font-semibold text-foreground">{docsCount}</Text>
+                <View className="min-h-[34px] w-full items-center justify-center">
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.docs[0]}
+                  </Text>
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.docs[1]}
+                  </Text>
+                </View>
               </View>
-              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+              <View className="min-w-0 flex-1 items-center rounded-lg bg-muted/50 px-2 py-2">
                 <View className="h-5 w-5 items-center justify-center">
                   <Icon as={Wrench} size={20} className="text-warning" />
                 </View>
-                <Text className="text-sm font-semibold text-foreground">{servicesCount}</Text>
-                <Text className="text-xs text-muted-foreground">Services</Text>
+                <Text className="text-center text-sm font-semibold text-foreground">
+                  {servicesCount}
+                </Text>
+                <View className="min-h-[34px] w-full items-center justify-center">
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.services[0]}
+                  </Text>
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.services[1]}
+                  </Text>
+                </View>
               </View>
-              <View className="flex-1 items-center rounded-lg bg-muted/50 px-3 py-2">
+              <View className="min-w-0 flex-1 items-center rounded-lg bg-muted/50 px-2 py-2">
                 <View className="h-5 w-5 items-center justify-center">
                   <Icon as={Clock} size={20} className="text-success" />
                 </View>
-                <Text className="text-sm font-semibold text-foreground">{checksCount}</Text>
-                <Text className="text-xs text-muted-foreground">Checks</Text>
+                <Text className="text-center text-sm font-semibold text-foreground">
+                  {checksCount}
+                </Text>
+                <View className="min-h-[34px] w-full items-center justify-center">
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.checkpoints[0]}
+                  </Text>
+                  <Text className="text-center text-xs leading-tight text-muted-foreground">
+                    {PROPERTY_STAT_LABELS.checkpoints[1]}
+                  </Text>
+                </View>
               </View>
             </View>
           </CardContent>

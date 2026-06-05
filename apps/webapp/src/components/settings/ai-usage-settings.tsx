@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   useLlmTokenUsage,
   type PlanLimitSlice,
 } from "@/contexts/llm-token-usage-context";
+import { usePreferences } from "@/contexts/preferences-context";
 import {
   Card,
   CardContent,
@@ -120,6 +122,12 @@ export function AiUsageSettings() {
     documentsLimit,
     checkpointsLimit,
   } = useLlmTokenUsage();
+  const { preferences, updatePreferences } = usePreferences();
+
+  useEffect(() => {
+    if (preferences?.discoveryAiUsageViewed) return;
+    void updatePreferences({ discoveryAiUsageViewed: true });
+  }, [preferences?.discoveryAiUsageViewed, updatePreferences]);
 
   const monthlyCap =
     effectiveMonthlyLimit ?? FREE_PLAN_LIMITS.tokensPerMonth ?? 1_000_000;

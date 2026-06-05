@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
-import { Bell, SunIcon, MoonStarIcon } from 'lucide-react-native';
+import { Bell, BookOpen, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -32,7 +32,8 @@ function ThemeToggle() {
       onPressIn={handleToggle}
       size="icon"
       variant="ghost"
-      className="h-8 w-8 min-w-8 rounded-full p-0 web:mx-2">
+      className="h-8 w-8 min-w-8 rounded-full p-0 web:mx-2"
+      accessibilityLabel="Light / dark mode">
       <Icon as={colorScheme === 'light' ? MoonStarIcon : SunIcon} className="size-4" />
     </Button>
   );
@@ -47,6 +48,10 @@ export default function AppHeader() {
     router.navigate('/(tabs)/settings/account');
   };
 
+  const openFaq = () => {
+    router.navigate('/(tabs)/settings/faq');
+  };
+
   return (
     <View
       className="flex-row items-center justify-between bg-card px-3 pb-3 shadow-sm"
@@ -59,8 +64,21 @@ export default function AppHeader() {
       </View>
       <View className="shrink-0 flex-row items-center gap-px">
         <ThemeToggle />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 min-w-8 p-0"
+          onPress={openFaq}
+          accessibilityLabel="FAQ & guides"
+          accessibilityRole="button">
+          <Icon as={BookOpen} size={20} className="text-muted-foreground" />
+        </Button>
         <TokenUsageBar />
-        <Button variant="ghost" size="icon" className="h-8 w-8 min-w-8 p-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 min-w-8 p-0"
+          accessibilityLabel="Notifications">
           <Icon as={Bell} size={20} className="text-muted-foreground" />
         </Button>
         {user ? (
@@ -69,7 +87,7 @@ export default function AppHeader() {
             size="icon"
             className="ml-0.5 h-8 w-8 min-w-8 rounded-full p-0"
             onPress={openAccountSettings}
-            accessibilityLabel="Open account settings"
+            accessibilityLabel="Account"
             accessibilityRole="button">
             <UserProfileAvatar
               user={user}

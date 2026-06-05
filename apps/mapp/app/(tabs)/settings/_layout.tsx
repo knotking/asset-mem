@@ -18,6 +18,7 @@ export default function SettingsLayout() {
         }}
       />
       <Stack.Screen name="account" />
+      <Stack.Screen name="faq" />
       <Stack.Screen name="help" />
       <Stack.Screen name="billing" />
       <Stack.Screen name="usage" />

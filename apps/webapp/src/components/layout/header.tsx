@@ -5,7 +5,7 @@ import React, { useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Settings, LogOut, LifeBuoy, Loader2 } from 'lucide-react';
+import { Bell, Settings, LogOut, LifeBuoy, Loader2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import {
@@ -16,12 +16,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import { Skeleton } from '../ui/skeleton';
 import { ThemeToggle } from './theme-toggle';
 import { TokenUsageToolbar } from './token-usage-toolbar';
 import { SupportDialog } from '@/components/support/support-dialog';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { getUserDisplayLabel } from '@/lib/user-display';
+import { HeaderIconTooltip } from './header-icon-tooltip';
 
 export function Header() {
   const { user, loading, signingOut, logout } = useAuth();
@@ -51,32 +55,52 @@ export function Header() {
          {loading || signingOut ? (
             <Skeleton className='h-8 w-32' />
          ) : user ? (
-            <>
+            <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" className='h-9 w-9'>
+                <HeaderIconTooltip label="Notifications">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Notifications">
                     <Bell className="h-4 w-4" />
-                    <span className="sr-only">Notifications</span>
-                </Button>
+                  </Button>
+                </HeaderIconTooltip>
                 <TokenUsageToolbar />
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className='h-9 w-9'
+                <HeaderIconTooltip label="FAQ & guides">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => router.push('/home/settings?tab=faq')}
+                    aria-label="FAQ & guides"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                  </Button>
+                </HeaderIconTooltip>
+                <HeaderIconTooltip label="Settings">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
                     onClick={() => router.push('/home/settings')}
-                >
+                    aria-label="Settings"
+                  >
                     <Settings className="h-4 w-4" />
-                    <span className="sr-only">Settings</span>
-                </Button>
+                  </Button>
+                </HeaderIconTooltip>
 
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2 h-9">
-                        <UserProfileAvatar user={user} className="h-6 w-6" />
-                        <span className="hidden sm:inline-block truncate max-w-[12rem]">
-                          {getUserDisplayLabel(user)}
-                        </span>
+                <HeaderIconTooltip label="Account">
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex h-9 items-center gap-2"
+                      aria-label="Account menu"
+                    >
+                      <UserProfileAvatar user={user} className="h-6 w-6" />
+                      <span className="hidden sm:inline-block truncate max-w-[12rem]">
+                        {getUserDisplayLabel(user)}
+                      </span>
                     </Button>
-                </DropdownMenuTrigger>
+                  </DropdownMenuTrigger>
+                </HeaderIconTooltip>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -100,7 +124,7 @@ export function Header() {
                 </DropdownMenuContent>
                 </DropdownMenu>
                 <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
-            </>
+            </TooltipProvider>
          ) : (
              <Button onClick={() => router.push('/login')}>Sign In</Button>
          )}

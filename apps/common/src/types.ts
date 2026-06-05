@@ -516,6 +516,26 @@ export type UserPreferences = {
   onboardingChecklistDismissed?: boolean;
   /** User opened AI Chat from the onboarding checklist. */
   onboardingChatOpened?: boolean;
+  /** Per-tip dismissals for contextual feature education banners. */
+  featureTipsDismissed?: Partial<
+    Record<
+      | "checkpoints_empty"
+      | "checkpoints_compare"
+      | "docs_linked_to_chat"
+      | "chat_optional_agents"
+      | "chat_multi_checkpoint"
+      | "quota_limit"
+      | "first_structured_response",
+      boolean
+    >
+  >;
+  /** User hid the post-onboarding discovery checklist on home. */
+  discoveryChecklistDismissed?: boolean;
+  discoveryCompareDone?: boolean;
+  discoveryOptionalAgentUsed?: boolean;
+  discoveryMultiCheckpointChat?: boolean;
+  discoveryAiUsageViewed?: boolean;
+  discoveryFirstStructuredResponseSeen?: boolean;
   updatedAt?: Timestamp;
 };
 

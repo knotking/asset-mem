@@ -103,3 +103,17 @@ export function trackFirstChatMessage(): void {
   sessionStorage.setItem(FIRST_CHAT_KEY, '1');
   trackEvent('first_chat_message');
 }
+
+export function trackFeatureTipDismiss(tipId: string): void {
+  trackEvent('feature_tip_dismiss', { tip_id: tipId });
+}
+
+export function trackDiscoveryStepClick(step: string): void {
+  trackEvent('discovery_step_click', { step });
+}
+
+export function trackSuggestedPromptClick(prompt: string): void {
+  trackEvent('suggested_prompt_click', {
+    event_label: prompt.slice(0, 80),
+  });
+}

@@ -11,6 +11,7 @@ import {
 } from '@homeapp/common/contexts/llm-token-usage-context';
 import { formatTokensCompact, formatTokensFull } from '@homeapp/common/lib/format-tokens';
 import { FREE_PLAN_TOKENS_PER_MONTH } from '@homeapp/common/lib/plan-defaults';
+import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { cn } from '@/lib/utils';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -102,6 +103,12 @@ export function AiUsageSettings() {
     documentsLimit,
     checkpointsLimit,
   } = useLlmTokenUsage();
+  const { preferences, updatePreferences } = usePreferences();
+
+  React.useEffect(() => {
+    if (preferences?.discoveryAiUsageViewed) return;
+    void updatePreferences({ discoveryAiUsageViewed: true });
+  }, [preferences?.discoveryAiUsageViewed, updatePreferences]);
 
   if (loading) {
     return (
