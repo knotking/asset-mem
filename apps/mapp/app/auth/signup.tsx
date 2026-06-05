@@ -123,10 +123,10 @@ export default function SignupScreen() {
       keyboardVerticalOffset={0}
       className="flex-1 bg-background">
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <View className="flex-1 items-center justify-center p-4">
+        <View className="items-center p-4 pt-2">
           <AssetMemBrandIcon size="lg" className="mb-6" />
           <Text className="mb-2 w-full text-center text-2xl font-bold leading-normal text-foreground">
             Create Account
@@ -220,20 +220,22 @@ export default function SignupScreen() {
             )}
           </Button>
 
-          <View className="min-h-[100px] w-full max-w-sm">
-            {state.error && (
-              <Alert icon={AlertCircle} variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{state.error}</AlertDescription>
-              </Alert>
-            )}
-            {state.success && (
-              <Alert icon={CheckCircle} variant="default">
-                <AlertTitle>Success</AlertTitle>
-                <AlertDescription>{state.success}</AlertDescription>
-              </Alert>
-            )}
-          </View>
+          {(state.error || state.success) && (
+            <View className="mb-2 w-full max-w-sm">
+              {state.error && (
+                <Alert icon={AlertCircle} variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{state.error}</AlertDescription>
+                </Alert>
+              )}
+              {state.success && (
+                <Alert icon={CheckCircle} variant="default">
+                  <AlertTitle>Success</AlertTitle>
+                  <AlertDescription>{state.success}</AlertDescription>
+                </Alert>
+              )}
+            </View>
+          )}
 
           <Link href="/auth/login" className="mt-10 text-center text-primary">
             <Text className="text-base text-gray-500">
