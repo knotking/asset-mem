@@ -559,6 +559,7 @@ function PropertyChatComposerInner(
         primaryAgent={props.primaryAgent}
         checkpoints={checkpoints ?? []}
         documents={documents}
+        pendingContext={pendingContext}
         selectedCheckpointIds={selectedCheckpointIds}
         selectedDocumentIds={selectedDocumentIds}
         selectedCheckpointCount={readySelectedCheckpoints.length}
