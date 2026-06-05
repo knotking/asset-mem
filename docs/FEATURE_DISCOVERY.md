@@ -36,7 +36,7 @@ Keep the two files in sync when changing copy, counts, or tip IDs:
 - **Settings → FAQ** — `HelpHubSettings` articles + deep links
 - **Header FAQ (BookOpen)** — web `/home/settings?tab=faq` (hover tooltips on header icons); mapp `settings/faq` + header/property nav icons use `accessibilityLabel` only (no tooltips)
 - **Settings → Help & support** — contact support and legal only
-- **Chat** — shared empty state (`ChatSessionEmptyState` web/mapp) with static timeline copy and prompts; web tips above `ChatList`, mapp tips above `GiftedChat` (only when visible); mapp empty state centered in the message list via `contentContainerStyle` + `justifyContent: 'center'`; `resolveChatDiscoveryCounts` for contextual tip visibility
+- **Chat** — empty state in `ChatList` (web) and `PropertyChatTab.renderChatEmpty` (mapp) using `CHAT_SESSION_EMPTY_INTRO` and `getSuggestedPrompts()`; tap sends via existing `handleSend` / `onSend`
 - **Timeline** — compare tip (web banner; mapp existing hint + milestone on compare)
 - **Property details** — docs → Docs chat tip
 - **Property cards** — stat labels (uploaded files, saved providers, timeline entries)

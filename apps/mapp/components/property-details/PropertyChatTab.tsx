@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import NetInfo from '@react-native-community/netinfo';
@@ -19,15 +19,17 @@ import {
 import GiftedChatBubble from '@/components/GiftedChatBubble';
 import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
-import {
-  getInFlightCheckpointProgressFromMessages,
-} from '@homeapp/common/lib/checkpoint-branch-progress';
+import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
 import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
 import {
   assistantMessageHasDisplayableContent,
   getMessageDisplayParts,
 } from '@/lib/chat-content-parse';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
+import {
+  CHAT_SESSION_EMPTY_INTRO,
+  getSuggestedPrompts,
+} from '@homeapp/common/lib/feature-discovery';
 import type {
   FileAttachment,
   AnalysisOptionalAgent,
@@ -88,12 +90,7 @@ function PropertyChatTab({
   onSearchLocationChange,
   propertyAddress,
 }: PropertyChatTabProps) {
-  const {
-    messages,
-    isLoadingEarlier,
-    hasMoreMessages,
-    loadEarlierMessages,
-  } = useMessages();
+  const { messages, isLoadingEarlier, hasMoreMessages, loadEarlierMessages } = useMessages();
 
   const [isOnline, setIsOnline] = React.useState(true);
 
@@ -165,39 +162,58 @@ function PropertyChatTab({
         />
       );
     },
-    [priorAssistantTurnCountById, activeStreamingAssistantId],
+    [priorAssistantTurnCountById, activeStreamingAssistantId]
   );
 
-  const renderChatEmpty = React.useCallback(
-    () => (
+  const renderChatEmpty = React.useCallback(() => {
+    const suggestedPrompts = getSuggestedPrompts();
+    return (
       <View
         style={{
           flex: 1,
           alignItems: 'center',
           justifyContent: 'flex-end',
-          paddingBottom: '50%',
+          paddingBottom: '30%',
           transform:
             Platform.OS === 'ios'
               ? [{ rotate: '180deg' }, { scaleX: -1 }]
               : [{ rotateX: '180deg' }, { rotateY: '180deg' }],
         }}>
-        <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
+        <View style={{ alignItems: 'center', paddingHorizontal: 16, maxWidth: 360 }}>
           <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
           <Text className="mb-2 text-center text-xl font-semibold text-foreground">
-            Start a Conversation
+            {CHAT_SESSION_EMPTY_INTRO.title}
           </Text>
-          <Text className="text-center text-sm text-muted-foreground">
-            Ask questions about this property's{'\n'}documents, services, and history
+          <Text className="mb-4 text-center text-sm text-muted-foreground">
+            {CHAT_SESSION_EMPTY_INTRO.subtitle}
           </Text>
+          <View className="w-full gap-2">
+            {suggestedPrompts.map((prompt) => (
+              <Pressable
+                key={prompt}
+                disabled={isSending}
+                onPress={() =>
+                  onSend([
+                    {
+                      _id: `${Date.now()}`,
+                      text: prompt,
+                      createdAt: new Date(),
+                      user: giftedChatUser,
+                    },
+                  ])
+                }
+                className="rounded-md border border-border bg-background px-3 py-2.5 disabled:opacity-50">
+                <Text className="text-left text-sm text-foreground">{prompt}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </View>
-    ),
-    []
-  );
+    );
+  }, [giftedChatUser, isSending, onSend]);
 
   const renderFooter = React.useCallback(
-    () =>
-      branchProgress ? <CheckpointAnalysisProgressFooter progress={branchProgress} /> : null,
+    () => (branchProgress ? <CheckpointAnalysisProgressFooter progress={branchProgress} /> : null),
     [branchProgress]
   );
 

@@ -56,7 +56,7 @@ import type { Checkpoint } from "@/lib/types";
 import { defaultSearchLocationInput } from "@/lib/search-location";
 import { streamAgentResponse } from "@/lib/api-agent";
 import { createLogger } from "@/lib/logger";
-import { trackFirstChatMessage } from "@/lib/analytics";
+import { trackFirstChatMessage, trackSuggestedPromptClick } from "@/lib/analytics";
 
 const chatLog = createLogger("chat");
 
@@ -540,6 +540,11 @@ export default function PropertyChatSessionPage() {
           messages={messages}
           isMessagesLoading={isMessagesLoading && messages.length === 0}
           context={"property"}
+          onSelectSuggestedPrompt={(prompt) => {
+            trackSuggestedPromptClick(prompt);
+            void handleSend(prompt);
+          }}
+          isSendDisabled={isLoading}
         />
       </main>
       <div className="shrink-0">
