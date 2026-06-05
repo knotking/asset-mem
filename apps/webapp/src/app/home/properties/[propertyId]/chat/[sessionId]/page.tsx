@@ -57,6 +57,7 @@ export default function PropertyChatSessionPage() {
   const sessionId = params.sessionId as string;
   const fromOnboardingChecklist =
     searchParams.get(ONBOARDING_CHAT_OPEN_PARAM) === "1";
+  const onboardingHandledRef = useRef(false);
 
   const { isLoading: isDocsLoading, property } = useProperty();
 
@@ -72,15 +73,19 @@ export default function PropertyChatSessionPage() {
   >(undefined);
 
   useEffect(() => {
-    if (!fromOnboardingChecklist || !propertyId || !sessionId) {
+    if (
+      !fromOnboardingChecklist ||
+      !propertyId ||
+      !sessionId ||
+      onboardingHandledRef.current
+    ) {
       return;
     }
-    const frameId = requestAnimationFrame(() => {
-      void updatePreferences({ onboardingChatOpened: true }).then(() => {
-        router.replace(`/home/properties/${propertyId}/chat/${sessionId}`);
-      });
-    });
-    return () => cancelAnimationFrame(frameId);
+    onboardingHandledRef.current = true;
+    // Strip the query param immediately so Timeline/Details/Providers clicks are
+    // not overridden by a delayed router.replace after the Firestore write.
+    router.replace(`/home/properties/${propertyId}/chat/${sessionId}`);
+    void updatePreferences({ onboardingChatOpened: true });
   }, [fromOnboardingChecklist, propertyId, sessionId, updatePreferences, router]);
 
   useEffect(() => {

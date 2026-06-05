@@ -84,7 +84,7 @@ Uses V2 fields — not raw `message.content` alone.
 |------|------|
 | `src/components/chat/chat-message.tsx` | Render markdown, accordion, thinking strip |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |
-| `src/app/home/properties/[propertyId]/chat/[sessionId]/page.tsx` | Send message, Firestore listener, SSE stream |
+| `src/app/home/properties/[propertyId]/chat/[sessionId]/page.tsx` | Send message, Firestore listener, SSE stream; strips `fromOnboardingChecklist` query param immediately on landing (preference write is fire-and-forget) so property tab navigations are not raced |
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |
 | `src/lib/message-display-parts.ts` | Structured vs markdown gating |
 | `src/hooks/use-debounced-thinking-status.ts` | Debounced thinking strip text |

@@ -1,7 +1,7 @@
 import { Text } from '@/components/ui/text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { ScrollView, View, Pressable, InteractionManager } from 'react-native';
+import { ScrollView, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
@@ -100,19 +100,23 @@ export default function PropertyDetailsScreen() {
   const [activeTab, setActiveTab] = React.useState<PropertyScreenTab>(() =>
     parsePropertyScreenTab(tab, isNew === 'true', propertyId)
   );
+  const onboardingHandledRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (fromOnboardingChecklist !== '1' || activeTab !== 'chat') {
+    if (
+      fromOnboardingChecklist !== '1' ||
+      activeTab !== 'chat' ||
+      onboardingHandledRef.current
+    ) {
       return;
     }
-    const task = InteractionManager.runAfterInteractions(() => {
-      void updatePreferences({ onboardingChatOpened: true }).then(() => {
-        router.setParams({
-          [ONBOARDING_CHAT_OPEN_PARAM]: undefined,
-        } as Record<string, string | undefined>);
-      });
-    });
-    return () => task.cancel();
+    onboardingHandledRef.current = true;
+    // Strip the route param immediately so Timeline/Details/Providers tab taps are
+    // not delayed by a Firestore write finishing later.
+    router.setParams({
+      [ONBOARDING_CHAT_OPEN_PARAM]: undefined,
+    } as Record<string, string | undefined>);
+    void updatePreferences({ onboardingChatOpened: true });
   }, [fromOnboardingChecklist, activeTab, updatePreferences, router]);
 
   // Drawer state
