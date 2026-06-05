@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ONBOARDING_CHAT_OPEN_PARAM } from '@/lib/home-onboarding';
 import { useSession } from '@/contexts/session-context';
@@ -10,63 +10,147 @@ import { useToast } from '@/hooks/use-toast';
 import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import { createLogger, truncateId } from '@/lib/logger';
 
-// This page acts as an entry point to find the existing draft chat session
-// for the current property and then redirects to it.
+const chatLog = createLogger('chat');
+
+// Entry point: resolve the property draft (or create one) and redirect to it.
 export default function NewChatRedirectPage() {
     const { user, authPending } = useRequireAuth();
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { draftsByProperty, createPropertyDraftSession } = useSession();
+    const {
+        draftsByProperty,
+        createPropertyDraftSession,
+        isLoading: isSessionsLoading,
+    } = useSession();
     const [creationError, setCreationError] = useState(false);
+    const redirectAttemptedRef = useRef(false);
 
     const propertyId = params.propertyId as string;
+    const propertyDraftId = draftsByProperty[propertyId]?.id;
     const fromOnboardingChecklist =
       searchParams.get(ONBOARDING_CHAT_OPEN_PARAM) === '1';
 
-    const tryCreateAndRedirect = async (cancelled: () => boolean) => {
-        if (!user || !propertyId) {
-            if(!propertyId && !cancelled()) router.replace('/home');
+    useEffect(() => {
+        if (authPending || !user || !propertyId) {
+            chatLog.debug('chat.redirect.wait', {
+                reason: 'auth_or_property',
+                authPending,
+                hasUser: !!user,
+                propertyId: truncateId(propertyId),
+            });
+            if (!propertyId && !authPending && user) {
+                router.replace('/home');
+            }
             return;
-        };
-
-        if (!cancelled()) {
-            setCreationError(false);
         }
 
-        const propertyDraft = draftsByProperty[propertyId];
+        if (isSessionsLoading) {
+            chatLog.debug('chat.redirect.wait', {
+                reason: 'sessions_loading',
+                propertyId: truncateId(propertyId),
+            });
+            return;
+        }
 
-        if (propertyDraft) {
-            if (cancelled()) return;
+        let cancelled = false;
+
+        const tryCreateAndRedirect = async () => {
+            if (!cancelled) {
+                setCreationError(false);
+            }
+
+            if (propertyDraftId) {
+                if (cancelled) return;
+                chatLog.debug('chat.redirect.found', {
+                    propertyId: truncateId(propertyId),
+                    sessionId: truncateId(propertyDraftId),
+                });
+                const onboardingQuery = fromOnboardingChecklist
+                  ? `?${ONBOARDING_CHAT_OPEN_PARAM}=1`
+                  : '';
+                router.replace(
+                  `/home/properties/${propertyId}/chat/${propertyDraftId}${onboardingQuery}`
+                );
+                return;
+            }
+
+            if (redirectAttemptedRef.current) {
+                chatLog.debug('chat.redirect.skip', {
+                    propertyId: truncateId(propertyId),
+                    reason: 'redirect_already_attempted',
+                });
+                return;
+            }
+
+            redirectAttemptedRef.current = true;
+            chatLog.debug('chat.redirect.create', { propertyId: truncateId(propertyId) });
+
+            const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
+            if (cancelled) return;
+
+            if (!newSessionId) {
+                redirectAttemptedRef.current = false;
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not create a new chat session. Please try again.',
+                });
+                setCreationError(true);
+                return;
+            }
+
+            chatLog.debug('chat.redirect.created', {
+                propertyId: truncateId(propertyId),
+                sessionId: truncateId(newSessionId),
+            });
             const onboardingQuery = fromOnboardingChecklist
               ? `?${ONBOARDING_CHAT_OPEN_PARAM}=1`
               : '';
             router.replace(
-              `/home/properties/${propertyId}/chat/${propertyDraft.id}${onboardingQuery}`
+              `/home/properties/${propertyId}/chat/${newSessionId}${onboardingQuery}`
             );
-        } else {
-            // The draft might not exist yet. Attempt to create it.
-            const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
-            if (cancelled()) return;
-            if (!newSessionId) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not create a new chat session. Please try again.' });
-                setCreationError(true);
-                // Do not redirect, stay here to show the error UI.
-            }
-            // If creation succeeds, the useEffect will re-run and redirect.
-        }
-    }
+        };
 
-    useEffect(() => {
-        if (authPending || !user) return;
-        let cancelled = false;
-        void tryCreateAndRedirect(() => cancelled);
+        void tryCreateAndRedirect();
+
         return () => {
             cancelled = true;
         };
-    }, [user, propertyId, draftsByProperty, authPending]);
+    }, [
+        user,
+        propertyId,
+        propertyDraftId,
+        authPending,
+        isSessionsLoading,
+        fromOnboardingChecklist,
+        router,
+        toast,
+        createPropertyDraftSession,
+    ]);
+
+    const handleRetry = () => {
+        redirectAttemptedRef.current = false;
+        setCreationError(false);
+        if (!user || !propertyId || isSessionsLoading) return;
+
+        chatLog.debug('chat.redirect.retry', { propertyId: truncateId(propertyId) });
+        void createPropertyDraftSession(user.uid, propertyId).then((newSessionId) => {
+            if (!newSessionId) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not create a new chat session. Please try again.',
+                });
+                setCreationError(true);
+                return;
+            }
+            router.replace(`/home/properties/${propertyId}/chat/${newSessionId}`);
+        });
+    };
 
     if (authPending || !user) {
         return <ChatPageSkeleton />;
@@ -77,8 +161,8 @@ export default function NewChatRedirectPage() {
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Failed to Start Chat</h2>
-                <p className="text-muted-foreground mb-6">We couldn't create a new chat session. Please check your connection and try again.</p>
-                <Button onClick={() => void tryCreateAndRedirect(() => false)}>
+                <p className="text-muted-foreground mb-6">We couldn&apos;t create a new chat session. Please check your connection and try again.</p>
+                <Button onClick={handleRetry}>
                     Retry
                 </Button>
             </div>

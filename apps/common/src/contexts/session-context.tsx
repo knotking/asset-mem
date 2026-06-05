@@ -1,11 +1,17 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Session } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
-import { createLogger } from '../lib/logger';
+import { createLogger, truncateId } from '../lib/logger';
 
 const sessionLog = createLogger('session');
+
+type DraftSource = 'eager' | 'caller';
+
+function draftInflightKey(propertyId?: string | null): string {
+  return propertyId ? `property:${propertyId}` : 'global';
+}
 
 interface SessionContextType {
   sessionsByProperty: Record<string, Session[]>;
@@ -31,6 +37,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
   const [draftsByProperty, setDraftsByProperty] = useState<Record<string, Session>>({});
   const [globalDraft, setGlobalDraft] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const draftCreationByKeyRef = useRef(new Map<string, Promise<string | null>>());
 
   const createAgentSession = useCallback(async (userId: string): Promise<string | null> => {
     const { agentSessionId, error } = await createAgentSessionFn(userId);
@@ -40,45 +47,71 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
     return agentSessionId;
   }, [createAgentSessionFn]);
 
-  const createGlobalDraftSession = useCallback(async (userId: string) => {
-    try {
-      const agentSessionId = await createAgentSession(userId);
-      if (!agentSessionId) return null;
-      
-      const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
-        name: 'draft',
-        createdAt: serverTimestamp(),
-        agentSessionId: agentSessionId,
-        propertyId: null, // Global draft
-      });
-      return docRef.id;
-    } catch (err) {
-      sessionLog.error('draft.global.failed', undefined, err);
-      // Don't show a toast for this background task
-      return null;
-    }
-  }, [createAgentSession]);
-  
-  const createPropertyDraftSession = useCallback(async (userId: string, propertyId: string) => {
-    try {
-      const agentSessionId = await createAgentSession(userId);
-      if (!agentSessionId) return null;
-      
-      const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
-        name: 'draft',
-        createdAt: serverTimestamp(),
-        agentSessionId: agentSessionId,
-        propertyId: propertyId,
-      });
-      return docRef.id;
-    } catch (err) {
-      sessionLog.error('draft.property.failed', { propertyId }, err);
-      return null;
-    }
-  }, [createAgentSession]);
+  const createDraftSessionInternal = useCallback(
+    async (
+      userId: string,
+      propertyId: string | null,
+      source: DraftSource
+    ): Promise<string | null> => {
+      const key = draftInflightKey(propertyId);
+      const inFlight = draftCreationByKeyRef.current.get(key);
+      if (inFlight) {
+        sessionLog.debug('draft.create.join', { key, source });
+        return inFlight;
+      }
+
+      sessionLog.debug('draft.create.start', { key, source });
+
+      const work = (async (): Promise<string | null> => {
+        try {
+          const agentSessionId = await createAgentSession(userId);
+          if (!agentSessionId) return null;
+
+          const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
+            name: 'draft',
+            createdAt: serverTimestamp(),
+            agentSessionId,
+            propertyId,
+          });
+
+          sessionLog.debug('draft.create.done', {
+            key,
+            source,
+            sessionId: truncateId(docRef.id),
+          });
+          return docRef.id;
+        } catch (err) {
+          sessionLog.error(
+            propertyId ? 'draft.property.failed' : 'draft.global.failed',
+            { propertyId: propertyId ?? undefined, source },
+            err
+          );
+          return null;
+        } finally {
+          draftCreationByKeyRef.current.delete(key);
+        }
+      })();
+
+      draftCreationByKeyRef.current.set(key, work);
+      return work;
+    },
+    [createAgentSession, db]
+  );
+
+  const createGlobalDraftSession = useCallback(
+    (userId: string) => createDraftSessionInternal(userId, null, 'caller'),
+    [createDraftSessionInternal]
+  );
+
+  const createPropertyDraftSession = useCallback(
+    (userId: string, propertyId: string) =>
+      createDraftSessionInternal(userId, propertyId, 'caller'),
+    [createDraftSessionInternal]
+  );
 
   useEffect(() => {
     if (!user) {
+      draftCreationByKeyRef.current.clear();
       setSessionsByProperty({});
       setDraftsByProperty({});
       setGlobalDraft(null);
@@ -96,13 +129,11 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       const newSessionsByProperty: Record<string, Session[]> = {};
       const newDraftsByProperty: Record<string, Session> = {};
       let foundGlobalDraft: Session | null = null;
-      const propertyIdsWithDrafts = new Set<string>();
 
       allSessions.forEach(session => {
         if (session.name === 'draft') {
           if (session.propertyId) {
             newDraftsByProperty[session.propertyId] = session;
-            propertyIdsWithDrafts.add(session.propertyId);
           } else {
             foundGlobalDraft = session;
           }
@@ -142,20 +173,6 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       setSessionsByProperty(newSessionsByProperty);
       setDraftsByProperty(newDraftsByProperty);
       setIsLoading(false);
-
-      // Eagerly create missing drafts
-      if (!foundGlobalDraft) {
-        createGlobalDraftSession(user.uid);
-      }
-      
-      // We need to know all properties to check if a draft is missing.
-      // For now, we assume if a property has sessions, it should have a draft.
-      Object.keys(newSessionsByProperty).forEach(propId => {
-        if (!propertyIdsWithDrafts.has(propId)) {
-          createPropertyDraftSession(user.uid, propId);
-        }
-      });
-
     }, (error) => {
         sessionLog.error("sessions.subscribe.failed", undefined, error);
         if (onError) {
@@ -165,7 +182,23 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
     });
 
     return () => unsubscribe();
-  }, [user, onError, createGlobalDraftSession, createPropertyDraftSession]);
+  }, [user, db, onError]);
+
+  useEffect(() => {
+    if (!user || isLoading) return;
+
+    if (!globalDraft) {
+      sessionLog.debug('draft.eager.global', { userId: truncateId(user.uid) });
+      void createDraftSessionInternal(user.uid, null, 'eager');
+    }
+
+    Object.keys(sessionsByProperty).forEach(propId => {
+      if (!draftsByProperty[propId]) {
+        sessionLog.debug('draft.eager.property', { propertyId: truncateId(propId) });
+        void createDraftSessionInternal(user.uid, propId, 'eager');
+      }
+    });
+  }, [user, isLoading, globalDraft, draftsByProperty, sessionsByProperty, createDraftSessionInternal]);
 
   return (
     <SessionContext.Provider value={{ sessionsByProperty, draftsByProperty, globalDraft, isLoading, createGlobalDraftSession, createPropertyDraftSession }}>

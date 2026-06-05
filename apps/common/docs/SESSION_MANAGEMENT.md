@@ -419,14 +419,27 @@ useEffect(() => {
 - Firestore security rules
 - Console for errors
 
+### Problem: Multiple `POST /agent-session` calls (dev)
+
+**Cause**: Concurrent draft creation (Firestore snapshots, chat redirect, property add) before the first draft lands in Firestore.
+
+**Solution**: `SessionProvider` dedupes in-flight work per key (`global` or `property:{id}`). Concurrent callers join the same promise instead of starting a new agent session.
+
+**Debug logs** (dev / `EXPO_PUBLIC_DEBUG_LOGS=true`): filter console for `[session]` or `[chat]`:
+
+| Log | Meaning |
+|-----|---------|
+| `draft.eager.global` / `draft.eager.property` | Background eager create scheduled |
+| `draft.create.start` | New agent-session + Firestore draft started (`source`: `eager` or `caller`) |
+| `draft.create.join` | Duplicate request joined in-flight work |
+| `draft.create.done` | Draft Firestore doc created |
+| `chat.redirect.wait` / `chat.redirect.create` | Webapp chat entry redirect flow |
+
 ### Problem: Multiple drafts for same property
 
-**Cause**: Race condition in concurrent creation
+**Cause**: Race before dedup existed, or manual retries after partial failure.
 
-**Solution**: The context provider handles this by:
-1. Checking for existing draft before creation
-2. Using the most recent draft if multiples exist
-3. Cleaning up old drafts in background
+**Solution**: Prefer the draft in `draftsByProperty[propertyId]`; delete extras in Firestore if needed.
 
 ### Problem: Agent session creation fails
 
