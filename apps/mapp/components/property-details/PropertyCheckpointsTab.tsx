@@ -979,7 +979,7 @@ export function PropertyCheckpointsTab({
       {activeSubTab === 'checkpoints' && (
         <View className="flex-1 p-4">
           {/* Selection indicator and action buttons */}
-          {selectedForActions.length > 0 && (
+          {isSelectionMode && (
             <View className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
               <View className="flex-row items-center justify-between">
                 <Text className="text-sm font-medium text-foreground">
