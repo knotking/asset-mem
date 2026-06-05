@@ -62,9 +62,9 @@ users/{userId}/chats/{sessionId}
 **Purpose**: Active conversation threads with message history
 
 **Characteristics**:
-- Named with timestamp format: "session: MMM d, yyyy, h:mm AM/PM"
+- Auto-named from the first user message (trimmed excerpt, max 60 chars), or `Chat · MMM d, yyyy` when too short
 - Contains message count and last message timestamp
-- Immutable once created (name doesn't change)
+- Users can rename manually; auto-name is written once when the draft is promoted
 - Grouped by property in UI
 
 **Storage Path**:
@@ -140,33 +140,14 @@ sequenceDiagram
     UI->>Firestore: Check if name === 'draft'
 
     alt Is draft
-        UI->>Firestore: updateDoc({ name: "session: [timestamp]" })
+        UI->>Firestore: updateDoc({ name: deriveSessionNameFromFirstMessage(text) })
         Firestore-->>Listener: Document changed
         Listener->>Listener: Detect draft claimed
         Listener->>Firestore: Create new draft
     end
 ```
 
-**Code Location**: `apps/mapp/app/(tabs)/home/property-details/index.tsx`
-
-```typescript
-// When sending first message
-if (sessionDoc.exists() && sessionData?.name === 'draft') {
-  const newName = `session: ${new Date().toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  })}`;
-
-  await updateDoc(sessionRef, {
-    name: newName,
-    propertyId: id,
-  });
-}
-```
+**Code locations**: `deriveSessionNameFromFirstMessage` in `@homeapp/common/lib/session-name` (webapp mirror: `apps/webapp/src/lib/session-name.ts`). Called on first send when `name === 'draft'` (`PropertyChatWithContext` mapp, `property-chat-with-context` webapp) and when claiming a draft on New Session (`session-context`).
 
 ### 3. Auto-Selection on Property Load
 
@@ -367,8 +348,9 @@ users/{userId}/
 ### Session list timestamps (sidebar)
 
 - **Sort / activity:** `lastMessageAt ?? startedAt ?? createdAt`
-- **Display:** subtitle shows `Last active: …` only when `lastMessageAt` is set; default session names (`session: Jun 5, 2026, …`) already convey start time
-- **Writes:** `startedAt` on draft claim / first-send rename (sort fallback); `lastMessageAt` + `messageCount` on each user message
+- **Display:** subtitle shows `Last active: …` only when `lastMessageAt` is set
+- **Auto names:** first user message text (trimmed, max 60 chars); fallback `Chat · Jun 5, 2026` when the message is too short (`<4` chars). Applied on first send (draft → named) and when claiming a draft on New Session
+- **Writes:** `startedAt` on draft claim / first-send rename uses **client clock** (`clientStartedAtTimestamp`) so the sidebar sort does not briefly fall back to draft `createdAt`; `lastMessageAt` + `messageCount` on each user message use `serverTimestamp()`
 
 ## Best Practices
 
@@ -439,7 +421,7 @@ useEffect(() => {
 | `new_session.click` | User tapped New Session (sidebar / mapp list) |
 | `draft.begin.select` | Switched to existing empty draft |
 | `draft.begin.create_after_claim` | Promoted in-use draft, creating fresh draft |
-| `draft.claim` | Renamed `draft` → `session: …` in Firestore |
+| `draft.claim` | Renamed `draft` using first user message (or date fallback) in Firestore |
 
 ### Problem: Multiple drafts for same property
 

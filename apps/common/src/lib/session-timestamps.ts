@@ -1,4 +1,4 @@
-import { increment, serverTimestamp, type FieldValue } from 'firebase/firestore';
+import { increment, serverTimestamp, Timestamp, type FieldValue } from 'firebase/firestore';
 import type { Session } from '../types';
 
 export function getTimestampValue(value: unknown): number {
@@ -40,7 +40,7 @@ export function formatSessionDisplayDate(timestamp: unknown): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Subtitle for session list rows. Default names already embed start time (`session: …`). */
+/** Subtitle for session list rows when the session has user messages. */
 export function getSessionSidebarActivityLabel(
   session: Pick<Session, 'lastMessageAt'>
 ): string | null {
@@ -62,6 +62,11 @@ export type SessionActivityPatch = {
   lastMessageAt: FieldValue;
   messageCount: FieldValue;
 };
+
+/** Client clock for startedAt so session list sort is stable before server ack. */
+export function clientStartedAtTimestamp(): Timestamp {
+  return Timestamp.fromDate(new Date());
+}
 
 /** Firestore fields to bump when the user sends a message. */
 export function sessionActivityOnUserMessagePatch(): SessionActivityPatch {

@@ -8,7 +8,11 @@ import {
   warmAddContextMediaPermissions,
 } from '@/lib/add-context-media-picker';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { sessionActivityOnUserMessagePatch } from '@homeapp/common/lib/session-timestamps';
+import {
+  clientStartedAtTimestamp,
+  sessionActivityOnUserMessagePatch,
+} from '@homeapp/common/lib/session-timestamps';
+import { deriveSessionNameFromFirstMessage } from '@homeapp/common/lib/session-name';
 import type { IMessage } from 'react-native-gifted-chat';
 import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
 import { AddContextSheet } from '@/components/chat/AddContextSheet';
@@ -178,7 +182,17 @@ function PropertyChatInner(props: Props) {
           readySelectedDocuments,
         });
 
-        await updateDoc(sessionRef, sessionActivityOnUserMessagePatch());
+        const isDraftSession = sessionDoc.data()?.name === 'draft';
+        if (isDraftSession) {
+          await updateDoc(sessionRef, {
+            name: deriveSessionNameFromFirstMessage(text.trim()),
+            propertyId,
+            startedAt: clientStartedAtTimestamp(),
+            ...sessionActivityOnUserMessagePatch(),
+          });
+        } else {
+          await updateDoc(sessionRef, sessionActivityOnUserMessagePatch());
+        }
 
         await addDoc(collection(db, 'users', userId, 'chats', sessionId, 'messages'), {
           role: 'user',
