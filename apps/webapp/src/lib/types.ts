@@ -255,6 +255,8 @@ export type Session = {
   id: string;
   name: string;
   createdAt: Timestamp;
+  /** Set when a draft is claimed or first promoted to a named session. */
+  startedAt?: Timestamp;
   agentSessionId?: string;
   propertyId?: string | null;
   messageCount?: number;

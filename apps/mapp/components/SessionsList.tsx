@@ -42,7 +42,8 @@ import { deleteAgentSession, WEB_APP_URL } from '@/lib/api';
 import { createLogger } from '@/lib/logger';
 import {
   filterAndSortSessions,
-  formatSessionDate,
+  getSessionMessageCountLabel,
+  getSessionSidebarActivityLabel,
   SESSIONS_LIST_FLAT_LIST_PROPS,
 } from '@/lib/sessions-list-utils';
 
@@ -88,6 +89,8 @@ const SessionItem = React.memo(({
 }) => {
   const handlePress = () => onPress(session);
   const handleLongPress = () => onLongPress(session);
+  const activityLabel = getSessionSidebarActivityLabel(session);
+  const messageCountLabel = getSessionMessageCountLabel(session);
 
   return (
     <Pressable
@@ -109,18 +112,11 @@ const SessionItem = React.memo(({
           </View>
           <View className="flex-1 gap-1">
             <Text className="text-base font-semibold text-foreground">{session.name}</Text>
-            <Text className="text-xs text-muted-foreground">
-              {formatSessionDate(session.createdAt)}
-            </Text>
-            {session.messageCount !== undefined && session.messageCount > 0 && (
-              <Text className="text-xs text-muted-foreground">
-                {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
-              </Text>
+            {activityLabel && (
+              <Text className="text-xs text-muted-foreground">{activityLabel}</Text>
             )}
-            {session.lastMessageAt && (
-              <Text className="text-xs text-muted-foreground">
-                Last active: {formatSessionDate(session.lastMessageAt)}
-              </Text>
+            {messageCountLabel && (
+              <Text className="text-xs text-muted-foreground">{messageCountLabel}</Text>
             )}
           </View>
         </View>

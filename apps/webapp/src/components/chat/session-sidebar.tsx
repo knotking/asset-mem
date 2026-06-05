@@ -39,7 +39,6 @@ import {
 import { deleteCollection, cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Skeleton } from '../ui/skeleton';
-import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
@@ -51,6 +50,11 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, writeBatch, Timestamp, limit } from 'firebase/firestore';
 import { deleteAgentSession } from '@/lib/api-agent';
 import { createLogger } from '@/lib/logger';
+import {
+  getSessionActivitySortTime,
+  getSessionMessageCountLabel,
+  getSessionSidebarActivityLabel,
+} from '@/lib/session-timestamps';
 
 const sessionLog = createLogger('session');
 
@@ -164,28 +168,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     );
     
     const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
-        const getTimestampValue = (value: any): number => {
-            if (!value) return 0;
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string') {
-                const parsed = Date.parse(value);
-                return Number.isNaN(parsed) ? 0 : parsed;
-            }
-            if (value instanceof Date) return value.getTime();
-            if (typeof value.toMillis === 'function') return value.toMillis();
-            if (typeof value.toDate === 'function') {
-                const date = value.toDate();
-                return date instanceof Date ? date.getTime() : 0;
-            }
-            return 0;
-        };
         const userSessions = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as Session))
-            .sort((a, b) => {
-                const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
-                const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
-                return bTime - aTime;
-            });
+            .sort((a, b) => getSessionActivitySortTime(b) - getSessionActivitySortTime(a));
         setSessions(userSessions);
         setIsInitialLoading(false);
     }, (error) => {
@@ -643,8 +628,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                     filteredSessions.map((session) => {
                     const route = `/home/properties/${propertyId}/chat/${session.id}`;
                     const isActive = sessionId === session.id;
-                    const sessionDate = session.createdAt?.toDate ? format(session.createdAt.toDate(), 'M/d/yyyy') : '...';
-                    
+                    const activityLabel = getSessionSidebarActivityLabel(session);
+                    const messageCountLabel = getSessionMessageCountLabel(session);
+
                     if (isCollapsed) {
                         const isSelected = selectedSessionIds.includes(session.id);
                         const handleItemInteraction = () => {
@@ -717,7 +703,12 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                 </TooltipTrigger>
                                 <TooltipContent side="right">
                                     <p className='font-medium'>{session.name}</p>
-                                    <p className='text-xs text-muted-foreground'>{sessionDate}</p>
+                                    {activityLabel && (
+                                      <p className='text-xs text-muted-foreground'>{activityLabel}</p>
+                                    )}
+                                    {messageCountLabel && (
+                                      <p className='text-xs text-muted-foreground'>{messageCountLabel}</p>
+                                    )}
                                 </TooltipContent>
                             </Tooltip>
                         )
@@ -768,9 +759,14 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                 </div>
                             )}
                             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                            <div className='flex-1 flex flex-col gap-1 min-w-0 overflow-hidden'>
+                            <div className='flex-1 flex flex-col gap-0.5 min-w-0 overflow-hidden'>
                                 <p className="text-sm font-medium truncate text-foreground">{session.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{sessionDate}</p>
+                                {activityLabel && (
+                                  <p className="text-xs text-muted-foreground truncate">{activityLabel}</p>
+                                )}
+                                {messageCountLabel && (
+                                  <p className="text-xs text-muted-foreground truncate">{messageCountLabel}</p>
+                                )}
                             </div>
                         </div>
                         {!isSelectionMode && (

@@ -158,6 +158,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       await updateDoc(doc(db, 'users', userId, 'chats', draftId), {
         name: formatClaimedSessionName(),
         propertyId,
+        startedAt: serverTimestamp(),
       });
     },
     [db]
@@ -261,8 +262,8 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
 
       Object.keys(newSessionsByProperty).forEach(propId => {
         newSessionsByProperty[propId].sort((a, b) => {
-          const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
-          const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
+          const bTime = getTimestampValue(b.lastMessageAt ?? b.startedAt ?? b.createdAt);
+          const aTime = getTimestampValue(a.lastMessageAt ?? a.startedAt ?? a.createdAt);
           return bTime - aTime;
         });
       });

@@ -43,6 +43,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { createLogger } from "@/lib/logger";
 import { trackFirstChatMessage } from "@/lib/analytics";
+import { sessionActivityOnUserMessagePatch } from "@/lib/session-timestamps";
 
 const chatLog = createLogger("chat");
 
@@ -156,8 +157,9 @@ function PropertyChatComposerInner(
       let activeSessionId = props.sessionId;
 
       try {
+        const sessionRef = doc(db, "users", user.uid, "chats", activeSessionId);
+
         if (props.isNewSession) {
-          const sessionRef = doc(db, "users", user.uid, "chats", activeSessionId);
           const newName = `session: ${new Date().toLocaleString("en-US", {
             month: "short",
             day: "numeric",
@@ -169,8 +171,12 @@ function PropertyChatComposerInner(
           await updateDoc(sessionRef, {
             name: newName,
             propertyId: props.propertyId,
+            startedAt: serverTimestamp(),
+            ...sessionActivityOnUserMessagePatch(),
           });
           props.setIsNewSession(false);
+        } else {
+          await updateDoc(sessionRef, sessionActivityOnUserMessagePatch());
         }
 
         const contextRefs = buildMessageContextRefs({

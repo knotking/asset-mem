@@ -347,11 +347,12 @@ users/{userId}/
   └── chats/{sessionId}/
       ├── Document (Session metadata)
       │   ├── name: string
-      │   ├── createdAt: Timestamp
-      │   ├── agentSessionId: string
-      │   ├── propertyId?: string
+      │   ├── createdAt: Timestamp (draft doc creation)
+      │   ├── startedAt?: Timestamp (when draft was claimed / named)
+      │   ├── lastMessageAt?: Timestamp (last user message)
       │   ├── messageCount?: number
-      │   └── lastMessageAt?: Timestamp
+      │   ├── agentSessionId: string
+      │   └── propertyId?: string
       │
       └── messages/{messageId}/
           ├── Document (Message)
@@ -362,6 +363,12 @@ users/{userId}/
           ├── documents?: Array<{ name, type }>
           └── agentSteps?: Array<{ name, status }>
 ```
+
+### Session list timestamps (sidebar)
+
+- **Sort / activity:** `lastMessageAt ?? startedAt ?? createdAt`
+- **Display:** subtitle shows `Last active: …` only when `lastMessageAt` is set; default session names (`session: Jun 5, 2026, …`) already convey start time
+- **Writes:** `startedAt` on draft claim / first-send rename (sort fallback); `lastMessageAt` + `messageCount` on each user message
 
 ## Best Practices
 
