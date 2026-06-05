@@ -35,6 +35,7 @@ import { createLogger } from "@/lib/logger";
 import { useAssistantLoadingUi } from "@/hooks/use-assistant-loading-ui";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import { splitMessageContextRefItems } from "@/lib/chat-message-context-refs";
+import { MessageContextRefsDisplay } from "@/components/chat/message-context-refs-display";
 import {
   assistantMessageHasDisplayableContent,
   getMessageDisplayParts,
@@ -1518,6 +1519,7 @@ type Props = {
   isLoading?: boolean;
   context?: 'property' | null;
   priorAssistantTurnCount?: number;
+  hideRepeatedContextRefs?: boolean;
 };
 
 const stripTextTransition = { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const };
@@ -1574,6 +1576,7 @@ const ChatMessageComponent = ({
   isLoading = false,
   context,
   priorAssistantTurnCount = 0,
+  hideRepeatedContextRefs = false,
 }: Props) => {
   const isUser = message.role === "user";
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
@@ -1834,6 +1837,61 @@ const ChatMessageComponent = ({
     return hasCheckpointDisplayTitleInProgress(messageContentJson);
   }, [isUser, messageContentJson]);
 
+  const isUserSplitContent =
+    isUser && !showStatusStrip && !showLoadingIndicator && !effectiveStructuredData;
+
+  const messageTimeLabel = useMemo(() => {
+    if (!message.createdAt) return null;
+    const date =
+      message.createdAt instanceof Date
+        ? message.createdAt
+        : typeof message.createdAt === "object" &&
+            message.createdAt !== null &&
+            "toDate" in message.createdAt &&
+            typeof message.createdAt.toDate === "function"
+          ? message.createdAt.toDate()
+          : null;
+    if (!date) return null;
+    return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }, [message.createdAt]);
+
+  const renderUserMessageBody = () => (
+    <div className="flex w-full max-w-full flex-col items-end gap-1.5">
+      {message.contextRefs ? (
+        <MessageContextRefsDisplay
+          refs={message.contextRefs}
+          hideRepeated={hideRepeatedContextRefs}
+        />
+      ) : null}
+      {renderFilePreview()}
+      {messageMarkdown ? (
+        <div className="w-fit max-w-full rounded-lg bg-secondary px-4 py-2.5 text-secondary-foreground shadow-sm">
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+            <p className="m-0 whitespace-pre-wrap break-words text-secondary-foreground">
+              {messageMarkdown}
+            </p>
+            {renderDocumentList()}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const renderAssistantMessageBody = () => (
+    <>
+      {renderContextRefs()}
+      {renderFilePreview()}
+      {messageMarkdown ? (
+        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
+            {messageMarkdown}
+          </ReactMarkdown>
+          {renderDocumentList()}
+        </div>
+      ) : null}
+    </>
+  );
+
   return (
     <div
       className={cn(
@@ -1846,7 +1904,12 @@ const ChatMessageComponent = ({
       </div>
       <div className={cn(
           "flex flex-col max-w-full sm:max-w-[calc(100%-4rem)] group relative",
-          effectiveStructuredData ? 'w-full md:w-5/6 lg:w-4/5' : 'w-fit'
+          effectiveStructuredData
+            ? "w-full md:w-5/6 lg:w-4/5"
+            : isUserSplitContent
+              ? "w-full"
+              : "w-fit",
+          isUser && "items-end"
       )} ref={bubbleRef} onCopy={handleCopy}>
           <div
             style={bubbleStyle}
@@ -1855,17 +1918,28 @@ const ChatMessageComponent = ({
               "animate-message-in",
               { "self-end": isUser },
               {
-                "rounded-lg": isUser,
+                "rounded-lg": isUser && !isUserSplitContent,
                 "bg-muted border":
                   !isUser && !showStatusStrip && !showLoadingIndicator && !effectiveStructuredData,
                 "bg-transparent border-0 shadow-none":
+                  isUserSplitContent ||
                   showStatusStrip ||
                   showLoadingIndicator ||
                   effectiveStructuredData
               },
-              (isUser && messageMarkdown) && "bg-secondary text-secondary-foreground",
-              fileData && messageMarkdown ? "gap-2" : "",
-              isMediaOnly ? 'p-0 bg-transparent' : (fileData || (showLoadingIndicator && !hasDisplayableContent)) ? "p-2" : effectiveStructuredData ? "" : "px-4 py-2.5"
+              !isUserSplitContent &&
+                (isUser && messageMarkdown) &&
+                "bg-secondary text-secondary-foreground",
+              !isUserSplitContent && fileData && messageMarkdown ? "gap-2" : "",
+              isUserSplitContent
+                ? "p-0"
+                : isMediaOnly
+                  ? "bg-transparent p-0"
+                  : fileData || (showLoadingIndicator && !hasDisplayableContent)
+                    ? "p-2"
+                    : effectiveStructuredData
+                      ? ""
+                      : "px-4 py-2.5"
             )}
           >
             {!isUser &&
@@ -1903,28 +1977,17 @@ const ChatMessageComponent = ({
                     }}
                   />
                 </motion.div>
+            ) : isUserSplitContent ? (
+                renderUserMessageBody()
             ) : (
-                <>
-                {renderContextRefs()}
-                {renderFilePreview()}
-                {messageMarkdown && (
-                  <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                    {isUser ? (
-                      <p className="whitespace-pre-wrap break-words text-secondary-foreground">{messageMarkdown}</p>
-                    ) : (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={markdownRenderers}
-                      >
-                        {messageMarkdown}
-                      </ReactMarkdown>
-                    )}
-                     {renderDocumentList()}
-                  </div>
-                )}
-                </>
+                renderAssistantMessageBody()
             )}
           </div>
+          {messageTimeLabel ? (
+            <p className={cn("mt-1 text-xs text-muted-foreground", isUser && "text-right")}>
+              {messageTimeLabel}
+            </p>
+          ) : null}
         </div>
       {isUser && (
         <div className="hidden sm:block">

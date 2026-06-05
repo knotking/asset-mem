@@ -14,6 +14,7 @@ import {
   CHAT_SESSION_EMPTY_INTRO,
   getSuggestedPrompts,
 } from '@/lib/feature-discovery';
+import { buildSuppressRepeatedContextRefsByMessageId } from '@/lib/chat-message-context-refs';
 
 type Props = {
   messages: Message[];
@@ -48,6 +49,11 @@ export function ChatList({
     }
   }, [messages]);
 
+  const suppressRepeatedContextRefsById = useMemo(
+    () => buildSuppressRepeatedContextRefsByMessageId(messages),
+    [messages]
+  );
+
   const renderedMessages = useMemo(() => {
     return messages.map((message, index) => {
         // A message is considered loading if it's the last one, from the assistant, and has no content yet.
@@ -66,10 +72,11 @@ export function ChatList({
                 isLoading={isLoading || (isPlaceholder && assistantHasNoDisplayableContentYet(message))}
                 context={context}
                 priorAssistantTurnCount={countPriorAssistantTurnsInSession(messages, message.id)}
+                hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(message.id) ?? false}
             />
         )
     });
-  }, [messages, context]);
+  }, [messages, context, suppressRepeatedContextRefsById]);
 
   const welcomeMessageVisible = messages.length === 1 && messages[0].id === 'intro-message';
 

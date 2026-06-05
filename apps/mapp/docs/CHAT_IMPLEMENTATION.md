@@ -19,7 +19,7 @@ Chat uses a single **Add context** (`+`) affordance in the composer — not ephe
 
 **Send rules:** non-empty text required; context is optional and included when ready items are selected. In-flight pending captures/uploads block send (composer shows pending label); **Ask when ready** queues the typed message until they finish. Selected checkpoints/documents must be ready — not-ready selections block send.
 
-User messages persist `contextRefs` (checkpoint/doc ids and names at send time) instead of `message.file`. The bubble shows compact name-only chips (first 2 + `+N more`). Legacy messages with `message.file` still render.
+User messages persist `contextRefs` (checkpoint/doc ids and names at send time) instead of `message.file`. Sent messages show a **collapsed** context summary (paperclip + first name + `+N more`); tap the chip to expand/collapse full chips. Context is **hidden** when it matches the previous user message's `contextRefs`. Legacy messages with `message.file` still render.
 
 **Key modules:** `ChatContextProvider` (`apps/common/src/contexts/chat-context-context.tsx`), `PropertyChatWithContext`, `AddContextSheet`, `ChatContextChipStrip`, `chat-send-context.ts`.
 

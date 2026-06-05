@@ -9,6 +9,7 @@ export interface GiftedChatBubbleCompareProps extends BubbleProps<IMessage> {
   sessionId?: string;
   priorAssistantTurnCount?: number;
   isActiveLoading?: boolean;
+  hideRepeatedContextRefs?: boolean;
 }
 
 function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
@@ -65,6 +66,7 @@ export function areGiftedChatBubblePropsEqual(
   if (prev.sessionId !== next.sessionId) return false;
   if (prev.priorAssistantTurnCount !== next.priorAssistantTurnCount) return false;
   if (prev.isActiveLoading !== next.isActiveLoading) return false;
+  if (prev.hideRepeatedContextRefs !== next.hideRepeatedContextRefs) return false;
   if (prev.position !== next.position) return false;
 
   const prevMsg = prev.currentMessage;
