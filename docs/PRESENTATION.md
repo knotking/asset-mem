@@ -420,48 +420,23 @@ AGENT  AGENT   AGENT                   │              │
 
 ### Agent Responsibilities
 
-#### Root Property Agent
+#### Root Property Agent (Orchestrator V2)
 
-- **Role**: Main orchestrator
-- **Responsibilities**:
-  - Routes requests based on input parameters
-  - Delegates to Analysis or DocuLink agents
-  - Handles casual queries directly
+- **Role**: Two-hop orchestrator (`resolve_turn_llm` + executor LLM)
+- **Flat executor tools**:
+  - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost
+  - `user_docs_retrieval` — user document RAG
+  - `knowledge_base_retrieval` — shared corpus RAG
+- **Casual turns**: canned markdown before executor runs
 
-#### Analysis Agent
-
-- **Triage Agent**: Multimodal analysis, initial diagnosis
-- **Coverage Agent**: Warranty/insurance retrieval
-- **DIY Agent**: Step-by-step instructions, videos, products
-- **Service Agent**: Local provider discovery
-- **Shopping Agent**: Product recommendations
-- **Cost Agent**: AI-powered cost estimates with location-aware pricing
-
-#### DocuLink Agent
-
-- **User Docs Agent**: Retrieves from user-uploaded documents
-- **Knowledge Base Agent**: Accesses general knowledge corpus
+See [Orchestrator V2 Plan](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
 
 ### Agent Workflow
 
-1. **Input Processing**
-   - User query analysis
-   - Parameter extraction (diagnosis_uris, context_doc_uris)
-   - Routing decision
-
-2. **Agent Selection**
-   - If diagnosis URIs → Analysis Agent
-   - If no diagnosis URIs → DocuLink Agent
-
-3. **Sub-Agent Execution**
-   - Parallel or sequential agent execution
-   - Tool calls (RAG, APIs, search)
-   - Result aggregation
-
-4. **Response Assembly**
-   - Structured JSON output
-   - Citation inclusion
-   - Streaming to client
+1. **Resolve** — intent, route, optional branches; casual short-circuit
+2. **Executor** — history-first markdown or tool call
+3. **Checkpoint pipeline** (when needed) — parallel branches, deterministic `contentJson`, synthesis markdown
+4. **Proxy persist** — merge `state_delta` into Firestore message fields
 
 ---
 
@@ -611,7 +586,7 @@ AGENT  AGENT   AGENT                   │              │
 **Flow**:
 
 1. User asks: "What does my home warranty cover?"
-2. DocuLink Agent routes to User Docs Agent
+2. Property agent calls `user_docs_retrieval`
 3. RAG retrieval searches user's uploaded warranty documents
 4. Returns relevant coverage information with citations
 
@@ -662,8 +637,8 @@ AGENT  AGENT   AGENT                   │              │
 **Flow**:
 
 1. User asks: "How do I reset my dishwasher?"
-2. DocuLink Agent searches user's uploaded manuals
-3. Knowledge Base Agent searches general appliance database
+2. Property agent calls `user_docs_retrieval` on uploaded manuals
+3. Or `knowledge_base_retrieval` for general appliance guidance
 4. Returns reset instructions with manual citations
 
 **Output**: Step-by-step reset instructions from user's manual or knowledge base

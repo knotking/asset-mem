@@ -49,6 +49,7 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
   coverage_agent: "Checking warranty & insurance…",
   diy_agent: "Building DIY steps…",
   run_checkpoint_pipeline: "Loading your checkpoints…",
+  // Legacy stream authors (pre-V2); not root tools — see property_agent/ARCHITECTURE.md
   checkpoint_analysis_agent: "Analyzing your checkpoints…",
   checkpoint_analysis_synthesis_agent: "Writing your summary…",
   checkpoint_optional_agents_parallel_runner: "Finishing your analysis…",

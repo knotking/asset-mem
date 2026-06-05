@@ -3,23 +3,19 @@
 from __future__ import annotations
 
 import json
-import re
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from property_agent.bindings.state_merge import merge_homecare_state_delta
 from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_RUN_ID_STATE_KEY,
     CHECKPOINT_ANALYSIS_STATE_KEY,
-    CHECKPOINT_BRANCH_COMPLETED_STATE_KEY,
-    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
     CHECKPOINT_SESSION_INPUT_KEYS,
     OPTIONAL_BRANCH_TO_AGENT_NAME,
     _PARALLEL_KEY_TO_BRANCH,
     _VALID_OPTIONAL_BRANCHES,
 )
 from property_agent.checkpoint.analysis.markdown_render import (
-    build_checkpoint_summary_from_results_blob,
     build_fallback_analysis,
     render_analysis_markdown,
     title_from_markdown_first_heading,
@@ -74,7 +70,7 @@ def apply_tool_context_state_delta(tool_context: Any, delta: Dict[str, Any]) -> 
 
 
 def analysis_status_for_branches(
-    requested: List[str],
+    requested: Sequence[str],
     *,
     completed: List[str],
     pending: List[str],
@@ -95,7 +91,7 @@ def build_initial_analysis(
     *,
     checkpoint_results: str,
     user_query: str,
-    requested_branches: List[str],
+    requested_branches: Sequence[str],
     property_address: Optional[str] = None,
     retrieval_search_query: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -133,7 +129,7 @@ def merge_branch_result(
     checkpoint_results: str,
     user_query: str,
     parallel_results: Dict[str, str],
-    requested_branches: List[str],
+    requested_branches: Sequence[str],
     completed_branches: List[str],
     pending_branches: List[str],
     in_progress: bool = True,
@@ -180,7 +176,7 @@ def minimal_checkpoint_progress_session_text(
     *,
     completed_branches: List[str],
     pending_branches: List[str],
-    requested_branches: List[str],
+    requested_branches: Sequence[str],
 ) -> str:
     """Short placeholder for ADK session history during progressive analysis."""
     total = len(requested_branches) or 1

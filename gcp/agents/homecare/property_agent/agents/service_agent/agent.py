@@ -102,7 +102,7 @@ def fetch_serpapi_maps_providers(
         return []
 
     if isinstance(search_location_raw, SearchLocation):
-        search_location = search_location_raw
+        search_location: SearchLocation | None = search_location_raw
     else:
         search_location = merge_search_location_sources(search_location_raw)
 
@@ -153,7 +153,7 @@ def _run_serpapi_maps_search(
         return "Service provider search not available (missing API key)."
 
     if isinstance(search_location_raw, SearchLocation):
-        search_location = search_location_raw
+        search_location: SearchLocation | None = search_location_raw
     else:
         search_location = merge_search_location_sources(search_location_raw)
 
@@ -210,7 +210,7 @@ def _run_serpapi_web_fallback(query: str) -> str:
 async def serpapi_search(
     query: str,
     search_location: Optional[dict] = None,
-    tool_context: ToolContext = None,
+    tool_context: ToolContext | None = None,
 ) -> str:
     """Search local service providers via SerpAPI Google Maps (structured geo when available)."""
     state_sl: Any = None

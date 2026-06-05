@@ -157,20 +157,15 @@
 
 ## Related Systems
 
-### Analysis Agent
-- **Docs**: `docs/analysis/`
-- **Integration**: Cost agent is called by analysis agent
-- **Relationship**: Provides cost estimates after triage
+### Property Agent (checkpoint pipeline)
+- **Docs**: [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md), [`docs/checkpoint/`](../checkpoint/)
+- **Integration**: Cost branch runs inside `run_checkpoint_pipeline` when `checkpoint_optional_agents` includes `cost`
+- **Relationship**: Provides DIY vs professional cost estimates for checkpoint-detected issues
 
-### Service Agent
-- **Docs**: `docs/analysis/ANALYSIS_AGENT_SUB_AGENTS.md`
-- **Integration**: Provides service provider data for calibration
-- **Relationship**: Service results feed into cost calibration
-
-### Checkpoint Agent
-- **Docs**: `docs/checkpoint/`
-- **Integration**: Cost agent called for checkpoint-based estimates
-- **Relationship**: Provides costs for checkpoint issues
+### Service branch
+- **Docs**: [`property_agent/ARCHITECTURE.md`](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md)
+- **Integration**: Service branch via `AgentTool(service_agent)` inside checkpoint pipeline
+- **Relationship**: Service results can inform cost calibration context
 
 ## External Resources
 

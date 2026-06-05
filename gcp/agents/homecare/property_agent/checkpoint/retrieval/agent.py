@@ -7,7 +7,6 @@ Can optionally trigger comprehensive analysis with coverage, DIY, service, and c
 
 import json
 import logging
-import os
 import re
 import time
 from typing import Any, Dict, List, Optional
@@ -16,26 +15,10 @@ from google.adk.tools import ToolContext
 from dotenv import load_dotenv
 from .firestore_vector_search import search_checkpoints_by_vector
 from property_agent.checkpoint.constants import (
-    CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
-    CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
     CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY,
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
 )
 from .media_search_query_refiner import refine_checkpoint_branch_search_intents
-from property_agent.checkpoint.analysis.assembler import (
-    apply_tool_context_state_delta,
-    build_initial_analysis,
-    build_message_patch_from_analysis,
-    bump_checkpoint_progress_emit_seq,
-    ensure_analysis_run_id,
-    format_checkpoints_for_analysis_blob,
-    minimal_checkpoint_progress_session_text,
-    stash_checkpoint_analysis_in_state,
-)
-from property_agent.checkpoint.session_input import (
-    optional_agents_for_progress_from_state,
-    should_run_optional_analysis,
-)
 from property_agent.checkpoint.timing import record_retrieval_ms
 
 load_dotenv()
@@ -75,73 +58,12 @@ def build_search_query_from_checkpoints(
     return q
 
 
-def _stash_pending_checkpoint_analysis(
-    tool_context: ToolContext,
-    *,
-    formatted_results: List[Dict[str, Any]],
-    search_query: str,
-    user_query: str,
-) -> None:
-    """Stash structured analysis input for downstream orchestrator execution."""
-    if not should_run_optional_analysis(tool_context.state, user_query):
-        return
-    requested = optional_agents_for_progress_from_state(tool_context.state)
-    if not requested or not formatted_results:
-        return
-
-    blob = format_checkpoints_for_analysis_blob(formatted_results)
-    pending: Dict[str, Any] = {
-        "checkpoint_results": blob,
-        "user_query": user_query,
-        "search_query": search_query or "",
-        "checkpoint_optional_agents": requested,
-    }
-    for key in (
-        "context_doc_uris",
-        "property_address",
-        "property_id",
-        "search_location",
-    ):
-        value = tool_context.state.get(key)
-        if value is not None:
-            pending[key] = value
-
-    pending_json = json.dumps(pending, ensure_ascii=False)
-    analysis = build_initial_analysis(
-        checkpoint_results=blob,
-        user_query=user_query,
-        requested_branches=requested,
-    )
-    stash_checkpoint_analysis_in_state(tool_context.state, analysis)
-    run_id = ensure_analysis_run_id(tool_context.state)
-    delta: Dict[str, Any] = {
-        "checkpoint_results": blob,
-        CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: pending_json,
-        CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY: minimal_checkpoint_progress_session_text(
-            completed_branches=[],
-            pending_branches=list(requested),
-            requested_branches=requested,
-        ),
-        CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY: search_query or "",
-        "checkpoint_optional_agents": requested,
-        **build_message_patch_from_analysis(analysis, analysis_run_id=run_id),
-    }
-    apply_tool_context_state_delta(tool_context, delta)
-    bump_checkpoint_progress_emit_seq(tool_context.state)
-    logger.info(
-        "checkpoint retrieval: stashed pending analysis branches=%s blob_len=%d",
-        requested,
-        len(blob),
-    )
-
-
-
 def ask_checkpoints_retrieval(
     user_query: str,
     property_id: str,  # Mandatory - required for property-specific checkpoint queries
     location: Optional[str] = None,
     checkpoint_ids: Optional[List[str]] = None,
-    tool_context: ToolContext = None,
+    tool_context: ToolContext | None = None,
 ):
     """
     Retrieves relevant checkpoints using Firestore Vector Search based on semantic query matching.
@@ -186,6 +108,11 @@ def ask_checkpoints_retrieval(
             checkpoint_ids,
         )
 
+        if tool_context is None:
+            logger.error("checkpoint_retrieval: missing tool_context")
+            _record_retrieval_timing()
+            return {"checkpoints": [], "search_query": ""}
+
         # Get user_id from context
         user_id = (
             tool_context.state.get("user_id")
@@ -227,7 +154,7 @@ def ask_checkpoints_retrieval(
         )
 
         # Lazy import to avoid deployment issues
-        from google.cloud import firestore
+        from google.cloud import firestore  # type: ignore[attr-defined]
 
         # Initialize Firestore client
         db = firestore.Client()
@@ -437,13 +364,6 @@ def ask_checkpoints_retrieval(
         if tool_context is not None and branch_intents.issue_stem:
             tool_context.state[CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY] = (
                 branch_intents.to_dict()
-            )
-        if tool_context is not None and formatted_results:
-            _stash_pending_checkpoint_analysis(
-                tool_context,
-                formatted_results=formatted_results,
-                search_query=search_query,
-                user_query=user_query,
             )
         logger.info(
             "checkpoint_retrieval: end duration_ms=%d outcome=ok checkpoints=%d "

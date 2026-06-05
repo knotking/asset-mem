@@ -4,7 +4,7 @@
 
 This is a comprehensive AI agent system designed for home care and vehicle diagnostics. It provides multimodal analysis, research capabilities, service provider discovery, and product recommendations through a sophisticated multi-agent architecture.
 
-The system consists of a main orchestrator agent that delegates tasks to specialized sub-agents, each handling specific aspects of home care diagnostics and support.
+The system uses a two-hop orchestrator (`resolve_turn_llm` then executor LLM) with a flat tool registry; checkpoint optional branches run inside `run_checkpoint_pipeline`.
 
 ## Quick Start
 
@@ -79,7 +79,7 @@ The **property agent** (`property_agent`) is the root orchestrator: it resolves 
 |:----------|:--------|
 | **Interaction Type** | Conversational with multimodal support |
 | **Complexity** | Advanced multi-agent system |
-| **Agent Type** | Orchestrator with specialized sub-agents |
+| **Agent Type** | Two-hop orchestrator with flat tool registry |
 | **Components** | Tools, RAG, External APIs, Multimodal Analysis |
 | **Vertical** | Home Care and Vehicle Diagnostics |
 

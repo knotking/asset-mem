@@ -32,7 +32,6 @@ HEAVY_STATE_KEYS_TO_PRUNE_AFTER_TURN = frozenset(
         "_checkpoint_pipeline_pending",
         "checkpoint_progress_emit_seq",
         "checkpoint_progress_last_emitted_seq",
-        "checkpoint_analysis_pending_input",
     }
 )
 

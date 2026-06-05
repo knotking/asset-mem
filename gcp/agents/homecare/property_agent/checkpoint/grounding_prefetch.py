@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, Sequence
 
 from property_agent.agents.diy_agent.orchestrator.checkpoint_parse import (
     _web_grounding_query,
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 CHECKPOINT_GROUNDING_SUMMARY_KEY = "checkpoint_grounding_web_summary"
 
 
-def should_prefetch_checkpoint_grounding(requested_branches: List[str]) -> bool:
+def should_prefetch_checkpoint_grounding(requested_branches: Sequence[str]) -> bool:
     """Prefetch one web summary when both DIY and cost need grounded market context."""
     if os_prefetch_disabled():
         return False

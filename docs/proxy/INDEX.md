@@ -262,8 +262,9 @@ black .
 
 - [GCP Proxy Main README](../../gcp/proxy/README.md) - Parent directory overview
 - [Workers Documentation](../../gcp/proxy/workers/README.md) - Background workers
-- [Checkpoint Analysis](../checkpoint/) - Checkpoint feature docs
-- [Analysis Agent](../analysis/) - Analysis agent docs
+- [Checkpoint features](../checkpoint/) - Checkpoint feature docs
+- [Property Agent](../../gcp/agents/homecare/property_agent/README.md) - Root orchestrator
+- [Orchestrator V2](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) - Chat SSOT contract
 
 ### External Resources
 

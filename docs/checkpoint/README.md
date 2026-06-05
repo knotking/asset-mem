@@ -1,6 +1,6 @@
 # Checkpoint Documentation
 
-Serving code lives under `gcp/agents/homecare/property_agent/checkpoint/` (`run_checkpoint_pipeline`, retrieval, optional-branch analysis). See `property_agent/ARCHITECTURE.md` and `docs/ORCHESTRATOR_V2_PLAN.md`.
+Serving code lives under `gcp/agents/homecare/property_agent/checkpoint/` (`run_checkpoint_pipeline`, retrieval, optional-branch analysis). See [`property_agent/ARCHITECTURE.md`](../../gcp/agents/homecare/property_agent/ARCHITECTURE.md) and [`ORCHESTRATOR_V2_PLAN.md`](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
 
 ## Overview
 
@@ -10,10 +10,10 @@ The Checkpoint feature allows users to capture and track property condition over
 
 ### Core Features
 
+- **[Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)** - Canonical checkpoint chat analysis contract (`contentJson` / `contentMarkdown`)
 - **[Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)** - Complete implementation plan and roadmap
 - **[Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)** - Integration with AI chat interface
-- **[Checkpoint AI Chat Analysis](./CHECKPOINT_AI_CHAT_ANALYSIS.md)** ⭐ **NEW** - Comprehensive analysis with coverage, DIY, service, and cost recommendations
-- **[Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)** ⭐ **NEW** - Complete API reference for checkpoint analysis
+- **[Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)** - API reference for checkpoint analysis
 
 ### Implementation Details
 
@@ -47,28 +47,6 @@ The Checkpoint feature allows users to capture and track property condition over
 2. **API**: See [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md)
 3. **Frontend (Webapp)**: See [Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)
 4. **Frontend (Mobile)**: See checkpoint components in `apps/mapp/components/property-details/`
-
-## Recent Updates (January 2026)
-
-### Checkpoint AI Chat Analysis ⭐
-
-Major feature release enabling comprehensive analysis of checkpoint data:
-
-**What's New**:
-- Coverage analysis for detected issues
-- DIY solutions with video tutorials and products
-- Local service provider recommendations
-- Cost estimates (DIY vs professional)
-
-**Key Features**:
-- Two modes: Simple query and Analysis mode
-- Optional agent selection (coverage, DIY, service, cost)
-- Dual format responses (Markdown + JSON)
-- Available on webapp and mobile app
-
-**Documentation**:
-- [Feature Overview](./CHECKPOINT_AI_CHAT_ANALYSIS.md)
-- [API Reference](./CHECKPOINT_ANALYSIS_API.md)
 
 ## Architecture
 
@@ -108,11 +86,11 @@ AI agent that answers questions about checkpoints using semantic search:
 - "Show me checkpoints with damage"
 - "When did I last check the roof?"
 
-### Checkpoint Analysis Agent
-Orchestrator that provides comprehensive recommendations:
-- Extracts issues from checkpoint data
-- Calls coverage, DIY, service, and cost agents
-- Returns actionable insights and recommendations
+### Checkpoint pipeline (`run_checkpoint_pipeline`)
+Composite tool that provides comprehensive recommendations:
+- Retrieves checkpoints via vector search
+- Runs optional coverage, DIY, service, and cost branches in parallel
+- Emits `contentJson` (accordions) and `contentMarkdown` (prose) via `state_delta` patches
 
 ### Optional Agents
 Specialized agents for different analysis aspects:
@@ -219,7 +197,6 @@ Optimize by:
 
 ## Related Documentation
 
-- [Analysis Agent Overview](../analysis/ANALYSIS_AGENT_OVERVIEW.md)
-- [Analysis Agent Sub-Agents](../analysis/ANALYSIS_AGENT_SUB_AGENTS.md)
-- [Property Agent Documentation](../../gcp/agents/homecare/property_agent/README.md)
+- [Property Agent README](../../gcp/agents/homecare/property_agent/README.md)
+- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
 - [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)

@@ -26,6 +26,31 @@ Three layers inside the `property_agent` Python package. Generic ADK plumbing li
 
 **Boundary:** `agent_framework` must never import `property_agent`.
 
+## Routing control plane
+
+Turn routing is distributed across three layers. Resolve hints are **not** final authority — layers 1 and 3 can override executor tool choice.
+
+| Layer | Owns | Key files |
+|-------|------|-----------|
+| **1 — Resolve** | Intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` inject | `routing/resolve_turn_llm.py`, `routing/resolve_turn.py`, `agent_framework/routing/resolve_pipeline.py` |
+| **2 — Executor** | History-first markdown vs tool call | `prompts.py`, `registry.py` |
+| **3 — Guards** | Block tools on casual/context turns; merge optional branches from state + query heuristics | `routing/conversational_callbacks.py`, `runtime/root_agent_plugin.py` (`before_tool_callback`), `routing/query_mode/` |
+
+See [`docs/ORCHESTRATOR_V2_PLAN.md`](../docs/ORCHESTRATOR_V2_PLAN.md) for the end-to-end flow.
+
+## Checkpoint optional branch invocation
+
+Inside `run_checkpoint_pipeline`, optional branches use mixed invocation styles (intentional — do not unify without a perf/reliability review):
+
+| Branch | Invocation | Rationale |
+|--------|------------|-----------|
+| `diy` | Python `run_diy_pipeline_sync` | Custom parallel prefetch (web, YouTube, shopping, cost library) |
+| `cost` | Python `_run_checkpoint_cost_pipeline` | Structured JSON assembly without ADK hop |
+| `coverage` | `AgentTool(coverage_agent)` | RAG + LLM dialogue fits ADK agent |
+| `service` | `AgentTool(service_agent)` | Same |
+
+Orchestration waves and `depends_on` edges: `agent_framework/registry/orchestration.py` + `checkpoint/branch_registry.py`.
+
 ## Naming
 
 - **Plugin** — `manifest.PropertyPlugin`, `PropertyRootAgentPlugin`
@@ -44,11 +69,24 @@ Legacy session keys `checkpoint_progress_*` are retained (no rename). V2 message
 | **ADK web (`adk web`)** | Same progress events when `HOMEAPP_CHECKPOINT_PROGRESS_RUNNER=1` (default) and `HomecareRunner` multiplexes a queue filled by `run_checkpoint_pipeline` | Session **state** inspector + final tool `functionResponse`; chat shows progress **text** events, not raw `state_delta` JSON |
 | **ADK web, runner off** | Only final tool response + state inspector | `state_delta` merged once when the tool returns (ADK tool limitation) |
 
-Pre–Orchestrator V2, `checkpoint_analysis_progress` was a **sub-agent** (`CheckpointOptionalParallelAgent`) whose `run_async` **yielded** events. V2 consolidated into `run_checkpoint_pipeline` **FunctionTool**, which blocks the runner until complete—so `apply_tool_context_state_delta` updates accumulated in `tool_context.actions` but ADK web did not stream them. `HomecareRunner` + `checkpoint/progress_stream.py` restore incremental **model text** events without reintroducing dual-format strings.
+V2 uses `run_checkpoint_pipeline` **FunctionTool**, which blocks the runner until complete—so `apply_tool_context_state_delta` updates accumulated in `tool_context.actions` but ADK web did not stream them incrementally by default. `HomecareRunner` + `checkpoint/progress_stream.py` restore incremental **model text** events (`author=checkpoint_analysis_progress`) without dual-format strings.
 
 **Queue contract:** `emit_checkpoint_progress_event` enqueues on a per-`invocation_id` registry queue. **Agent Engine:** `HomecareAdkApp` subclasses `vertexai.agent_engines.AdkApp` (not `preview`). On unpickle, `__setstate__` clears a stock `Runner` so `set_up` wires `HomecareRunner`. `async_stream_query` multiplexes the queue at the stream boundary (`runtime/stream_query_multiplex.py`)—log `checkpoint progress yielded (stream_query)`. **ADK web:** `HomecareRunner._exec_with_plugin` multiplexes the same queue—log `checkpoint progress yielded`. Debug: `HOMEAPP_ENGINE_ENTRYPOINT` WARNING lines prove `stream_query` / `set_up` ran; `checkpoint progress queued` without `yielded` means runner/stream wiring failed.
 
 Set `HOMEAPP_CHECKPOINT_PROGRESS_RUNNER=0` to use stock ADK `Runner` (smaller session event volume in dev only).
+
+### Legacy stream author labels (keep)
+
+V2 does **not** register `checkpoint_analysis_agent` as a root tool. Proxy and clients still map these historical stream `author` / tool ids for the thinking strip and `agentSteps` UX:
+
+| Label | Where | Purpose |
+|-------|-------|---------|
+| `checkpoint_analysis_agent` | `gcp/proxy/api/services/vertex_service.py`, `apps/common` + `apps/webapp` `agent-display.ts` | Pre-V2 workflow name; may appear on older stream events |
+| `checkpoint_optional_agents_parallel_runner` | proxy lifecycle maps | Parallel branch progress |
+| `checkpoint_analysis_synthesis_agent` | proxy lifecycle maps | Synthesis phase |
+| `checkpoint_analysis_progress` | progress event author | Incremental `state_delta` patches |
+
+Do not remove these mappings without a client/proxy migration plan. Do not reintroduce matching ADK root tools — checkpoint work stays on `run_checkpoint_pipeline`.
 
 ## Extension points
 

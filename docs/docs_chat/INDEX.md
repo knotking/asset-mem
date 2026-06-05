@@ -221,8 +221,9 @@ Comprehensive testing guide with test cases and procedures.
 - [Proxy API README](../../gcp/proxy/api/README.md)
 
 ### Related Features
-- [Analysis Agent](../analysis/README.md)
-- [Checkpoint Agent](../checkpoint/README.md)
+- [Property Agent](../../gcp/agents/homecare/property_agent/README.md)
+- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
+- [Checkpoint features](../checkpoint/README.md)
 - [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)
 - [Tech Stack](../TECH_STACK.md)
 

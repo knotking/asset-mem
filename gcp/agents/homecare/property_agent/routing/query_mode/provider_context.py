@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
+
+from property_agent.routing.schema import SessionStateLike
+
+from property_agent.routing.optional_branches import OPTIONAL_CHECKPOINT_BRANCHES
 
 from .session_memory import (
-    SESSION_WORKING_MEMORY_SNAPSHOT_KEY,
     extract_known_service_providers,
     extract_service_provider_details,
 )
@@ -30,7 +33,7 @@ def provider_context_answer_is_substantive(answer: str) -> bool:
     return False
 
 
-def format_provider_context_answer(user_query: str, state: Mapping[str, Any] | None) -> Optional[str]:
+def format_provider_context_answer(user_query: str, state: SessionStateLike | None) -> Optional[str]:
     if not state:
         return None
     match = query_references_known_provider(user_query, state)
@@ -161,7 +164,7 @@ def _provider_distinctive_match_score(entity_tokens: set[str], name_tokens: set[
     return len(overlap) / len(distinctive)
 
 
-def query_references_known_provider(user_query: str, state: Mapping[str, Any] | None) -> Optional[str]:
+def query_references_known_provider(user_query: str, state: SessionStateLike | None) -> Optional[str]:
     providers = extract_known_service_providers(state)
     if not providers:
         return None
@@ -197,5 +200,5 @@ def query_references_known_provider(user_query: str, state: Mapping[str, Any] | 
     return None
 
 
-def prior_analysis_has_service_results(state: Mapping[str, Any] | None) -> bool:
+def prior_analysis_has_service_results(state: SessionStateLike | None) -> bool:
     return bool(extract_known_service_providers(state))

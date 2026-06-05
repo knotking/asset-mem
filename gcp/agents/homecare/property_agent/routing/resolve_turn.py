@@ -14,7 +14,7 @@ from agent_framework.routing.resolved_turn import (
 
 from .constants import RESOLVED_TURN_UI_CONTEXT_NOTE
 from .homecare_resolve_hooks import HOMECARE_RESOLVE_HOOKS
-from .schema import CASUAL_INTENTS, ResolvedTurn, resolved_turn_from_state
+from .schema import CASUAL_INTENTS, ResolvedTurn, SessionStateLike, resolved_turn_from_state
 
 from .conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
 from agent_framework.context.hydrator_render import render_hydrated_context
@@ -135,7 +135,7 @@ def _clear_checkpoint_passthrough_stash(state: Any) -> None:
 
 
 def requests_optional_analysis_from_resolved(
-    state: Mapping[str, Any] | None,
+    state: SessionStateLike | None,
     *,
     user_query: str = "",
 ) -> bool:

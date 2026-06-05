@@ -42,7 +42,7 @@ def load_property_plugin() -> PropertyPlugin:
         prepare_before_model_turn=prepare_before_model_turn,
         property_agent_executor_instructions=property_agent_executor_instructions,
         diagnosis_input_schema=DiagnosisInput,
-        global_gemini_model=GLOBAL_GEMINI_MODEL,
+        global_gemini_model=GLOBAL_GEMINI_MODEL.model,
         memory_preload_enabled=memory_preload_enabled,
         ingest_invocation_to_memory_bank=ingest_invocation_to_memory_bank,
         property_agent_name=PROPERTY_AGENT_NAME,

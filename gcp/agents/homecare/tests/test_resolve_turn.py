@@ -94,7 +94,6 @@ def test_apply_resolved_sets_optional_branches() -> None:
 def test_apply_resolved_preserves_stash_when_optional_misroutes_provider_follow_up() -> (
     None
 ):
-    dual = "# Analysis\n\n```json\n{}\n```"
     state = {
         "checkpoint_parallel_results": json.dumps(
             {

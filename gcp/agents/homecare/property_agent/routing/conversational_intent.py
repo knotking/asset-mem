@@ -5,7 +5,16 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Literal, Mapping, Optional, Sequence
+from typing import Any, Literal, Optional, Sequence
+
+from property_agent.routing.schema import SessionStateLike
+
+from property_agent.routing.optional_branches import (
+    HOW_ABOUT_OPTIONAL_BRANCH_RE,
+    MEAN_OPTIONAL_BRANCH_RE,
+    OPTIONAL_CHECKPOINT_BRANCHES,
+    STANDALONE_OPTIONAL_BRANCH_RE,
+)
 
 ConversationalLabel = Literal[
     "greeting", "acknowledgment", "capabilities", "substantive"
@@ -79,13 +88,6 @@ _INDEXICAL_PHRASE_RE = re.compile(
     r") one"
     r"(?: in (?:your|the) list)?$",
     re.IGNORECASE,
-)
-
-from property_agent.routing.optional_branches import (
-    HOW_ABOUT_OPTIONAL_BRANCH_RE,
-    MEAN_OPTIONAL_BRANCH_RE,
-    OPTIONAL_CHECKPOINT_BRANCHES,
-    STANDALONE_OPTIONAL_BRANCH_RE,
 )
 
 _MEAN_OPTIONAL_BRANCH_RE = MEAN_OPTIONAL_BRANCH_RE
@@ -291,7 +293,7 @@ def resolve_user_query_for_turn(
     return hydrate_turn_state_from_context(ctx, llm_request=llm_request)
 
 
-def resolve_user_query_from_state(state: Mapping[str, Any] | None) -> str:
+def resolve_user_query_from_state(state: SessionStateLike | None) -> str:
     if not state:
         return ""
     for key in ("user_query", "app:user_query"):
@@ -302,7 +304,7 @@ def resolve_user_query_from_state(state: Mapping[str, Any] | None) -> str:
 
 
 def resolve_property_address_from_state(
-    state: Mapping[str, Any] | None,
+    state: SessionStateLike | None,
 ) -> Optional[str]:
     if not state:
         return None
@@ -330,7 +332,7 @@ def last_turn_delivered_checkpoint_analysis(
     session_events: Sequence[Any] | None,
     *,
     current_invocation_id: Optional[str] = None,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> bool:
     if state and state.get(CHECKPOINT_LAST_RESPONSE_KIND_KEY) in ("analysis", "retrieval"):
         return True
@@ -362,7 +364,7 @@ def record_last_offered_options(state: Any) -> None:
 
 def _indexical_option_key(
     normalized: str,
-    state: Mapping[str, Any] | None,
+    state: SessionStateLike | None,
 ) -> Optional[str]:
     if not normalized or state is None:
         return None
@@ -380,7 +382,7 @@ def _indexical_option_key(
 
 def resolve_requested_optional_branches(
     user_query: str,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> list[str]:
     normalized = normalize_user_query(user_query)
     if not normalized:
@@ -430,7 +432,7 @@ def resolve_requested_optional_branches(
 
 def resolve_explicit_optional_branches(
     user_query: str,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> list[str]:
     normalized = normalize_user_query(user_query)
     if not normalized:
@@ -480,7 +482,7 @@ def query_requests_full_analysis_replay(user_query: str) -> bool:
     return bool(_FULL_ANALYSIS_REPLAY_RE.search(normalized))
 
 
-def prior_checkpoint_analysis_in_session(state: Mapping[str, Any] | None) -> bool:
+def prior_checkpoint_analysis_in_session(state: SessionStateLike | None) -> bool:
     if not state:
         return False
     if state.get(CHECKPOINT_LAST_RESPONSE_KIND_KEY) == "analysis":
@@ -496,7 +498,7 @@ def prior_checkpoint_analysis_in_session(state: Mapping[str, Any] | None) -> boo
 def requests_checkpoint_optional_analysis(
     user_query: str,
     *,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> bool:
     if resolve_requested_optional_branches(user_query, state):
         return True
@@ -520,7 +522,7 @@ _CAPABILITY_BULLETS = (
 )
 
 
-def _context_attachment_hint(state: Mapping[str, Any] | None) -> str:
+def _context_attachment_hint(state: SessionStateLike | None) -> str:
     if not state:
         return ""
     checkpoint_ids = state.get("checkpoint_ids") or []
@@ -543,7 +545,7 @@ def _context_attachment_hint(state: Mapping[str, Any] | None) -> str:
 def build_capabilities_summary(
     *,
     property_address: Optional[str] = None,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> str:
     record_last_offered_options(state)
     addr = (property_address or "").strip()
@@ -561,7 +563,7 @@ def build_conversational_reply(
     *,
     property_address: Optional[str] = None,
     prior_analysis: bool = False,
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> str:
     if label == "capabilities":
         return build_capabilities_summary(

@@ -202,7 +202,7 @@ Manual `workflow_dispatch` to **prod** (recommended order):
 | # | Item | Done | Owner |
 |---|------|------|-------|
 | 9.1 | `docs/proxy/API_OVERVIEW.md` matches implementation (rate limits, CORS) | [ ] | Eng |
-| 9.2 | `docs/analysis/ANALYSIS_AGENT_API_INTEGRATION.md` claims verified or removed | [ ] | Eng |
+| 9.2 | Retired `docs/analysis/` tree removed; agent docs point to `ORCHESTRATOR_V2_PLAN.md` | [x] | Eng |
 | 9.3 | `docs/deployment/ENVIRONMENTS.md` aspirational monitoring flags updated | [ ] | Eng |
 | 9.4 | GitHub env vars in `.github/GITHUB_VARIABLES_SETUP.md` — no prod placeholders | [ ] | Eng |
 

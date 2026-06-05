@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from unittest.mock import patch
 
 from property_agent.routing.apply_resolved_turn import (
     apply_checkpoint_retrieval_plan as _apply_checkpoint_retrieval_plan,

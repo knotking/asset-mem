@@ -64,7 +64,6 @@ def provider_context_payload(payload: dict[str, Any], *, user_query: str, state:
 
 def follow_up_from_resolver(payload: dict[str, Any], *, user_query: str, state: Mapping[str, Any]) -> dict[str, Any]:
     from .conversational_intent import resolve_explicit_optional_branches
-    from .query_mode import query_looks_like_explain_follow_up, query_requests_fresh_external_data
     expanded = str(payload.get("expanded_user_query") or user_query).strip()
     branches = list(payload.get("run_optional_agents") or [])
     explicit = resolve_explicit_optional_branches(expanded, state) or resolve_explicit_optional_branches(user_query, state)
@@ -154,7 +153,7 @@ def sanitize_llm_payload(data: dict[str, Any], *, user_query: str, state: Mappin
             menu_index = int(menu_index)
         except (TypeError, ValueError):
             menu_index = None
-    payload = {"intent": "substantive", "route": route, "expanded_user_query": expanded, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context", "menu_index": menu_index, "capability_key": cap}
+    payload: dict[str, Any] = {"intent": "substantive", "route": route, "expanded_user_query": expanded, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context", "menu_index": menu_index, "capability_key": cap}
     if route == "checkpoint":
         payload = apply_checkpoint_retrieval_plan(payload, user_query=user_query, state=state or {})
     elif route in ("user_docs", "knowledge_base"):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Optional
 
 RouteKind = Literal["none", "checkpoint", "user_docs", "knowledge_base"]
 IntentKind = Literal["greeting", "capabilities", "acknowledgment", "substantive"]
@@ -16,6 +16,10 @@ QueryModeKind = Literal[
 ]
 
 CASUAL_INTENTS = frozenset({"greeting", "capabilities", "acknowledgment"})
+
+
+# ADK ``State``, plain mappings, and resolver payloads share dict-like access.
+SessionStateLike = Any
 
 
 @dataclass
@@ -41,7 +45,7 @@ class ResolvedTurn:
         return self.intent in CASUAL_INTENTS
 
 
-def resolved_turn_from_state(state: Mapping[str, Any] | None) -> Optional[ResolvedTurn]:
+def resolved_turn_from_state(state: SessionStateLike | None) -> Optional[ResolvedTurn]:
     if not state:
         return None
     from agent_framework.routing.resolved_turn import RESOLVED_TURN_STATE_KEY
@@ -50,29 +54,33 @@ def resolved_turn_from_state(state: Mapping[str, Any] | None) -> Optional[Resolv
     if not isinstance(raw, dict):
         return None
     try:
+        raw_user_goal = raw.get("user_goal")
+        user_goal: UserGoalKind = (
+            raw_user_goal
+            if raw_user_goal
+            in ("answer_from_context", "new_analysis", "replay_deliverable")
+            else "answer_from_context"
+        )
+        raw_query_mode = raw.get("query_mode")
+        query_mode: QueryModeKind = (
+            raw_query_mode
+            if raw_query_mode
+            in (
+                "interpret_session",
+                "branch_issue_search",
+                "branch_entity_search",
+                "branch_explicit",
+            )
+            else "interpret_session"
+        )
         return ResolvedTurn(
             intent=raw.get("intent", "substantive"),
             route=raw.get("route", "checkpoint"),
             expanded_user_query=str(raw.get("expanded_user_query") or ""),
             retrieval_only=bool(raw.get("retrieval_only", True)),
             run_optional_agents=list(raw.get("run_optional_agents") or []),
-            user_goal=(
-                raw.get("user_goal")
-                if raw.get("user_goal")
-                in ("answer_from_context", "new_analysis", "replay_deliverable")
-                else "answer_from_context"
-            ),
-            query_mode=(
-                raw.get("query_mode")
-                if raw.get("query_mode")
-                in (
-                    "interpret_session",
-                    "branch_issue_search",
-                    "branch_entity_search",
-                    "branch_explicit",
-                )
-                else "interpret_session"
-            ),
+            user_goal=user_goal,
+            query_mode=query_mode,
             menu_index=raw.get("menu_index"),
             capability_key=raw.get("capability_key"),
             resolve_source=str(raw.get("resolve_source") or "llm"),

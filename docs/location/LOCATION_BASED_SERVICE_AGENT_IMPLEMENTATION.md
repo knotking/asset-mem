@@ -82,9 +82,9 @@ Updated service agent instructions to prioritize coordinates with radius:
 - Distance sorting for coordinate-based searches
 - Explicit instructions to filter results within radius
 
-#### Analysis Agent (`gcp/agents/homecare/property_agent/sub_agents/analysis_agent/prompts.py`)
+#### Service branch (`gcp/agents/homecare/property_agent/agents/service_agent/`)
 
-Updated analysis agent to pass location data correctly to service agent:
+Service agent (invoked inside `run_checkpoint_pipeline` via `AgentTool`) receives `search_location` from checkpoint session state:
 
 **Key Changes**:
 - Priority order documentation for location handling

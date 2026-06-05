@@ -1,19 +1,14 @@
-"""Unit tests for checkpoint_analysis_agent Python parallel runner."""
+"""Unit tests for checkpoint optional-branch parallel runner."""
 
 import asyncio
 import json
-import re
 import threading
 from types import SimpleNamespace
 
 import pytest
-from google.adk.agents import Agent as LlmAgent
 
 from property_agent.checkpoint.analysis import agent as caa
 from property_agent.checkpoint.analysis import parallel_runner as parallel_mod
-from property_agent.checkpoint.analysis.checkpoint_parse import (
-    _pending_checkpoint_analysis_input_from_state,
-)
 from property_agent.checkpoint.analysis.search_query import (
     CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY,
     _search_query_from_analysis_json,
@@ -27,20 +22,15 @@ from property_agent.checkpoint.analysis.analysis_validate import (
     llm_response_has_function_responses,
 )
 from property_agent.checkpoint.analysis.assembler import (
-    build_checkpoint_summary_from_results_blob,
     format_checkpoints_for_analysis_blob,
     minimal_checkpoint_progress_session_text,
     sync_checkpoint_tool_args_to_state,
 )
 from property_agent.checkpoint.analysis.markdown_render import (
     _overlay_branch_array,
+    build_checkpoint_summary_from_results_blob,
 )
-from property_agent.checkpoint.analysis.synthesis_callback import (
-    synthesis_after_model_callback,
-)
-from property_agent.checkpoint.constants import CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY
 from property_agent.checkpoint.session_input import (
-    ensure_checkpoint_analysis_pending_stashed,
     optional_agents_for_progress_from_state,
     should_run_optional_analysis,
 )
@@ -63,14 +53,6 @@ def _stub_invoke(per_agent: dict | None = None, default: str = "ok"):
         return per_agent.get(getattr(agent, "name", ""), default)
 
     return _inner
-
-
-def test_parallel_agent_is_python_base_agent_not_llm():
-    assert isinstance(
-        caa.checkpoint_optional_parallel_agent, caa.CheckpointOptionalParallelAgent
-    )
-    assert not isinstance(caa.checkpoint_optional_parallel_agent, LlmAgent)
-    assert not hasattr(caa.checkpoint_optional_parallel_agent, "model")
 
 
 _JSON_INPUT_SAMPLE = {
@@ -102,31 +84,6 @@ def test_parse_checkpoint_analysis_payload_json():
     assert data["user_query"] == "analyse my checkpoints"
 
 
-def test_parse_checkpoint_analysis_input_from_json():
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(_JSON_INPUT_SAMPLE))],
-    )
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=SimpleNamespace(user_id="u1", state={}),
-        invocation_id="inv-1",
-        agent=caa.checkpoint_optional_parallel_agent,
-        branch=None,
-    )
-    inp = caa._parse_checkpoint_analysis_input(invocation)
-    assert inp is not None
-    assert inp.checkpoint_optional_agents == [
-        "coverage",
-        "diy",
-        "service",
-        "cost",
-    ]
-    assert inp.search_query == "residential garage door paint chipping scratches repair"
-
-
 def test_normalize_checkpoint_analysis_tool_args_from_request_json():
     normalized = caa.normalize_checkpoint_analysis_tool_args(
         {"request": json.dumps(_JSON_INPUT_SAMPLE)}
@@ -152,242 +109,9 @@ def test_normalize_checkpoint_analysis_tool_args_preserves_structured():
     assert caa.normalize_checkpoint_analysis_tool_args(structured) == structured
 
 
-def test_parse_checkpoint_analysis_input_from_json_diy_payload():
-    payload = {
-        "checkpoint_results": "Issues: leak",
-        "user_query": "get diy",
-        "search_query": "garage door paint repair",
-        "checkpoint_optional_agents": ["diy"],
-        "property_address": "1 Main St",
-    }
-    session = SimpleNamespace(
-        user_id="u1",
-        state={},
-        app_name="property_agent",
-        id="sess-1",
-    )
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(payload))],
-    )
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=session,
-        invocation_id="inv-1",
-        agent=caa.checkpoint_optional_parallel_agent,
-        branch=None,
-    )
-    inp = caa._parse_checkpoint_analysis_input(invocation)
-    assert inp is not None
-    assert inp.user_query == "get diy"
-    assert inp.search_query == "garage door paint repair"
-    assert inp.checkpoint_optional_agents == ["diy"]
-
-
-def test_parse_checkpoint_analysis_input_falls_back_to_pending_on_partial_json():
-    """Transfer JSON without checkpoint_results must not block stashed pending input."""
-    pending = {
-        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
-        "user_query": "analyse my checkpoints",
-        "search_query": "garage door paint repair",
-        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
-        "location_radius": 5,
-    }
-    partial_transfer = {
-        "user_query": "analyse my checkpoints",
-        "search_location": {
-            "source": "device_gps",
-            "radius_miles": 5,
-            "coordinates": {"lat": 37.9, "lng": -121.7},
-        },
-        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
-        "property_id": "prop-1",
-    }
-    session = SimpleNamespace(
-        user_id="u1",
-        state={
-            CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
-            "checkpoint_results": pending["checkpoint_results"],
-            "checkpoint_optional_agents": pending["checkpoint_optional_agents"],
-        },
-        app_name="property_agent",
-        id="sess-1",
-    )
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(partial_transfer))],
-    )
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=session,
-        invocation_id="inv-1",
-        agent=caa.checkpoint_optional_parallel_agent,
-        branch=None,
-    )
-    inp = caa._parse_checkpoint_analysis_input(invocation)
-    assert inp is not None
-    assert "paint chipping" in inp.checkpoint_results
-    assert inp.checkpoint_optional_agents == ["coverage", "diy", "service", "cost"]
-    assert inp.user_query == "analyse my checkpoints"
-    assert inp.search_location is not None
-    assert inp.search_location["coordinates"]["lat"] == 37.9
-
-
-def test_merge_routing_keeps_resolved_service_only_over_client_toggles() -> None:
-    """Client payload toggles must not expand branches when resolve requested service only."""
-    from property_agent.routing.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
-    pending = {
-        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
-        "user_query": "list professional service options for the garage door damage",
-        "search_query": "garage door paint repair",
-        "checkpoint_optional_agents": ["service"],
-        "property_id": "prop-1",
-    }
-    client_routing = {
-        "user_query": "list professional",
-        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
-        "property_id": "prop-1",
-        "search_location": {
-            "source": "device_gps",
-            "radius_miles": 5,
-            "coordinates": {"lat": 37.9, "lng": -121.7},
-        },
-    }
-    session = SimpleNamespace(
-        user_id="u1",
-        state={
-            CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
-            "checkpoint_results": pending["checkpoint_results"],
-            "checkpoint_optional_agents": ["service"],
-            RESOLVED_TURN_STATE_KEY: ResolvedTurn(
-                intent="substantive",
-                route="checkpoint",
-                expanded_user_query=pending["user_query"],
-                retrieval_only=False,
-                run_optional_agents=["service"],
-                user_goal="new_analysis",
-            ).to_dict(),
-        },
-        app_name="property_agent",
-        id="sess-1",
-    )
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(client_routing))],
-    )
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=session,
-        invocation_id="inv-service-only",
-        agent=caa.checkpoint_optional_parallel_agent,
-        branch=None,
-    )
-    inp = caa._parse_checkpoint_analysis_input(invocation)
-    assert inp is not None
-    assert inp.checkpoint_optional_agents == ["service"]
-
-
-def test_merge_routing_keeps_resolved_diy_only_over_client_toggles() -> None:
-    from property_agent.routing.resolve_turn import RESOLVED_TURN_STATE_KEY, ResolvedTurn
-    pending = {
-        "checkpoint_results": "Checkpoint Name: Garage\nIssues: paint chipping\n",
-        "user_query": "get more details on DIY repair options",
-        "checkpoint_optional_agents": ["diy"],
-    }
-    client_routing = {
-        "user_query": "get more details on DIY",
-        "checkpoint_optional_agents": ["coverage", "diy", "service", "cost"],
-    }
-    session = SimpleNamespace(
-        user_id="u1",
-        state={
-            CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending),
-            "checkpoint_results": pending["checkpoint_results"],
-            RESOLVED_TURN_STATE_KEY: ResolvedTurn(
-                intent="substantive",
-                route="checkpoint",
-                expanded_user_query=pending["user_query"],
-                retrieval_only=False,
-                run_optional_agents=["diy"],
-                user_goal="new_analysis",
-            ).to_dict(),
-        },
-        app_name="property_agent",
-        id="sess-1",
-    )
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(client_routing))],
-    )
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=session,
-        invocation_id="inv-diy-only",
-        agent=caa.checkpoint_optional_parallel_agent,
-        branch=None,
-    )
-    inp = caa._parse_checkpoint_analysis_input(invocation)
-    assert inp is not None
-    assert inp.checkpoint_optional_agents == ["diy"]
-
-
-@pytest.mark.asyncio
-async def test_execute_checkpoint_optional_parallel_invokes_runner(monkeypatch):
-    calls: list[dict] = []
-
-    async def _capture(**kwargs):
-        calls.append(kwargs)
-        return "{}"
-
-    monkeypatch.setattr(caa, "run_checkpoint_optional_agents_parallel", _capture)
-    payload = {
-        "checkpoint_results": "Issues: paint chip",
-        "user_query": "get diy",
-        "search_query": "garage door paint",
-        "checkpoint_optional_agents": ["diy"],
-    }
-    session = SimpleNamespace(
-        user_id="u1",
-        state={},
-        app_name="property_agent",
-        id="sess-1",
-    )
-    from google.genai import types
-
-    user_content = types.Content(
-        role="user",
-        parts=[types.Part(text=json.dumps(payload))],
-    )
-    agent = caa.checkpoint_optional_parallel_agent
-    invocation = SimpleNamespace(
-        user_content=user_content,
-        session=session,
-        invocation_id="inv-1",
-        agent=agent,
-        branch=None,
-        app_name="property_agent",
-        user_id="u1",
-    )
-    tool_ctx = await caa.execute_checkpoint_optional_parallel(invocation)
-    assert len(calls) == 1
-    assert calls[0]["checkpoint_optional_agents"] == ["diy"]
-    assert calls[0]["search_query"] == "garage door paint"
-    assert (
-        tool_ctx.state.get("checkpoint_retrieval_search_query") == "garage door paint"
-    )
-
-
 def test_parallel_runner_marks_unrequested_as_skipped(monkeypatch):
     monkeypatch.setattr(
-        caa,
+        parallel_mod,
         "_invoke_optional_agent_async",
         _stub_invoke(default="coverage-ok"),
     )
@@ -408,7 +132,7 @@ def test_parallel_runner_marks_unrequested_as_skipped(monkeypatch):
 
 def test_parallel_runner_writes_checkpoint_parallel_results_state(monkeypatch):
     monkeypatch.setattr(
-        caa,
+        parallel_mod,
         "_invoke_optional_agent_async",
         _stub_invoke(default="coverage-ok"),
     )
@@ -428,9 +152,9 @@ def test_parallel_runner_writes_checkpoint_parallel_results_state(monkeypatch):
     async def _diy_ok(_payload):
         return "diy-ok"
 
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _diy_ok)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _diy_ok)
     monkeypatch.setattr(
-        caa,
+        parallel_mod,
         "_invoke_optional_agent_async",
         _stub_invoke(per_agent={"service_agent": "service-ok"}),
     )
@@ -457,10 +181,10 @@ def test_parallel_runner_all_four_branches_merged(monkeypatch):
     async def _cost_ok(_payload):
         return "cost-ok"
 
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _diy_ok)
-    monkeypatch.setattr(caa, "_run_checkpoint_cost_pipeline", _cost_ok)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _diy_ok)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_cost_pipeline", _cost_ok)
     monkeypatch.setattr(
-        caa,
+        parallel_mod,
         "_invoke_optional_agent_async",
         _stub_invoke(
             per_agent={
@@ -505,7 +229,7 @@ def test_parallel_runner_completion_order_independent(monkeypatch):
             return "service-ok"
         return await _invoke(agent, payload, tool_context)
 
-    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _invoke_with_service_delay)
+    monkeypatch.setattr(parallel_mod, "_invoke_optional_agent_async", _invoke_with_service_delay)
     out = asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
             checkpoint_results="x",
@@ -556,9 +280,9 @@ def test_parallel_runner_prefetch_overlaps_coverage(monkeypatch: pytest.MonkeyPa
         assert payload.get("checkpoint_grounding_web_summary") == "shared-web-summary"
         return "cost-ok"
 
-    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _invoke)
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _diy_ok)
-    monkeypatch.setattr(caa, "_run_checkpoint_cost_pipeline", _cost_ok)
+    monkeypatch.setattr(parallel_mod, "_invoke_optional_agent_async", _invoke)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _diy_ok)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_cost_pipeline", _cost_ok)
     asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
             checkpoint_results="x",
@@ -607,7 +331,7 @@ def test_parallel_runner_payload_uses_search_user_query(
         captured.append(dict(payload))
         return "ok"
 
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _capture_diy)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _capture_diy)
     blob = (
         "Checkpoint 'Checkpoint • May 11 • 9:10 PM' (Garage): Detected door. "
         "Issues: Paint damage DIY tutorial how to fix"
@@ -698,8 +422,8 @@ def test_parallel_runner_cost_branch_calls_direct_pipeline(
         captured.append(query)
         return '{"costEstimates": {"repair_type": "stub", "DIY": {}, "Service": {}, "comparison": {}}}'
 
-    # checkpoint_analysis_agent imports _cost_estimation_sync by name; patch that binding.
-    monkeypatch.setattr(caa, "_cost_estimation_sync", _sync_capture)
+    # parallel_runner imports _cost_estimation_sync by name; patch that binding.
+    monkeypatch.setattr(parallel_mod, "_cost_estimation_sync", _sync_capture)
     out = asyncio.run(
         caa.run_checkpoint_optional_agents_parallel(
             checkpoint_results="Issues: paint chip",
@@ -749,7 +473,7 @@ def test_parallel_runner_uses_state_when_search_query_arg_missing(
         captured.append(dict(payload))
         return "ok"
 
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _capture_diy)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _capture_diy)
     tc = _minimal_tool_context()
     tc.state["checkpoint_retrieval_search_query"] = (
         "residential garage door paint chipping scratches repair"
@@ -785,7 +509,7 @@ def test_parallel_runner_service_uses_stem_under_branch_explicit(
             captured.append(dict(payload))
         return "ok"
 
-    monkeypatch.setattr(caa, "_invoke_optional_agent_async", _capture_service)
+    monkeypatch.setattr(parallel_mod, "_invoke_optional_agent_async", _capture_service)
     stem = "residential garage door paint chipping scratches repair"
     tc = _minimal_tool_context()
     tc.state[CHECKPOINT_RETRIEVAL_SEARCH_QUERY_STATE_KEY] = stem
@@ -819,7 +543,7 @@ def test_parallel_runner_prefers_explicit_search_query(monkeypatch: pytest.Monke
         captured.append(dict(payload))
         return "ok"
 
-    monkeypatch.setattr(caa, "_run_checkpoint_diy_pipeline", _capture_diy)
+    monkeypatch.setattr(parallel_mod, "_run_checkpoint_diy_pipeline", _capture_diy)
     blob = "long checkpoint prose " * 20
     explicit = "garage door paint touch up"
     asyncio.run(
@@ -1085,34 +809,7 @@ def test_sync_checkpoint_tool_args_to_state():
     assert state["property_id"] == "prop1"
 
 
-def test_ensure_checkpoint_analysis_pending_stashed_from_fields():
-    state = {
-        "checkpoint_optional_agents": ["service"],
-        "checkpoint_results": "Checkpoint Name: Garage\nIssues: leak",
-        "user_query": "analyse",
-        "checkpoint_retrieval_search_query": "garage leak",
-    }
-    assert ensure_checkpoint_analysis_pending_stashed(state) is True
-    raw = state[CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY]
-    data = json.loads(raw)
-    assert data["checkpoint_optional_agents"] == ["service"]
-    assert "leak" in data["checkpoint_results"]
-
-
-def test_ensure_pending_stashed_from_checkpoint_result_singular():
-    state = {
-        "checkpoint_optional_agents": ["cost"],
-        "checkpoint_result": "Checkpoint Name: Garage\nIssues: paint chip",
-        "user_query": "how about cost?",
-        "checkpoint_retrieval_search_query": "garage door paint",
-    }
-    assert ensure_checkpoint_analysis_pending_stashed(state) is True
-    data = json.loads(state[CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY])
-    assert data["checkpoint_optional_agents"] == ["cost"]
-    assert "paint chip" in data["checkpoint_results"]
-
-
-def test_optional_agents_and_stash_from_resolved_turn():
+def test_optional_agents_from_resolved_turn():
     from property_agent.routing.resolve_turn import RESOLVED_TURN_STATE_KEY
     state = {
         RESOLVED_TURN_STATE_KEY: {
@@ -1132,7 +829,6 @@ def test_optional_agents_and_stash_from_resolved_turn():
     assert should_run_optional_analysis(
         state, "What might repairs cost for the garage door?"
     )
-    assert ensure_checkpoint_analysis_pending_stashed(state) is True
 
 
 def test_format_checkpoints_for_analysis_blob():
@@ -1153,47 +849,6 @@ def test_format_checkpoints_for_analysis_blob():
     assert "Garage May 8" in blob
     assert "paint chipping" in blob
     assert blob.count("Checkpoint Name:") == 2
-
-
-def test_pending_checkpoint_analysis_input_from_state():
-    from unittest.mock import MagicMock, patch
-
-    pending = {
-        "checkpoint_results": "Checkpoint Name: Garage\nIssues: leak",
-        "user_query": "analyse",
-        "checkpoint_optional_agents": ["diy"],
-        "search_query": "garage leak",
-    }
-    ctx = MagicMock()
-    tool_ctx = MagicMock()
-    tool_ctx.state = {
-        CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY: json.dumps(pending)
-    }
-    from property_agent.checkpoint.analysis import checkpoint_parse
-
-    with patch.object(checkpoint_parse, "Context", return_value=tool_ctx):
-        inp = _pending_checkpoint_analysis_input_from_state(ctx)
-    assert inp is not None
-    assert inp.checkpoint_optional_agents == ["diy"]
-    assert inp.search_query == "garage leak"
-
-
-def test_synthesis_after_model_callback_skips_streaming_partials():
-    from unittest.mock import MagicMock
-
-    from google.adk.models.llm_response import LlmResponse
-    from google.genai import types
-
-    ctx = MagicMock()
-    ctx.state = {}
-    partial = LlmResponse(
-        content=types.Content(
-            role="model",
-            parts=[types.Part(text='# Bad\n\n```json\n{"analysis":{}}\n```')],
-        ),
-        partial=True,
-    )
-    assert synthesis_after_model_callback(ctx, partial) is None
 
 
 def test_minimal_checkpoint_progress_session_text():
@@ -1224,7 +879,7 @@ async def test_parallel_runner_emits_progressive_callbacks(monkeypatch):
         session_event_text = kwargs.get("session_event_text") or ""
         assert "```json" not in session_event_text
 
-    monkeypatch.setattr(caa, "_run_single_optional_agent_async", _stub_branch)
+    monkeypatch.setattr(parallel_mod, "_run_single_optional_agent_async", _stub_branch)
     blob = """Checkpoint Name: Garage
 Location/Asset: Garage
 Issues: paint chipping

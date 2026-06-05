@@ -117,6 +117,10 @@ async def test_serpapi_search_appends_hint_on_maps_error(
         search_location=sl,
         tool_context=tool_context,
     )
+    assert "SERPAPI_FALLBACK_HINT" in out
+    assert "garage door paint repair" in out
+
+
 @pytest.mark.asyncio
 async def test_serpapi_search_resolves_property_address_when_coords_missing(
     monkeypatch: pytest.MonkeyPatch,

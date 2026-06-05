@@ -129,13 +129,14 @@ def _youtube_for_diagnosis(
 ) -> list[Dict[str, Any]]:
     youtube_query = branch_intents.youtube_query if branch_intents else None
     stem = branch_intents.issue_stem if branch_intents else None
-    if (youtube_query or "").strip():
+    normalized_youtube_query = (youtube_query or "").strip()
+    if normalized_youtube_query:
         return youtube_search(
-            youtube_query.strip(),
+            normalized_youtube_query,
             max_results=5,
             search_location=search_location,
             relevance_stem=stem,
-            rank_search_query=youtube_query.strip(),
+            rank_search_query=normalized_youtube_query,
         )
     seed = _compact_diy_search_seed(diagnosis)
     q = compact_youtube_search_query(seed)
@@ -156,13 +157,14 @@ def _youtube_for_checkpoint_retrieval_seed(
     """YouTube: branch intent query when set, else retrieval seed + DIY tail."""
     youtube_query = branch_intents.youtube_query if branch_intents else None
     stem = branch_intents.issue_stem if branch_intents else None
-    if (youtube_query or "").strip():
+    normalized_youtube_query = (youtube_query or "").strip()
+    if normalized_youtube_query:
         return youtube_search(
-            youtube_query.strip(),
+            normalized_youtube_query,
             max_results=5,
             search_location=search_location,
             relevance_stem=stem or seed,
-            rank_search_query=youtube_query.strip(),
+            rank_search_query=normalized_youtube_query,
         )
     base = (seed or "").strip()
     if not base:

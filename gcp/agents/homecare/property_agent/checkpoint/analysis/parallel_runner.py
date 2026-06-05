@@ -6,17 +6,13 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
 from agent_framework.execution.thread_context import to_thread
 
-from google.adk.agents import Agent, BaseAgent
-from google.adk.agents.context import Context
-from google.adk.agents.invocation_context import InvocationContext
-from google.adk.events.event import Event
+from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
-from typing_extensions import override
 
 from agent_framework.execution import run_orchestrated_branches
 from agent_framework.registry.orchestration import build_execution_plan
@@ -28,12 +24,10 @@ from property_agent.checkpoint.branch_registry import (
 
 from property_agent.shared.inputs import CheckpointOptionalAgent
 from property_agent.geo.search_location_utils import search_location_from_payload
-from property_agent.checkpoint.progress_events import build_checkpoint_progress_event
 from property_agent.checkpoint.analysis.assembler import (
     apply_tool_context_state_delta,
     build_initial_analysis,
     build_message_patch_from_analysis,
-    bump_checkpoint_progress_emit_seq,
     ensure_analysis_run_id,
     merge_branch_result,
     minimal_checkpoint_progress_session_text,
@@ -49,9 +43,6 @@ from property_agent.checkpoint.grounding_prefetch import (
     prefetch_checkpoint_web_context,
     should_prefetch_checkpoint_grounding,
 )
-
-# Branches that consume shared checkpoint web summary (await same prefetch task).
-_GROUNDING_CONSUMER_BRANCHES = frozenset({"diy", "cost"})
 from property_agent.checkpoint.timing import (
     mark_synthesis_started,
     record_diy_ms,
@@ -62,15 +53,16 @@ from property_agent.agents.diy_agent.agent import diy_agent
 from property_agent.agents.diy_agent.orchestrator import run_diy_pipeline
 from property_agent.agents.service_agent.agent import service_agent
 from property_agent.checkpoint.branch_search_intents import BranchSearchIntents
-from property_agent.agents.cost_agent.agent import cost_agent
-from .checkpoint_parse import _parse_checkpoint_analysis_input
+from property_agent.agents.cost_agent.agent import _cost_estimation_sync, cost_agent
 from .search_query import (
     optional_branch_search_user_query,
     resolve_effective_search_query,
     resolve_optional_branch_user_query,
     resolve_service_branch_user_query,
-    _stash_retrieval_search_query,
 )
+
+# Branches that consume shared checkpoint web summary (await same prefetch task).
+_GROUNDING_CONSUMER_BRANCHES = frozenset({"diy", "cost"})
 
 logger = logging.getLogger(__name__)
 
@@ -80,12 +72,6 @@ def _branch_intents_from_state(state: Any) -> Optional[BranchSearchIntents]:
         return None
     raw = state.get(CHECKPOINT_BRANCH_SEARCH_INTENTS_KEY)
     return BranchSearchIntents.from_dict(raw)
-
-
-def _parallel_attr(name: str):
-    from . import agent as _agent
-
-    return getattr(_agent, name)
 
 
 def _analysis_merge_context_from_state(state: Any) -> tuple[Optional[str], Optional[str], str]:
@@ -102,136 +88,16 @@ def _analysis_merge_context_from_state(state: Any) -> tuple[Optional[str], Optio
     return pa, stem, md
 
 
-BranchCompleteCallback = Callable[
-    [str, Dict[str, str], Dict[str, Any], ToolContext], Awaitable[None]
-]
-
-
-async def execute_checkpoint_optional_parallel(
-    ctx: InvocationContext,
-    *,
-    on_branch_complete: Optional[BranchCompleteCallback] = None,
-) -> Context:
-    tool_ctx = Context(invocation_context=ctx)
-    inp = _parse_checkpoint_analysis_input(ctx)
-    run_parallel = _parallel_attr("run_checkpoint_optional_agents_parallel")
-    if inp is None:
-        await run_parallel(
-            checkpoint_results="",
-            user_query="",
-            checkpoint_optional_agents=[],
-            tool_context=tool_ctx,
-            on_branch_complete=on_branch_complete,
-        )
-        return tool_ctx
-
-    _stash_retrieval_search_query(tool_ctx, inp)
-    await run_parallel(
-        checkpoint_results=inp.checkpoint_results,
-        user_query=inp.user_query,
-        checkpoint_optional_agents=inp.checkpoint_optional_agents,
-        context_doc_uris=inp.context_doc_uris,
-        property_address=inp.property_address,
-        property_id=inp.property_id,
-        search_location=inp.search_location,
-        search_query=inp.search_query,
-        tool_context=tool_ctx,
-        on_branch_complete=on_branch_complete,
-    )
-    return tool_ctx
-
-
-class CheckpointOptionalParallelAgent(BaseAgent):
-    """Python-only parallel runner (replaces the prior LLM tool-caller hop)."""
-
-    @override
-    async def _run_async_impl(
-        self, ctx: InvocationContext
-    ) -> AsyncGenerator[Event, None]:
-        progress_queue: asyncio.Queue[Optional[Event]] = asyncio.Queue()
-        tool_ctx_holder: List[Optional[ToolContext]] = [None]
-
-        async def on_branch_complete(
-            branch: str,
-            results: Dict[str, str],
-            analysis: Dict[str, Any],
-            tool_context: ToolContext,
-            *,
-            session_event_text: str,
-        ) -> None:
-            run_id = ensure_analysis_run_id(tool_context.state)
-            analysis = tool_context.state.get("checkpoint_analysis")
-            if not isinstance(analysis, dict):
-                analysis = {}
-            requested = list(
-                tool_context.state.get("_checkpoint_pipeline_requested") or []
-            )
-            completed = list(
-                tool_context.state.get("_checkpoint_pipeline_completed") or []
-            )
-            pending = list(tool_context.state.get("_checkpoint_pipeline_pending") or [])
-            ck_blob = str(tool_context.state.get("checkpoint_results") or "")
-            uq = str(tool_context.state.get("user_query") or "")
-
-            pa, stem, md = _analysis_merge_context_from_state(tool_context.state)
-            analysis = merge_branch_result(
-                analysis,
-                checkpoint_results=ck_blob,
-                user_query=uq,
-                parallel_results=results,
-                requested_branches=requested,
-                completed_branches=completed,
-                pending_branches=pending,
-                in_progress=bool(pending),
-                property_address=pa,
-                retrieval_search_query=stem,
-                markdown_source=md,
-            )
-            stash_checkpoint_analysis_in_state(tool_context.state, analysis)
-            delta = build_message_patch_from_analysis(
-                analysis,
-                analysis_run_id=run_id,
-                branch_completed=branch or "",
-            )
-            delta["checkpoint_parallel_results"] = json.dumps(
-                results, ensure_ascii=False
-            )
-            apply_tool_context_state_delta(tool_context, delta)
-            bump_checkpoint_progress_emit_seq(tool_context.state)
-
-            await progress_queue.put(
-                build_checkpoint_progress_event(
-                    invocation_id=ctx.invocation_id,
-                    session_event_text=session_event_text,
-                    state_delta=delta,
-                    branch=ctx.branch,
-                )
-            )
-
-        async def run_parallel() -> None:
-            tool_ctx_holder[0] = await execute_checkpoint_optional_parallel(
-                ctx, on_branch_complete=on_branch_complete
-            )
-            await progress_queue.put(None)
-
-        runner_task = asyncio.create_task(run_parallel())
-        try:
-            while True:
-                ev = await progress_queue.get()
-                if ev is None:
-                    break
-                yield ev
-        finally:
-            await runner_task
-
-        tool_ctx = tool_ctx_holder[0]
-        if tool_ctx is not None and tool_ctx.state.has_delta():
-            yield Event(
-                invocation_id=ctx.invocation_id,
-                author=self.name,
-                branch=ctx.branch,
-                actions=tool_ctx.actions,
-            )
+class BranchCompleteCallback(Protocol):
+    async def __call__(
+        self,
+        branch: str,
+        results: Dict[str, str],
+        analysis: Dict[str, Any],
+        tool_context: ToolContext,
+        *,
+        session_event_text: str,
+    ) -> None: ...
 
 
 def _normalize_agent_result(result: Any) -> str:
@@ -339,7 +205,7 @@ def _build_checkpoint_cost_query(payload: Dict[str, Any]) -> str:
 
 async def _run_checkpoint_cost_pipeline(payload: Dict[str, Any]) -> str:
     query = _build_checkpoint_cost_query(payload)
-    return await to_thread(_parallel_attr("_cost_estimation_sync"), query)
+    return await to_thread(_cost_estimation_sync, query)
 
 
 async def _invoke_optional_agent_async(
@@ -358,12 +224,12 @@ async def _run_single_optional_agent_async(
     branch_failed = False
     try:
         if name == "diy":
-            result = await _parallel_attr("_run_checkpoint_diy_pipeline")(payload)
+            result = await _run_checkpoint_diy_pipeline(payload)
         elif name == "cost":
-            result = await _parallel_attr("_run_checkpoint_cost_pipeline")(payload)
+            result = await _run_checkpoint_cost_pipeline(payload)
         else:
             branch_agent, _ = _branch_agents()[name]
-            result = await _parallel_attr("_invoke_optional_agent_async")(
+            result = await _invoke_optional_agent_async(
                 branch_agent, payload, tool_context
             )
         return _normalize_agent_result(result)
@@ -401,7 +267,7 @@ async def _emit_progressive_update(
     results: Dict[str, str],
     checkpoint_results: str,
     user_query: str,
-    requested: List[str],
+    requested: Sequence[str],
     completed: List[str],
     pending: List[str],
     tool_context: ToolContext,
@@ -458,7 +324,7 @@ async def run_checkpoint_optional_agents_parallel(
     property_id: Optional[str] = None,
     search_location: Optional[Dict[str, Any]] = None,
     search_query: Optional[str] = None,
-    tool_context: ToolContext = None,
+    tool_context: ToolContext | None = None,
     on_branch_complete: Optional[BranchCompleteCallback] = None,
 ) -> str:
     total_start = time.monotonic()
@@ -589,7 +455,7 @@ async def run_checkpoint_optional_agents_parallel(
             branch_payload = service_payload
         if name in _GROUNDING_CONSUMER_BRANCHES:
             branch_payload = await _payload_with_grounding_summary(branch_payload)
-        value = await _parallel_attr("_run_single_optional_agent_async")(
+        value = await _run_single_optional_agent_async(
             name, branch_payload, tool_context
         )
         return name, value

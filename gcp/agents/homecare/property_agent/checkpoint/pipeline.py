@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from google.adk.tools import ToolContext
 
@@ -19,6 +19,7 @@ from property_agent.checkpoint.analysis.assembler import (
     stash_checkpoint_analysis_in_state,
 )
 from property_agent.checkpoint.session_input import optional_agents_for_progress_from_state
+from property_agent.shared.inputs import CheckpointOptionalAgent
 from property_agent.checkpoint.analysis.synthesis_runner import (
     synthesize_checkpoint_markdown,
 )
@@ -108,7 +109,7 @@ async def run_checkpoint_pipeline(
     context_doc_uris: Optional[List[str]] = None,
     property_address: Optional[str] = None,
     search_location: Optional[Dict[str, Any]] = None,
-    tool_context: ToolContext = None,
+    tool_context: ToolContext | None = None,
 ) -> str:
     """
     Full checkpoint flow: vector retrieval, optional parallel branches, structured message patch.
@@ -229,7 +230,7 @@ async def run_checkpoint_pipeline(
         await run_checkpoint_optional_agents_parallel(
             checkpoint_results=blob,
             user_query=user_query,
-            checkpoint_optional_agents=requested,
+            checkpoint_optional_agents=cast(list[CheckpointOptionalAgent], requested),
             context_doc_uris=context_doc_uris,
             property_address=property_address,
             property_id=property_id,

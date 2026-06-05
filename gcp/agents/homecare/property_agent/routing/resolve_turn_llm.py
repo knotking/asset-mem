@@ -179,7 +179,6 @@ def call_resolve_turn_llm(
     user_id: Optional[str] = None,
     property_id: Optional[str] = None,
 ) -> Optional[Any]:
-    from .schema import ResolvedTurn
     from property_agent.observability.turn_request_timing import mark, record_duration_ms
 
     mark("resolve_start")
@@ -267,7 +266,6 @@ def call_resolve_turn_llm(
 
 
 def resolve_turn_llm(ctx: Any, *, llm_request: Any = None) -> Any:
-    from .schema import ResolvedTurn
 
     state = getattr(ctx, "state", None) or {}
     user_query = hydrate_turn_state_from_context(ctx, llm_request=llm_request)

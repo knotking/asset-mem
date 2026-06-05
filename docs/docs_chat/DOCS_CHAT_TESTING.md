@@ -270,8 +270,8 @@ Before deploying to production:
 
 ## Related Documentation
 
-- [Analysis Agent Overview](analysis/ANALYSIS_AGENT_OVERVIEW.md)
-- [Checkpoint AI Chat Analysis](checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md)
+- [Property Agent README](../gcp/agents/homecare/property_agent/README.md)
+- [Orchestrator V2 Plan](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
 - [User Docs Agent README](../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
 - [Session Management](../apps/common/docs/SESSION_MANAGEMENT.md)
 

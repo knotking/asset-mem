@@ -6,7 +6,7 @@ parameters for the cost estimation system.
 """
 
 import os
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 
 class CostEstimationConfig:
@@ -111,7 +111,7 @@ class CostEstimationConfig:
         return cls.USE_SERVICE_PROVIDER_CALIBRATION
 
     @classmethod
-    def get_ai_config(cls) -> Dict[str, any]:
+    def get_ai_config(cls) -> Dict[str, Any]:
         """
         Get AI model configuration.
 
@@ -176,7 +176,7 @@ class CostEstimationConfig:
         return True, None
 
     @classmethod
-    def get_fallback_reason_log(cls, reason: str, diagnosis: str) -> Dict[str, str]:
+    def get_fallback_reason_log(cls, reason: str, diagnosis: str) -> Dict[str, Union[str, bool]]:
         """
         Create log entry for fallback usage.
 

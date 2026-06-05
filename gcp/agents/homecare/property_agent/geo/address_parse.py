@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 
 from property_agent.shared.inputs import SearchLocation, SearchLocationCoordinates
 from property_agent.geo.http import requests
@@ -320,8 +320,10 @@ def merge_search_location_sources(
         return None
 
     lat, lng = coords
-    source = merged.get("source")
-    if source not in ("property_address", "device_gps"):
+    source_raw = merged.get("source")
+    if source_raw in ("property_address", "device_gps"):
+        source: Literal["property_address", "device_gps"] = source_raw
+    else:
         source = "device_gps"
 
     radius = merged.get("radius_miles", 5)
