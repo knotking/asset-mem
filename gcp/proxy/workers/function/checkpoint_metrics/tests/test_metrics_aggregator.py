@@ -4,7 +4,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from metrics_aggregator import compute_property_metrics_from_checkpoints
+from metrics_aggregator import (
+    apply_incremental_checkpoint_to_metrics,
+    compute_property_metrics_from_checkpoints,
+    should_use_full_aggregation,
+)
 
 
 class _FakeTimestamp:
@@ -114,3 +118,60 @@ def test_issues_recent_from_issues_list():
     assert len(metrics["issues"]["recent"]) == 1
     assert metrics["issues"]["recent"][0]["severity"] == "major"
     assert metrics["issues"]["recent"][0]["checkpointName"] == "Kitchen"
+
+
+def test_apply_incremental_builds_from_empty_existing():
+    t1 = _FakeTimestamp(datetime(2025, 1, 1, tzinfo=timezone.utc))
+    checkpoint = {
+        "id": "c1",
+        "createdAt": t1,
+        "name": "Kitchen",
+        "analysisStatus": "completed",
+        "aiAnalysis": {
+            "condition_scores": {"overall": 80},
+            "issues": [{"description": "crack", "severity": "minor"}],
+        },
+    }
+    metrics = apply_incremental_checkpoint_to_metrics(None, checkpoint)
+    assert metrics["window"]["checkpoints_considered"] == 1
+    assert metrics["window"]["checkpoints_with_score"] == 1
+    assert metrics["window"]["scored_sum"] == 80
+    assert metrics["overall"]["headline"]["value"] == 80
+
+
+def test_apply_incremental_appends_second_checkpoint():
+    t1 = _FakeTimestamp(datetime(2025, 1, 1, tzinfo=timezone.utc))
+    t2 = _FakeTimestamp(datetime(2025, 1, 2, tzinfo=timezone.utc))
+    first = {
+        "id": "c1",
+        "createdAt": t1,
+        "analysisStatus": "completed",
+        "aiAnalysis": {"condition_scores": {"overall": 90}},
+    }
+    existing = compute_property_metrics_from_checkpoints([first])
+    second = {
+        "id": "c2",
+        "createdAt": t2,
+        "analysisStatus": "completed",
+        "aiAnalysis": {"condition_scores": {"overall": 70}},
+    }
+    metrics = apply_incremental_checkpoint_to_metrics(existing, second)
+    assert metrics["window"]["checkpoints_considered"] == 2
+    assert metrics["overall"]["headline"]["value"] == 80
+    assert [p["score"] for p in metrics["overall"]["trend"]] == [90.0, 70.0]
+
+
+def test_should_use_full_aggregation_when_window_full():
+    existing = {
+        "version": 2,
+        "window": {"checkpoints_considered": 60, "last_applied_checkpoint_id": "c60"},
+    }
+    assert should_use_full_aggregation(existing, {"id": "c61"}) is True
+
+
+def test_should_use_full_aggregation_on_reanalysis_same_id():
+    existing = {
+        "version": 2,
+        "window": {"checkpoints_considered": 2, "last_applied_checkpoint_id": "c1"},
+    }
+    assert should_use_full_aggregation(existing, {"id": "c1"}) is True

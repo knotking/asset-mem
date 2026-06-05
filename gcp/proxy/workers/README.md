@@ -113,8 +113,13 @@ workers/
 
 - Parses the Pub/Sub message to extract checkpoint analysis request.
 - Calls `checkpoint_service.analyze_checkpoint_image()` to analyze the image using Gemini AI.
+- Claims the job idempotently (`analysisJobId` / `analysisJobStartedAt` lease) so Pub/Sub
+  redelivery does not re-run Gemini on already-completed checkpoints.
 - Updates Firestore checkpoint document with analysis results.
 - Sets `analysisStatus` to `completed` on success or `failed` on error.
+- Publishes an **incremental** metrics event (checkpoint snapshot in payload) on success.
+- Uses `checkpointComparison` prefs from the Pub/Sub payload (loaded by the proxy at
+  enqueue) instead of reading `users/{userId}/preferences/user` in the worker.
 - Handles errors and logs processing status.
 
 ### 2. RAG Service (`function/user_docs/rag_service.py`)

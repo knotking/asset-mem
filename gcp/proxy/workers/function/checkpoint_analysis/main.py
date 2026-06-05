@@ -7,7 +7,12 @@ import json
 import firebase_admin
 from firebase_admin import firestore
 
-from utils import parse_pubsub_message
+from utils import (
+    checkpoint_timestamp_to_datetime,
+    parse_pubsub_message,
+    resolve_user_preferences_from_payload,
+    try_claim_checkpoint_analysis,
+)
 from checkpoint_service import analyze_checkpoint_image
 from comparison_service import (
     find_previous_checkpoint,
@@ -59,7 +64,15 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 CHECKPOINT_METRICS_TOPIC = os.environ.get("CHECKPOINT_METRICS_TOPIC")
 
 
-def _publish_metrics_aggregate_event(user_id: str, property_id: str, checkpoint_id: str, reason: str) -> None:
+def _publish_metrics_aggregate_event(
+    user_id: str,
+    property_id: str,
+    checkpoint_id: str,
+    reason: str,
+    *,
+    mode: str = "full",
+    checkpoint: dict | None = None,
+) -> None:
     if not (GCP_PROJECT_ID and CHECKPOINT_METRICS_TOPIC):
         return
     try:
@@ -70,7 +83,10 @@ def _publish_metrics_aggregate_event(user_id: str, property_id: str, checkpoint_
             "propertyId": property_id,
             "checkpointId": checkpoint_id,
             "reason": reason,
+            "mode": mode,
         })
+        if checkpoint is not None:
+            payload["checkpoint"] = checkpoint
         publisher.publish(topic_path, json.dumps(payload).encode("utf-8")).result()
     except Exception as e:
         logger.warning(
@@ -132,6 +148,13 @@ def pubsub_checkpoint_analysis(request, context):
                 .collection("checkpoints")
                 .document(checkpoint_id)
             )
+
+            job_id = payload.get("jobId") or str(uuid.uuid4())
+            claim_action, existing_checkpoint = try_claim_checkpoint_analysis(
+                checkpoint_ref, checkpoint_id, job_id
+            )
+            if claim_action in ("skip_completed", "skip_in_flight", "skip_missing"):
+                return
 
             # /analyze-checkpoint records monthly checkpoint creations at enqueue time.
             # Keep worker-side limit enforcement for non-API sources only.
@@ -200,14 +223,9 @@ def pubsub_checkpoint_analysis(request, context):
                 analysis_duration_ms = (time.time() - analysis_start_time) * 1000
             
                 # Update Firestore with analysis results
-                # Check if location already exists
-                checkpoint_doc = checkpoint_ref.get()
-                existing_location = None
-                existing_name = None
-                if checkpoint_doc.exists:
-                    existing = checkpoint_doc.to_dict() or {}
-                    existing_location = existing.get("location")
-                    existing_name = existing.get("name")
+                existing = existing_checkpoint or {}
+                existing_location = existing.get("location")
+                existing_name = existing.get("name")
             
                 # Extract condition and damage scores from analysis result (normalized in checkpoint_service)
                 condition_scores = analysis_result.get("condition_scores", {})
@@ -317,12 +335,27 @@ def pubsub_checkpoint_analysis(request, context):
                     # Don't fail the entire process if embedding generation fails
                     logger.error(f"Error generating embedding for checkpoint {checkpoint_id}: {embedding_error}", exc_info=True)
             
-                # Trigger async metrics aggregation for the property (mobile analytics)
+                # Incremental metrics update (1 summary read/write; avoids 60-checkpoint scan)
+                created_dt = checkpoint_timestamp_to_datetime(existing.get("createdAt"))
+                ai_analysis_payload = {
+                    k: v
+                    for k, v in update_data["aiAnalysis"].items()
+                    if k != "analyzedAt"
+                }
+                metrics_checkpoint = {
+                    "id": checkpoint_id,
+                    "createdAt": created_dt.isoformat() if created_dt else None,
+                    "name": update_data.get("name") or existing_name,
+                    "analysisStatus": "completed",
+                    "aiAnalysis": ai_analysis_payload,
+                }
                 _publish_metrics_aggregate_event(
                     user_id=user_id,
                     property_id=property_id,
                     checkpoint_id=checkpoint_id,
                     reason="checkpoint.analysis.completed",
+                    mode="incremental",
+                    checkpoint=metrics_checkpoint,
                 )
             
                 # Determine media type
@@ -389,9 +422,13 @@ def pubsub_checkpoint_analysis(request, context):
                 # Attempt automatic comparison with previous checkpoint
                 comparison_start_time = time.time()
                 try:
-                    # Fetch user preferences
-                    user_preferences = get_user_preferences(db, user_id)
-            
+                    user_preferences = resolve_user_preferences_from_payload(
+                        payload,
+                        db,
+                        user_id,
+                        get_user_preferences=get_user_preferences,
+                    )
+
                     # Find previous checkpoint for the same location
                     previous_checkpoint = find_previous_checkpoint(
                         db=db,
@@ -404,13 +441,8 @@ def pubsub_checkpoint_analysis(request, context):
                         user_preferences=user_preferences
                     )
             
-                    # Check if we should perform comparison
-                    checkpoint_doc_after_update = checkpoint_ref.get()
-                    skip_comparison = False
-                    if checkpoint_doc_after_update.exists:
-                        checkpoint_data = checkpoint_doc_after_update.to_dict()
-                        skip_comparison = checkpoint_data.get("skipComparison", False)
-            
+                    skip_comparison = bool(existing_checkpoint.get("skipComparison", False))
+
                     should_compare = should_compare_checkpoints(
                         previous_checkpoint,
                         asset_confidence,
@@ -419,8 +451,7 @@ def pubsub_checkpoint_analysis(request, context):
                     )
             
                     if should_compare:
-                        # Get media URLs for comparison
-                        new_checkpoint_media = checkpoint_doc_after_update.to_dict().get("media", [])
+                        new_checkpoint_media = existing_checkpoint.get("media", [])
                         previous_media = previous_checkpoint.get("media", [])
             
                         if new_checkpoint_media and previous_media:

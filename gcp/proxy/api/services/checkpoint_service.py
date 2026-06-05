@@ -10,7 +10,8 @@ import json
 import logging
 import os
 import time
-from typing import Optional
+from typing import Any, Dict, Optional
+from google.cloud import firestore
 from google.cloud import pubsub_v1
 from google import genai
 from google.genai import types
@@ -47,7 +48,43 @@ def _initialize_genai_client():
             logger.exception("Failed to initialize Google Gen AI SDK: %s", e)
             genai_client = None
 
-def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
+def load_checkpoint_analysis_enqueue_context(
+    db: firestore.Client,
+    user_id: str,
+) -> Dict[str, Any]:
+    """
+    Load worker context at enqueue time to avoid extra Firestore reads in the worker.
+
+    Currently includes checkpoint comparison preferences from users/{userId}/preferences/user.
+    """
+    context: Dict[str, Any] = {}
+    try:
+        prefs_doc = (
+            db.collection("users")
+            .document(user_id)
+            .collection("preferences")
+            .document("user")
+            .get()
+        )
+        if prefs_doc.exists:
+            prefs = prefs_doc.to_dict() or {}
+            comparison = prefs.get("checkpointComparison")
+            if isinstance(comparison, dict):
+                context["checkpointComparison"] = comparison
+    except Exception as e:
+        logger.warning(
+            "Failed to load checkpoint analysis enqueue context user=%s: %s",
+            user_id,
+            e,
+        )
+    return context
+
+
+def publish_checkpoint_analysis(
+    request: AnalyzeCheckpointRequest,
+    *,
+    enqueue_context: Optional[Dict[str, Any]] = None,
+) -> str:
     """
     Publishes a checkpoint analysis request to Pub/Sub for async processing.
     
@@ -70,6 +107,9 @@ def publish_checkpoint_analysis(request: AnalyzeCheckpointRequest) -> str:
             "propertyId": request.propertyId,
             "source": "checkpoint-analysis-api",
         })
+        if enqueue_context:
+            if isinstance(enqueue_context.get("checkpointComparison"), dict):
+                payload["checkpointComparison"] = enqueue_context["checkpointComparison"]
 
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)

@@ -69,13 +69,16 @@ The deploy job **rsyncs** `gcp/common/observability` and `gcp/common/token` into
 
 ## How It Works
 
-1. The API endpoint (`/analyze-checkpoint`) publishes a message to the `checkpoint-analysis-topic`.
+1. The API endpoint (`/analyze-checkpoint`) loads `checkpointComparison` prefs and publishes
+   a message to the `checkpoint-analysis-topic`.
 2. This Cloud Function is triggered by the Pub/Sub message.
 3. The function:
    - Parses the checkpoint analysis request
+   - Claims the job with a short-lived lease (skips duplicate Pub/Sub deliveries)
    - Calls Gemini AI to analyze the checkpoint image
    - Updates the Firestore checkpoint document with analysis results
    - Sets `analysisStatus` to `completed` on success or `failed` on error
+   - Publishes an incremental checkpoint-metrics event on success
 
 ## Monitoring
 

@@ -13,7 +13,11 @@ from schemas.checkpoint import (
     AnalyzeCheckpointRequest,
     CompareCheckpointsRequest
 )
-from services.checkpoint_service import publish_checkpoint_analysis, compare_checkpoints
+from services.checkpoint_service import (
+    compare_checkpoints,
+    load_checkpoint_analysis_enqueue_context,
+    publish_checkpoint_analysis,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -55,8 +59,11 @@ async def analyze_checkpoint_endpoint(
         except PlanLimitExceeded as e:
             return plan_limit_exceeded_response(e)
 
-        # Publish to Pub/Sub topic for async processing
-        message_id = publish_checkpoint_analysis(request_data)
+        enqueue_context = load_checkpoint_analysis_enqueue_context(db, request_data.userId)
+        message_id = publish_checkpoint_analysis(
+            request_data,
+            enqueue_context=enqueue_context,
+        )
 
         logger.info(
             "Checkpoint analysis published message_id=%s checkpointId=%s",

@@ -8,6 +8,18 @@ Writes/updates:
 
 - `users/{userId}/properties/{propertyId}/metrics/summary`
 
+## Aggregation modes
+
+Pub/Sub payload `mode` controls how the summary is updated:
+
+- **`incremental`** (default from checkpoint analysis on success): reads the existing
+  `metrics/summary` doc and patches it with the completed `checkpoint` snapshot in the
+  payload (1 read + 1 write). Falls back to a full scan when the sliding window is full
+  (60 checkpoints), the summary version mismatches, or the same `checkpointId` is
+  re-applied.
+- **`full`**: queries up to 60 recent checkpoints and recomputes the summary (repair /
+  backfill path).
+
 ## Unit tests
 
 Unit tests focus on the most testable logic:
