@@ -182,7 +182,7 @@ export function CheckpointComparisonModal({
                 {/* Header */}
                 <View
                   className="flex-row items-center justify-between border-b border-border px-4"
-                  style={{ paddingTop: Math.max(insets.top, 12), paddingBottom: 12 }}>
+                  style={{ paddingTop: 12, paddingBottom: 12 }}>
                   <Text className="text-lg font-semibold text-foreground">Compare Checkpoints</Text>
                     <Button onPress={onClose} variant="ghost" size="icon">
                         <Icon as={X} size={24} className="text-foreground" />

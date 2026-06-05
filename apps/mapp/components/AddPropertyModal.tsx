@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Pressable, ScrollView } from 'react-native';
+import { Modal, View, Pressable, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -229,7 +229,9 @@ export default function AddPropertyModal({ visible, onClose, onSuccess }: AddPro
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={handleClose}>
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView
+        className="flex-1 bg-background"
+        edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : undefined}>
         {/* Header */}
         <View className="border-b border-border bg-background px-6 py-4">
           <View className="flex-row items-center justify-between">
