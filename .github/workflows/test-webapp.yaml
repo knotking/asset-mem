@@ -38,3 +38,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck --workspace=nextn
+
+      - name: Unit tests
+        run: npm run test --workspace=nextn

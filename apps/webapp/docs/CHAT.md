@@ -23,6 +23,8 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 
 **Guardrails:** ESLint `no-restricted-imports`, `npm run check:no-common`, CI workflow `test-webapp.yaml`.
 
+**Tests:** Mirrored libs have Jest coverage under `apps/webapp/__tests__/` (ported from `apps/common` / `apps/mapp` where applicable). Run `npm run test` in `apps/webapp`.
+
 | Module | Sync with |
 |--------|-----------|
 | `src/lib/message-content-parts.ts` | `apps/common/src/lib/message-content-parts.ts` |
