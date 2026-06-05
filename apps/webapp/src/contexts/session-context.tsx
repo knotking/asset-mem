@@ -1,16 +1,22 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Session } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { createAgentSession } from '@/lib/api-agent';
-import { createLogger } from '@/lib/logger';
+import { createLogger, truncateId } from '@/lib/logger';
 
 const sessionLog = createLogger('session');
+
+type DraftSource = 'eager' | 'caller';
+
+function draftInflightKey(propertyId?: string | null): string {
+  return propertyId ? `property:${propertyId}` : 'global';
+}
 
 interface SessionContextType {
   sessionsByProperty: Record<string, Session[]>;
@@ -30,6 +36,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   const [draftsByProperty, setDraftsByProperty] = useState<Record<string, Session>>({});
   const [globalDraft, setGlobalDraft] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const draftCreationByKeyRef = useRef(new Map<string, Promise<string | null>>());
 
   const createAgentSessionForUser = useCallback(async (userId: string): Promise<string | null> => {
     const { agentSessionId, error } = await createAgentSession(userId);
@@ -39,45 +46,71 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     return agentSessionId;
   }, []);
 
-  const createGlobalDraftSession = useCallback(async (userId: string) => {
-    try {
-      const agentSessionId = await createAgentSessionForUser(userId);
-      if (!agentSessionId) return null;
-      
-      const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
-        name: 'draft',
-        createdAt: serverTimestamp(),
-        agentSessionId: agentSessionId,
-        propertyId: null, // Global draft
-      });
-      return docRef.id;
-    } catch (err) {
-      sessionLog.error('draft.global.failed', undefined, err);
-      // Don't show a toast for this background task
-      return null;
-    }
-  }, [createAgentSessionForUser]);
-  
-  const createPropertyDraftSession = useCallback(async (userId: string, propertyId: string) => {
-    try {
-      const agentSessionId = await createAgentSessionForUser(userId);
-      if (!agentSessionId) return null;
-      
-      const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
-        name: 'draft',
-        createdAt: serverTimestamp(),
-        agentSessionId: agentSessionId,
-        propertyId: propertyId,
-      });
-      return docRef.id;
-    } catch (err) {
-      sessionLog.error('draft.property.failed', { propertyId }, err);
-      return null;
-    }
-  }, [createAgentSessionForUser]);
+  const createDraftSessionInternal = useCallback(
+    async (
+      userId: string,
+      propertyId: string | null,
+      source: DraftSource
+    ): Promise<string | null> => {
+      const key = draftInflightKey(propertyId);
+      const inFlight = draftCreationByKeyRef.current.get(key);
+      if (inFlight) {
+        sessionLog.debug('draft.create.join', { key, source });
+        return inFlight;
+      }
+
+      sessionLog.debug('draft.create.start', { key, source });
+
+      const work = (async (): Promise<string | null> => {
+        try {
+          const agentSessionId = await createAgentSessionForUser(userId);
+          if (!agentSessionId) return null;
+
+          const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
+            name: 'draft',
+            createdAt: serverTimestamp(),
+            agentSessionId,
+            propertyId,
+          });
+
+          sessionLog.debug('draft.create.done', {
+            key,
+            source,
+            sessionId: truncateId(docRef.id),
+          });
+          return docRef.id;
+        } catch (err) {
+          sessionLog.error(
+            propertyId ? 'draft.property.failed' : 'draft.global.failed',
+            { propertyId: propertyId ?? undefined, source },
+            err
+          );
+          return null;
+        } finally {
+          draftCreationByKeyRef.current.delete(key);
+        }
+      })();
+
+      draftCreationByKeyRef.current.set(key, work);
+      return work;
+    },
+    [createAgentSessionForUser]
+  );
+
+  const createGlobalDraftSession = useCallback(
+    (userId: string) => createDraftSessionInternal(userId, null, 'caller'),
+    [createDraftSessionInternal]
+  );
+
+  const createPropertyDraftSession = useCallback(
+    (userId: string, propertyId: string) =>
+      createDraftSessionInternal(userId, propertyId, 'caller'),
+    [createDraftSessionInternal]
+  );
 
   useEffect(() => {
     if (!user) {
+      draftCreationByKeyRef.current.clear();
       setSessionsByProperty({});
       setDraftsByProperty({});
       setGlobalDraft(null);
@@ -95,13 +128,11 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       const newSessionsByProperty: Record<string, Session[]> = {};
       const newDraftsByProperty: Record<string, Session> = {};
       let foundGlobalDraft: Session | null = null;
-      const propertyIdsWithDrafts = new Set<string>();
 
       allSessions.forEach(session => {
         if (session.name === 'draft') {
           if (session.propertyId) {
             newDraftsByProperty[session.propertyId] = session;
-            propertyIdsWithDrafts.add(session.propertyId);
           } else {
             foundGlobalDraft = session;
           }
@@ -112,25 +143,38 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
             newSessionsByProperty[session.propertyId].push(session);
         }
       });
+
+      const getTimestampValue = (value: unknown): number => {
+        if (!value) return 0;
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const parsed = Date.parse(value);
+          return Number.isNaN(parsed) ? 0 : parsed;
+        }
+        if (value instanceof Date) return value.getTime();
+        if (typeof value === 'object' && value !== null) {
+          const maybeTimestamp = value as { toMillis?: () => number; toDate?: () => Date };
+          if (typeof maybeTimestamp.toMillis === 'function') return maybeTimestamp.toMillis();
+          if (typeof maybeTimestamp.toDate === 'function') {
+            const date = maybeTimestamp.toDate();
+            return date instanceof Date ? date.getTime() : 0;
+          }
+        }
+        return 0;
+      };
+
+      Object.keys(newSessionsByProperty).forEach(propId => {
+        newSessionsByProperty[propId].sort((a, b) => {
+          const bTime = getTimestampValue(b.lastMessageAt ?? b.createdAt);
+          const aTime = getTimestampValue(a.lastMessageAt ?? a.createdAt);
+          return bTime - aTime;
+        });
+      });
       
       setGlobalDraft(foundGlobalDraft);
       setSessionsByProperty(newSessionsByProperty);
       setDraftsByProperty(newDraftsByProperty);
       setIsLoading(false);
-
-      // Eagerly create missing drafts
-      if (!foundGlobalDraft) {
-        createGlobalDraftSession(user.uid);
-      }
-      
-      // We need to know all properties to check if a draft is missing.
-      // For now, we assume if a property has sessions, it should have a draft.
-      Object.keys(newSessionsByProperty).forEach(propId => {
-        if (!propertyIdsWithDrafts.has(propId)) {
-          createPropertyDraftSession(user.uid, propId);
-        }
-      });
-
     }, (error) => {
         sessionLog.error("sessions.subscribe.failed", undefined, error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load chat sessions.' });
@@ -138,7 +182,23 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     });
 
     return () => unsubscribe();
-  }, [user, toast, createGlobalDraftSession, createPropertyDraftSession]);
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (!user || isLoading) return;
+
+    if (!globalDraft) {
+      sessionLog.debug('draft.eager.global', { userId: truncateId(user.uid) });
+      void createDraftSessionInternal(user.uid, null, 'eager');
+    }
+
+    Object.keys(sessionsByProperty).forEach(propId => {
+      if (!draftsByProperty[propId]) {
+        sessionLog.debug('draft.eager.property', { propertyId: truncateId(propId) });
+        void createDraftSessionInternal(user.uid, propId, 'eager');
+      }
+    });
+  }, [user, isLoading, globalDraft, draftsByProperty, sessionsByProperty, createDraftSessionInternal]);
 
   return (
     <SessionContext.Provider value={{ sessionsByProperty, draftsByProperty, globalDraft, isLoading, createGlobalDraftSession, createPropertyDraftSession }}>
