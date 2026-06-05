@@ -72,6 +72,11 @@ export function clientStartedAtTimestamp(): Timestamp {
   return Timestamp.fromDate(new Date());
 }
 
+/** One ms after `base` so paired assistant rows sort and display after the user turn. */
+export function clientMessageTimestampAfter(base: Timestamp): Timestamp {
+  return Timestamp.fromMillis(base.toMillis() + 1);
+}
+
 export function sessionActivityOnUserMessagePatch(): SessionActivityPatch {
   return {
     lastMessageAt: serverTimestamp(),

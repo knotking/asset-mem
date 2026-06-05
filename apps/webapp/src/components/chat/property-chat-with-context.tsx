@@ -44,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createLogger } from "@/lib/logger";
 import { trackFirstChatMessage } from "@/lib/analytics";
 import {
+  clientMessageTimestampAfter,
   clientStartedAtTimestamp,
   sessionActivityOnUserMessagePatch,
 } from "@/lib/session-timestamps";
@@ -186,6 +187,8 @@ function PropertyChatComposerInner(
           readySelectedDocuments,
         });
 
+        const userCreatedAt = clientStartedAtTimestamp();
+
         const userMessageRef = await addDoc(
           collection(db, "users", user.uid, "chats", activeSessionId, "messages"),
           {
@@ -193,7 +196,7 @@ function PropertyChatComposerInner(
             content: content.trim(),
             contentMarkdown: content.trim(),
             contextRefs,
-            createdAt: serverTimestamp(),
+            createdAt: userCreatedAt,
           }
         );
 
@@ -202,7 +205,7 @@ function PropertyChatComposerInner(
           {
             role: "assistant",
             content: "",
-            createdAt: serverTimestamp(),
+            createdAt: clientMessageTimestampAfter(userCreatedAt),
             primaryAgent: props.primaryAgent,
           }
         );

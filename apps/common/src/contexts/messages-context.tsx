@@ -13,6 +13,7 @@ import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
 import { createLogger } from '../lib/logger';
 import { mergeMessagesFromSnapshot } from '../lib/merge-messages-snapshot';
+import { sortMessagesChronologically } from '../lib/sort-messages';
 
 const messagesLog = createLogger('messages');
 
@@ -102,8 +103,8 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
         const loadedMessages = snapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() } as Message)
         );
-        // Reverse to show oldest first (GiftedChat will reverse again to show newest at bottom)
-        const ordered = loadedMessages.reverse();
+        // Reverse to oldest first, then stabilize user-before-assistant on timestamp ties.
+        const ordered = sortMessagesChronologically(loadedMessages.reverse());
         const merged = mergeMessagesFromSnapshot(prevMessagesRef.current, ordered);
         prevMessagesRef.current = merged;
         setMessages(merged);

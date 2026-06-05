@@ -15,6 +15,7 @@ import {
   getSuggestedPrompts,
 } from '@/lib/feature-discovery';
 import { buildSuppressRepeatedContextRefsByMessageId } from '@/lib/chat-message-context-refs';
+import { hasUserMessageBefore } from '@homeapp/common/lib/sort-messages';
 
 type Props = {
   messages: Message[];
@@ -60,7 +61,8 @@ export function ChatList({
         const isLoading =
           index === messages.length - 1 &&
           message.role === 'assistant' &&
-          assistantHasNoDisplayableContentYet(message);
+          assistantHasNoDisplayableContentYet(message) &&
+          hasUserMessageBefore(messages, index);
 
         // Also check for the local-only placeholder ID
         const isPlaceholder = message.id.startsWith('local-');

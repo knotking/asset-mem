@@ -1841,6 +1841,7 @@ const ChatMessageComponent = ({
     isUser && !showStatusStrip && !showLoadingIndicator && !effectiveStructuredData;
 
   const messageTimeLabel = useMemo(() => {
+    if (!isUser && (showStatusStrip || showLoadingIndicator)) return null;
     if (!message.createdAt) return null;
     const date =
       message.createdAt instanceof Date
@@ -1853,7 +1854,7 @@ const ChatMessageComponent = ({
           : null;
     if (!date) return null;
     return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  }, [message.createdAt]);
+  }, [message.createdAt, isUser, showStatusStrip, showLoadingIndicator]);
 
   const renderUserMessageBody = () => (
     <div className="flex w-full max-w-full flex-col items-end gap-1.5">
