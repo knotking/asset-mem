@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Modal, View, Image, Pressable, ScrollView } from 'react-native';
+import { Modal, View, Image, Pressable, ScrollView, Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -266,7 +266,10 @@ export function CreateCheckpointModal({ visible, onClose, onCreate }: CreateChec
         {/* Header */}
         <View
           className="flex-row items-center justify-between border-b border-border bg-background px-4"
-          style={{ paddingTop: Math.max(insets.top, 12), paddingBottom: 12 }}>
+          style={{
+            paddingTop: Platform.OS === 'ios' ? 12 : Math.max(insets.top, 12),
+            paddingBottom: 12,
+          }}>
           <Text className="text-lg font-semibold text-foreground">New Checkpoint</Text>
           <Button onPress={onClose} variant="ghost" size="icon" disabled={loading}>
             <Icon as={X} size={24} className="text-foreground" />
