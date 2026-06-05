@@ -44,6 +44,7 @@ cd apps/common && npm run build        # Build the shared lib (tsc --build); rer
 ```bash
 cd apps/webapp && npm run lint
 cd apps/webapp && npm run typecheck
+cd apps/webapp && npm run test         # Jest unit/component tests
 cd apps/webapp && npm run build        # next build, then scripts/fix-firebase-standalone.js
 
 cd apps/mapp && npx tsc --noEmit       # mapp has no separate lint script
