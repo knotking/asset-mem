@@ -10,14 +10,16 @@ import type { Session } from '@homeapp/common/types';
 interface SessionsDrawerContentProps {
   propertyId: string;
   propertyName: string;
+  currentSessionId?: string | null;
   onClose: () => void;
   onSessionPress: (session: Session) => void;
-  onCreateSession: () => void;
+  onCreateSession: (sessionId: string) => void;
 }
 
 export function SessionsDrawerContent({
   propertyId,
   propertyName,
+  currentSessionId,
   onClose,
   onSessionPress,
   onCreateSession,
@@ -39,6 +41,7 @@ export function SessionsDrawerContent({
       </View>
       <SessionsList
         propertyId={propertyId}
+        currentSessionId={currentSessionId}
         onSessionPress={onSessionPress}
         onCreateSession={onCreateSession}
       />

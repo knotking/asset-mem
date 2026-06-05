@@ -158,18 +158,20 @@ SessionItem.displayName = 'SessionItem';
 
 interface SessionsListProps {
   propertyId: string;
+  currentSessionId?: string | null;
   onSessionPress?: (session: Session) => void;
-  onCreateSession?: () => void;
+  onCreateSession?: (sessionId: string) => void;
 }
 
 type ShareState = 'idle' | 'checking' | 'prompt_update' | 'creating' | 'updating' | 'done';
 
 export default function SessionsList({
   propertyId,
+  currentSessionId,
   onSessionPress,
   onCreateSession,
 }: SessionsListProps) {
-  const { sessionsByProperty, draftsByProperty, isLoading, createPropertyDraftSession } = useSession();
+  const { sessionsByProperty, draftsByProperty, isLoading, beginNewPropertyChatSession } = useSession();
   const { user } = useAuth();
   const { db } = useFirebase();
 
@@ -359,23 +361,26 @@ export default function SessionsList({
   const handleCreateSession = async () => {
     if (!user) return;
 
-    // Claim existing draft or create new one (same as webapp)
-    if (draftSession) {
-      // Draft exists - claim it by selecting it
-      onSessionPress?.(draftSession);
+    sessionLog.debug('new_session.click', {
+      propertyId,
+      currentSessionId,
+    });
+
+    const targetSessionId = await beginNewPropertyChatSession(
+      user.uid,
+      propertyId,
+      currentSessionId
+    );
+    if (!targetSessionId) return;
+
+    const draft = draftsByProperty[propertyId];
+    if (draft?.id === targetSessionId) {
+      onSessionPress?.(draft);
     } else {
-      // No draft exists - create one
-      const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
-      if (newSessionId) {
-        // The draft will be picked up by the context and auto-selected
-        // In parallel, a new draft will be created for future use
-      }
+      onSessionPress?.({ id: targetSessionId, name: 'draft', propertyId } as Session);
     }
 
-    // Call the onCreateSession callback if provided
-    if (onCreateSession) {
-      onCreateSession();
-    }
+    onCreateSession?.(targetSessionId);
   };
 
   const handleDeleteSession = async () => {

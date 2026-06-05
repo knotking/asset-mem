@@ -44,7 +44,7 @@ describe('SessionsList', () => {
       sessionsByProperty: { [PROPERTY_ID]: generateMockSessions(500) },
       draftsByProperty: {},
       isLoading: false,
-      createPropertyDraftSession: jest.fn(async () => 'new-draft'),
+      beginNewPropertyChatSession: jest.fn(async () => 'new-draft'),
     });
   });
 
@@ -95,7 +95,7 @@ describe('SessionsList', () => {
       sessionsByProperty: {},
       draftsByProperty: {},
       isLoading: true,
-      createPropertyDraftSession: jest.fn(),
+      beginNewPropertyChatSession: jest.fn(),
     });
 
     const SessionsList = require('@/components/SessionsList').default;

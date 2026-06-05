@@ -23,7 +23,7 @@ export default function NewChatRedirectPage() {
     const { toast } = useToast();
     const {
         draftsByProperty,
-        createPropertyDraftSession,
+        beginNewPropertyChatSession,
         isLoading: isSessionsLoading,
     } = useSession();
     const [creationError, setCreationError] = useState(false);
@@ -89,7 +89,7 @@ export default function NewChatRedirectPage() {
             redirectAttemptedRef.current = true;
             chatLog.debug('chat.redirect.create', { propertyId: truncateId(propertyId) });
 
-            const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
+            const newSessionId = await beginNewPropertyChatSession(user.uid, propertyId);
             if (cancelled) return;
 
             if (!newSessionId) {
@@ -129,7 +129,7 @@ export default function NewChatRedirectPage() {
         fromOnboardingChecklist,
         router,
         toast,
-        createPropertyDraftSession,
+        beginNewPropertyChatSession,
     ]);
 
     const handleRetry = () => {
@@ -138,7 +138,7 @@ export default function NewChatRedirectPage() {
         if (!user || !propertyId || isSessionsLoading) return;
 
         chatLog.debug('chat.redirect.retry', { propertyId: truncateId(propertyId) });
-        void createPropertyDraftSession(user.uid, propertyId).then((newSessionId) => {
+        void beginNewPropertyChatSession(user.uid, propertyId).then((newSessionId) => {
             if (!newSessionId) {
                 toast({
                     variant: 'destructive',
