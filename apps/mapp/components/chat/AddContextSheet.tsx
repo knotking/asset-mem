@@ -48,8 +48,6 @@ import {
   CONTEXT_SELECTION_CHECKPOINT_LIMIT,
   CONTEXT_SELECTION_DOCUMENT_LIMIT,
   type AddContextCaptureAction,
-  getAddContextLaunchingLabel,
-  isTimelineCaptureAction,
 } from '@homeapp/common/lib/chat-context-labels';
 import {
   ADD_CONTEXT_DOC_BROWSE_PAGE_SIZE,
@@ -573,11 +571,6 @@ export function AddContextSheet({
           {renderCaptureButton('gallery', 'Gallery', Images, onPickGallery)}
           {renderCaptureButton('video', 'Video', Video, onCaptureVideo)}
         </View>
-        {launchingAction && isTimelineCaptureAction(launchingAction) ? (
-          <Text className="mb-2 text-center text-xs text-muted-foreground">
-            {getAddContextLaunchingLabel(launchingAction)}
-          </Text>
-        ) : null}
       </View>
     ) : (
       <View className="mb-2">
@@ -596,11 +589,6 @@ export function AddContextSheet({
           </View>
           <Text className="text-sm font-medium text-foreground">Upload document</Text>
         </Pressable>
-        {launchingAction === 'upload' ? (
-          <Text className="mb-2 text-center text-xs text-muted-foreground">
-            {getAddContextLaunchingLabel('upload')}
-          </Text>
-        ) : null}
       </View>
     );
 

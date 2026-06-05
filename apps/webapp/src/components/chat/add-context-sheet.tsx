@@ -13,7 +13,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import type { Checkpoint, Document, PrimaryAgent } from "@/lib/types";
+import type { Checkpoint, Document, PendingContextItem, PrimaryAgent } from "@/lib/types";
 import type { ToggleSelectionResult } from "@/contexts/chat-context-context";
 import {
   getCheckpointThumbnail,
@@ -34,11 +34,13 @@ import {
   ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_TIMELINE,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS,
+  PENDING_CHECKPOINT_LABEL,
+  PENDING_DOCUMENT_ANALYZE_LABEL,
+  PENDING_DOCUMENT_INDEX_LABEL,
+  PENDING_DOCUMENT_UPLOAD_LABEL,
   CONTEXT_SELECTION_CHECKPOINT_LIMIT,
   CONTEXT_SELECTION_DOCUMENT_LIMIT,
   type AddContextCaptureAction,
-  getAddContextLaunchingLabel,
-  isTimelineCaptureAction,
 } from "@/lib/chat-context-labels";
 import {
   ADD_CONTEXT_DOC_BROWSE_PAGE_SIZE,
@@ -69,6 +71,7 @@ type Props = {
   primaryAgent: PrimaryAgent;
   checkpoints: Checkpoint[];
   documents: Document[];
+  pendingContext: PendingContextItem[];
   selectedCheckpointIds: Set<string>;
   selectedDocumentIds: Set<string>;
   selectedCheckpointCount: number;
@@ -141,6 +144,44 @@ function ContextListRow({
   );
 }
 
+function pendingItemLabel(item: PendingContextItem): string {
+  if (item.kind === "checkpoint") return PENDING_CHECKPOINT_LABEL;
+  if (item.status === "uploading") return PENDING_DOCUMENT_UPLOAD_LABEL;
+  if (item.status === "analyzing") return PENDING_DOCUMENT_ANALYZE_LABEL;
+  return PENDING_DOCUMENT_INDEX_LABEL;
+}
+
+function PendingContextRow({ item }: { item: PendingContextItem }) {
+  const FallbackIcon = item.kind === "checkpoint" ? Clock : FileText;
+  return (
+    <div className="mb-2 flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/50 p-3">
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+        {item.localPreviewUri ? (
+          <Image
+            src={item.localPreviewUri}
+            alt=""
+            width={56}
+            height={56}
+            className="h-full w-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <FallbackIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">
+          {item.label || (item.kind === "checkpoint" ? "Checkpoint" : "Document")}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">{pendingItemLabel(item)}</p>
+      </div>
+      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
 function TabButton({
   label,
   active,
@@ -172,6 +213,7 @@ export function AddContextSheet({
   primaryAgent,
   checkpoints,
   documents,
+  pendingContext,
   selectedCheckpointIds,
   selectedDocumentIds,
   selectedCheckpointCount,
@@ -229,6 +271,23 @@ export function AddContextSheet({
       setActiveTab(defaultTab);
     }
   }, [open, defaultTab]);
+
+  const pendingCheckpointCount = pendingContext.filter((p) => p.kind === "checkpoint").length;
+  const pendingDocumentCount = pendingContext.filter((p) => p.kind === "document").length;
+  const hasPendingContext = pendingContext.length > 0;
+  const pendingCheckpoints = pendingContext.filter((p) => p.kind === "checkpoint");
+  const pendingDocuments = pendingContext.filter((p) => p.kind === "document");
+  const pendingSummaryParts: string[] = [];
+  if (pendingCheckpointCount > 0) {
+    pendingSummaryParts.push(
+      `${pendingCheckpointCount} checkpoint${pendingCheckpointCount === 1 ? "" : "s"}`
+    );
+  }
+  if (pendingDocumentCount > 0) {
+    pendingSummaryParts.push(
+      `${pendingDocumentCount} document${pendingDocumentCount === 1 ? "" : "s"}`
+    );
+  }
 
   const isCheckpointMode = primaryAgent === "checkpoint";
   const trimmedSearch = searchQuery.trim();
@@ -320,6 +379,14 @@ export function AddContextSheet({
     }
     return (
       <>
+        {pendingCheckpoints.length > 0 ? (
+          <>
+            <p className="mb-2 mt-4 text-sm font-semibold">Pending</p>
+            {pendingCheckpoints.map((pending) => (
+              <PendingContextRow key={`pending-cp-${pending.id}`} item={pending} />
+            ))}
+          </>
+        ) : null}
         {recentCheckpoints.length > 0 && !hasSearch ? (
           <>
             <p className="mb-2 mt-4 text-sm font-semibold">{ADD_CONTEXT_RECENT_LABEL}</p>
@@ -389,6 +456,14 @@ export function AddContextSheet({
 
   const renderDocumentsList = () => (
     <>
+      {pendingDocuments.length > 0 ? (
+        <>
+          <p className="mb-2 mt-4 text-sm font-semibold">Pending</p>
+          {pendingDocuments.map((pending) => (
+            <PendingContextRow key={`pending-doc-${pending.id}`} item={pending} />
+          ))}
+        </>
+      ) : null}
       {recentDocuments.length > 0 && !hasSearch ? (
         <>
           <p className="mb-2 mt-4 text-sm font-semibold">{ADD_CONTEXT_RECENT_LABEL}</p>
@@ -515,7 +590,7 @@ export function AddContextSheet({
           onScroll={handleScroll}
           className="min-h-0 flex-1 overflow-y-auto px-4 pb-6"
         >
-          <div className={cn("mt-4", launchingAction ? "min-h-[6.5rem]" : "min-h-[5.5rem]")}>
+          <div className="mt-4 min-h-[5.5rem]">
             {activeTab === "timeline" ? (
               <div>
                 <div className="grid grid-cols-3 gap-2">
@@ -549,11 +624,6 @@ export function AddContextSheet({
                     );
                   })}
                 </div>
-                {launchingAction && isTimelineCaptureAction(launchingAction) ? (
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    {getAddContextLaunchingLabel(launchingAction)}
-                  </p>
-                ) : null}
               </div>
             ) : (
               <div>
@@ -574,14 +644,22 @@ export function AddContextSheet({
                   )}
                   Upload document
                 </Button>
-                {launchingAction === "upload" ? (
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    {getAddContextLaunchingLabel("upload")}
-                  </p>
-                ) : null}
               </div>
             )}
           </div>
+
+          {hasPendingContext ? (
+            <div className="mb-2 rounded-lg border border-dashed border-border bg-muted/50 px-3 py-2">
+              <p className="text-xs text-muted-foreground">
+                Processing {pendingContext.length} item
+                {pendingContext.length === 1 ? "" : "s"}
+                {pendingSummaryParts.length > 0
+                  ? ` (${pendingSummaryParts.join(", ")})`
+                  : ""}
+                . They will auto-select when ready.
+              </p>
+            </div>
+          ) : null}
 
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
