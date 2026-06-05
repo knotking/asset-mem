@@ -86,13 +86,18 @@ export async function deleteAgentSession(
 
 export async function postFileToAgent(
   gsURI: string,
-  userId: string
+  userId: string,
+  docId?: string
 ): Promise<{ success: boolean; summary?: string; error?: string }> {
   try {
     const url = apiUrls.ragFileUpload();
     const response = await proxyFetchWithAuth(url, getFirebaseIdTokenForProxy, {
       method: 'POST',
-      body: JSON.stringify({ user_id: userId, context_doc_uris: [gsURI] }),
+      body: JSON.stringify({
+        user_id: userId,
+        context_doc_uris: [gsURI],
+        ...(docId ? { context_doc_ids: [docId] } : {}),
+      }),
     });
     if (!response.ok) {
       const errorBody = await response.text();

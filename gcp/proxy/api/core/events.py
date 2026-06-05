@@ -25,11 +25,19 @@ _pubsub_thread: Optional[threading.Thread] = None
 
 
 async def on_event_user_upload_result(message: str):
+    """Log RAG upload outcomes; Firestore ragIndexed is owned by user_docs worker."""
     try:
         event_obj = UserUploadResultEvent.model_validate(json.loads(message))
-        logger.info("Parsed user upload result event: %s", event_obj)
-        # Original logic in main.py appeared to stop here or was incomplete.
-        # Placeholder for further processing if needed.
+        logger.info(
+            "user_upload_result user_id=%s success=%s doc_ids=%d gcs_urls=%d source=%s",
+            event_obj.user_id,
+            event_obj.success,
+            len(event_obj.context_doc_ids or []),
+            len(event_obj.gcs_urls or []),
+            event_obj.source,
+        )
+        if not event_obj.success and event_obj.error:
+            logger.warning("user_upload_result error=%s", event_obj.error)
     except Exception as e:
         logger.exception("Failed to parse user upload result event: %s", e)
 

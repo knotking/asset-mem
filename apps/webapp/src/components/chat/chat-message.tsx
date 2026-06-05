@@ -12,7 +12,7 @@ import {
 } from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Clock, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -34,6 +34,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
 import { useAssistantLoadingUi } from "@/hooks/use-assistant-loading-ui";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
+import { splitMessageContextRefItems } from "@/lib/chat-message-context-refs";
 import {
   assistantMessageHasDisplayableContent,
   getMessageDisplayParts,
@@ -1714,6 +1715,36 @@ const ChatMessageComponent = ({
     )
   }
 
+  const renderContextRefs = () => {
+    const refs = message.contextRefs;
+    if (!refs) return null;
+    const { visible, hiddenCount } = splitMessageContextRefItems(refs);
+    if (visible.length === 0 && hiddenCount === 0) return null;
+
+    return (
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        {visible.map((item) => (
+          <div
+            key={`${item.kind}-${item.id}`}
+            className="flex items-center gap-1 rounded-lg border border-border/60 bg-background/80 px-2 py-1"
+          >
+            {item.kind === "checkpoint" ? (
+              <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+            ) : (
+              <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+            )}
+            <span className="max-w-28 truncate text-xs">{item.name}</span>
+          </div>
+        ))}
+        {hiddenCount > 0 ? (
+          <div className="rounded-lg border border-border/60 bg-background/80 px-2 py-1">
+            <span className="text-xs font-medium text-muted-foreground">+{hiddenCount} more</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderFilePreview = () => {
     if (!fileData) return null;
 
@@ -1874,6 +1905,7 @@ const ChatMessageComponent = ({
                 </motion.div>
             ) : (
                 <>
+                {renderContextRefs()}
                 {renderFilePreview()}
                 {messageMarkdown && (
                   <div className="prose prose-sm dark:prose-invert max-w-none break-words">

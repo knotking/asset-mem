@@ -12,7 +12,6 @@ import {
   Plus,
   File,
   X,
-  Camera,
   Clock,
   Users,
   BookOpen,
@@ -24,9 +23,7 @@ import { useSession } from '@homeapp/common/contexts/session-context';
 import { MessagesProvider } from '@homeapp/common/contexts/messages-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
-import * as ImagePicker from 'expo-image-picker';
+import { serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import * as Location from 'expo-location';
 import PushDrawer from '@/components/PushDrawer';
 import type {
@@ -40,22 +37,14 @@ import type {
 } from '@homeapp/common/types';
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
-import { streamAgentResponse } from '@/lib/api';
-import type { IMessage } from 'react-native-gifted-chat';
-import { createLogger } from '@/lib/logger';
-
-const chatLog = createLogger('chat');
-const propertyLog = createLogger('property');
-import { CameraModal } from '@/components/property-details/CameraModal';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
 import { PropertySavedProvidersTab } from '@/components/property-details/PropertySavedProvidersTab';
 import { parsePropertyScreenTab, type PropertyScreenTab } from '@/components/property-details/property-screen-tab';
-import { PropertyChatTab } from '@/components/property-details/PropertyChatTab';
+import { PropertyChatWithContext } from '@/components/chat/PropertyChatWithContext';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
 import { DocumentsDrawerContent } from '@/components/property-details/DocumentsDrawerContent';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
-import { useFileUpload } from '@/hooks/useFileUpload';
 import { useDocumentAutoUpload } from '@/hooks/useDocumentAutoUpload';
 import { useSessionSelection } from '@/hooks/useSessionSelection';
 import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
@@ -155,10 +144,8 @@ export default function PropertyDetailsScreen() {
 
   // Message sending state
   const [isSending, setIsSending] = React.useState(false);
-  const [message, setMessage] = React.useState('');
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
-  const [cameraModalVisible, setCameraModalVisible] = React.useState(false);
   const [searchLocation, setSearchLocation] = React.useState<SearchLocationInput | undefined>(
     undefined
   );
@@ -168,8 +155,6 @@ export default function PropertyDetailsScreen() {
 
   // Custom hooks
   const { selectedSessionId, setSelectedSessionId } = useSessionSelection(propertyId ?? '', sessionId);
-  const { fileAttachment, uploadAsset, uploadDocument, removeAttachment, setFileAttachment } =
-    useFileUpload(storage, user?.uid);
 
   // Auto-upload documents from AddPropertyModal
   useDocumentAutoUpload({
@@ -206,131 +191,6 @@ export default function PropertyDetailsScreen() {
     }
   }, [primaryAgent]);
 
-  const handleTakePhoto = React.useCallback(async () => {
-    try {
-      if (!user) return;
-
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMessage('Please grant permission to access your camera.');
-        setErrorAlertOpen(true);
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: 'images',
-        allowsEditing: false,
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) {
-        return;
-      }
-
-      await uploadAsset(result.assets[0]);
-    } catch (error) {
-      propertyLog.error('camera.photo.failed', undefined, error);
-      setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setErrorAlertOpen(true);
-    }
-  }, [user, uploadAsset]);
-
-  const handleRecordVideo = React.useCallback(async () => {
-    try {
-      if (!user) return;
-      setCameraModalVisible(true);
-    } catch (error) {
-      propertyLog.error('camera.video.failed', undefined, error);
-      setErrorMessage(`Camera error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setErrorAlertOpen(true);
-    }
-  }, [user]);
-
-  const handleVideoRecorded = React.useCallback(
-    async (videoUri: string) => {
-      setCameraModalVisible(false);
-
-      const timestamp = Date.now();
-      const fileName = `video-${timestamp}.mp4`;
-
-      const mockAsset: ImagePicker.ImagePickerAsset = {
-        uri: videoUri,
-        type: 'video' as const,
-        fileName: fileName,
-        fileSize: 0,
-        mimeType: 'video/mp4',
-        width: 0,
-        height: 0,
-      };
-
-      await uploadAsset(mockAsset);
-    },
-    [uploadAsset]
-  );
-
-  const handleSelectFromLibrary = React.useCallback(async () => {
-    if (!user) return;
-
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      setErrorMessage('Please grant permission to access your media library.');
-      setErrorAlertOpen(true);
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: false,
-      quality: 0.8,
-      videoMaxDuration: 60,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-
-    await uploadAsset(result.assets[0]);
-  }, [user, uploadAsset]);
-
-  const handleSelectFiles = React.useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const DocumentPicker = await import('expo-document-picker');
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*', 'video/*'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) {
-        return;
-      }
-
-      await uploadDocument(result.assets[0]);
-    } catch (error) {
-      propertyLog.error('file.pick.failed', undefined, error);
-      setErrorMessage('Failed to select file. Please try again.');
-      setErrorAlertOpen(true);
-    }
-  }, [user, uploadDocument]);
-
-  const removeFileAttachment = React.useCallback(async () => {
-    if (!fileAttachment) return;
-
-    if (fileAttachment.storagePath && fileAttachment.downloadURL) {
-      const fileRef = ref(storage, fileAttachment.storagePath);
-      try {
-        await deleteObject(fileRef);
-      } catch (error: any) {
-        if (error.code !== 'storage/object-not-found') {
-          propertyLog.error('file.storageDelete.failed', undefined, error);
-        }
-      }
-    }
-
-    removeAttachment();
-  }, [fileAttachment, storage, removeAttachment]);
-
   const toggleOptionalAgent = React.useCallback((agent: AnalysisOptionalAgent) => {
     setSelectedOptionalAgents((prev) => {
       const isSelected = prev.includes(agent);
@@ -354,173 +214,6 @@ export default function PropertyDetailsScreen() {
       setIsSending(false);
     }
   }, []);
-
-  const handleSendMessage = React.useCallback(
-    async (textOverride?: string) => {
-      const messageText = textOverride !== undefined ? textOverride : message;
-      const hasContent =
-        messageText.trim() || (fileAttachment?.downloadURL && !fileAttachment?.error);
-      if (!user || !selectedSessionId || !hasContent || isSending) return;
-
-      if (fileAttachment && (!fileAttachment.downloadURL || fileAttachment.error)) {
-        setErrorMessage('Please wait for the file to finish uploading.');
-        setErrorAlertOpen(true);
-        return;
-      }
-
-      setIsSending(true);
-      const userMessage = messageText;
-      const currentFileAttachment = fileAttachment;
-      setMessage('');
-      setFileAttachment(null);
-
-      try {
-        const sessionRef = doc(db, 'users', user.uid, 'chats', selectedSessionId);
-        const sessionDoc = await getDoc(sessionRef);
-        const sessionData = sessionDoc.data();
-
-        if (sessionDoc.exists() && sessionData?.name === 'draft') {
-          const newName = `session: ${new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })}`;
-          await updateDoc(sessionRef, {
-            name: newName,
-            propertyId: propertyId!,
-          });
-        }
-
-        const agentSessionId = sessionData?.agentSessionId;
-        if (!agentSessionId) {
-          throw new Error('Agent session ID not found');
-        }
-
-        let fileData = undefined;
-        if (currentFileAttachment && currentFileAttachment.downloadURL) {
-          const storageRef = ref(storage, currentFileAttachment.storagePath);
-          fileData = {
-            name: currentFileAttachment.fileName,
-            type: currentFileAttachment.fileType,
-            url: currentFileAttachment.downloadURL,
-            gsURI: `gs://${storageRef.bucket}/${storageRef.fullPath}`,
-            width: currentFileAttachment.width,
-            height: currentFileAttachment.height,
-          };
-        }
-
-        await addDoc(collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'), {
-          role: 'user',
-          content: userMessage,
-          contentMarkdown: userMessage,
-          createdAt: serverTimestamp(),
-          ...(fileData && { file: fileData }),
-        });
-
-        const assistantMessageRef = await addDoc(
-          collection(db, 'users', user.uid, 'chats', selectedSessionId, 'messages'),
-          {
-            role: 'assistant',
-            content: '',
-            createdAt: serverTimestamp(),
-            primaryAgent,
-          }
-        );
-        const assistantMessageId = assistantMessageRef.id;
-
-        const contextDocURIs = [
-          ...selectedDocuments.map((doc) => doc.gsURI).filter((uri): uri is string => !!uri),
-          ...(fileData?.gsURI ? [fileData.gsURI] : []),
-        ];
-
-        const currentProperty = properties.find((p) => p.id === propertyId);
-        const propertyAddress = currentProperty?.address;
-
-        abortControllerRef.current = new AbortController();
-        const { signal } = abortControllerRef.current;
-
-        const queryText = userMessage || 'What can you tell me about this?';
-
-        const checkpointIds = selectedCheckpoints
-          .map((cp) => cp.id)
-          .filter((id): id is string => !!id);
-
-        await streamAgentResponse({
-          userId: user.uid,
-          agentSessionId,
-          userQuery: queryText,
-          contextDocURIs,
-          checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
-          propertyAddress,
-          propertyId: propertyId!,
-          primaryAgent,
-          checkpointOptionalAgents:
-            selectedCheckpointOptionalAgents.length > 0
-              ? selectedCheckpointOptionalAgents
-              : undefined,
-          searchLocation,
-          signal,
-          firebaseChatId: selectedSessionId,
-          assistantMessageId,
-          onError: (error) => {
-            updateDoc(assistantMessageRef, {
-              content: `Error: ${error.message}`,
-            }).catch((err) => chatLog.error('assistant.errorMessageUpdate.failed', undefined, err));
-            throw error;
-          },
-        });
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          chatLog.debug('message.send.aborted');
-          return;
-        }
-
-        chatLog.error('message.send.failed', undefined, error);
-        const errMsg = error instanceof Error ? error.message : 'Unknown error';
-        setErrorMessage(
-          /monthly ai token limit|monthly ai usage limit/i.test(errMsg)
-            ? errMsg
-            : `Failed to send message: ${errMsg}`
-        );
-        setErrorAlertOpen(true);
-        setMessage(userMessage);
-        setFileAttachment(currentFileAttachment);
-      } finally {
-        setIsSending(false);
-        abortControllerRef.current = null;
-      }
-    },
-    [
-      user,
-      selectedSessionId,
-      message,
-      isSending,
-      fileAttachment,
-      db,
-      storage,
-      propertyId,
-      selectedDocuments,
-      selectedCheckpoints,
-      properties,
-      selectedCheckpointOptionalAgents,
-      primaryAgent,
-      searchLocation,
-      setFileAttachment,
-    ]
-  );
-
-  const handleGiftedChatSend = React.useCallback(
-    (giftedMessages: IMessage[]) => {
-      if (giftedMessages.length === 0) return;
-      const text = giftedMessages[0].text;
-      setMessage(text);
-      void handleSendMessage(text);
-    },
-    [handleSendMessage]
-  );
 
   const toggleDocumentSelection = (document: Document) => {
     setHasManuallyInteracted(true);
@@ -568,7 +261,7 @@ export default function PropertyDetailsScreen() {
       id: propertyId,
       name: firestoreProperty?.name ?? 'New Property',
       address: firestoreProperty?.address ?? PENDING_PROPERTY_ADDRESS,
-      userId: user?.uid,
+      userId: user?.uid ?? '',
     };
   }
 
@@ -631,32 +324,20 @@ export default function PropertyDetailsScreen() {
         selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
         toggleCheckpointOptionalAgent={toggleCheckpointOptionalAgent}
         isSending={isSending}
-        message={message}
-        setMessage={setMessage}
-        fileAttachment={fileAttachment}
-        setFileAttachment={setFileAttachment}
-        cameraModalVisible={cameraModalVisible}
-        setCameraModalVisible={setCameraModalVisible}
+        setIsSending={setIsSending}
         errorAlertOpen={errorAlertOpen}
         setErrorAlertOpen={setErrorAlertOpen}
         errorMessage={errorMessage}
         setErrorMessage={setErrorMessage}
-        handleSendMessage={handleSendMessage}
-        handleGiftedChatSend={handleGiftedChatSend}
-        handleVideoRecorded={handleVideoRecorded}
-        removeFileAttachment={removeFileAttachment}
         toggleOptionalAgent={toggleOptionalAgent}
         handleStop={handleStop}
-        handleTakePhoto={handleTakePhoto}
-        handleRecordVideo={handleRecordVideo}
-        handleSelectFromLibrary={handleSelectFromLibrary}
-        handleSelectFiles={handleSelectFiles}
         searchLocation={searchLocation}
         setSearchLocation={setSearchLocation}
         router={router}
         user={user}
         db={db}
         storage={storage}
+        abortControllerRef={abortControllerRef}
       />
     </CheckpointProvider>
   );
@@ -698,77 +379,23 @@ function PropertyDetailsScreenContent({
   selectedCheckpointOptionalAgents,
   toggleCheckpointOptionalAgent,
   isSending,
-  message,
-  setMessage,
-  fileAttachment,
-  setFileAttachment,
-  cameraModalVisible,
-  setCameraModalVisible,
+  setIsSending,
   errorAlertOpen,
   setErrorAlertOpen,
   errorMessage,
   setErrorMessage,
-  handleSendMessage,
-  handleGiftedChatSend,
-  handleVideoRecorded,
-  removeFileAttachment,
   toggleOptionalAgent,
   handleStop,
-  handleTakePhoto,
-  handleRecordVideo,
-  handleSelectFromLibrary,
-  handleSelectFiles,
   searchLocation,
   setSearchLocation,
   router,
   user,
   db,
   storage,
+  abortControllerRef,
 }: any) {
   const { checkpoints } = useCheckpoint();
   const { savedProviders } = useSavedServiceProviders();
-
-  // Smart checkpoint selection: Auto-select when checkpoint agent is active
-  React.useEffect(() => {
-    if (primaryAgent === 'checkpoint') {
-      // When checkpoint agent is selected, auto-select all checkpoints
-      if (
-        checkpoints &&
-        checkpoints.length > 0 &&
-        selectedCheckpoints.length === 0 &&
-        !hasManuallyInteracted
-      ) {
-        setSelectedCheckpoints(checkpoints);
-      }
-    }
-  }, [
-    checkpoints,
-    selectedCheckpoints.length,
-    hasManuallyInteracted,
-    setSelectedCheckpoints,
-    primaryAgent,
-  ]);
-
-  // Handle checkpoint selection when switching agents
-  React.useEffect(() => {
-    if (primaryAgent === 'checkpoint' && checkpoints && checkpoints.length > 0) {
-      // If user switches to checkpoint agent and no checkpoints are selected, auto-select all
-      if (selectedCheckpoints.length === 0 && !hasManuallyInteracted) {
-        setSelectedCheckpoints(checkpoints);
-      }
-    } else if (primaryAgent === 'analysis') {
-      // Clear checkpoints when switching to analysis agent
-      if (selectedCheckpoints.length > 0) {
-        setSelectedCheckpoints([]);
-      }
-    }
-  }, [
-    primaryAgent,
-    checkpoints,
-    selectedCheckpoints.length,
-    hasManuallyInteracted,
-    setSelectedCheckpoints,
-  ]);
 
   return (
     <PushDrawer
@@ -869,46 +496,23 @@ function PropertyDetailsScreenContent({
                             <Icon as={Plus} size={20} className="text-foreground" />
                           </Button>
                         )}
-                        {activeTab !== 'timeline' && activeTab !== 'providers' && (
-                          <>
-                            <View className="relative items-center justify-center">
-                              <Button
-                                onPress={() => setDocumentsDrawerVisible(true)}
-                                variant="ghost"
-                                size="icon"
-                                className="items-center justify-center">
-                                <Icon as={File} size={20} className="text-foreground" />
-                              </Button>
-                              {((activeTab === 'chat' && selectedDocuments.length > 0) ||
-                                (activeTab === 'details' && documents.length > 0)) && (
-                                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                    {activeTab === 'chat'
-                                      ? selectedDocuments.length
-                                      : documents.length}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            {activeTab === 'chat' && primaryAgent === 'checkpoint' && (
-                              <View className="relative items-center justify-center">
-                                <Button
-                                  onPress={() => setCheckpointsDrawerVisible(true)}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="items-center justify-center">
-                                  <Icon as={Clock} size={20} className="text-foreground" />
-                                </Button>
-                                {selectedCheckpoints.length > 0 && (
-                                  <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
-                                    <Text className="text-center text-[10px] font-semibold text-primary-foreground">
-                                      {selectedCheckpoints.length}
-                                    </Text>
-                                  </View>
-                                )}
+                        {activeTab === 'details' && (
+                          <View className="relative items-center justify-center">
+                            <Button
+                              onPress={() => setDocumentsDrawerVisible(true)}
+                              variant="ghost"
+                              size="icon"
+                              className="items-center justify-center">
+                              <Icon as={File} size={20} className="text-foreground" />
+                            </Button>
+                            {documents.length > 0 && (
+                              <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                                <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                  {documents.length}
+                                </Text>
                               </View>
                             )}
-                          </>
+                          </View>
                         )}
                       </View>
                     </View>
@@ -970,84 +574,14 @@ function PropertyDetailsScreenContent({
                     </Pressable>
                   </View>
 
-                  {/* Selected Context Display (Documents + Checkpoints) */}
-                  {activeTab === 'chat' &&
-                    (selectedDocuments.length > 0 || selectedCheckpoints.length > 0) && (
-                      <View className="border-b border-border bg-secondary/50 px-3 py-1.5">
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                          <View className="flex-row items-center gap-1.5">
-                            {selectedDocuments.length > 0 && (
-                              <>
-                                <View className="mr-1 flex-row items-center gap-1">
-                                  <Icon as={FileText} size={12} className="text-muted-foreground" />
-                                  <Text className="text-xs font-medium text-muted-foreground">
-                                    {selectedDocuments.length}
-                                  </Text>
-                                </View>
-                                {selectedDocuments.map((doc: Document) => (
-                                  <Pressable
-                                    key={doc.id}
-                                    onPress={() => toggleDocumentSelection(doc)}
-                                    className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
-                                    <Text
-                                      className="max-w-24 text-xs text-foreground"
-                                      numberOfLines={1}>
-                                      {doc.name}
-                                    </Text>
-                                    <Icon as={X} size={12} className="text-muted-foreground" />
-                                  </Pressable>
-                                ))}
-                              </>
-                            )}
-                            {selectedCheckpoints.length > 0 && (
-                              <>
-                                {selectedDocuments.length > 0 && (
-                                  <View className="h-4 w-px bg-border" />
-                                )}
-                                <View className="mr-1 flex-row items-center gap-1">
-                                  <Icon as={Camera} size={12} className="text-muted-foreground" />
-                                  <Text className="text-xs font-medium text-muted-foreground">
-                                    {selectedCheckpoints.length}
-                                  </Text>
-                                </View>
-                                {selectedCheckpoints.map((checkpoint: Checkpoint) => (
-                                  <Pressable
-                                    key={checkpoint.id}
-                                    onPress={() => toggleCheckpointSelection(checkpoint)}
-                                    className="flex-row items-center gap-1 rounded-full border border-border/60 bg-background px-2 py-0.5">
-                                    <Text
-                                      className="max-w-24 text-xs text-foreground"
-                                      numberOfLines={1}>
-                                      {checkpoint.name || 'Checkpoint'}
-                                    </Text>
-                                    <Icon as={X} size={12} className="text-muted-foreground" />
-                                  </Pressable>
-                                ))}
-                              </>
-                            )}
-                            <Pressable
-                              onPress={() => {
-                                setHasManuallyInteracted(true);
-                                setSelectedDocuments([]);
-                                setSelectedCheckpoints([]);
-                              }}
-                              className="ml-1 rounded-full bg-background px-2 py-0.5">
-                              <Text className="text-xs text-muted-foreground">Clear All</Text>
-                            </Pressable>
-                          </View>
-                        </ScrollView>
-                      </View>
-                    )}
-
                   {/* Main Content Area */}
                   {activeTab === 'chat' ? (
                     <MessagesProvider sessionId={selectedSessionId}>
-                      <PropertyChatTab
+                      <PropertyChatWithContext
                         sessionId={selectedSessionId}
                         userId={user?.uid || ''}
-                        fileAttachment={fileAttachment}
-                        onAttachmentPress={() => {}}
-                        onRemoveAttachment={removeFileAttachment}
+                        propertyId={id!}
+                        propertyAddress={property?.address}
                         primaryAgent={primaryAgent}
                         onPrimaryAgentChange={setPrimaryAgent}
                         selectedOptionalAgents={selectedOptionalAgents}
@@ -1055,17 +589,17 @@ function PropertyDetailsScreenContent({
                         selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
                         onToggleCheckpointOptionalAgent={toggleCheckpointOptionalAgent}
                         isSending={isSending}
+                        setIsSending={setIsSending}
                         onStop={handleStop}
-                        attachmentOptionsVisible={false}
-                        onCloseAttachmentOptions={() => {}}
-                        onTakePhoto={handleTakePhoto}
-                        onRecordVideo={handleRecordVideo}
-                        onSelectFromLibrary={handleSelectFromLibrary}
-                        onSelectFiles={handleSelectFiles}
                         searchLocation={searchLocation}
                         onSearchLocationChange={setSearchLocation}
-                        propertyAddress={property?.address}
-                        onSend={handleGiftedChatSend}
+                        db={db}
+                        storage={storage}
+                        abortControllerRef={abortControllerRef}
+                        onError={(msg) => {
+                          setErrorMessage(msg);
+                          setErrorAlertOpen(true);
+                        }}
                       />
                     </MessagesProvider>
                   ) : activeTab === 'timeline' ? (
@@ -1090,12 +624,6 @@ function PropertyDetailsScreenContent({
                     description={errorMessage}
                   />
 
-                  {/* Camera Modal for Video Recording */}
-                  <CameraModal
-                    visible={cameraModalVisible}
-                    onClose={() => setCameraModalVisible(false)}
-                    onVideoRecorded={handleVideoRecorded}
-                  />
                 </SafeAreaView>
               }>
               {/* Sessions Drawer Content */}

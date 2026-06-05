@@ -218,7 +218,12 @@ except Exception as e:
     logger.error(f"Failed to initialize Vertex AI client or Session Service: {e}", exc_info=True)
     reasoning_engine_resource = None
 
-def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str ) -> dict:
+def publish_doc_to_secure_store(
+    gcs_urls: list[str],
+    user_query: str,
+    user_id: str,
+    context_doc_ids: list[str] | None = None,
+) -> dict:
     """Publishes a structured payload to a secure storage."""
     try:
         publisher = pubsub_v1.PublisherClient()
@@ -229,6 +234,7 @@ def publish_doc_to_secure_store(gcs_urls:list[str], user_query:str, user_id: str
             "user_id": user_id,
             "user_query": user_query,
             "source": "rag-file-upload",
+            "context_doc_ids": context_doc_ids or [],
         })
         data = json.dumps(payload).encode("utf-8")
         future = publisher.publish(topic_path, data)

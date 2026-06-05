@@ -270,6 +270,7 @@ export function UploadDocumentsDialog({
         contentType: uploadableFile.file.type,
         createdAt: serverTimestamp(),
         status: "uploading",
+        ragIndexed: false,
         propertyId: currentPropertyId,
         url: "",
         storagePath: "",
@@ -315,7 +316,7 @@ export function UploadDocumentsDialog({
         });
 
         const idToken = await user.getIdToken();
-        const ragResult = await postFileToAgent(gsURI, user.uid);
+        const ragResult = await postFileToAgent(gsURI, user.uid, docId);
         const queued = await queueExtractDocInfo(
           {
             docId,

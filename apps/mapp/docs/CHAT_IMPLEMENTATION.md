@@ -5,6 +5,57 @@ This document describes the implementation of chat messages functionality in the
 
 > **Note**: This app now uses `react-native-gifted-chat` for the chat UI. See [GIFTED_CHAT_MIGRATION.md](../GIFTED_CHAT_MIGRATION.md) for migration details.
 
+## Unified Add context (async context queue)
+
+Chat uses a single **Add context** (`+`) affordance in the composer — not ephemeral scratch uploads or `message.file` on new sends.
+
+| State | UI | Send |
+| ----- | -- | ---- |
+| **Pending** | Chip with spinner (Analyzing… / Indexing…) | Excluded from agent payload |
+| **Ready** | Compact chip (2 shown + `+N more`); new capture auto-selects if under cap | Included when selected (max 5 cp / 10 docs) |
+| **Failed** | Error chip; user can remove and retry | Excluded |
+
+**Readiness:** checkpoints need `analysisStatus === 'completed'`; documents are ready when not uploading/analyzing/failed, and either (a) **no** `status` field, (b) `status === 'complete'` without `ragIndexed` (legacy), or (c) `status === 'complete'` **and** `ragIndexed !== false`. New uploads set `ragIndexed: false` at create; `user_docs` worker sets `true`/`false` from Vertex `ImportRagFilesResponse` counts (proxy does not write `ragIndexed`).
+
+**Send rules:** non-empty text required; context is optional and included when ready items are selected. In-flight pending captures/uploads block send (composer shows pending label); **Ask when ready** queues the typed message until they finish. Selected checkpoints/documents must be ready — not-ready selections block send.
+
+User messages persist `contextRefs` (checkpoint/doc ids and names at send time) instead of `message.file`. The bubble shows compact name-only chips (first 2 + `+N more`). Legacy messages with `message.file` still render.
+
+**Key modules:** `ChatContextProvider` (`apps/common/src/contexts/chat-context-context.tsx`), `PropertyChatWithContext`, `AddContextSheet`, `ChatContextChipStrip`, `chat-send-context.ts`.
+
+### Scale-first Add context picker
+
+Designed for **1,000+ checkpoints** and **100+ documents**:
+
+| Concern | Approach |
+| -------- | -------- |
+| **List UI** | Virtualized (`FlatList` mapp); scroll + paging (web) |
+| **Checkpoints** | Reuse `CheckpointProvider` pagination (`loadMoreCheckpoints`, page size 20) |
+| **Documents** | Client browse pages of 30 over property listener (ready-only rows) |
+| **Discovery** | Search bar (name, location, type); **Recent** (10) + **All checkpoints/documents**; **Results** while searching |
+| **Selection** | Max **5** checkpoints / **10** docs per send; defaults to **1 recent** ready checkpoint + **1 recent** ready document until the user changes selection (Docs mode: document only) |
+| **Composer chips** | First 2 thumbnails + `+N more` summary |
+
+Constants: `apps/common/src/lib/chat-context-limits.ts`. Filter/sort: `chat-context-picker.ts`.
+
+### Tabbed picker (Timeline | Documents)
+
+- **Pinned:** selection summary, segment control, mode hint, tab-scoped search.
+- **Timeline tab:** capture CTAs + checkpoint pick (Checkpoint mode). Docs mode: capture only + note to switch agent for chat context.
+- **Documents tab:** upload CTA + doc pick. In Checkpoint mode, selected docs are **optional** but sent as `contextDocURIs` with checkpoint IDs.
+- Default tab follows `primaryAgent` (`checkpoint` → Timeline, `docs` → Documents).
+
+### Capture / upload responsiveness
+
+| Optimization | mapp | webapp |
+| ------------ | ---- | ------ |
+| Instant tap feedback | Spinner + “Opening library…” only while the native picker opens; clears after pick/cancel (Pending section tracks upload/analysis) | Same; tab-specific hint (no upload label on Timeline) |
+| Sheet stays open on cancel | Yes — closes only after successful pick/capture | Same |
+| Faster native picker | No crop step (`allowsEditing: false`); permissions warmed when sheet opens | File/camera opens while sheet stays open |
+| Document picker | Static `expo-document-picker` import (no dynamic import delay) | Hidden `<input>` with cancel detection |
+
+Picker options: `apps/mapp/lib/add-context-media-picker.ts`.
+
 ## Architecture
 
 ### 1. Message Types (`@homeapp/common/types.ts`)

@@ -49,7 +49,14 @@ class TestPubSubToUserDocs(unittest.TestCase):
         context = None
 
         mock_rag_instance = mock_rag_service_cls.return_value
-        mock_rag_instance.import_files.return_value = {"document_import_result": "success"}
+        mock_rag_instance.import_files.return_value = {
+            "document_import_result": {
+                "imported_rag_files_count": 1,
+                "failed_rag_files_count": 0,
+                "skipped_rag_files_count": 0,
+            },
+            "media_import_result": {},
+        }
         
         mock_config.USER_UPLOAD_RESULT_TOPIC = "projects/test/topics/test-topic"
         
@@ -114,7 +121,14 @@ class TestPubSubToUserDocs(unittest.TestCase):
 
         mock_firebase_admin.get_app.return_value = object()
         mock_admin_firestore.client.return_value = MagicMock()
-        mock_rag_service_cls.return_value.import_files.return_value = "ok"
+        mock_rag_service_cls.return_value.import_files.return_value = {
+            "document_import_result": {
+                "imported_rag_files_count": 2,
+                "failed_rag_files_count": 0,
+                "skipped_rag_files_count": 0,
+            },
+            "media_import_result": {},
+        }
 
         main.pubsub_to_user_docs(event, None)
 
@@ -145,7 +159,14 @@ class TestPubSubToUserDocs(unittest.TestCase):
         db = MagicMock()
         mock_firebase_admin.get_app.return_value = object()
         mock_admin_firestore.client.return_value = db
-        mock_rag_service_cls.return_value.import_files.return_value = "ok"
+        mock_rag_service_cls.return_value.import_files.return_value = {
+            "document_import_result": {
+                "imported_rag_files_count": 2,
+                "failed_rag_files_count": 0,
+                "skipped_rag_files_count": 0,
+            },
+            "media_import_result": {},
+        }
 
         main.pubsub_to_user_docs(event, None)
 

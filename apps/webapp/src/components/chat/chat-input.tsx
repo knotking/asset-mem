@@ -19,6 +19,7 @@ import {
   Send,
   Camera,
   Clock,
+  Plus,
 } from "lucide-react";
 import Image from "next/image";
 import { Progress } from "@/components/ui/progress";
@@ -54,9 +55,12 @@ type Props = {
   onSend: (message: string) => void;
   isLoading: boolean;
   onStop: () => void;
-  fileAttachment: FileAttachment | null;
-  onFileChange: (file: File) => void;
-  onFileRemove: () => void;
+  fileAttachment?: FileAttachment | null;
+  onFileChange?: (file: File) => void;
+  onFileRemove?: () => void;
+  onOpenAddContext?: () => void;
+  contextChipStrip?: React.ReactNode;
+  sendBlockHint?: string | null;
   // Property context props (for property hub)
   properties?: Property[];
   selectedProperty?: Property | null;
@@ -92,9 +96,12 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       onSend,
       isLoading,
       onStop,
-      fileAttachment,
+      fileAttachment = null,
       onFileChange,
       onFileRemove,
+      onOpenAddContext,
+      contextChipStrip,
+      sendBlockHint,
       properties = [],
       selectedProperty,
       onPropertySelect,
@@ -130,7 +137,7 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFile = e.target.files?.[0];
-      if (selectedFile) {
+      if (selectedFile && onFileChange) {
         onFileChange(selectedFile);
       }
     };
@@ -163,15 +170,17 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       target.style.height = `${target.scrollHeight}px`;
     };
 
+    const useContextMode = !!onOpenAddContext;
     const isUploading =
       fileAttachment && fileAttachment.progress < 100 && !fileAttachment.error;
-    const isSendDisabled =
-      isLoading ||
-      (fileAttachment && !fileAttachment.downloadURL) ||
-      (!content.trim() &&
-        !fileAttachment?.downloadURL &&
-        !selectedProperty &&
-        selectedDocuments.length === 0);
+    const isSendDisabled = useContextMode
+      ? isLoading || !content.trim()
+      : isLoading ||
+        (fileAttachment && !fileAttachment.downloadURL) ||
+        (!content.trim() &&
+          !fileAttachment?.downloadURL &&
+          !selectedProperty &&
+          selectedDocuments.length === 0);
 
     const [popoverOpen, setPopoverOpen] = useState(false);
     const handlePropertySelect = (property: Property) => {
@@ -248,10 +257,10 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
 
     const showPropertySelector = false; // Disabled for now
     const showDocumentSelector = false; // Disabled for now
-    const allowFileAttachment = !!onFileChange;
+    const allowFileAttachment = !!onFileChange && !useContextMode;
     const hasFileAttached = !!fileAttachment;
     const handleCameraCapture = (file: File) => {
-      onFileChange(file);
+      onFileChange?.(file);
       setCameraDialogOpen(false);
     };
 
@@ -310,6 +319,10 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
           className="relative flex w-full items-end gap-2"
         >
           <div className="flex flex-1 flex-col gap-3">
+            {contextChipStrip}
+            {sendBlockHint ? (
+              <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
+            ) : null}
             {/* Compact Settings Bar */}
             <ChatSettingsPopover
               open={settingsPopoverOpen}
@@ -354,7 +367,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
               </div>
             </ChatSettingsPopover>
             {/* Selected Checkpoints Display */}
-            {primaryAgent === "checkpoint" &&
+            {!useContextMode &&
+              primaryAgent === "checkpoint" &&
               selectedCheckpoints.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -391,7 +405,8 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
               )}
 
             {/* Checkpoint Selection Button */}
-            {primaryAgent === "checkpoint" &&
+            {!useContextMode &&
+              primaryAgent === "checkpoint" &&
               selectedCheckpoints.length === 0 &&
               onOpenCheckpointDrawer && (
                 <button
@@ -529,6 +544,21 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
                 </Popover>
               )}
 
+              {useContextMode ? (
+                <div className="absolute right-2 top-1/2 flex -translate-y-1/2">
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 rounded-full"
+                    onClick={onOpenAddContext}
+                    disabled={isLoading}
+                    type="button"
+                    aria-label="Add context"
+                  >
+                    <Plus className="h-[18px] w-[18px]" />
+                  </Button>
+                </div>
+              ) : null}
               {allowFileAttachment && (
                 <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
                   <Button

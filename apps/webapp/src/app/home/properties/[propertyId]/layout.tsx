@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { PropertyProvider, useProperty } from '@/contexts/property-context';
 import { CheckpointProvider } from '@/contexts/checkpoint-context';
 import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
-import { ContextDocumentsPanel } from '@/components/properties/context-documents-panel';
 import { cn } from '@/lib/utils';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -124,13 +123,9 @@ function PropertyHeader() {
 
 function PropertyChatLayoutContent({ children }: { children: React.ReactNode; }) {
   const pathname = usePathname();
-  const { onOpen: openUploadDialog } = useUploadDialog();
   const isChatActive = pathname.includes('/chat');
   const [isSessionSidebarCollapsed, setIsSessionSidebarCollapsed] = useState(false);
-  const [isResourcesPanelCollapsed, setIsResourcesPanelCollapsed] = useState(false);
-  
   const [isMobileSessionOpen, setIsMobileSessionOpen] = useState(false);
-  const [isMobileResourcesOpen, setIsMobileResourcesOpen] = useState(false);
 
   if (!isChatActive) {
     return (
@@ -170,27 +165,7 @@ function PropertyChatLayoutContent({ children }: { children: React.ReactNode; })
             </main>
         </div>
         
-        <div className="absolute top-2 right-2 z-10 lg:hidden">
-            <Button variant="outline" size="icon" onClick={() => setIsMobileResourcesOpen(true)}>
-                <PanelRight className="h-4 w-4" />
-            </Button>
-        </div>
-
-        <aside className={cn(
-            "lg:relative border-l bg-sidebar transition-all duration-300 z-20",
-            "lg:w-80",
-            isResourcesPanelCollapsed ? 'lg:w-14' : 'lg:w-80',
-            !isMobileResourcesOpen && "hidden lg:flex flex-col",
-            isMobileResourcesOpen && "absolute inset-y-0 right-0 w-full max-w-sm flex flex-col"
-            )}>
-            <ContextDocumentsPanel 
-                onUploadClick={openUploadDialog} 
-                isCollapsed={isResourcesPanelCollapsed} 
-                onToggleCollapse={() => setIsResourcesPanelCollapsed(!isResourcesPanelCollapsed)}
-                isMobileOpen={isMobileResourcesOpen}
-                onMobileClose={() => setIsMobileResourcesOpen(false)}
-            />
-        </aside>
+        {/* Context is managed in the chat composer (Add context), not the sidebar panel. */}
       </div>
   );
 }

@@ -45,7 +45,14 @@
     "./lib/checkpoint-metrics-display": "./src/lib/checkpoint-metrics-display.ts",
     "./lib/checkpoint-list-badge": "./src/lib/checkpoint-list-badge.ts",
     "./lib/home-onboarding": "./src/lib/home-onboarding.ts",
-    "./lib/feature-discovery": "./src/lib/feature-discovery.ts"
+    "./lib/feature-discovery": "./src/lib/feature-discovery.ts",
+    "./lib/chat-context-readiness": "./src/lib/chat-context-readiness.ts",
+    "./lib/chat-context-labels": "./src/lib/chat-context-labels.ts",
+    "./lib/chat-send-context": "./src/lib/chat-send-context.ts",
+    "./lib/chat-message-context-refs": "./src/lib/chat-message-context-refs.ts",
+    "./lib/chat-context-limits": "./src/lib/chat-context-limits.ts",
+    "./lib/chat-context-picker": "./src/lib/chat-context-picker.ts",
+    "./contexts/chat-context-context": "./src/contexts/chat-context-context.tsx"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
