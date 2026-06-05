@@ -20,9 +20,8 @@ jest.mock('@/lib/firebase', () => ({
 
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    <img {...props} />
+  default: ({ alt, ...props }: { alt?: string; [key: string]: unknown }) => (
+    <span data-testid="next-image" aria-label={alt} {...props} />
   ),
 }));
 
