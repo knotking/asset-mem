@@ -10,6 +10,7 @@ interface CustomBubbleProps extends BubbleProps<IMessage> {
   sessionId?: string;
   priorAssistantTurnCount?: number;
   isActiveLoading?: boolean;
+  hideRepeatedContextRefs?: boolean;
 }
 
 /** Matches react-native-gifted-chat default Bubble side margins (see Bubble/styles.js). */
@@ -41,6 +42,7 @@ function GiftedChatBubble({
   position,
   priorAssistantTurnCount = 0,
   isActiveLoading = false,
+  hideRepeatedContextRefs = false,
 }: CustomBubbleProps) {
   if (!currentMessage) {
     return null;
@@ -61,6 +63,7 @@ function GiftedChatBubble({
         sessionId={sessionId}
         priorAssistantTurnCount={priorAssistantTurnCount}
         isActiveLoading={isActiveLoading}
+        hideRepeatedContextRefs={hideRepeatedContextRefs}
       />
     </View>
   );

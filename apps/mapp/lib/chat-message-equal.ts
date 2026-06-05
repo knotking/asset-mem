@@ -6,6 +6,7 @@ export interface ChatMessageCompareProps {
   sessionId?: string;
   priorAssistantTurnCount?: number;
   isActiveLoading?: boolean;
+  hideRepeatedContextRefs?: boolean;
 }
 
 function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
@@ -43,6 +44,7 @@ export function areChatMessagePropsEqual(
   if (prev.sessionId !== next.sessionId) return false;
   if (prev.priorAssistantTurnCount !== next.priorAssistantTurnCount) return false;
   if (prev.isActiveLoading !== next.isActiveLoading) return false;
+  if (prev.hideRepeatedContextRefs !== next.hideRepeatedContextRefs) return false;
 
   const prevMsg = prev.message;
   const nextMsg = next.message;

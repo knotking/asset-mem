@@ -21,6 +21,7 @@ import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
 import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
 import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
+import { buildSuppressRepeatedContextRefsByMessageId } from '@homeapp/common/lib/chat-message-context-refs';
 import {
   assistantMessageHasDisplayableContent,
   getMessageDisplayParts,
@@ -130,6 +131,11 @@ function PropertyChatTab({
     return map;
   }, [messages]);
 
+  const suppressRepeatedContextRefsById = React.useMemo(
+    () => buildSuppressRepeatedContextRefsByMessageId(messages),
+    [messages]
+  );
+
   const giftedChatUser = React.useMemo(() => ({ _id: userId }), [userId]);
 
   const sessionIdRef = React.useRef(sessionId);
@@ -146,10 +152,11 @@ function PropertyChatTab({
           sessionId={sessionIdRef.current ?? undefined}
           priorAssistantTurnCount={priorAssistantTurnCountById.get(messageId) ?? 0}
           isActiveLoading={messageId === activeStreamingAssistantId}
+          hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(messageId) ?? false}
         />
       );
     },
-    [priorAssistantTurnCountById, activeStreamingAssistantId]
+    [priorAssistantTurnCountById, activeStreamingAssistantId, suppressRepeatedContextRefsById]
   );
 
   const renderChatEmpty = React.useCallback(() => {

@@ -38,6 +38,7 @@ import {
   Lightbulb,
   AlertTriangle,
   Heart,
+  Paperclip,
 } from 'lucide-react-native';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { buildServiceProviderDedupeKey } from '@homeapp/common/lib/saved-service-provider-dedupe';
@@ -83,7 +84,10 @@ import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles'
 import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
-import { splitMessageContextRefItems } from '@homeapp/common/lib/chat-message-context-refs';
+import {
+  listMessageContextRefItems,
+  splitMessageContextRefItems,
+} from '@homeapp/common/lib/chat-message-context-refs';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -95,6 +99,8 @@ interface ChatMessageProps {
   priorAssistantTurnCount?: number;
   /** True while this message is the in-flight assistant placeholder. */
   isActiveLoading?: boolean;
+  /** Hide context when it matches the previous user message. */
+  hideRepeatedContextRefs?: boolean;
 }
 
 // Helper functions moved outside components
@@ -1455,13 +1461,69 @@ const MessageContent = React.memo(
 });
 
 const ContextRefsPreview = React.memo(
-  ({ refs }: { refs: NonNullable<Message['contextRefs']> }) => {
-    const { visible, hiddenCount } = splitMessageContextRefItems(refs);
-    if (visible.length === 0 && hiddenCount === 0) return null;
+  ({
+    refs,
+    compact = false,
+    hideRepeated = false,
+  }: {
+    refs: NonNullable<Message['contextRefs']>;
+    compact?: boolean;
+    hideRepeated?: boolean;
+  }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    if (hideRepeated) return null;
+
+    const allItems = listMessageContextRefItems(refs);
+    if (allItems.length === 0) return null;
+
+    const toggleExpanded = () => setExpanded((value) => !value);
+
+    if (compact) {
+      const moreCount = allItems.length - 1;
+      return (
+        <View className="w-full flex-row justify-end">
+          <Pressable onPress={toggleExpanded}>
+            <View className="flex-row items-center gap-1 rounded-lg border border-border/60 bg-background/80 px-2 py-1">
+              <Icon as={Paperclip} size={12} className="text-muted-foreground" />
+              {!expanded ? (
+                <>
+                  <Text className="max-w-28 text-xs text-muted-foreground" numberOfLines={1}>
+                    {allItems[0].name}
+                  </Text>
+                  {moreCount > 0 ? (
+                    <Text className="text-xs text-muted-foreground">+{moreCount} more</Text>
+                  ) : null}
+                </>
+              ) : (
+                <View className="max-w-72 flex-row items-center gap-1.5">
+                  {allItems.map((item) => (
+                    <View
+                      key={`${item.kind}-${item.id}`}
+                      className="shrink-0 flex-row items-center gap-1">
+                      <Icon
+                        as={item.kind === 'checkpoint' ? Clock : FileText}
+                        size={12}
+                        className="text-muted-foreground"
+                      />
+                      <Text className="max-w-28 text-xs text-foreground" numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+
+    const chips = splitMessageContextRefItems(refs);
 
     return (
       <View className="mb-2 flex-row flex-wrap items-center gap-1.5">
-        {visible.map((item) => (
+        {chips.visible.map((item) => (
           <View
             key={`${item.kind}-${item.id}`}
             className="flex-row items-center gap-1 rounded-lg border border-border/60 bg-background/80 px-2 py-1">
@@ -1475,9 +1537,9 @@ const ContextRefsPreview = React.memo(
             </Text>
           </View>
         ))}
-        {hiddenCount > 0 ? (
+        {chips.hiddenCount > 0 ? (
           <View className="rounded-lg border border-border/60 bg-background/80 px-2 py-1">
-            <Text className="text-xs font-medium text-muted-foreground">+{hiddenCount} more</Text>
+            <Text className="text-xs font-medium text-muted-foreground">+{chips.hiddenCount} more</Text>
           </View>
         ) : null}
       </View>
@@ -1593,6 +1655,7 @@ function ChatMessage({
   sessionId,
   priorAssistantTurnCount = 0,
   isActiveLoading = false,
+  hideRepeatedContextRefs = false,
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const { markdown: messageMarkdown, contentJson: messageContentJson } =
@@ -1711,52 +1774,82 @@ function ChatMessage({
           onLongPress={handleLongPress}
           delayLongPress={500}
           className={isFullWidthAssistant ? 'w-full self-stretch' : 'max-w-full'}>
-          <View
-            cssInterop={false}
-            style={[
-              isUser ? nativeStyles.userBubble : nativeStyles.assistantBubble,
-              isFullWidthAssistant && nativeStyles.bubbleFullWidth,
-              !isUser &&
-                (showEarlyLoading
-                  ? nativeStyles.assistantBubbleThinking
-                  : nativeStyles.assistantBubbleFilled),
-              showTypingIndicator && nativeStyles.typingBubble,
-            ]}>
-            {message.contextRefs ? (
-              <ContextRefsPreview refs={message.contextRefs} />
-            ) : null}
-            {message.file && (
-              <FilePreview
-                file={message.file}
-                isUserMessage={isUser}
-                onPress={() => setShowMediaDetail(true)}
-              />
-            )}
-            {showStatusStrip ? (
-              <AgentStatus
-                steps={message.agentSteps ?? []}
-                lifecycleHeader={showLifecycleStrip ? lifecycleHeader : null}
-                useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
-                messageContentJson={messageContentJson}
-              />
-            ) : null}
-            {showTypingIndicator ? (
-              <View className="p-2">
-                <TypingIndicator variant={typingIndicatorVariant} />
-              </View>
-            ) : null}
-            {hasDisplayableContent ? (
-              <View className={`flex flex-col gap-3 ${isStructuredAssistant ? 'p-0' : 'p-3'}`}>
-                <MessageContent
-                  content={messageMarkdown}
-                  isUser={isUser}
-                  messageId={message.id}
-                  sessionId={sessionId}
-                  structuredData={displayParts.structuredData}
+          {isUser ? (
+            <View className="w-full max-w-full flex-col items-end gap-1.5">
+              {message.contextRefs ? (
+                <ContextRefsPreview
+                  refs={message.contextRefs}
+                  compact
+                  hideRepeated={hideRepeatedContextRefs}
                 />
-              </View>
-            ) : null}
-          </View>
+              ) : null}
+              {message.file ? (
+                <FilePreview
+                  file={message.file}
+                  isUserMessage
+                  onPress={() => setShowMediaDetail(true)}
+                />
+              ) : null}
+              {hasDisplayableContent ? (
+                <View cssInterop={false} style={nativeStyles.userBubble}>
+                  <View className="p-3">
+                    <MessageContent
+                      content={messageMarkdown}
+                      isUser
+                      messageId={message.id}
+                      sessionId={sessionId}
+                      structuredData={displayParts.structuredData}
+                    />
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <View
+              cssInterop={false}
+              style={[
+                nativeStyles.assistantBubble,
+                isFullWidthAssistant && nativeStyles.bubbleFullWidth,
+                showEarlyLoading
+                  ? nativeStyles.assistantBubbleThinking
+                  : nativeStyles.assistantBubbleFilled,
+                showTypingIndicator && nativeStyles.typingBubble,
+              ]}>
+              {message.contextRefs ? (
+                <ContextRefsPreview refs={message.contextRefs} />
+              ) : null}
+              {message.file ? (
+                <FilePreview
+                  file={message.file}
+                  onPress={() => setShowMediaDetail(true)}
+                />
+              ) : null}
+              {showStatusStrip ? (
+                <AgentStatus
+                  steps={message.agentSteps ?? []}
+                  lifecycleHeader={showLifecycleStrip ? lifecycleHeader : null}
+                  useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
+                  messageContentJson={messageContentJson}
+                />
+              ) : null}
+              {showTypingIndicator ? (
+                <View className="p-2">
+                  <TypingIndicator variant={typingIndicatorVariant} />
+                </View>
+              ) : null}
+              {hasDisplayableContent ? (
+                <View className={`flex flex-col gap-3 ${isStructuredAssistant ? 'p-0' : 'p-3'}`}>
+                  <MessageContent
+                    content={messageMarkdown}
+                    isUser={false}
+                    messageId={message.id}
+                    sessionId={sessionId}
+                    structuredData={displayParts.structuredData}
+                  />
+                </View>
+              ) : null}
+            </View>
+          )}
         </Pressable>
 
         {copyStatus && (

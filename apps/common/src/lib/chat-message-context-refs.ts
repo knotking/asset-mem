@@ -36,3 +36,44 @@ export function splitMessageContextRefItems(
     hiddenCount: Math.max(0, all.length - visibleCount),
   };
 }
+
+/** Stable id-only key for comparing context across consecutive user messages. */
+export function contextRefsFingerprint(refs: MessageContextRefs): string | null {
+  const checkpointIds = (refs.checkpoints ?? []).map((cp) => cp.id).sort();
+  const documentIds = (refs.documents ?? []).map((doc) => doc.id).sort();
+  if (checkpointIds.length === 0 && documentIds.length === 0) return null;
+  return `c:${checkpointIds.join(",")}|d:${documentIds.join(",")}`;
+}
+
+/** One-line label for collapsed context on a sent message. */
+export function getContextRefsSummaryLabel(refs: MessageContextRefs): string {
+  const items = listMessageContextRefItems(refs);
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0].name;
+  return `${items[0].name} +${items.length - 1} more`;
+}
+
+/** Hide context when it matches the previous user message's contextRefs. */
+export function buildSuppressRepeatedContextRefsByMessageId(
+  messages: ReadonlyArray<{
+    id: string;
+    role: string;
+    contextRefs?: MessageContextRefs;
+  }>
+): Map<string, boolean> {
+  const suppressed = new Map<string, boolean>();
+  let previousUserContextKey: string | null = null;
+
+  for (const message of messages) {
+    if (message.role !== "user") continue;
+    const key = message.contextRefs ? contextRefsFingerprint(message.contextRefs) : null;
+    if (key) {
+      suppressed.set(message.id, key === previousUserContextKey);
+      previousUserContextKey = key;
+    } else {
+      previousUserContextKey = null;
+    }
+  }
+
+  return suppressed;
+}
