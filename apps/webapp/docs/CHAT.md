@@ -35,6 +35,7 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
 | `src/lib/plan-limit-errors.ts` | `apps/common/src/lib/document-analysis-errors.ts` |
 | `src/lib/home-onboarding.ts` | `apps/common/src/lib/home-onboarding.ts` |
+| `src/lib/sort-messages.ts` | `apps/common/src/lib/sort-messages.ts` |
 
 ## Display resolution flow
 
