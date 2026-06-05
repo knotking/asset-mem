@@ -23,7 +23,7 @@ def _extract_price_from_text(text: str) -> List[Tuple[float, float]]:
     Returns:
         List of (low, high) tuples for found price ranges
     """
-    price_ranges = []
+    price_ranges: List[Tuple[float, float]] = []
 
     if not text:
         return price_ranges
@@ -93,7 +93,7 @@ def extract_pricing_from_serp_results(
     Returns:
         Dictionary with extracted pricing data
     """
-    pricing_data = {
+    pricing_data: Dict[str, Any] = {
         "found_prices": False,
         "price_ranges": [],
         "average_low": None,
@@ -106,7 +106,7 @@ def extract_pricing_from_serp_results(
         return pricing_data
 
     pricing_data["provider_count"] = len(serp_results)
-    all_ranges = []
+    all_ranges: List[Tuple[float, float]] = []
 
     for provider in serp_results:
         if not isinstance(provider, dict):
@@ -164,7 +164,7 @@ def extract_pricing_from_yelp_results(
     Returns:
         Dictionary with extracted pricing data
     """
-    pricing_data = {
+    pricing_data: Dict[str, Any] = {
         "found_prices": False,
         "price_ranges": [],
         "price_levels": {},  # Yelp uses $ symbols for price level
@@ -178,7 +178,7 @@ def extract_pricing_from_yelp_results(
         return pricing_data
 
     pricing_data["provider_count"] = len(yelp_results)
-    all_ranges = []
+    all_ranges: List[Tuple[float, float]] = []
 
     # Yelp price level to approximate cost mapping
     price_level_map = {
@@ -256,7 +256,7 @@ def combine_service_provider_pricing(
     Returns:
         Combined pricing data
     """
-    combined = {
+    combined: Dict[str, Any] = {
         "has_pricing_data": False,
         "sources": [],
         "combined_average_low": None,

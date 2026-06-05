@@ -96,7 +96,6 @@ def stage_extra_packages(
     Each staged directory name matches the import root (``property_agent``,
     ``agent_framework``) so the dependency tarball can use flat arcnames.
     """
-    root = homecare_root()
     staging_dir = staging_root or pathlib.Path(
         tempfile.mkdtemp(prefix="agent_engine_bundle_")
     )

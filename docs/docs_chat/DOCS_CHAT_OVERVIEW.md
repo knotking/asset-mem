@@ -285,23 +285,23 @@ Return to user
 
 ## Comparison with Other Agents
 
-### vs. Analysis Agent
+### vs. Property Agent (checkpoint path)
 
-| Feature | Docs Agent | Analysis Agent |
-|---------|-----------|----------------|
-| Purpose | Document Q&A | Problem diagnosis |
-| Input | Text query | Text + images/videos |
-| Output | Document-based answer | Diagnostic workflow |
-| Use Case | "What's in my warranty?" | "How do I fix this leak?" |
-| Data Source | User documents | Multiple sources + tools |
+| Feature | Docs Agent (`user_docs_retrieval`) | Checkpoint pipeline (`run_checkpoint_pipeline`) |
+|---------|-----------------------------------|------------------------------------------------|
+| Purpose | Document Q&A | Checkpoint retrieval + optional analysis |
+| Input | Text query + `context_doc_uris` | Text query + `checkpoint_ids` |
+| Output | Document-based answer | `contentJson` accordions + `contentMarkdown` |
+| Use Case | "What's in my warranty?" | "Analyse my garage checkpoints" |
+| Data Source | User documents (RAG) | Firestore checkpoints + optional branches |
 
-### vs. Checkpoint Agent
+### vs. Checkpoint chat (same root agent)
 
-| Feature | Docs Agent | Checkpoint Agent |
-|---------|-----------|------------------|
-| Purpose | Document Q&A | Property history |
+| Feature | Docs mode (`primary_agent=docs`) | Checkpoint mode (`primary_agent=checkpoint`) |
+|---------|----------------------------------|---------------------------------------------|
+| Purpose | Document Q&A | Property history + analysis |
 | Input | Text query | Text query + checkpoint IDs |
-| Output | Document-based answer | Checkpoint analysis |
+| Output | Markdown prose | Structured analysis + prose |
 | Use Case | "What's my coverage?" | "What changed in my kitchen?" |
 | Data Source | User documents | Checkpoint data |
 
@@ -360,8 +360,8 @@ Return to user
 - [Docs Chat Testing Guide](DOCS_CHAT_TESTING.md)
 - [Docs Chat API Integration](DOCS_CHAT_API_INTEGRATION.md)
 - [User Docs Agent README](../../gcp/agents/homecare/property_agent/agents/user_docs_agent/README.md)
-- [Analysis Agent Overview](../analysis/ANALYSIS_AGENT_OVERVIEW.md)
-- [Checkpoint AI Chat Analysis](../checkpoint/CHECKPOINT_AI_CHAT_ANALYSIS.md)
+- [Property Agent README](../../gcp/agents/homecare/property_agent/README.md)
+- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
 
 ## Support
 

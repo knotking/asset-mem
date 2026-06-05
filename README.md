@@ -9,7 +9,7 @@ This repository contains the complete source code for the HomeApp platform, a co
 >
 > 📊 **Presentation**: For project presentations, demos, and overview slides, see [PRESENTATION.md](./docs/PRESENTATION.md).
 >
-> 🤖 **AI Agents**: For documentation on AI agents including Analysis and Checkpoint agents, see [Analysis Agent](./docs/analysis/README.md) and [Checkpoint Features](./docs/checkpoint/README.md).
+> 🤖 **AI Agents**: For the property agent and checkpoint chat, see [Property Agent](./gcp/agents/homecare/property_agent/README.md), [Orchestrator V2](./gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md), and [Checkpoint Features](./docs/checkpoint/README.md).
 
 <img width="1241" height="694" alt="AssetMem AI Idea Explained" src="https://github.com/user-attachments/assets/5de22222-c0ad-40db-a745-6bbcfc3459fe" />
 
@@ -35,8 +35,8 @@ The monorepo is organized into two main areas:
 ## Key Features
 
 ### AI-Powered Analysis
-- **Analysis Agent**: Multimodal problem diagnosis with coverage, DIY, service, and cost recommendations
-- **Checkpoint Agent**: Property condition tracking with timeline queries and comprehensive analysis
+- **Property Agent**: Checkpoint retrieval, optional coverage/DIY/service/cost analysis, and document Q&A via a flat tool registry
+- **Checkpoints**: Property condition tracking with timeline queries and comprehensive analysis
 - **Document Q&A**: RAG-powered document retrieval for warranty and insurance information
 
 ### Property Management
@@ -50,7 +50,8 @@ The monorepo is organized into two main areas:
 - **Telegram Bot**: Conversational interface for quick queries
 
 For detailed feature documentation, see:
-- [Analysis Agent Documentation](./docs/analysis/README.md)
+- [Property Agent](./gcp/agents/homecare/property_agent/README.md)
+- [Orchestrator V2 Plan](./gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)
 - [Checkpoint Features Documentation](./docs/checkpoint/README.md)
 
 ## Prerequisites

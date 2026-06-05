@@ -87,7 +87,12 @@ async def multiplex_engine_stream_and_progress(
     bind_progress_stream_event_loop()
     active_invocation_id: Optional[str] = None
     engine_agen = engine_stream.__aiter__()
-    agent_task: asyncio.Task | None = asyncio.create_task(engine_agen.__anext__())
+
+    async def _next_engine_event() -> Dict[str, Any]:
+        return await engine_agen.__anext__()
+    agent_task: asyncio.Task[Dict[str, Any]] | None = asyncio.create_task(
+        _next_engine_event()
+    )
     progress_task: asyncio.Task | None = None
 
     try:
@@ -132,7 +137,7 @@ async def multiplex_engine_stream_and_progress(
                 if inv:
                     active_invocation_id = inv
                 yield event_dict
-                agent_task = asyncio.create_task(engine_agen.__anext__())
+                agent_task = asyncio.create_task(_next_engine_event())
     finally:
         if progress_task is not None and not progress_task.done():
             progress_task.cancel()
@@ -161,7 +166,9 @@ async def multiplex_engine_stream_and_progress(
                 await agent_task
             except (asyncio.CancelledError, StopAsyncIteration):
                 pass
-        await engine_agen.aclose()
+        aclose = getattr(engine_agen, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
         if active_invocation_id:
             release_progress_queue_for_invocation_id(active_invocation_id)

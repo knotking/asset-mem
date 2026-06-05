@@ -69,7 +69,7 @@ class HomecareAdkApp(AdkApp):
 
     def __setstate__(self, state: object) -> None:
         """Drop pickled stock ``Runner`` so ``set_up`` wires ``HomecareRunner`` on Engine."""
-        self.__dict__.update(state)  # type: ignore[arg-type]
+        self.__dict__.update(state)  # type: ignore[arg-type,call-overload]
         runner = self._tmpl_attrs.get("runner")
         in_mem = self._tmpl_attrs.get("in_memory_runner")
         if (runner is not None and not isinstance(runner, HomecareRunner)) or (
@@ -240,7 +240,6 @@ class HomecareAdkApp(AdkApp):
             raise errors[0]
 
     def _wire_runners_with_property_app(self) -> None:
-        app_name = self._tmpl_attrs.get("app_name")
         credential_service = self._tmpl_attrs.get("credential_service")
 
         self._tmpl_attrs["app"] = property_app

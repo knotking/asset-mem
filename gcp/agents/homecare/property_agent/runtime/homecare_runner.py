@@ -13,7 +13,6 @@ from google.adk.utils.context_utils import Aclosing
 
 from property_agent.checkpoint.progress_stream import (
     checkpoint_progress_streaming_enabled,
-    get_checkpoint_progress_queue,
     init_checkpoint_progress_queue,
     release_checkpoint_progress_queue,
 )

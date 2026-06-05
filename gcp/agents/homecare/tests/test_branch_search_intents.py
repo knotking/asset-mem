@@ -1,7 +1,6 @@
 """Tests for checkpoint branch search intents."""
 
 import json
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from property_agent.checkpoint.branch_search_intents import (

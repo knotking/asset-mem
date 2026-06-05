@@ -51,7 +51,7 @@ Implemented comprehensive analysis capabilities for checkpoint agent, enabling u
 - **Cost Estimates**: Compare DIY vs professional repair costs
 
 **Documentation**:
-- [Checkpoint AI Chat Analysis](./CHECKPOINT_AI_CHAT_ANALYSIS.md) - Feature overview and implementation details
+- [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) - Canonical serving-path contract
 - [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md) - Complete API reference
 
 **Key Features**:

@@ -12,9 +12,9 @@ December 28, 2025
 
 ### 1. Primary Agent Selection
 - Added agent switcher in the chat input area
-- Two agent types:
-  - **Analysis Agent**: For diagnosis, triage, and analysis (existing functionality)
-  - **Checkpoint Agent**: For querying property timeline and checkpoints (new)
+- Two chat modes (`primary_agent`):
+  - **`docs`**: Document Q&A via `user_docs_retrieval`
+  - **`checkpoint`**: Timeline queries and optional analysis via `run_checkpoint_pipeline`
 
 ### 2. Checkpoint Selection UI
 - **CheckpointDrawer Component** (`src/components/checkpoints/checkpoint-drawer.tsx`):
@@ -27,15 +27,15 @@ December 28, 2025
 
 ### 3. Chat Input Enhancements
 - Updated `ChatInput` component to support:
-  - Primary agent selection (Analysis vs Checkpoint)
+  - Primary agent selection (docs vs checkpoint)
   - Display of selected checkpoints as removable badges/chips
   - "Select checkpoints for context" button when no checkpoints are selected
   - "Add more" link when checkpoints are already selected
-  - Conditional display of optional agents (only shown for Analysis agent)
+  - Conditional display of optional agents (checkpoint mode)
 
 ### 4. Backend Integration
 - Updated API request payload to include:
-  - `primary_agent`: 'analysis' or 'checkpoint'
+  - `primary_agent`: `docs` or `checkpoint`
   - `checkpoint_ids`: Array of selected checkpoint IDs
 - Backend can now use checkpoint data to answer property timeline questions
 
@@ -146,7 +146,7 @@ The checkpoint chat integration has been extended with comprehensive analysis ca
 - **Service Providers**: Find local professionals for detected issues
 - **Cost Estimates**: Compare DIY vs professional repair costs
 
-See [Checkpoint AI Chat Analysis](./CHECKPOINT_AI_CHAT_ANALYSIS.md) for complete details.
+See [Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) and [Checkpoint Analysis API](./CHECKPOINT_ANALYSIS_API.md) for complete details.
 
 ## Notes
 - Implementation matches mobile app patterns for consistency

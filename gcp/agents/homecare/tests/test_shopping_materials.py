@@ -3,7 +3,6 @@
 import json
 from unittest.mock import MagicMock
 
-import pytest
 
 from property_agent.agents.shopping_agent import agent as shopping_mod
 

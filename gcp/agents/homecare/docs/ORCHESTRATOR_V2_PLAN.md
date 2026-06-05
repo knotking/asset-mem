@@ -151,6 +151,18 @@ Each turn runs **resolve** then optionally **execute**:
 
 Nested `checkpoint_agent` AgentTool + fenced dual-format strings are **removed**.
 
+### Routing control plane
+
+Turn routing is distributed across three layers (see [`property_agent/ARCHITECTURE.md`](../property_agent/ARCHITECTURE.md)):
+
+| Layer | Owns |
+| ----- | ---- |
+| **1 — Resolve** | Intent, route, `user_goal`, casual short-circuit, `[RESOLVED_TURN]` inject |
+| **2 — Executor** | History-first markdown vs tool call |
+| **3 — Guards** | Block tools on casual/context turns; merge optional branches from state + query heuristics |
+
+Resolve hints are **not** final authority — `apply_resolved_turn_to_state` and `before_tool_callback` can override `run_optional_agents` and block pipeline runs.
+
 ### `run_checkpoint_pipeline` (internal)
 
 | Step | Mechanism | Output |
@@ -308,6 +320,7 @@ Historical design notes live in archived docs only (see docs purge in implementa
 - **No** serving-path fallback to fenced-json parsing in proxy or clients.
 - **No** serving-path fallback to `analysis/current` for chat.
 - **Synthesis LLM** produces markdown only; structured UI data is assembled in code.
+- **Do not reintroduce** nested `checkpoint_agent` / `checkpoint_analysis_agent` as root executor tools. Checkpoint work stays behind `run_checkpoint_pipeline` (composite `FunctionTool`).
 - **Coordinated deploy**: proxy and agent ship together; docs describe only this contract.
 
 ---
@@ -320,7 +333,7 @@ Historical design notes live in archived docs only (see docs purge in implementa
 | Proxy | `message_content_persist` merges `state_delta` patches |
 | Agent | `run_checkpoint_pipeline`; no dual-format hot path |
 | Clients | `resolveMessageContentParts`; no `analysis/current` for chat |
-| Docs | This file is canonical; legacy plans archived |
+| Docs | This file is canonical; stale V1 docs removed |
 
 Dead-code purge complete (legacy dual-format shims, duplicate `agents/checkpoint_*` trees, env flags). Serving path: `resolve_turn_llm` → executor → `run_checkpoint_pipeline` → assembler → `contentJson` / `contentMarkdown` state_delta.
 
@@ -347,6 +360,5 @@ Detailed go/no-go and rollback: [orchestrator-v2-cutover runbook](../../../../do
 
 | Document | Role |
 | -------- | ---- |
-| [`STRUCTURED_ANALYSIS_V2.md`](./STRUCTURED_ANALYSIS_V2.md) | Archived stub — points here |
-| Pre-orchestrator V2 chat/analysis plan (historical) | Historical — superseded by this doc |
-| [`gcp/docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) | Repo-wide architecture (update on cutover) |
+| [`property_agent/ARCHITECTURE.md`](../property_agent/ARCHITECTURE.md) | Layer rules, routing control plane, branch invocation |
+| [`gcp/docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) | Repo-wide architecture |

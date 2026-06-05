@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Optional, Sequence
+
+from property_agent.routing.schema import SessionStateLike
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.events.event import Event
@@ -36,7 +38,7 @@ _SKIP_MEMORY_AUTHORS = frozenset(
 )
 
 
-def resolve_property_id(state: Mapping[str, Any] | None) -> Optional[str]:
+def resolve_property_id(state: SessionStateLike | None) -> Optional[str]:
     if not state:
         return None
     for key in ("property_id", "app:property_id"):
@@ -50,7 +52,7 @@ def memory_stream_id(*, property_id: Optional[str]) -> str:
     return _platform_memory_stream_id(property_id=property_id)
 
 
-def _analysis_from_state(state: Mapping[str, Any]) -> dict[str, Any] | None:
+def _analysis_from_state(state: SessionStateLike) -> dict[str, Any] | None:
     raw = state.get(CHECKPOINT_ANALYSIS_STATE_KEY)
     if isinstance(raw, dict):
         inner = raw.get("analysis")
@@ -68,7 +70,7 @@ def _analysis_from_state(state: Mapping[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-def _checkpoint_analysis_memory_facts(state: Mapping[str, Any]) -> list[str]:
+def _checkpoint_analysis_memory_facts(state: SessionStateLike) -> list[str]:
     """Optional Tier-B facts from assembled checkpoint analysis."""
     analysis = _analysis_from_state(state)
     if not isinstance(analysis, dict):

@@ -1,3 +1,3 @@
-from .agent import checkpoint_analysis_agent
+from .parallel_runner import run_checkpoint_optional_agents_parallel
 
-__all__ = ["checkpoint_analysis_agent"]
+__all__ = ["run_checkpoint_optional_agents_parallel"]

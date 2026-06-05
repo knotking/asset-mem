@@ -96,13 +96,11 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │  │   │      │  │   (User Uploads)   │              │              │               │   │
 │  │   │      │  └────────────────────┘              │              │               │   │
 │  │   │      │                                      │              │               │   │
-│  │   │      ▼ *Checkpoint Analysis Agent          │              │               │   │
+│  │   │      ▼ run_checkpoint_pipeline (tool)      │              │               │   │
 │  │   │   ┌────────────────────────────────┐       │              │               │   │
-│  │   │   │  Orchestrates:                 │       │              │               │   │
-│  │   │   │  • Coverage Agent              │       │              │               │   │
-│  │   │   │  • DIY Agent                   │       │              │               │   │
-│  │   │   │  • Service Agent               │       │              │               │   │
-│  │   │   │  • Cost Agent                  │       │              │               │   │
+│  │   │   │  Optional branches inside:     │       │              │               │   │
+│  │   │   │  • coverage / diy / service    │       │              │               │   │
+│  │   │   │  • cost (Python pipelines)     │       │              │               │   │
 │  │   │   └────────────────────────────────┘       │              │               │   │
 │  │   │      │                │                     │              │               │   │
 │  │   └──────┼────────────────┼─────────────────────┘              │               │   │

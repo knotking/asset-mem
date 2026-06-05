@@ -55,7 +55,11 @@ def get_user_file_ids(
                         # In selected-docs mode, only add if filename matches
                         if all_docs_mode:
                             file_ids.append(str(obj["FileId"]))
-                        elif "Filename" in obj and obj["Filename"] in context_doc_uris:
+                        elif (
+                            context_doc_uris
+                            and "Filename" in obj
+                            and obj["Filename"] in context_doc_uris
+                        ):
                             file_ids.append(str(obj["FileId"]))
                 except Exception as e:
                     logger.warning(f"Failed to parse line in {blob.name}: {e}")
@@ -129,8 +133,10 @@ def _ask_user_docs_retreival_sync(
 async def ask_user_docs_retreival(
     user_query: str,
     context_doc_uris: Optional[List[str]] = None,
-    tool_context: ToolContext = None,
+    tool_context: ToolContext | None = None,
 ):
+    if tool_context is None:
+        return "No matching result found."
     user_id = (
         tool_context.state.get("user_id")
         or tool_context._invocation_context.session.user_id

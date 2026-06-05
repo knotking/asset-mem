@@ -58,7 +58,8 @@ async def synthesize_checkpoint_markdown(
 
     text = ""
     if response and response.candidates:
-        for part in response.candidates[0].content.parts or []:
+        content = response.candidates[0].content
+        for part in (content.parts if content else None) or []:
             if part.text:
                 text += part.text
     text = (text or "").strip()

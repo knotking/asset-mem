@@ -6,7 +6,7 @@ Performs KNN (K-Nearest Neighbor) vector searches on checkpoint embeddings store
 
 import os
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from google import genai
 from google.genai.types import EmbedContentConfig
 
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
 
+embedding_client: genai.Client | None
 try:
     embedding_client = genai.Client(
         vertexai=True, project=PROJECT_ID, location=LOCATION
@@ -67,7 +68,7 @@ def generate_query_embedding(query_text: str) -> Optional[List[float]]:
         )
         result = embedding_client.models.embed_content(
             model=EMBEDDING_MODEL,
-            contents=[query_text],
+            contents=query_text,
             config=EmbedContentConfig(output_dimensionality=EMBEDDING_DIMENSION),
         )
 
@@ -127,7 +128,7 @@ def search_checkpoints_by_vector(
     """
     try:
         # Lazy imports to avoid deployment issues
-        from google.cloud import firestore
+        from google.cloud import firestore  # type: ignore[attr-defined]
         from google.cloud.firestore_v1.vector import Vector
         from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 

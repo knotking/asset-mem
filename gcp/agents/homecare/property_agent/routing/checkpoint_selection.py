@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any
+
+from property_agent.routing.schema import SessionStateLike
 
 from property_agent.checkpoint.constants import CHECKPOINT_IDS_ANALYZED_STATE_KEY
 
@@ -17,13 +19,13 @@ def normalized_checkpoint_id_set(ids: Any) -> frozenset[str]:
     return frozenset(str(x).strip() for x in ids if x is not None and str(x).strip())
 
 
-def checkpoint_ids_from_state(state: Mapping[str, Any] | None) -> frozenset[str]:
+def checkpoint_ids_from_state(state: SessionStateLike | None) -> frozenset[str]:
     if not state:
         return frozenset()
     return normalized_checkpoint_id_set(state.get("checkpoint_ids"))
 
 
-def checkpoint_ids_last_analyzed(state: Mapping[str, Any] | None) -> frozenset[str]:
+def checkpoint_ids_last_analyzed(state: SessionStateLike | None) -> frozenset[str]:
     if not state:
         return frozenset()
     recorded = normalized_checkpoint_id_set(state.get(CHECKPOINT_IDS_ANALYZED_STATE_KEY))
@@ -39,7 +41,9 @@ def checkpoint_ids_last_analyzed(state: Mapping[str, Any] | None) -> frozenset[s
     return frozenset()
 
 
-def _checkpoints_analyzed_count(state: Mapping[str, Any]) -> int | None:
+def _checkpoints_analyzed_count(state: SessionStateLike | None) -> int | None:
+    if state is None:
+        return None
     structured = state.get("checkpoint_analysis")
     if isinstance(structured, dict):
         cs = structured.get("checkpointSummary")
@@ -61,7 +65,7 @@ def _checkpoints_analyzed_count(state: Mapping[str, Any]) -> int | None:
     return None
 
 
-def checkpoint_selection_changed(state: Mapping[str, Any] | None) -> bool:
+def checkpoint_selection_changed(state: SessionStateLike | None) -> bool:
     """True when the client checkpoint_ids set differs from the last full analysis."""
     current = checkpoint_ids_from_state(state)
     if not current:

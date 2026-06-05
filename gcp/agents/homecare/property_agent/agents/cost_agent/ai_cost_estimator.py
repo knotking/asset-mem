@@ -175,7 +175,7 @@ def _build_cost_estimation_prompt(
     """
     location_context = f" in {location}" if location else ""
     web_block = ""
-    if (web_context or "").strip():
+    if web_context and web_context.strip():
         web_block = (
             "\n**Web research (already retrieved; do not request another search):**\n"
             f"{web_context.strip()[:6000]}\n"
@@ -396,7 +396,7 @@ def _generate_cost_estimate_content(
             top_k=40,
             max_output_tokens=ai_cfg["max_output_tokens"],
             response_modalities=["TEXT"],
-            tools=tools,
+            tools=tools,  # type: ignore[arg-type]
         ),
     )
 

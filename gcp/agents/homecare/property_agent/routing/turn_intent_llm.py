@@ -6,7 +6,6 @@ from typing import Any, Mapping, Optional
 
 from .checkpoint_selection import checkpoint_selection_changed
 from .conversational_intent import (
-    OPTIONAL_CHECKPOINT_BRANCHES,
     query_requests_full_analysis_replay,
     resolve_explicit_optional_branches,
 )

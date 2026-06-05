@@ -3,27 +3,22 @@ info:
   title: Property Agent API
   version: 2.0.0
   description: |
-    OpenAPI schema for the Property Agent and all sub-agents. The Property Agent 
-    orchestrates multiple specialized sub-agents for comprehensive property care.
+    OpenAPI schema for the Property Agent (Orchestrator V2).
     
-    **Property Agent Scope:**
-    The Property Agent helps with property care via a single-hop executor and checkpoint analysis:
-    - **Maintenance Checkpoints**: Property inspections and condition over time
-    - **Property Documents**: Answers from uploaded lease, policy, and insurance documents
-    - **Coverage**: Warranty and insurance guidance from user documents
-    - **DIY**: Steps, videos, and product suggestions for do-it-yourself repairs
-    - **Service**: Local service provider recommendations
-    - **Cost**: Repair cost estimates (DIY vs professional)
+    **Two-hop orchestration:** `resolve_turn_llm` classifies each turn; the executor LLM
+    calls a flat tool registry (or returns markdown from session history).
     
-    **Sub-Agents (executor tools and checkpoint analysis):**
-    - Checkpoint retrieval (`checkpoint/retrieval`): Firestore vector search
-    - Checkpoint analysis (`checkpoint/analysis`): Optional coverage, DIY, service, cost + synthesis
-    - User Docs Agent: User document RAG (`context_doc_uris`)
-    - Knowledge Base Agent: Shared corpus RAG
-    - DIY / Service / Cost / Shopping: Used in optional checkpoint analysis paths
+    **Root executor tools (3):**
+    - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost + assembler + synthesis
+    - `user_docs_retrieval` — user document RAG (`context_doc_uris`)
+    - `knowledge_base_retrieval` — shared corpus RAG
     
-    The Property Agent resolves each turn, invokes retrieval tools directly,
-    or returns a canned text response for casual queries.
+    **Inside `run_checkpoint_pipeline` (not root-routable):**
+    - Checkpoint retrieval (Firestore vector search)
+    - Optional branches: coverage, DIY, service, cost
+    - Deterministic `contentJson` assembly; synthesis LLM for `contentMarkdown` only
+    
+    Casual turns (greeting, thanks) short-circuit with canned markdown before the executor runs.
 
 paths: {}
 

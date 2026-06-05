@@ -29,8 +29,6 @@ def _patch_adk_web_runner_for_checkpoint_progress() -> None:
     except ImportError:
         return
 
-    original = adk_web_server.AdkWebServer._create_runner
-
     def _create_runner(self, agentic_app):  # type: ignore[no-untyped-def]
         from property_agent.runtime.homecare_runner import create_homecare_runner
 

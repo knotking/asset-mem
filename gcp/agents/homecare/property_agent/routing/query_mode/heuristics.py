@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Literal, Mapping
+from typing import Literal
+
+from property_agent.routing.schema import SessionStateLike
 
 from ..conversational_intent import resolve_requested_optional_branches
 from ..optional_branches import (
@@ -54,7 +56,7 @@ def query_requests_entity_detail(user_query: str) -> bool:
     return False
 
 
-def should_answer_provider_from_context(user_query: str, *, state: Mapping[str, Any] | None) -> bool:
+def should_answer_provider_from_context(user_query: str, *, state: SessionStateLike | None) -> bool:
     if not prior_analysis_has_service_results(state):
         return False
     if not query_requests_entity_detail(user_query):
@@ -103,7 +105,7 @@ def query_requests_fresh_external_data(user_query: str) -> bool:
     return bool(_FRESH_EXTERNAL_DATA_RE.search(normalized))
 
 
-def prior_analysis_branches_completed(state: Mapping[str, Any] | None) -> frozenset[str]:
+def prior_analysis_branches_completed(state: SessionStateLike | None) -> frozenset[str]:
     analysis = _analysis_object_from_state(state)
     if not analysis:
         return frozenset()
@@ -123,7 +125,7 @@ _FRESH_CHECKPOINT_AREA_RE = re.compile(
 )
 
 
-def _checkpoint_areas_in_memory(state: Mapping[str, Any] | None) -> set[str]:
+def _checkpoint_areas_in_memory(state: SessionStateLike | None) -> set[str]:
     memory = build_session_working_memory(state)
     if not memory:
         return set()
@@ -136,7 +138,7 @@ def _checkpoint_areas_in_memory(state: Mapping[str, Any] | None) -> set[str]:
     return areas
 
 
-def query_asks_area_outside_memory(user_query: str, state: Mapping[str, Any] | None) -> bool:
+def query_asks_area_outside_memory(user_query: str, state: SessionStateLike | None) -> bool:
     normalized = (user_query or "").strip().lower()
     match = _FRESH_CHECKPOINT_AREA_RE.search(normalized)
     if not match:
@@ -151,7 +153,7 @@ def query_asks_area_outside_memory(user_query: str, state: Mapping[str, Any] | N
     return True
 
 
-def needs_fresh_checkpoint_retrieval(user_query: str, *, state: Mapping[str, Any] | None = None) -> bool:
+def needs_fresh_checkpoint_retrieval(user_query: str, *, state: SessionStateLike | None = None) -> bool:
     normalized = (user_query or "").strip().lower()
     if not normalized:
         return False
@@ -169,7 +171,7 @@ def needs_fresh_checkpoint_retrieval(user_query: str, *, state: Mapping[str, Any
 def should_block_checkpoint_pipeline_for_context_turn(
     *,
     user_query: str,
-    state: Mapping[str, Any] | None,
+    state: SessionStateLike | None,
     user_goal: str,
     query_mode: str,
     resolved_route: str = "",
@@ -223,7 +225,7 @@ def infer_query_mode(
     user_goal: str,
     expanded_user_query: str,
     run_optional_agents: list[str],
-    state: Mapping[str, Any] | None = None,
+    state: SessionStateLike | None = None,
 ) -> QueryModeKind:
     if user_goal == "answer_from_context":
         return "interpret_session"

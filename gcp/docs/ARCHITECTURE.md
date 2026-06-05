@@ -90,7 +90,7 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 
 **Location:** `gcp/agents/homecare/property_agent/`
 
-**Purpose:** Main orchestrator that routes user requests to specialized sub-agents based on input parameters.
+**Purpose:** Two-hop orchestrator: `resolve_turn_llm` classifies each turn, then the executor LLM calls a flat tool registry (`run_checkpoint_pipeline`, RAG tools); optional checkpoint branches run inside the pipeline.
 
 **Key Responsibilities:**
 - Runs **`resolve_turn_llm`** each turn (intent, route, optional branches) and applies state

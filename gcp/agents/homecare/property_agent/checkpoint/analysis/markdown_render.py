@@ -2,24 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from google.adk.models.llm_response import LlmResponse
 
-from property_agent.checkpoint.constants import (
-    CHECKPOINT_ANALYSIS_STATE_KEY,
-    CHECKPOINT_ANALYSIS_PENDING_INPUT_STATE_KEY,
-    CHECKPOINT_ANALYSIS_PROGRESS_STATE_KEY,
-    CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY,
-    CHECKPOINT_SESSION_INPUT_KEYS,
-    OPTIONAL_BRANCH_TO_AGENT_NAME,
-    CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY as _CHECKPOINT_RETRIEVAL_SEARCH_QUERY_KEY,
-    _VALID_OPTIONAL_BRANCHES,
-    _JSON_FENCE_RE,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +15,6 @@ from .analysis_validate import (  # noqa: E402
     _is_placeholder_checkpoint_summary,
     _list_is_empty,
     _parse_branch_json_blob,
-    analysis_has_structured_ui_sections,
-    strip_json_fences,
     title_from_markdown_first_heading,
 )
 
