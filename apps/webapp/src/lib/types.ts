@@ -460,6 +460,24 @@ export type UserPreferences = {
   onboardingPropertyId?: string;
   onboardingChecklistDismissed?: boolean;
   onboardingChatOpened?: boolean;
+  featureTipsDismissed?: Partial<
+    Record<
+      | "checkpoints_empty"
+      | "checkpoints_compare"
+      | "docs_linked_to_chat"
+      | "chat_optional_agents"
+      | "chat_multi_checkpoint"
+      | "quota_limit"
+      | "first_structured_response",
+      boolean
+    >
+  >;
+  discoveryChecklistDismissed?: boolean;
+  discoveryCompareDone?: boolean;
+  discoveryOptionalAgentUsed?: boolean;
+  discoveryMultiCheckpointChat?: boolean;
+  discoveryAiUsageViewed?: boolean;
+  discoveryFirstStructuredResponseSeen?: boolean;
   updatedAt?: Timestamp;
 };
 

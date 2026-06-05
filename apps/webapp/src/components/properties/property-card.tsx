@@ -24,20 +24,36 @@ import { deleteObject, ref } from 'firebase/storage';
 import { deleteCollection } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
+import { PROPERTY_STAT_LABELS } from '@/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
 
 
-const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: number, label: string }) => (
-    <div className="flex flex-col items-center justify-center p-3 bg-muted/50 rounded-lg gap-1 text-center">
-        <Icon className={cn("h-5 w-5", 
-            label === 'Docs' ? 'text-blue-500' : 
-            label === 'Services' ? 'text-orange-500' : 
-            'text-green-500'
-        )} />
-        <span className="text-sm font-semibold text-foreground">{value}</span>
-        <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
+type StatKind = keyof typeof PROPERTY_STAT_LABELS;
+
+const STAT_ICON_CLASS: Record<StatKind, string> = {
+  docs: 'text-blue-500',
+  services: 'text-orange-500',
+  checkpoints: 'text-green-500',
+};
+
+const StatItem = ({
+  icon: Icon,
+  value,
+  kind,
+}: {
+  icon: React.ElementType;
+  value: number;
+  kind: StatKind;
+}) => (
+  <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg bg-muted/50 p-3 text-center">
+    <Icon className={cn('h-5 w-5 shrink-0', STAT_ICON_CLASS[kind])} />
+    <span className="text-sm font-semibold tabular-nums text-foreground">{value}</span>
+    <span className="flex min-h-[2.25rem] w-full flex-col items-center justify-center text-center text-xs leading-tight text-muted-foreground">
+      <span>{PROPERTY_STAT_LABELS[kind][0]}</span>
+      <span>{PROPERTY_STAT_LABELS[kind][1]}</span>
+    </span>
+  </div>
 );
 
 
@@ -147,9 +163,9 @@ export function PropertyCard({ property }: { property: Property }) {
 
 
                     <div className="grid grid-cols-3 gap-2 mt-auto">
-                        <StatItem icon={FileText} value={docCount} label="Docs" />
-                        <StatItem icon={Wrench} value={servicesCount} label="Services" />
-                        <StatItem icon={Clock} value={checksCount} label="Checks" />
+                        <StatItem icon={FileText} value={docCount} kind="docs" />
+                        <StatItem icon={Wrench} value={servicesCount} kind="services" />
+                        <StatItem icon={Clock} value={checksCount} kind="checkpoints" />
                     </div>
 
                 </CardContent>

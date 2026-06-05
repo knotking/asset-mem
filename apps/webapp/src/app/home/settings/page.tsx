@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Activity, ArrowLeft, Camera, CreditCard, LifeBuoy, LogOut, User } from 'lucide-react';
+import { Activity, ArrowLeft, BookOpen, Camera, CreditCard, LifeBuoy, LogOut, User } from 'lucide-react';
 import { CheckpointSettings } from '@/components/settings/checkpoint-settings';
 import { AiUsageSettings } from '@/components/settings/ai-usage-settings';
 import { SubscriptionSettings } from '@/components/settings/subscription-settings';
@@ -10,6 +10,7 @@ import { ProfileSettings } from '@/components/settings/profile-settings';
 import { AccountDeletionSettings } from '@/components/settings/account-deletion-settings';
 import { LegalSettings } from '@/components/settings/legal-settings';
 import { SupportSettings } from '@/components/settings/support-settings';
+import { HelpHubSettings } from '@/components/feature-discovery/help-hub-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ const SETTINGS_TABS = [
   { id: 'billing', label: 'Plan & billing', icon: CreditCard },
   { id: 'usage', label: 'AI usage', icon: Activity },
   { id: 'checkpoints', label: 'Checkpoints', icon: Camera },
+  { id: 'faq', label: 'FAQ', icon: BookOpen },
   { id: 'help', label: 'Help & support', icon: LifeBuoy },
 ] as const;
 
@@ -160,6 +162,10 @@ function SettingsPageContent() {
               <LogOut className="h-4 w-4 text-destructive" />
               {signingOut ? 'Signing out…' : 'Sign out'}
             </Button>
+          </TabsContent>
+
+          <TabsContent value="faq" className="mt-0 focus-visible:outline-none">
+            <HelpHubSettings />
           </TabsContent>
 
           <TabsContent value="help" className="mt-0 space-y-4 focus-visible:outline-none">

@@ -24,3 +24,5 @@ Hidden only when `onboardingChecklistDismissed` is true.
 ## Preferences fields
 
 `users/{uid}/preferences/user`: `onboardingPropertyId`, `onboardingChecklistDismissed`, `onboardingChatOpened`.
+
+After onboarding, see [FEATURE_DISCOVERY.md](../../docs/FEATURE_DISCOVERY.md) for the discovery checklist, help hub, chat prompts, and contextual tips.

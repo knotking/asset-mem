@@ -7,6 +7,7 @@ import AddPropertyModal from '@/components/AddPropertyModal';
 import PropertyCard from '@/components/PropertyCard';
 import PropertyListSkeleton from '@/components/PropertyListSkeleton';
 import { HomeOnboardingChecklist } from '@/components/onboarding/HomeOnboardingChecklist';
+import { DiscoveryChecklist } from '@/components/feature-discovery/DiscoveryChecklist';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { Input } from '@/components/ui/input';
@@ -114,6 +115,7 @@ export default function Screen() {
             properties={properties}
             onAddProperty={openAddPropertyModal}
           />
+          <DiscoveryChecklist properties={properties} />
         </View>
 
         {/* Search Bar */}

@@ -11,6 +11,7 @@ import { CheckpointComparisonDialog } from '@/components/checkpoints/checkpoint-
 import { MetricsDashboard } from '@/components/checkpoints/metrics-dashboard';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useRequireAuth } from '@/hooks/use-require-auth';
+import { usePreferences } from '@/contexts/preferences-context';
 import { Checkpoint } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ type CheckpointTab = 'checkpoints' | 'insights';
 export default function PropertyCheckpointsPage() {
   const { user, authPending } = useRequireAuth();
   const { checkpoints, loading, setSelectedCheckpoint } = useCheckpoint();
+  const { updatePreferences } = usePreferences();
   const [activeTab, setActiveTab] = useState<CheckpointTab>('checkpoints');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -40,6 +42,7 @@ export default function PropertyCheckpointsPage() {
   };
 
   const handleCompare = (checkpoint1: Checkpoint, checkpoint2: Checkpoint) => {
+    void updatePreferences({ discoveryCompareDone: true });
     setComparisonCheckpoints([checkpoint1, checkpoint2]);
     setIsComparisonOpen(true);
   };

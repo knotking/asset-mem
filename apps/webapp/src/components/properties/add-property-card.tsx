@@ -20,8 +20,8 @@ export function AddPropertyCard() {
 
     return (
         <button onClick={handleClick} className="w-full h-full text-left">
-            <Card className="h-full group hover:border-foreground/20 transition-colors border-dashed border-2 flex flex-col">
-                <CardContent className="p-4 flex-1 flex flex-col items-center gap-4">
+            <Card className="group flex h-full flex-col border-2 border-dashed transition-colors hover:border-foreground/20">
+                <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
                     <div className="flex items-center justify-center h-10 w-10 bg-muted rounded-full shrink-0 group-hover:bg-muted-foreground/10 transition-colors">
                         <Plus className="h-6 w-6 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
                     </div>

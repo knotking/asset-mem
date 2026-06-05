@@ -13,6 +13,7 @@ import { usePropertiesDashboard } from '@/contexts/properties-dashboard-context'
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
 import { HomeOnboardingChecklist } from '@/components/onboarding/home-onboarding-checklist';
+import { DiscoveryChecklist } from '@/components/feature-discovery/discovery-checklist';
 import { ProductHuntWelcomeBanner } from '@/components/onboarding/product-hunt-welcome-banner';
 
 function PropertiesDashboardSkeleton() {
@@ -112,6 +113,7 @@ function PropertiesDashboardContent() {
 
         <ProductHuntWelcomeBanner />
         <HomeOnboardingChecklist properties={properties} />
+        <DiscoveryChecklist properties={properties} />
 
         <div className="mb-6">
           <div className="relative max-w-md">

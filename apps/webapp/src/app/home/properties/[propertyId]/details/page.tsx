@@ -24,6 +24,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@/lib/property-types';
 import { createLogger } from '@/lib/logger';
 import { getFailedDocumentSummary } from '@/lib/plan-limit-errors';
+import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-banner';
+import { usePreferences } from '@/contexts/preferences-context';
+import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
+import { shouldShowFeatureTip } from '@/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
 
@@ -109,6 +113,8 @@ function PropertyDetailsContent() {
     const router = useRouter();
     const { toast } = useToast();
     const { onOpen: openUploadDialog } = useUploadDialog();
+    const { preferences } = usePreferences();
+    const { dismissTip } = useDismissFeatureTip();
     const [docToDelete, setDocToDelete] = useState<{id: string, name: string} | null>(null);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -211,6 +217,16 @@ function PropertyDetailsContent() {
     
     return (
         <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto min-h-full">
+            {documents.length > 0 && shouldShowFeatureTip(preferences, 'docs_linked_to_chat') ? (
+              <FeatureTipBanner
+                tipId="docs_linked_to_chat"
+                title="Chat with your uploads"
+                description="Switch to Docs mode in AI Chat to ask questions about warranties, manuals, and receipts — answers cite your uploaded files."
+                onDismiss={dismissTip}
+                actionLabel="Open AI Chat"
+                onAction={() => property && router.push(`/home/properties/${property.id}/chat`)}
+              />
+            ) : null}
             <Card className="transition-shadow hover:shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-start">

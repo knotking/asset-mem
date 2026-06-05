@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   onSnapshot,
   Timestamp,
+  deleteField,
 } from "firebase/firestore";
 import { UserPreferences, CheckpointComparisonPreferences } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
@@ -27,6 +28,7 @@ interface PreferencesContextType {
   preferences: UserPreferences | null;
   loading: boolean;
   updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
+  resetFeatureTipsDismissed: () => Promise<void>;
   updateCheckpointComparison: (
     updates: Partial<CheckpointComparisonPreferences>
   ) => Promise<void>;
@@ -94,15 +96,19 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         const currentData = preferences || {};
-        await setDoc(
-          preferencesRef,
-          {
-            ...currentData,
-            ...updates,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
+        const { featureTipsDismissed, ...restUpdates } = updates;
+        const payload: Record<string, unknown> = {
+          ...currentData,
+          ...restUpdates,
+          updatedAt: serverTimestamp(),
+        };
+        if (featureTipsDismissed !== undefined) {
+          payload.featureTipsDismissed = {
+            ...currentData.featureTipsDismissed,
+            ...featureTipsDismissed,
+          };
+        }
+        await setDoc(preferencesRef, payload, { merge: true });
       } catch (error) {
         prefsLog.error("preferences.update.failed", undefined, error);
         throw error;
@@ -110,6 +116,28 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
     },
     [user, db, preferences]
   );
+
+  const resetFeatureTipsDismissed = useCallback(async () => {
+    if (!user || !db) {
+      throw new Error("User not authenticated");
+    }
+
+    const preferencesRef = doc(db, "users", user.uid, "preferences", "user");
+
+    try {
+      await setDoc(
+        preferencesRef,
+        {
+          featureTipsDismissed: deleteField(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      prefsLog.error("preferences.resetFeatureTips.failed", undefined, error);
+      throw error;
+    }
+  }, [user, db]);
 
   const updateCheckpointComparison = useCallback(
     async (updates: Partial<CheckpointComparisonPreferences>) => {
@@ -136,6 +164,7 @@ export const PreferencesProvider = ({ children }: { children: ReactNode }) => {
         preferences,
         loading,
         updatePreferences,
+        resetFeatureTipsDismissed,
         updateCheckpointComparison,
       }}
     >

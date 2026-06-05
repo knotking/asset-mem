@@ -67,10 +67,12 @@ export function useSettingsHubSummaries() {
   const comparisonEnabled = preferences?.checkpointComparison?.enabled ?? true;
   const checkpointsSubtitle = comparisonEnabled ? 'Automatic comparison on' : 'Automatic comparison off';
 
-  const helpSubtitle = 'Contact us, policies, and legal';
+  const faqSubtitle = 'Checkpoints, chat modes, comparisons, and limits';
+  const helpSubtitle = 'Contact support and legal';
 
   return {
     accountSubtitle,
+    faqSubtitle,
     helpSubtitle,
     billingSubtitle,
     usageSubtitle,

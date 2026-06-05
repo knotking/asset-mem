@@ -23,6 +23,10 @@ import { Badge } from '@/components/ui/badge';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useToast } from '@/hooks/use-toast';
 import { createLogger } from '@/lib/logger';
+import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-banner';
+import { usePreferences } from '@/contexts/preferences-context';
+import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
+import { shouldShowFeatureTip } from '@/lib/feature-discovery';
 
 const checkpointLog = createLogger('checkpoint');
 
@@ -46,6 +50,8 @@ export function CheckpointList({
     isLoadingEarlier,
   } = useCheckpoint();
   const { toast } = useToast();
+  const { preferences } = usePreferences();
+  const { dismissTip } = useDismissFeatureTip();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -155,14 +161,36 @@ export function CheckpointList({
         </div>
         <h3 className="text-lg font-semibold">No Checkpoints Yet</h3>
         <p className="mt-2 text-sm text-muted-foreground max-w-md">
-          Create your first checkpoint to start tracking your property's condition over time.
+          Capture photos or videos of rooms, systems, or problem areas. AI scores condition over
+          time — then attach checkpoints to chat for analysis and cost estimates.
         </p>
       </div>
     );
   }
 
+  const showCompareTip =
+    checkpoints.length >= 2 &&
+    shouldShowFeatureTip(preferences, 'checkpoints_compare') &&
+    !selectionMode;
+
+  const isTrulyEmpty =
+    checkpoints.length === 0 &&
+    !searchTerm &&
+    locationFilter === 'all' &&
+    statusFilter === 'all';
+
   return (
     <div className="space-y-4">
+      {showCompareTip ? (
+        <FeatureTipBanner
+          tipId="checkpoints_compare"
+          title="Compare before and after"
+          description="Tap Compare, select two checkpoints, and review AI-detected changes — great for tracking repairs or deterioration."
+          onDismiss={dismissTip}
+          actionLabel="Start compare mode"
+          onAction={() => setSelectionMode(true)}
+        />
+      ) : null}
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -278,7 +306,17 @@ export function CheckpointList({
       {/* Checkpoints List */}
       {filteredCheckpoints.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-muted-foreground">No checkpoints match your filters.</p>
+          {isTrulyEmpty ? (
+            <>
+              <p className="font-medium text-foreground">No checkpoints yet</p>
+              <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+                Capture photos or videos of rooms, systems, or problem areas. AI scores condition
+                over time — then attach checkpoints to chat for analysis and cost estimates.
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground">No checkpoints match your filters.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

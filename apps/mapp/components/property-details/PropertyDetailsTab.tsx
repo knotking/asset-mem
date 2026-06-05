@@ -53,13 +53,21 @@ import { mergePropertyDocuments } from '@/lib/merge-property-documents';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { RotatingSparkles } from './RotatingSparkles';
 import { AlertDialogWrapper } from './AlertDialogWrapper';
+import { usePreferences } from '@homeapp/common/contexts/preferences-context';
+import { shouldShowFeatureTip } from '@homeapp/common/lib/feature-discovery';
+import { FeatureTipBanner } from '@/components/feature-discovery/FeatureTipBanner';
+import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
+import { useRouter } from 'expo-router';
 
 interface PropertyDetailsTabProps {
   property: any;
 }
 
 export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
+  const router = useRouter();
   const { documents, isLoading: documentsLoading } = useProperty();
+  const { preferences } = usePreferences();
+  const { dismissTip } = useDismissFeatureTip();
   const { user } = useAuth();
   const { db, storage } = useFirebase();
   const { uploadingDocs, uploadDocuments, removeUploadingDoc } = useDocumentUpload();
@@ -363,6 +371,21 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
 
   return (
     <View className="mb-4 w-full">
+      {documents.length > 0 && shouldShowFeatureTip(preferences, 'docs_linked_to_chat') ? (
+        <FeatureTipBanner
+          tipId="docs_linked_to_chat"
+          title="Chat with your uploads"
+          description="Switch to Docs mode in AI Chat to ask about warranties, manuals, and receipts."
+          onDismiss={dismissTip}
+          actionLabel="Open AI Chat"
+          onAction={() =>
+            router.push({
+              pathname: '/home/property-details',
+              params: { id: property.id, tab: 'chat' },
+            })
+          }
+        />
+      ) : null}
       <Card className="mb-4">
         <CardHeader>
           <View className="mb-1 flex-row items-center justify-between">
