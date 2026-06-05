@@ -79,7 +79,7 @@ export default function PropertyDetailsScreen() {
   const fromOnboardingChecklist = normalizeRouteParam(params.fromOnboardingChecklist);
 
   const { properties } = usePropertiesList();
-  const { draftsByProperty, createPropertyDraftSession, sessionsByProperty } = useSession();
+  const { draftsByProperty, beginNewPropertyChatSession, sessionsByProperty } = useSession();
   const { documents, property: firestoreProperty, isLoading: isPropertyLoading } = useProperty();
   const { user } = useAuth();
   const { updatePreferences } = usePreferences();
@@ -318,7 +318,7 @@ export default function PropertyDetailsScreen() {
         setSelectedSessionId={setSelectedSessionId}
         sessionsByProperty={sessionsByProperty}
         draftsByProperty={draftsByProperty}
-        createPropertyDraftSession={createPropertyDraftSession}
+        beginNewPropertyChatSession={beginNewPropertyChatSession}
         hasManuallyInteracted={hasManuallyInteracted}
         setHasManuallyInteracted={setHasManuallyInteracted}
         primaryAgent={primaryAgent}
@@ -373,7 +373,7 @@ function PropertyDetailsScreenContent({
   setSelectedSessionId,
   sessionsByProperty,
   draftsByProperty,
-  createPropertyDraftSession,
+  beginNewPropertyChatSession,
   hasManuallyInteracted,
   setHasManuallyInteracted,
   primaryAgent,
@@ -473,16 +473,13 @@ function PropertyDetailsScreenContent({
                             <Button
                               onPress={async () => {
                                 if (!user) return;
-                                if (draftsByProperty[id]) {
-                                  setSelectedSessionId(draftsByProperty[id].id);
-                                } else {
-                                  const newSessionId = await createPropertyDraftSession(
-                                    user.uid,
-                                    id
-                                  );
-                                  if (newSessionId) {
-                                    setSelectedSessionId(newSessionId);
-                                  }
+                                const targetSessionId = await beginNewPropertyChatSession(
+                                  user.uid,
+                                  id,
+                                  selectedSessionId
+                                );
+                                if (targetSessionId) {
+                                  setSelectedSessionId(targetSessionId);
                                 }
                               }}
                               variant="ghost"
@@ -634,13 +631,15 @@ function PropertyDetailsScreenContent({
               <SessionsDrawerContent
                 propertyId={id}
                 propertyName={property.name}
+                currentSessionId={selectedSessionId}
                 onClose={() => setSessionsDrawerVisible(false)}
                 onSessionPress={(session: Session) => {
                   setSelectedSessionId(session.id);
                   setActiveTab('chat');
                   setSessionsDrawerVisible(false);
                 }}
-                onCreateSession={() => {
+                onCreateSession={(sessionId) => {
+                  setSelectedSessionId(sessionId);
                   setActiveTab('chat');
                   setSessionsDrawerVisible(false);
                 }}

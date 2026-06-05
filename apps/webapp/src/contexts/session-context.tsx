@@ -2,7 +2,18 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  getDocs,
+  limit,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Session } from '@/lib/types';
 import { useAuth } from './auth-context';
@@ -18,6 +29,17 @@ function draftInflightKey(propertyId?: string | null): string {
   return propertyId ? `property:${propertyId}` : 'global';
 }
 
+function formatClaimedSessionName(): string {
+  return `session: ${new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })}`;
+}
+
 interface SessionContextType {
   sessionsByProperty: Record<string, Session[]>;
   draftsByProperty: Record<string, Session>;
@@ -25,6 +47,11 @@ interface SessionContextType {
   isLoading: boolean;
   createGlobalDraftSession: (userId: string) => Promise<string | null>;
   createPropertyDraftSession: (userId: string, propertyId: string) => Promise<string | null>;
+  beginNewPropertyChatSession: (
+    userId: string,
+    propertyId: string,
+    currentSessionId?: string | null
+  ) => Promise<string | null>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -106,6 +133,77 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     (userId: string, propertyId: string) =>
       createDraftSessionInternal(userId, propertyId, 'caller'),
     [createDraftSessionInternal]
+  );
+
+  const sessionHasMessages = useCallback(
+    async (userId: string, sessionId: string): Promise<boolean> => {
+      const messagesSnap = await getDocs(
+        query(
+          collection(db, 'users', userId, 'chats', sessionId, 'messages'),
+          limit(1)
+        )
+      );
+      return !messagesSnap.empty;
+    },
+    []
+  );
+
+  const claimDraftSession = useCallback(
+    async (userId: string, propertyId: string, draftId: string): Promise<void> => {
+      sessionLog.debug('draft.claim', {
+        propertyId: truncateId(propertyId),
+        sessionId: truncateId(draftId),
+      });
+      await updateDoc(doc(db, 'users', userId, 'chats', draftId), {
+        name: formatClaimedSessionName(),
+        propertyId,
+      });
+    },
+    []
+  );
+
+  const beginNewPropertyChatSession = useCallback(
+    async (
+      userId: string,
+      propertyId: string,
+      currentSessionId?: string | null
+    ): Promise<string | null> => {
+      const draft = draftsByProperty[propertyId];
+
+      if (draft && currentSessionId === draft.id) {
+        const hasMessages = await sessionHasMessages(userId, draft.id);
+        if (!hasMessages) {
+          sessionLog.debug('draft.begin.noop', {
+            propertyId: truncateId(propertyId),
+            reason: 'already_on_empty_draft',
+          });
+          return draft.id;
+        }
+        await claimDraftSession(userId, propertyId, draft.id);
+        sessionLog.debug('draft.begin.create_after_claim', {
+          propertyId: truncateId(propertyId),
+        });
+        return createPropertyDraftSession(userId, propertyId);
+      }
+
+      if (draft) {
+        sessionLog.debug('draft.begin.select', {
+          propertyId: truncateId(propertyId),
+          sessionId: truncateId(draft.id),
+          currentSessionId: truncateId(currentSessionId ?? undefined),
+        });
+        return draft.id;
+      }
+
+      sessionLog.debug('draft.begin.create', { propertyId: truncateId(propertyId) });
+      return createPropertyDraftSession(userId, propertyId);
+    },
+    [
+      draftsByProperty,
+      sessionHasMessages,
+      claimDraftSession,
+      createPropertyDraftSession,
+    ]
   );
 
   useEffect(() => {
@@ -201,7 +299,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   }, [user, isLoading, globalDraft, draftsByProperty, sessionsByProperty, createDraftSessionInternal]);
 
   return (
-    <SessionContext.Provider value={{ sessionsByProperty, draftsByProperty, globalDraft, isLoading, createGlobalDraftSession, createPropertyDraftSession }}>
+    <SessionContext.Provider value={{ sessionsByProperty, draftsByProperty, globalDraft, isLoading, createGlobalDraftSession, createPropertyDraftSession, beginNewPropertyChatSession }}>
       {children}
     </SessionContext.Provider>
   );

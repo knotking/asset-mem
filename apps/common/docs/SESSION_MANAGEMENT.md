@@ -298,24 +298,19 @@ The `agentSessionId` links the Firestore chat session to a backend AI agent sess
 
 ### Creating a Property Session
 
+Use `beginNewPropertyChatSession` for the **New Session** button. It selects the property draft when one exists, or claims the current draft (if it has messages) and creates a fresh draft.
+
 ```typescript
 import { useSession } from '@homeapp/common/contexts/session-context';
 
-function PropertyChat({ propertyId }: { propertyId: string }) {
-  const { draftsByProperty, createPropertyDraftSession } = useSession();
+function PropertyChat({ propertyId, currentSessionId }: { propertyId: string; currentSessionId?: string }) {
+  const { beginNewPropertyChatSession } = useSession();
   const { user } = useAuth();
 
   const handleNewSession = async () => {
-    const draft = draftsByProperty[propertyId];
-
-    if (draft) {
-      // Use existing draft
-      setSelectedSession(draft.id);
-    } else {
-      // Create new draft
-      const sessionId = await createPropertyDraftSession(user.uid, propertyId);
-      setSelectedSession(sessionId);
-    }
+    if (!user) return;
+    const sessionId = await beginNewPropertyChatSession(user.uid, propertyId, currentSessionId);
+    if (sessionId) setSelectedSession(sessionId);
   };
 
   return <button onClick={handleNewSession}>New Session</button>;
@@ -434,6 +429,10 @@ useEffect(() => {
 | `draft.create.join` | Duplicate request joined in-flight work |
 | `draft.create.done` | Draft Firestore doc created |
 | `chat.redirect.wait` / `chat.redirect.create` | Webapp chat entry redirect flow |
+| `new_session.click` | User tapped New Session (sidebar / mapp list) |
+| `draft.begin.select` | Switched to existing empty draft |
+| `draft.begin.create_after_claim` | Promoted in-use draft, creating fresh draft |
+| `draft.claim` | Renamed `draft` → `session: …` in Firestore |
 
 ### Problem: Multiple drafts for same property
 

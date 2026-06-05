@@ -46,6 +46,7 @@ import { Checkbox } from '../ui/checkbox';
 
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { useSession } from '@/contexts/session-context';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, writeBatch, Timestamp, limit } from 'firebase/firestore';
 import { deleteAgentSession } from '@/lib/api-agent';
@@ -67,6 +68,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { beginNewPropertyChatSession } = useSession();
+  const [isStartingNewSession, setIsStartingNewSession] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
@@ -103,11 +106,44 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     setIsRenaming(false);
   }, [propertyId, isMobileOpen, exitSelectionMode]);
 
-  const handleNewChat = useCallback(() => {
-    if (!propertyId) return;
-    router.push(`/home/properties/${propertyId}/chat`);
-    if(isMobileOpen) onMobileClose();
-  }, [propertyId, router, isMobileOpen, onMobileClose]);
+  const handleNewChat = useCallback(async () => {
+    if (!propertyId || !user || isStartingNewSession) return;
+
+    setIsStartingNewSession(true);
+    try {
+      sessionLog.debug('new_session.click', {
+        propertyId,
+        currentSessionId: sessionId,
+      });
+      const targetSessionId = await beginNewPropertyChatSession(
+        user.uid,
+        propertyId,
+        sessionId
+      );
+      if (!targetSessionId) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not start a new chat session. Please try again.',
+        });
+        return;
+      }
+      router.replace(`/home/properties/${propertyId}/chat/${targetSessionId}`);
+      if (isMobileOpen) onMobileClose();
+    } finally {
+      setIsStartingNewSession(false);
+    }
+  }, [
+    propertyId,
+    user,
+    sessionId,
+    isStartingNewSession,
+    beginNewPropertyChatSession,
+    router,
+    isMobileOpen,
+    onMobileClose,
+    toast,
+  ]);
 
   useEffect(() => {
     if (!user || !propertyId) {
@@ -470,8 +506,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         <div className={cn("flex items-center gap-2", isCollapsed && "w-full justify-center")}>
           <Button
             className={cn("flex-shrink-0 h-8 w-8 rounded-lg p-0", isCollapsed && "hidden")}
-            onClick={handleNewChat}
-            disabled={isInitialLoading || isSelectionMode}
+            onClick={() => void handleNewChat()}
+            disabled={isInitialLoading || isSelectionMode || isStartingNewSession}
             aria-label="New Session"
           >
             <Plus className="h-4 w-4" />
@@ -765,7 +801,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
             </TooltipProvider>
         </ScrollArea>
         <footer className={cn('h-[84px] flex items-center p-2 border-t shrink-0', isCollapsed && "justify-center")}>
-            <Button variant="outline" className={cn('w-full', isCollapsed && "w-10 h-10 p-0")} onClick={handleNewChat} disabled={isInitialLoading || isSelectionMode}>
+            <Button variant="outline" className={cn('w-full', isCollapsed && "w-10 h-10 p-0")} onClick={() => void handleNewChat()} disabled={isInitialLoading || isSelectionMode || isStartingNewSession}>
                 <Plus className='h-4 w-4' />
                 <span className={cn(isCollapsed && "sr-only", "ml-2")}>New Session</span>
             </Button>
