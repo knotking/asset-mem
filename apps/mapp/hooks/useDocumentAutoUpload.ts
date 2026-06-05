@@ -131,11 +131,12 @@ export function useDocumentAutoUpload({
               gsURI,
               contentType: doc.mimeType,
               status: 'analyzing',
+              ragIndexed: false,
               summary: 'Processing...',
             });
 
             try {
-              const ragResult = await postFileToAgent(gsURI, userId);
+              const ragResult = await postFileToAgent(gsURI, userId, docRef.id);
               let queueExtractError: unknown;
               try {
                 await queueExtractDocInfo({

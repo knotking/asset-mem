@@ -69,6 +69,7 @@ def handle_firebase_file_upload( request: AgentRequest) -> Dict[str, Any]:
         gcs_urls=request.context_doc_uris,
         user_query=request.user_query,
         user_id=request.user_id,
+        context_doc_ids=request.context_doc_ids or [],
     )
     logger.info("rag_file_upload publish_result keys=%s", list(result.keys()) if isinstance(result, dict) else type(result).__name__)
     return {"status": "success", "message": "Files are published for upload"}

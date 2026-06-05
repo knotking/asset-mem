@@ -31,7 +31,6 @@ import {
   getSuggestedPrompts,
 } from '@homeapp/common/lib/feature-discovery';
 import type {
-  FileAttachment,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
   PrimaryAgent,
@@ -40,9 +39,6 @@ import type {
 interface PropertyChatTabProps {
   sessionId: string | null;
   userId: string;
-  fileAttachment: FileAttachment | null;
-  onAttachmentPress: () => void;
-  onRemoveAttachment: () => void;
   primaryAgent: PrimaryAgent;
   onPrimaryAgentChange: (agent: PrimaryAgent) => void;
   selectedOptionalAgents: AnalysisOptionalAgent[];
@@ -51,13 +47,10 @@ interface PropertyChatTabProps {
   onToggleCheckpointOptionalAgent: (agent: CheckpointOptionalAgent) => void;
   isSending: boolean;
   onStop: () => void;
-  attachmentOptionsVisible: boolean;
-  onCloseAttachmentOptions: () => void;
-  onTakePhoto: () => void;
-  onRecordVideo: () => void;
-  onSelectFromLibrary: () => void;
-  onSelectFiles: () => void;
   onSend: (messages: IMessage[]) => void;
+  onOpenAddContext: () => void;
+  contextChipStrip?: React.ReactNode;
+  sendBlockHint?: string | null;
   searchLocation?: import('@homeapp/common/types').SearchLocationInput;
   onSearchLocationChange?: (
     searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
@@ -68,9 +61,6 @@ interface PropertyChatTabProps {
 function PropertyChatTab({
   sessionId,
   userId,
-  fileAttachment,
-  onAttachmentPress,
-  onRemoveAttachment,
   primaryAgent,
   onPrimaryAgentChange,
   selectedOptionalAgents,
@@ -79,13 +69,10 @@ function PropertyChatTab({
   onToggleCheckpointOptionalAgent,
   isSending,
   onStop,
-  attachmentOptionsVisible,
-  onCloseAttachmentOptions,
-  onTakePhoto,
-  onRecordVideo,
-  onSelectFromLibrary,
-  onSelectFiles,
   onSend,
+  onOpenAddContext,
+  contextChipStrip,
+  sendBlockHint,
   searchLocation,
   onSearchLocationChange,
   propertyAddress,
@@ -221,9 +208,9 @@ function PropertyChatTab({
     (props: InputToolbarProps<IMessage>) => (
       <GiftedChatInputToolbar
         {...props}
-        fileAttachment={fileAttachment}
-        onAttachmentPress={onAttachmentPress}
-        onRemoveAttachment={onRemoveAttachment}
+        onOpenAddContext={onOpenAddContext}
+        contextChipStrip={contextChipStrip}
+        sendBlockHint={sendBlockHint}
         primaryAgent={primaryAgent}
         onPrimaryAgentChange={onPrimaryAgentChange}
         selectedOptionalAgents={selectedOptionalAgents}
@@ -232,21 +219,15 @@ function PropertyChatTab({
         onToggleCheckpointOptionalAgent={onToggleCheckpointOptionalAgent}
         isSending={isSending}
         onStop={onStop}
-        attachmentOptionsVisible={attachmentOptionsVisible}
-        onCloseAttachmentOptions={onCloseAttachmentOptions}
-        onTakePhoto={onTakePhoto}
-        onRecordVideo={onRecordVideo}
-        onSelectFromLibrary={onSelectFromLibrary}
-        onSelectFiles={onSelectFiles}
         searchLocation={searchLocation}
         onSearchLocationChange={onSearchLocationChange}
         propertyAddress={propertyAddress}
       />
     ),
     [
-      fileAttachment,
-      onAttachmentPress,
-      onRemoveAttachment,
+      onOpenAddContext,
+      contextChipStrip,
+      sendBlockHint,
       primaryAgent,
       onPrimaryAgentChange,
       selectedOptionalAgents,
@@ -255,12 +236,6 @@ function PropertyChatTab({
       onToggleCheckpointOptionalAgent,
       isSending,
       onStop,
-      attachmentOptionsVisible,
-      onCloseAttachmentOptions,
-      onTakePhoto,
-      onRecordVideo,
-      onSelectFromLibrary,
-      onSelectFiles,
       searchLocation,
       onSearchLocationChange,
       propertyAddress,

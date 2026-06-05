@@ -87,6 +87,10 @@ export type Message = {
     width?: number;
     height?: number;
   };
+  contextRefs?: {
+    checkpoints?: { id: string; name?: string }[];
+    documents?: { id: string; name: string }[];
+  };
   agentSteps?: AgentStep[];
   /** Early-turn status from proxy lifecycle persist (cleared when agentSteps arrive). */
   agentLifecycle?: AgentLifecycle | null;
@@ -340,6 +344,35 @@ export type Document = {
   propertyAddress?: string;
   keyEntities?: { name: string; value: string }[];
   status?: "uploading" | "analyzing" | "complete" | "failed";
+  ragIndexed?: boolean;
+};
+
+export type MessageContextRefs = NonNullable<Message["contextRefs"]>;
+
+export type PendingCheckpointContext = {
+  kind: "checkpoint";
+  id: string;
+  checkpointId: string;
+  localPreviewUri?: string;
+  status: "pending" | "processing" | "failed";
+  label?: string;
+};
+
+export type PendingDocumentContext = {
+  kind: "document";
+  id: string;
+  docId: string;
+  localPreviewUri?: string;
+  status: "uploading" | "analyzing" | "indexing" | "failed";
+  label?: string;
+};
+
+export type PendingContextItem = PendingCheckpointContext | PendingDocumentContext;
+
+export type QueuedChatSend = {
+  text: string;
+  waitForIds: string[];
+  primaryAgent: PrimaryAgent;
 };
 
 export type Property = {

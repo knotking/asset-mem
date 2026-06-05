@@ -207,11 +207,12 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
             gsURI,
             contentType: doc.mimeType,
             status: 'analyzing',
+            ragIndexed: false,
             summary: 'Processing...',
           });
 
           try {
-            const ragResult = await postFileToAgent(gsURI, user.uid);
+            const ragResult = await postFileToAgent(gsURI, user.uid, docRef.id);
             let queueExtractError: unknown;
             try {
               await queueExtractDocInfo({

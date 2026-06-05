@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   User,
+  Clock,
   FileText,
   ShieldCheck,
   Stethoscope,
@@ -82,6 +83,7 @@ import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles'
 import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { splitMessageContextRefItems } from '@homeapp/common/lib/chat-message-context-refs';
 import { createLogger } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
@@ -1452,6 +1454,37 @@ const MessageContent = React.memo(
   );
 });
 
+const ContextRefsPreview = React.memo(
+  ({ refs }: { refs: NonNullable<Message['contextRefs']> }) => {
+    const { visible, hiddenCount } = splitMessageContextRefItems(refs);
+    if (visible.length === 0 && hiddenCount === 0) return null;
+
+    return (
+      <View className="mb-2 flex-row flex-wrap items-center gap-1.5">
+        {visible.map((item) => (
+          <View
+            key={`${item.kind}-${item.id}`}
+            className="flex-row items-center gap-1 rounded-lg border border-border/60 bg-background/80 px-2 py-1">
+            <Icon
+              as={item.kind === 'checkpoint' ? Clock : FileText}
+              size={12}
+              className="text-muted-foreground"
+            />
+            <Text className="max-w-28 text-xs text-foreground" numberOfLines={1}>
+              {item.name}
+            </Text>
+          </View>
+        ))}
+        {hiddenCount > 0 ? (
+          <View className="rounded-lg border border-border/60 bg-background/80 px-2 py-1">
+            <Text className="text-xs font-medium text-muted-foreground">+{hiddenCount} more</Text>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+);
+
 const FilePreview = React.memo(
   ({ file, isUserMessage, onPress }: { file: NonNullable<Message['file']>; isUserMessage?: boolean; onPress?: () => void }) => {
     // Media dimensions constants
@@ -1689,6 +1722,9 @@ function ChatMessage({
                   : nativeStyles.assistantBubbleFilled),
               showTypingIndicator && nativeStyles.typingBubble,
             ]}>
+            {message.contextRefs ? (
+              <ContextRefsPreview refs={message.contextRefs} />
+            ) : null}
             {message.file && (
               <FilePreview
                 file={message.file}

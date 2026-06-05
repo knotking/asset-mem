@@ -33,6 +33,10 @@ class AgentRequest(BaseModel):
     session_id: Optional[str] = Field(default="", description="Session ID for the conversation context")
     user_query: str = Field(default="Analyse", description="The query or prompt from the user")
     context_doc_uris: List[str] = Field(default_factory=list, description="List of GCS URIs for context documents")
+    context_doc_ids: List[str] = Field(
+        default_factory=list,
+        description="Firestore doc ids (users/{uid}/docs/{id}) parallel to context_doc_uris for RAG indexing status",
+    )
     checkpoint_ids: Optional[List[str]] = Field(default=None, description="Checkpoint IDs for checkpoint context (enables run_checkpoint_pipeline when new analysis is needed)")
     property_address: str = Field(
         default="",
@@ -83,6 +87,7 @@ class UserUploadResultEvent(BaseModel):
     user_id: str
     user_query: str
     gcs_urls: List[str]
+    context_doc_ids: List[str] = Field(default_factory=list)
     success: bool = Field(default=True)
     error: str = Field(default="")
     source: str = Field(default="unknown")

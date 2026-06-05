@@ -53,6 +53,10 @@ export type Message = {
     url: string;
     gsURI?: string;
   };
+  contextRefs?: {
+    checkpoints?: { id: string; name?: string }[];
+    documents?: { id: string; name: string }[];
+  };
   documents?: {
     name: string;
     type:
@@ -278,6 +282,7 @@ export type Document = {
   propertyAddress?: string; // This is now redundant but we keep for migration/lookup if needed.
   keyEntities?: { name: string; value: string }[];
   status?: "uploading" | "analyzing" | "complete" | "failed";
+  ragIndexed?: boolean;
 };
 
 export type Property = {
@@ -545,4 +550,32 @@ export type Provider = {
   specialties: string[];
   addedDate: Date;
   createdAt: Date;
+};
+
+export type MessageContextRefs = NonNullable<Message["contextRefs"]>;
+
+export type PendingCheckpointContext = {
+  kind: "checkpoint";
+  id: string;
+  checkpointId: string;
+  localPreviewUri?: string;
+  status: "pending" | "processing" | "failed";
+  label?: string;
+};
+
+export type PendingDocumentContext = {
+  kind: "document";
+  id: string;
+  docId: string;
+  localPreviewUri?: string;
+  status: "uploading" | "analyzing" | "indexing" | "failed";
+  label?: string;
+};
+
+export type PendingContextItem = PendingCheckpointContext | PendingDocumentContext;
+
+export type QueuedChatSend = {
+  text: string;
+  waitForIds: string[];
+  primaryAgent: PrimaryAgent;
 };

@@ -6,6 +6,7 @@ from google.cloud import pubsub_v1
 
 from config import Config
 from rag_service import RagService
+from rag_import_result import evaluate_rag_import_result, update_docs_rag_indexed
 from utils import parse_pubsub_message
 from exceptions import WorkerError
 
@@ -34,6 +35,7 @@ def pubsub_to_user_docs(request, context):
     user_id = payload.get("user_id")
     user_query = payload.get("user_query", "")
     source = payload.get("source", "unknown")
+    context_doc_ids = payload.get("context_doc_ids") or []
 
     if not user_id or not gcs_urls:
         logger.warning("No user_id or gcs_urls in payload, skipping.")
@@ -55,6 +57,7 @@ def pubsub_to_user_docs(request, context):
 
         success = False
         result_msg = ""
+        db = None
 
         try:
             if admin_firestore is not None:
@@ -69,8 +72,11 @@ def pubsub_to_user_docs(request, context):
                 if source != "rag-file-upload":
                     check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
             rag_service = RagService()
-            result_msg = rag_service.import_files(gcs_urls, user_id)
-            success = True
+            import_result = rag_service.import_files(gcs_urls, user_id)
+            success, summary = evaluate_rag_import_result(import_result, len(gcs_urls))
+            result_msg = {"summary": summary, **import_result}
+            if not success:
+                logger.warning("user_docs RAG import rejected: %s", summary)
         except PlanLimitExceeded as e:
             logger.warning(
                 "user_docs skipped: document creation limit user=%s period=%s used=%s limit=%s",
@@ -98,6 +104,26 @@ def pubsub_to_user_docs(request, context):
         )
         logger.debug("user_docs result_preview=%r", result_preview[:800])
 
+        if (context_doc_ids or gcs_urls) and admin_firestore is not None:
+            try:
+                if db is None:
+                    if firebase_admin is not None:
+                        try:
+                            firebase_admin.get_app()
+                        except ValueError:
+                            firebase_admin.initialize_app()
+                    db = admin_firestore.client()
+                if context_doc_ids or gcs_urls:
+                    update_docs_rag_indexed(
+                        db,
+                        user_id,
+                        context_doc_ids,
+                        gcs_urls,
+                        indexed=success,
+                    )
+            except Exception as e:
+                logger.warning("user_docs ragIndexed update failed: %s", e)
+
         data = {
             "gcs_urls": gcs_urls,
             "user_id": user_id,
@@ -107,6 +133,7 @@ def pubsub_to_user_docs(request, context):
             "success": success,
             "error": "" if success else str(result_msg),
             "source": source,
+            "context_doc_ids": context_doc_ids,
         }
 
         _publish_result(data)

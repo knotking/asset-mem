@@ -12,6 +12,8 @@ type CameraCaptureDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCapture: (file: File) => void;
+  /** When the dialog opens, start in photo or video mode. */
+  initialMode?: "photo" | "video";
 };
 
 const getSupportedMimeType = (): string | null => {
@@ -29,7 +31,12 @@ const getSupportedMimeType = (): string | null => {
   return null;
 };
 
-export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCaptureDialogProps) {
+export function CameraCaptureDialog({
+  open,
+  onOpenChange,
+  onCapture,
+  initialMode = "photo",
+}: CameraCaptureDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -113,6 +120,11 @@ export function CameraCaptureDialog({ open, onOpenChange, onCapture }: CameraCap
     },
     [canRecordVideo, selectedFacingMode, stopStream]
   );
+
+  useEffect(() => {
+    if (!open) return;
+    setMode(initialMode === "video" && canRecordVideo ? "video" : "photo");
+  }, [open, initialMode, canRecordVideo]);
 
   useEffect(() => {
     if (!open) {

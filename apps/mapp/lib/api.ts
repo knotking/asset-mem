@@ -463,7 +463,8 @@ export async function queueExtractDocInfo(
  */
 export async function postFileToAgent(
   gsURI: string,
-  userId: string
+  userId: string,
+  docId?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const url = RAG_FILE_UPLOAD_URL;
@@ -476,6 +477,7 @@ export async function postFileToAgent(
       body: JSON.stringify({
         user_id: userId,
         context_doc_uris: [gsURI],
+        ...(docId ? { context_doc_ids: [docId] } : {}),
       }),
     });
 

@@ -42,7 +42,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     bullets: [
       "Create checkpoints from photos or videos on the Timeline tab.",
       "AI scores condition and flags issues (minor → critical).",
-      "Attach checkpoints to chat for analysis, DIY steps, and cost estimates.",
+      "Use Add context (+) in chat to capture or search ready checkpoints (up to 5 per message) for analysis, DIY, and cost estimates.",
     ],
   },
   {
@@ -52,7 +52,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     bullets: [
       "Docs — answers from uploaded warranties, manuals, and receipts (RAG).",
       "Checkpoint — uses timeline photos plus optional coverage, DIY, service, and cost agents.",
-      "Upload documents on the property Details tab; they power Docs mode automatically.",
+      "Upload documents via Add context (+) in chat or on the Details tab; ready files include legacy uploads and ragIndexed documents.",
     ],
   },
   {
