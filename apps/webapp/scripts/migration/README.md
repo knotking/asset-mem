@@ -426,7 +426,7 @@ firebase deploy --only firestore:indexes --project homegeek-staging
 
 ### 9. Migrate Vertex AI RAG Corpus
 
-⚠️ **Important**: This migrates user-uploaded documents to a new RAG corpus in the target project. The Knowledge Base corpus does not need migration.
+⚠️ **Important**: This migrates user-uploaded documents to a new RAG corpus in the target project.
 
 **Prerequisites:**
 

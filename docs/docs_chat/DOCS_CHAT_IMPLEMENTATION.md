@@ -71,7 +71,7 @@ primary_agent: Optional[PrimaryAgent] = Field(
 0. primary_agent="docs" → resolve route=user_docs → user_docs_retrieval
 1. primary_agent="checkpoint" → resolve route=checkpoint → run_checkpoint_pipeline (when new analysis needed)
 2. checkpoint_ids / optional agents → context for resolve + tools
-3. Other property queries → resolve picks checkpoint | user_docs | knowledge_base
+3. Other property queries → resolve picks checkpoint | user_docs | orchestrator-only (`route=none`)
 ```
 
 **Code Addition**:
@@ -103,7 +103,7 @@ primary_agent: Optional[PrimaryAgent] = Field(
    → user_docs path
 
 4. Else:
-   → knowledge_base_retrieval
+   → orchestrator markdown only (no retrieval tool)
 ```
 
 #### 4. User Docs Agent Enhancement

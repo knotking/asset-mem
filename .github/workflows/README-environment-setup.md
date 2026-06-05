@@ -76,9 +76,8 @@ The `create-environment.yaml` workflow automatically provisions and configures:
    - **Subscriptions**: Automatic with 60s ack deadline, 7-day retention, retry policies
 
 6. **AI/ML Resources**
-   - **RAG Corpora** (2 separate corpora):
+   - **RAG Corpus**:
      - `user-upload-rag-corpus-{ENV}`: For user-uploaded documents
-     - `knowledge-base-rag-corpus-{ENV}`: For knowledge base documents
    - Note: RAG API has regional availability. Workflow automatically maps regions:
      - `us-central1`, `us-east4` → `us-west1`
      - `europe-west*` → `europe-west4`
@@ -120,7 +119,6 @@ The workflow automatically creates these environment variables in your GitHub en
 #### AI/ML Configuration
 - `REASONING_ENGINE_ID`: Agent reasoning engine identifier (default: `new`)
 - `USER_UPLOAD_RAG_CORPUS`: RAG corpus resource name for user uploads
-- `KNOWLEDGE_BASE_RAG_CORPUS`: RAG corpus resource name for knowledge base
 - `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`: Plan limits for proxy and workers; default includes **`free`** tier (1M tokens / 2 docs / 5 checkpoints) when the variable is **missing** (`set_var_if_not_exists`)
 
 #### Application Configuration
@@ -395,7 +393,7 @@ The destroy workflow removes all resources created by the create workflow:
 - Firestore database (all data will be permanently deleted!)
 
 #### AI/ML Resources
-- RAG corpora: `user-upload-rag-corpus-{ENV}`, `knowledge-base-rag-corpus-{ENV}`
+- RAG corpus: `user-upload-rag-corpus-{ENV}`
 - RAG service account permissions
 
 #### IAM & Security

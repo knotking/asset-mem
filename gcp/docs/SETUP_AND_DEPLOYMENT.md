@@ -138,7 +138,6 @@ Rename `.env.example` to `.env` and configure the following variables in `/Users
 - `GOOGLE_CLOUD_PROJECT=your-project-id`
 - `GOOGLE_CLOUD_LOCATION=your-location` (e.g., `us-central1`)
 - `RAG_CORPUS=projects/<project-number>/locations/us-central1/ragCorpora/<corpus-id>` (if existing)
-- `KNOWLEDGE_BASE_RAG_CORPUS=projects/<project-number>/locations/us-central1/ragCorpora/<corpus-id>`
 - `USER_UPLOAD_RAG_CORPUS=projects/<project-number>/locations/us-central1/ragCorpora/<corpus-id>`
 - `GCS_BUCKET=your-gcs-bucket-for-uploads`
 - `USER_UPLOAD_FOLDER=uploads` (default)

@@ -76,7 +76,7 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
 
     state[CONVERSATIONAL_TURN_STATE_KEY] = False
 
-    if resolved.route in ("user_docs", "knowledge_base"):
+    if resolved.route == "user_docs":
         _clear_checkpoint_passthrough_stash(state)
         state["checkpoint_optional_agents"] = []
         return

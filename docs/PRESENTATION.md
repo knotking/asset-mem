@@ -31,7 +31,7 @@
 - 🤖 **Multi-Agent AI System** powered by Google Vertex AI Reasoning Engine
 - 📱 **Cross-Platform Applications** - Mobile (iOS/Android) and Web
 - 🔍 **Multimodal Analysis** - Images, videos, documents, and text
-- 📚 **RAG-Powered Knowledge Base** - Document retrieval and Q&A
+- 📚 **RAG-Powered Document Q&A** - User-upload retrieval and chat
 - 🛠️ **Comprehensive Diagnostics** - Triage, coverage, DIY, services, and cost analysis
 - ☁️ **Cloud-Native Architecture** - Built on Google Cloud Platform
 
@@ -73,7 +73,7 @@
 HomeApp addresses these challenges through an integrated AI platform that:
 
 - **Analyzes** multimodal inputs (photos, videos, documents) using advanced AI
-- **Retrieves** relevant information from user documents and knowledge base
+- **Retrieves** relevant information from user documents and checkpoint history
 - **Recommends** DIY solutions, service providers, and products
 - **Estimates** costs and compares options
 - **Provides** comprehensive coverage analysis
@@ -295,11 +295,11 @@ HomeApp addresses these challenges through an integrated AI platform that:
 - Automatic indexing to RAG corpus
 - User-specific document corpus
 
-**Knowledge Retrieval**
+**Document Retrieval**
 
 - Q&A from user documents
-- General knowledge base access
-- Citation support
+- Orchestrator guidance when no docs apply
+- Citation support when RAG returns sources
 
 **Search Capabilities**
 
@@ -403,15 +403,15 @@ HomeApp addresses these challenges through an integrated AI platform that:
         │                                      │
    ┌────┴────┐                          ┌──────┴──────┐
    │        │                          │              │
-TRIAGE   COVERAGE                    USER DOCS    KNOWLEDGE
-AGENT    AGENT                       AGENT        BASE AGENT
-   │        │                          │              │
-   │    ┌───┴───┐                      │              │
-   │    │       │                      │              │
-DIY   SERVICE  COST                    │              │
-AGENT  AGENT   AGENT                   │              │
-   │    │       │                      │              │
-   └────┼───────┘                      │              │
+TRIAGE   COVERAGE                    USER DOCS
+AGENT    AGENT                       AGENT
+   │        │                          │
+   │    ┌───┴───┐                      │
+   │    │       │                      │
+DIY   SERVICE  COST                    │
+AGENT  AGENT   AGENT                   │
+   │    │       │                      │
+   └────┼───────┘                      │
         │                              │              │
         └──────────────┬───────────────┴──────────────┘
                        │
@@ -426,7 +426,6 @@ AGENT  AGENT   AGENT                   │              │
 - **Flat executor tools**:
   - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost
   - `user_docs_retrieval` — user document RAG
-  - `knowledge_base_retrieval` — shared corpus RAG
 - **Casual turns**: canned markdown before executor runs
 
 See [Orchestrator V2 Plan](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
@@ -637,11 +636,11 @@ See [Orchestrator V2 Plan](../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md).
 **Flow**:
 
 1. User asks: "How do I reset my dishwasher?"
-2. Property agent calls `user_docs_retrieval` on uploaded manuals
-3. Or `knowledge_base_retrieval` for general appliance guidance
-4. Returns reset instructions with manual citations
+2. Property agent calls `user_docs_retrieval` on uploaded manuals when available
+3. Otherwise orchestrator answers from session context and general guidance
+4. Returns reset instructions with citations when docs are retrieved
 
-**Output**: Step-by-step reset instructions from user's manual or knowledge base
+**Output**: Step-by-step reset instructions from user's manual or best-effort guidance
 
 ### Use Case 8: AI-Powered Cost Estimation ⭐ NEW
 

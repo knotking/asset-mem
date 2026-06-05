@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-# Script to grant RAG Corpus access permissions (for both user upload and knowledge base corpora)
+# Script to grant RAG Corpus access permissions for user-upload corpora
 
 set -e
 
@@ -74,7 +74,7 @@ gcloud alpha services identity create --service=aiplatform.googleapis.com --proj
 # Create a custom role with RAG access permissions (applies to all RAG corpora in project)
 ROLE_ID="ragCorpusAccessRole"
 ROLE_TITLE="RAG Corpus Access Role"
-ROLE_DESCRIPTION="Custom role with permissions to access all RAG corpora (user upload and knowledge base)"
+ROLE_DESCRIPTION="Custom role with permissions to access user-upload RAG corpora"
 
 # Required permissions for RAG queries
 PERMISSIONS="aiplatform.ragCorpora.get,aiplatform.ragCorpora.query,aiplatform.ragFiles.get,aiplatform.ragFiles.list"

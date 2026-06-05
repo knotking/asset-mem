@@ -313,20 +313,10 @@ done
 ### 5. Vertex AI RAG Corpus
 
 ```bash
-# Create knowledge base corpus
-gcloud ai rag-corpora create \
-  --display-name="homecare-knowledge-base" \
-  --region=us-central1
-
 # Create user upload corpus
 gcloud ai rag-corpora create \
   --display-name="homecare-user-uploads" \
   --region=us-central1
-
-# Import initial documents
-gcloud ai rag-corpora import-files CORPUS_ID \
-  --region=us-central1 \
-  --source=gs://your-bucket/knowledge-base/
 ```
 
 ### 6. Artifact Registry

@@ -305,16 +305,6 @@ Return to user
 | Use Case | "What's my coverage?" | "What changed in my kitchen?" |
 | Data Source | User documents | Checkpoint data |
 
-### vs. Knowledge Base Agent
-
-| Feature | Docs Agent | Knowledge Base Agent |
-|---------|-----------|---------------------|
-| Purpose | User document Q&A | General knowledge |
-| Input | Text query | Text query |
-| Output | User doc answer | General knowledge answer |
-| Use Case | "What's in MY manual?" | "How do HVAC systems work?" |
-| Data Source | User documents | General knowledge base |
-
 ## Use Cases
 
 ### Common Scenarios

@@ -17,7 +17,7 @@ RESOLVE_SCHEMA: dict[str, Any] = {
         },
         "route": {
             "type": "string",
-            "enum": ["none", "checkpoint", "user_docs", "knowledge_base"],
+            "enum": ["none", "checkpoint", "user_docs"],
         },
         "expanded_user_query": {
             "type": "string",
@@ -84,7 +84,7 @@ Critical:
 - checkpoint_selection_changed=true means the user added/removed checkpoints since the last analysis — prefer user_goal=new_analysis and a fresh run_checkpoint_pipeline, not answer_from_context.
 - Questions like overall condition, what's wrong, should I hire a professional → answer_from_context (even if toggles are on).
 - More details / tell me about a **service provider already listed in prior analysis** → answer_from_context, retrieval_only=true, run_optional_agents=[]; do not set menu_index for provider names.
-- route=none for casual intents; checkpoint for checkpoints/branches; user_docs for document/policy; knowledge_base only if no checkpoint/doc fit.
+- route=none for casual intents OR general property questions that need no checkpoint/doc retrieval; checkpoint for checkpoints/branches; user_docs for document/policy.
 - Expand indexical/menu picks into a concrete expanded_user_query for tools.
 When property_analysis.branches_completed is non-empty (G3):
 - Explain/clarify questions ("explain DIY steps", "why is cost high") → user_goal=answer_from_context, run_optional_agents=[].

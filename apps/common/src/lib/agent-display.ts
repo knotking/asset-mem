@@ -41,7 +41,6 @@ export const CHECKPOINT_PARALLEL_ANALYSIS_LABEL = "Analyzing your checkpoints…
  */
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   diagnostic_agent: "Diagnosing the issue…",
-  knowledge_base_retrieval: "Searching repair guides…",
   user_docs_retrieval: "Searching your documents…",
   analyse_multimodal_data: "Reviewing your photo or video…",
   research_agent: "Researching options…",

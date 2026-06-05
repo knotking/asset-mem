@@ -223,7 +223,6 @@ add_content_slide(slide, "Key Features: DIY, Service Providers & Document RAG",
         "Service Discovery — SerpAPI + SerpAPI, authorized centers, ratings, contact info",
         "Document Upload — PDFs, images, videos → auto-indexed to RAG corpus",
         "Document Q&A — ask natural language questions, get answers with citations",
-        "Knowledge Base — general RAG corpus for reference materials",
     ])
 
 # ─── SLIDE 8: Multi-Agent Architecture ───
@@ -269,7 +268,6 @@ for name, desc, color in agents_left:
 agents_right = [
     ("DocuLink Agent", "Document Retrieval & Q&A", ORANGE),
     ("User Docs Agent", "User-uploaded documents", RGBColor(0xFB, 0xBF, 0x24)),
-    ("Knowledge Base Agent", "General RAG corpus", RGBColor(0xFB, 0xBF, 0x24)),
     ("Checkpoint Agent", "Timeline queries & analysis", RGBColor(0xFB, 0xBF, 0x24)),
 ]
 

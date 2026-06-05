@@ -195,7 +195,6 @@ The agent does **not** emit markdown + ```json as a single wire-format blob.
 | ------- | ---- |
 | `run_checkpoint_pipeline` | Full checkpoint retrieval + optional parallel analysis |
 | `user_docs_retrieval` | User document RAG |
-| `knowledge_base_retrieval` | Shared corpus RAG |
 
 ---
 

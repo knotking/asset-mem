@@ -69,7 +69,6 @@ The backend implements a multi-agent system using Google Cloud's Agent Developme
 - **Root Property Agent**: Two-hop orchestrator (`resolve_turn_llm` + executor LLM) with flat tool registry
   - `run_checkpoint_pipeline`: Checkpoint retrieval + optional coverage/DIY/service/cost branches
   - `user_docs_retrieval`: RAG over user-uploaded documents
-  - `knowledge_base_retrieval`: RAG over shared corpus
 
 ---
 

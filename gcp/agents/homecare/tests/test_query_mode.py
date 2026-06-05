@@ -513,7 +513,7 @@ def test_should_block_entity_detail_with_memory_without_provider_match() -> None
         state=state,
         user_goal="answer_from_context",
         query_mode="interpret_session",
-        tool_name="knowledge_base_retrieval",
+        tool_name="user_docs_retrieval",
     )
 
 

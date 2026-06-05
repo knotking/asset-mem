@@ -33,13 +33,12 @@ For detailed usage, see sections below.
 
 ### Main Orchestrator Agent (`root_agent`)
 
-The **property agent** (`property_agent`) is the root orchestrator: it resolves each turn (`resolve_turn_llm`), then the orchestrator LLM invokes **`run_checkpoint_pipeline`**, user-document RAG, or knowledge-base lookup via a **flat tool registry** (no nested checkpoint hop). Optional checkpoint analysis (coverage, DIY, service, cost) runs inside the pipeline when `checkpoint_optional_agents` is set. Structured output is emitted as `state_delta` patches for the proxy to persist as `contentJson` + `contentMarkdown` on Firestore messages.
+The **property agent** (`property_agent`) is the root orchestrator: it resolves each turn (`resolve_turn_llm`), then the orchestrator LLM invokes **`run_checkpoint_pipeline`** or user-document RAG via a **flat tool registry** (no nested checkpoint hop). Optional checkpoint analysis (coverage, DIY, service, cost) runs inside the pipeline when `checkpoint_optional_agents` is set. Structured output is emitted as `state_delta` patches for the proxy to persist as `contentJson` + `contentMarkdown` on Firestore messages.
 
 ### Sub-Agents (leaf modules and checkpoint pipeline)
 
 - **`run_checkpoint_pipeline`**: retrieval + optional coverage / DIY / service / cost + assembler + synthesis
 - **User Docs Agent**: RAG over user-uploaded documents (`context_doc_uris`)
-- **Knowledge Base Agent**: RAG over the shared corpus
 - **DIY / Service / Cost / Shopping**: Leaf agents invoked inside the checkpoint pipeline
 
 ## Key Features
@@ -47,7 +46,6 @@ The **property agent** (`property_agent`) is the root orchestrator: it resolves 
 ### Document & checkpoint context
 - **User documents**: Context via `context_doc_uris` and user-docs RAG
 - **Checkpoints**: Timeline and semantic search over property checkpoints
-- **Knowledge base**: General reference materials
 
 ### Comprehensive Research
 - **Internet Search**: Google Search integration for general information
@@ -95,7 +93,7 @@ The system accepts various input types:
 ### Processing Flow
 1. **Root routing**: `resolve_turn` → casual canned reply OR orchestrator LLM + flat tools
 2. **Checkpoint path**: `run_checkpoint_pipeline` — retrieval, optional parallel branches, assembler, synthesis
-3. **Docs / KB path**: `user_docs_retrieval` or `knowledge_base_retrieval`
+3. **Docs path**: `user_docs_retrieval`; general questions without docs/checkpoints → orchestrator markdown only (`route=none`)
 4. **Response**: Proxy merges `state_delta` into Firestore message (`contentMarkdown` + `contentJson`); clients render via `resolveMessageContentParts`
 
 ### Output Schema

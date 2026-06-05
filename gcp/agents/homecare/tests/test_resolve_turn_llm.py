@@ -61,6 +61,24 @@ def test_sanitize_casual_intent() -> None:
     assert out["run_optional_agents"] == []
 
 
+def test_sanitize_maps_legacy_knowledge_base_route_to_none() -> None:
+    out = _sanitize_llm_payload(
+        {
+            "intent": "substantive",
+            "route": "knowledge_base",
+            "expanded_user_query": "What does washer error E3 mean?",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+        },
+        user_query="What does washer error E3 mean?",
+    )
+    assert out is not None
+    assert out["intent"] == "substantive"
+    assert out["route"] == "none"
+    assert out["retrieval_only"] is True
+    assert out["user_goal"] == "answer_from_context"
+
+
 def test_sanitize_coerces_retrieval_only_on_interpretive_follow_up() -> None:
     state = {"checkpoint_last_response_kind": "analysis"}
     out = _sanitize_llm_payload(

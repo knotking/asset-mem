@@ -38,7 +38,6 @@ _BLOCKED_ROUTING_TOOLS_ON_CASUAL = frozenset(
     {
         "run_checkpoint_pipeline",
         "user_docs_retrieval",
-        "knowledge_base_retrieval",
     }
 )
 

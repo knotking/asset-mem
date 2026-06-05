@@ -39,7 +39,7 @@ The GCP directory contains a comprehensive AI-powered property care system built
 │  │                    Property Agent (Root Orchestrator)            │  │
 │  │  ┌────────────────────────────────────────────────────────────┐  │  │
 │  │  │  Single orchestrator LLM + flat tool registry              │  │  │
-│  │  │  Tools: run_checkpoint_pipeline | user_docs | knowledge_base│  │  │
+│  │  │  Tools: run_checkpoint_pipeline | user_docs                  │  │  │
 │  │  │  Checkpoint pipeline: retrieval → parallel branches →       │  │  │
 │  │  │    assembler (contentJson) → synthesis (contentMarkdown)    │  │  │
 │  │  └────────────────────────────────────────────────────────────┘  │  │
@@ -102,7 +102,7 @@ A sophisticated multi-agent AI system deployed on Vertex AI Reasoning Engine tha
 1. **Casual** (greeting, capabilities, thanks): canned reply before orchestrator
 2. **Follow-up** from prior analysis: orchestrator answers from session memory / prior message `contentJson` digests — markdown only
 3. **New checkpoint work:** orchestrator calls **`run_checkpoint_pipeline`** (retrieval + optional parallel branches + assembler + synthesis)
-4. **`route=user_docs` / `knowledge_base`:** `user_docs_retrieval` / `knowledge_base_retrieval` AgentTools
+4. **`route=user_docs`:** `user_docs_retrieval` AgentTool; **`route=none` (substantive):** orchestrator markdown only
 5. Client `primary_agent`, `checkpoint_ids`, and UI optional toggles are **context** for resolve, not sole routing authority
 
 See [`gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`](../agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md) for the canonical V2 contract.
@@ -135,10 +135,6 @@ class DiagnosisInput(BaseModel):
 2. **`user_docs_retrieval`** (`agents/user_docs_agent/` — `AgentTool`)
    - Vertex AI RAG over the user upload corpus
    - Scoped by `context_doc_uris` when provided (includes chat attachments)
-
-3. **`knowledge_base_retrieval`** (`agents/knowledge_base_agent/` — `AgentTool`)
-   - Vertex AI RAG over the shared reference corpus
-   - Used when no user documents apply to the query
 
 **Tool selection:** Orchestrator instructions in `property_agent/prompts.py`; resolve output in session state guides casual vs follow-up vs new analysis.
 
@@ -360,7 +356,7 @@ Supplemental ops (DLQ, alert policies) use `gcloud` or workflow steps documented
    └─> Resolve turn → canned reply OR orchestrator LLM + flat tools
 
 4. Orchestrator tools
-   └─> run_checkpoint_pipeline | user_docs_retrieval | knowledge_base_retrieval
+   └─> run_checkpoint_pipeline | user_docs_retrieval
        └─> Checkpoint path: retrieval → parallel branches → assembler → synthesis
            └─> state_delta patches (contentJson, contentMarkdown, agentSteps)
 
@@ -487,7 +483,6 @@ Supplemental ops (DLQ, alert policies) use `gcloud` or workflow steps documented
 - `GOOGLE_CLOUD_PROJECT` - GCP project ID
 - `GOOGLE_CLOUD_LOCATION` - GCP region
 - `AGENT_ENGINE_ID` - Reasoning Engine resource name
-- `KNOWLEDGE_BASE_RAG_CORPUS` - Knowledge base corpus resource name
 - `USER_UPLOAD_RAG_CORPUS` - User documents corpus resource name
 - `GCS_BUCKET` - Storage bucket name
 - `USER_UPLOAD_FOLDER` - Upload folder path

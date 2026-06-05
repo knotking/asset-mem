@@ -19,8 +19,7 @@ property_agent (root orchestrator)
 ├── before_model: casual canned OR resolve_turn
 ├── run_checkpoint_pipeline (FunctionTool)     # retrieval + optional branches + assembler
 │       └── checkpoint/analysis/               # parallel_runner, assembler, synthesis
-├── AgentTool(user_docs_agent)
-└── AgentTool(knowledge_base_agent)
+└── AgentTool(user_docs_agent)
 ```
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for layer rules and import matrix.
