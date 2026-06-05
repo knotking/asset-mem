@@ -5,23 +5,20 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from utils import normalize_import_result_counts
+
 logger = logging.getLogger(__name__)
 
 
 def _counts_from_branch(branch_result: Any) -> dict[str, int]:
     if branch_result is None:
         return {"imported": 0, "failed": 0, "skipped": 0}
-    if isinstance(branch_result, dict):
-        data = branch_result
-    elif hasattr(branch_result, "to_dict"):
-        data = branch_result.to_dict()
-    else:
-        return {"imported": 0, "failed": 0, "skipped": 0}
 
+    data = normalize_import_result_counts(branch_result)
     return {
-        "imported": int(data.get("imported_rag_files_count") or 0),
-        "failed": int(data.get("failed_rag_files_count") or 0),
-        "skipped": int(data.get("skipped_rag_files_count") or 0),
+        "imported": data.get("imported_rag_files_count", 0),
+        "failed": data.get("failed_rag_files_count", 0),
+        "skipped": data.get("skipped_rag_files_count", 0),
     }
 
 
