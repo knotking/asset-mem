@@ -7,7 +7,7 @@ Four-step checklist on the properties home screen. Step logic: `@homeapp/common/
 1. **Add property** — at least one property exists.
 2. **Upload** — onboarding property has `docs > 0` (Firestore doc count on mapp; document list length on web).
 3. **Checkpoint** — onboarding property has `checks > 0` (checkpoint subcollection count).
-4. **Chat** — user tapped **Open AI Chat** from the checklist. `onboardingChatOpened` is written after the chat screen/tab is shown (via `fromOnboardingChecklist` route param), so the home checklist does not vanish mid-navigation.
+4. **Chat** — user tapped **Open AI Chat** from the checklist. On landing (via `fromOnboardingChecklist` route param), the param is cleared immediately and `onboardingChatOpened` is written in the background so other property tabs stay responsive.
 
 ## Onboarding property
 

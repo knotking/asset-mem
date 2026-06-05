@@ -26,17 +26,20 @@ export default function NewChatRedirectPage() {
     const fromOnboardingChecklist =
       searchParams.get(ONBOARDING_CHAT_OPEN_PARAM) === '1';
 
-    const tryCreateAndRedirect = async () => {
+    const tryCreateAndRedirect = async (cancelled: () => boolean) => {
         if (!user || !propertyId) {
-            if(!propertyId) router.replace('/home');
+            if(!propertyId && !cancelled()) router.replace('/home');
             return;
         };
 
-        setCreationError(false);
+        if (!cancelled()) {
+            setCreationError(false);
+        }
 
         const propertyDraft = draftsByProperty[propertyId];
 
         if (propertyDraft) {
+            if (cancelled()) return;
             const onboardingQuery = fromOnboardingChecklist
               ? `?${ONBOARDING_CHAT_OPEN_PARAM}=1`
               : '';
@@ -46,6 +49,7 @@ export default function NewChatRedirectPage() {
         } else {
             // The draft might not exist yet. Attempt to create it.
             const newSessionId = await createPropertyDraftSession(user.uid, propertyId);
+            if (cancelled()) return;
             if (!newSessionId) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Could not create a new chat session. Please try again.' });
                 setCreationError(true);
@@ -57,7 +61,11 @@ export default function NewChatRedirectPage() {
 
     useEffect(() => {
         if (authPending || !user) return;
-        tryCreateAndRedirect();
+        let cancelled = false;
+        void tryCreateAndRedirect(() => cancelled);
+        return () => {
+            cancelled = true;
+        };
     }, [user, propertyId, draftsByProperty, authPending]);
 
     if (authPending || !user) {
@@ -70,7 +78,7 @@ export default function NewChatRedirectPage() {
                 <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Failed to Start Chat</h2>
                 <p className="text-muted-foreground mb-6">We couldn't create a new chat session. Please check your connection and try again.</p>
-                <Button onClick={tryCreateAndRedirect}>
+                <Button onClick={() => void tryCreateAndRedirect(() => false)}>
                     Retry
                 </Button>
             </div>
