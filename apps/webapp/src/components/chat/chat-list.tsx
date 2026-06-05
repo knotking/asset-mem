@@ -15,7 +15,7 @@ import {
   getSuggestedPrompts,
 } from '@/lib/feature-discovery';
 import { buildSuppressRepeatedContextRefsByMessageId } from '@/lib/chat-message-context-refs';
-import { hasUserMessageBefore } from '@homeapp/common/lib/sort-messages';
+import { hasUserMessageBefore } from '@/lib/sort-messages';
 
 type Props = {
   messages: Message[];

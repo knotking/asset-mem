@@ -37,7 +37,7 @@ import {
   PropertyChatComposer,
   type PropertyChatComposerHandle,
 } from "@/components/chat/property-chat-with-context";
-import { sortMessagesChronologically } from "@homeapp/common/lib/sort-messages";
+import { sortMessagesChronologically } from "@/lib/sort-messages";
 
 const chatLog = createLogger("chat");
 
