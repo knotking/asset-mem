@@ -73,7 +73,6 @@ def test_before_tool_blocks_run_checkpoint_pipeline_when_conversational() -> Non
     "tool_name",
     [
         "user_docs_retrieval",
-        "knowledge_base_retrieval",
     ],
 )
 def test_before_tool_blocks_routing_tools_when_resolved_casual(tool_name: str) -> None:
@@ -139,7 +138,6 @@ def test_fail_closed_skips_substantive_query() -> None:
     "tool_name",
     [
         "run_checkpoint_pipeline",
-        "knowledge_base_retrieval",
         "user_docs_retrieval",
     ],
 )
@@ -183,8 +181,8 @@ def test_before_tool_allows_pipeline_when_fresh_retrieval_requested() -> None:
     assert result is None
 
 
-def test_before_tool_blocks_kb_on_checkpoint_memory_follow_up() -> None:
-    tool = SimpleNamespace(name="knowledge_base_retrieval")
+def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
+    tool = SimpleNamespace(name="user_docs_retrieval")
     tool_context = MagicMock()
     tool_context.state = {
         "user_query": "Are there issues in the kitchen?",
@@ -235,7 +233,7 @@ def test_before_tool_allows_user_docs_on_user_docs_route() -> None:
     assert result is None
 
 
-def test_before_tool_blocks_kb_after_prune_when_snapshot_has_providers() -> None:
+def test_before_tool_blocks_user_docs_after_prune_when_snapshot_has_providers() -> None:
     provider = "Ace Handyman Services Brentwood"
     state = {
         "user_query": f"get me more details on {provider}",
@@ -253,7 +251,7 @@ def test_before_tool_blocks_kb_after_prune_when_snapshot_has_providers() -> None
         "user_goal": "answer_from_context",
         "query_mode": "interpret_session",
     }
-    tool = SimpleNamespace(name="knowledge_base_retrieval")
+    tool = SimpleNamespace(name="user_docs_retrieval")
     tool_context = MagicMock()
     tool_context.state = state
 

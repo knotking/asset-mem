@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal, Optional
 
-RouteKind = Literal["none", "checkpoint", "user_docs", "knowledge_base"]
+RouteKind = Literal["none", "checkpoint", "user_docs"]
 IntentKind = Literal["greeting", "capabilities", "acknowledgment", "substantive"]
 UserGoalKind = Literal["answer_from_context", "new_analysis", "replay_deliverable"]
 QueryModeKind = Literal[

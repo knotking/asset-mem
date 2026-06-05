@@ -136,7 +136,6 @@ GOOGLE_CLOUD_LOCATION=us-central1
 GOOGLE_GENAI_USE_VERTEXAI=1
 
 # RAG Corpus
-KNOWLEDGE_BASE_RAG_CORPUS=projects/PROJECT_NUMBER/locations/us-central1/ragCorpora/CORPUS_ID
 USER_UPLOAD_RAG_CORPUS=projects/PROJECT_NUMBER/locations/us-central1/ragCorpora/USER_CORPUS_ID
 
 # Storage
@@ -212,7 +211,6 @@ dependencies = [
 - `GCS_BUCKET`
 - `USER_UPLOAD_FOLDER`
 - `USER_UPLOAD_RAG_CORPUS`
-- `KNOWLEDGE_BASE_RAG_CORPUS`
 - `USER_UPLOAD_TOPIC`
 - `WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT_EMAIL`
@@ -320,11 +318,6 @@ gcloud ai reasoning-engines update REASONING_ENGINE_ID \
 ### Create RAG Corpus
 
 ```bash
-# Create knowledge base corpus
-gcloud ai rag-corpora create \
-  --display-name="homecare-knowledge-base" \
-  --region=us-central1
-
 # Create user upload corpus
 gcloud ai rag-corpora create \
   --display-name="homecare-user-uploads" \
@@ -599,8 +592,7 @@ gcloud secrets versions add serp-api-key --data-file=-
 - Keep staging and prod in sync
 
 ### 2. RAG Management
-- Regularly update knowledge base
-- Remove outdated documents
+- Remove outdated user-upload documents
 - Monitor RAG performance
 - Optimize chunk parameters
 

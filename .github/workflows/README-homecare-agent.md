@@ -17,7 +17,7 @@ Before using this action, ensure you have:
 2.  **Service Account**: A service account with the necessary permissions to deploy and manage Vertex AI Agent Engines and other GCP resources (e.g., Cloud Storage, Pub/Sub, Vertex AI RAG). The service account email will be dynamically set based on the environment.
 3.  **Workload Identity Federation**: Set up Workload Identity Federation between your GitHub repository and your GCP projects for both staging and production. You will need to replace the placeholder `workload_identity_provider` value in the workflow with your actual provider ID.
 4.  **Google Cloud Storage Buckets**: Ensure the necessary staging buckets for the agent engine and user data buckets exist in both your staging and production projects, with appropriate environment suffixes.
-5.  **Vertex AI RAG Corpora**: Ensure the user upload and knowledge base RAG Corpora exist in both your staging and production projects.
+5.  **Vertex AI RAG Corpus**: Ensure the user-upload RAG corpus exists in both your staging and production projects.
 6.  **Pub/Sub Topics**: Ensure the `user-upload-topic` exists in both your staging and production projects, with appropriate environment suffixes.
 7.  **GitHub Secrets**: The following secrets must be configured in your GitHub repository:
     - `STAGING_SERP_API_KEY`: SerpAPI key for the staging environment.
@@ -36,7 +36,6 @@ The following environment variables are set for the deployment script, dynamical
 - `GOOGLE_CLOUD_BUCKET`: The GCS bucket for user data.
 - `USER_UPLOAD_FOLDER`: The folder within the GCS bucket for user uploads.
 - `USER_UPLOAD_RAG_CORPUS`: The full path to the Vertex AI RAG Corpus for user uploads.
-- `KNOWLEDGE_BASE_RAG_CORPUS`: The full path to the Vertex AI RAG Corpus for the knowledge base.
 - `USER_UPLOAD_TOPIC`: The Pub/Sub topic for user uploads.
 - `SERP_API_KEY`: (From GitHub Secret) SerpAPI key.
 - ``: (From GitHub Secret) SerpAPI key.

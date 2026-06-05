@@ -24,7 +24,7 @@ Creates a new environment with all required GCP infrastructure.
 - Storage Buckets (with versioning, lifecycle, CORS)
 - Pub/Sub Topics and Subscriptions
 - Pub/Sub dead letter topic `worker-dlq-{ENV}` (via `apply-pubsub-dlq.sh`)
-- RAG Corpora (2 separate: user-upload and knowledge-base)
+- RAG Corpus (user-upload)
 - GitHub Environment with all variables
 
 #### [apply-operations-config.yaml](apply-operations-config.yaml)
@@ -248,7 +248,6 @@ After running `create-environment.yaml`, these variables are automatically set:
 | `USER_UPLOAD_TOPIC` | Pub/Sub topic for uploads |
 | `USER_UPLOAD_RESULT_TOPIC` | Pub/Sub topic for results |
 | `USER_UPLOAD_RAG_CORPUS` | RAG corpus for user uploads |
-| `KNOWLEDGE_BASE_RAG_CORPUS` | RAG corpus for knowledge base |
 | `REASONING_ENGINE_ID` | Set to "new" initially |
 
 ## Prerequisites

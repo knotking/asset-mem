@@ -82,19 +82,15 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │  │   │          │                                   │   │  3. Metrics Worker   │   │   │
 │  │   │   ┌──────┴──────┐                           │   └──────────┬───────────┘   │   │
 │  │   │   ▼             ▼                           │              │               │   │
-│  │   │ ┌──────────┐ ┌─────────────────┐            │              │               │   │
-│  │   │ │CHECKPOINT│ │KNOWLEDGE BASE   │            │              │               │   │
-│  │   │ │ AGENT    │ │  AGENT          │            │              │               │   │
-│  │   │ │          │ │                 │            │              │               │   │
-│  │   │ │Timeline  │ │General          │            │              │               │   │
-│  │   │ │Queries + │ │RAG Corpus       │            │              │               │   │
-│  │   │ │Analysis* │ │                 │            │              │               │   │
-│  │   │ └────┬─────┘ └────────┬────────┘            │              │               │   │
-│  │   │      │                │                     │              │               │   │
-│  │   │      │  ┌─────────────┴──────┐              │              │               │   │
-│  │   │      │  │   USER DOCS AGENT  │              │              │               │   │
-│  │   │      │  │   (User Uploads)   │              │              │               │   │
-│  │   │      │  └────────────────────┘              │              │               │   │
+│  │   │ ┌──────────┐ ┌────────────────────┐          │              │               │   │
+│  │   │ │CHECKPOINT│ │   USER DOCS AGENT  │          │              │               │   │
+│  │   │ │ AGENT    │ │   (User Uploads)   │          │              │               │   │
+│  │   │ │          │ │                    │          │              │               │   │
+│  │   │ │Timeline  │ │ User-upload RAG    │          │              │               │   │
+│  │   │ │Queries + │ │                    │          │              │               │   │
+│  │   │ │Analysis* │ │                    │          │              │               │   │
+│  │   │ └────┬─────┘ └─────────┬──────────┘          │              │               │   │
+│  │   │      │                 │                     │              │               │   │
 │  │   │      │                                      │              │               │   │
 │  │   │      ▼ run_checkpoint_pipeline (tool)      │              │               │   │
 │  │   │   ┌────────────────────────────────┐       │              │               │   │
@@ -109,13 +105,13 @@ A visual representation of the HomeApp platform architecture, showing the relati
 │  │   ┌─────────────────────────────────────────────────────────────────────────┐   │   │
 │  │   │                        VERTEX AI RAG ENGINE                             │   │   │
 │  │   │                                                                         │   │   │
-│  │   │   ┌────────────────────────┐    ┌────────────────────────────────┐     │   │   │
-│  │   │   │   User Upload Corpus   │◄───│   Knowledge Base Corpus        │     │   │   │
-│  │   │   │                        │    │                                │     │   │   │
-│  │   │   │   • Property docs      │    │   • Home maintenance guides    │     │   │   │
-│  │   │   │   • User manuals       │    │   • Repair instructions        │     │   │   │
-│  │   │   │   • Receipts           │    │   • Product information        │     │   │   │
-│  │   │   └────────────────────────┘    └────────────────────────────────┘     │   │   │
+│  │   │   ┌────────────────────────┐                                           │   │   │
+│  │   │   │   User Upload Corpus   │                                           │   │   │
+│  │   │   │                        │                                           │   │   │
+│  │   │   │   • Property docs      │                                           │   │   │
+│  │   │   │   • User manuals       │                                           │   │   │
+│  │   │   │   • Receipts           │                                           │   │   │
+│  │   │   └────────────────────────┘                                           │   │   │
 │  │   │                                                                         │   │   │
 │  │   └─────────────────────────────────────────────────────────────────────────┘   │   │
 │  │                                                                                  │   │
@@ -204,34 +200,34 @@ A visual representation of the HomeApp platform architecture, showing the relati
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                         ORCHESTRATOR LLM + FLAT TOOLS                             │
 │                                                                                   │
-│   Tools: run_checkpoint_pipeline | user_docs_retrieval | knowledge_base_retrieval │
+│   Tools: run_checkpoint_pipeline | user_docs_retrieval                              │
 │                                                                                   │
 │   IF new checkpoint analysis:                                                     │
 │     run_checkpoint_pipeline → retrieval → parallel branches → assembler           │
 │       → synthesis → state_delta (contentJson + contentMarkdown)                   │
 │   ELIF route=user_docs OR context_doc_uris:                                       │
 │     user_docs_retrieval                                                           │
-│   ELIF route=knowledge_base:                                                      │
-│     knowledge_base_retrieval                                                      │
+│   ELIF route=none (substantive):                                                  │
+│     orchestrator markdown only (no retrieval tool)                                  │
 │                                                                                   │
-│        │              │                │                                          │
-│        ▼              ▼                ▼                                          │
-│  ┌────────────┐ ┌───────────┐ ┌─────────────┐                                    │
-│  │ Checkpoint │ │ User Docs │ │ Knowledge   │                                    │
-│  │  pipeline  │ │   RAG     │ │ Base RAG    │                                    │
-│  └─────┬──────┘ └─────┬─────┘ └──────┬──────┘                                    │
-└────────┼──────────────┼──────────────┼────────────────────────────────────────────┘
-         │              │              │
-         ▼              ▼              ▼
+│        │              │                                                           │
+│        ▼              ▼                                                           │
+│  ┌────────────┐ ┌───────────┐                                                    │
+│  │ Checkpoint │ │ User Docs │                                                    │
+│  │  pipeline  │ │   RAG     │                                                    │
+│  └─────┬──────┘ └─────┬─────┘                                                    │
+└────────┼──────────────┼──────────────────────────────────────────────────────────┘
+         │              │
+         ▼              ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                            VERTEX AI RAG ENGINE                                  │
 │                                                                                  │
-│   ┌────────────────────────────┐      ┌────────────────────────────────┐        │
-│   │    User Upload Corpus      │      │    Knowledge Base Corpus       │        │
-│   │                            │      │                                │        │
-│   │  Filtered by matching      │      │  General home maintenance      │        │
-│   │  context_doc_uris          │      │  and repair information        │        │
-│   └────────────────────────────┘      └────────────────────────────────┘        │
+│   ┌────────────────────────────┐                                                 │
+│   │    User Upload Corpus      │                                                 │
+│   │                            │                                                 │
+│   │  Filtered by matching      │                                                 │
+│   │  context_doc_uris          │                                                 │
+│   └────────────────────────────┘                                                 │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```

@@ -1,6 +1,6 @@
 ---
 name: run-homecare-agent
-description: Run, evaluate, customize, or deploy the Vertex AI multi-agent system under gcp/agents/homecare. Use whenever the user asks about the property/analysis/checkpoint/diy/coverage/service/shopping/cost/user_docs/knowledge_base agents, ADK, RAG corpus prep, or anything in the gcp/agents/ tree.
+description: Run, evaluate, customize, or deploy the Vertex AI multi-agent system under gcp/agents/homecare. Use whenever the user asks about the property/analysis/checkpoint/diy/coverage/service/shopping/cost/user_docs agents, ADK, RAG corpus prep, or anything in the gcp/agents/ tree.
 ---
 
 # Working with the homecare ADK agent
@@ -13,7 +13,6 @@ The agent lives at `gcp/agents/homecare/` and is built on Google's Agent Develop
 
 - `run_checkpoint_pipeline` — Firestore vector retrieval, optional parallel coverage / DIY / service / cost analysis, deterministic `contentJson` assembly, synthesis markdown; emits `state_delta` patches
 - `user_docs_retrieval` — RAG over user uploads (`context_doc_uris`)
-- `knowledge_base_retrieval` — RAG over the shared corpus
 - Leaf agents (`diy_agent`, `service_agent`, `cost_agent`, `shopping_agent`) — invoked inside the checkpoint pipeline, not as root routes
 
 Tool registration: `property_agent/registry.py` + `manifest.py`. Canonical V2 contract: `gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md`.
@@ -29,7 +28,7 @@ make setup           # installs uv if needed, runs `uv sync`, copies .env.exampl
 
 Edit `.env` and set:
 - `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` (e.g. `us-central1`)
-- `RAG_CORPUS=projects/<num>/locations/us-central1/ragCorpora/<id>` — required for the user_docs / knowledge_base agents
+- `USER_UPLOAD_RAG_CORPUS=projects/<num>/locations/us-central1/ragCorpora/<id>` — required for the user_docs agent
 - `AGENT_ENGINE_ID=...` — auto-filled after first `make deploy`
 - API keys used by sub-agents (SerpAPI, YouTube, etc. — see `.env.example`)
 

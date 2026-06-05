@@ -184,7 +184,6 @@ Details: [.github/workflows/README-deploy-orchestrator.md](../../.github/workflo
 - `GCS_BUCKET`
 - `USER_UPLOAD_FOLDER`
 - `USER_UPLOAD_RAG_CORPUS`
-- `KNOWLEDGE_BASE_RAG_CORPUS`
 - `USER_UPLOAD_TOPIC`
 - ``
 - `WORKLOAD_IDENTITY_PROVIDER`
@@ -372,7 +371,7 @@ Set these in GitHub repository → Settings → Secrets and variables → Action
 - `PYTHON_VERSION` - Python version (3.9)
 - `AGENT_STAGING_BUCKET` - GCS bucket for agent staging
 - `REASONING_ENGINE_ID` - Vertex AI Reasoning Engine ID
-- `KNOWLEDGE_BASE_RAG_CORPUS` - RAG corpus for knowledge base
+ - RAG corpus for knowledge base
 - `USER_UPLOAD_RAG_CORPUS` - RAG corpus for user uploads
 
 **Storage and Messaging**:

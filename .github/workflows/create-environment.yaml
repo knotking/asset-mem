@@ -247,7 +247,6 @@ jobs:
       checkpoint_metrics_topic: ${{ steps.pubsub.outputs.checkpoint_metrics_topic }}
       document_analysis_topic: ${{ steps.pubsub.outputs.document_analysis_topic }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
-      knowledge_base_rag_corpus: ${{ steps.rag.outputs.knowledge_base_rag_corpus }}
       apphosting_backend_id: ${{ steps.apphosting.outputs.backend_id }}
       apphosting_backend_url: ${{ steps.apphosting.outputs.backend_url }}
     steps:
@@ -1373,50 +1372,6 @@ jobs:
             fi
           fi
 
-          # Check for existing Knowledge Base RAG Corpus
-          echo "Checking for existing Knowledge Base RAG corpus..."
-          KB_DISPLAY_NAME="knowledge-base-rag-corpus-${ENV}"
-
-          KNOWLEDGE_BASE_CORPUS=$(echo "$EXISTING_CORPORA" | jq -r ".ragCorpora[]? | select(.displayName==\"$KB_DISPLAY_NAME\") | .name" 2>/dev/null || echo "")
-
-          if [ -n "$KNOWLEDGE_BASE_CORPUS" ] && [ "$KNOWLEDGE_BASE_CORPUS" != "null" ]; then
-            echo "✓ Knowledge base RAG corpus already exists: $KNOWLEDGE_BASE_CORPUS"
-            echo "knowledge_base_rag_corpus=$KNOWLEDGE_BASE_CORPUS" >> $GITHUB_OUTPUT
-          else
-            echo "Creating Knowledge Base RAG corpus..."
-            KNOWLEDGE_BASE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
-              -H "$AUTH_HEADER" \
-              -H "Content-Type: application/json" \
-              "$BASE_URL" \
-              -d "{
-                \"displayName\": \"$KB_DISPLAY_NAME\",
-                \"description\": \"Knowledge base RAG corpus for ${ENV} environment\"
-              }" 2>&1) || true
-
-            # Extract HTTP code and body
-            KB_HTTP_CODE=$(echo "$KNOWLEDGE_BASE_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
-            KB_RESPONSE_BODY=$(echo "$KNOWLEDGE_BASE_RESPONSE" | sed '/HTTP_CODE:/d')
-
-            echo "API Response Status: $KB_HTTP_CODE"
-
-            # Only try to parse JSON if we got a 200 response
-            if [ "$KB_HTTP_CODE" = "200" ] || [ "$KB_HTTP_CODE" = "201" ]; then
-              KNOWLEDGE_BASE_CORPUS=$(echo "$KB_RESPONSE_BODY" | jq -r '.name // empty' 2>/dev/null)
-              if [ -n "$KNOWLEDGE_BASE_CORPUS" ] && [ "$KNOWLEDGE_BASE_CORPUS" != "null" ]; then
-                echo "✓ Knowledge base RAG corpus created: $KNOWLEDGE_BASE_CORPUS"
-                echo "knowledge_base_rag_corpus=$KNOWLEDGE_BASE_CORPUS" >> $GITHUB_OUTPUT
-              else
-                echo "⚠️ Could not extract corpus name from response"
-                echo "Response: $KB_RESPONSE_BODY"
-                echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "⚠️ Knowledge base RAG corpus creation failed with HTTP $KB_HTTP_CODE"
-              echo "Response: $KB_RESPONSE_BODY"
-              echo "knowledge_base_rag_corpus=placeholder" >> $GITHUB_OUTPUT
-            fi
-          fi
-
           # Grant RAG service account access to storage (only if at least one corpus was created)
           if [ -n "$USER_UPLOAD_CORPUS" ] && [ "$USER_UPLOAD_CORPUS" != "null" ] && [ "$USER_UPLOAD_CORPUS" != "placeholder" ]; then
             echo "Granting RAG service account storage permissions..."
@@ -1440,7 +1395,7 @@ jobs:
             # Create custom role for RAG access (applies to all RAG corpora in project)
             ROLE_ID="ragCorpusAccessRole"
             ROLE_TITLE="RAG Corpus Access Role"
-            ROLE_DESCRIPTION="Custom role with permissions to access all RAG corpora (user upload and knowledge base)"
+            ROLE_DESCRIPTION="Custom role with permissions to access user-upload RAG corpora"
             PERMISSIONS="aiplatform.ragCorpora.get,aiplatform.ragCorpora.query,aiplatform.ragFiles.get,aiplatform.ragFiles.list"
 
             # Check if custom role exists
@@ -1644,7 +1599,6 @@ jobs:
           # RAG and Agent configuration
           set_var_if_not_exists "REASONING_ENGINE_ID" "new"
           set_or_update_var "USER_UPLOAD_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}"
-          set_or_update_var "KNOWLEDGE_BASE_RAG_CORPUS" "${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}"
 
           # Agent and app-specific variables (set to defaults, can be updated manually)
           set_or_update_var "AGENT_STAGING_BUCKET" "gs://homegeek-agent-${{ inputs.environment_name }}"
@@ -1698,7 +1652,6 @@ jobs:
           # RAG and Agent Configuration
           REASONING_ENGINE_ID=new
           USER_UPLOAD_RAG_CORPUS=${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}
-          KNOWLEDGE_BASE_RAG_CORPUS=${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}
 
           # Agent and App-specific Variables
           AGENT_STAGING_BUCKET=gs://homegeek-agent-${{ inputs.environment_name }}
@@ -1797,7 +1750,6 @@ jobs:
           | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |
-          | \`KNOWLEDGE_BASE_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.knowledge_base_rag_corpus }}\` |
           | \`AGENT_STAGING_BUCKET\` | \`gs://homegeek-agent-${{ inputs.environment_name }}\` |
           | \`EXPO_ACCOUNT\` | \`homegeekai\` |
           | \`WEBAPP_GCP_PROJECT_ID\` | \`${{ needs.resolve-inputs.outputs.gcp_project_id }}\` |

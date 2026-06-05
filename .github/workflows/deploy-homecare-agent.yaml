@@ -88,10 +88,6 @@ jobs:
             missing_vars+=("USER_UPLOAD_RAG_CORPUS")
           fi
 
-          if [ -z "${{ vars.KNOWLEDGE_BASE_RAG_CORPUS }}" ]; then
-            missing_vars+=("KNOWLEDGE_BASE_RAG_CORPUS")
-          fi
-
           if [ -z "${{ vars.USER_UPLOAD_TOPIC }}" ]; then
             missing_vars+=("USER_UPLOAD_TOPIC")
           fi
@@ -156,7 +152,6 @@ jobs:
           echo "GOOGLE_CLOUD_BUCKET=${{ vars.GCS_BUCKET }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_FOLDER=${{ vars.USER_UPLOAD_FOLDER }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_RAG_CORPUS=${{ vars.USER_UPLOAD_RAG_CORPUS }}" >> $GITHUB_ENV
-          echo "KNOWLEDGE_BASE_RAG_CORPUS=${{ vars.KNOWLEDGE_BASE_RAG_CORPUS }}" >> $GITHUB_ENV
           echo "USER_UPLOAD_TOPIC=${{ vars.USER_UPLOAD_TOPIC }}" >> $GITHUB_ENV
           echo "SERP_API_KEY=${{ secrets.SERP_API_KEY }}" >> $GITHUB_ENV
           if [ -n "${{ secrets.YOUTUBE_API_KEY }}" ]; then

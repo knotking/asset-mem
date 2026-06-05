@@ -142,7 +142,9 @@ def sanitize_llm_payload(data: dict[str, Any], *, user_query: str, state: Mappin
     if intent in CASUAL_INTENTS:
         return {"intent": intent, "route": "none", "expanded_user_query": expanded, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context", "menu_index": None, "capability_key": None}
     route = data.get("route")
-    if route not in ("checkpoint", "user_docs", "knowledge_base"):
+    if route == "knowledge_base":
+        route = "none"
+    elif route not in ("checkpoint", "user_docs", "none"):
         route = "checkpoint"
     cap = data.get("capability_key")
     if cap is not None and cap not in DEFAULT_CAPABILITY_OPTIONS:
@@ -156,7 +158,9 @@ def sanitize_llm_payload(data: dict[str, Any], *, user_query: str, state: Mappin
     payload: dict[str, Any] = {"intent": "substantive", "route": route, "expanded_user_query": expanded, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context", "menu_index": menu_index, "capability_key": cap}
     if route == "checkpoint":
         payload = apply_checkpoint_retrieval_plan(payload, user_query=user_query, state=state or {})
-    elif route in ("user_docs", "knowledge_base"):
+    elif route == "user_docs":
+        payload = {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
+    elif route == "none":
         payload = {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
     return payload
 

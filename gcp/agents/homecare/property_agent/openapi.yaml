@@ -11,7 +11,6 @@ info:
     **Root executor tools (3):**
     - `run_checkpoint_pipeline` — retrieval + optional coverage/DIY/service/cost + assembler + synthesis
     - `user_docs_retrieval` — user document RAG (`context_doc_uris`)
-    - `knowledge_base_retrieval` — shared corpus RAG
     
     **Inside `run_checkpoint_pipeline` (not root-routable):**
     - Checkpoint retrieval (Firestore vector search)
@@ -437,16 +436,6 @@ components:
       example:
         user_docs_result: "Warranty covers parts for 5 years from purchase date. See section 3.2 of warranty document."
 
-    KnowledgeBaseAgentOutput:
-      type: object
-      properties:
-        knowledge_base_results:
-          type: string
-          description: Retrieved information from knowledge base RAG corpus.
-      description: Knowledge Base Agent output - retrieval results from general knowledge base.
-      example:
-        knowledge_base_results: "The E3 error code indicates an unbalanced load. See manual section 4.2 for troubleshooting steps."
-
     Product:
       type: object
       properties:
@@ -855,7 +844,7 @@ components:
       properties:
         source:
           type: string
-          enum: [user_documents, knowledge_base]
+          enum: [user_documents]
           description: Origin of the retrieval results.
         result:
           type: string
@@ -1053,7 +1042,7 @@ components:
 
   # ============================================================================
   # Root property_agent (single-hop executor)
-  #   Tools: run_checkpoint_pipeline, user_docs_retrieval, knowledge_base_retrieval
+  #   Tools: run_checkpoint_pipeline, user_docs_retrieval
   #   Optional branches (coverage|diy|service|cost) run inside run_checkpoint_pipeline
   # See property_agent/README.md and prompts.py for routing details.
 

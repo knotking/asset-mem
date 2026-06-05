@@ -26,23 +26,11 @@ def _user_docs_tool():
     return AgentTool(user_docs_agent)
 
 
-def _knowledge_base_tool():
-    from google.adk.tools.agent_tool import AgentTool
-
-    from property_agent.agents.knowledge_base_agent import knowledge_base_agent
-
-    return AgentTool(knowledge_base_agent)
-
-
 def _base_tool_specs() -> tuple[ToolSpec, ...]:
     return (
         ToolSpec(
             id="user_docs_retrieval",
             factory=_user_docs_tool,
-        ),
-        ToolSpec(
-            id="knowledge_base_retrieval",
-            factory=_knowledge_base_tool,
         ),
         ToolSpec(
             id="run_checkpoint_pipeline",

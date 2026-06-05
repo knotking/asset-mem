@@ -122,7 +122,6 @@ def main():
         "GOOGLE_CLOUD_BUCKET",
         "USER_UPLOAD_FOLDER",
         "USER_UPLOAD_RAG_CORPUS",
-        "KNOWLEDGE_BASE_RAG_CORPUS",
         "USER_UPLOAD_TOPIC",
         "SERP_API_KEY",
     ]

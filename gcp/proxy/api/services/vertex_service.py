@@ -80,7 +80,6 @@ def _reasoning_payload_summary(payload: Dict[str, Any]) -> str:
 
 _DISPLAY_NAME_MAP = {
     "diagnostic_agent": "Diagnosing the issue…",
-    "knowledge_base_retrieval": "Searching repair guides…",
     "user_docs_retrieval": "Searching your documents…",
     "analyse_multimodal_data": "Reviewing your photo or video…",
     "research_agent": "Researching options…",
@@ -582,7 +581,7 @@ def _checkpoint_preview(data: Dict[str, Any]) -> Optional[str]:
 
 
 def _docs_preview(data: Dict[str, Any]) -> Optional[str]:
-    # user_docs / knowledge_base outputs vary; surface a coarse signal.
+    # user_docs outputs vary; surface a coarse signal.
     root = _unwrap_analysis(data)
     if isinstance(root, dict):
         for key in ("documents", "results", "matches", "snippets", "passages"):
@@ -605,7 +604,6 @@ _PREVIEW_FORMATTERS: Dict[str, Callable[[Dict[str, Any]], Optional[str]]] = {
     "run_checkpoint_pipeline": _checkpoint_preview,
     "checkpoint_analysis_agent": _checkpoint_preview,
     "user_docs_retrieval": _docs_preview,
-    "knowledge_base_retrieval": _docs_preview,
 }
 
 
