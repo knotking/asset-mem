@@ -159,6 +159,14 @@ export default function PropertyChatSessionPage() {
     composerRef.current?.send(prompt);
   };
 
+  const handleSuggestedAction = (
+    action: import("@/lib/types").SuggestedAction
+  ) => {
+    composerRef.current?.send(action.userQuery, {
+      chatIntent: action.chatIntent,
+    });
+  };
+
   if (authPending || !user || isMessagesLoading || isDocsLoading) {
     return <ChatPageSkeleton />;
   }
@@ -171,6 +179,7 @@ export default function PropertyChatSessionPage() {
           isMessagesLoading={isMessagesLoading && messages.length === 0}
           context="property"
           onSelectSuggestedPrompt={handleSuggestedPrompt}
+          onSuggestedAction={handleSuggestedAction}
           isSendDisabled={isLoading}
         />
       </main>

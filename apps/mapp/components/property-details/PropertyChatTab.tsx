@@ -50,6 +50,9 @@ interface PropertyChatTabProps {
   isSending: boolean;
   onStop: () => void;
   onSend: (messages: IMessage[]) => void;
+  onSuggestedAction?: (
+    action: import('@homeapp/common/lib/suggested-actions').SuggestedAction
+  ) => void;
   onOpenAddContext: () => void;
   contextChipStrip?: React.ReactNode;
   sendBlockHint?: string | null;
@@ -72,6 +75,7 @@ function PropertyChatTab({
   isSending,
   onStop,
   onSend,
+  onSuggestedAction,
   onOpenAddContext,
   contextChipStrip,
   sendBlockHint,
@@ -145,6 +149,9 @@ function PropertyChatTab({
 
   const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
 
+  const onSuggestedActionRef = React.useRef(onSuggestedAction);
+  onSuggestedActionRef.current = onSuggestedAction;
+
   const renderBubble = React.useCallback(
     (props: BubbleProps<IMessage>) => {
       const messageId = String(props.currentMessage?._id ?? '');
@@ -155,10 +162,12 @@ function PropertyChatTab({
           priorAssistantTurnCount={priorAssistantTurnCountById.get(messageId) ?? 0}
           isActiveLoading={messageId === activeStreamingAssistantId}
           hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(messageId) ?? false}
+          onSuggestedAction={onSuggestedActionRef.current}
+          isSendDisabled={isSending}
         />
       );
     },
-    [priorAssistantTurnCountById, activeStreamingAssistantId, suppressRepeatedContextRefsById]
+    [priorAssistantTurnCountById, activeStreamingAssistantId, suppressRepeatedContextRefsById, isSending]
   );
 
   const renderChatEmpty = React.useCallback(() => {

@@ -180,7 +180,16 @@ export type DiyCostEstimatesSummary = {
   };
 };
 
+export type ChatIntentHint = "discuss_report" | "new_analysis" | "replay_report";
+
+export type SuggestedAction = {
+  label: string;
+  userQuery: string;
+  chatIntent?: ChatIntentHint;
+};
+
 export type StructuredResponseData = {
+  suggestedActions?: SuggestedAction[];
   // Top-level fields (for backward compatibility and flat structures)
   title?: string;
 

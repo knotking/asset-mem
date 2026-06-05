@@ -163,6 +163,25 @@ def is_greeting_like(normalized: str) -> bool:
     return _matches_any_phrase(normalized, GREETING_PHRASES)
 
 
+_CLOSURE_PHRASE_CATEGORIES = (
+    "thanks",
+    "closure",
+    "positive_reaction",
+    "app_reaction",
+    "understanding",
+)
+
+
+def is_closure_phrase(user_query: str) -> bool:
+    normalized = normalize_user_query(user_query)
+    if not normalized:
+        return False
+    phrases: list[str] = []
+    for cat in _CLOSURE_PHRASE_CATEGORIES:
+        phrases.extend(PHRASE_CATEGORIES.get(cat, []))
+    return _matches_any_phrase(normalized, phrases)
+
+
 _TURN_PAYLOAD_STATE_KEYS = (
     "user_query",
     "property_address",
@@ -173,6 +192,7 @@ _TURN_PAYLOAD_STATE_KEYS = (
     "checkpoint_optional_agents",
     "search_location",
     "correlation_id",
+    "chat_intent",
 )
 
 

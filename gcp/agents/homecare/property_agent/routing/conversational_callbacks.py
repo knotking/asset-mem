@@ -109,6 +109,7 @@ def _conversational_before_tool_impl(
             query_mode=str(resolved.query_mode or ""),
             resolved_route=str(resolved.route or ""),
             tool_name=tool_name,
+            discourse_act=str(resolved.discourse_act or ""),
         )
     ):
         answer: str | None = None

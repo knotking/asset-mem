@@ -12,7 +12,7 @@ class RootAgentPlugin(Protocol):
 
     root_agent_name: str
     root_agent_description: str
-    global_gemini_model: str
+    global_gemini_model: Any
     executor_instructions: Callable[[], str]
     executor_input_schema: type
     build_executor_tools: Callable[[Callable[[], bool]], list]

@@ -105,6 +105,7 @@ def test_sanitize_ignores_llm_branches_copied_from_ui_toggles() -> None:
     }
     out = _sanitize_llm_payload(
         {
+            "discourse_act": "explain_prior",
             "intent": "substantive",
             "route": "checkpoint",
             "expanded_user_query": "What is wrong with my overall condition?",
@@ -127,6 +128,8 @@ def test_sanitize_advisory_professional_not_service_analysis() -> None:
     }
     out = _sanitize_llm_payload(
         {
+            "discourse_act": "explain_prior",
+            "focus_branch": "cost",
             "intent": "substantive",
             "route": "checkpoint",
             "expanded_user_query": "Should I engage a professional for garage door repair?",

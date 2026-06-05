@@ -14,7 +14,7 @@ class PropertyPlugin:
     prepare_before_model_turn: Callable[..., Any]
     property_agent_executor_instructions: Callable[[], str]
     diagnosis_input_schema: type
-    global_gemini_model: str
+    global_gemini_model: Any
     memory_preload_enabled: Callable[[], bool]
     ingest_invocation_to_memory_bank: Callable[..., Any]
     property_agent_name: str
@@ -42,7 +42,7 @@ def load_property_plugin() -> PropertyPlugin:
         prepare_before_model_turn=prepare_before_model_turn,
         property_agent_executor_instructions=property_agent_executor_instructions,
         diagnosis_input_schema=DiagnosisInput,
-        global_gemini_model=GLOBAL_GEMINI_MODEL.model,
+        global_gemini_model=GLOBAL_GEMINI_MODEL,
         memory_preload_enabled=memory_preload_enabled,
         ingest_invocation_to_memory_bank=ingest_invocation_to_memory_bank,
         property_agent_name=PROPERTY_AGENT_NAME,

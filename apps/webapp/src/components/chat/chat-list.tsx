@@ -4,7 +4,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/components/chat/chat-message';
-import type { Message } from '@/lib/types';
+import type { Message, SuggestedAction } from '@/lib/types';
 import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
 import { AnimatePresence } from 'framer-motion';
@@ -22,6 +22,7 @@ type Props = {
   isMessagesLoading: boolean;
   context?: 'property' | null;
   onSelectSuggestedPrompt?: (prompt: string) => void;
+  onSuggestedAction?: (action: SuggestedAction) => void;
   isSendDisabled?: boolean;
 };
 
@@ -35,6 +36,7 @@ export function ChatList({
   isMessagesLoading,
   context,
   onSelectSuggestedPrompt,
+  onSuggestedAction,
   isSendDisabled,
 }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,8 @@ export function ChatList({
                 context={context}
                 priorAssistantTurnCount={countPriorAssistantTurnsInSession(messages, message.id)}
                 hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(message.id) ?? false}
+                onSuggestedAction={onSuggestedAction}
+                isSendDisabled={isSendDisabled}
             />
         )
     });
