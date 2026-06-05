@@ -9,11 +9,18 @@ import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
 import { AnimatePresence } from 'framer-motion';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
+import { Button } from '@/components/ui/button';
+import {
+  CHAT_SESSION_EMPTY_INTRO,
+  getSuggestedPrompts,
+} from '@/lib/feature-discovery';
 
 type Props = {
   messages: Message[];
   isMessagesLoading: boolean;
   context?: 'property' | null;
+  onSelectSuggestedPrompt?: (prompt: string) => void;
+  isSendDisabled?: boolean;
 };
 
 function assistantHasNoDisplayableContentYet(message: Message): boolean {
@@ -25,6 +32,8 @@ export function ChatList({
   messages,
   isMessagesLoading,
   context,
+  onSelectSuggestedPrompt,
+  isSendDisabled,
 }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -65,17 +74,35 @@ export function ChatList({
   const welcomeMessageVisible = messages.length === 1 && messages[0].id === 'intro-message';
 
   const isEmpty = messages.length === 0 && !isMessagesLoading;
+  const suggestedPrompts = getSuggestedPrompts();
 
   return (
     <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
       {isEmpty ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-          <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80">
+          <div className="flex flex-col items-center text-center p-4 rounded-lg bg-card/80 max-w-md">
             <AssetMemBrandIcon size="lg" className="mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Start a Conversation</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Ask questions about this property&apos;s documents, services, and history
+            <h3 className="text-lg font-semibold mb-2">{CHAT_SESSION_EMPTY_INTRO.title}</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mb-4">
+              {CHAT_SESSION_EMPTY_INTRO.subtitle}
             </p>
+            {onSelectSuggestedPrompt ? (
+              <div className="flex w-full flex-col gap-2">
+                {suggestedPrompts.map((prompt) => (
+                  <Button
+                    key={prompt}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto whitespace-normal px-3 py-2 text-left text-sm"
+                    disabled={isSendDisabled}
+                    onClick={() => onSelectSuggestedPrompt(prompt)}
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (
