@@ -1863,7 +1863,7 @@ function ChatMessage({
           </View>
         )}
 
-        {message.createdAt && (
+        {message.createdAt && (isUser || (!showStatusStrip && !showTypingIndicator)) && (
           <Text className="mt-1 text-xs text-muted-foreground">
             {new Date(
               message.createdAt instanceof Date ? message.createdAt : message.createdAt.toDate()

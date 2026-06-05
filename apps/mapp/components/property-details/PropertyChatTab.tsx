@@ -21,6 +21,7 @@ import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
 import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
 import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
+import { hasUserMessageBefore } from '@homeapp/common/lib/sort-messages';
 import { buildSuppressRepeatedContextRefsByMessageId } from '@homeapp/common/lib/chat-message-context-refs';
 import {
   assistantMessageHasDisplayableContent,
@@ -115,6 +116,7 @@ function PropertyChatTab({
       const msg = messages[i];
       if (msg.role !== 'assistant') continue;
       if (!assistantMessageHasDisplayableContent(getMessageDisplayParts(msg))) {
+        if (!hasUserMessageBefore(messages, i)) return null;
         return msg.id;
       }
     }

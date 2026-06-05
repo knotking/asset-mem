@@ -37,6 +37,7 @@ import {
   PropertyChatComposer,
   type PropertyChatComposerHandle,
 } from "@/components/chat/property-chat-with-context";
+import { sortMessagesChronologically } from "@homeapp/common/lib/sort-messages";
 
 const chatLog = createLogger("chat");
 
@@ -109,13 +110,15 @@ export default function PropertyChatSessionPage() {
     const unsubscribe = onSnapshot(
       messagesQuery,
       (snapshot) => {
-        const fetchedMessages = snapshot.docs.map(
-          (docSnap) =>
-            ({
-              id: docSnap.id,
-              ...docSnap.data(),
-              createdAt: (docSnap.data().createdAt as Timestamp)?.toDate(),
-            }) as Message
+        const fetchedMessages = sortMessagesChronologically(
+          snapshot.docs.map(
+            (docSnap) =>
+              ({
+                id: docSnap.id,
+                ...docSnap.data(),
+                createdAt: (docSnap.data().createdAt as Timestamp)?.toDate(),
+              }) as Message
+          )
         );
         setMessages(fetchedMessages);
         setIsMessagesLoading(false);

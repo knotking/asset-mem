@@ -9,6 +9,7 @@ import {
 } from '@/lib/add-context-media-picker';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import {
+  clientMessageTimestampAfter,
   clientStartedAtTimestamp,
   sessionActivityOnUserMessagePatch,
 } from '@homeapp/common/lib/session-timestamps';
@@ -194,12 +195,14 @@ function PropertyChatInner(props: Props) {
           await updateDoc(sessionRef, sessionActivityOnUserMessagePatch());
         }
 
+        const userCreatedAt = clientStartedAtTimestamp();
+
         await addDoc(collection(db, 'users', userId, 'chats', sessionId, 'messages'), {
           role: 'user',
           content: text.trim(),
           contentMarkdown: text.trim(),
           contextRefs,
-          createdAt: serverTimestamp(),
+          createdAt: userCreatedAt,
         });
 
         const assistantMessageRef = await addDoc(
@@ -207,7 +210,7 @@ function PropertyChatInner(props: Props) {
           {
             role: 'assistant',
             content: '',
-            createdAt: serverTimestamp(),
+            createdAt: clientMessageTimestampAfter(userCreatedAt),
             primaryAgent,
           }
         );
