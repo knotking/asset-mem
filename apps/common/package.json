@@ -50,6 +50,7 @@
     "./lib/chat-context-labels": "./src/lib/chat-context-labels.ts",
     "./lib/chat-send-context": "./src/lib/chat-send-context.ts",
     "./lib/session-timestamps": "./src/lib/session-timestamps.ts",
+    "./lib/session-name": "./src/lib/session-name.ts",
     "./lib/chat-message-context-refs": "./src/lib/chat-message-context-refs.ts",
     "./lib/chat-context-limits": "./src/lib/chat-context-limits.ts",
     "./lib/chat-context-picker": "./src/lib/chat-context-picker.ts",

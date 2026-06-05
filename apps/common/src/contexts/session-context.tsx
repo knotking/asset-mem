@@ -15,6 +15,11 @@ import type { Session } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
 import { createLogger, truncateId } from '../lib/logger';
+import {
+  deriveSessionNameFromFirstMessage,
+  messageTextForSessionName,
+} from '../lib/session-name';
+import { clientStartedAtTimestamp } from '../lib/session-timestamps';
 
 const sessionLog = createLogger('session');
 
@@ -22,17 +27,6 @@ type DraftSource = 'eager' | 'caller';
 
 function draftInflightKey(propertyId?: string | null): string {
   return propertyId ? `property:${propertyId}` : 'global';
-}
-
-function formatClaimedSessionName(): string {
-  return `session: ${new Date().toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })}`;
 }
 
 interface SessionContextType {
@@ -149,19 +143,39 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
     [db]
   );
 
+  const resolveClaimedSessionName = useCallback(
+    async (userId: string, sessionId: string): Promise<string> => {
+      const messagesSnap = await getDocs(
+        query(
+          collection(db, 'users', userId, 'chats', sessionId, 'messages'),
+          orderBy('createdAt', 'asc'),
+          limit(20)
+        )
+      );
+      for (const messageDoc of messagesSnap.docs) {
+        const data = messageDoc.data();
+        if (data.role !== 'user') continue;
+        return deriveSessionNameFromFirstMessage(messageTextForSessionName(data));
+      }
+      return deriveSessionNameFromFirstMessage('');
+    },
+    [db]
+  );
+
   const claimDraftSession = useCallback(
     async (userId: string, propertyId: string, draftId: string): Promise<void> => {
       sessionLog.debug('draft.claim', {
         propertyId: truncateId(propertyId),
         sessionId: truncateId(draftId),
       });
+      const name = await resolveClaimedSessionName(userId, draftId);
       await updateDoc(doc(db, 'users', userId, 'chats', draftId), {
-        name: formatClaimedSessionName(),
+        name,
         propertyId,
-        startedAt: serverTimestamp(),
+        startedAt: clientStartedAtTimestamp(),
       });
     },
-    [db]
+    [db, resolveClaimedSessionName]
   );
 
   const beginNewPropertyChatSession = useCallback(
