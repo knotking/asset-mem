@@ -73,6 +73,11 @@ def _checkpoint_datetime(created_at: Any) -> Optional[datetime]:
         dt = datetime.fromtimestamp(created_at.seconds, tz=timezone.utc)
     elif isinstance(created_at, datetime):
         dt = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    elif isinstance(created_at, str):
+        try:
+            dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        except ValueError:
+            return None
     else:
         return None
     if dt.tzinfo is None:
@@ -179,8 +184,10 @@ def compute_property_metrics_from_checkpoints(
     latest_checkpoint_id: Optional[str] = None
     latest_checkpoint_score: Optional[float] = None
 
+    scored_sum = 0.0
     if scored_checkpoints:
-        headline_value = sum(s for _, s, _ in scored_checkpoints) / float(len(scored_checkpoints))
+        scored_sum = sum(s for _, s, _ in scored_checkpoints)
+        headline_value = scored_sum / float(len(scored_checkpoints))
         headline_source = "weighted_mean"
         last_c, last_score, _ = scored_checkpoints[-1]
         latest_checkpoint_id = last_c.get("id")
@@ -225,6 +232,8 @@ def compute_property_metrics_from_checkpoints(
             "checkpoints_considered": checkpoints_considered,
             "checkpoints_with_score": checkpoints_with_score,
             "trend_points": len(overall_trend),
+            "scored_sum": scored_sum,
+            "last_applied_checkpoint_id": latest_checkpoint_id,
         },
         "overall": {
             "headline": headline,
@@ -242,6 +251,184 @@ def compute_property_metrics_from_checkpoints(
             "trend": deterioration_trend,
         },
     }
+
+
+def should_use_full_aggregation(
+    existing: Optional[Dict[str, Any]],
+    checkpoint: Dict[str, Any],
+) -> bool:
+    """Fall back to a full checkpoint scan when incremental state may be stale."""
+    if not existing:
+        return False
+    if existing.get("version") != METRICS_VERSION:
+        return True
+    window = existing.get("window") or {}
+    if window.get("checkpoints_considered", 0) >= MAX_CHECKPOINTS:
+        return True
+    if window.get("last_applied_checkpoint_id") == checkpoint.get("id"):
+        return True
+    if window.get("checkpoints_considered", 0) > 0 and window.get("scored_sum") is None:
+        return True
+    return False
+
+
+def _deterioration_from_trend(trend: List[Dict[str, Any]]) -> Dict[str, Any]:
+    deterioration_rate = None
+    deterioration_trend = "unknown"
+    if len(trend) >= 2:
+        prev = trend[-2]
+        last = trend[-1]
+        prev_score = _safe_float(prev.get("score"))
+        last_score = _safe_float(last.get("score"))
+        prev_dt = _checkpoint_datetime(prev.get("t"))
+        last_dt = _checkpoint_datetime(last.get("t"))
+        if (
+            prev_score is not None
+            and last_score is not None
+            and prev_dt is not None
+            and last_dt is not None
+        ):
+            days = (last_dt - prev_dt).total_seconds() / 86400.0
+            if days > 0:
+                deterioration_rate = (prev_score - last_score) / days
+                if deterioration_rate > 0.05:
+                    deterioration_trend = "deteriorating"
+                elif deterioration_rate < -0.05:
+                    deterioration_trend = "improving"
+                else:
+                    deterioration_trend = "stable"
+    return {
+        "rate_points_per_day": deterioration_rate,
+        "trend": deterioration_trend,
+    }
+
+
+def apply_incremental_checkpoint_to_metrics(
+    existing: Optional[Dict[str, Any]],
+    checkpoint: Dict[str, Any],
+    trend_points: int = TREND_POINTS,
+) -> Dict[str, Any]:
+    """
+    Patch property metrics summary with one newly completed checkpoint.
+    """
+    if not existing:
+        return compute_property_metrics_from_checkpoints([checkpoint], trend_points=trend_points)
+
+    if (checkpoint.get("analysisStatus") != "completed") and not checkpoint.get("aiAnalysis"):
+        return existing
+
+    window = dict(existing.get("window") or {})
+    if window.get("last_applied_checkpoint_id") == checkpoint.get("id"):
+        return existing
+
+    ai = checkpoint.get("aiAnalysis") or {}
+    sev_counts = _extract_issues_by_severity(ai)
+    overall = _extract_overall_condition(ai)
+    created_dt = _checkpoint_datetime(checkpoint.get("createdAt"))
+
+    issues_total = dict(existing.get("issues", {}).get("total_by_severity") or {})
+    for sev in ("critical", "major", "moderate", "minor"):
+        issues_total[sev] = int(issues_total.get(sev, 0) or 0) + int(sev_counts.get(sev, 0) or 0)
+
+    issues_recent = list(existing.get("issues", {}).get("recent") or [])
+    issues_recent = issues_recent + _issue_rows_from_checkpoint(checkpoint)
+    issues_recent.sort(key=lambda r: r.get("createdAt", ""), reverse=True)
+    issues_recent = issues_recent[:ISSUES_RECENT_MAX]
+
+    overall_section = dict(existing.get("overall") or {})
+    trend = list(overall_section.get("trend") or [])
+    if overall is not None and created_dt is not None:
+        trend.append(
+            {
+                "t": created_dt.isoformat(),
+                "score": overall,
+                "checkpointId": checkpoint.get("id", ""),
+            }
+        )
+        trend.sort(key=lambda p: p.get("t", ""))
+        trend = trend[-trend_points:]
+
+    considered = int(window.get("checkpoints_considered", 0) or 0) + 1
+    scored_count = int(window.get("checkpoints_with_score", 0) or 0)
+    scored_sum = _safe_float(window.get("scored_sum")) or 0.0
+    if overall is not None:
+        scored_count += 1
+        scored_sum += overall
+
+    status = _compute_status(considered, scored_count)
+    headline = None
+    latest_checkpoint_score = None
+    if scored_count > 0:
+        headline_value = scored_sum / float(scored_count)
+        latest_checkpoint_score = overall if overall is not None else None
+        headline = {
+            "value": headline_value,
+            "source": "weighted_mean",
+            "latest_checkpoint_id": checkpoint.get("id"),
+            "latest_checkpoint_score": latest_checkpoint_score,
+        }
+
+    deterioration = _deterioration_from_trend(trend)
+
+    return {
+        "version": METRICS_VERSION,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        "status": status,
+        "window": {
+            "max_checkpoints": MAX_CHECKPOINTS,
+            "checkpoints_considered": considered,
+            "checkpoints_with_score": scored_count,
+            "trend_points": len(trend),
+            "scored_sum": scored_sum,
+            "last_applied_checkpoint_id": checkpoint.get("id"),
+        },
+        "overall": {
+            "headline": headline,
+            "trend": trend,
+            "latest_score": latest_checkpoint_score,
+        },
+        "issues": {
+            "total_by_severity": issues_total,
+            "total": sum(int(v or 0) for v in issues_total.values()),
+            "recent": issues_recent,
+        },
+        "deterioration": deterioration,
+    }
+
+
+def increment_property_metrics(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    checkpoint: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Incrementally update metrics/summary from one checkpoint (1 read + 1 write).
+    Falls back to aggregate_property_metrics when a full scan is required.
+    """
+    metrics_ref = (
+        db.collection("users")
+        .document(user_id)
+        .collection("properties")
+        .document(property_id)
+        .collection("metrics")
+        .document("summary")
+    )
+    existing_snap = metrics_ref.get()
+    existing = existing_snap.to_dict() if existing_snap.exists else None
+
+    if should_use_full_aggregation(existing, checkpoint):
+        logger.info(
+            "metrics.incremental.fallback user=%s property=%s checkpoint=%s",
+            user_id,
+            property_id,
+            checkpoint.get("id"),
+        )
+        return aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
+
+    metrics = apply_incremental_checkpoint_to_metrics(existing, checkpoint)
+    metrics_ref.set(metrics)
+    return metrics
 
 
 def aggregate_property_metrics(

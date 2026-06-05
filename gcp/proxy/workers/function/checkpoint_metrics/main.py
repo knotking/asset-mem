@@ -9,7 +9,7 @@ from firebase_admin import firestore
 from google.cloud import pubsub_v1
 
 from utils import parse_pubsub_message
-from metrics_aggregator import aggregate_property_metrics
+from metrics_aggregator import aggregate_property_metrics, increment_property_metrics
 
 logging.basicConfig(level=logging.INFO)
 from common.observability.logging_context import install_auth_uid_logging_if_needed
@@ -57,6 +57,8 @@ def pubsub_checkpoint_metrics_aggregate(request, context):
     property_id = payload.get("propertyId")
     checkpoint_id = payload.get("checkpointId")
     reason = payload.get("reason", "checkpoint.analysis.completed")
+    mode = payload.get("mode", "full")
+    checkpoint_data = payload.get("checkpoint")
 
     if not user_id or not property_id:
         logger.warning(f"Missing userId/propertyId in payload: {payload}")
@@ -77,7 +79,15 @@ def pubsub_checkpoint_metrics_aggregate(request, context):
 
         db = firestore.client()
         try:
-            metrics = aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
+            if mode == "incremental" and isinstance(checkpoint_data, dict):
+                metrics = increment_property_metrics(
+                    db=db,
+                    user_id=user_id,
+                    property_id=property_id,
+                    checkpoint=checkpoint_data,
+                )
+            else:
+                metrics = aggregate_property_metrics(db=db, user_id=user_id, property_id=property_id)
             duration_ms = (time.time() - start) * 1000
             logger.info(
                 "metrics.summary.write user=%s property=%s checkpoint=%s status=%s "
