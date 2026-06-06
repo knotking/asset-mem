@@ -50,7 +50,17 @@ export const garageDoorDualFormatMessage: Message = {
   id: 'msg-assistant-garage-door-dual-format',
   role: 'assistant',
   content: '# Garage Door Maintenance Analysis: 1982 Helena Way',
-  contentMarkdown: '# Garage Door Maintenance Analysis: 1982 Helena Way',
+  contentMarkdown: `# Garage Door Maintenance Analysis: 1982 Helena Way
+
+Following the inspection, extensive paint chipping was found on the garage door.
+
+### Repair Options
+* **DIY:** $60 - $250
+* **Professional:** $250 - $900
+
+### Next Steps
+1. **If DIY:** Prep the surface before priming.
+2. **If Service:** Contact local contractors for formal quotes.`,
   contentJson: {
     analysis: {
       title: 'Garage Door Maintenance Analysis: 1982 Helena Way',

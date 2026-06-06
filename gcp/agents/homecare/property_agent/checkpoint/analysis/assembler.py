@@ -11,6 +11,7 @@ from property_agent.checkpoint.constants import (
     CHECKPOINT_ANALYSIS_RUN_ID_STATE_KEY,
     CHECKPOINT_ANALYSIS_STATE_KEY,
     CHECKPOINT_SESSION_INPUT_KEYS,
+    CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY,
     OPTIONAL_BRANCH_TO_AGENT_NAME,
     _PARALLEL_KEY_TO_BRANCH,
     _VALID_OPTIONAL_BRANCHES,
@@ -67,6 +68,24 @@ def apply_tool_context_state_delta(tool_context: Any, delta: Dict[str, Any]) -> 
         actions.state_delta = merge_homecare_state_delta(existing, delta)
     else:
         actions.state_delta = merge_homecare_state_delta(None, delta)
+
+
+def checkpoint_synthesis_progress_session_text() -> str:
+    """Session event copy while executive-summary synthesis LLM is running."""
+    return "Writing your summary…"
+
+
+def set_synthesis_analysis_status(
+    analysis: Dict[str, Any],
+    *,
+    phase: str,
+) -> Dict[str, Any]:
+    """Attach ``analysisStatus.synthesis`` for progressive chat UI."""
+    updated = json.loads(json.dumps(analysis, ensure_ascii=False))
+    status = dict(updated.get("analysisStatus") or {})
+    status[CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY] = phase
+    updated["analysisStatus"] = status
+    return updated
 
 
 def analysis_status_for_branches(

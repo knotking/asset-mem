@@ -183,10 +183,17 @@ export type StructuredResponseData = {
           professional_benefits?: string;
           considerations?: string;
         };
+        recommendation?: {
+          notes?: string;
+          next_steps?: string;
+        };
       };
     };
     analysisStatus?: Partial<
-      Record<"coverage" | "diy" | "service" | "cost", "pending" | "running" | "completed">
+      Record<
+        "coverage" | "diy" | "service" | "cost" | "synthesis",
+        "pending" | "running" | "completed"
+      >
     >;
   };
   title?: string;

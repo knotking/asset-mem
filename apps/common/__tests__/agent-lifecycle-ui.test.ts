@@ -131,4 +131,23 @@ describe("resolveAssistantLoadingUi", () => {
     expect(ui.showThinkingStrip).toBe(true);
     expect(ui.showTypingIndicator).toBe(false);
   });
+
+  it("hides all in-message loading strips once structured content is visible", () => {
+    const ui = resolveAssistantLoadingUi({
+      ...base,
+      hasDisplayableContent: true,
+      agentStepCount: 2,
+    });
+    expect(ui.showStatusStrip).toBe(false);
+    expect(ui.showTypingIndicator).toBe(false);
+  });
+
+  it("returns empty when turn is not in flight", () => {
+    const ui = resolveAssistantLoadingUi({
+      ...base,
+      hasDisplayableContent: true,
+      isActiveLoading: false,
+    });
+    expect(ui.showStatusStrip).toBe(false);
+  });
 });

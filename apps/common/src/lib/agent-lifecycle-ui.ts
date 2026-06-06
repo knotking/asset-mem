@@ -62,6 +62,7 @@ export type AssistantLoadingUiState = {
   showTypingIndicator: boolean;
   showLifecycleStrip: boolean;
   showThinkingStrip: boolean;
+  /** Pre-content lifecycle / pipeline strip. */
   showStatusStrip: boolean;
   lifecycleStatus: ThinkingStatus | null;
   /** Lifecycle strip header text (empty when copy suppressed). */
@@ -97,7 +98,11 @@ export function resolveAssistantLoadingUi(
     typingIndicatorVariant: "bounce",
   };
 
-  if (role !== "assistant" || hasDisplayableContent || !isActiveLoading) {
+  if (role !== "assistant" || !isActiveLoading) {
+    return empty;
+  }
+
+  if (hasDisplayableContent) {
     return empty;
   }
 

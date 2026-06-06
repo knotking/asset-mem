@@ -325,11 +325,18 @@ export type StructuredResponseData = {
           professional_benefits?: string;
           considerations?: string;
         };
+        recommendation?: {
+          notes?: string;
+          next_steps?: string;
+        };
       };
     };
-    /** Per optional-agent progress during progressive checkpoint analysis (chat only). */
+    /** Per optional-agent + synthesis progress during progressive checkpoint analysis (chat only). */
     analysisStatus?: Partial<
-      Record<CheckpointOptionalAgent, "pending" | "running" | "completed">
+      Record<
+        CheckpointOptionalAgent | "synthesis",
+        "pending" | "running" | "completed"
+      >
     >;
   };
 };

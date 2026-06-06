@@ -7,6 +7,7 @@ import { ChatMessage } from '@/components/chat/chat-message';
 import type { Message, SuggestedAction } from '@/lib/types';
 import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
+import { getActiveStreamingAssistantMessageId } from '@/lib/sort-messages';
 import { AnimatePresence } from 'framer-motion';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,8 @@ import { hasUserMessageBefore } from '@/lib/sort-messages';
 type Props = {
   messages: Message[];
   isMessagesLoading: boolean;
+  /** True while the composer stream/session is still open for the current turn. */
+  isStreamActive?: boolean;
   context?: 'property' | null;
   onSelectSuggestedPrompt?: (prompt: string) => void;
   onSuggestedAction?: (action: SuggestedAction) => void;
@@ -34,6 +37,7 @@ function assistantHasNoDisplayableContentYet(message: Message): boolean {
 export function ChatList({
   messages,
   isMessagesLoading,
+  isStreamActive = false,
   context,
   onSelectSuggestedPrompt,
   onSuggestedAction,
@@ -57,23 +61,29 @@ export function ChatList({
     [messages]
   );
 
+  const activeStreamingAssistantMessageId = useMemo(
+    () => getActiveStreamingAssistantMessageId(messages, isStreamActive),
+    [messages, isStreamActive]
+  );
+
   const renderedMessages = useMemo(() => {
     return messages.map((message, index) => {
-        // A message is considered loading if it's the last one, from the assistant, and has no content yet.
-        const isLoading =
-          index === messages.length - 1 &&
-          message.role === 'assistant' &&
-          assistantHasNoDisplayableContentYet(message) &&
-          hasUserMessageBefore(messages, index);
-
-        // Also check for the local-only placeholder ID
         const isPlaceholder = message.id.startsWith('local-');
+        const isTurnInFlight =
+          message.id === activeStreamingAssistantMessageId &&
+          message.role === 'assistant' &&
+          hasUserMessageBefore(messages, index);
 
         return (
             <ChatMessage 
                 key={message.id} 
                 message={message}
-                isLoading={isLoading || (isPlaceholder && assistantHasNoDisplayableContentYet(message))}
+                isTurnInFlight={
+                  isTurnInFlight ||
+                  (isPlaceholder &&
+                    assistantHasNoDisplayableContentYet(message) &&
+                    isStreamActive)
+                }
                 context={context}
                 priorAssistantTurnCount={countPriorAssistantTurnsInSession(messages, message.id)}
                 hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(message.id) ?? false}
@@ -82,7 +92,15 @@ export function ChatList({
             />
         )
     });
-  }, [messages, context, suppressRepeatedContextRefsById]);
+  }, [
+    messages,
+    context,
+    suppressRepeatedContextRefsById,
+    onSuggestedAction,
+    isSendDisabled,
+    activeStreamingAssistantMessageId,
+    isStreamActive,
+  ]);
 
   const welcomeMessageVisible = messages.length === 1 && messages[0].id === 'intro-message';
 

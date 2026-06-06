@@ -262,6 +262,30 @@ async def run_checkpoint_pipeline(
         )
         stash_checkpoint_analysis_in_state(tool_context.state, analysis)
 
+        from property_agent.checkpoint.analysis.assembler import (
+            checkpoint_synthesis_progress_session_text,
+            set_synthesis_analysis_status,
+        )
+
+        analysis_synthesis_running = set_synthesis_analysis_status(
+            analysis, phase="running"
+        )
+        stash_checkpoint_analysis_in_state(
+            tool_context.state, analysis_synthesis_running
+        )
+        synthesis_started_patch = build_message_patch_from_analysis(
+            analysis_synthesis_running,
+            analysis_run_id=run_id,
+        )
+        if on_branch_complete is not None:
+            await emit_checkpoint_progress_event(
+                tool_context,
+                session_event_text=checkpoint_synthesis_progress_session_text(),
+                state_delta=synthesis_started_patch,
+            )
+        else:
+            apply_tool_context_state_delta(tool_context, synthesis_started_patch)
+
         markdown = await _run_synthesis_markdown(
             analysis=analysis,
             user_query=user_query,
@@ -286,6 +310,7 @@ async def run_checkpoint_pipeline(
             retrieval_search_query=search_query or None,
             markdown_source=markdown,
         )
+        analysis = set_synthesis_analysis_status(analysis, phase="completed")
         stash_checkpoint_analysis_in_state(tool_context.state, analysis)
         final_patch = build_message_patch_from_analysis(
             analysis, analysis_run_id=run_id

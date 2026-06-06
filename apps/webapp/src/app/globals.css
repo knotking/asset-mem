@@ -146,7 +146,7 @@
     width: 100% !important;
   }
 
-  /* Shimmering gradient text (display title + thinking strip) */
+  /* Legacy alias — prefer DISPLAY_TITLE_GRADIENT_CLASS Tailwind utilities in chat-message */
   .display-title-gradient-text {
     display: inline-block;
     background-image: linear-gradient(
@@ -159,6 +159,7 @@
     background-position: 0% 50%;
     -webkit-background-clip: text;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
     color: transparent;
     animation: display-title-gradient 2.5s ease-in-out infinite;
   }

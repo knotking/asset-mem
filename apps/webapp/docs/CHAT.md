@@ -38,6 +38,9 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/lib/plan-limit-errors.ts` | `apps/common/src/lib/document-analysis-errors.ts` |
 | `src/lib/home-onboarding.ts` | `apps/common/src/lib/home-onboarding.ts` |
 | `src/lib/sort-messages.ts` | `apps/common/src/lib/sort-messages.ts` |
+| `src/lib/executive-summary-display.ts` | `apps/common/src/lib/executive-summary-display.ts` |
+| `src/lib/structured-accordion-defaults.ts` | `apps/common/src/lib/structured-accordion-defaults.ts` |
+| `src/lib/suggested-actions.ts` | `apps/common/src/lib/suggested-actions.ts` |
 
 ## Display resolution flow
 
@@ -64,7 +67,10 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Lifecycle strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentLifecycle` set, no `agentSteps` yet |
 | **Thinking strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentSteps.length > 0` |
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
+| **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`) |
+| **Suggested-action chips** | Quick-reply buttons below accordions — hidden while `isTurnInFlight`; shown when the turn completes |
 | **Structured accordion** | `displayParts.structuredData` set |
+| **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` while `isTurnInFlight`, `analysisStatus` is in flight, or optional-branch/synthesis `agentSteps` are executing |
 | **Markdown bubble** | Displayable markdown, no structured UI |
 | **Copy button** | Markdown-only assistant responses |
 
@@ -72,12 +78,9 @@ Thinking strip labels come from `useDebouncedThinkingStatus` → `getThinkingSta
 
 ## Parent loading flag (`chat-list.tsx`)
 
-`ChatList` passes `isLoading` to the last assistant message when:
+`ChatList` passes `isTurnInFlight` when the message id matches `getActiveStreamingAssistantMessageId(messages, isStreamActive)`. The helper also treats the last assistant as in-flight on **passive clients** (other device/tab) when Firestore still has `agentSteps`, `agentLifecycle`, in-progress `analysisStatus`, or an empty assistant placeholder immediately after the user message (pre-content shell before the first lifecycle patch) — so webapp and mapp stay in sync without a local stream.
 
-```typescript
-assistantHasNoDisplayableContentYet(message)
-// ≡ !assistantMessageHasDisplayableContent(getMessageDisplayParts(message))
-```
+Pre-content loading UI still uses `!hasDisplayableContent && isTurnInFlight`.
 
 Uses V2 fields — not raw `message.content` alone.
 

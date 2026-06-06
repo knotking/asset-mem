@@ -26,6 +26,8 @@ CHECKPOINT_PROGRESS_EMIT_SEQ_STATE_KEY = "checkpoint_progress_emit_seq"
 CHECKPOINT_PROGRESS_LAST_EMITTED_SEQ_STATE_KEY = "checkpoint_progress_last_emitted_seq"
 # Stable id for a single analysis run (message + agentSteps correlation).
 CHECKPOINT_ANALYSIS_RUN_ID_STATE_KEY = "analysis_run_id"
+# First-class synthesis phase in ``analysis.analysisStatus`` (chat progress UX).
+CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY = "synthesis"
 # UI checkpoint_ids included in the last completed run_checkpoint_pipeline retrieval.
 CHECKPOINT_IDS_ANALYZED_STATE_KEY = "checkpoint_ids_analyzed"
 
