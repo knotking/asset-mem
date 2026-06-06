@@ -23,6 +23,7 @@ npm run test:watch
 | [`__mocks__/`](../__mocks__/) | GiftedChat, YouTube, expo-image/video, markdown, clipboard, haptics |
 | [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures (markdown + structured variants) |
 | [`lib/gifted-chat-bubble-equal.ts`](../lib/gifted-chat-bubble-equal.ts) | Bubble memo comparator (`areGiftedChatBubblePropsEqual`) |
+| [`lib/chat-list-scroll-anchor-context.tsx`](../lib/chat-list-scroll-anchor-context.tsx) | GiftedChat scroll offset + accordion expand/collapse compensation |
 | [`lib/property-chat-list-props.ts`](../lib/property-chat-list-props.ts) | Android GiftedChat `listViewProps` tuning |
 | [`lib/gifted-chat-utils.ts`](../lib/gifted-chat-utils.ts) | GiftedChat transform + `transformMessagesToGiftedChatCached` |
 | [`apps/common/src/lib/merge-messages-snapshot.ts`](../../common/src/lib/merge-messages-snapshot.ts) | Incremental Firestore snapshot merge |
@@ -63,5 +64,5 @@ After `eas build --profile prod-apk` (or internal prod APK), on a mid-range Andr
 
 - Scroll a long chat (50+ messages) — no severe jank
 - Stream a long assistant reply — UI stays responsive
-- Expand structured accordions (coverage, DIY) — first expand acceptable; YouTube loads only when section is open
+- Expand structured accordions (coverage, DIY) — list stays anchored on the section header (no jump to bottom); YouTube loads only when section is open
 - Cold start → open property chat — time to interactive reasonable
