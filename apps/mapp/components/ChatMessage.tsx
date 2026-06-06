@@ -94,7 +94,7 @@ import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
-import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
+import { getStructuredAccordionDefaultValue, STRUCTURED_ACCORDION_COLLAPSED } from '@/lib/structured-accordion-defaults';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 import {
@@ -831,11 +831,17 @@ const StructuredResponse = React.memo(
   const showSummaryAccordion =
     hasSummaryMarkdown ||
     (summarySynthesisInProgress && !hasSummaryMarkdown);
-  const [openSection, setOpenSection] = useState<string | undefined>(accordionDefaultValue);
+  const [openSection, setOpenSection] = useState<string>(
+    accordionDefaultValue ?? STRUCTURED_ACCORDION_COLLAPSED
+  );
+
+  const handleAccordionValueChange = useCallback((value: string | undefined) => {
+    setOpenSection(value ?? STRUCTURED_ACCORDION_COLLAPSED);
+  }, []);
 
   useEffect(() => {
     setOpenSection((current) =>
-      current === undefined && accordionDefaultValue
+      current === STRUCTURED_ACCORDION_COLLAPSED && accordionDefaultValue
         ? accordionDefaultValue
         : current
     );
@@ -881,7 +887,7 @@ const StructuredResponse = React.memo(
         collapsible
         className="w-full"
         value={openSection}
-        onValueChange={setOpenSection}>
+        onValueChange={handleAccordionValueChange}>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">

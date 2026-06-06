@@ -158,6 +158,7 @@ Orchestrator V2 uses persisted `contentJson` as the single source for structured
   - `analysis.title` title card
   - Structured accordions from `contentJson` (collapsed only while optional branches or synthesis are in flight — checkpoint-only opens **Checkpoint Summary** by default)
   - **Summary & Next Steps** last accordion from filtered `contentMarkdown` (collapsed by default; inline preview in trigger; placeholder **Preparing summary…** only while `analysisStatus.synthesis` is `pending`/`running` or the synthesis agent step is executing — not for checkpoint-only turns; does not auto-open when synthesis arrives)
+  - Native accordion `value` uses `STRUCTURED_ACCORDION_COLLAPSED` (`__collapsed__`) instead of `undefined` so `@rn-primitives/accordion` stays controlled on collapse (avoids preview + content showing together on first tap)
   - In-flight branch/synthesis progress uses **CheckpointAnalysisProgressFooter** above the composer context chips (not a strip below accordions)
   - **Suggested-action** quick-reply chips below accordions are hidden while `isTurnInFlight`; they appear when the turn completes
   - `suggestedActions` quick-reply chips below the bubble
