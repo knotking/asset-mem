@@ -64,5 +64,5 @@ After `eas build --profile prod-apk` (or internal prod APK), on a mid-range Andr
 
 - Scroll a long chat (50+ messages) — no severe jank
 - Stream a long assistant reply — UI stays responsive
-- Expand structured accordions (coverage, DIY) — list stays anchored on the section header (no jump to bottom); YouTube loads only when section is open
+- Expand structured accordions (coverage, DIY) — list stays anchored on expand/collapse tap; DIY should not re-jank when YouTube embeds mount; YouTube loads only when section is open
 - Cold start → open property chat — time to interactive reasonable
