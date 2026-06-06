@@ -35,11 +35,12 @@ export function LazyYouTubePlayer({
   const playerHeight =
     containerWidth > 0 ? (containerWidth * 9) / 16 : height;
   const readyToMount = accordionExpanded && containerWidth > 0;
+  const reservedHeight = accordionExpanded ? playerHeight : 0;
 
   return (
     <View
       testID={`${testID}-shell`}
-      style={styles.shell}
+      style={[styles.shell, reservedHeight > 0 && { minHeight: reservedHeight }]}
       onLayout={(event) => {
         const { width } = event.nativeEvent.layout;
         if (width > 0 && width !== containerWidth) {
