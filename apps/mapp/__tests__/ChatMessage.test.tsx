@@ -2,6 +2,9 @@ import React from 'react';
 import { renderWithProviders } from './test-utils';
 import { messageFixtures } from './fixtures/messages';
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 jest.mock('react-native-markdown-display', () => {
   const React = require('react');
   const { Text } = require('react-native');

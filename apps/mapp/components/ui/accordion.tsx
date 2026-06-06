@@ -62,9 +62,11 @@ const Trigger = Platform.OS === 'web' ? View : Pressable;
 function AccordionTrigger({
   className,
   children,
+  headerAction,
   ...props
 }: AccordionPrimitive.TriggerProps & {
   children?: React.ReactNode;
+  headerAction?: React.ReactNode;
 } & React.RefAttributes<AccordionPrimitive.TriggerRef>) {
   const { isExpanded } = AccordionPrimitive.useItemContext();
 
@@ -85,31 +87,34 @@ function AccordionTrigger({
         'text-left text-sm font-medium',
         Platform.select({ web: 'group-hover:underline' })
       )}>
-      <AccordionPrimitive.Header>
-        <AccordionPrimitive.Trigger {...props} asChild>
-          <Trigger
-            className={cn(
-              'w-full flex-row items-start justify-between gap-4 rounded-md py-4 disabled:opacity-50',
-              Platform.select({
-                web: 'focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 outline-none transition-all hover:underline focus-visible:ring-[3px] disabled:pointer-events-none [&[data-state=open]>svg]:rotate-180',
-              }),
-              className
-            )}>
-            <>{children}</>
-            <Animated.View style={chevronStyle}>
-              <Icon
-                as={ChevronDown}
-                size={16}
-                className={cn(
-                  'text-muted-foreground shrink-0',
-                  Platform.select({
-                    web: 'pointer-events-none translate-y-0.5 transition-transform duration-200',
-                  })
-                )}
-              />
-            </Animated.View>
-          </Trigger>
-        </AccordionPrimitive.Trigger>
+      <AccordionPrimitive.Header asChild>
+        <View className="w-full flex-row items-start gap-1">
+          <AccordionPrimitive.Trigger {...props} asChild>
+            <Trigger
+              className={cn(
+                'min-w-0 flex-1 flex-row items-start justify-between gap-4 rounded-md py-4 disabled:opacity-50',
+                Platform.select({
+                  web: 'focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 outline-none transition-all hover:underline focus-visible:ring-[3px] disabled:pointer-events-none [&[data-state=open]>svg]:rotate-180',
+                }),
+                className
+              )}>
+              <>{children}</>
+              <Animated.View style={chevronStyle}>
+                <Icon
+                  as={ChevronDown}
+                  size={16}
+                  className={cn(
+                    'text-muted-foreground shrink-0',
+                    Platform.select({
+                      web: 'pointer-events-none translate-y-0.5 transition-transform duration-200',
+                    })
+                  )}
+                />
+              </Animated.View>
+            </Trigger>
+          </AccordionPrimitive.Trigger>
+          {headerAction ? <View className="shrink-0 pt-3 pr-1">{headerAction}</View> : null}
+        </View>
       </AccordionPrimitive.Header>
     </TextClassContext.Provider>
   );

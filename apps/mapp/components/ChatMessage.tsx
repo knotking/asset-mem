@@ -40,6 +40,7 @@ import {
   Heart,
   Paperclip,
   ListChecks,
+  Maximize2,
 } from 'lucide-react-native';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { buildServiceProviderDedupeKey } from '@homeapp/common/lib/saved-service-provider-dedupe';
@@ -95,6 +96,7 @@ import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
 import { getStructuredAccordionDefaultValue, STRUCTURED_ACCORDION_COLLAPSED } from '@/lib/structured-accordion-defaults';
+import { StructuredReportSheet } from '@/components/chat/StructuredReportSheet';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 import {
@@ -643,6 +645,8 @@ const StructuredResponse = React.memo(
     accordionPipelineInProgress = false,
     summarySynthesisInProgress = false,
     saveMeta,
+    layoutMode = 'inline',
+    showTitleCard = true,
   }: {
     data: StructuredResponseData;
     summaryMarkdown?: string;
@@ -650,13 +654,32 @@ const StructuredResponse = React.memo(
     accordionPipelineInProgress?: boolean;
     summarySynthesisInProgress?: boolean;
     saveMeta?: SaveServiceProviderMeta;
+    layoutMode?: 'inline' | 'sheet';
+    showTitleCard?: boolean;
   }) => {
+  const isSheetLayout = layoutMode === 'sheet';
   const colorScheme = useColorScheme();
   const nativeStyles = useMemo(
     () => createChatMessageNativeStyles(colorScheme),
     [colorScheme]
   );
-  const markdownStyles = useMarkdownStyles(false);
+  const markdownStyles = useMarkdownStyles(false, 'accordion');
+  const [reportSheetVisible, setReportSheetVisible] = useState(false);
+  const [reportSheetMounted, setReportSheetMounted] = useState(false);
+
+  useEffect(() => {
+    if (reportSheetVisible) {
+      setReportSheetMounted(true);
+    }
+  }, [reportSheetVisible]);
+
+  const handleReportSheetClose = useCallback(() => {
+    setReportSheetVisible(false);
+  }, []);
+
+  const handleReportSheetDismissed = useCallback(() => {
+    setReportSheetMounted(false);
+  }, []);
 
   // Support both nested (analysis.*) and flat structures (top-level keys)
   const analysis = data.analysis || ({} as NonNullable<StructuredResponseData['analysis']>);
@@ -839,13 +862,41 @@ const StructuredResponse = React.memo(
     setOpenSection(value ?? STRUCTURED_ACCORDION_COLLAPSED);
   }, []);
 
+  const allExpandedSectionValues = useMemo(() => {
+    const values: string[] = [];
+    if (hasTriage || needsClarification) values.push('triage');
+    if (hasCheckpointSummary) values.push('checkpoint-summary');
+    if (hasCheckpointDetails) values.push('checkpoint-details');
+    if (hasCheckpointInsights) values.push('checkpoint-insights');
+    if (hasCoverage) values.push('coverage');
+    if (hasDIY) values.push('diy');
+    if (hasService) values.push('service');
+    if (hasCostEstimates) values.push('cost-estimates');
+    if (showSummaryAccordion) values.push(EXECUTIVE_SUMMARY_ACCORDION_VALUE);
+    return values;
+  }, [
+    hasTriage,
+    needsClarification,
+    hasCheckpointSummary,
+    hasCheckpointDetails,
+    hasCheckpointInsights,
+    hasCoverage,
+    hasDIY,
+    hasService,
+    hasCostEstimates,
+    showSummaryAccordion,
+  ]);
+
+  const noopMultipleAccordionChange = useCallback((_value: string[]) => {}, []);
+
   useEffect(() => {
+    if (isSheetLayout) return;
     setOpenSection((current) =>
       current === STRUCTURED_ACCORDION_COLLAPSED && accordionDefaultValue
         ? accordionDefaultValue
         : current
     );
-  }, [accordionDefaultValue]);
+  }, [accordionDefaultValue, isSheetLayout]);
   const summaryPreview = useMemo(() => {
     if (hasSummaryMarkdown) {
       return getSummaryAccordionPreview(summaryMarkdown!);
@@ -863,7 +914,7 @@ const StructuredResponse = React.memo(
     [hasSummaryMarkdown, summaryMarkdown, summaryPreview]
   );
   const summaryAccordionExpanded =
-    openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
+    isSheetLayout || openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
 
   const costRecommendation = useMemo(
     () =>
@@ -875,19 +926,53 @@ const StructuredResponse = React.memo(
 
   return (
     <View className="w-full space-y-3">
-      {displayTitle && (
+      {!isSheetLayout && displayTitle && reportSheetMounted ? (
+        <StructuredReportSheet
+          visible={reportSheetVisible}
+          onClose={handleReportSheetClose}
+          onDismissed={handleReportSheetDismissed}
+          title={displayTitle}>
+          <StructuredResponse
+            layoutMode="sheet"
+            showTitleCard={false}
+            data={data}
+            summaryMarkdown={summaryMarkdown}
+            displayTitleInProgress={displayTitleInProgress}
+            accordionPipelineInProgress={accordionPipelineInProgress}
+            summarySynthesisInProgress={summarySynthesisInProgress}
+            saveMeta={saveMeta}
+          />
+        </StructuredReportSheet>
+      ) : null}
+      {displayTitle && showTitleCard ? (
         <View cssInterop={false} style={nativeStyles.structuredTitleCard}>
-          <DisplayTitleGradientText active={displayTitleInProgress}>
-            {displayTitle}
-          </DisplayTitleGradientText>
+          <View className="flex-row items-start justify-between gap-4">
+            <View className="min-w-0 flex-1">
+              <DisplayTitleGradientText active={displayTitleInProgress && !isSheetLayout}>
+                {displayTitle}
+              </DisplayTitleGradientText>
+            </View>
+            {!isSheetLayout ? (
+              <Pressable
+                onPress={() => setReportSheetVisible(true)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Open full report"
+                className="shrink-0 items-center justify-center">
+                <Icon as={Maximize2} size={16} className="text-muted-foreground" />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-      )}
+      ) : null}
       <Accordion
-        type="single"
-        collapsible
+        type={isSheetLayout ? 'multiple' : 'single'}
+        collapsible={!isSheetLayout}
         className="w-full"
-        value={openSection}
-        onValueChange={handleAccordionValueChange}>
+        value={isSheetLayout ? allExpandedSectionValues : openSection}
+        onValueChange={
+          isSheetLayout ? noopMultipleAccordionChange : handleAccordionValueChange
+        }>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
@@ -1521,10 +1606,10 @@ const StructuredResponse = React.memo(
         {showSummaryAccordion && (
           <AccordionItem value={EXECUTIVE_SUMMARY_ACCORDION_VALUE} className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="min-w-0 flex-1 flex-col gap-1 pr-2">
+              <View className="min-w-0 flex-1 flex-col gap-1 pr-1">
                 <View className="flex-row items-center gap-2">
                   <Icon as={ListChecks} size={16} className="text-emerald-600" />
-                  <Text className="font-medium text-foreground">
+                  <Text className="min-w-0 flex-1 font-medium text-foreground">
                     {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
                   </Text>
                 </View>

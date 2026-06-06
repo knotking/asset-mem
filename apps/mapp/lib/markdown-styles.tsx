@@ -39,10 +39,16 @@ const colors = {
   },
 };
 
-export const useMarkdownStyles = (isUserMessage: boolean = false) => {
+type MarkdownStyleVariant = 'default' | 'accordion';
+
+export const useMarkdownStyles = (
+  isUserMessage: boolean = false,
+  variant: MarkdownStyleVariant = 'default'
+) => {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? colors.dark : colors.light;
+  const isAccordion = variant === 'accordion';
 
   // For user messages, use colors that contrast with gray background
   // Gray background is light (gray-200) in light mode and dark (gray-800) in dark mode
@@ -53,13 +59,26 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       : colors.light.foreground // Light mode: gray-200 background, use dark text
     : theme.foreground;
 
+  const bodyFontSize = isAccordion ? 14 : 15;
+  const bodyLineHeight = isAccordion ? 20 : 22;
+  const accordionHeading = isAccordion
+    ? {
+        color: textColor,
+        fontSize: 14,
+        fontWeight: '600' as const,
+        lineHeight: 20,
+        marginTop: 8,
+        marginBottom: 4,
+      }
+    : null;
+
   return StyleSheet.create({
     body: {
       color: textColor,
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: bodyFontSize,
+      lineHeight: bodyLineHeight,
     },
-    heading1: {
+    heading1: accordionHeading ?? {
       color: textColor,
       fontSize: 24,
       fontWeight: '700',
@@ -67,7 +86,7 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginTop: 16,
       marginBottom: 8,
     },
-    heading2: {
+    heading2: accordionHeading ?? {
       color: textColor,
       fontSize: 20,
       fontWeight: '600',
@@ -75,7 +94,7 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginTop: 14,
       marginBottom: 6,
     },
-    heading3: {
+    heading3: accordionHeading ?? {
       color: textColor,
       fontSize: 18,
       fontWeight: '600',
@@ -83,7 +102,9 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginTop: 12,
       marginBottom: 6,
     },
-    heading4: {
+    heading4: isAccordion
+      ? accordionHeading!
+      : {
       color: textColor,
       fontSize: 16,
       fontWeight: '600',
@@ -91,7 +112,9 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginTop: 10,
       marginBottom: 4,
     },
-    heading5: {
+    heading5: isAccordion
+      ? accordionHeading!
+      : {
       color: textColor,
       fontSize: 14,
       fontWeight: '600',
@@ -99,7 +122,9 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginTop: 8,
       marginBottom: 4,
     },
-    heading6: {
+    heading6: isAccordion
+      ? { ...accordionHeading!, fontSize: 13, lineHeight: 18 }
+      : {
       color: textColor,
       fontSize: 13,
       fontWeight: '600',
@@ -109,8 +134,8 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
     },
     paragraph: {
       color: textColor,
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: bodyFontSize,
+      lineHeight: bodyLineHeight,
       marginTop: 0,
       marginBottom: 0,
     },
@@ -182,15 +207,15 @@ export const useMarkdownStyles = (isUserMessage: boolean = false) => {
       marginLeft: 0,
       marginRight: 8,
       color: textColor,
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: bodyFontSize,
+      lineHeight: bodyLineHeight,
     },
     ordered_list_icon: {
       marginLeft: 0,
       marginRight: 8,
       color: textColor,
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: bodyFontSize,
+      lineHeight: bodyLineHeight,
     },
     hr: {
       backgroundColor: theme.border,
