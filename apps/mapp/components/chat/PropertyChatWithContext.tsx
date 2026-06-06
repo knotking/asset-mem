@@ -524,6 +524,9 @@ function PropertyChatInner(props: Props) {
           />
         }
         sendBlockHint={sendBlockHint}
+        readyContextCount={readySelectedCheckpoints.length + readySelectedDocuments.length}
+        pendingContextCount={pendingContext.length}
+        hasQueuedSend={queuedSend != null}
       />
       <AddContextSheet
         visible={addContextVisible}
