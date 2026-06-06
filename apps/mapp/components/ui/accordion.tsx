@@ -1,12 +1,13 @@
 import { Icon } from '@/components/ui/icon';
 import { AccordionMountContext } from '@/lib/accordion-mount-context';
+import { useChatListScrollAnchor } from '@/lib/chat-list-scroll-anchor-context';
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import * as AccordionPrimitive from '@rn-primitives/accordion';
 import { ChevronDown } from 'lucide-react-native';
-import { Platform, Pressable, View } from 'react-native';
+import React, { createContext, useCallback, useContext, useRef } from 'react';
+import { LayoutChangeEvent, Platform, Pressable, View } from 'react-native';
 import Animated, {
-  FadeOutUp,
   LayoutAnimationConfig,
   LinearTransition,
   useAnimatedStyle,
@@ -14,21 +15,27 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+const AccordionScrollAnchorContext = createContext(true);
+
 function Accordion({
   children,
+  enableScrollAnchor = true,
   ...props
-}: Omit<AccordionPrimitive.RootProps, 'asChild'> &
-  React.RefAttributes<AccordionPrimitive.RootRef>) {
+}: Omit<AccordionPrimitive.RootProps, 'asChild'> & {
+  enableScrollAnchor?: boolean;
+} & React.RefAttributes<AccordionPrimitive.RootRef>) {
   return (
-    <LayoutAnimationConfig skipEntering>
-      <AccordionPrimitive.Root
-        {...(props as AccordionPrimitive.RootProps)}
-        asChild={Platform.OS !== 'web'}>
-        <Animated.View layout={LinearTransition.duration(200)} className="w-full">
-          {children}
-        </Animated.View>
-      </AccordionPrimitive.Root>
-    </LayoutAnimationConfig>
+    <AccordionScrollAnchorContext.Provider value={enableScrollAnchor}>
+      <LayoutAnimationConfig skipEntering>
+        <AccordionPrimitive.Root
+          {...(props as AccordionPrimitive.RootProps)}
+          asChild={Platform.OS !== 'web'}>
+          <Animated.View layout={LinearTransition.duration(200)} className="w-full">
+            {children}
+          </Animated.View>
+        </AccordionPrimitive.Root>
+      </LayoutAnimationConfig>
+    </AccordionScrollAnchorContext.Provider>
   );
 }
 
@@ -38,6 +45,31 @@ function AccordionItem({
   value,
   ...props
 }: AccordionPrimitive.ItemProps & React.RefAttributes<AccordionPrimitive.ItemRef>) {
+  const scrollAnchorEnabled = useContext(AccordionScrollAnchorContext);
+  const chatScrollAnchor = useChatListScrollAnchor();
+  const prevHeightRef = useRef(0);
+  const initialLayoutRef = useRef(true);
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      if (Platform.OS === 'web' || !scrollAnchorEnabled || !chatScrollAnchor) return;
+
+      const height = event.nativeEvent.layout.height;
+      const delta = height - prevHeightRef.current;
+      prevHeightRef.current = height;
+
+      if (initialLayoutRef.current) {
+        initialLayoutRef.current = false;
+        return;
+      }
+
+      if (Math.abs(delta) >= 1) {
+        chatScrollAnchor.compensateScrollForScreenDelta(delta);
+      }
+    },
+    [scrollAnchorEnabled, chatScrollAnchor]
+  );
+
   return (
     <AccordionPrimitive.Item
       className={cn(
@@ -49,6 +81,7 @@ function AccordionItem({
       asChild
       {...props}>
       <Animated.View
+        onLayout={handleLayout}
         className="native:overflow-hidden w-full"
         layout={Platform.select({ native: LinearTransition.duration(200) })}>
         {children}
@@ -137,11 +170,7 @@ function AccordionContent({
         )}
         {...props}>
         <AccordionMountContext.Provider value={isExpanded}>
-          <Animated.View
-            exiting={Platform.select({ native: FadeOutUp.duration(200) })}
-            className={cn('pb-4', className)}>
-            {children}
-          </Animated.View>
+          <View className={cn('pb-4', className)}>{children}</View>
         </AccordionMountContext.Provider>
       </AccordionPrimitive.Content>
     </TextClassContext.Provider>

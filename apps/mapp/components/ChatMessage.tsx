@@ -966,6 +966,7 @@ const StructuredResponse = React.memo(
         </View>
       ) : null}
       <Accordion
+        enableScrollAnchor={!isSheetLayout}
         type={isSheetLayout ? 'multiple' : 'single'}
         collapsible={!isSheetLayout}
         className="w-full"

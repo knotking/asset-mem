@@ -25,6 +25,11 @@ import { getActiveStreamingAssistantMessageId } from '@homeapp/common/lib/sort-m
 import { buildSuppressRepeatedContextRefsByMessageId } from '@homeapp/common/lib/chat-message-context-refs';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import {
+  ChatListScrollAnchorProvider,
+  useChatListScrollOnScrollHandler,
+} from '@/lib/chat-list-scroll-anchor-context';
+import type { AnimatedList } from 'react-native-gifted-chat/lib/MessageContainer/types';
+import {
   CHAT_SESSION_EMPTY_INTRO,
   getSuggestedPrompts,
 } from '@homeapp/common/lib/feature-discovery';
@@ -60,6 +65,22 @@ interface PropertyChatTabProps {
     searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
   ) => void;
   propertyAddress?: string;
+}
+
+function GiftedChatWithScrollAnchor(
+  props: Omit<React.ComponentProps<typeof GiftedChat>, 'messageContainerRef'> & {
+    messageContainerRef: React.RefObject<AnimatedList<IMessage> | null>;
+  }
+) {
+  const handleOnScroll = useChatListScrollOnScrollHandler();
+  const { messageContainerRef, ...giftedChatProps } = props;
+  return (
+    <GiftedChat
+      {...giftedChatProps}
+      messageContainerRef={messageContainerRef as React.RefObject<AnimatedList<IMessage>>}
+      handleOnScroll={handleOnScroll}
+    />
+  );
 }
 
 function PropertyChatTab({
@@ -141,6 +162,8 @@ function PropertyChatTab({
 
   const sessionIdRef = React.useRef(sessionId);
   sessionIdRef.current = sessionId;
+
+  const messageContainerRef = React.useRef<AnimatedList<IMessage>>(null);
 
   const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
 
@@ -293,41 +316,44 @@ function PropertyChatTab({
         </View>
       )}
 
-      <GiftedChat
-        messages={giftedMessages}
-        onSend={onSend}
-        user={giftedChatUser}
-        renderBubble={renderBubble}
-        renderChatEmpty={renderChatEmpty}
-        renderFooter={renderFooter}
-        renderInputToolbar={renderInputToolbar}
-        scrollToBottomComponent={scrollToBottomComponent}
-        scrollToBottomStyle={{
-          bottom: 10,
-          right: 16,
-          zIndex: 1000,
-        }}
-        scrollToBottomOffset={200}
-        isScrollToBottomEnabled={true}
-        renderActions={renderActions}
-        renderAvatar={renderAvatar}
-        listViewProps={listViewProps}
-        isLoadingEarlier={isLoadingEarlier}
-        loadEarlier={hasMoreMessages}
-        onLoadEarlier={loadEarlierMessages}
-        alwaysShowSend={true}
-        keyboardShouldPersistTaps="never"
-        messagesContainerStyle={{
-          backgroundColor: 'transparent',
-        }}
-        textInputProps={{
-          autoCapitalize: 'sentences',
-          autoCorrect: true,
-        }}
-        bottomOffset={-84}
-        minInputToolbarHeight={44}
-        infiniteScroll
-      />
+      <ChatListScrollAnchorProvider messageListRef={messageContainerRef}>
+        <GiftedChatWithScrollAnchor
+          messageContainerRef={messageContainerRef}
+          messages={giftedMessages}
+          onSend={onSend}
+          user={giftedChatUser}
+          renderBubble={renderBubble}
+          renderChatEmpty={renderChatEmpty}
+          renderFooter={renderFooter}
+          renderInputToolbar={renderInputToolbar}
+          scrollToBottomComponent={scrollToBottomComponent}
+          scrollToBottomStyle={{
+            bottom: 10,
+            right: 16,
+            zIndex: 1000,
+          }}
+          scrollToBottomOffset={200}
+          isScrollToBottomEnabled={true}
+          renderActions={renderActions}
+          renderAvatar={renderAvatar}
+          listViewProps={listViewProps}
+          isLoadingEarlier={isLoadingEarlier}
+          loadEarlier={hasMoreMessages}
+          onLoadEarlier={loadEarlierMessages}
+          alwaysShowSend={true}
+          keyboardShouldPersistTaps="never"
+          messagesContainerStyle={{
+            backgroundColor: 'transparent',
+          }}
+          textInputProps={{
+            autoCapitalize: 'sentences',
+            autoCorrect: true,
+          }}
+          bottomOffset={-84}
+          minInputToolbarHeight={44}
+          infiniteScroll
+        />
+      </ChatListScrollAnchorProvider>
     </>
   );
 }
