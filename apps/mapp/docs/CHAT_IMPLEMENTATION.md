@@ -23,6 +23,8 @@ User messages persist `contextRefs` (checkpoint/doc ids and names at send time) 
 
 **Key modules:** `ChatContextProvider` (`apps/common/src/contexts/chat-context-context.tsx`), `PropertyChatWithContext`, `AddContextSheet`, `ChatContextChipStrip`, `chat-send-context.ts`.
 
+**Composer collapse:** `GiftedChatInputToolbar` shows a chevron to collapse context chips and `CompactSettingsBar` into a single summary pill (agent, optional agents, context/queue counts). Tap the pill to open chat settings; tap chevron up to expand. Send-block hints stay visible when collapsed.
+
 ### Scale-first Add context picker
 
 Designed for **1,000+ checkpoints** and **100+ documents**:

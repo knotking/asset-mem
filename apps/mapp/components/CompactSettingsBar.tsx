@@ -27,6 +27,7 @@ interface CompactSettingsBarProps {
   onOpenSettings: () => void;
   onAgentPress?: () => void;
   onLocationPress?: () => void;
+  className?: string;
 }
 
 export function CompactSettingsBar({
@@ -38,6 +39,7 @@ export function CompactSettingsBar({
   onOpenSettings,
   onAgentPress,
   onLocationPress,
+  className,
 }: CompactSettingsBarProps) {
   const hasLocation = !!(
     (searchLocation?.source === 'device_gps' && searchLocation?.coordinates) ||
@@ -50,7 +52,7 @@ export function CompactSettingsBar({
   };
 
   return (
-    <View className="mb-2 flex-row items-center gap-2">
+    <View className={className ?? 'mb-2 flex-row items-center gap-2'}>
       <Pressable
         onPress={onAgentPress || onOpenSettings}
         className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"

@@ -5,12 +5,61 @@ import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gi
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Plus, Send as SendIcon, Square } from 'lucide-react-native';
+import { Plus, Send as SendIcon, Square, ChevronDown, ChevronUp } from 'lucide-react-native';
 import type { AnalysisOptionalAgent, CheckpointOptionalAgent, PrimaryAgent } from '@homeapp/common/types';
 import { CompactSettingsBar } from './CompactSettingsBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
 
 const MAX_MESSAGE_LENGTH = 2000;
+
+function primaryAgentLabel(agent: PrimaryAgent): string {
+  if (agent === 'analysis') return 'Analysis';
+  if (agent === 'checkpoint') return 'Checkpoint';
+  return 'Docs';
+}
+
+function buildCollapsedComposerSummary({
+  primaryAgent,
+  selectedOptionalAgents,
+  selectedCheckpointOptionalAgents,
+  readyContextCount,
+  pendingContextCount,
+  hasQueuedSend,
+}: {
+  primaryAgent: PrimaryAgent;
+  selectedOptionalAgents: AnalysisOptionalAgent[];
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  readyContextCount: number;
+  pendingContextCount: number;
+  hasQueuedSend: boolean;
+}): string {
+  const parts = [primaryAgentLabel(primaryAgent)];
+
+  const optionalCount =
+    primaryAgent === 'analysis'
+      ? selectedOptionalAgents.length
+      : primaryAgent === 'checkpoint'
+        ? selectedCheckpointOptionalAgents.length
+        : 0;
+  if (optionalCount > 0) {
+    parts[0] = `${parts[0]} +${optionalCount}`;
+  }
+
+  if (hasQueuedSend) {
+    parts.push('queued message');
+  } else {
+    const contextTotal = readyContextCount + pendingContextCount;
+    if (contextTotal > 0) {
+      parts.push(
+        pendingContextCount > 0 && readyContextCount === 0
+          ? `${pendingContextCount} pending`
+          : `${contextTotal} context`
+      );
+    }
+  }
+
+  return parts.join(' · ');
+}
 
 interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
   onOpenAddContext: () => void;
@@ -29,6 +78,9 @@ interface GiftedChatInputToolbarProps extends InputToolbarProps<IMessage> {
     searchLocation: import('@homeapp/common/types').SearchLocationInput | undefined
   ) => void;
   propertyAddress?: string;
+  readyContextCount?: number;
+  pendingContextCount?: number;
+  hasQueuedSend?: boolean;
 }
 
 export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
@@ -47,6 +99,9 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
     searchLocation,
     onSearchLocationChange,
     propertyAddress,
+    readyContextCount = 0,
+    pendingContextCount = 0,
+    hasQueuedSend = false,
     ...inputToolbarProps
   } = props;
 
@@ -54,6 +109,32 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
   const isDark = colorScheme === 'dark';
   const [settingsModalVisible, setSettingsModalVisible] = React.useState(false);
   const [settingsModalTab, setSettingsModalTab] = React.useState<'agent' | 'location'>('agent');
+  const [composerMetaExpanded, setComposerMetaExpanded] = React.useState(true);
+
+  const collapsedSummary = React.useMemo(
+    () =>
+      buildCollapsedComposerSummary({
+        primaryAgent,
+        selectedOptionalAgents,
+        selectedCheckpointOptionalAgents,
+        readyContextCount,
+        pendingContextCount,
+        hasQueuedSend,
+      }),
+    [
+      primaryAgent,
+      selectedOptionalAgents,
+      selectedCheckpointOptionalAgents,
+      readyContextCount,
+      pendingContextCount,
+      hasQueuedSend,
+    ]
+  );
+
+  const toggleComposerMeta = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setComposerMetaExpanded((value) => !value);
+  }, []);
 
   const colors = React.useMemo(
     () => ({
@@ -206,23 +287,63 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
 
   return (
     <View className="border-t border-border bg-light-background-alt px-4 pb-2 pt-3">
-      {contextChipStrip}
+      {composerMetaExpanded ? (
+        <>
+          {contextChipStrip}
 
-      {sendBlockHint ? (
+          {sendBlockHint ? (
+            <Text className="mb-2 text-xs text-muted-foreground">{sendBlockHint}</Text>
+          ) : null}
+
+          <View className="mb-2 flex-row items-center gap-1">
+            <View className="min-w-0 flex-1">
+              <CompactSettingsBar
+                primaryAgent={primaryAgent}
+                selectedOptionalAgents={selectedOptionalAgents}
+                selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+                searchLocation={searchLocation}
+                propertyAddress={propertyAddress}
+                onOpenSettings={handleOpenSettings}
+                onAgentPress={handleOpenAgentSettings}
+                onLocationPress={handleOpenLocationSettings}
+                className="flex-row items-center gap-2"
+              />
+            </View>
+            <Pressable
+              onPress={toggleComposerMeta}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Collapse chat settings and context"
+              className="h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-background">
+              <Icon as={ChevronDown} size={16} className="text-muted-foreground" />
+            </Pressable>
+          </View>
+        </>
+      ) : (
+        <View className="mb-2 flex-row items-center gap-1">
+          <Pressable
+            onPress={handleOpenSettings}
+            className="min-w-0 flex-1 flex-row items-center rounded-full border border-border bg-background px-3 py-1.5"
+            accessibilityRole="button"
+            accessibilityLabel={`Chat settings: ${collapsedSummary}`}>
+            <Text className="flex-1 text-xs font-medium text-foreground" numberOfLines={1}>
+              {collapsedSummary}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={toggleComposerMeta}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Expand chat settings and context"
+            className="h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-background">
+            <Icon as={ChevronUp} size={16} className="text-muted-foreground" />
+          </Pressable>
+        </View>
+      )}
+
+      {!composerMetaExpanded && sendBlockHint ? (
         <Text className="mb-2 text-xs text-muted-foreground">{sendBlockHint}</Text>
       ) : null}
-
-      {/* Compact Settings Bar */}
-      <CompactSettingsBar
-        primaryAgent={primaryAgent}
-        selectedOptionalAgents={selectedOptionalAgents}
-        selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-        searchLocation={searchLocation}
-        propertyAddress={propertyAddress}
-        onOpenSettings={handleOpenSettings}
-        onAgentPress={handleOpenAgentSettings}
-        onLocationPress={handleOpenLocationSettings}
-      />
 
       {/* Chat Settings Modal */}
       <ChatSettingsModal
