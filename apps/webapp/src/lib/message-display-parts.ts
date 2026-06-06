@@ -2,12 +2,15 @@
  * Message display resolution for chat UI — local copy for App Hosting (webapp does not depend on @homeapp/common).
  * Keep in sync with apps/mapp/lib/chat-content-parse.ts.
  */
+import { extractExecutiveSummaryNarrative } from "@/lib/executive-summary-display";
 import type { Message, StructuredResponseData } from "@/lib/types";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 
 export type MessageDisplayParts = {
   structuredData: StructuredResponseData | null;
   markdown: string;
+  /** Narrative prose (overview, recommendations) shown above accordions. */
+  summaryMarkdown: string;
 };
 
 function checkpointSummaryHasVisibleData(
@@ -121,13 +124,35 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
   return false;
 }
 
+function synthesisMarkdownForSummary(message: Message): string {
+  if (typeof message.contentMarkdown === "string" && message.contentMarkdown.trim()) {
+    return message.contentMarkdown.trim();
+  }
+  const content = typeof message.content === "string" ? message.content.trim() : "";
+  if (!content || content.startsWith("{") || content.startsWith("[")) {
+    return "";
+  }
+  return content;
+}
+
 /** Resolve structured vs markdown display from Orchestrator V2 message fields. */
 export function getMessageDisplayParts(message: Message): MessageDisplayParts {
   const { markdown, contentJson } = resolveMessageContentParts(message);
   if (contentJson && structuredDataHasVisibleSections(contentJson)) {
-    return { structuredData: contentJson, markdown: "" };
+    const analysis = contentJson.analysis;
+    const omitCheckpointSummaryMarkdown = checkpointSummaryHasVisibleData(
+      analysis?.checkpointSummary
+    );
+    return {
+      structuredData: contentJson,
+      markdown: "",
+      summaryMarkdown: extractExecutiveSummaryNarrative(
+        synthesisMarkdownForSummary(message),
+        { omitCheckpointSummaryMarkdown }
+      ),
+    };
   }
-  return { structuredData: null, markdown };
+  return { structuredData: null, markdown, summaryMarkdown: "" };
 }
 
 /** Whether assistant message parts should render content (vs typing / agent status). */

@@ -177,6 +177,7 @@ export default function PropertyChatSessionPage() {
         <ChatList
           messages={messages}
           isMessagesLoading={isMessagesLoading && messages.length === 0}
+          isStreamActive={isLoading}
           context="property"
           onSelectSuggestedPrompt={handleSuggestedPrompt}
           onSuggestedAction={handleSuggestedAction}

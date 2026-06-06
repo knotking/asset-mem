@@ -2,6 +2,13 @@ import type {Config} from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
+  safelist: [
+    'animate-text-gradient',
+    'bg-clip-text',
+    'bg-[length:200%_auto]',
+    '[-webkit-text-fill-color:transparent]',
+    'display-title-gradient-text',
+  ],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

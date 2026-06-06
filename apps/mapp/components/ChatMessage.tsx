@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import {
   View,
   Linking,
@@ -39,6 +39,7 @@ import {
   AlertTriangle,
   Heart,
   Paperclip,
+  ListChecks,
 } from 'lucide-react-native';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { buildServiceProviderDedupeKey } from '@homeapp/common/lib/saved-service-provider-dedupe';
@@ -75,6 +76,14 @@ import {
   structuredDataHasVisibleSections,
 } from '@/lib/chat-content-parse';
 import {
+  EXECUTIVE_SUMMARY_ACCORDION_TITLE,
+  EXECUTIVE_SUMMARY_ACCORDION_VALUE,
+  getSummaryAccordionPreview,
+  summaryAccordionPreviewIsTruncated,
+  getCostEstimateRecommendation,
+  SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
+} from '@homeapp/common/lib/executive-summary-display';
+import {
   getSuggestedActionsFromContentJson,
   type SuggestedAction,
 } from '@homeapp/common/lib/suggested-actions';
@@ -88,6 +97,13 @@ import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles'
 import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import {
+  hasPostContentPipelineWork,
+  resolveStructuredAnalysis,
+  shouldShowDisplayTitleGradient,
+  shouldShowSummaryAccordionPlaceholder,
+} from '@homeapp/common/lib/checkpoint-branch-progress';
+import { DisplayTitleGradientText } from '@/components/DisplayTitleGradientText';
 import {
   listMessageContextRefItems,
   splitMessageContextRefItems,
@@ -622,9 +638,17 @@ const ServiceProviderCard = React.memo(
 const StructuredResponse = React.memo(
   ({
     data,
+    summaryMarkdown,
+    displayTitleInProgress = false,
+    accordionPipelineInProgress = false,
+    summarySynthesisInProgress = false,
     saveMeta,
   }: {
     data: StructuredResponseData;
+    summaryMarkdown?: string;
+    displayTitleInProgress?: boolean;
+    accordionPipelineInProgress?: boolean;
+    summarySynthesisInProgress?: boolean;
     saveMeta?: SaveServiceProviderMeta;
   }) => {
   const colorScheme = useColorScheme();
@@ -779,6 +803,8 @@ const StructuredResponse = React.memo(
     () =>
       getStructuredAccordionDefaultValue({
         needsClarification,
+        hasSummaryMarkdown: !!summaryMarkdown?.trim(),
+        analysisInProgress: accordionPipelineInProgress,
         hasCheckpointSummary,
         hasCheckpointDetails,
         hasCheckpointInsights,
@@ -789,6 +815,8 @@ const StructuredResponse = React.memo(
       }),
     [
       needsClarification,
+      summaryMarkdown,
+      accordionPipelineInProgress,
       hasCheckpointSummary,
       hasCheckpointDetails,
       hasCheckpointInsights,
@@ -799,18 +827,61 @@ const StructuredResponse = React.memo(
     ]
   );
 
+  const hasSummaryMarkdown = !!summaryMarkdown?.trim();
+  const showSummaryAccordion =
+    hasSummaryMarkdown ||
+    (summarySynthesisInProgress && !hasSummaryMarkdown);
+  const [openSection, setOpenSection] = useState<string | undefined>(accordionDefaultValue);
+
+  useEffect(() => {
+    setOpenSection((current) =>
+      current === undefined && accordionDefaultValue
+        ? accordionDefaultValue
+        : current
+    );
+  }, [accordionDefaultValue]);
+  const summaryPreview = useMemo(() => {
+    if (hasSummaryMarkdown) {
+      return getSummaryAccordionPreview(summaryMarkdown!);
+    }
+    if (summarySynthesisInProgress) {
+      return SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW;
+    }
+    return '';
+  }, [hasSummaryMarkdown, summaryMarkdown, summarySynthesisInProgress]);
+  const summaryPreviewTruncated = useMemo(
+    () =>
+      hasSummaryMarkdown
+        ? summaryAccordionPreviewIsTruncated(summaryMarkdown!, summaryPreview)
+        : false,
+    [hasSummaryMarkdown, summaryMarkdown, summaryPreview]
+  );
+  const summaryAccordionExpanded =
+    openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
+
+  const costRecommendation = useMemo(
+    () =>
+      costEstimation?.costEstimates
+        ? getCostEstimateRecommendation(costEstimation.costEstimates)
+        : null,
+    [costEstimation]
+  );
+
   return (
     <View className="w-full space-y-3">
       {displayTitle && (
         <View cssInterop={false} style={nativeStyles.structuredTitleCard}>
-          <Text className="text-md font-semibold text-foreground">{displayTitle}</Text>
+          <DisplayTitleGradientText active={displayTitleInProgress}>
+            {displayTitle}
+          </DisplayTitleGradientText>
         </View>
       )}
       <Accordion
         type="single"
         collapsible
         className="w-full"
-        defaultValue={accordionDefaultValue}>
+        value={openSection}
+        onValueChange={setOpenSection}>
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
@@ -1418,7 +1489,62 @@ const StructuredResponse = React.memo(
                       )}
                     </View>
                   )}
+                  {costRecommendation && (
+                    <View className="mt-3 rounded-lg border border-border bg-background p-3">
+                      <Text className="mb-2 text-sm font-semibold text-foreground">
+                        Recommendation
+                      </Text>
+                      {costRecommendation.notes ? (
+                        <Text className="mb-2 text-sm text-foreground">
+                          {costRecommendation.notes}
+                        </Text>
+                      ) : null}
+                      {costRecommendation.next_steps ? (
+                        <Text className="text-sm text-foreground">
+                          {costRecommendation.next_steps}
+                        </Text>
+                      ) : null}
+                    </View>
+                  )}
                 </View>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {showSummaryAccordion && (
+          <AccordionItem value={EXECUTIVE_SUMMARY_ACCORDION_VALUE} className="border-b border-border">
+            <AccordionTrigger className="px-2 py-3">
+              <View className="min-w-0 flex-1 flex-col gap-1 pr-2">
+                <View className="flex-row items-center gap-2">
+                  <Icon as={ListChecks} size={16} className="text-emerald-600" />
+                  <Text className="font-medium text-foreground">
+                    {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
+                  </Text>
+                </View>
+                {summaryPreview && !summaryAccordionExpanded ? (
+                  <Text
+                    className="text-sm text-muted-foreground"
+                    numberOfLines={2}>
+                    {summaryPreview}
+                  </Text>
+                ) : null}
+                {summaryPreviewTruncated && !summaryAccordionExpanded ? (
+                  <Text className="text-xs text-muted-foreground/80">
+                    Show full summary
+                  </Text>
+                ) : null}
+              </View>
+            </AccordionTrigger>
+            <AccordionContent className="border-t border-border bg-background p-4">
+              {hasSummaryMarkdown ? (
+                <Markdown style={markdownStyles} rules={markdownRules}>
+                  {summaryMarkdown!}
+                </Markdown>
+              ) : (
+                <Text className="text-sm text-muted-foreground">
+                  {SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW}
+                </Text>
               )}
             </AccordionContent>
           </AccordionItem>
@@ -1435,12 +1561,20 @@ const MessageContent = React.memo(
     messageId,
     sessionId,
     structuredData,
+    summaryMarkdown,
+    displayTitleInProgress = false,
+    accordionPipelineInProgress = false,
+    summarySynthesisInProgress = false,
   }: {
     content: string;
     isUser: boolean;
     messageId: string;
     sessionId?: string;
     structuredData?: StructuredResponseData | null;
+    summaryMarkdown?: string;
+    displayTitleInProgress?: boolean;
+    accordionPipelineInProgress?: boolean;
+    summarySynthesisInProgress?: boolean;
   }) => {
   const markdownStyles = useMarkdownStyles(isUser);
 
@@ -1449,6 +1583,10 @@ const MessageContent = React.memo(
       <View className="w-full gap-3">
         <StructuredResponse
           data={structuredData}
+          summaryMarkdown={summaryMarkdown}
+          displayTitleInProgress={displayTitleInProgress}
+          accordionPipelineInProgress={accordionPipelineInProgress}
+          summarySynthesisInProgress={summarySynthesisInProgress}
           saveMeta={{
             source: 'chat',
             messageId,
@@ -1695,6 +1833,24 @@ function ChatMessage({
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
+  const structuredAnalysis = useMemo(
+    () => resolveStructuredAnalysis(messageContentJson),
+    [messageContentJson]
+  );
+  const summarySynthesisInProgress = useMemo(
+    () =>
+      shouldShowSummaryAccordionPlaceholder(
+        structuredAnalysis,
+        message.agentSteps
+      ),
+    [structuredAnalysis, message.agentSteps]
+  );
+  const postContentPipelineInProgress = useMemo(
+    () =>
+      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps),
+    [structuredAnalysis, message.agentSteps]
+  );
+
   const loadingUi = useAssistantLoadingUi({
     messageId: message.id,
     role: message.role,
@@ -1713,6 +1869,16 @@ function ChatMessage({
     useProxyWaveIndicator,
     typingIndicatorVariant,
   } = loadingUi;
+  const isTurnInFlight = !isUser && isActiveLoading;
+  const displayTitleInProgress = useMemo(
+    () =>
+      shouldShowDisplayTitleGradient({
+        structured: messageContentJson,
+        steps: message.agentSteps,
+        isTurnInFlight,
+      }),
+    [messageContentJson, message.agentSteps, isTurnInFlight]
+  );
   const showEarlyLoading = !isUser && !hasDisplayableContent && isActiveLoading;
   const isStructuredAssistant =
     !isUser &&
@@ -1858,6 +2024,10 @@ function ChatMessage({
                     messageId={message.id}
                     sessionId={sessionId}
                     structuredData={displayParts.structuredData}
+                    summaryMarkdown={displayParts.summaryMarkdown}
+                    displayTitleInProgress={displayTitleInProgress}
+                    accordionPipelineInProgress={postContentPipelineInProgress}
+                    summarySynthesisInProgress={summarySynthesisInProgress}
                   />
                 </View>
               ) : null}
@@ -1867,6 +2037,7 @@ function ChatMessage({
 
         {!isUser &&
         !showTypingIndicator &&
+        !isTurnInFlight &&
         suggestedActions.length > 0 &&
         onSuggestedAction ? (
           <View className="mt-2 flex-row flex-wrap gap-2">
@@ -1893,7 +2064,8 @@ function ChatMessage({
           </View>
         )}
 
-        {message.createdAt && (isUser || (!showStatusStrip && !showTypingIndicator)) && (
+        {message.createdAt &&
+          (isUser || (!showStatusStrip && !showTypingIndicator)) && (
           <Text className="mt-1 text-xs text-muted-foreground">
             {new Date(
               message.createdAt instanceof Date ? message.createdAt : message.createdAt.toDate()

@@ -1,5 +1,6 @@
 import {
   CHECKPOINT_OPTIONAL_AGENTS,
+  type AgentStep,
   type CheckpointOptionalAgent,
 } from "../types";
 import { serviceSearchFailed } from "./service-search-status";
@@ -25,6 +26,20 @@ export type CheckpointBranchAccordionBadge = {
   kind: "pending" | "running" | "completed";
   label: string;
 };
+
+/** ``analysis.analysisStatus`` key for executive-summary synthesis (Orchestrator V2). */
+export const CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY = "synthesis";
+
+export const SYNTHESIS_WRITING_LABEL = "Writing your summary…";
+
+const SYNTHESIS_AGENT_STEP_NAME = "checkpoint_analysis_synthesis_agent";
+
+const CHECKPOINT_OPTIONAL_AGENT_STEP_NAMES = new Set<string>([
+  "coverage_agent",
+  "diy_agent",
+  "service_agent",
+  "cost_agent",
+]);
 
 const BRANCH_LABELS: Record<CheckpointOptionalAgent, string> = {
   coverage: "Coverage",
@@ -190,7 +205,100 @@ export function getCheckpointBranchProgressFromAccordionAnalysis(
 }
 
 /** Latest assistant message with optional-agent analysis still in flight. */
+/** Tailwind utility string (webapp); mapp uses native shimmer instead. */
 export const DISPLAY_TITLE_GRADIENT_CLASS = "display-title-gradient-text";
+
+export function getSynthesisAnalysisStatus(
+  analysis: unknown
+): CheckpointBranchStatus | null {
+  if (!analysis || typeof analysis !== "object") {
+    return null;
+  }
+  const statusMap = (analysis as { analysisStatus?: unknown }).analysisStatus;
+  if (!statusMap || typeof statusMap !== "object") {
+    return null;
+  }
+  return normalizeStatus(
+    (statusMap as Record<string, unknown>)[CHECKPOINT_SYNTHESIS_ANALYSIS_STATUS_KEY]
+  );
+}
+
+export function isSynthesisAnalysisInProgress(analysis: unknown): boolean {
+  const status = getSynthesisAnalysisStatus(analysis);
+  return status === "pending" || status === "running";
+}
+
+/** ``analysis`` from message ``contentJson`` or ``contentJson.analysis``. */
+export function resolveStructuredAnalysis(
+  structured: unknown
+): Record<string, unknown> | null {
+  if (!structured || typeof structured !== "object") {
+    return null;
+  }
+  const root = structured as Record<string, unknown>;
+  const inner = root.analysis;
+  if (inner && typeof inner === "object") {
+    return inner as Record<string, unknown>;
+  }
+  return root;
+}
+
+export function isSynthesisAgentStepExecuting(
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null
+): boolean {
+  return !!steps?.some(
+    (step) =>
+      step.name === SYNTHESIS_AGENT_STEP_NAME && step.status === "executing"
+  );
+}
+
+/** Placeholder Summary accordion only while executive-summary synthesis is in flight. */
+export function shouldShowSummaryAccordionPlaceholder(
+  analysis: unknown,
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null
+): boolean {
+  return (
+    isSynthesisAnalysisInProgress(analysis) ||
+    isSynthesisAgentStepExecuting(steps)
+  );
+}
+
+/**
+ * Post-content status strip: optional branches or synthesis still running.
+ * Ignores orchestrator / checkpoint-load steps so checkpoint-only turns do not duplicate status.
+ */
+export function hasPostContentPipelineWork(
+  analysis: unknown,
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null
+): boolean {
+  if (getCheckpointBranchProgress(analysis)?.isInProgress) {
+    return true;
+  }
+  if (shouldShowSummaryAccordionPlaceholder(analysis, steps)) {
+    return true;
+  }
+  return !!steps?.some(
+    (step) =>
+      step.status === "executing" &&
+      CHECKPOINT_OPTIONAL_AGENT_STEP_NAMES.has(step.name)
+  );
+}
+
+export function getSynthesisTurnProgress(
+  analysis: unknown
+): CheckpointBranchProgress | null {
+  if (!isSynthesisAnalysisInProgress(analysis)) {
+    return null;
+  }
+  return {
+    items: [],
+    isInProgress: true,
+    completedCount: 0,
+    totalCount: 0,
+    header: SYNTHESIS_WRITING_LABEL,
+    detail: null,
+  };
+}
 
 export function hasCheckpointAnalysisStatusInProgress(
   analysis: unknown
@@ -201,6 +309,9 @@ export function hasCheckpointAnalysisStatusInProgress(
   const statusMap = (analysis as { analysisStatus?: unknown }).analysisStatus;
   if (!statusMap || typeof statusMap !== "object") {
     return false;
+  }
+  if (isSynthesisAnalysisInProgress(analysis)) {
+    return true;
   }
   for (const key of CHECKPOINT_OPTIONAL_AGENTS) {
     const st = normalizeStatus((statusMap as Record<string, unknown>)[key]);
@@ -226,6 +337,27 @@ export function hasCheckpointDisplayTitleInProgress(structured: unknown): boolea
   return false;
 }
 
+export type DisplayTitleGradientInput = {
+  structured?: unknown;
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null;
+  /** Local SSE or Firestore-observed in-flight turn (includes post-synthesis stream tail). */
+  isTurnInFlight?: boolean;
+};
+
+/** Shimmer the structured title card while checkpoint pipeline work is still running. */
+export function shouldShowDisplayTitleGradient(
+  input: DisplayTitleGradientInput
+): boolean {
+  if (input.isTurnInFlight) {
+    return true;
+  }
+  if (hasCheckpointDisplayTitleInProgress(input.structured)) {
+    return true;
+  }
+  const analysis = resolveStructuredAnalysis(input.structured ?? null);
+  return hasPostContentPipelineWork(analysis, input.steps);
+}
+
 export function getInFlightCheckpointProgressFromMessages(
   messages: Array<{
     role: string;
@@ -238,8 +370,10 @@ export function getInFlightCheckpointProgressFromMessages(
     if (msg.role !== "assistant") continue;
     const progress = getCheckpointBranchProgressFromMessage(msg);
     if (progress?.isInProgress) return progress;
-    if (typeof msg.content === "string" && msg.content.trim()) {
-      return null;
+    if (msg.contentJson && typeof msg.contentJson === "object") {
+      const root = msg.contentJson as Record<string, unknown>;
+      const synthesis = getSynthesisTurnProgress(root.analysis ?? root);
+      if (synthesis) return synthesis;
     }
   }
   return null;

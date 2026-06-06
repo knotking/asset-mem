@@ -2,7 +2,16 @@
 
 import { cn } from "@/lib/utils";
 import type { Message, ServiceProvider, StructuredResponseData, Product, DiyCostEstimatesSummary, SaveServiceProviderMeta, SuggestedAction } from "@/lib/types";
-import { getSuggestedActionsFromContentJson } from "@homeapp/common/lib/suggested-actions";
+import {
+  EXECUTIVE_SUMMARY_ACCORDION_TITLE,
+  EXECUTIVE_SUMMARY_ACCORDION_VALUE,
+  getSummaryAccordionPreview,
+  summaryAccordionPreviewIsTruncated,
+  getCostEstimateRecommendation,
+  SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
+} from "@/lib/executive-summary-display";
+import { getStructuredAccordionDefaultValue } from "@/lib/structured-accordion-defaults";
+import { getSuggestedActionsFromContentJson } from "@/lib/suggested-actions";
 import { useSavedServiceProviders } from "@/contexts/saved-service-providers-context";
 import { buildServiceProviderDedupeKey } from "@/lib/saved-service-provider-dedupe";
 import {
@@ -13,7 +22,7 @@ import {
 } from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Clock, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Clock, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart, ListChecks } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -21,9 +30,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useDebouncedThinkingStatus } from "@/hooks/use-debounced-thinking-status";
 import { CheckpointAccordionBranchBadge } from "@/components/chat/checkpoint-accordion-branch-badge";
 import {
-  DISPLAY_TITLE_GRADIENT_CLASS,
-  hasCheckpointDisplayTitleInProgress,
+  hasPostContentPipelineWork,
+  resolveStructuredAnalysis,
+  shouldShowDisplayTitleGradient,
+  shouldShowSummaryAccordionPlaceholder,
 } from "@/lib/checkpoint-branch-progress";
+
+/** Literal Tailwind utilities (must live in a scanned component file for JIT). */
+const DISPLAY_TITLE_GRADIENT_CLASS =
+  "inline-block bg-gradient-to-r from-primary via-muted-foreground to-primary bg-[length:200%_auto] bg-clip-text text-transparent [-webkit-text-fill-color:transparent] animate-text-gradient display-title-gradient-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -227,6 +242,22 @@ function CostEstimatesAccordionBody({ costEstimates }: { costEstimates: CostEsti
                     )}
                 </div>
             )}
+
+            {(() => {
+                const recommendation = getCostEstimateRecommendation(costEstimates);
+                if (!recommendation) return null;
+                return (
+                    <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                        <h4 className="mb-2 text-sm font-semibold text-foreground">Recommendation</h4>
+                        {recommendation.notes ? (
+                            <p className="mb-2 text-sm text-foreground">{recommendation.notes}</p>
+                        ) : null}
+                        {recommendation.next_steps ? (
+                            <p className="text-sm text-foreground">{recommendation.next_steps}</p>
+                        ) : null}
+                    </div>
+                );
+            })()}
         </div>
     );
 }
@@ -583,11 +614,20 @@ const getPreviewText = (value?: string, max = 240) => {
 
 const StructuredResponse = ({
   data,
-  displayTitleInProgress,
+  summaryMarkdown,
+  displayTitleInProgress = false,
+  isTurnInFlight = false,
+  accordionPipelineInProgress = false,
+  summarySynthesisInProgress = false,
   saveMeta,
 }: {
   data: StructuredResponseData;
+  summaryMarkdown?: string;
   displayTitleInProgress?: boolean;
+  isTurnInFlight?: boolean;
+  /** Collapse accordions while optional branches or synthesis are in flight (not client stream). */
+  accordionPipelineInProgress?: boolean;
+  summarySynthesisInProgress?: boolean;
   saveMeta?: SaveServiceProviderMeta;
 }) => {
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
@@ -710,6 +750,80 @@ const StructuredResponse = ({
             : "Service provider search did not complete. Please try again.";
     const hasService = !needsClarification && (hasProviders || serviceSearchFailedFlag);
     const hasCostEstimates = !needsClarification && !!(cost && cost.costEstimates);
+    const hasSummaryMarkdown = !!summaryMarkdown?.trim();
+    const showSummaryAccordion =
+      hasSummaryMarkdown ||
+      (summarySynthesisInProgress && !hasSummaryMarkdown);
+
+    const hasCheckpointDetails = Array.isArray((analysis as { checkpointDetails?: unknown })?.checkpointDetails)
+      && ((analysis as { checkpointDetails: unknown[] }).checkpointDetails.length > 0);
+    const insightsRecord = (analysis as { insights?: Record<string, unknown> })?.insights;
+    const hasCheckpointInsights = !!insightsRecord
+      && typeof insightsRecord === "object"
+      && Object.keys(insightsRecord).length > 0;
+
+    const accordionVisibility = useMemo(
+      () => ({
+        needsClarification,
+        hasSummaryMarkdown,
+        analysisInProgress: accordionPipelineInProgress,
+        hasCheckpointSummary,
+        hasCheckpointDetails,
+        hasCheckpointInsights,
+        hasCoverage,
+        hasDIY,
+        hasService,
+        hasCostEstimates,
+      }),
+      [
+        needsClarification,
+        hasSummaryMarkdown,
+        accordionPipelineInProgress,
+        hasCheckpointSummary,
+        hasCheckpointDetails,
+        hasCheckpointInsights,
+        hasCoverage,
+        hasDIY,
+        hasService,
+        hasCostEstimates,
+      ]
+    );
+
+    const accordionDefaultValue = useMemo(
+      () => getStructuredAccordionDefaultValue(accordionVisibility, "web"),
+      [accordionVisibility]
+    );
+
+    const [openSection, setOpenSection] = useState<string | undefined>(
+      accordionDefaultValue
+    );
+
+    useEffect(() => {
+      setOpenSection((current) =>
+        current === undefined && accordionDefaultValue
+          ? accordionDefaultValue
+          : current
+      );
+    }, [accordionDefaultValue]);
+
+    const summaryPreview = useMemo(() => {
+      if (hasSummaryMarkdown) {
+        return getSummaryAccordionPreview(summaryMarkdown!);
+      }
+      if (summarySynthesisInProgress) {
+        return SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW;
+      }
+      return "";
+    }, [hasSummaryMarkdown, summaryMarkdown, summarySynthesisInProgress]);
+    const summaryPreviewTruncated = useMemo(
+      () =>
+        hasSummaryMarkdown
+          ? summaryAccordionPreviewIsTruncated(summaryMarkdown!, summaryPreview)
+          : false,
+      [hasSummaryMarkdown, summaryMarkdown, summaryPreview]
+    );
+    const summaryAccordionExpanded =
+      openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
     
     parseLog.debug('serviceRecommendations', {
             serviceExists: !!service,
@@ -852,7 +966,7 @@ const StructuredResponse = ({
         : undefined;
     const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
     const showTitleGradient =
-      displayTitleInProgress ?? hasCheckpointDisplayTitleInProgress(data);
+      isTurnInFlight || displayTitleInProgress || accordionPipelineInProgress;
 
     return (
         <div className="space-y-4">
@@ -869,7 +983,13 @@ const StructuredResponse = ({
                     </h2>
                 </div>
             )}
-        <Accordion type="single" collapsible defaultValue={hasCheckpointSummary ? "checkpoint-summary" : "triage"} className="w-full space-y-2">
+        <Accordion
+          type="single"
+          collapsible
+          value={openSection}
+          onValueChange={setOpenSection}
+          className="w-full space-y-2"
+        >
             {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
@@ -1285,6 +1405,40 @@ const StructuredResponse = ({
                     </AccordionContent>
                 </AccordionItem>
             )}
+
+            {showSummaryAccordion && (
+                <AccordionItem value={EXECUTIVE_SUMMARY_ACCORDION_VALUE} className="border rounded-lg">
+                    <AccordionTrigger className="items-start px-4 py-3 text-sm hover:no-underline sm:text-base">
+                        <div className="min-w-0 flex-1 pr-2 text-left">
+                            <div className="flex items-center gap-2">
+                                <ListChecks className="h-5 w-5 shrink-0 text-emerald-600" />
+                                <span className="font-semibold text-foreground">
+                                    {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
+                                </span>
+                            </div>
+                            {summaryPreview && !summaryAccordionExpanded ? (
+                                <p className="mt-1 line-clamp-2 text-sm font-normal text-muted-foreground">
+                                    {summaryPreview}
+                                </p>
+                            ) : null}
+                            {summaryPreviewTruncated && !summaryAccordionExpanded ? (
+                                <span className="mt-1 block text-xs font-normal text-muted-foreground/80">
+                                    Show full summary
+                                </span>
+                            ) : null}
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">
+                        {hasSummaryMarkdown ? (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryMarkdown!}</ReactMarkdown>
+                        ) : (
+                          <p className="text-sm text-muted-foreground animate-pulse">
+                            {SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW}
+                          </p>
+                        )}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
         </Accordion>
         </div>
     );
@@ -1517,7 +1671,8 @@ a: ({node, ...props}: any) => {
 
 type Props = {
   message: Message;
-  isLoading?: boolean;
+  /** True while this assistant turn is still streaming on the client. */
+  isTurnInFlight?: boolean;
   context?: 'property' | null;
   priorAssistantTurnCount?: number;
   hideRepeatedContextRefs?: boolean;
@@ -1576,7 +1731,7 @@ function AssistantProgressStrip({
 
 const ChatMessageComponent = ({
   message,
-  isLoading = false,
+  isTurnInFlight = false,
   context,
   priorAssistantTurnCount = 0,
   hideRepeatedContextRefs = false,
@@ -1639,13 +1794,31 @@ const ChatMessageComponent = ({
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
+  const structuredAnalysis = useMemo(
+    () => resolveStructuredAnalysis(messageContentJson),
+    [messageContentJson]
+  );
+  const summarySynthesisInProgress = useMemo(
+    () =>
+      shouldShowSummaryAccordionPlaceholder(
+        structuredAnalysis,
+        message.agentSteps
+      ),
+    [structuredAnalysis, message.agentSteps]
+  );
+  const postContentPipelineInProgress = useMemo(
+    () =>
+      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps),
+    [structuredAnalysis, message.agentSteps]
+  );
+
   const loadingUi = useAssistantLoadingUi({
     messageId: message.id,
     role: message.role,
     agentLifecycle: message.agentLifecycle,
     agentStepCount: message.agentSteps?.length ?? 0,
     hasDisplayableContent,
-    isActiveLoading: isLoading && !isUser,
+    isActiveLoading: isTurnInFlight && !isUser,
     priorAssistantTurnCount,
   });
   const {
@@ -1843,15 +2016,20 @@ const ChatMessageComponent = ({
 
   const displayTitleAnalysisInProgress = useMemo(() => {
     if (isUser) return false;
-    if (!messageContentJson) return false;
-    return hasCheckpointDisplayTitleInProgress(messageContentJson);
-  }, [isUser, messageContentJson]);
+    return shouldShowDisplayTitleGradient({
+      structured: messageContentJson,
+      steps: message.agentSteps,
+      isTurnInFlight,
+    });
+  }, [isUser, messageContentJson, message.agentSteps, isTurnInFlight]);
 
   const isUserSplitContent =
     isUser && !showStatusStrip && !showLoadingIndicator && !effectiveStructuredData;
 
   const messageTimeLabel = useMemo(() => {
-    if (!isUser && (showStatusStrip || showLoadingIndicator)) return null;
+    if (!isUser && (showStatusStrip || showLoadingIndicator)) {
+      return null;
+    }
     if (!message.createdAt) return null;
     const date =
       message.createdAt instanceof Date
@@ -1946,11 +2124,14 @@ const ChatMessageComponent = ({
                 ? "p-0"
                 : isMediaOnly
                   ? "bg-transparent p-0"
-                  : fileData || (showLoadingIndicator && !hasDisplayableContent)
+                  : fileData
                     ? "p-2"
-                    : effectiveStructuredData
-                      ? ""
-                      : "px-4 py-2.5"
+                    : (showLoadingIndicator || showStatusStrip) &&
+                        !hasDisplayableContent
+                      ? "p-0"
+                      : effectiveStructuredData
+                        ? ""
+                        : "px-4 py-2.5"
             )}
           >
             {!isUser &&
@@ -1970,7 +2151,7 @@ const ChatMessageComponent = ({
                 useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
               />
             ) : showLoadingIndicator ? (
-               <div className="flex items-center justify-start p-2">
+               <div className="flex items-center justify-start py-3">
                 {typingIndicatorVariant === "wave" ? (
                   <AssistantWaveDots />
                 ) : (
@@ -1981,7 +2162,11 @@ const ChatMessageComponent = ({
                 <motion.div layout className="flex w-full flex-col gap-3">
                   <StructuredResponse
                     data={effectiveStructuredData}
+                    summaryMarkdown={displayParts.summaryMarkdown}
                     displayTitleInProgress={displayTitleAnalysisInProgress}
+                    isTurnInFlight={isTurnInFlight}
+                    accordionPipelineInProgress={postContentPipelineInProgress}
+                    summarySynthesisInProgress={summarySynthesisInProgress}
                     saveMeta={{
                       source: 'chat',
                       messageId: message.id,
@@ -1996,9 +2181,10 @@ const ChatMessageComponent = ({
           </div>
           {!isUser &&
           !showLoadingIndicator &&
+          !isTurnInFlight &&
           suggestedActions.length > 0 &&
           onSuggestedAction ? (
-            <div className="mt-2 flex w-full flex-wrap gap-2">
+            <div className="relative z-10 mt-2 flex w-full flex-wrap gap-2">
               {suggestedActions.map((action) => (
                 <Button
                   key={`${message.id}-${action.label}`}
@@ -2007,7 +2193,10 @@ const ChatMessageComponent = ({
                   size="sm"
                   className="h-auto whitespace-normal px-3 py-2 text-left text-sm"
                   disabled={isSendDisabled}
-                  onClick={() => onSuggestedAction(action)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSuggestedAction(action);
+                  }}
                 >
                   {action.label}
                 </Button>

@@ -1,6 +1,9 @@
 import type { AgentStep } from "../types";
 import {
   getCheckpointBranchProgress,
+  isSynthesisAnalysisInProgress,
+  resolveStructuredAnalysis,
+  SYNTHESIS_WRITING_LABEL,
 } from "./checkpoint-branch-progress";
 
 /** Shown when no specialist step is active yet. */
@@ -22,6 +25,14 @@ function orchestratorPipelineIndex(name: string): number {
 
 /** Internal tools that should never appear in the thinking ticker. */
 const HIDDEN_TICKER_AGENTS = new Set<string>([]);
+
+/** Rollup / progress rows superseded by optional specialists or ``analysisStatus``. */
+const CHECKPOINT_ROLLUP_TICKER_AGENTS = new Set<string>([
+  "run_checkpoint_pipeline",
+  "checkpoint_analysis_agent",
+  "checkpoint_optional_agents_parallel_runner",
+  "checkpoint_analysis_progress",
+]);
 
 /** Checkpoint optional specialists (parallel branches). */
 const CHECKPOINT_OPTIONAL_STEP_NAMES = new Set<string>([
@@ -149,9 +160,28 @@ export function getAgentStepDisplayLabel(
   return prettifyAgentName(step.name);
 }
 
+function isCheckpointRollupTickerAgent(name: string | undefined | null): boolean {
+  return !!name && CHECKPOINT_ROLLUP_TICKER_AGENTS.has(name);
+}
+
 function isVisibleTickerStep(step: AgentStep): boolean {
   if (isHiddenTickerAgent(step.name)) return false;
   return step.status === "executing";
+}
+
+function resolveThinkingStatusAnalysis(
+  options?: ThinkingStatusOptions,
+): unknown {
+  if (options?.accordionAnalysis) {
+    return options.accordionAnalysis;
+  }
+  if (options?.messageContentJson) {
+    return (
+      resolveStructuredAnalysis(options.messageContentJson) ??
+      options.messageContentJson
+    );
+  }
+  return null;
 }
 
 function executingCheckpointOptionalSteps(
@@ -176,7 +206,22 @@ export function pickActiveAgentStep(
 
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    if (step.status === "executing" && isVisibleTickerStep(step) && !isOrchestratorAgent(step.name)) {
+    if (
+      step.status === "executing" &&
+      isVisibleTickerStep(step) &&
+      !isOrchestratorAgent(step.name) &&
+      !isCheckpointRollupTickerAgent(step.name)
+    ) {
+      return step;
+    }
+  }
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    if (
+      isVisibleTickerStep(step) &&
+      !isOrchestratorAgent(step.name) &&
+      !isCheckpointRollupTickerAgent(step.name)
+    ) {
       return step;
     }
   }
@@ -204,8 +249,7 @@ export function getThinkingStatusFromSteps(
   steps: AgentStep[] | undefined | null,
   options?: ThinkingStatusOptions,
 ): ThinkingStatus {
-  const analysis: unknown =
-    options?.accordionAnalysis ?? options?.messageContentJson ?? null;
+  const analysis = resolveThinkingStatusAnalysis(options);
   const branchProgress = getCheckpointBranchProgress(analysis);
   if (branchProgress?.isInProgress) {
     return {
@@ -214,9 +258,20 @@ export function getThinkingStatusFromSteps(
     };
   }
 
+  if (isSynthesisAnalysisInProgress(analysis)) {
+    return { header: SYNTHESIS_WRITING_LABEL, preview: null };
+  }
+
   const executingOptional = executingCheckpointOptionalSteps(steps);
   if (executingOptional.length >= 2) {
     return { header: CHECKPOINT_PARALLEL_ANALYSIS_LABEL, preview: null };
+  }
+  if (executingOptional.length === 1) {
+    const step = executingOptional[0];
+    return {
+      header: getAgentStepDisplayLabel(step, steps),
+      preview: step.preview?.trim() || null,
+    };
   }
 
   const active = pickActiveAgentStep(steps);

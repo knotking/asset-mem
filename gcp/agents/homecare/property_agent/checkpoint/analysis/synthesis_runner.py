@@ -18,9 +18,13 @@ def _synthesis_user_content(
     user_query: str,
 ) -> str:
     return (
-        "Write an executive summary in markdown for the property owner.\n"
+        "Write concise summary markdown for the property owner "
+        "(overview, recommendations, next steps).\n"
         "Rules:\n"
-        "- Output markdown prose only (start with # Title).\n"
+        "- Output markdown prose only; start with a single `#` H1 title.\n"
+        "- The H1 must be a short, specific issue title "
+        '(e.g. `# Garage Door Paint Chipping`). Do NOT use generic titles like '
+        '"Executive Summary" or prefix the title with "Executive Summary:".\n'
         "- Do NOT output JSON or ```json fences.\n"
         "- Do not repeat full accordion tables; the UI renders structured sections separately.\n\n"
         f"User question: {user_query}\n\n"

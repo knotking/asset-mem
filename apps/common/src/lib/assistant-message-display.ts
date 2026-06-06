@@ -1,21 +1,12 @@
-import { extractExecutiveSummaryNarrative } from '@homeapp/common/lib/executive-summary-display';
-import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
-import { serviceSearchFailed } from '@homeapp/common/lib/service-search-status';
-import type { Message, StructuredResponseData } from '@homeapp/common/types';
-
-export type MessageDisplayParts = {
-  structuredData: StructuredResponseData | null;
-  markdown: string;
-  /** Narrative prose (overview, recommendations) shown above accordions. */
-  summaryMarkdown: string;
-};
+import type { Message, StructuredResponseData } from "../types";
+import { resolveMessageContentParts } from "./message-content-parts";
 
 function checkpointSummaryHasVisibleData(
-  checkpointSummary: NonNullable<StructuredResponseData['analysis']>['checkpointSummary']
+  checkpointSummary: NonNullable<StructuredResponseData["analysis"]>["checkpointSummary"]
 ): boolean {
   if (!checkpointSummary) return false;
   if (
-    typeof checkpointSummary.checkpointsAnalyzed === 'number' &&
+    typeof checkpointSummary.checkpointsAnalyzed === "number" &&
     checkpointSummary.checkpointsAnalyzed > 0
   ) {
     return true;
@@ -31,20 +22,22 @@ function checkpointSummaryHasVisibleData(
 function triageHasVisibleData(
   triage: Record<string, unknown> | null | undefined
 ): boolean {
-  if (!triage || typeof triage !== 'object') return false;
+  if (!triage || typeof triage !== "object") return false;
   if (triage.needs_clarification === true) {
     const questions = triage.clarification_questions;
     if (Array.isArray(questions) && questions.length > 0) return true;
     const message = triage.message;
-    if (typeof message === 'string' && message.trim()) return true;
+    if (typeof message === "string" && message.trim()) return true;
   }
   const diagnosis = triage.diagnosis;
-  return typeof diagnosis === 'string' && diagnosis.trim() !== '';
+  return typeof diagnosis === "string" && diagnosis.trim() !== "";
 }
 
 /** True when structured JSON has at least one section the UI can render (not an empty shell). */
-export function structuredDataHasVisibleSections(data: StructuredResponseData): boolean {
-  const analysis = data.analysis || ({} as NonNullable<StructuredResponseData['analysis']>);
+export function structuredDataHasVisibleSections(
+  data: StructuredResponseData
+): boolean {
+  const analysis = data.analysis || ({} as NonNullable<StructuredResponseData["analysis"]>);
   const analysisRecord = analysis as Record<string, unknown>;
   const rootRecord = data as Record<string, unknown>;
 
@@ -59,7 +52,7 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
   if (Array.isArray(checkpointDetails) && checkpointDetails.length > 0) return true;
 
   const insights = analysisRecord.insights;
-  if (insights && typeof insights === 'object') {
+  if (insights && typeof insights === "object") {
     const insightRecord = insights as Record<string, unknown>;
     if (insightRecord.changes || insightRecord.patterns || insightRecord.recommendations) {
       return true;
@@ -81,7 +74,7 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
     if (
       diyRecord.hireProfessionalRecommended === true ||
       diyRecord.hire_professional_recommended === true ||
-      (typeof diySteps?.summary === 'string' && diySteps.summary.trim()) ||
+      (typeof diySteps?.summary === "string" && diySteps.summary.trim()) ||
       (Array.isArray(diySteps?.steps) && diySteps.steps.length > 0) ||
       (Array.isArray(youtubeSearch?.videos) && youtubeSearch.videos.length > 0) ||
       (Array.isArray(recommendedProducts?.products) && recommendedProducts.products.length > 0)
@@ -105,7 +98,13 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
       serviceRecord.nearbyProviders,
     ];
     if (providerArrays.some((arr) => Array.isArray(arr) && arr.length > 0)) return true;
-    if (serviceSearchFailed(serviceRecord)) return true;
+    if (
+      String(serviceRecord.searchStatus ?? "")
+        .trim()
+        .toLowerCase() === "failed"
+    ) {
+      return true;
+    }
   }
 
   const costEstimation = rootRecord.costEstimationResults || analysisRecord.costEstimationResults;
@@ -115,41 +114,11 @@ export function structuredDataHasVisibleSections(data: StructuredResponseData): 
   return false;
 }
 
-function synthesisMarkdownForSummary(message: Message): string {
-  if (typeof message.contentMarkdown === 'string' && message.contentMarkdown.trim()) {
-    return message.contentMarkdown.trim();
-  }
-  const content = typeof message.content === 'string' ? message.content.trim() : '';
-  if (!content || content.startsWith('{') || content.startsWith('[')) {
-    return '';
-  }
-  return content;
-}
-
-/** Resolve structured vs markdown display from Orchestrator V2 message fields. */
-export function getMessageDisplayParts(message: Message): MessageDisplayParts {
+/** Whether an assistant Firestore message should render content (vs loading UI). */
+export function assistantMessageHasDisplayableContent(message: Message): boolean {
   const { markdown, contentJson } = resolveMessageContentParts(message);
   if (contentJson && structuredDataHasVisibleSections(contentJson)) {
-    const analysis = contentJson.analysis;
-    const omitCheckpointSummaryMarkdown = checkpointSummaryHasVisibleData(
-      analysis?.checkpointSummary
-    );
-    return {
-      structuredData: contentJson,
-      markdown: '',
-      summaryMarkdown: extractExecutiveSummaryNarrative(
-        synthesisMarkdownForSummary(message),
-        { omitCheckpointSummaryMarkdown }
-      ),
-    };
+    return true;
   }
-  return { structuredData: null, markdown, summaryMarkdown: '' };
-}
-
-/** Whether assistant message parts should render content (vs typing / agent status). */
-export function assistantMessageHasDisplayableContent(parts: MessageDisplayParts): boolean {
-  if (parts.structuredData) {
-    return structuredDataHasVisibleSections(parts.structuredData);
-  }
-  return !!parts.markdown?.trim();
+  return !!markdown.trim();
 }

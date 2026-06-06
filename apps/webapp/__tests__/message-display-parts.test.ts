@@ -49,6 +49,7 @@ describe('getMessageDisplayParts', () => {
     expect(getMessageDisplayParts(messageFixtures.partialAssistantMessage)).toEqual({
       structuredData: null,
       markdown: messageFixtures.partialAssistantMessage.contentMarkdown,
+      summaryMarkdown: '',
     });
   });
 
@@ -56,6 +57,7 @@ describe('getMessageDisplayParts', () => {
     expect(getMessageDisplayParts(messageFixtures.structuredAssistantMessage)).toEqual({
       structuredData: messageFixtures.structuredAssistantMessage.contentJson,
       markdown: '',
+      summaryMarkdown: '',
     });
   });
 
@@ -63,6 +65,25 @@ describe('getMessageDisplayParts', () => {
     const parts = getMessageDisplayParts(messageFixtures.garageDoorDualFormatMessage);
     expect(parts.structuredData).toBe(messageFixtures.garageDoorDualFormatMessage.contentJson);
     expect(parts.markdown).toBe('');
+    expect(parts.summaryMarkdown).not.toContain('Following the inspection');
+    expect(parts.summaryMarkdown).toContain('### Next Steps');
+    expect(parts.summaryMarkdown).not.toContain('Repair Options');
+  });
+
+  it('extracts summaryMarkdown from legacy content when contentMarkdown is empty', () => {
+    const legacy = {
+      ...messageFixtures.garageDoorDualFormatMessage,
+      contentMarkdown: '',
+      content: `# Garage Door Analysis
+
+Following the inspection, paint chipping was found.
+
+### Next Steps
+1. Prep the surface before priming.`,
+    };
+    const parts = getMessageDisplayParts(legacy);
+    expect(parts.summaryMarkdown).toContain('### Next Steps');
+    expect(parts.summaryMarkdown).not.toContain('Following the inspection');
   });
 });
 

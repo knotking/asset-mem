@@ -4,6 +4,7 @@ from services.vertex_service import (
     _checkpoint_progress_display_text,
     _progressive_checkpoint_step_updates_from_state_delta,
     _should_replace_assistant_content,
+    _synthesis_step_updates_from_state_delta,
 )
 
 
@@ -47,3 +48,25 @@ def test_progressive_step_updates_from_state_delta():
     assert len(updates) == 1
     assert updates[0]["name"] == "diy_agent"
     assert updates[0]["status"] == "completed"
+
+
+def test_synthesis_step_updates_from_state_delta():
+    event = {
+        "author": "checkpoint_analysis_progress",
+        "actions": {
+            "state_delta": {
+                "contentJson": {
+                    "analysis": {
+                        "analysisStatus": {
+                            "coverage": "completed",
+                            "synthesis": "running",
+                        }
+                    }
+                }
+            }
+        },
+    }
+    updates = _synthesis_step_updates_from_state_delta(event)
+    assert len(updates) == 1
+    assert updates[0]["name"] == "checkpoint_analysis_synthesis_agent"
+    assert updates[0]["status"] == "executing"

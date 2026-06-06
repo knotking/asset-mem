@@ -21,12 +21,8 @@ import { GiftedChatInputToolbar } from '@/components/GiftedChatInputToolbar';
 import { CheckpointAnalysisProgressFooter } from '@/components/CheckpointAnalysisProgressFooter';
 import { getInFlightCheckpointProgressFromMessages } from '@homeapp/common/lib/checkpoint-branch-progress';
 import { countPriorAssistantTurnsInSession } from '@homeapp/common/lib/agent-lifecycle-ui';
-import { hasUserMessageBefore } from '@homeapp/common/lib/sort-messages';
+import { getActiveStreamingAssistantMessageId } from '@homeapp/common/lib/sort-messages';
 import { buildSuppressRepeatedContextRefsByMessageId } from '@homeapp/common/lib/chat-message-context-refs';
-import {
-  assistantMessageHasDisplayableContent,
-  getMessageDisplayParts,
-} from '@/lib/chat-content-parse';
 import { giftedChatListViewPropsForPlatform } from '@/lib/property-chat-list-props';
 import {
   CHAT_SESSION_EMPTY_INTRO,
@@ -115,17 +111,10 @@ function PropertyChatTab({
     return getInFlightCheckpointProgressFromMessages(messages);
   }, [messages]);
 
-  const activeStreamingAssistantId = React.useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const msg = messages[i];
-      if (msg.role !== 'assistant') continue;
-      if (!assistantMessageHasDisplayableContent(getMessageDisplayParts(msg))) {
-        if (!hasUserMessageBefore(messages, i)) return null;
-        return msg.id;
-      }
-    }
-    return null;
-  }, [messages]);
+  const activeStreamingAssistantId = React.useMemo(
+    () => getActiveStreamingAssistantMessageId(messages, isSending),
+    [messages, isSending]
+  );
 
   const priorAssistantTurnCountById = React.useMemo(() => {
     const map = new Map<string, number>();

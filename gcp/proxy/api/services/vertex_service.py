@@ -709,6 +709,21 @@ def _progressive_checkpoint_step_updates_from_state_delta(
     return [_step_update(agent_name, "completed")]
 
 
+def _synthesis_step_updates_from_state_delta(
+    event: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """Reflect ``analysisStatus.synthesis`` as a first-class agentSteps row."""
+    status = _analysis_status_from_delta(_event_state_delta(event))
+    if not status:
+        return []
+    phase = status.get("synthesis")
+    if phase == "running":
+        return [_step_update("checkpoint_analysis_synthesis_agent", "executing")]
+    if phase == "completed":
+        return [_step_update("checkpoint_analysis_synthesis_agent", "completed")]
+    return []
+
+
 def _is_checkpoint_progress_event(event: Dict[str, Any], event_text: str) -> bool:
     if not event_text:
         return False
@@ -754,7 +769,7 @@ def _analysis_status_from_delta(delta: Dict[str, Any]) -> Optional[Dict[str, str
             return {
                 str(key): str(value)
                 for key, value in status.items()
-                if key in _CHECKPOINT_OPTIONAL_AGENT_BY_KEY
+                if key in _CHECKPOINT_OPTIONAL_AGENT_BY_KEY or key == "synthesis"
             }
     return None
 
@@ -1376,6 +1391,9 @@ async def stream_agent_answers(
             step_updates = extract_agent_step_updates_from_event(event)
             if _is_checkpoint_progress_event(event, event_text):
                 step_updates = step_updates + _progressive_checkpoint_step_updates_from_state_delta(
+                    event
+                )
+                step_updates = step_updates + _synthesis_step_updates_from_state_delta(
                     event
                 )
             if step_updates:

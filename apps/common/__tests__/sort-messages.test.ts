@@ -5,6 +5,7 @@ import {
   clientStartedAtTimestamp,
 } from '../src/lib/session-timestamps';
 import {
+  getActiveStreamingAssistantMessageId,
   hasUserMessageBefore,
   sortMessagesChronologically,
 } from '../src/lib/sort-messages';
@@ -77,5 +78,71 @@ describe('hasUserMessageBefore', () => {
         1,
       ),
     ).toBe(true);
+  });
+});
+
+describe('getActiveStreamingAssistantMessageId', () => {
+  const thread = [
+    msg('user', 'user', t),
+    msg('assistant', 'assistant', t),
+  ];
+
+  it('returns null when stream is not active and assistant is complete', () => {
+    expect(
+      getActiveStreamingAssistantMessageId(
+        [
+          ...thread,
+          {
+            ...thread[1],
+            contentMarkdown: 'Done',
+          },
+        ],
+        false
+      )
+    ).toBeNull();
+  });
+
+  it('returns last assistant after a user message while stream is active', () => {
+    expect(getActiveStreamingAssistantMessageId(thread, true)).toBe('assistant');
+  });
+
+  it('observes in-flight assistant from Firestore when local stream is inactive', () => {
+    const assistant: Message = {
+      ...msg('assistant', 'assistant', t),
+      agentSteps: [{ name: 'run_checkpoint_pipeline', status: 'executing' }],
+    };
+    expect(
+      getActiveStreamingAssistantMessageId(
+        [msg('user', 'user', t), assistant],
+        false
+      )
+    ).toBe('assistant');
+  });
+
+  it('observes empty assistant shell on passive client before lifecycle lands', () => {
+    expect(
+      getActiveStreamingAssistantMessageId(
+        [msg('user', 'user', t), msg('assistant', 'assistant', t)],
+        false
+      )
+    ).toBe('assistant');
+  });
+
+  it('observes pipeline progress on passive client after structured content lands', () => {
+    const assistant: Message = {
+      ...msg('assistant', 'assistant', t),
+      contentJson: {
+        analysis: {
+          checkpointSummary: { checkpointsAnalyzed: 1 },
+          analysisStatus: { coverage: 'running' },
+        },
+      } as Message['contentJson'],
+    };
+    expect(
+      getActiveStreamingAssistantMessageId(
+        [msg('user', 'user', t), assistant],
+        false
+      )
+    ).toBe('assistant');
   });
 });

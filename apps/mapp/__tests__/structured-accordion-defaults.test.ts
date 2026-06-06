@@ -8,18 +8,29 @@ describe('getStructuredAccordionDefaultValue', () => {
     Platform.OS = originalOs;
   });
 
-  it('opens checkpoint summary on Android when present', () => {
+  it('keeps all sections collapsed during streaming on Android', () => {
     Platform.OS = 'android';
     expect(
       getStructuredAccordionDefaultValue({
+        analysisInProgress: true,
         hasCheckpointSummary: true,
         hasCoverage: true,
-        hasDIY: true,
       })
-    ).toBe('checkpoint-summary');
+    ).toBeUndefined();
   });
 
-  it('keeps optional-agent sections collapsed on Android when only summary is present', () => {
+  it('keeps summary collapsed when synthesis markdown is present', () => {
+    Platform.OS = 'android';
+    expect(
+      getStructuredAccordionDefaultValue({
+        hasSummaryMarkdown: true,
+        hasCheckpointSummary: true,
+        hasCoverage: true,
+      })
+    ).toBeUndefined();
+  });
+
+  it('opens checkpoint summary on Android when present and complete', () => {
     Platform.OS = 'android';
     expect(
       getStructuredAccordionDefaultValue({
@@ -58,13 +69,14 @@ describe('getStructuredAccordionDefaultValue', () => {
     ).toBe('coverage');
   });
 
-  it('prefers checkpoint summary on iOS when present', () => {
+  it('keeps summary collapsed on iOS when synthesis markdown is present', () => {
     Platform.OS = 'ios';
     expect(
       getStructuredAccordionDefaultValue({
+        hasSummaryMarkdown: true,
         hasCheckpointSummary: true,
         hasCheckpointDetails: true,
       })
-    ).toBe('checkpoint-summary');
+    ).toBeUndefined();
   });
 });

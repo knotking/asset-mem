@@ -13,7 +13,7 @@ When users request actionable recommendations from checkpoints, the pipeline:
 - Parses retrieval output into issues and checkpoint summaries
 - Runs optional branches in parallel via `checkpoint/analysis/parallel_runner.py`
 - Assembles `contentJson` deterministically (`checkpoint/analysis/assembler.py`)
-- Synthesizes executive summary markdown (no fenced JSON in model output)
+- Synthesizes summary markdown with an issue-specific H1 title (no "Executive Summary" prefix; no fenced JSON in model output)
 - Emits incremental `state_delta` patches for the proxy to merge into Firestore messages
 
 ## Architecture

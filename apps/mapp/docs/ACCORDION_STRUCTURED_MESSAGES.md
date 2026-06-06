@@ -154,17 +154,29 @@ Orchestrator V2 uses persisted `contentJson` as the single source for structured
 
 **Current behavior:**
 - Proxy persists `contentJson` + `contentMarkdown`
-- Chat UI reads `contentJson` directly for accordions
+- When `contentJson` has visible accordion sections, UI renders **hybrid** display:
+  - `analysis.title` title card
+  - Structured accordions from `contentJson` (collapsed only while optional branches or synthesis are in flight — checkpoint-only opens **Checkpoint Summary** by default)
+  - **Summary & Next Steps** last accordion from filtered `contentMarkdown` (collapsed by default; inline preview in trigger; placeholder **Preparing summary…** only while `analysisStatus.synthesis` is `pending`/`running` or the synthesis agent step is executing — not for checkpoint-only turns; does not auto-open when synthesis arrives)
+  - In-flight branch/synthesis progress uses **CheckpointAnalysisProgressFooter** above the composer context chips (not a strip below accordions)
+  - **Suggested-action** quick-reply chips below accordions are hidden while `isTurnInFlight`; they appear when the turn completes
+  - `suggestedActions` quick-reply chips below the bubble
+- Plain markdown-only messages still use full `contentMarkdown` prose
 - Message text is not parsed for fenced JSON in hot paths
 
 **Content resolution:**
 ```typescript
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
+import { getMessageDisplayParts } from '@/lib/chat-content-parse';
 
 const { markdown, contentJson } = resolveMessageContentParts(message);
-// contentJson → StructuredResponse when sections are visible
+const { structuredData, summaryMarkdown } = getMessageDisplayParts(message);
+// structuredData → StructuredResponse accordions
+// summaryMarkdown → last accordion (Summary & Next Steps) when structured
 // markdown → prose fallback when no structured UI
 ```
+
+**Cost accordion:** renders `costEstimates.recommendation.notes` and `next_steps` when present in JSON.
 
 #### B. StructuredResponse Component
 
@@ -219,6 +231,7 @@ Displays parsed JSON data in accordion sections with intelligent content detecti
 - Extracted from `analysis.title` or `data.title`
 - Falls back to preview text from diagnosis or clarification message
 - Displayed in rounded border box above accordion
+- Shimmers via `DisplayTitleGradientText` while `shouldShowDisplayTitleGradient` is true (`isTurnInFlight`, in-flight `analysisStatus`, or executing branch/synthesis `agentSteps`)
 
 #### C. ServiceProviderCard Component ([ChatMessage.tsx:320-447](apps/mapp/components/ChatMessage.tsx#L320-L447))
 

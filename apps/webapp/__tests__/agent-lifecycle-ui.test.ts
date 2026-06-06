@@ -72,4 +72,14 @@ describe('resolveAssistantLoadingUi', () => {
     expect(ui.showThinkingStrip).toBe(true);
     expect(ui.showTypingIndicator).toBe(false);
   });
+
+  it('hides in-message strips when structured content is visible', () => {
+    const ui = resolveAssistantLoadingUi({
+      ...base,
+      hasDisplayableContent: true,
+      agentStepCount: 2,
+    });
+    expect(ui.showStatusStrip).toBe(false);
+    expect(ui.showTypingIndicator).toBe(false);
+  });
 });

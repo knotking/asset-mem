@@ -54,6 +54,8 @@
     "./lib/session-name": "./src/lib/session-name.ts",
     "./lib/chat-message-context-refs": "./src/lib/chat-message-context-refs.ts",
     "./lib/suggested-actions": "./src/lib/suggested-actions.ts",
+    "./lib/executive-summary-display": "./src/lib/executive-summary-display.ts",
+    "./lib/structured-accordion-defaults": "./src/lib/structured-accordion-defaults.ts",
     "./lib/chat-context-limits": "./src/lib/chat-context-limits.ts",
     "./lib/chat-context-picker": "./src/lib/chat-context-picker.ts",
     "./contexts/chat-context-context": "./src/contexts/chat-context-context.tsx"
