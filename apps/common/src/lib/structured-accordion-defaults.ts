@@ -29,6 +29,13 @@ export type StructuredAccordionVisibility = {
 export type StructuredAccordionPlatform = "ios" | "android" | "web";
 
 /**
+ * Collapsed sentinel for native single-select accordions (`@rn-primitives/accordion`).
+ * Do not use `undefined` as the controlled `value` — the primitive treats that as
+ * uncontrolled and keeps stale internal state (first collapse shows preview + content).
+ */
+export const STRUCTURED_ACCORDION_COLLAPSED = "__collapsed__";
+
+/**
  * Collapse structured accordions while optional branches or synthesis are still running.
  * Do not tie this to the client stream alone — checkpoint-only turns should open
  * Checkpoint Summary as soon as structured content is visible.

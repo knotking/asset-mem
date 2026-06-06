@@ -1,11 +1,18 @@
 import { Platform } from 'react-native';
-import { getStructuredAccordionDefaultValue } from '@/lib/structured-accordion-defaults';
+import {
+  getStructuredAccordionDefaultValue,
+  STRUCTURED_ACCORDION_COLLAPSED,
+} from '@/lib/structured-accordion-defaults';
 
 describe('getStructuredAccordionDefaultValue', () => {
   const originalOs = Platform.OS;
 
   afterEach(() => {
     Platform.OS = originalOs;
+  });
+
+  it('exposes a non-undefined collapsed sentinel for native accordion control', () => {
+    expect(STRUCTURED_ACCORDION_COLLAPSED).toBe('__collapsed__');
   });
 
   it('keeps all sections collapsed during streaming on Android', () => {
