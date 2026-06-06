@@ -54,7 +54,7 @@ export function createChatMessageNativeStyles(scheme: ColorSchemeName | null | u
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.muted40,
-      paddingHorizontal: 16,
+      paddingHorizontal: 8,
       paddingVertical: 12,
     },
     structuredSectionCard: {
