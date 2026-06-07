@@ -106,7 +106,7 @@ function PropertyChatTab({
   onSearchLocationChange,
   propertyAddress,
 }: PropertyChatTabProps) {
-  const { messages, isLoadingEarlier, hasMoreMessages, loadEarlierMessages } = useMessages();
+  const { messages, isLoading, isLoadingEarlier, hasMoreMessages, loadEarlierMessages } = useMessages();
 
   const [isOnline, setIsOnline] = React.useState(true);
 
@@ -191,6 +191,9 @@ function PropertyChatTab({
   );
 
   const renderChatEmpty = React.useCallback(() => {
+    if (isLoading) {
+      return null;
+    }
     const suggestedPrompts = getSuggestedPrompts();
     return (
       <View
@@ -235,7 +238,7 @@ function PropertyChatTab({
         </View>
       </View>
     );
-  }, [giftedChatUser, isSending, onSend]);
+  }, [giftedChatUser, isSending, isLoading, onSend]);
 
   const renderFooter = React.useCallback(
     () => (branchProgress ? <CheckpointAnalysisProgressFooter progress={branchProgress} /> : null),
@@ -340,7 +343,7 @@ function PropertyChatTab({
           renderAvatar={renderAvatar}
           listViewProps={listViewProps}
           isLoadingEarlier={isLoadingEarlier}
-          loadEarlier={hasMoreMessages}
+          loadEarlier={hasMoreMessages && !isLoading}
           onLoadEarlier={loadEarlierMessages}
           alwaysShowSend={true}
           keyboardShouldPersistTaps="never"

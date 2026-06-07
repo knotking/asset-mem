@@ -25,6 +25,10 @@ User messages persist `contextRefs` (checkpoint/doc ids and names at send time) 
 
 **Composer collapse:** `GiftedChatInputToolbar` shows a chevron to collapse context chips and `CompactSettingsBar` into a single summary pill (agent, optional agents, context/queue counts). Tap the pill to open chat settings; tap chevron up to expand. Send-block hints stay visible when collapsed.
 
+**Context chip row:** `ChatContextChipStrip` always reserves a fixed-height row (`CONTEXT_CHIP_ROW_HEIGHT`) when the composer meta is expanded. With no selection, a dashed **Add checkpoint or document** placeholder opens the add-context sheet; chips swap in without changing composer height. Queued-send banner renders above the fixed row when present.
+
+**Property → session entry:** `MessagesProvider` keeps `hasMoreMessages` false until the first snapshot (no **Load earlier messages** flash). `PropertyChatTab` hides the empty-state intro while `isLoading`. `useSessionSelection` resolves the draft session synchronously (no **Select a session** flash).
+
 ### Scale-first Add context picker
 
 Designed for **1,000+ checkpoints** and **100+ documents**:

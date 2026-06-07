@@ -2,7 +2,7 @@ import * as React from 'react';
 import { View, Pressable, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
-import { X, FileText, Clock } from 'lucide-react-native';
+import { X, FileText, Clock, Plus } from 'lucide-react-native';
 import type { Checkpoint, Document, PendingContextItem } from '@homeapp/common/types';
 import {
   getCheckpointThumbnail,
@@ -18,11 +18,15 @@ import {
 } from '@homeapp/common/lib/chat-context-labels';
 import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from '@homeapp/common/lib/chat-context-limits';
 
+/** Fixed chip row height — keeps composer layout stable when selection loads or clears. */
+export const CONTEXT_CHIP_ROW_HEIGHT = 42;
+
 type Props = {
   pendingContext: PendingContextItem[];
   readySelectedCheckpoints: Checkpoint[];
   readySelectedDocuments: Document[];
   queuedSend: { text: string } | null;
+  onOpenAddContext: () => void;
   onToggleCheckpoint: (cp: Checkpoint) => void;
   onToggleDocument: (doc: Document) => void;
   onRemovePending: (id: string) => void;
@@ -46,6 +50,7 @@ export function ChatContextChipStrip({
   readySelectedCheckpoints,
   readySelectedDocuments,
   queuedSend,
+  onOpenAddContext,
   onToggleCheckpoint,
   onToggleDocument,
   onRemovePending,
@@ -66,10 +71,7 @@ export function ChatContextChipStrip({
   const visibleReady = readyPreview.slice(0, ADD_CONTEXT_VISIBLE_CHIP_COUNT);
   const hiddenReadyCount = Math.max(0, readyPreview.length - visibleReady.length);
 
-  const hasContent =
-    pendingContext.length > 0 || readyPreview.length > 0 || queuedSend;
-
-  if (!hasContent) return null;
+  const hasChipRowContent = pendingContext.length > 0 || readyPreview.length > 0;
 
   return (
     <View className="mb-2 gap-2">
@@ -90,90 +92,103 @@ export function ChatContextChipStrip({
         </View>
       ) : null}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View className="flex-row items-center gap-2">
-          {pendingContext.map((item) => (
-            <View
-              key={item.id}
-              className="flex-row items-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/50 py-1 pl-1 pr-2">
-              {item.localPreviewUri ? (
-                <Image source={{ uri: item.localPreviewUri }} className="h-8 w-8 rounded-md" />
-              ) : (
-                <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                  <Icon
-                    as={item.kind === 'checkpoint' ? Clock : FileText}
-                    size={14}
-                    className="text-muted-foreground"
-                  />
-                </View>
-              )}
-              <ActivityIndicator size="small" />
-              <Text className="max-w-28 text-xs text-muted-foreground" numberOfLines={1}>
-                {item.label || pendingLabel(item)}
-              </Text>
-              <Pressable onPress={() => onRemovePending(item.id)} hitSlop={6}>
-                <Icon as={X} size={12} className="text-muted-foreground" />
-              </Pressable>
-            </View>
-          ))}
-
-          {visibleReady.map((chip) => {
-            if (chip.kind === 'checkpoint') {
-              const cp = chip.item;
-              const thumb = getCheckpointThumbnail(cp);
-              return (
-                <Pressable
-                  key={`cp-${cp.id}`}
-                  onPress={() => onToggleCheckpoint(cp)}
-                  className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
-                  {thumb ? (
-                    <Image source={{ uri: thumb }} className="h-8 w-8 rounded-md" />
+      <View style={{ height: CONTEXT_CHIP_ROW_HEIGHT }} className="justify-center">
+        {hasChipRowContent ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row items-center gap-2">
+              {pendingContext.map((item) => (
+                <View
+                  key={item.id}
+                  className="flex-row items-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/50 py-1 pl-1 pr-2">
+                  {item.localPreviewUri ? (
+                    <Image source={{ uri: item.localPreviewUri }} className="h-8 w-8 rounded-md" />
                   ) : (
                     <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                      <Icon as={Clock} size={14} className="text-primary" />
+                      <Icon
+                        as={item.kind === 'checkpoint' ? Clock : FileText}
+                        size={14}
+                        className="text-muted-foreground"
+                      />
                     </View>
                   )}
-                  <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
-                    {cp.name || 'Checkpoint'}
+                  <ActivityIndicator size="small" />
+                  <Text className="max-w-28 text-xs text-muted-foreground" numberOfLines={1}>
+                    {item.label || pendingLabel(item)}
                   </Text>
-                  <Icon as={X} size={12} className="text-muted-foreground" />
+                  <Pressable onPress={() => onRemovePending(item.id)} hitSlop={6}>
+                    <Icon as={X} size={12} className="text-muted-foreground" />
+                  </Pressable>
+                </View>
+              ))}
+
+              {visibleReady.map((chip) => {
+                if (chip.kind === 'checkpoint') {
+                  const cp = chip.item;
+                  const thumb = getCheckpointThumbnail(cp);
+                  return (
+                    <Pressable
+                      key={`cp-${cp.id}`}
+                      onPress={() => onToggleCheckpoint(cp)}
+                      className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
+                      {thumb ? (
+                        <Image source={{ uri: thumb }} className="h-8 w-8 rounded-md" />
+                      ) : (
+                        <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                          <Icon as={Clock} size={14} className="text-primary" />
+                        </View>
+                      )}
+                      <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
+                        {cp.name || 'Checkpoint'}
+                      </Text>
+                      <Icon as={X} size={12} className="text-muted-foreground" />
+                    </Pressable>
+                  );
+                }
+                const doc = chip.item;
+                return (
+                  <Pressable
+                    key={`doc-${doc.id}`}
+                    onPress={() => onToggleDocument(doc)}
+                    className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
+                    {isDocumentImage(doc) && doc.url ? (
+                      <Image source={{ uri: doc.url }} className="h-8 w-8 rounded-md" />
+                    ) : (
+                      <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                        <Icon as={FileText} size={14} className="text-primary" />
+                      </View>
+                    )}
+                    <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
+                      {doc.name}
+                    </Text>
+                    <Icon as={X} size={12} className="text-muted-foreground" />
+                  </Pressable>
+                );
+              })}
+
+              {hiddenReadyCount > 0 ? (
+                <View className="rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
+                  <Text className="text-xs font-medium text-primary">+{hiddenReadyCount} more</Text>
+                </View>
+              ) : null}
+
+              {readyPreview.length > 0 ? (
+                <Pressable onPress={onClearReady} className="rounded-lg bg-secondary px-2 py-1">
+                  <Text className="text-xs text-muted-foreground">Clear</Text>
                 </Pressable>
-              );
-            }
-            const doc = chip.item;
-            return (
-              <Pressable
-                key={`doc-${doc.id}`}
-                onPress={() => onToggleDocument(doc)}
-                className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
-                {isDocumentImage(doc) && doc.url ? (
-                  <Image source={{ uri: doc.url }} className="h-8 w-8 rounded-md" />
-                ) : (
-                  <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                    <Icon as={FileText} size={14} className="text-primary" />
-                  </View>
-                )}
-                <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
-                  {doc.name}
-                </Text>
-                <Icon as={X} size={12} className="text-muted-foreground" />
-              </Pressable>
-            );
-          })}
-
-          {hiddenReadyCount > 0 ? (
-            <View className="rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
-              <Text className="text-xs font-medium text-primary">+{hiddenReadyCount} more</Text>
+              ) : null}
             </View>
-          ) : null}
-
-          {readyPreview.length > 0 && (
-            <Pressable onPress={onClearReady} className="rounded-lg bg-secondary px-2 py-1">
-              <Text className="text-xs text-muted-foreground">Clear</Text>
-            </Pressable>
-          )}
-        </View>
-      </ScrollView>
+          </ScrollView>
+        ) : (
+          <Pressable
+            onPress={onOpenAddContext}
+            accessibilityRole="button"
+            accessibilityLabel="Add checkpoint or document context"
+            className="h-full flex-row items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3">
+            <Icon as={Plus} size={16} className="text-muted-foreground" />
+            <Text className="text-xs text-muted-foreground">Add checkpoint or document</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }

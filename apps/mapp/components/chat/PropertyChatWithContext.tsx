@@ -516,6 +516,7 @@ function PropertyChatInner(props: Props) {
             readySelectedCheckpoints={readySelectedCheckpoints}
             readySelectedDocuments={readySelectedDocuments}
             queuedSend={queuedSend}
+            onOpenAddContext={() => setAddContextVisible(true)}
             onToggleCheckpoint={toggleCheckpoint}
             onToggleDocument={toggleDocument}
             onRemovePending={removePendingContext}
