@@ -14,8 +14,16 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatTokensCompact } from '@/lib/format-tokens';
+import {
+  buildSettingsHref,
+  type SettingsReturnContext,
+} from '@/lib/settings-navigation';
 
-export function TokenUsageToolbar() {
+export type TokenUsageToolbarProps = {
+  settingsReturnContext?: SettingsReturnContext;
+};
+
+export function TokenUsageToolbar({ settingsReturnContext }: TokenUsageToolbarProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { loading, limitsLoading, error, periodTotalTokens, effectiveMonthlyLimit } =
@@ -37,7 +45,13 @@ export function TokenUsageToolbar() {
     return null;
   }
 
-  const goSettings = () => router.push('/home/settings?tab=usage');
+  const goSettings = () => {
+    if (settingsReturnContext) {
+      router.push(buildSettingsHref('usage', settingsReturnContext));
+      return;
+    }
+    router.push('/home/settings?tab=usage');
+  };
 
   if (effectiveMonthlyLimit == null || effectiveMonthlyLimit <= 0) {
     return (

@@ -19,15 +19,17 @@ type SettingsSubScreenProps = {
 
 export function SettingsSubScreen({ title, children }: SettingsSubScreenProps) {
   const router = useRouter();
-  const { returnTo, returnPropertyId, returnPropertyTab } = useLocalSearchParams<{
+  const { returnTo, returnPropertyId, returnPropertyTab, returnSessionId } = useLocalSearchParams<{
     returnTo?: string | string[];
     returnPropertyId?: string | string[];
     returnPropertyTab?: string | string[];
+    returnSessionId?: string | string[];
   }>();
   const returnContext = resolveSettingsReturnContext({
     returnTo,
     returnPropertyId,
     returnPropertyTab,
+    returnSessionId,
   });
 
   const handleBack = () => {

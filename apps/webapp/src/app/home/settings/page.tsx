@@ -17,6 +17,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { isBillingCheckoutTier } from '@/lib/pending-checkout';
+import {
+  isSettingsHubReturn,
+  resolveSettingsReturnContext,
+  settingsBackAccessibilityLabel,
+  settingsBackHref,
+} from '@/lib/settings-navigation';
 
 const SETTINGS_TABS = [
   { id: 'account', label: 'Account', icon: User },
@@ -42,6 +48,10 @@ function SettingsPageContent() {
   const subscribeParam = searchParams.get('subscribe');
   const tabParam = searchParams.get('tab');
   const portalParam = searchParams.get('portal');
+  const returnToParam = searchParams.get('returnTo');
+  const returnPropertyIdParam = searchParams.get('returnPropertyId');
+  const returnPropertyTabParam = searchParams.get('returnPropertyTab');
+  const returnSessionIdParam = searchParams.get('returnSessionId');
 
   const loginPath = useMemo(
     () =>
@@ -68,6 +78,23 @@ function SettingsPageContent() {
   const [activeTab, setActiveTab] = useState<SettingsTabId>(initialTab);
   const [billingNotice, setBillingNotice] = useState<'canceled' | null>(null);
   const [resumePortalOpen, setResumePortalOpen] = useState(() => portalParam === '1');
+  const [returnContext] = useState(() =>
+    resolveSettingsReturnContext({
+      returnTo: returnToParam,
+      returnPropertyId: returnPropertyIdParam,
+      returnPropertyTab: returnPropertyTabParam,
+      returnSessionId: returnSessionIdParam,
+    }),
+  );
+
+  const handleBack = () => {
+    if (isSettingsHubReturn(returnContext)) {
+      setActiveTab('account');
+      router.replace('/home/settings');
+      return;
+    }
+    router.push(settingsBackHref(returnContext));
+  };
 
   useEffect(() => {
     if (billingParam === 'canceled') {
@@ -104,11 +131,11 @@ function SettingsPageContent() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push('/home')}
+            onClick={handleBack}
             className="h-8 w-8"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to home</span>
+            <span className="sr-only">{settingsBackAccessibilityLabel(returnContext)}</span>
           </Button>
           <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
         </div>
