@@ -16,6 +16,9 @@ import {
   DollarSign,
   Clock,
   ArrowRight,
+  Users,
+  Share2,
+  Home,
 } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 
@@ -53,33 +56,43 @@ const LANDING_COLORS = {
 
 const features = [
   {
-    title: 'Checkpoint Timeline',
-    desc: 'Capture recurring walkthroughs, compare before/after states, and maintain a visual history for every area.',
+    title: 'Timeline',
+    desc: 'Take photos and videos over time and build a visual history for every room and area.',
     icon: Zap,
   },
   {
     title: 'Property Checkpoints',
-    desc: 'Condition scoring and trend tracking that help you prioritize repairs and preventive tasks.',
+    desc: 'See simple condition scores and trends so you know what needs attention first.',
     icon: ImageIcon,
   },
   {
-    title: 'Chat with Your Documents',
-    desc: 'Ask questions about your warranties, manuals, inspection reports, and policies—get instant answers with citations.',
+    title: 'Two Ways to Chat',
+    desc: 'Ask about your documents, or chat about photos from your timeline. Switch anytime.',
     icon: FileText,
   },
   {
-    title: 'Photo and Video Comparisons',
-    desc: 'Review changes across checkpoints with visual diffs, similarity scoring, and contextual notes.',
+    title: 'Before & After Comparisons',
+    desc: 'Line up two visits side by side and clearly see what changed.',
     icon: ImageIcon,
   },
   {
-    title: 'Service Marketplace',
-    desc: 'Discover and connect with local providers based on checkpoint findings and maintenance priorities.',
-    icon: Settings,
+    title: 'Saved Service Providers',
+    desc: 'Save local pros the AI recommends and find them again on your Providers tab.',
+    icon: Users,
   },
   {
-    title: 'Maintenance Planning',
-    desc: 'Turn checkpoint trends into repair priorities, budget forecasts, and scheduling plans.',
+    title: 'Share Your Answers',
+    desc: 'Send a read-only link to a chat so contractors or family can see what the AI found.',
+    icon: Share2,
+  },
+  {
+    title: 'Multiple Properties',
+    desc: 'Manage every home or rental from one account—each with its own timeline, docs, and chats.',
+    icon: Home,
+  },
+  {
+    title: 'Repair Guidance',
+    desc: 'Get clear next steps, cost ranges, and product ideas without reading long reports.',
     icon: DollarSign,
   },
 ];
@@ -87,23 +100,23 @@ const features = [
 const steps = [
   {
     step: 1,
-    title: 'Upload & Connect',
-    desc: 'Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.',
+    title: 'Add Your Property',
+    desc: 'Create a property, upload documents, and take your first photos. Add as many properties as you need.',
   },
   {
     step: 2,
-    title: 'Platform Intelligence',
-    desc: 'Platform intelligence analyzes checkpoint history and documents to highlight maintenance priorities.',
+    title: 'Ask Questions',
+    desc: 'Chat with your paperwork or your timeline photos. Turn on extra help for coverage, repairs, costs, or local pros.',
   },
   {
     step: 3,
-    title: 'Unified Insights',
-    desc: 'Get comprehensive answers: chat with documents, compare checkpoints, find services, and estimate costs—all integrated.',
+    title: 'Get Clear Answers',
+    desc: 'See costs, repair steps, comparisons, and provider ideas in one easy-to-read conversation.',
   },
   {
     step: 4,
-    title: 'Manage & Track',
-    desc: 'Monitor property health, share with contractors, and keep everything organized in one place.',
+    title: 'Stay Organized',
+    desc: 'Save providers, share a chat link, and check your timeline whenever you need to follow up.',
   },
 ];
 
@@ -234,7 +247,7 @@ export default function LandingPage() {
                   fontWeight: '300',
                   color: LANDING_COLORS.foreground90,
                 }}>
-                Home Care Platform
+                Property Care Platform
               </Text>
             </Text>
 
@@ -247,9 +260,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 28,
               }}>
-              A comprehensive platform centered on property checkpoints, condition timelines,
-              document intelligence, and service planning, all working together to simplify your
-              home care journey.
+              AI agents analyze your property photos and documents, rate condition over time, flag
+              issues, and guide you on repairs and costs while connecting you with local pros.
             </Text>
 
             {/* CTA Buttons */}
@@ -339,7 +351,7 @@ export default function LandingPage() {
                 marginBottom: 16,
               }}>
               From routine walkthroughs to seasonal planning, see how checkpoint-driven workflows
-              help homeowners stay ahead
+              help homeowners and landlords stay ahead
             </Text>
           </View>
 
@@ -379,8 +391,8 @@ export default function LandingPage() {
                 steps: [
                   'Auto-compare before/after photos',
                   'AI detects missing shingles, damage',
-                  'Generate professional report',
-                  'Export PDF for insurance adjuster',
+                  'Build a dated before-and-after story with photos',
+                  'Share comparisons and notes with your adjuster',
                 ],
                 result: 'Claim approved in 3 days',
               },
@@ -406,7 +418,7 @@ export default function LandingPage() {
                   'Capture before/after checkpoints for each milestone',
                   'Compare workmanship and finish quality over time',
                   'Attach invoices, warranties, and notes to each checkpoint',
-                  'Share one visual timeline with your contractor and family',
+                  'Share a read-only chat link with your contractor or family',
                 ],
                 result: 'Kept everyone aligned with one source of truth',
               },
@@ -416,10 +428,10 @@ export default function LandingPage() {
                 icon: CheckCircle,
                 color: LANDING_COLORS.primary,
                 steps: [
-                  'Monthly checkpoints track cabinets',
-                  'Platform shows -0.5 pts/month decline',
-                  'AI suggests refinishing in 3-6 months',
-                  'Share timeline, get quote',
+                  'Monthly photos show cabinets slowly wearing down',
+                  'Trends highlight what may need work soon',
+                  'AI suggests refinishing before a full replacement',
+                  'Share a chat link with your contractor and plan the budget',
                 ],
                 result: '$1.2K refinish vs $8K replacement',
               },
@@ -691,42 +703,42 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Our multi-agent system is anchored on checkpoint intelligence: retrieve relevant
-              property history first, then orchestrate coverage, DIY, service, and cost planning
-              from the same checkpoint context
+              Specialized agents work together—starting with your timeline photos, then
+              pulling in warranty checks, repair steps, local pros, and cost estimates when you
+              need them
             </Text>
           </View>
 
           <View style={{ gap: 20 }}>
             {[
               {
-                title: 'Checkpoint Agent',
-                desc: 'Retrieves relevant checkpoints using semantic vector search, then orchestrates coverage, DIY, service, and cost planning from the same checkpoint context.',
+                title: 'Timeline Agent',
+                desc: 'Looks at your photos and past visits first, then brings in other help when you ask a question.',
                 icon: FileText,
               },
               {
                 title: 'Coverage Agent',
-                desc: 'Checks warranties, insurance policies, and service contracts using checkpoint context and supporting documents.',
+                desc: 'Checks warranties, insurance, and service contracts against what your photos and documents show.',
                 icon: CheckCircle,
               },
               {
                 title: 'DIY Agent',
-                desc: 'Provides step-by-step repair guidance aligned to checkpoint findings, required tools, safety notes, and effort estimates.',
+                desc: 'Walks you through fixes step by step, including tools, safety tips, and helpful product ideas.',
                 icon: Settings,
               },
               {
                 title: 'Service Agent',
-                desc: 'Finds local providers based on checkpoint location and condition details, with relevance for the required work.',
+                desc: 'Suggests nearby pros that fit the issue shown in your photos and notes.',
                 icon: TrendingUp,
               },
               {
                 title: 'Cost Agent',
-                desc: 'Estimates costs from checkpoint evidence, comparing DIY and professional options with clearer budget planning.',
+                desc: 'Gives rough cost ranges and compares doing it yourself versus hiring someone.',
                 icon: DollarSign,
               },
               {
-                title: 'Platform Orchestration',
-                desc: 'Checkpoint retrieval and checkpoint analysis coordinate downstream agents so recommendations stay grounded in timeline data.',
+                title: 'Working Together',
+                desc: 'Everything stays connected—your photos, documents, saved providers, and past chats feed into one clear answer.',
                 icon: ImageIcon,
               },
             ].map((agent, i) => (
@@ -798,7 +810,7 @@ export default function LandingPage() {
                 }}>
                 Property Checkpoints:{'\n'}
                 <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                  Your Visual Timeline
+                  Your Timeline
                 </Text>
               </Text>
               <Text
@@ -815,33 +827,33 @@ export default function LandingPage() {
             <View style={{ gap: 20 }}>
               {[
                 {
-                  title: 'Visual Timeline',
-                  desc: 'Capture photos/videos of property areas over time; track condition with before/after comparisons; AI-powered analysis; automatic room/area detection.',
+                  title: 'Timeline Capture',
+                  desc: 'Snap photos and videos over time, spot changes with before-and-after views, and let AI summarize what it sees.',
                   icon: ImageIcon,
                 },
                 {
                   title: 'AI-Powered Analysis',
-                  desc: 'Condition scoring (0–100); damage detection and severity; detected items/features; issue categories (critical, major, moderate, minor); cost estimates.',
+                  desc: 'Get a simple condition score, see what looks damaged, and understand how serious each issue is.',
                   icon: TrendingUp,
                 },
                 {
                   title: 'Automatic Comparison',
-                  desc: 'Intelligent comparison with previous checkpoints; visual diff and similarity scoring; change detection; configurable comparison preferences.',
+                  desc: 'Compare a new visit to an older one and see what changed—with settings you can adjust anytime.',
                   icon: CheckCircle,
                 },
                 {
-                  title: 'Timeline (Before/After)',
-                  desc: 'Visual timeline showing checkpoint changes over time with before/after comparisons and condition context.',
+                  title: 'Timeline Comparisons',
+                  desc: 'Scroll through your history and open side-by-side views whenever you need proof of progress or damage.',
                   icon: Clock,
                 },
                 {
                   title: 'Property Health Metrics',
-                  desc: 'Overall condition score and trend; issues summary by severity; deterioration rate; predictive maintenance insights.',
+                  desc: 'See how your property is doing overall, which issues matter most, and whether things are getting better or worse.',
                   icon: TrendingUp,
                 },
                 {
-                  title: 'Real-Time & Scalable',
-                  desc: 'Non-blocking creation; real-time UI updates; built to scale.',
+                  title: 'Always Up to Date',
+                  desc: 'New photos and results show up right away—no need to refresh or wait around.',
                   icon: Zap,
                 },
               ].map((block, i) => (
@@ -918,7 +930,7 @@ export default function LandingPage() {
                 marginBottom: 36,
               }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
-                INTELLIGENT DOCUMENT CHAT
+                TWO WAYS TO CHAT
               </Text>
             </View>
             <Text
@@ -931,8 +943,8 @@ export default function LandingPage() {
                 paddingHorizontal: 10,
                 lineHeight: 40,
               }}>
-              Talk to Your{'\n'}
-              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Documents</Text>
+              Chat with Your{'\n'}
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>Docs or Photos</Text>
             </Text>
             <Text
               style={{
@@ -943,8 +955,9 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 32,
               }}>
-              Upload your home inspection reports, warranties, manuals, and policies—then chat with
-              them naturally
+              Docs mode answers from your inspection reports, warranties, manuals, and policies.
+              Timeline mode uses your photos plus optional repair, coverage, cost, and provider help.
+              Pick the mode that fits your question.
             </Text>
           </View>
 
@@ -1170,7 +1183,7 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              From data upload to actionable insights—everything connected in one unified platform
+              From your first photo to a clear plan—everything stays in one place
             </Text>
           </View>
 
@@ -1222,6 +1235,68 @@ export default function LandingPage() {
           </View>
         </View>
 
+        {/* Pricing Section */}
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
+          <View style={{ alignItems: 'center' }}>
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 24,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                PRICING
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 16,
+                lineHeight: 40,
+              }}>
+              Plans for homeowners and landlords
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 12,
+                lineHeight: 24,
+                marginBottom: 28,
+              }}>
+              Simple monthly plans with a fair amount of AI chat, document uploads, and photo
+              analysis. See what you have left anytime in Settings.
+            </Text>
+            <TouchableOpacity
+              onPress={() => Linking.openURL('https://asset-mem.com#pricing')}
+              style={{
+                paddingVertical: 14,
+                paddingHorizontal: 28,
+                borderRadius: 10,
+                borderWidth: 2,
+                borderColor: LANDING_COLORS.border,
+              }}>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
+                View plans on the web
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Final CTA Section */}
         <View
           style={{
@@ -1243,7 +1318,7 @@ export default function LandingPage() {
               }}>
               Experience the Complete{'\n'}
               <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
-                Home Care Platform
+                Property Care Platform
               </Text>
             </Text>
             <Text
@@ -1255,8 +1330,8 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 26,
               }}>
-              Join thousands of homeowners and property managers using our unified platform for all
-              their home care needs
+              Join thousands of homeowners, landlords, and property managers using our unified platform for all
+              their property care needs
             </Text>
 
             <TouchableOpacity
@@ -1311,6 +1386,28 @@ export default function LandingPage() {
                 AssetMem <Text style={{ fontWeight: 'bold' }}>AI</Text>
               </Text>
             </View>
+            <Text
+              style={{
+                fontSize: 14,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                lineHeight: 22,
+                marginBottom: 20,
+                paddingHorizontal: 8,
+              }}>
+              Photos, documents, and AI guidance for every property you manage.
+            </Text>
+            <TouchableOpacity onPress={() => Linking.openURL('mailto:support@asset-mem.com')}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: LANDING_COLORS.primary,
+                  marginBottom: 16,
+                  textDecorationLine: 'underline',
+                }}>
+                support@asset-mem.com
+              </Text>
+            </TouchableOpacity>
             <Text
               style={{
                 fontSize: 12,

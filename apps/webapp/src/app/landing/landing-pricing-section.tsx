@@ -132,15 +132,15 @@ export function LandingPricingSection({
             className="text-4xl lg:text-5xl font-light tracking-tight"
             style={{ color: c.foreground }}
           >
-            Plans for homeowners
+            Plans for homeowners and landlords
           </h2>
           <p
             className="text-lg max-w-2xl mx-auto font-light"
             style={{ color: c.mutedForeground }}
           >
-            Billed monthly through Stripe. Limits reset at the start of each UTC
-            calendar month and are enforced on the proxy (AI tokens, document
-            analysis, checkpoint AI).
+            Simple monthly billing. Each plan includes a fair amount of AI chat,
+            document uploads, and photo analysis—you can always see what you have
+            left in Settings.
           </p>
         </div>
 
