@@ -61,6 +61,7 @@ import {
   AssistantWaveDots,
 } from "@/components/chat/assistant-loading-indicators";
 import { StructuredReportSheet } from "@/components/chat/structured-report-sheet";
+import { DiyVideoTutorialsSection } from "@/components/chat/diy-video-tutorials-section";
 
 const parseLog = createLogger("parse");
 
@@ -1347,42 +1348,7 @@ const StructuredResponse = ({
                         )}
                         
                         {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
-                            <div className="space-y-3">
-                                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                                    <Youtube className="h-4 w-4" /> Video Tutorials
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {diy.youtubeSearch.videos.map((v: any, i: number) => {
-                                        const id = getYouTube_VideoId(v.url);
-                                        return (
-                                            <div key={i} className="space-y-2">
-                                                {id ? (
-                                                    <iframe
-                                                        src={`https://www.youtube.com/embed/${id}`}
-                                                        frameBorder="0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
-                                                        title={v.title || `YouTube video ${i+1}`}
-                                                        className="w-full max-w-full aspect-video rounded-md border"
-                                                    />
-                                                ) : (
-                                                    <a 
-                                                        href={v.url} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
-                                                        className="text-blue-600 dark:text-blue-400 underline break-words block"
-                                                    >
-                                                        {v.title || v.url}
-                                                    </a>
-                                                )}
-                                                {v.description && (
-                                                    <p className="text-xs text-muted-foreground line-clamp-3">{v.description}</p>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            <DiyVideoTutorialsSection videos={diy.youtubeSearch.videos} />
                         )}
                         
                         {(() => {

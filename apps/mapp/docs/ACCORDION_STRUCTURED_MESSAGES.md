@@ -206,7 +206,7 @@ Displays parsed JSON data in accordion sections with intelligent content detecti
    - Icon: Wrench (Warning color)
    - **DIY Steps Summary**: Markdown rendered summary
    - **Step-by-Step Instructions**: Numbered list with descriptions
-   - **Video Tutorials**: YouTube video embeds with titles and descriptions
+   - **Video Tutorials**: Tappable preview rows open the sheet with the tapped video first (autoplay) and the rest below; **View all** opens in list order with the first video autoplaying
    - **Recommended Products**: Product cards with images and purchase links
    - Hidden if clarification needed
 
@@ -282,16 +282,21 @@ Displays recommended products with rich media:
 - Memory + disk caching via expo-image
 - 200ms fade-in transition
 
-#### E. YouTubeEmbed Component ([ChatMessage.tsx:299-318](apps/mapp/components/ChatMessage.tsx#L299-L318))
+#### E. DiyVideoTutorialsSection ([DiyVideoTutorialsSection.tsx](apps/mapp/components/chat/DiyVideoTutorialsSection.tsx))
 
-Embeds YouTube videos inline:
+DIY accordion video tutorials use a preview + sheet pattern:
 
-**Features:**
-- Extracts video ID from various URL formats
-- 192px height, full width
-- Paused by default
-- Hardware layer for Android performance
-- Uses `react-native-youtube-iframe`
+**Inline (accordion):**
+- Each row is tappable: YouTube thumbnail (static image), play overlay, title/description, chevron
+- Row tap opens sheet scrolled to that video
+- **View all video tutorials (N)** opens the full list from the top
+
+**Sheet:**
+- Selected video moves to the top; others follow in original order below
+- Top video autoplays (`LazyYouTubePlayer` `autoPlay` / embed `?autoplay=1` on web)
+- **Watch on YouTube** opens the URL in the system browser
+
+**Why:** Keeps collapsed/expanded DIY accordions fast on mobile; YouTube WebViews mount only when the user opts in.
 
 #### F. FilePreview Component ([ChatMessage.tsx:1021-1120](apps/mapp/components/ChatMessage.tsx#L1021-L1120))
 
@@ -771,7 +776,7 @@ Create a test message in Firestore with separate V2 fields:
   - StructuredResponse component with 5 sections
   - ServiceProviderCard with normalization
   - ProductCard with image handling
-  - YouTubeEmbed component
+  - DiyVideoTutorialsSection (preview + sheet; LazyYouTubePlayer in sheet only)
   - FilePreview component
   - MessageContent with markdown rendering
   - Context menu for copy/share
@@ -947,7 +952,7 @@ const displayParts = useMemo(
 All display components use `React.memo`:
 - `MessageAvatar`
 - `ProductCard`
-- `YouTubeEmbed`
+- `DiyVideoTutorialsSection`
 - `ServiceProviderCard`
 - `StructuredResponse`
 - `MessageContent`

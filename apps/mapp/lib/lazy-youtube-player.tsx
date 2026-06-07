@@ -9,6 +9,7 @@ type LazyYouTubePlayerProps = {
   videoUrl?: string;
   height?: number;
   testID?: string;
+  autoPlay?: boolean;
 };
 
 /**
@@ -20,6 +21,7 @@ export function LazyYouTubePlayer({
   videoUrl,
   height = 192,
   testID = 'lazy-youtube-player',
+  autoPlay = false,
 }: LazyYouTubePlayerProps) {
   const accordionExpanded = useContext(AccordionMountContext);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -52,7 +54,7 @@ export function LazyYouTubePlayer({
           <YoutubePlayer
             height={playerHeight}
             videoId={videoId}
-            play={false}
+            play={autoPlay}
             webViewProps={{
               androidLayerType: 'hardware',
             }}

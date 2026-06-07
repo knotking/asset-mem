@@ -88,7 +88,7 @@ import {
   getSuggestedActionsFromContentJson,
   type SuggestedAction,
 } from '@homeapp/common/lib/suggested-actions';
-import { LazyYouTubePlayer } from '@/lib/lazy-youtube-player';
+import { DiyVideoTutorialsSection } from '@/components/chat/DiyVideoTutorialsSection';
 import { markdownToWhatsapp } from '@/lib/utils';
 import TypingIndicator from './TypingIndicator';
 import { AgentStatus } from './AgentStatus';
@@ -439,14 +439,6 @@ const ProductCard = React.memo(({ product }: { product: Product }) => {
           <Text>View Product</Text>
         </Button>
       )}
-    </View>
-  );
-});
-
-const YouTubeEmbed = React.memo(({ videoUrl }: { videoUrl: string }) => {
-  return (
-    <View className="mb-2 w-full overflow-hidden rounded-md">
-      <LazyYouTubePlayer videoUrl={videoUrl} />
     </View>
   );
 });
@@ -1341,28 +1333,7 @@ const StructuredResponse = React.memo(
               )}
 
               {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
-                <View className="mb-3">
-                  <Text className="mb-2 text-sm font-semibold text-warning">Video Tutorials</Text>
-                  {diy.youtubeSearch.videos.map((video: any, i: number) => (
-                    <View key={i} className="mb-3">
-                      <YouTubeEmbed videoUrl={video.url} />
-                      <Text className="mt-1 text-sm font-medium text-foreground" numberOfLines={2}>
-                        {video.title || 'Video'}
-                      </Text>
-                      {video.description && (
-                        <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
-                          {video.description}
-                        </Text>
-                      )}
-                      <Button
-                        onPress={() => Linking.openURL(video.url)}
-                        variant="outline"
-                        className="mt-2 w-full">
-                        <Text>Watch on YouTube</Text>
-                      </Button>
-                    </View>
-                  ))}
-                </View>
+                <DiyVideoTutorialsSection videos={diy.youtubeSearch.videos} />
               )}
 
               {diy?.recommendedProducts?.products &&

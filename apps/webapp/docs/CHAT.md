@@ -90,6 +90,7 @@ Uses V2 fields — not raw `message.content` alone.
 |------|------|
 | `src/components/chat/chat-message.tsx` | Render markdown, accordion, thinking strip |
 | `src/components/chat/structured-report-sheet.tsx` | Full-report side sheet for structured messages |
+| `src/components/chat/diy-video-tutorials-section.tsx` | DIY video preview list + side sheet with embedded players |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |
 | `src/app/home/properties/[propertyId]/chat/[sessionId]/page.tsx` | Send message, Firestore listener, SSE stream; strips `fromOnboardingChecklist` query param immediately on landing (preference write is fire-and-forget) so property tab navigations are not raced |
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |

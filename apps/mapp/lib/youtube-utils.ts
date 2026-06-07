@@ -64,6 +64,14 @@ export const isYouTubeUrl = (url: string): boolean => {
   return getYouTubeVideoId(url) !== null;
 };
 
+/** Static thumbnail URL (no WebView) for preview rows. */
+export const getYouTubeThumbnailUrl = (
+  videoId: string,
+  quality: 'hqdefault' | 'mqdefault' = 'hqdefault'
+): string => {
+  return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+};
+
 /**
  * Extracts text content from markdown nodes (recursive)
  */
