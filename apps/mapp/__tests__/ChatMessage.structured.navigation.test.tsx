@@ -38,7 +38,7 @@ function renderInNavigation(ui: React.ReactElement) {
   return render(<NavigationContainer>{ui}</NavigationContainer>);
 }
 
-describe('ChatMessage structured checkpoint (real accordion, navigation context)', () => {
+describe('ChatMessage structured checkpoint (inline rows + sheets)', () => {
   it('renders visible structured sections without navigation context error', () => {
     expect(() =>
       renderInNavigation(
@@ -47,12 +47,13 @@ describe('ChatMessage structured checkpoint (real accordion, navigation context)
     ).not.toThrow();
   });
 
-  it('shows checkpoint accordion labels after stream payload is displayable', () => {
+  it('shows title and report section rows after stream payload is displayable', () => {
     const { getByText, queryByText } = renderInNavigation(
       <ChatMessage message={garageDoorDualFormatMessage} sessionId="session-1" />
     );
 
     expect(getByText(/Garage Door Maintenance Analysis: 1982 Helena Way/i)).toBeTruthy();
+    expect(getByText('Report sections')).toBeTruthy();
     expect(queryByText('Working on it…')).toBeNull();
   });
 });

@@ -80,7 +80,6 @@ import {
   EXECUTIVE_SUMMARY_ACCORDION_TITLE,
   EXECUTIVE_SUMMARY_ACCORDION_VALUE,
   getSummaryAccordionPreview,
-  summaryAccordionPreviewIsTruncated,
   getCostEstimateRecommendation,
   SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
 } from '@homeapp/common/lib/executive-summary-display';
@@ -95,8 +94,19 @@ import { AgentStatus } from './AgentStatus';
 import { MediaDetailModal } from './MediaDetailModal';
 import { CheckpointAccordionBranchBadge } from './CheckpointAccordionBranchBadge';
 import { createChatMessageNativeStyles } from '@/lib/chat-message-native-styles';
-import { getStructuredAccordionDefaultValue, STRUCTURED_ACCORDION_COLLAPSED } from '@/lib/structured-accordion-defaults';
 import { StructuredReportSheet } from '@/components/chat/StructuredReportSheet';
+import { StructuredCheckpointSummaryCard } from '@/components/chat/StructuredCheckpointSummaryCard';
+import {
+  CheckpointSummaryField,
+  CheckpointSummaryListSection,
+  CheckpointSummaryTextSection,
+} from '@/components/chat/CheckpointSummaryFields';
+import {
+  buildStructuredSectionNavItems,
+  STRUCTURED_SECTION_TITLES,
+  StructuredSectionNav,
+  type StructuredSection,
+} from '@/components/chat/StructuredSectionNav';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 import {
@@ -639,6 +649,7 @@ const StructuredResponse = React.memo(
     saveMeta,
     layoutMode = 'inline',
     showTitleCard = true,
+    sectionOnly,
   }: {
     data: StructuredResponseData;
     summaryMarkdown?: string;
@@ -648,8 +659,10 @@ const StructuredResponse = React.memo(
     saveMeta?: SaveServiceProviderMeta;
     layoutMode?: 'inline' | 'sheet';
     showTitleCard?: boolean;
+    sectionOnly?: StructuredSection;
   }) => {
   const isSheetLayout = layoutMode === 'sheet';
+  const useHybridInlineLayout = !isSheetLayout && !sectionOnly;
   const colorScheme = useColorScheme();
   const nativeStyles = useMemo(
     () => createChatMessageNativeStyles(colorScheme),
@@ -658,6 +671,9 @@ const StructuredResponse = React.memo(
   const markdownStyles = useMarkdownStyles(false, 'accordion');
   const [reportSheetVisible, setReportSheetVisible] = useState(false);
   const [reportSheetMounted, setReportSheetMounted] = useState(false);
+  const [sectionSheetVisible, setSectionSheetVisible] = useState(false);
+  const [sectionSheetMounted, setSectionSheetMounted] = useState(false);
+  const [activeSection, setActiveSection] = useState<StructuredSection | null>(null);
 
   useEffect(() => {
     if (reportSheetVisible) {
@@ -665,12 +681,32 @@ const StructuredResponse = React.memo(
     }
   }, [reportSheetVisible]);
 
+  useEffect(() => {
+    if (sectionSheetVisible) {
+      setSectionSheetMounted(true);
+    }
+  }, [sectionSheetVisible]);
+
   const handleReportSheetClose = useCallback(() => {
     setReportSheetVisible(false);
   }, []);
 
   const handleReportSheetDismissed = useCallback(() => {
     setReportSheetMounted(false);
+  }, []);
+
+  const handleSectionSheetClose = useCallback(() => {
+    setSectionSheetVisible(false);
+  }, []);
+
+  const handleSectionSheetDismissed = useCallback(() => {
+    setSectionSheetMounted(false);
+    setActiveSection(null);
+  }, []);
+
+  const handleSectionPress = useCallback((section: StructuredSection) => {
+    setActiveSection(section);
+    setSectionSheetVisible(true);
   }, []);
 
   // Support both nested (analysis.*) and flat structures (top-level keys)
@@ -814,43 +850,10 @@ const StructuredResponse = React.memo(
     [analysis]
   );
 
-  const accordionDefaultValue = useMemo(
-    () =>
-      getStructuredAccordionDefaultValue({
-        needsClarification,
-        analysisInProgress: accordionPipelineInProgress,
-        hasCheckpointSummary,
-        hasCheckpointDetails,
-        hasCheckpointInsights,
-        hasCoverage,
-        hasDIY,
-        hasService,
-        hasCostEstimates,
-      }),
-    [
-      needsClarification,
-      accordionPipelineInProgress,
-      hasCheckpointSummary,
-      hasCheckpointDetails,
-      hasCheckpointInsights,
-      hasCoverage,
-      hasDIY,
-      hasService,
-      hasCostEstimates,
-    ]
-  );
-
   const hasSummaryMarkdown = !!summaryMarkdown?.trim();
   const showSummaryAccordion =
     hasSummaryMarkdown ||
     (summarySynthesisInProgress && !hasSummaryMarkdown);
-  const [openSection, setOpenSection] = useState<string>(
-    accordionDefaultValue ?? STRUCTURED_ACCORDION_COLLAPSED
-  );
-
-  const handleAccordionValueChange = useCallback((value: string | undefined) => {
-    setOpenSection(value ?? STRUCTURED_ACCORDION_COLLAPSED);
-  }, []);
 
   const allExpandedSectionValues = useMemo(() => {
     const values: string[] = [];
@@ -879,14 +882,6 @@ const StructuredResponse = React.memo(
 
   const noopMultipleAccordionChange = useCallback((_value: string[]) => {}, []);
 
-  useEffect(() => {
-    if (isSheetLayout) return;
-    setOpenSection((current) =>
-      current === STRUCTURED_ACCORDION_COLLAPSED && accordionDefaultValue
-        ? accordionDefaultValue
-        : current
-    );
-  }, [accordionDefaultValue, isSheetLayout]);
   const summaryPreview = useMemo(() => {
     if (hasSummaryMarkdown) {
       return getSummaryAccordionPreview(summaryMarkdown!);
@@ -896,16 +891,6 @@ const StructuredResponse = React.memo(
     }
     return '';
   }, [hasSummaryMarkdown, summaryMarkdown, summarySynthesisInProgress]);
-  const summaryPreviewTruncated = useMemo(
-    () =>
-      hasSummaryMarkdown
-        ? summaryAccordionPreviewIsTruncated(summaryMarkdown!, summaryPreview)
-        : false,
-    [hasSummaryMarkdown, summaryMarkdown, summaryPreview]
-  );
-  const summaryAccordionExpanded =
-    isSheetLayout || openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
-
   const costRecommendation = useMemo(
     () =>
       costEstimation?.costEstimates
@@ -913,6 +898,483 @@ const StructuredResponse = React.memo(
         : null,
     [costEstimation]
   );
+
+  const optionalSectionNavItems = useMemo(
+    () =>
+      buildStructuredSectionNavItems({
+        needsClarification,
+        hasTriage,
+        hasCheckpointDetails,
+        hasCheckpointInsights,
+        hasCoverage,
+        hasDIY,
+        hasService,
+        hasCostEstimates,
+        showSummarySection: showSummaryAccordion,
+        summaryPreview: summaryPreview || undefined,
+        summarySynthesisInProgress:
+          summarySynthesisInProgress && !hasSummaryMarkdown ? true : undefined,
+      }),
+    [
+      needsClarification,
+      hasTriage,
+      hasCheckpointDetails,
+      hasCheckpointInsights,
+      hasCoverage,
+      hasDIY,
+      hasService,
+      hasCostEstimates,
+      showSummaryAccordion,
+      summaryPreview,
+      summarySynthesisInProgress,
+      hasSummaryMarkdown,
+    ]
+  );
+
+  const renderTriageContent = () =>
+    needsClarification && hasClarificationQuestions ? (
+      <View className="space-y-3">
+        {triage.message && (
+          <Text className="mb-2 text-sm text-muted-foreground">{triage.message}</Text>
+        )}
+        <View className="space-y-2">
+          <Text className="text-sm font-semibold text-foreground">
+            Please provide more information:
+          </Text>
+          {triage.clarification_questions.map((question: string, index: number) => (
+            <View key={index} className="flex-row gap-2">
+              <Text className="text-sm font-medium text-foreground">{index + 1}.</Text>
+              <Text className="flex-1 text-sm text-foreground">{question}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    ) : hasTriage ? (
+      <Markdown style={markdownStyles} rules={markdownRules}>
+        {triage!.diagnosis!}
+      </Markdown>
+    ) : null;
+
+  const renderCheckpointSummaryContent = () => (
+    <View className="space-y-3">
+      {checkpointSummary?.checkpointsAnalyzed ? (
+        <CheckpointSummaryField
+          label="Checkpoints Analyzed:"
+          value={checkpointSummary.checkpointsAnalyzed}
+          valueClassName="font-semibold"
+        />
+      ) : null}
+      {(checkpointSummary as any)?.queryType ? (
+        <View className="flex-row flex-wrap items-center gap-2">
+          <Text className="shrink-0 text-sm font-medium text-muted-foreground">Query Type:</Text>
+          <View className="rounded-md border border-border bg-background px-2 py-1">
+            <Text className="text-xs capitalize text-foreground">
+              {(checkpointSummary as any).queryType}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+      {(checkpointSummary as any)?.dateRange ? (
+        <CheckpointSummaryTextSection
+          label="Date Range:"
+          text={(checkpointSummary as any).dateRange}
+        />
+      ) : null}
+      {checkpointSummary?.overallCondition ? (
+        <CheckpointSummaryTextSection
+          label="Overall Condition:"
+          text={checkpointSummary.overallCondition}
+        />
+      ) : null}
+      {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 ? (
+        <CheckpointSummaryListSection label="Issues Detected:">
+          <View className="gap-1">
+            {checkpointSummary.issuesDetected.map((issue, idx) => (
+              <View key={idx} className="flex-row gap-2">
+                <Text className="text-sm text-foreground">•</Text>
+                <Text className="flex-1 text-sm text-foreground">{issue}</Text>
+              </View>
+            ))}
+          </View>
+        </CheckpointSummaryListSection>
+      ) : null}
+      {checkpointSummary?.locations && checkpointSummary.locations.length > 0 ? (
+        <CheckpointSummaryListSection label="Locations:">
+          <View className="flex-row flex-wrap gap-1">
+            {checkpointSummary.locations.map((location, idx) => (
+              <View key={idx} className="rounded-md bg-secondary px-2 py-1">
+                <Text className="text-xs text-secondary-foreground">{location}</Text>
+              </View>
+            ))}
+          </View>
+        </CheckpointSummaryListSection>
+      ) : null}
+    </View>
+  );
+
+  const renderCheckpointDetailsContent = () => (
+    <View className="space-y-4">
+      {(analysis as any).checkpointDetails.map((checkpoint: any, idx: number) => (
+        <View key={idx} cssInterop={false} style={nativeStyles.structuredSectionCard}>
+          <Text className="text-sm font-semibold text-foreground">
+            {checkpoint.name || `Checkpoint ${idx + 1}`}
+          </Text>
+          {checkpoint.location && (
+            <View className="flex-row items-start gap-2">
+              <Text className="min-w-[80px] text-xs font-medium text-muted-foreground">Location:</Text>
+              <Text className="flex-1 text-xs text-foreground">{checkpoint.location}</Text>
+            </View>
+          )}
+          {checkpoint.date && (
+            <View className="flex-row items-start gap-2">
+              <Text className="min-w-[80px] text-xs font-medium text-muted-foreground">Date:</Text>
+              <Text className="flex-1 text-xs text-foreground">{checkpoint.date}</Text>
+            </View>
+          )}
+          {checkpoint.summary && (
+            <View className="flex-row items-start gap-2">
+              <Text className="min-w-[80px] text-xs font-medium text-muted-foreground">Summary:</Text>
+              <Text className="flex-1 text-xs text-foreground">{checkpoint.summary}</Text>
+            </View>
+          )}
+          {checkpoint.detectedItems && checkpoint.detectedItems.length > 0 && (
+            <View className="space-y-1">
+              <Text className="text-xs font-medium text-muted-foreground">Detected Items:</Text>
+              <View className="flex-row flex-wrap gap-1">
+                {checkpoint.detectedItems.map((item: string, i: number) => (
+                  <View key={i} className="rounded-md bg-secondary px-2 py-0.5">
+                    <Text className="text-xs text-secondary-foreground">{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+          {checkpoint.conditions && checkpoint.conditions.length > 0 && (
+            <View className="space-y-1">
+              <Text className="text-xs font-medium text-muted-foreground">Conditions:</Text>
+              {checkpoint.conditions.map((condition: string, i: number) => (
+                <View key={i} className="flex-row gap-1">
+                  <Text className="text-xs text-foreground">•</Text>
+                  <Text className="flex-1 text-xs text-foreground">{condition}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {checkpoint.issues && checkpoint.issues.length > 0 && (
+            <View className="space-y-1">
+              <Text className="text-xs font-medium text-destructive">Issues:</Text>
+              {checkpoint.issues.map((issue: string, i: number) => (
+                <View key={i} className="flex-row gap-1">
+                  <Text className="text-xs text-destructive">•</Text>
+                  <Text className="flex-1 text-xs text-destructive">{issue}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderCheckpointInsightsContent = () => (
+    <View className="space-y-3">
+      {(analysis as any).insights.changes && (
+        <View className="space-y-1">
+          <Text className="text-sm font-semibold text-warning">Changes Observed</Text>
+          <Text className="text-sm text-foreground">{(analysis as any).insights.changes}</Text>
+        </View>
+      )}
+      {(analysis as any).insights.patterns && (
+        <View className="space-y-1">
+          <Text className="text-sm font-semibold text-warning">Patterns Identified</Text>
+          <Text className="text-sm text-foreground">{(analysis as any).insights.patterns}</Text>
+        </View>
+      )}
+      {(analysis as any).insights.recommendations && (
+        <View className="space-y-1">
+          <Text className="text-sm font-semibold text-warning">Recommendations</Text>
+          <Text className="text-sm text-foreground">{(analysis as any).insights.recommendations}</Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderExecutiveSummaryContent = () =>
+    hasSummaryMarkdown ? (
+      <Markdown style={markdownStyles} rules={markdownRules}>
+        {summaryMarkdown!}
+      </Markdown>
+    ) : (
+      <Text className="text-sm text-muted-foreground">{SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW}</Text>
+    );
+
+  const renderCoverageContent = () => (
+    <>
+      {coverage?.warrantyInfo && (
+        <View className="mb-3">
+          <Text className="mb-1 text-sm font-semibold text-success">Warranty Information</Text>
+          <Markdown style={markdownStyles} rules={markdownRules}>
+            {coverage.warrantyInfo}
+          </Markdown>
+        </View>
+      )}
+      {coverage?.insuranceInfo && (
+        <View>
+          <Text className="mb-1 text-sm font-semibold text-success">Insurance Information</Text>
+          <Markdown style={markdownStyles} rules={markdownRules}>
+            {coverage.insuranceInfo}
+          </Markdown>
+        </View>
+      )}
+    </>
+  );
+
+  const renderDiyContent = () => (
+    <>
+      {getDiyHireProfessionalRecommended(diy) && (
+        <Alert icon={AlertTriangle} variant="destructive" className="mb-3">
+          <AlertTitle>Professional help recommended</AlertTitle>
+          <AlertDescription>
+            This repair may involve gas, electrical, structural, or other hazards. Consider hiring a
+            licensed professional before attempting DIY work.
+          </AlertDescription>
+        </Alert>
+      )}
+      {diyCostBlock && diyCostBlockHasContent(diyCostBlock) && (
+        <View cssInterop={false} style={nativeStyles.diyCostCallout}>
+          <View className="mb-2 flex-row items-center gap-2">
+            <Icon as={DollarSign} size={16} className="text-amber-600" />
+            <Text className="text-sm font-semibold text-foreground">Estimated DIY cost</Text>
+          </View>
+          <Text className="mb-2 text-xs text-muted-foreground">
+            Indicative range from our repair library—not a quote. Verify with local pricing.
+          </Text>
+          {diyCostBlock.repair_type ? (
+            <Text className="mb-1 text-xs text-muted-foreground">
+              <Text className="font-medium text-foreground">Repair type: </Text>
+              {String(diyCostBlock.repair_type)}
+            </Text>
+          ) : null}
+          {diyCostBlock.DIY?.cost_range ? (
+            <Text className="mb-1 text-sm text-foreground">
+              <Text className="font-medium">Typical range: </Text>
+              {String(diyCostBlock.DIY.cost_range)}
+            </Text>
+          ) : null}
+          {Array.isArray(diyCostBlock.DIY?.includes) && diyCostBlock.DIY.includes.length > 0 ? (
+            <View className="mb-2">
+              <Text className="mb-1 text-sm font-medium text-foreground">Includes</Text>
+              {diyCostBlock.DIY.includes.map((it: string, i: number) => (
+                <Text key={i} className="pl-2 text-sm text-foreground">
+                  • {it}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+          {diyCostBlock.DIY?.savings ? (
+            <Text className="mb-1 text-sm text-foreground">
+              <Text className="font-medium">Savings: </Text>
+              {String(diyCostBlock.DIY.savings)}
+            </Text>
+          ) : null}
+          {diyCostBlock.DIY?.complexity ? (
+            <Text className="text-sm text-foreground">
+              <Text className="font-medium">Complexity: </Text>
+              {String(diyCostBlock.DIY.complexity)}
+            </Text>
+          ) : null}
+        </View>
+      )}
+      {diy?.diySteps?.summary && (
+        <View className="mb-3">
+          <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>
+          <Markdown style={markdownStyles} rules={markdownRules}>
+            {diy.diySteps.summary}
+          </Markdown>
+        </View>
+      )}
+      {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
+        <View className="mb-3">
+          <Text className="mb-2 text-sm font-semibold text-warning">Step-by-Step Instructions</Text>
+          {diy.diySteps.steps.map((step: any, idx: number) => (
+            <View key={idx} className="mb-2 flex-row gap-2">
+              <Text className="text-sm font-medium text-foreground">{idx + 1}.</Text>
+              <Text className="flex-1 text-sm text-foreground">{step.description}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
+        <DiyVideoTutorialsSection videos={diy.youtubeSearch.videos} />
+      )}
+      {diy?.recommendedProducts?.products && diy.recommendedProducts.products.length > 0 && (
+        <View className="mb-3">
+          <Text className="mb-2 text-sm font-semibold text-warning">Recommended Products</Text>
+          {diy.recommendedProducts.products.map((product: Product, index: number) => (
+            <ProductCard key={index} product={product} />
+          ))}
+        </View>
+      )}
+    </>
+  );
+
+  const renderServiceContent = () => (
+    <>
+      <Text className="mb-2 text-sm font-semibold text-indigo-600">Local Service Providers</Text>
+      {allProviders.length > 0 ? (
+        allProviders.map((provider, index) => (
+          <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
+        ))
+      ) : serviceSearchFailedFlag ? (
+        <Text className="text-sm text-muted-foreground">{serviceFailureCopy}</Text>
+      ) : (
+        <Text className="text-sm italic text-muted-foreground">
+          No service providers found for this location.
+        </Text>
+      )}
+    </>
+  );
+
+  const renderCostContent = () =>
+    typeof costEstimation.costEstimates === 'string' ? (
+      <Text className="text-sm text-foreground">{costEstimation.costEstimates}</Text>
+    ) : (
+      <View className="space-y-3">
+        {costEstimation.costEstimates.repair_type && (
+          <View className="mb-2">
+            <Text className="text-sm font-semibold text-purple-600">Repair Type</Text>
+            <Text className="text-sm text-foreground">{costEstimation.costEstimates.repair_type}</Text>
+          </View>
+        )}
+        {costEstimation.costEstimates.DIY && (
+          <View className="mb-3 rounded-lg border border-border bg-background p-3">
+            <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
+            {costEstimation.costEstimates.DIY.cost_range && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Cost Range:</Text>
+                <Text className="flex-1 text-sm font-semibold text-purple-600">
+                  {costEstimation.costEstimates.DIY.cost_range}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.DIY.savings && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Savings:</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  {costEstimation.costEstimates.DIY.savings}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.DIY.complexity && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Complexity:</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  {costEstimation.costEstimates.DIY.complexity}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.DIY.includes &&
+              Array.isArray(costEstimation.costEstimates.DIY.includes) &&
+              costEstimation.costEstimates.DIY.includes.length > 0 && (
+                <View className="mt-2">
+                  <Text className="mb-1 text-sm font-medium text-muted-foreground">Includes:</Text>
+                  {costEstimation.costEstimates.DIY.includes.map((item: string, idx: number) => (
+                    <View key={idx} className="mb-1 flex-row gap-2">
+                      <Text className="text-sm text-foreground">•</Text>
+                      <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+          </View>
+        )}
+        {costEstimation.costEstimates.Service && (
+          <View className="mb-3 rounded-lg border border-border bg-background p-3">
+            <Text className="mb-2 text-sm font-semibold text-foreground">Professional Service</Text>
+            {costEstimation.costEstimates.Service.cost_range && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Cost Range:</Text>
+                <Text className="flex-1 text-sm font-semibold text-purple-600">
+                  {costEstimation.costEstimates.Service.cost_range}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.Service.benefits && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Benefits:</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  {costEstimation.costEstimates.Service.benefits}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.Service.complexity && (
+              <View className="mb-2 flex-row items-start gap-2">
+                <Text className="text-sm font-medium text-muted-foreground">Complexity:</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  {costEstimation.costEstimates.Service.complexity}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.Service.includes &&
+              Array.isArray(costEstimation.costEstimates.Service.includes) &&
+              costEstimation.costEstimates.Service.includes.length > 0 && (
+                <View className="mt-2">
+                  <Text className="mb-1 text-sm font-medium text-muted-foreground">Includes:</Text>
+                  {costEstimation.costEstimates.Service.includes.map((item: string, idx: number) => (
+                    <View key={idx} className="mb-1 flex-row gap-2">
+                      <Text className="text-sm text-foreground">•</Text>
+                      <Text className="flex-1 text-sm text-foreground">{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+          </View>
+        )}
+        {costEstimation.costEstimates.comparison && (
+          <View className="mt-3 rounded-lg bg-muted p-3">
+            <Text className="mb-2 text-sm font-semibold text-foreground">
+              Comparison & Considerations
+            </Text>
+            {costEstimation.costEstimates.comparison.diy_savings && (
+              <View className="mb-1 flex-row items-start gap-2">
+                <Text className="text-sm text-foreground">•</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  DIY Savings: {costEstimation.costEstimates.comparison.diy_savings}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.comparison.professional_benefits && (
+              <View className="mb-1 flex-row items-start gap-2">
+                <Text className="text-sm text-foreground">•</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  Professional Benefits:{' '}
+                  {costEstimation.costEstimates.comparison.professional_benefits}
+                </Text>
+              </View>
+            )}
+            {costEstimation.costEstimates.comparison.considerations && (
+              <View className="mb-1 flex-row items-start gap-2">
+                <Text className="text-sm text-foreground">•</Text>
+                <Text className="flex-1 text-sm text-foreground">
+                  Considerations: {costEstimation.costEstimates.comparison.considerations}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+        {costRecommendation && (
+          <View className="mt-3 rounded-lg border border-border bg-background p-3">
+            <Text className="mb-2 text-sm font-semibold text-foreground">Recommendation</Text>
+            {costRecommendation.notes ? (
+              <Text className="mb-2 text-sm text-foreground">{costRecommendation.notes}</Text>
+            ) : null}
+            {costRecommendation.next_steps ? (
+              <Text className="text-sm text-foreground">{costRecommendation.next_steps}</Text>
+            ) : null}
+          </View>
+        )}
+      </View>
+    );
 
   return (
     <View className="w-full space-y-3">
@@ -934,6 +1396,45 @@ const StructuredResponse = React.memo(
           />
         </StructuredReportSheet>
       ) : null}
+      {!isSheetLayout && sectionSheetMounted && activeSection ? (
+        <StructuredReportSheet
+          visible={sectionSheetVisible}
+          onClose={handleSectionSheetClose}
+          onDismissed={handleSectionSheetDismissed}
+          title={STRUCTURED_SECTION_TITLES[activeSection]}>
+          <StructuredResponse
+            sectionOnly={activeSection}
+            showTitleCard={false}
+            data={data}
+            summaryMarkdown={summaryMarkdown}
+            displayTitleInProgress={displayTitleInProgress}
+            accordionPipelineInProgress={accordionPipelineInProgress}
+            summarySynthesisInProgress={summarySynthesisInProgress}
+            saveMeta={saveMeta}
+          />
+        </StructuredReportSheet>
+      ) : null}
+      {sectionOnly ? (
+        <View className="w-full bg-background p-4">
+          {sectionOnly === 'triage' && (needsClarification || hasTriage)
+            ? renderTriageContent()
+            : null}
+          {sectionOnly === 'checkpoint-details' && hasCheckpointDetails
+            ? renderCheckpointDetailsContent()
+            : null}
+          {sectionOnly === 'checkpoint-insights' && hasCheckpointInsights
+            ? renderCheckpointInsightsContent()
+            : null}
+          {sectionOnly === 'coverage' && hasCoverage ? renderCoverageContent() : null}
+          {sectionOnly === 'diy' && hasDIY ? renderDiyContent() : null}
+          {sectionOnly === 'service' && hasService ? renderServiceContent() : null}
+          {sectionOnly === 'cost-estimates' && hasCostEstimates ? renderCostContent() : null}
+          {sectionOnly === 'executive-summary' && showSummaryAccordion
+            ? renderExecutiveSummaryContent()
+            : null}
+        </View>
+      ) : (
+        <>
       {displayTitle && showTitleCard ? (
         <View cssInterop={false} style={nativeStyles.structuredTitleCard}>
           <View className="flex-row items-start justify-between gap-4">
@@ -955,15 +1456,25 @@ const StructuredResponse = React.memo(
           </View>
         </View>
       ) : null}
+      {useHybridInlineLayout && hasCheckpointSummary && checkpointSummary ? (
+        <StructuredCheckpointSummaryCard checkpointSummary={checkpointSummary} />
+      ) : null}
+      {useHybridInlineLayout ? (
+        <StructuredSectionNav
+          items={optionalSectionNavItems}
+          analysis={analysis}
+          onSectionPress={handleSectionPress}
+        />
+      ) : null}
+      {isSheetLayout ? (
       <Accordion
-        enableScrollAnchor={!isSheetLayout}
-        type={isSheetLayout ? 'multiple' : 'single'}
-        collapsible={!isSheetLayout}
+        enableScrollAnchor={false}
+        type="multiple"
+        collapsible={false}
         className="w-full"
-        value={isSheetLayout ? allExpandedSectionValues : openSection}
-        onValueChange={
-          isSheetLayout ? noopMultipleAccordionChange : handleAccordionValueChange
-        }>
+        value={allExpandedSectionValues}
+        onValueChange={noopMultipleAccordionChange}
+      >
         {(hasTriage || needsClarification) && (
           <AccordionItem value="triage" className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
@@ -1010,82 +1521,7 @@ const StructuredResponse = React.memo(
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              <View className="space-y-3">
-                {checkpointSummary?.checkpointsAnalyzed && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Checkpoints Analyzed:
-                    </Text>
-                    <Text className="text-sm font-semibold text-foreground">
-                      {checkpointSummary.checkpointsAnalyzed}
-                    </Text>
-                  </View>
-                )}
-                {(checkpointSummary as any)?.queryType && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Query Type:
-                    </Text>
-                    <View className="rounded-md border border-border bg-background px-2 py-1">
-                      <Text className="text-xs text-foreground capitalize">
-                        {(checkpointSummary as any).queryType}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-                {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Locations:
-                    </Text>
-                    <View className="flex-1 flex-row flex-wrap gap-1">
-                      {checkpointSummary.locations.map((location, idx) => (
-                        <View
-                          key={idx}
-                          className="rounded-md bg-secondary px-2 py-1"
-                        >
-                          <Text className="text-xs text-secondary-foreground">{location}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-                {(checkpointSummary as any)?.dateRange && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Date Range:
-                    </Text>
-                    <Text className="flex-1 text-sm text-foreground">
-                      {(checkpointSummary as any).dateRange}
-                    </Text>
-                  </View>
-                )}
-                {checkpointSummary?.overallCondition && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Overall Condition:
-                    </Text>
-                    <Text className="flex-1 text-sm text-foreground">
-                      {checkpointSummary.overallCondition}
-                    </Text>
-                  </View>
-                )}
-                {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 && (
-                  <View className="flex-row items-start gap-2">
-                    <Text className="text-sm font-medium text-muted-foreground min-w-[140px]">
-                      Issues Detected:
-                    </Text>
-                    <View className="flex-1 space-y-1">
-                      {checkpointSummary.issuesDetected.map((issue, idx) => (
-                        <View key={idx} className="flex-row gap-2">
-                          <Text className="text-sm text-foreground">•</Text>
-                          <Text className="flex-1 text-sm text-foreground">{issue}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </View>
+              {renderCheckpointSummaryContent()}
             </AccordionContent>
           </AccordionItem>
         )}
@@ -1217,26 +1653,7 @@ const StructuredResponse = React.memo(
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              {coverage?.warrantyInfo && (
-                <View className="mb-3">
-                  <Text className="mb-1 text-sm font-semibold text-success">
-                    Warranty Information
-                  </Text>
-                  <Markdown style={markdownStyles} rules={markdownRules}>
-                    {coverage.warrantyInfo}
-                  </Markdown>
-                </View>
-              )}
-              {coverage?.insuranceInfo && (
-                <View>
-                  <Text className="mb-1 text-sm font-semibold text-success">
-                    Insurance Information
-                  </Text>
-                  <Markdown style={markdownStyles} rules={markdownRules}>
-                    {coverage.insuranceInfo}
-                  </Markdown>
-                </View>
-              )}
+              {renderCoverageContent()}
             </AccordionContent>
           </AccordionItem>
         )}
@@ -1255,98 +1672,7 @@ const StructuredResponse = React.memo(
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              {getDiyHireProfessionalRecommended(diy) && (
-                <Alert icon={AlertTriangle} variant="destructive" className="mb-3">
-                  <AlertTitle>Professional help recommended</AlertTitle>
-                  <AlertDescription>
-                    This repair may involve gas, electrical, structural, or other hazards. Consider
-                    hiring a licensed professional before attempting DIY work.
-                  </AlertDescription>
-                </Alert>
-              )}
-              {diyCostBlock && diyCostBlockHasContent(diyCostBlock) && (
-                <View cssInterop={false} style={nativeStyles.diyCostCallout}>
-                  <View className="mb-2 flex-row items-center gap-2">
-                    <Icon as={DollarSign} size={16} className="text-amber-600" />
-                    <Text className="text-sm font-semibold text-foreground">Estimated DIY cost</Text>
-                  </View>
-                  <Text className="mb-2 text-xs text-muted-foreground">
-                    Indicative range from our repair library—not a quote. Verify with local pricing.
-                  </Text>
-                  {diyCostBlock.repair_type ? (
-                    <Text className="mb-1 text-xs text-muted-foreground">
-                      <Text className="font-medium text-foreground">Repair type: </Text>
-                      {String(diyCostBlock.repair_type)}
-                    </Text>
-                  ) : null}
-                  {diyCostBlock.DIY?.cost_range ? (
-                    <Text className="mb-1 text-sm text-foreground">
-                      <Text className="font-medium">Typical range: </Text>
-                      {String(diyCostBlock.DIY.cost_range)}
-                    </Text>
-                  ) : null}
-                  {Array.isArray(diyCostBlock.DIY?.includes) && diyCostBlock.DIY.includes.length > 0 ? (
-                    <View className="mb-2">
-                      <Text className="mb-1 text-sm font-medium text-foreground">Includes</Text>
-                      {diyCostBlock.DIY.includes.map((it: string, i: number) => (
-                        <Text key={i} className="pl-2 text-sm text-foreground">
-                          • {it}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                  {diyCostBlock.DIY?.savings ? (
-                    <Text className="mb-1 text-sm text-foreground">
-                      <Text className="font-medium">Savings: </Text>
-                      {String(diyCostBlock.DIY.savings)}
-                    </Text>
-                  ) : null}
-                  {diyCostBlock.DIY?.complexity ? (
-                    <Text className="text-sm text-foreground">
-                      <Text className="font-medium">Complexity: </Text>
-                      {String(diyCostBlock.DIY.complexity)}
-                    </Text>
-                  ) : null}
-                </View>
-              )}
-              {diy?.diySteps?.summary && (
-                <View className="mb-3">
-                  <Text className="mb-1 text-sm font-semibold text-warning">Summary</Text>
-                  <Markdown style={markdownStyles} rules={markdownRules}>
-                    {diy.diySteps.summary}
-                  </Markdown>
-                </View>
-              )}
-
-              {diy?.diySteps?.steps && diy.diySteps.steps.length > 0 && (
-                <View className="mb-3">
-                  <Text className="mb-2 text-sm font-semibold text-warning">
-                    Step-by-Step Instructions
-                  </Text>
-                  {diy.diySteps.steps.map((step: any, idx: number) => (
-                    <View key={idx} className="mb-2 flex-row gap-2">
-                      <Text className="text-sm font-medium text-foreground">{idx + 1}.</Text>
-                      <Text className="flex-1 text-sm text-foreground">{step.description}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {diy?.youtubeSearch?.videos && diy.youtubeSearch.videos.length > 0 && (
-                <DiyVideoTutorialsSection videos={diy.youtubeSearch.videos} />
-              )}
-
-              {diy?.recommendedProducts?.products &&
-                diy.recommendedProducts.products.length > 0 && (
-                  <View className="mb-3">
-                    <Text className="mb-2 text-sm font-semibold text-warning">
-                      Recommended Products
-                    </Text>
-                    {diy.recommendedProducts.products.map((product: Product, index: number) => (
-                      <ProductCard key={index} product={product} />
-                    ))}
-                  </View>
-                )}
+              {renderDiyContent()}
             </AccordionContent>
           </AccordionItem>
         )}
@@ -1365,20 +1691,7 @@ const StructuredResponse = React.memo(
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              <Text className="mb-2 text-sm font-semibold text-indigo-600">
-                Local Service Providers
-              </Text>
-              {allProviders.length > 0 ? (
-                allProviders.map((provider, index) => (
-                  <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
-                ))
-              ) : serviceSearchFailedFlag ? (
-                <Text className="text-sm text-muted-foreground">{serviceFailureCopy}</Text>
-              ) : (
-                <Text className="text-sm italic text-muted-foreground">
-                  No service providers found for this location.
-                </Text>
-              )}
+              {renderServiceContent()}
             </AccordionContent>
           </AccordionItem>
         )}
@@ -1397,178 +1710,7 @@ const StructuredResponse = React.memo(
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              {typeof costEstimation.costEstimates === 'string' ? (
-                <Text className="text-sm text-foreground">{costEstimation.costEstimates}</Text>
-              ) : (
-                <View className="space-y-3">
-                  {costEstimation.costEstimates.repair_type && (
-                    <View className="mb-2">
-                      <Text className="text-sm font-semibold text-purple-600">Repair Type</Text>
-                      <Text className="text-sm text-foreground">
-                        {costEstimation.costEstimates.repair_type}
-                      </Text>
-                    </View>
-                  )}
-
-                  {costEstimation.costEstimates.DIY && (
-                    <View className="mb-3 rounded-lg border border-border bg-background p-3">
-                      <Text className="mb-2 text-sm font-semibold text-foreground">DIY Option</Text>
-                      {costEstimation.costEstimates.DIY.cost_range && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Cost Range:
-                          </Text>
-                          <Text className="flex-1 text-sm font-semibold text-purple-600">
-                            {costEstimation.costEstimates.DIY.cost_range}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.DIY.savings && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Savings:
-                          </Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            {costEstimation.costEstimates.DIY.savings}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.DIY.complexity && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Complexity:
-                          </Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            {costEstimation.costEstimates.DIY.complexity}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.DIY.includes &&
-                        Array.isArray(costEstimation.costEstimates.DIY.includes) &&
-                        costEstimation.costEstimates.DIY.includes.length > 0 && (
-                          <View className="mt-2">
-                            <Text className="mb-1 text-sm font-medium text-muted-foreground">
-                              Includes:
-                            </Text>
-                            {costEstimation.costEstimates.DIY.includes.map(
-                              (item: string, idx: number) => (
-                                <View key={idx} className="mb-1 flex-row gap-2">
-                                  <Text className="text-sm text-foreground">•</Text>
-                                  <Text className="flex-1 text-sm text-foreground">{item}</Text>
-                                </View>
-                              )
-                            )}
-                          </View>
-                        )}
-                    </View>
-                  )}
-
-                  {costEstimation.costEstimates.Service && (
-                    <View className="mb-3 rounded-lg border border-border bg-background p-3">
-                      <Text className="mb-2 text-sm font-semibold text-foreground">
-                        Professional Service
-                      </Text>
-                      {costEstimation.costEstimates.Service.cost_range && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Cost Range:
-                          </Text>
-                          <Text className="flex-1 text-sm font-semibold text-purple-600">
-                            {costEstimation.costEstimates.Service.cost_range}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.Service.benefits && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Benefits:
-                          </Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            {costEstimation.costEstimates.Service.benefits}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.Service.complexity && (
-                        <View className="mb-2 flex-row items-start gap-2">
-                          <Text className="text-sm font-medium text-muted-foreground">
-                            Complexity:
-                          </Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            {costEstimation.costEstimates.Service.complexity}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.Service.includes &&
-                        Array.isArray(costEstimation.costEstimates.Service.includes) &&
-                        costEstimation.costEstimates.Service.includes.length > 0 && (
-                          <View className="mt-2">
-                            <Text className="mb-1 text-sm font-medium text-muted-foreground">
-                              Includes:
-                            </Text>
-                            {costEstimation.costEstimates.Service.includes.map(
-                              (item: string, idx: number) => (
-                                <View key={idx} className="mb-1 flex-row gap-2">
-                                  <Text className="text-sm text-foreground">•</Text>
-                                  <Text className="flex-1 text-sm text-foreground">{item}</Text>
-                                </View>
-                              )
-                            )}
-                          </View>
-                        )}
-                    </View>
-                  )}
-
-                  {costEstimation.costEstimates.comparison && (
-                    <View className="mt-3 rounded-lg bg-muted p-3">
-                      <Text className="mb-2 text-sm font-semibold text-foreground">
-                        Comparison & Considerations
-                      </Text>
-                      {costEstimation.costEstimates.comparison.diy_savings && (
-                        <View className="mb-1 flex-row items-start gap-2">
-                          <Text className="text-sm text-foreground">•</Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            DIY Savings: {costEstimation.costEstimates.comparison.diy_savings}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.comparison.professional_benefits && (
-                        <View className="mb-1 flex-row items-start gap-2">
-                          <Text className="text-sm text-foreground">•</Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            Professional Benefits:{' '}
-                            {costEstimation.costEstimates.comparison.professional_benefits}
-                          </Text>
-                        </View>
-                      )}
-                      {costEstimation.costEstimates.comparison.considerations && (
-                        <View className="mb-1 flex-row items-start gap-2">
-                          <Text className="text-sm text-foreground">•</Text>
-                          <Text className="flex-1 text-sm text-foreground">
-                            Considerations: {costEstimation.costEstimates.comparison.considerations}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-                  {costRecommendation && (
-                    <View className="mt-3 rounded-lg border border-border bg-background p-3">
-                      <Text className="mb-2 text-sm font-semibold text-foreground">
-                        Recommendation
-                      </Text>
-                      {costRecommendation.notes ? (
-                        <Text className="mb-2 text-sm text-foreground">
-                          {costRecommendation.notes}
-                        </Text>
-                      ) : null}
-                      {costRecommendation.next_steps ? (
-                        <Text className="text-sm text-foreground">
-                          {costRecommendation.next_steps}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-              )}
+              {renderCostContent()}
             </AccordionContent>
           </AccordionItem>
         )}
@@ -1576,41 +1718,22 @@ const StructuredResponse = React.memo(
         {showSummaryAccordion && (
           <AccordionItem value={EXECUTIVE_SUMMARY_ACCORDION_VALUE} className="border-b border-border">
             <AccordionTrigger className="px-2 py-3">
-              <View className="min-w-0 flex-1 flex-col gap-1 pr-1">
-                <View className="flex-row items-center gap-2">
-                  <Icon as={ListChecks} size={16} className="text-emerald-600" />
-                  <Text className="min-w-0 flex-1 font-medium text-foreground">
-                    {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
-                  </Text>
-                </View>
-                {summaryPreview && !summaryAccordionExpanded ? (
-                  <Text
-                    className="text-sm text-muted-foreground"
-                    numberOfLines={2}>
-                    {summaryPreview}
-                  </Text>
-                ) : null}
-                {summaryPreviewTruncated && !summaryAccordionExpanded ? (
-                  <Text className="text-xs text-muted-foreground/80">
-                    Show full summary
-                  </Text>
-                ) : null}
+              <View className="flex-row items-center gap-2">
+                <Icon as={ListChecks} size={16} className="text-emerald-600" />
+                <Text className="min-w-0 flex-1 font-medium text-foreground">
+                  {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
+                </Text>
               </View>
             </AccordionTrigger>
             <AccordionContent className="border-t border-border bg-background p-4">
-              {hasSummaryMarkdown ? (
-                <Markdown style={markdownStyles} rules={markdownRules}>
-                  {summaryMarkdown!}
-                </Markdown>
-              ) : (
-                <Text className="text-sm text-muted-foreground">
-                  {SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW}
-                </Text>
-              )}
+              {renderExecutiveSummaryContent()}
             </AccordionContent>
           </AccordionItem>
         )}
       </Accordion>
+      ) : null}
+        </>
+      )}
     </View>
   );
 });

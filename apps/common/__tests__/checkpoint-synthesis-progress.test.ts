@@ -145,12 +145,11 @@ describe("shouldShowDisplayTitleGradient", () => {
     ).toBe(true);
   });
 
-  it("returns true from executing optional-agent steps without analysisStatus", () => {
+  it("returns true from executing optional-agent steps when title is not yet present", () => {
     expect(
       shouldShowDisplayTitleGradient({
         structured: {
           analysis: {
-            title: "Garage door",
             checkpointSummary: { checkpointsAnalyzed: 1 },
           },
         },
@@ -170,6 +169,23 @@ describe("shouldShowDisplayTitleGradient", () => {
           },
         },
         steps: [{ name: "checkpoint_analysis_synthesis_agent", status: "completed" }],
+        isTurnInFlight: false,
+      })
+    ).toBe(false);
+  });
+
+  it("returns false after stream when title is present even if analysisStatus lags on a ready branch", () => {
+    expect(
+      shouldShowDisplayTitleGradient({
+        structured: {
+          analysis: {
+            title: "Garage Door Maintenance Analysis",
+            checkpointSummary: { checkpointsAnalyzed: 1 },
+            coverageResult: { warrantyInfo: "Manufacturer warranty applies." },
+            analysisStatus: { coverage: "running", diy: "completed" },
+          },
+        },
+        steps: [{ name: "coverage_agent", status: "executing" }],
         isTurnInFlight: false,
       })
     ).toBe(false);

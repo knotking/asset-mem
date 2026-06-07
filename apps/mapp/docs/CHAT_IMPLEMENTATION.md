@@ -189,7 +189,14 @@ The main message rendering component with comprehensive features:
 - **Haptic feedback**: Touch feedback for interactions
 
 **Structured Response Rendering:**
-When the assistant returns structured data (JSON format), the component renders an accordion-based UI with:
+When the assistant returns structured data (JSON format), **inline chat** uses a rows + sheets layout (no inline accordion):
+
+- **Title card** with open-full-report action
+- **Checkpoint summary card** — compact always-visible preview
+- **Report sections** — tappable rows opening section sheets (triage, checkpoint details/insights, coverage, DIY, service, cost, summary)
+- **Full report sheet** — all sections in accordion, expanded
+
+Section content includes:
 
 1. **Triage Summary** (Stethoscope icon, blue)
    - Primary diagnosis or problem assessment
@@ -228,7 +235,7 @@ When the assistant returns structured data (JSON format), the component renders 
 **Message Content Extraction:**
 The component uses the strict Orchestrator V2 message contract:
 - Renders prose from `contentMarkdown`
-- Renders accordions from `contentJson`
+- Renders structured UI from `contentJson` (inline rows + sheets; accordion in full-report sheet only)
 - Does not parse structured JSON from message text in the hot path
 
 **File Preview Component:**
