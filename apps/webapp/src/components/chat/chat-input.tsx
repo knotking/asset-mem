@@ -50,6 +50,7 @@ import {
 import type { Checkpoint } from "@/lib/types";
 import { CompactSettingsBar } from "./compact-settings-bar";
 import { ChatSettingsPopover } from "./chat-settings-popover";
+import { ComposerMetaSection } from "./composer-meta-section";
 
 type Props = {
   onSend: (message: string) => void;
@@ -88,6 +89,9 @@ type Props = {
     searchLocation: import("@/lib/types").SearchLocationInput | undefined,
   ) => void;
   propertyAddress?: string;
+  readyContextCount?: number;
+  pendingContextCount?: number;
+  hasQueuedSend?: boolean;
 };
 
 export const ChatInput = forwardRef<HTMLInputElement, Props>(
@@ -121,6 +125,9 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
       searchLocation,
       onSearchLocationChange,
       propertyAddress,
+      readyContextCount = 0,
+      pendingContextCount = 0,
+      hasQueuedSend = false,
     },
     ref,
   ) => {
@@ -319,53 +326,67 @@ export const ChatInput = forwardRef<HTMLInputElement, Props>(
           className="relative flex w-full items-end gap-2"
         >
           <div className="flex flex-1 flex-col gap-3">
-            {contextChipStrip}
-            {sendBlockHint ? (
-              <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
-            ) : null}
-            {/* Compact Settings Bar */}
-            <ChatSettingsPopover
-              open={settingsPopoverOpen}
-              onOpenChange={setSettingsPopoverOpen}
-              primaryAgent={primaryAgent}
-              onPrimaryAgentChange={onPrimaryAgentChange}
-              selectedOptionalAgents={selectedOptionalAgents}
-              onToggleOptionalAgent={handleOptionalAgentToggle}
-              selectedCheckpointOptionalAgents={
-                selectedCheckpointOptionalAgents
-              }
-              onToggleCheckpointOptionalAgent={
-                handleCheckpointOptionalAgentToggle
-              }
-              searchLocation={searchLocation}
-              onSearchLocationChange={onSearchLocationChange}
-              propertyAddress={propertyAddress}
-              initialTab={settingsPopoverTab}
-            >
-              <div onClick={() => setSettingsPopoverOpen(true)}>
-                <CompactSettingsBar
+            {useContextMode ? (
+              <ComposerMetaSection
+                contextChipStrip={contextChipStrip}
+                sendBlockHint={sendBlockHint}
+                primaryAgent={primaryAgent}
+                onPrimaryAgentChange={onPrimaryAgentChange}
+                selectedOptionalAgents={selectedOptionalAgents}
+                onToggleOptionalAgent={handleOptionalAgentToggle}
+                selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+                onToggleCheckpointOptionalAgent={handleCheckpointOptionalAgentToggle}
+                searchLocation={searchLocation}
+                onSearchLocationChange={onSearchLocationChange}
+                propertyAddress={propertyAddress}
+                readyContextCount={readyContextCount}
+                pendingContextCount={pendingContextCount}
+                hasQueuedSend={hasQueuedSend}
+              />
+            ) : (
+              <>
+                {contextChipStrip}
+                {sendBlockHint ? (
+                  <p className="text-xs text-muted-foreground">{sendBlockHint}</p>
+                ) : null}
+                <ChatSettingsPopover
+                  open={settingsPopoverOpen}
+                  onOpenChange={setSettingsPopoverOpen}
                   primaryAgent={primaryAgent}
+                  onPrimaryAgentChange={onPrimaryAgentChange}
                   selectedOptionalAgents={selectedOptionalAgents}
-                  selectedCheckpointOptionalAgents={
-                    selectedCheckpointOptionalAgents
-                  }
+                  onToggleOptionalAgent={handleOptionalAgentToggle}
+                  selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+                  onToggleCheckpointOptionalAgent={handleCheckpointOptionalAgentToggle}
                   searchLocation={searchLocation}
+                  onSearchLocationChange={onSearchLocationChange}
                   propertyAddress={propertyAddress}
-                  onOpenSettings={() => {
-                    setSettingsPopoverTab("agent");
-                    setSettingsPopoverOpen(true);
-                  }}
-                  onAgentPress={() => {
-                    setSettingsPopoverTab("agent");
-                    setSettingsPopoverOpen(true);
-                  }}
-                  onLocationPress={() => {
-                    setSettingsPopoverTab("location");
-                    setSettingsPopoverOpen(true);
-                  }}
-                />
-              </div>
-            </ChatSettingsPopover>
+                  initialTab={settingsPopoverTab}
+                >
+                  <div onClick={() => setSettingsPopoverOpen(true)}>
+                    <CompactSettingsBar
+                      primaryAgent={primaryAgent}
+                      selectedOptionalAgents={selectedOptionalAgents}
+                      selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+                      searchLocation={searchLocation}
+                      propertyAddress={propertyAddress}
+                      onOpenSettings={() => {
+                        setSettingsPopoverTab("agent");
+                        setSettingsPopoverOpen(true);
+                      }}
+                      onAgentPress={() => {
+                        setSettingsPopoverTab("agent");
+                        setSettingsPopoverOpen(true);
+                      }}
+                      onLocationPress={() => {
+                        setSettingsPopoverTab("location");
+                        setSettingsPopoverOpen(true);
+                      }}
+                    />
+                  </div>
+                </ChatSettingsPopover>
+              </>
+            )}
             {/* Selected Checkpoints Display */}
             {!useContextMode &&
               primaryAgent === "checkpoint" &&

@@ -5,7 +5,7 @@ import { InputToolbar, InputToolbarProps, Composer, Send } from 'react-native-gi
 import type { IMessage } from 'react-native-gifted-chat';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Plus, Send as SendIcon, Square, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Plus, Send as SendIcon, Square, ChevronDown, ChevronUp, Settings } from 'lucide-react-native';
 import type { AnalysisOptionalAgent, CheckpointOptionalAgent, PrimaryAgent } from '@homeapp/common/types';
 import { CompactSettingsBar } from './CompactSettingsBar';
 import { ChatSettingsModal } from './ChatSettingsModal';
@@ -295,20 +295,27 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
             <Text className="mb-2 text-xs text-muted-foreground">{sendBlockHint}</Text>
           ) : null}
 
-          <View className="mb-2 flex-row items-center gap-1">
-            <View className="min-w-0 flex-1">
-              <CompactSettingsBar
-                primaryAgent={primaryAgent}
-                selectedOptionalAgents={selectedOptionalAgents}
-                selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
-                searchLocation={searchLocation}
-                propertyAddress={propertyAddress}
-                onOpenSettings={handleOpenSettings}
-                onAgentPress={handleOpenAgentSettings}
-                onLocationPress={handleOpenLocationSettings}
-                className="flex-row items-center gap-2"
-              />
-            </View>
+          <View className="mb-2 flex-row flex-wrap items-center gap-1.5">
+            <CompactSettingsBar
+              primaryAgent={primaryAgent}
+              selectedOptionalAgents={selectedOptionalAgents}
+              selectedCheckpointOptionalAgents={selectedCheckpointOptionalAgents}
+              searchLocation={searchLocation}
+              propertyAddress={propertyAddress}
+              onOpenSettings={handleOpenSettings}
+              onAgentPress={handleOpenAgentSettings}
+              onLocationPress={handleOpenLocationSettings}
+              showSettingsButton={false}
+              className="min-w-0 shrink flex-row items-center gap-2"
+            />
+            <Pressable
+              onPress={handleOpenSettings}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Open chat settings"
+              className="h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-background">
+              <Icon as={Settings} size={16} className="text-muted-foreground" />
+            </Pressable>
             <Pressable
               onPress={toggleComposerMeta}
               hitSlop={8}
@@ -320,10 +327,10 @@ export function GiftedChatInputToolbar(props: GiftedChatInputToolbarProps) {
           </View>
         </>
       ) : (
-        <View className="mb-2 flex-row items-center gap-1">
+        <View className="mb-2 flex-row items-center gap-1.5">
           <Pressable
             onPress={handleOpenSettings}
-            className="min-w-0 flex-1 flex-row items-center rounded-full border border-border bg-background px-3 py-1.5"
+            className="max-w-[calc(100%-2.25rem)] shrink flex-row items-center rounded-full border border-border bg-background px-3 py-1.5"
             accessibilityRole="button"
             accessibilityLabel={`Chat settings: ${collapsedSummary}`}>
             <Text className="flex-1 text-xs font-medium text-foreground" numberOfLines={1}>

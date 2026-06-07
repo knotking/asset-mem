@@ -27,6 +27,8 @@ interface CompactSettingsBarProps {
   onOpenSettings: () => void;
   onAgentPress?: () => void;
   onLocationPress?: () => void;
+  /** When false, omit the trailing settings icon (e.g. toolbar renders it beside collapse). */
+  showSettingsButton?: boolean;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export function CompactSettingsBar({
   onOpenSettings,
   onAgentPress,
   onLocationPress,
+  showSettingsButton = true,
   className,
 }: CompactSettingsBarProps) {
   const hasLocation = !!(
@@ -52,10 +55,10 @@ export function CompactSettingsBar({
   };
 
   return (
-    <View className={className ?? 'mb-2 flex-row items-center gap-2'}>
+    <View className={className ?? 'mb-2 min-w-0 flex-row items-center gap-2'}>
       <Pressable
         onPress={onAgentPress || onOpenSettings}
-        className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
+        className="shrink-0 flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
         accessibilityRole="button"
         accessibilityLabel={`Current agent: ${primaryAgent === 'analysis' ? 'Analysis' : primaryAgent === 'checkpoint' ? 'Checkpoint' : 'Docs'}`}>
         <Icon
@@ -84,7 +87,7 @@ export function CompactSettingsBar({
 
       <Pressable
         onPress={onLocationPress || onOpenSettings}
-        className="flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
+        className="min-w-0 max-w-[48%] shrink flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
         accessibilityRole="button"
         accessibilityLabel={`Location: ${getLocationLabel()}`}>
         <Icon
@@ -92,18 +95,22 @@ export function CompactSettingsBar({
           size={14}
           className={hasLocation ? 'text-primary' : 'text-muted-foreground'}
         />
-        <Text className={`text-xs font-medium ${hasLocation ? 'text-foreground' : 'text-muted-foreground'}`}>
+        <Text
+          className={`min-w-0 shrink text-xs font-medium ${hasLocation ? 'text-foreground' : 'text-muted-foreground'}`}
+          numberOfLines={1}>
           {getLocationLabel()}
         </Text>
       </Pressable>
 
-      <Pressable
-        onPress={onOpenSettings}
-        className="h-8 w-8 items-center justify-center rounded-full border border-border bg-background"
-        accessibilityRole="button"
-        accessibilityLabel="Open chat settings">
-        <Icon as={Settings} size={16} className="text-muted-foreground" />
-      </Pressable>
+      {showSettingsButton ? (
+        <Pressable
+          onPress={onOpenSettings}
+          className="h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-background"
+          accessibilityRole="button"
+          accessibilityLabel="Open chat settings">
+          <Icon as={Settings} size={16} className="text-muted-foreground" />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
