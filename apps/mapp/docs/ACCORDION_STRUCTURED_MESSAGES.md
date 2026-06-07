@@ -157,7 +157,7 @@ Orchestrator V2 uses persisted `contentJson` as the single source for structured
 - When `contentJson` has visible accordion sections, UI renders **hybrid** display:
   - `analysis.title` title card
   - Structured accordions from `contentJson` (**Checkpoint Summary** opens as soon as checkpoint summary JSON is visible, including while optional branches or synthesis are still running; other sections stay collapsed until the pipeline finishes)
-  - **Summary & Next Steps** last accordion from filtered `contentMarkdown` (collapsed by default; inline preview in trigger; placeholder **Preparing summary…** only while `analysisStatus.synthesis` is `pending`/`running` or the synthesis agent step is executing — not for checkpoint-only turns; never auto-opens)
+  - **Summary & Next Steps** last accordion from filtered `contentMarkdown` (collapsed by default; inline preview in trigger; placeholder **Preparing summary…** while synthesis is in flight — including the client-inferred gap after optional branches finish and before `analysisStatus.synthesis` is patched; never auto-opens)
   - Native accordion `value` uses `STRUCTURED_ACCORDION_COLLAPSED` (`__collapsed__`) instead of `undefined` so `@rn-primitives/accordion` stays controlled on collapse (avoids preview + content showing together on first tap)
   - Structured **title card** includes a full-report icon that opens a page sheet with all accordion sections expanded for read-through
   - In-flight branch/synthesis progress uses **CheckpointAnalysisProgressFooter** above the composer context chips (not a strip below accordions)

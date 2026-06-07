@@ -228,6 +228,73 @@ export function isSynthesisAnalysisInProgress(analysis: unknown): boolean {
   return status === "pending" || status === "running";
 }
 
+export type SynthesisProgressOptions = {
+  /** Local stream / Firestore in-flight turn — required for pre-synthesis gap UX. */
+  isTurnInFlight?: boolean;
+};
+
+/** True when every optional branch in ``analysisStatus`` is completed. */
+export function areAllOptionalBranchesCompleted(analysis: unknown): boolean {
+  if (!analysis || typeof analysis !== "object") {
+    return false;
+  }
+  const statusMap = (analysis as { analysisStatus?: unknown }).analysisStatus;
+  if (!statusMap || typeof statusMap !== "object") {
+    return false;
+  }
+
+  const analysisRecord = analysis as Record<string, unknown>;
+  let tracked = 0;
+  for (const key of CHECKPOINT_OPTIONAL_AGENTS) {
+    let status = normalizeStatus((statusMap as Record<string, unknown>)[key]);
+    if (
+      status &&
+      status !== "completed" &&
+      branchSectionReady(analysisRecord, key)
+    ) {
+      status = "completed";
+    }
+    if (!status) continue;
+    tracked += 1;
+    if (status !== "completed") {
+      return false;
+    }
+  }
+  return tracked > 0;
+}
+
+/**
+ * Server gap after optional branches finish but before ``analysisStatus.synthesis``
+ * is patched — treat as synthesis in flight on the client while the turn is open.
+ */
+export function isSynthesisPendingAfterBranches(
+  analysis: unknown,
+  options?: SynthesisProgressOptions
+): boolean {
+  if (!options?.isTurnInFlight) {
+    return false;
+  }
+  if (getSynthesisAnalysisStatus(analysis) === "completed") {
+    return false;
+  }
+  if (isSynthesisAnalysisInProgress(analysis)) {
+    return false;
+  }
+  return areAllOptionalBranchesCompleted(analysis);
+}
+
+export function isSynthesisWorkInFlight(
+  analysis: unknown,
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null,
+  options?: SynthesisProgressOptions
+): boolean {
+  return (
+    isSynthesisAnalysisInProgress(analysis) ||
+    isSynthesisAgentStepExecuting(steps) ||
+    isSynthesisPendingAfterBranches(analysis, options)
+  );
+}
+
 /** ``analysis`` from message ``contentJson`` or ``contentJson.analysis``. */
 export function resolveStructuredAnalysis(
   structured: unknown
@@ -255,12 +322,10 @@ export function isSynthesisAgentStepExecuting(
 /** Placeholder Summary accordion only while executive-summary synthesis is in flight. */
 export function shouldShowSummaryAccordionPlaceholder(
   analysis: unknown,
-  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null,
+  options?: SynthesisProgressOptions
 ): boolean {
-  return (
-    isSynthesisAnalysisInProgress(analysis) ||
-    isSynthesisAgentStepExecuting(steps)
-  );
+  return isSynthesisWorkInFlight(analysis, steps, options);
 }
 
 /**
@@ -269,12 +334,13 @@ export function shouldShowSummaryAccordionPlaceholder(
  */
 export function hasPostContentPipelineWork(
   analysis: unknown,
-  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null
+  steps?: ReadonlyArray<Pick<AgentStep, "name" | "status">> | null,
+  options?: SynthesisProgressOptions
 ): boolean {
   if (getCheckpointBranchProgress(analysis)?.isInProgress) {
     return true;
   }
-  if (shouldShowSummaryAccordionPlaceholder(analysis, steps)) {
+  if (shouldShowSummaryAccordionPlaceholder(analysis, steps, options)) {
     return true;
   }
   return !!steps?.some(
@@ -285,9 +351,13 @@ export function hasPostContentPipelineWork(
 }
 
 export function getSynthesisTurnProgress(
-  analysis: unknown
+  analysis: unknown,
+  options?: SynthesisProgressOptions
 ): CheckpointBranchProgress | null {
-  if (!isSynthesisAnalysisInProgress(analysis)) {
+  if (
+    !isSynthesisAnalysisInProgress(analysis) &&
+    !isSynthesisPendingAfterBranches(analysis, options)
+  ) {
     return null;
   }
   return {
@@ -299,6 +369,11 @@ export function getSynthesisTurnProgress(
     detail: null,
   };
 }
+
+export type InFlightCheckpointProgressOptions = {
+  /** True while composer stream / send is open for the current turn. */
+  isStreamActive?: boolean;
+};
 
 export function hasCheckpointAnalysisStatusInProgress(
   analysis: unknown
@@ -355,7 +430,9 @@ export function shouldShowDisplayTitleGradient(
     return true;
   }
   const analysis = resolveStructuredAnalysis(input.structured ?? null);
-  return hasPostContentPipelineWork(analysis, input.steps);
+  return hasPostContentPipelineWork(analysis, input.steps, {
+    isTurnInFlight: input.isTurnInFlight,
+  });
 }
 
 export function getInFlightCheckpointProgressFromMessages(
@@ -363,16 +440,23 @@ export function getInFlightCheckpointProgressFromMessages(
     role: string;
     content?: string | null;
     contentJson?: Record<string, unknown> | null;
-  }>
+  }>,
+  options?: InFlightCheckpointProgressOptions
 ): CheckpointBranchProgress | null {
+  let seenAssistant = false;
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (msg.role !== "assistant") continue;
+    const isLatestAssistant = !seenAssistant;
+    seenAssistant = true;
+
     const progress = getCheckpointBranchProgressFromMessage(msg);
     if (progress?.isInProgress) return progress;
     if (msg.contentJson && typeof msg.contentJson === "object") {
       const root = msg.contentJson as Record<string, unknown>;
-      const synthesis = getSynthesisTurnProgress(root.analysis ?? root);
+      const synthesis = getSynthesisTurnProgress(root.analysis ?? root, {
+        isTurnInFlight: isLatestAssistant && !!options?.isStreamActive,
+      });
       if (synthesis) return synthesis;
     }
   }

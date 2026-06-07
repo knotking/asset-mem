@@ -67,7 +67,7 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Lifecycle strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentLifecycle` set, no `agentSteps` yet |
 | **Thinking strip** (`AssistantProgressStrip`) | Assistant, `!hasDisplayableContent`, `agentSteps.length > 0` |
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
-| **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`) |
+| **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`); shows **Writing your summary…** during the server gap after optional branches finish and before `analysisStatus.synthesis` arrives |
 | **Suggested-action chips** | Quick-reply buttons below accordions — hidden while `isTurnInFlight`; shown when the turn completes |
 | **Structured accordion** | `displayParts.structuredData` set; title card **Open full report** opens a side sheet with all sections expanded |
 | **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` while `isTurnInFlight`, `analysisStatus` is in flight, or optional-branch/synthesis `agentSteps` are executing |

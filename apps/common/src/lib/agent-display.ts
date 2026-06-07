@@ -1,7 +1,7 @@
 import type { AgentStep } from "../types";
 import {
   getCheckpointBranchProgress,
-  isSynthesisAnalysisInProgress,
+  isSynthesisWorkInFlight,
   resolveStructuredAnalysis,
   SYNTHESIS_WRITING_LABEL,
 } from "./checkpoint-branch-progress";
@@ -242,6 +242,8 @@ export type ThinkingStatusOptions = {
   messageContentJson?: Record<string, unknown> | null;
   /** Branch-progress snapshot mapped for accordion / ticker rendering. */
   accordionAnalysis?: Record<string, unknown> | null;
+  /** Local stream / Firestore in-flight turn for synthesis gap UX. */
+  isTurnInFlight?: boolean;
 };
 
 /** Header + preview for the early thinking strip from agent steps and/or message JSON. */
@@ -258,7 +260,11 @@ export function getThinkingStatusFromSteps(
     };
   }
 
-  if (isSynthesisAnalysisInProgress(analysis)) {
+  if (
+    isSynthesisWorkInFlight(analysis, steps, {
+      isTurnInFlight: options?.isTurnInFlight,
+    })
+  ) {
     return { header: SYNTHESIS_WRITING_LABEL, preview: null };
   }
 

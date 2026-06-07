@@ -135,8 +135,10 @@ function PropertyChatTab({
   }, [messages, userId]);
 
   const branchProgress = React.useMemo(() => {
-    return getInFlightCheckpointProgressFromMessages(messages);
-  }, [messages]);
+    return getInFlightCheckpointProgressFromMessages(messages, {
+      isStreamActive: isSending,
+    });
+  }, [messages, isSending]);
 
   const activeStreamingAssistantId = React.useMemo(
     () => getActiveStreamingAssistantMessageId(messages, isSending),

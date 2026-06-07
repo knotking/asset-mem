@@ -1923,6 +1923,8 @@ function ChatMessage({
     return assistantMessageHasDisplayableContent(displayParts);
   }, [isUser, displayParts, messageMarkdown]);
 
+  const isTurnInFlight = !isUser && isActiveLoading;
+
   const structuredAnalysis = useMemo(
     () => resolveStructuredAnalysis(messageContentJson),
     [messageContentJson]
@@ -1931,14 +1933,17 @@ function ChatMessage({
     () =>
       shouldShowSummaryAccordionPlaceholder(
         structuredAnalysis,
-        message.agentSteps
+        message.agentSteps,
+        { isTurnInFlight }
       ),
-    [structuredAnalysis, message.agentSteps]
+    [structuredAnalysis, message.agentSteps, isTurnInFlight]
   );
   const postContentPipelineInProgress = useMemo(
     () =>
-      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps),
-    [structuredAnalysis, message.agentSteps]
+      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps, {
+        isTurnInFlight,
+      }),
+    [structuredAnalysis, message.agentSteps, isTurnInFlight]
   );
 
   const loadingUi = useAssistantLoadingUi({
@@ -1959,7 +1964,6 @@ function ChatMessage({
     useProxyWaveIndicator,
     typingIndicatorVariant,
   } = loadingUi;
-  const isTurnInFlight = !isUser && isActiveLoading;
   const displayTitleInProgress = useMemo(
     () =>
       shouldShowDisplayTitleGradient({
@@ -2099,6 +2103,7 @@ function ChatMessage({
                   lifecycleHeader={showLifecycleStrip ? lifecycleHeader : null}
                   useProxyWaveIndicator={showLifecycleStrip && useProxyWaveIndicator}
                   messageContentJson={messageContentJson}
+                  isTurnInFlight={isTurnInFlight}
                 />
               ) : null}
               {showTypingIndicator ? (

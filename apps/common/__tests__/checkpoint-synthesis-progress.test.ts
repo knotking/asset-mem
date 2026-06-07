@@ -3,6 +3,7 @@ import {
   getSynthesisTurnProgress,
   hasPostContentPipelineWork,
   isSynthesisAnalysisInProgress,
+  isSynthesisPendingAfterBranches,
   shouldShowDisplayTitleGradient,
   shouldShowSummaryAccordionPlaceholder,
   SYNTHESIS_WRITING_LABEL,
@@ -63,6 +64,69 @@ describe("synthesis analysisStatus", () => {
     };
     expect(shouldShowSummaryAccordionPlaceholder(analysis, null)).toBe(true);
     expect(hasPostContentPipelineWork(analysis, null)).toBe(true);
+  });
+
+  it("treats post-branch server gap as synthesis in flight while turn is open", () => {
+    const analysis = {
+      checkpointSummary: { checkpointsAnalyzed: 1 },
+      analysisStatus: {
+        coverage: "completed",
+        diy: "completed",
+        service: "completed",
+        cost: "completed",
+      },
+    };
+    const steps = [{ name: "run_checkpoint_pipeline", status: "executing" as const }];
+
+    expect(isSynthesisPendingAfterBranches(analysis, { isTurnInFlight: true })).toBe(
+      true
+    );
+    expect(
+      shouldShowSummaryAccordionPlaceholder(analysis, steps, { isTurnInFlight: true })
+    ).toBe(true);
+    expect(
+      hasPostContentPipelineWork(analysis, steps, { isTurnInFlight: true })
+    ).toBe(true);
+    expect(
+      getSynthesisTurnProgress(analysis, { isTurnInFlight: true })?.header
+    ).toBe(SYNTHESIS_WRITING_LABEL);
+    expect(
+      getInFlightCheckpointProgressFromMessages(
+        [
+          {
+            role: "assistant",
+            contentJson: { analysis },
+          },
+        ],
+        { isStreamActive: true }
+      )?.header
+    ).toBe(SYNTHESIS_WRITING_LABEL);
+    expect(
+      getThinkingStatusFromSteps(steps, {
+        messageContentJson: { analysis },
+        isTurnInFlight: true,
+      }).header
+    ).toBe(SYNTHESIS_WRITING_LABEL);
+  });
+
+  it("does not infer synthesis pending when the turn is finished", () => {
+    const analysis = {
+      analysisStatus: {
+        coverage: "completed",
+        diy: "completed",
+        service: "completed",
+        cost: "completed",
+      },
+    };
+    expect(isSynthesisPendingAfterBranches(analysis, { isTurnInFlight: false })).toBe(
+      false
+    );
+    expect(
+      getInFlightCheckpointProgressFromMessages(
+        [{ role: "assistant", contentJson: { analysis } }],
+        { isStreamActive: false }
+      )
+    ).toBeNull();
   });
 });
 

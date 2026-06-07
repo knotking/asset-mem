@@ -1881,14 +1881,17 @@ const ChatMessageComponent = ({
     () =>
       shouldShowSummaryAccordionPlaceholder(
         structuredAnalysis,
-        message.agentSteps
+        message.agentSteps,
+        { isTurnInFlight: isTurnInFlight && !isUser }
       ),
-    [structuredAnalysis, message.agentSteps]
+    [structuredAnalysis, message.agentSteps, isTurnInFlight, isUser]
   );
   const postContentPipelineInProgress = useMemo(
     () =>
-      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps),
-    [structuredAnalysis, message.agentSteps]
+      hasPostContentPipelineWork(structuredAnalysis, message.agentSteps, {
+        isTurnInFlight: isTurnInFlight && !isUser,
+      }),
+    [structuredAnalysis, message.agentSteps, isTurnInFlight, isUser]
   );
 
   const loadingUi = useAssistantLoadingUi({
@@ -1913,6 +1916,7 @@ const ChatMessageComponent = ({
     showThinkingStrip ? message.agentSteps : null,
     {
       messageContentJson,
+      isTurnInFlight: isTurnInFlight && !isUser,
     },
   );
   const thinkingHeader = showLifecycleStrip

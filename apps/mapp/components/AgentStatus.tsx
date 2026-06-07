@@ -16,6 +16,8 @@ type Props = {
   /** Structured payload from message `contentJson`. */
   messageContentJson?: Record<string, unknown> | null;
   accordionAnalysis?: Record<string, unknown> | null;
+  /** Local stream in-flight turn for synthesis gap UX. */
+  isTurnInFlight?: boolean;
 };
 
 function SparkleAnimation() {
@@ -92,11 +94,13 @@ export function AgentStatus({
   useProxyWaveIndicator = false,
   messageContentJson,
   accordionAnalysis,
+  isTurnInFlight = false,
 }: Props) {
   const hasSteps = (steps?.length ?? 0) > 0;
   const fromSteps = useDebouncedThinkingStatus(hasSteps ? steps : null, {
     messageContentJson,
     accordionAnalysis,
+    isTurnInFlight,
   });
   const headerText = hasSteps
     ? fromSteps.header
