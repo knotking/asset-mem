@@ -107,6 +107,7 @@ export type StructuredResponseData = {
       issuesDetected?: string[];
       overallCondition?: string;
       locations?: string[];
+      propertyAddress?: string;
       queryType?: "single" | "comparison" | "trend" | "location-specific";
       dateRange?: string;
     };
