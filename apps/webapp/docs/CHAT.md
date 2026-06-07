@@ -69,7 +69,7 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
 | **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`) |
 | **Suggested-action chips** | Quick-reply buttons below accordions — hidden while `isTurnInFlight`; shown when the turn completes |
-| **Structured accordion** | `displayParts.structuredData` set |
+| **Structured accordion** | `displayParts.structuredData` set; title card **Open full report** opens a side sheet with all sections expanded |
 | **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` while `isTurnInFlight`, `analysisStatus` is in flight, or optional-branch/synthesis `agentSteps` are executing |
 | **Markdown bubble** | Displayable markdown, no structured UI |
 | **Copy button** | Markdown-only assistant responses |
@@ -89,6 +89,7 @@ Uses V2 fields — not raw `message.content` alone.
 | File | Role |
 |------|------|
 | `src/components/chat/chat-message.tsx` | Render markdown, accordion, thinking strip |
+| `src/components/chat/structured-report-sheet.tsx` | Full-report side sheet for structured messages |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |
 | `src/app/home/properties/[propertyId]/chat/[sessionId]/page.tsx` | Send message, Firestore listener, SSE stream; strips `fromOnboardingChecklist` query param immediately on landing (preference write is fire-and-forget) so property tab navigations are not raced |
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |
