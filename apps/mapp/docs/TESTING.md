@@ -33,7 +33,7 @@ npm run test:watch
 | [`lib/chat-message-native-styles.ts`](../lib/chat-message-native-styles.ts) | StyleSheet bypass for NativeWind opacity/shadow interop issues |
 | [`lib/lazy-youtube-player.tsx`](../lib/lazy-youtube-player.tsx) | Defers Youtube WebView until accordion expanded + layout |
 | [`__tests__/ChatMessage.youtube.test.tsx`](../__tests__/ChatMessage.youtube.test.tsx) | Lazy YouTube mount gated by `AccordionMountContext` |
-| [`lib/structured-accordion-defaults.ts`](../lib/structured-accordion-defaults.ts) | Android: only summary/clarification open; no triage default |
+| [`lib/structured-accordion-defaults.ts`](../lib/structured-accordion-defaults.ts) | Checkpoint Summary opens when JSON visible; Android keeps optional sections collapsed |
 | [`__tests__/structured-accordion-defaults.test.ts`](../__tests__/structured-accordion-defaults.test.ts) | Accordion `defaultValue` by platform and visible sections |
 | [`lib/chat-message-equal.ts`](../lib/chat-message-equal.ts) | `ChatMessage` memo comparator (content, steps, file, createdAt) |
 | [`__tests__/chat-message.equal.test.ts`](../__tests__/chat-message.equal.test.ts) | `areChatMessagePropsEqual` mirrors bubble comparator |

@@ -765,7 +765,6 @@ const StructuredResponse = ({
     const accordionVisibility = useMemo(
       () => ({
         needsClarification,
-        hasSummaryMarkdown,
         analysisInProgress: accordionPipelineInProgress,
         hasCheckpointSummary,
         hasCheckpointDetails,
@@ -777,7 +776,6 @@ const StructuredResponse = ({
       }),
       [
         needsClarification,
-        hasSummaryMarkdown,
         accordionPipelineInProgress,
         hasCheckpointSummary,
         hasCheckpointDetails,

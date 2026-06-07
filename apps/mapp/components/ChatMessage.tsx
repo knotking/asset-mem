@@ -826,7 +826,6 @@ const StructuredResponse = React.memo(
     () =>
       getStructuredAccordionDefaultValue({
         needsClarification,
-        hasSummaryMarkdown: !!summaryMarkdown?.trim(),
         analysisInProgress: accordionPipelineInProgress,
         hasCheckpointSummary,
         hasCheckpointDetails,
@@ -838,7 +837,6 @@ const StructuredResponse = React.memo(
       }),
     [
       needsClarification,
-      summaryMarkdown,
       accordionPipelineInProgress,
       hasCheckpointSummary,
       hasCheckpointDetails,

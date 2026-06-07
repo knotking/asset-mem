@@ -15,7 +15,7 @@ describe('getStructuredAccordionDefaultValue', () => {
     expect(STRUCTURED_ACCORDION_COLLAPSED).toBe('__collapsed__');
   });
 
-  it('keeps all sections collapsed during streaming on Android', () => {
+  it('opens checkpoint summary during streaming on Android when data is visible', () => {
     Platform.OS = 'android';
     expect(
       getStructuredAccordionDefaultValue({
@@ -23,18 +23,27 @@ describe('getStructuredAccordionDefaultValue', () => {
         hasCheckpointSummary: true,
         hasCoverage: true,
       })
-    ).toBeUndefined();
+    ).toBe('checkpoint-summary');
   });
 
-  it('keeps summary collapsed when synthesis markdown is present', () => {
+  it('keeps sections collapsed during streaming before checkpoint summary arrives', () => {
     Platform.OS = 'android';
     expect(
       getStructuredAccordionDefaultValue({
-        hasSummaryMarkdown: true,
-        hasCheckpointSummary: true,
+        analysisInProgress: true,
         hasCoverage: true,
       })
     ).toBeUndefined();
+  });
+
+  it('opens checkpoint summary on Android when synthesis markdown is present', () => {
+    Platform.OS = 'android';
+    expect(
+      getStructuredAccordionDefaultValue({
+        hasCheckpointSummary: true,
+        hasCoverage: true,
+      })
+    ).toBe('checkpoint-summary');
   });
 
   it('opens checkpoint summary on Android when present and complete', () => {
@@ -76,14 +85,13 @@ describe('getStructuredAccordionDefaultValue', () => {
     ).toBe('coverage');
   });
 
-  it('keeps summary collapsed on iOS when synthesis markdown is present', () => {
+  it('opens checkpoint summary on iOS when synthesis markdown is present', () => {
     Platform.OS = 'ios';
     expect(
       getStructuredAccordionDefaultValue({
-        hasSummaryMarkdown: true,
         hasCheckpointSummary: true,
         hasCheckpointDetails: true,
       })
-    ).toBeUndefined();
+    ).toBe('checkpoint-summary');
   });
 });

@@ -18,7 +18,6 @@ export type StructuredAccordionSection =
 
 export type StructuredAccordionVisibility = {
   needsClarification?: boolean;
-  hasSummaryMarkdown?: boolean;
   analysisInProgress?: boolean;
   hasCheckpointSummary?: boolean;
   hasCheckpointDetails?: boolean;
@@ -32,19 +31,22 @@ export type StructuredAccordionVisibility = {
 export type StructuredAccordionPlatform = "ios" | "android" | "web";
 
 /**
- * Collapse structured accordions while optional branches or synthesis are still running.
- * Do not tie this to the client stream alone — checkpoint-only turns should open
- * Checkpoint Summary as soon as structured content is visible.
+ * Collapse optional-section defaults while pipeline branches or synthesis run
+ * and checkpoint summary JSON is not yet available.
  */
 export function structuredAccordionsCollapsed(
-  visibility: Pick<StructuredAccordionVisibility, "analysisInProgress">
+  visibility: Pick<
+    StructuredAccordionVisibility,
+    "analysisInProgress" | "hasCheckpointSummary"
+  >
 ): boolean {
-  return !!visibility.analysisInProgress;
+  return !!visibility.analysisInProgress && !visibility.hasCheckpointSummary;
 }
 
 /**
  * Initial expanded accordion for structured checkpoint messages.
- * While `analysisInProgress` (pipeline branches / synthesis), all sections stay collapsed.
+ * Checkpoint Summary opens as soon as structured checkpoint data is visible
+ * (including while optional branches or synthesis are still running).
  * Summary & Next Steps stays collapsed by default (preview in trigger).
  */
 export function getStructuredAccordionDefaultValue(
@@ -55,16 +57,12 @@ export function getStructuredAccordionDefaultValue(
     return "triage";
   }
 
-  if (structuredAccordionsCollapsed(visibility)) {
-    return undefined;
-  }
-
-  if (visibility.hasSummaryMarkdown) {
-    return undefined;
-  }
-
   if (visibility.hasCheckpointSummary) {
     return "checkpoint-summary";
+  }
+
+  if (structuredAccordionsCollapsed(visibility)) {
+    return undefined;
   }
 
   if (platform === "android") {
