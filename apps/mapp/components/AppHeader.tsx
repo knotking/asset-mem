@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
@@ -13,6 +13,10 @@ import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { UserProfileAvatar } from '@/components/UserProfileAvatar';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
 import { ThemePreference } from '@homeapp/common/types';
+import {
+  navigateToSettingsSubScreen,
+  resolveAppHeaderReturnContext,
+} from '@/lib/settings-navigation';
 
 function ThemeToggle() {
   const { user } = useAuth();
@@ -43,13 +47,15 @@ export default function AppHeader() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
+  const returnContext = resolveAppHeaderReturnContext(segments);
 
   const openAccountSettings = () => {
-    router.navigate('/(tabs)/settings/account');
+    navigateToSettingsSubScreen(router, 'account', returnContext);
   };
 
   const openFaq = () => {
-    router.navigate('/(tabs)/settings/faq');
+    navigateToSettingsSubScreen(router, 'faq', returnContext);
   };
 
   return (
@@ -73,7 +79,7 @@ export default function AppHeader() {
           accessibilityRole="button">
           <Icon as={BookOpen} size={20} className="text-muted-foreground" />
         </Button>
-        <TokenUsageBar />
+        <TokenUsageBar settingsReturnContext={returnContext} />
         <Button
           variant="ghost"
           size="icon"

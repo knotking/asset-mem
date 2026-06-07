@@ -1,11 +1,16 @@
 import * as React from 'react';
 import { ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import {
+  navigateBackFromSettingsSubScreen,
+  resolveSettingsReturnContext,
+  settingsBackAccessibilityLabel,
+} from '@/lib/settings-navigation';
 
 type SettingsSubScreenProps = {
   title: string;
@@ -14,15 +19,29 @@ type SettingsSubScreenProps = {
 
 export function SettingsSubScreen({ title, children }: SettingsSubScreenProps) {
   const router = useRouter();
+  const { returnTo, returnPropertyId, returnPropertyTab } = useLocalSearchParams<{
+    returnTo?: string | string[];
+    returnPropertyId?: string | string[];
+    returnPropertyTab?: string | string[];
+  }>();
+  const returnContext = resolveSettingsReturnContext({
+    returnTo,
+    returnPropertyId,
+    returnPropertyTab,
+  });
+
+  const handleBack = () => {
+    navigateBackFromSettingsSubScreen(router, returnContext);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <View className="flex-row items-center border-b border-border bg-card px-2 py-2">
         <Button
-          onPress={() => router.replace('/(tabs)/settings')}
+          onPress={handleBack}
           variant="ghost"
           size="icon"
-          accessibilityLabel="Back to settings">
+          accessibilityLabel={settingsBackAccessibilityLabel(returnContext)}>
           <Icon as={ArrowLeft} size={22} className="text-foreground" />
         </Button>
         <Text className="flex-1 text-center text-lg font-semibold text-foreground" numberOfLines={1}>
