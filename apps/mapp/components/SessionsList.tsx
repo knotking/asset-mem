@@ -9,6 +9,8 @@ import type { Session, Message } from '@homeapp/common/types';
 import {
   SHARED_CHAT_TTL_DAYS,
   sharedChatExpiresAtFromNow,
+  deleteAllInCollection,
+  writeSharedChatMessages,
 } from '@homeapp/common/lib/shared-chat';
 import { useSession } from '@homeapp/common/contexts/session-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -60,9 +62,7 @@ import {
   limit,
   addDoc,
   updateDoc,
-  writeBatch,
   serverTimestamp,
-  type Timestamp,
 } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -468,13 +468,7 @@ export default function SessionsList({
       const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
       const messagesSnap = await getDocs(messagesQuery);
 
-      const messages = messagesSnap.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          ...data,
-          createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        };
-      });
+      const messages = messagesSnap.docs.map((messageDoc) => messageDoc.data() as Record<string, unknown>);
 
       let shareId: string;
 
@@ -483,18 +477,9 @@ export default function SessionsList({
         const sharedChatRef = doc(db, 'sharedChats', shareId);
         const sharedMessagesRef = collection(sharedChatRef, 'messages');
 
-        // Delete old messages
-        await deleteCollection(db, sharedMessagesRef);
+        await deleteAllInCollection(db, sharedMessagesRef);
+        await writeSharedChatMessages(db, sharedMessagesRef, messages);
 
-        // Add new messages
-        const batch = writeBatch(db);
-        messages.forEach((message) => {
-          const messageRef = doc(sharedMessagesRef);
-          batch.set(messageRef, message);
-        });
-        await batch.commit();
-
-        // Update the updatedAt timestamp on the parent doc
         await updateDoc(sharedChatRef, {
           updatedAt: serverTimestamp(),
           expiresAt: sharedChatExpiresAtFromNow(),
@@ -513,13 +498,8 @@ export default function SessionsList({
         });
         shareId = newSharedChatRef.id;
 
-        const batch = writeBatch(db);
         const sharedMessagesRef = collection(newSharedChatRef, 'messages');
-        messages.forEach((message) => {
-          const messageRef = doc(sharedMessagesRef);
-          batch.set(messageRef, message);
-        });
-        await batch.commit();
+        await writeSharedChatMessages(db, sharedMessagesRef, messages);
       }
 
       setSharedLink(`${WEB_APP_URL}/share/${shareId}`);
