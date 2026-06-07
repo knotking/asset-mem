@@ -249,7 +249,7 @@ The component uses the strict Orchestrator V2 message contract:
 
 **Copy/Share Functionality:**
 - Long-press message to show context menu
-- **Copy**: Converts markdown to WhatsApp-formatted text, copies to clipboard with haptic feedback
+- **Copy**: Exports markdown or full structured accordion text (via `buildAssistantMessageCopyText`), then WhatsApp-formatted clipboard copy with haptic feedback
 - **Share**: Uses native share sheet with formatted text
 - Success/error alerts with auto-dismiss
 

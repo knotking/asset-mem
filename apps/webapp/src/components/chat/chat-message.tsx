@@ -49,6 +49,7 @@ import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createLogger } from "@/lib/logger";
 import { useAssistantLoadingUi } from "@/hooks/use-assistant-loading-ui";
+import { copyChatMessageToClipboard } from "@/lib/message-copy-clipboard";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import { splitMessageContextRefItems } from "@/lib/chat-message-context-refs";
 import { MessageContextRefsDisplay } from "@/components/chat/message-context-refs-display";
@@ -632,6 +633,7 @@ const StructuredResponse = ({
   allowSave = true,
   layoutMode = "inline",
   showTitleCard = true,
+  onCopyClick,
 }: {
   data: StructuredResponseData;
   summaryMarkdown?: string;
@@ -644,6 +646,7 @@ const StructuredResponse = ({
   allowSave?: boolean;
   layoutMode?: "inline" | "sheet";
   showTitleCard?: boolean;
+  onCopyClick?: () => void;
 }) => {
     const isSheetLayout = layoutMode === "sheet";
     const [reportSheetOpen, setReportSheetOpen] = useState(false);
@@ -1027,6 +1030,9 @@ const StructuredResponse = ({
         : undefined;
     const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
     const showTitleGradient = !isSheetLayout && displayTitleInProgress;
+    const showInlineCopyInTitle = Boolean(
+      onCopyClick && displayTitle && showTitleCard && !isSheetLayout
+    );
 
     const sheetStructuredResponse = (
       <StructuredResponse
@@ -1045,6 +1051,19 @@ const StructuredResponse = ({
 
     return (
         <div className="space-y-4">
+            {onCopyClick && !showInlineCopyInTitle && !isSheetLayout ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 z-10 h-7 w-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                aria-label="Copy message"
+                onClick={onCopyClick}
+              >
+                <Copy className="h-4 w-4" />
+                <span className="sr-only">Copy message</span>
+              </Button>
+            ) : null}
             {!isSheetLayout && displayTitle ? (
               <StructuredReportSheet
                 open={reportSheetOpen}
@@ -1067,16 +1086,31 @@ const StructuredResponse = ({
                           </span>
                       </h2>
                       {!isSheetLayout ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-muted-foreground"
-                          aria-label="Open full report"
-                          onClick={() => setReportSheetOpen(true)}
-                        >
-                          <Maximize2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex shrink-0 items-center">
+                          {showInlineCopyInTitle ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                              aria-label="Copy message"
+                              onClick={onCopyClick}
+                            >
+                              <Copy className="h-4 w-4" />
+                              <span className="sr-only">Copy message</span>
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-muted-foreground"
+                            aria-label="Open full report"
+                            onClick={() => setReportSheetOpen(true)}
+                          >
+                            <Maximize2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                 </div>
@@ -1877,39 +1911,21 @@ const ChatMessageComponent = ({
   const fileData = message.file;
 
   const handleCopyClick = () => {
-    const whatsappFormattedText = markdownToWhatsapp(messageMarkdown);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(whatsappFormattedText).then(() => {
-        toast({
-          title: "Message copied!",
-        });
-      }, (err) => {
+    void copyChatMessageToClipboard(message)
+      .then((ok) => {
+        if (ok) {
+          toast({ title: "Message copied!" });
+          return;
+        }
+        throw new Error("copy failed");
+      })
+      .catch(() => {
         toast({
           variant: "destructive",
           title: "Copy failed",
           description: "Could not copy message to clipboard.",
         });
       });
-    } else {
-      // Fallback for browsers without clipboard API
-      const textArea = document.createElement('textarea');
-      textArea.value = whatsappFormattedText;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        toast({ title: "Message copied!" });
-      } catch {
-        toast({
-          variant: "destructive",
-          title: "Copy failed",
-          description: "Could not copy message to clipboard.",
-        });
-      }
-      document.body.removeChild(textArea);
-    }
   };
 
   const renderDocumentList = () => {
@@ -2169,8 +2185,8 @@ const ChatMessageComponent = ({
             {!isUser &&
               hasDisplayableContent &&
               !showLoadingIndicator &&
-              !effectiveStructuredData &&
-              !!messageMarkdown.trim() && (
+              (!!messageMarkdown.trim() || !!effectiveStructuredData) &&
+              !effectiveStructuredData && (
                 <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleCopyClick}>
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">Copy message</span>
@@ -2204,6 +2220,7 @@ const ChatMessageComponent = ({
                       messageId: message.id,
                     }}
                     allowSave={!readOnly}
+                    onCopyClick={handleCopyClick}
                   />
                 </motion.div>
             ) : isUserSplitContent ? (

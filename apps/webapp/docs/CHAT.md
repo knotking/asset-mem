@@ -72,7 +72,7 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Structured accordion** | `displayParts.structuredData` set; inline **checkpoint summary card** (always visible) plus collapsible sections; title card **Open full report** opens a side sheet with all sections expanded |
 | **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` during the client stream (stops once `analysis.title` is present and SSE closes; branch/synthesis progress uses the composer footer) |
 | **Markdown bubble** | Displayable markdown, no structured UI |
-| **Copy button** | Markdown-only assistant responses |
+| **Copy button** | Assistant messages — dual clipboard on web (`text/plain` WhatsApp-friendly + `text/html` with markdown links); mapp stays WhatsApp plain |
 
 Thinking strip labels come from `useDebouncedThinkingStatus` → `getThinkingStatusFromSteps` (`src/lib/agent-display.ts`), with checkpoint branch progress from streaming `contentJson` when branches are in flight.
 
@@ -98,6 +98,8 @@ Uses V2 fields — not raw `message.content` alone.
 | `src/components/chat/diy-video-tutorials-section.tsx` | DIY video preview list + side sheet with embedded players |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |
 | `src/app/home/properties/[propertyId]/chat/[sessionId]/page.tsx` | Send message, Firestore listener, SSE stream; strips `fromOnboardingChecklist` query param immediately on landing (preference write is fire-and-forget) so property tab navigations are not raced |
+| `src/lib/message-copy-clipboard.ts` | Web dual-format clipboard (`text/plain` + `text/html` with StartFragment + div-per-line for Gmail) |
+| `src/lib/message-copy-text.ts` | Plain-text export for copy/share (structured accordions + markdown) |
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |
 | `src/lib/message-display-parts.ts` | Structured vs markdown gating |
 | `src/hooks/use-debounced-thinking-status.ts` | Debounced thinking strip text |

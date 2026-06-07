@@ -109,6 +109,7 @@ import {
   type StructuredSection,
 } from '@/components/chat/StructuredSectionNav';
 import { areChatMessagePropsEqual } from '@/lib/chat-message-equal';
+import { buildAssistantMessageCopyText } from '@homeapp/common/lib/message-copy-text';
 import { resolveMessageContentParts } from '@homeapp/common/lib/message-content-parts';
 import {
   hasPostContentPipelineWork,
@@ -2089,14 +2090,12 @@ function ChatMessage({
     return markdownToWhatsapp(content);
   }, []);
 
-  const getMarkdownContent = useCallback(() => {
-    return displayParts.markdown || messageMarkdown;
-  }, [displayParts.markdown, messageMarkdown]);
-
   const handleCopyMessage = useCallback(async () => {
     try {
-      const markdownContent = getMarkdownContent();
-      const formattedText = formatMessageContent(markdownContent);
+      const copyText = isUser
+        ? messageMarkdown
+        : buildAssistantMessageCopyText(message);
+      const formattedText = formatMessageContent(copyText);
       await Clipboard.setStringAsync(formattedText);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCopyStatus({ type: 'success', message: 'Message copied to clipboard' });
@@ -2110,12 +2109,14 @@ function ChatMessage({
       // Auto-dismiss after 2 seconds
       setTimeout(() => setCopyStatus(null), 2000);
     }
-  }, [formatMessageContent, getMarkdownContent]);
+  }, [formatMessageContent, isUser, message, messageMarkdown]);
 
   const handleShareMessage = useCallback(async () => {
     try {
-      const markdownContent = getMarkdownContent();
-      const formattedText = formatMessageContent(markdownContent);
+      const copyText = isUser
+        ? messageMarkdown
+        : buildAssistantMessageCopyText(message);
+      const formattedText = formatMessageContent(copyText);
       await Share.share({
         message: formattedText,
       });
@@ -2125,7 +2126,7 @@ function ChatMessage({
       chatLog.error('share.failed', undefined, error);
       setShowContextMenu(false);
     }
-  }, [formatMessageContent, getMarkdownContent]);
+  }, [formatMessageContent, isUser, message, messageMarkdown]);
 
   const handleCloseContextMenu = useCallback(() => {
     setShowContextMenu(false);
