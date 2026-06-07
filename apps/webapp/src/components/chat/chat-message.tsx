@@ -22,7 +22,7 @@ import {
 } from "@/lib/service-providers";
 import { ChatAvatar } from "./chat-avatar";
 import Image from "next/image";
-import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Clock, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart, ListChecks } from "lucide-react";
+import { File, Map, Building, Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, Clock, Lightbulb, Copy, Star, Users, Phone, Mail, CheckCircle, Info, Wrench, Youtube, ExternalLink, Stethoscope, TrendingUp, ShoppingCart, DollarSign, Sparkles, AlertTriangle, Heart, ListChecks, Maximize2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -60,6 +60,7 @@ import {
   AssistantBounceDots,
   AssistantWaveDots,
 } from "@/components/chat/assistant-loading-indicators";
+import { StructuredReportSheet } from "@/components/chat/structured-report-sheet";
 
 const parseLog = createLogger("parse");
 
@@ -620,6 +621,8 @@ const StructuredResponse = ({
   accordionPipelineInProgress = false,
   summarySynthesisInProgress = false,
   saveMeta,
+  layoutMode = "inline",
+  showTitleCard = true,
 }: {
   data: StructuredResponseData;
   summaryMarkdown?: string;
@@ -629,7 +632,11 @@ const StructuredResponse = ({
   accordionPipelineInProgress?: boolean;
   summarySynthesisInProgress?: boolean;
   saveMeta?: SaveServiceProviderMeta;
+  layoutMode?: "inline" | "sheet";
+  showTitleCard?: boolean;
 }) => {
+    const isSheetLayout = layoutMode === "sheet";
+    const [reportSheetOpen, setReportSheetOpen] = useState(false);
     const analysis = data.analysis || {} as NonNullable<StructuredResponseData['analysis']>;
     // Support both nested (analysis.*) and flat structures (top-level keys)
     const triage = analysis?.triageResult || (data as any)?.triageResult;
@@ -797,12 +804,13 @@ const StructuredResponse = ({
     );
 
     useEffect(() => {
+      if (isSheetLayout) return;
       setOpenSection((current) =>
         current === undefined && accordionDefaultValue
           ? accordionDefaultValue
           : current
       );
-    }, [accordionDefaultValue]);
+    }, [accordionDefaultValue, isSheetLayout]);
 
     const summaryPreview = useMemo(() => {
       if (hasSummaryMarkdown) {
@@ -821,8 +829,35 @@ const StructuredResponse = ({
       [hasSummaryMarkdown, summaryMarkdown, summaryPreview]
     );
     const summaryAccordionExpanded =
-      openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
-    
+      isSheetLayout || openSection === EXECUTIVE_SUMMARY_ACCORDION_VALUE;
+
+    const allExpandedSectionValues = useMemo(() => {
+      const values: string[] = [];
+      if (hasTriage || needsClarification) values.push("triage");
+      if (hasCheckpointSummary) values.push("checkpoint-summary");
+      if (hasCheckpointDetails) values.push("checkpoint-details");
+      if (hasCheckpointInsights) values.push("checkpoint-insights");
+      if (hasCoverage) values.push("coverage");
+      if (hasDIY) values.push("diy");
+      if (hasService) values.push("service");
+      if (hasCostEstimates) values.push("cost-estimates");
+      if (showSummaryAccordion) values.push(EXECUTIVE_SUMMARY_ACCORDION_VALUE);
+      return values;
+    }, [
+      hasTriage,
+      needsClarification,
+      hasCheckpointSummary,
+      hasCheckpointDetails,
+      hasCheckpointInsights,
+      hasCoverage,
+      hasDIY,
+      hasService,
+      hasCostEstimates,
+      showSummaryAccordion,
+    ]);
+
+    const noopMultipleAccordionChange = useCallback((_value: string[]) => {}, []);
+
     parseLog.debug('serviceRecommendations', {
             serviceExists: !!service,
             rawProvidersCount: allProvidersRaw.length,
@@ -964,28 +999,74 @@ const StructuredResponse = ({
         : undefined;
     const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
     const showTitleGradient =
-      isTurnInFlight || displayTitleInProgress || accordionPipelineInProgress;
+      !isSheetLayout &&
+      (isTurnInFlight || displayTitleInProgress || accordionPipelineInProgress);
+
+    const sheetStructuredResponse = (
+      <StructuredResponse
+        layoutMode="sheet"
+        showTitleCard={false}
+        data={data}
+        summaryMarkdown={summaryMarkdown}
+        displayTitleInProgress={displayTitleInProgress}
+        isTurnInFlight={isTurnInFlight}
+        accordionPipelineInProgress={accordionPipelineInProgress}
+        summarySynthesisInProgress={summarySynthesisInProgress}
+        saveMeta={saveMeta}
+      />
+    );
 
     return (
         <div className="space-y-4">
-            {displayTitle && (
+            {!isSheetLayout && displayTitle ? (
+              <StructuredReportSheet
+                open={reportSheetOpen}
+                onOpenChange={setReportSheetOpen}
+                title={displayTitle}
+              >
+                {sheetStructuredResponse}
+              </StructuredReportSheet>
+            ) : null}
+            {displayTitle && showTitleCard ? (
                 <div className="rounded-lg border bg-muted/40 px-4 py-3">
-                    <h2 className="text-base sm:text-lg font-semibold">
-                        <span
-                            className={cn(
-                                showTitleGradient ? DISPLAY_TITLE_GRADIENT_CLASS : "text-foreground",
-                            )}
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="min-w-0 flex-1 text-base font-semibold sm:text-lg">
+                          <span
+                              className={cn(
+                                  showTitleGradient ? DISPLAY_TITLE_GRADIENT_CLASS : "text-foreground",
+                              )}
+                          >
+                              {displayTitle}
+                          </span>
+                      </h2>
+                      {!isSheetLayout ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground"
+                          aria-label="Open full report"
+                          onClick={() => setReportSheetOpen(true)}
                         >
-                            {displayTitle}
-                        </span>
-                    </h2>
+                          <Maximize2 className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                 </div>
-            )}
+            ) : null}
         <Accordion
-          type="single"
-          collapsible
-          value={openSection}
-          onValueChange={setOpenSection}
+          {...(isSheetLayout
+            ? {
+                type: "multiple" as const,
+                value: allExpandedSectionValues,
+                onValueChange: noopMultipleAccordionChange,
+              }
+            : {
+                type: "single" as const,
+                collapsible: true,
+                value: openSection,
+                onValueChange: setOpenSection,
+              })}
           className="w-full space-y-2"
         >
             {(hasTriage || needsClarification) && (
