@@ -297,7 +297,7 @@ export default function LandingPageClient() {
                 >
                   Your Complete
                   <br />
-                  <span className="font-medium">Home Care Platform</span>
+                  <span className="font-medium">Property Care Platform</span>
                 </h2>
               </div>
 
@@ -305,10 +305,9 @@ export default function LandingPageClient() {
                 className="text-xl leading-relaxed max-w-xl font-light"
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
-                A comprehensive platform centered on property checkpoints,
-                condition timelines, document intelligence, and service
-                planning, all working together to simplify your home care
-                journey.
+                AI agents analyze your property photos and documents, rate
+                condition over time, flag issues, and guide you on repairs and
+                costs while connecting you with local pros.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -476,7 +475,7 @@ export default function LandingPageClient() {
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
               From routine walkthroughs to seasonal planning, see how
-              checkpoint-driven workflows help homeowners stay ahead
+              checkpoint-driven workflows help homeowners and landlords stay ahead
             </p>
           </div>
 
@@ -518,8 +517,8 @@ export default function LandingPageClient() {
                 steps: [
                   "Platform auto-compares before/after checkpoint photos",
                   "AI detects: missing shingles, damaged flashing, water damage",
-                  "Generates professional comparison report with timestamps",
-                  "Export PDF with visual evidence for insurance adjuster",
+                  "Build a dated before-and-after story with photos",
+                  "Share comparisons and notes with your insurance adjuster",
                 ],
                 result:
                   "Claim approved in 3 days with AI-verified documentation",
@@ -548,7 +547,7 @@ export default function LandingPageClient() {
                   "Capture before/after checkpoints for each milestone",
                   "Compare workmanship and finish quality over time",
                   "Attach invoices, warranties, and notes to each checkpoint",
-                  "Share one visual timeline with your contractor and family",
+                  "Share a read-only chat link with your contractor or family",
                 ],
                 result: "Kept everyone aligned with one source of truth",
               },
@@ -558,10 +557,10 @@ export default function LandingPageClient() {
                 icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
                 color: LANDING_COLORS.primary,
                 steps: [
-                  "Monthly checkpoints show kitchen cabinet condition declining",
-                  "Platform tracks deterioration rate: -0.5 points/month",
-                  "AI suggests: 'Consider refinishing in 3-6 months'",
-                  "Share timeline with contractor, get quote, plan budget",
+                  "Monthly photos show kitchen cabinets slowly wearing down",
+                  "Condition trends highlight what may need work soon",
+                  "AI suggests refinishing before a full replacement",
+                  "Share a chat link with your contractor and plan the budget",
                 ],
                 result: "Refinished cabinets for $1,200 vs $8,000 replacement",
               },
@@ -748,38 +747,43 @@ export default function LandingPageClient() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {[
               {
-                title: "Checkpoint Timeline",
-                desc: "Capture recurring walkthroughs, compare before/after states, and maintain a clear visual history for every area.",
+                title: "Timeline",
+                desc: "Take photos and videos over time and build a visual history for every room and area.",
                 icon: "M13 10V3L4 14h7v7l9-11h-7z",
               },
               {
                 title: "Property Checkpoints",
-                desc: "Condition scoring and trend tracking that help you prioritize repairs and preventive tasks.",
+                desc: "See simple condition scores and trends so you know what needs attention first.",
                 icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
               },
               {
-                title: "Chat with Your Documents",
-                desc: "Ask questions about your warranties, manuals, inspection reports, and policies—get instant answers with citations.",
+                title: "Two Ways to Chat",
+                desc: "Ask about your documents, or chat about photos from your timeline. Switch anytime.",
                 icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
               },
               {
-                title: "Photo and Video Comparisons",
-                desc: "Review changes across checkpoints with visual diffs, similarity scoring, and contextual notes.",
+                title: "Before & After Comparisons",
+                desc: "Line up two visits side by side and clearly see what changed.",
                 icon: "M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z",
               },
               {
-                title: "Document Intelligence",
-                desc: "AI-powered property care that connects checkpoint analysis, your documents, and maintenance recommendations.",
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                title: "Saved Service Providers",
+                desc: "Save local pros the AI recommends and find them again on your Providers tab.",
+                icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
               },
               {
-                title: "Service Marketplace",
-                desc: "Discover and connect with local providers based on checkpoint findings and maintenance priorities.",
-                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
+                title: "Share Your Answers",
+                desc: "Send a read-only link to a chat so contractors or family can see what the AI found.",
+                icon: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z",
               },
               {
-                title: "Maintenance Planning",
-                desc: "Turn checkpoint trends into repair priorities, budget forecasts, and scheduling plans.",
+                title: "Multiple Properties",
+                desc: "Manage every home or rental from one account—each with its own timeline, docs, and chats.",
+                icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+              },
+              {
+                title: "Repair Guidance",
+                desc: "Get clear next steps, cost ranges, and product ideas without reading long reports.",
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
               },
             ].map((item, i) => (
@@ -910,43 +914,42 @@ export default function LandingPageClient() {
               className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Our multi-agent system is anchored on checkpoint intelligence:
-              retrieve relevant property history first, then orchestrate
-              coverage, DIY, service, and cost planning from the same
-              checkpoint context.
+              Specialized agents work together—starting with your timeline
+              photos, then pulling in warranty checks, repair steps, local
+              pros, and cost estimates when you need them.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {[
               {
-                title: "Checkpoint Agent",
-                desc: "Retrieves relevant checkpoints using semantic vector search, then orchestrates coverage, DIY, service, and cost planning from the same checkpoint context.",
+                title: "Timeline Agent",
+                desc: "Looks at your photos and past visits first, then brings in other help when you ask a question.",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
               },
               {
                 title: "Coverage Agent",
-                desc: "Checks warranties, insurance policies, and service contracts using checkpoint context and supporting documents.",
+                desc: "Checks warranties, insurance, and service contracts against what your photos and documents show.",
                 icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
               },
               {
                 title: "DIY Agent",
-                desc: "Provides step-by-step repair guidance aligned to checkpoint findings, required tools, safety notes, and effort estimates.",
+                desc: "Walks you through fixes step by step, including tools, safety tips, and helpful product ideas.",
                 icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
               },
               {
                 title: "Service Agent",
-                desc: "Finds local providers based on checkpoint location and condition details, with relevance for the required work.",
+                desc: "Suggests nearby pros that fit the issue shown in your photos and notes.",
                 icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
               },
               {
                 title: "Cost Agent",
-                desc: "Estimates costs from checkpoint evidence, comparing DIY and professional options with clearer budget planning.",
+                desc: "Gives rough cost ranges and compares doing it yourself versus hiring someone.",
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
               },
               {
-                title: "Platform Orchestration",
-                desc: "All agents share insights across the platform, connecting your diagnostics, documents, checkpoints, and services into one unified intelligence system.",
+                title: "Working Together",
+                desc: "Everything stays connected—your photos, documents, saved providers, and past chats feed into one clear answer.",
                 icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
               },
             ].map((item, i) => (
@@ -1043,7 +1046,7 @@ export default function LandingPageClient() {
                       backgroundClip: "text",
                     }}
                   >
-                    Your Visual Timeline
+                    Your Timeline
                   </span>
                 </h2>
                 <p
@@ -1056,33 +1059,33 @@ export default function LandingPageClient() {
               </div>
               {[
                 {
-                  title: "Visual Timeline",
-                  desc: "Capture photos/videos of property areas over time; track condition with before/after comparisons; AI-powered analysis; automatic room/area detection.",
+                  title: "Timeline Capture",
+                  desc: "Snap photos and videos over time, spot changes with before-and-after views, and let AI summarize what it sees.",
                   icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
                 },
                 {
                   title: "AI-Powered Analysis",
-                  desc: "Condition scoring (0–100); damage detection and severity; detected items/features; issue categories (critical, major, moderate, minor); cost estimates.",
+                  desc: "Get a simple condition score, see what looks damaged, and understand how serious each issue is.",
                   icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 4a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v10a2 2 0 002 2zm0 0V5a2 2 0 012-2h2a2 2 0 012 2v14",
                 },
                 {
                   title: "Automatic Comparison",
-                  desc: "Intelligent comparison with previous checkpoints; visual diff and similarity scoring; change detection; configurable comparison preferences.",
+                  desc: "Compare a new visit to an older one and see what changed—with settings you can adjust anytime.",
                   icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
                 },
                 {
-                  title: "Timeline (Before/After)",
-                  desc: "Visual timeline showing checkpoint changes over time with before/after comparisons and condition context.",
+                  title: "Timeline Comparisons",
+                  desc: "Scroll through your history and open side-by-side views whenever you need proof of progress or damage.",
                   icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
                 },
                 {
                   title: "Property Health Metrics",
-                  desc: "Overall condition score and trend; issues summary by severity; deterioration rate; predictive maintenance insights.",
+                  desc: "See how your property is doing overall, which issues matter most, and whether things are getting better or worse.",
                   icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
                 },
                 {
-                  title: "Real-Time & Scalable",
-                  desc: "Non-blocking creation; real-time UI updates; built to scale.",
+                  title: "Always Up to Date",
+                  desc: "New photos and results show up right away—no need to refresh or wait around.",
                   icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
                 },
               ].map((block, i) => (
@@ -1295,14 +1298,14 @@ export default function LandingPageClient() {
                     className="text-sm font-semibold tracking-wide"
                     style={{ color: LANDING_COLORS.primary }}
                   >
-                    INTELLIGENT DOCUMENT CHAT
+                    TWO WAYS TO CHAT
                   </span>
                 </div>
                 <h2
                   className="text-4xl lg:text-5xl font-light tracking-tight mb-4"
                   style={{ color: LANDING_COLORS.foreground }}
                 >
-                  Talk to Your
+                  Chat with Your
                   <br />
                   <span
                     className="font-bold"
@@ -1313,16 +1316,18 @@ export default function LandingPageClient() {
                       backgroundClip: "text",
                     }}
                   >
-                    Documents
+                    Docs or Photos
                   </span>
                 </h2>
                 <p
                   className="text-lg font-light leading-relaxed"
                   style={{ color: LANDING_COLORS.mutedForeground }}
                 >
-                  Upload your home inspection reports, warranties, manuals, and
-                  policies—then chat with them naturally. Get instant answers
-                  with precise citations.
+                  <strong style={{ color: LANDING_COLORS.foreground90 }}>Docs mode</strong> answers
+                  from your inspection reports, warranties, manuals, and policies—with sources
+                  cited. <strong style={{ color: LANDING_COLORS.foreground90 }}>Timeline mode</strong>{" "}
+                  uses your photos and optional repair, coverage, cost, and provider help. Pick the
+                  mode that fits your question.
                 </p>
               </div>
 
@@ -1451,31 +1456,31 @@ export default function LandingPageClient() {
               className="text-lg max-w-2xl mx-auto font-light"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              From checkpoint capture to maintenance planning, everything
-              connected in one unified platform
+              From your first photo to a clear plan—everything stays in one
+              place
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {[
               {
                 step: 1,
-                title: "Upload & Connect",
-                desc: "Add documents, photos, videos, and create property checkpoints. Everything syncs to your unified platform.",
+                title: "Add Your Property",
+                desc: "Create a property, upload documents, and take your first photos. Add as many properties as you need.",
               },
               {
                 step: 2,
-                title: "Platform Intelligence",
-                desc: "Platform intelligence analyzes your checkpoint history and documents to highlight maintenance priorities.",
+                title: "Ask Questions",
+                desc: "Chat with your paperwork or your timeline photos. Turn on extra help for coverage, repairs, costs, or local pros.",
               },
               {
                 step: 3,
-                title: "Unified Insights",
-                desc: "Get comprehensive answers: compare checkpoints, chat with documents, and plan services with full context.",
+                title: "Get Clear Answers",
+                desc: "See costs, repair steps, comparisons, and provider ideas in one easy-to-read conversation.",
               },
               {
                 step: 4,
-                title: "Manage & Track",
-                desc: "Monitor property health, share with contractors, and keep everything organized in one place.",
+                title: "Stay Organized",
+                desc: "Save providers, share a chat link, and check your timeline whenever you need to follow up.",
               },
             ].map((item, i) => (
               <div
@@ -1554,15 +1559,15 @@ export default function LandingPageClient() {
                   backgroundClip: "text",
                 }}
               >
-                Home Care Platform
+                Property Care Platform
               </span>
             </h2>
             <p
               className="text-xl max-w-2xl mx-auto font-light leading-relaxed"
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
-              Join thousands of homeowners and property managers using our
-              unified platform for all their home care needs
+              Join thousands of homeowners, landlords, and property managers using our
+              unified platform for all their property care needs
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center pt-6">
               {user ? (
@@ -1726,9 +1731,7 @@ export default function LandingPageClient() {
                 className="text-sm"
                 style={{ color: LANDING_COLORS.mutedForeground }}
               >
-                Your complete home care platform for checkpoint tracking,
-                property documentation, and service planning in one unified
-                solution.
+                Photos, documents, and AI guidance for every property you manage.
               </p>
             </div>
 
