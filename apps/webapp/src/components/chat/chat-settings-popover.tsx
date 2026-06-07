@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
@@ -30,7 +31,9 @@ import { useToast } from "@/hooks/use-toast";
 const chatLog = createLogger("chat");
 
 interface ChatSettingsPopoverProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  /** Position anchor when opened programmatically (no trigger child). */
+  anchor?: React.ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   primaryAgent: PrimaryAgent;
@@ -58,6 +61,7 @@ const OPTIONAL_AGENT_OPTIONS: ReadonlyArray<{
 
 export function ChatSettingsPopover({
   children,
+  anchor,
   open,
   onOpenChange,
   primaryAgent,
@@ -170,7 +174,8 @@ export function ChatSettingsPopover({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      {anchor ? <PopoverAnchor asChild>{anchor}</PopoverAnchor> : null}
+      {children ? <PopoverTrigger asChild>{children}</PopoverTrigger> : null}
       <PopoverContent className="w-96 p-0" align="start">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'agent' | 'location')}>
           <div className="border-b px-4 pt-4">

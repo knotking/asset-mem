@@ -1,0 +1,54 @@
+import type {
+  AnalysisOptionalAgent,
+  CheckpointOptionalAgent,
+  PrimaryAgent,
+} from "@/lib/types";
+
+function primaryAgentLabel(agent: PrimaryAgent): string {
+  if (agent === "analysis") return "Analysis";
+  if (agent === "checkpoint") return "Checkpoint";
+  return "Docs";
+}
+
+export function buildCollapsedComposerSummary({
+  primaryAgent,
+  selectedOptionalAgents,
+  selectedCheckpointOptionalAgents,
+  readyContextCount,
+  pendingContextCount,
+  hasQueuedSend,
+}: {
+  primaryAgent: PrimaryAgent;
+  selectedOptionalAgents: AnalysisOptionalAgent[];
+  selectedCheckpointOptionalAgents: CheckpointOptionalAgent[];
+  readyContextCount: number;
+  pendingContextCount: number;
+  hasQueuedSend: boolean;
+}): string {
+  const parts = [primaryAgentLabel(primaryAgent)];
+
+  const optionalCount =
+    primaryAgent === "analysis"
+      ? selectedOptionalAgents.length
+      : primaryAgent === "checkpoint"
+        ? selectedCheckpointOptionalAgents.length
+        : 0;
+  if (optionalCount > 0) {
+    parts[0] = `${parts[0]} +${optionalCount}`;
+  }
+
+  if (hasQueuedSend) {
+    parts.push("queued message");
+  } else {
+    const contextTotal = readyContextCount + pendingContextCount;
+    if (contextTotal > 0) {
+      parts.push(
+        pendingContextCount > 0 && readyContextCount === 0
+          ? `${pendingContextCount} pending`
+          : `${contextTotal} context`,
+      );
+    }
+  }
+
+  return parts.join(" · ");
+}

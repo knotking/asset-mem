@@ -101,6 +101,19 @@ Uses V2 fields — not raw `message.content` alone.
 | `src/lib/message-content-parts.ts` | Read `contentMarkdown` / `contentJson` |
 | `src/lib/message-display-parts.ts` | Structured vs markdown gating |
 | `src/hooks/use-debounced-thinking-status.ts` | Debounced thinking strip text |
+| `src/components/chat/composer-meta-section.tsx` | Context-mode composer collapse, summary pill, settings row |
+| `src/lib/composer-collapse.ts` | Collapsed summary text (agent + optional agents + context counts) |
+| `src/lib/settings-navigation.ts` | Origin-aware back from header settings shortcuts |
+
+## Property chat composer (context mode)
+
+`PropertyChatWithContext` uses `ComposerMetaSection` (via `ChatInput` when `onOpenAddContext` is set):
+
+- **Expanded:** context chip strip, `CompactSettingsBar` (agent/location pills; location truncates on narrow widths), separate settings + collapse chevron buttons (avoids overlap when checkpoint shows `+N` optional agents).
+- **Collapsed:** single summary pill (`Checkpoint +4 · 2 context`, etc.); tap pill opens chat settings popover; chevron expands chips/settings again.
+- Send-block hints remain visible when collapsed.
+
+Header shortcuts (usage, FAQ, settings) use `settings-navigation` return params so back restores the same property tab and chat session.
 
 ## Removed / obsolete
 
