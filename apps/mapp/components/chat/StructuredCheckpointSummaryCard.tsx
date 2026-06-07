@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Sparkles } from 'lucide-react-native';
 import type { StructuredResponseData } from '@homeapp/common/types';
+import { formatCheckpointOverallCondition } from '@homeapp/common/lib/checkpoint-summary-display';
 import {
   CheckpointSummaryField,
   CheckpointSummaryListSection,
@@ -44,7 +45,7 @@ export function StructuredCheckpointSummaryCard({ checkpointSummary }: Props) {
         {checkpointSummary.overallCondition ? (
           <CheckpointSummaryTextSection
             label="Overall Condition:"
-            text={checkpointSummary.overallCondition}
+            text={formatCheckpointOverallCondition(checkpointSummary.overallCondition)}
           />
         ) : null}
 

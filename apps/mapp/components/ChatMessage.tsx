@@ -83,6 +83,7 @@ import {
   getCostEstimateRecommendation,
   SUMMARY_ACCORDION_PLACEHOLDER_PREVIEW,
 } from '@homeapp/common/lib/executive-summary-display';
+import { formatCheckpointOverallCondition } from '@homeapp/common/lib/checkpoint-summary-display';
 import {
   getSuggestedActionsFromContentJson,
   type SuggestedAction,
@@ -983,7 +984,7 @@ const StructuredResponse = React.memo(
       {checkpointSummary?.overallCondition ? (
         <CheckpointSummaryTextSection
           label="Overall Condition:"
-          text={checkpointSummary.overallCondition}
+          text={formatCheckpointOverallCondition(checkpointSummary.overallCondition)}
         />
       ) : null}
       {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 ? (

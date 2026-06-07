@@ -61,6 +61,9 @@ import {
   AssistantWaveDots,
 } from "@/components/chat/assistant-loading-indicators";
 import { StructuredReportSheet } from "@/components/chat/structured-report-sheet";
+import { StructuredCheckpointSummaryCard } from "@/components/chat/structured-checkpoint-summary-card";
+import { CheckpointSummaryContent } from "@/components/chat/checkpoint-summary-content";
+import { StructuredAccordionSectionIcon } from "@/components/chat/structured-accordion-section-icon";
 import { DiyVideoTutorialsSection } from "@/components/chat/diy-video-tutorials-section";
 
 const parseLog = createLogger("parse");
@@ -795,10 +798,28 @@ const StructuredResponse = ({
       ]
     );
 
-    const accordionDefaultValue = useMemo(
-      () => getStructuredAccordionDefaultValue(accordionVisibility, "web"),
-      [accordionVisibility]
-    );
+    const accordionDefaultValue = useMemo(() => {
+      const value = getStructuredAccordionDefaultValue(accordionVisibility, "web");
+      if (!isSheetLayout && value === "checkpoint-summary") {
+        if (hasCheckpointDetails) return "checkpoint-details";
+        if (hasCheckpointInsights) return "checkpoint-insights";
+        if (hasCoverage) return "coverage";
+        if (hasDIY) return "diy";
+        if (hasService) return "service";
+        if (hasCostEstimates) return "cost-estimates";
+        return undefined;
+      }
+      return value;
+    }, [
+      accordionVisibility,
+      isSheetLayout,
+      hasCheckpointDetails,
+      hasCheckpointInsights,
+      hasCoverage,
+      hasDIY,
+      hasService,
+      hasCostEstimates,
+    ]);
 
     const [openSection, setOpenSection] = useState<string | undefined>(
       accordionDefaultValue
@@ -999,9 +1020,7 @@ const StructuredResponse = ({
         ? getPreviewText(triage?.message || triage?.diagnosis)
         : undefined;
     const displayTitle = rawTitle || (needsClarification ? clarificationPreview : diagnosisPreview);
-    const showTitleGradient =
-      !isSheetLayout &&
-      (isTurnInFlight || displayTitleInProgress || accordionPipelineInProgress);
+    const showTitleGradient = !isSheetLayout && displayTitleInProgress;
 
     const sheetStructuredResponse = (
       <StructuredResponse
@@ -1055,6 +1074,9 @@ const StructuredResponse = ({
                     </div>
                 </div>
             ) : null}
+            {!isSheetLayout && hasCheckpointSummary && checkpointSummary ? (
+              <StructuredCheckpointSummaryCard checkpointSummary={checkpointSummary} />
+            ) : null}
         <Accordion
           {...(isSheetLayout
             ? {
@@ -1073,8 +1095,8 @@ const StructuredResponse = ({
             {(hasTriage || needsClarification) && (
                 <AccordionItem value="triage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Stethoscope className="h-5 w-5 text-blue-600" />
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                            <StructuredAccordionSectionIcon icon={Stethoscope} className="text-blue-600" />
                             <span className="font-semibold">
                                 {needsClarification ? "Clarification Needed" : "Triage Summary"}
                             </span>
@@ -1108,65 +1130,16 @@ const StructuredResponse = ({
                 </AccordionItem>
             )}
             
-            {hasCheckpointSummary && (
+            {hasCheckpointSummary && isSheetLayout && (
                 <AccordionItem value="checkpoint-summary" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Sparkles className="h-5 w-5 text-purple-600" />
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                            <StructuredAccordionSectionIcon icon={Sparkles} className="text-purple-600" />
                             <span className="font-semibold">Checkpoint Summary</span>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 pt-0">
-                        <div className="space-y-3">
-                            {checkpointSummary?.checkpointsAnalyzed && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Checkpoints Analyzed:</span>
-                                    <span className="text-sm font-semibold">{checkpointSummary.checkpointsAnalyzed}</span>
-                                </div>
-                            )}
-                            {checkpointSummary?.queryType && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Query Type:</span>
-                                    <Badge variant="outline" className="text-xs capitalize">
-                                        {checkpointSummary.queryType}
-                                    </Badge>
-                                </div>
-                            )}
-                            {checkpointSummary?.locations && checkpointSummary.locations.length > 0 && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Locations:</span>
-                                    <div className="flex flex-wrap gap-1">
-                                        {checkpointSummary.locations.map((location, idx) => (
-                                            <Badge key={idx} variant="secondary" className="text-xs">
-                                                {location}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {checkpointSummary?.dateRange && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Date Range:</span>
-                                    <span className="text-sm">{checkpointSummary.dateRange}</span>
-                                </div>
-                            )}
-                            {checkpointSummary?.overallCondition && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Overall Condition:</span>
-                                    <span className="text-sm">{checkpointSummary.overallCondition}</span>
-                                </div>
-                            )}
-                            {checkpointSummary?.issuesDetected && checkpointSummary.issuesDetected.length > 0 && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-sm font-medium text-muted-foreground min-w-[140px]">Issues Detected:</span>
-                                    <ul className="list-disc pl-5 space-y-1 flex-1">
-                                        {checkpointSummary.issuesDetected.map((issue, idx) => (
-                                            <li key={idx} className="text-sm">{issue}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
+                        <CheckpointSummaryContent checkpointSummary={checkpointSummary!} />
                     </AccordionContent>
                 </AccordionItem>
             )}
@@ -1174,8 +1147,8 @@ const StructuredResponse = ({
             {analysis?.checkpointDetails && Array.isArray(analysis.checkpointDetails) && analysis.checkpointDetails.length > 0 && (
                 <AccordionItem value="checkpoint-details" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Info className="h-5 w-5 text-blue-600" />
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                            <StructuredAccordionSectionIcon icon={Info} className="text-blue-600" />
                             <span className="font-semibold">Checkpoint Details</span>
                         </div>
                     </AccordionTrigger>
@@ -1197,8 +1170,8 @@ const StructuredResponse = ({
             {analysis?.insights && typeof analysis.insights === 'object' && Object.keys(analysis.insights).length > 0 && (
                 <AccordionItem value="checkpoint-insights" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex items-center gap-2 flex-1 text-left">
-                            <Lightbulb className="h-5 w-5 text-yellow-600" />
+                        <div className="flex items-center gap-3 flex-1 text-left">
+                            <StructuredAccordionSectionIcon icon={Lightbulb} className="text-yellow-600" />
                             <span className="font-semibold">Insights & Recommendations</span>
                         </div>
                     </AccordionTrigger>
@@ -1230,8 +1203,8 @@ const StructuredResponse = ({
             {hasCoverage && (
                 <AccordionItem value="coverage" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex w-full items-center gap-2 text-left">
-                            <ShieldCheck className="h-5 w-5 shrink-0 text-green-600" />
+                        <div className="flex w-full items-center gap-3 text-left">
+                            <StructuredAccordionSectionIcon icon={ShieldCheck} className="text-green-600" />
                             <span className="flex-1 font-semibold">Coverage Analysis</span>
                             <CheckpointAccordionBranchBadge
                                 branch="coverage"
@@ -1264,8 +1237,8 @@ const StructuredResponse = ({
             {hasDIY && (
                 <AccordionItem value="diy" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex w-full items-center gap-2 text-left">
-                            <Wrench className="h-5 w-5 shrink-0 text-orange-600" />
+                        <div className="flex w-full items-center gap-3 text-left">
+                            <StructuredAccordionSectionIcon icon={Wrench} className="text-orange-600" />
                             <span className="flex-1 font-semibold">DIY Recommendations</span>
                             <CheckpointAccordionBranchBadge
                                 branch="diy"
@@ -1392,8 +1365,8 @@ const StructuredResponse = ({
             {hasService && (
                 <AccordionItem value="service" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex w-full items-center gap-2 text-left">
-                            <TrendingUp className="h-5 w-5 shrink-0 text-purple-600" />
+                        <div className="flex w-full items-center gap-3 text-left">
+                            <StructuredAccordionSectionIcon icon={TrendingUp} className="text-purple-600" />
                             <span className="flex-1 font-semibold">Service Recommendations</span>
                             <CheckpointAccordionBranchBadge
                                 branch="service"
@@ -1435,8 +1408,8 @@ const StructuredResponse = ({
             {hasCostEstimates && (
                 <AccordionItem value="cost-estimates" className="border rounded-lg">
                     <AccordionTrigger className="text-sm sm:text-base px-4 hover:no-underline">
-                        <div className="flex w-full items-center gap-2 text-left">
-                            <DollarSign className="h-5 w-5 shrink-0 text-purple-600" />
+                        <div className="flex w-full items-center gap-3 text-left">
+                            <StructuredAccordionSectionIcon icon={DollarSign} className="text-purple-600" />
                             <span className="flex-1 font-semibold">Cost Estimates</span>
                             <CheckpointAccordionBranchBadge
                                 branch="cost"
@@ -1454,23 +1427,23 @@ const StructuredResponse = ({
             {showSummaryAccordion && (
                 <AccordionItem value={EXECUTIVE_SUMMARY_ACCORDION_VALUE} className="border rounded-lg">
                     <AccordionTrigger className="items-start px-4 py-3 text-sm hover:no-underline sm:text-base">
-                        <div className="min-w-0 flex-1 pr-2 text-left">
-                            <div className="flex items-center gap-2">
-                                <ListChecks className="h-5 w-5 shrink-0 text-emerald-600" />
+                        <div className="flex min-w-0 flex-1 items-start gap-3 pr-2 text-left">
+                            <StructuredAccordionSectionIcon icon={ListChecks} className="text-emerald-600" />
+                            <div className="min-w-0 flex-1">
                                 <span className="font-semibold text-foreground">
                                     {EXECUTIVE_SUMMARY_ACCORDION_TITLE}
                                 </span>
+                                {summaryPreview && !summaryAccordionExpanded ? (
+                                    <p className="mt-1 line-clamp-2 text-sm font-normal text-muted-foreground">
+                                        {summaryPreview}
+                                    </p>
+                                ) : null}
+                                {summaryPreviewTruncated && !summaryAccordionExpanded ? (
+                                    <span className="mt-1 block text-xs font-normal text-muted-foreground/80">
+                                        Show full summary
+                                    </span>
+                                ) : null}
                             </div>
-                            {summaryPreview && !summaryAccordionExpanded ? (
-                                <p className="mt-1 line-clamp-2 text-sm font-normal text-muted-foreground">
-                                    {summaryPreview}
-                                </p>
-                            ) : null}
-                            {summaryPreviewTruncated && !summaryAccordionExpanded ? (
-                                <span className="mt-1 block text-xs font-normal text-muted-foreground/80">
-                                    Show full summary
-                                </span>
-                            ) : null}
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="prose prose-sm dark:prose-invert max-w-none break-words px-4 pb-4 pt-0">

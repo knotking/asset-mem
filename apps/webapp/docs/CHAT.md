@@ -69,8 +69,8 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
 | **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`); shows **Writing your summary…** during the server gap after optional branches finish and before `analysisStatus.synthesis` arrives |
 | **Suggested-action chips** | Quick-reply buttons below accordions — hidden while `isTurnInFlight`; shown when the turn completes |
-| **Structured accordion** | `displayParts.structuredData` set; title card **Open full report** opens a side sheet with all sections expanded |
-| **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` while `isTurnInFlight`, `analysisStatus` is in flight, or optional-branch/synthesis `agentSteps` are executing |
+| **Structured accordion** | `displayParts.structuredData` set; inline **checkpoint summary card** (always visible) plus collapsible sections; title card **Open full report** opens a side sheet with all sections expanded |
+| **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` during the client stream (stops once `analysis.title` is present and SSE closes; branch/synthesis progress uses the composer footer) |
 | **Markdown bubble** | Displayable markdown, no structured UI |
 | **Copy button** | Markdown-only assistant responses |
 
@@ -89,6 +89,11 @@ Uses V2 fields — not raw `message.content` alone.
 | File | Role |
 |------|------|
 | `src/components/chat/chat-message.tsx` | Render markdown, accordion, thinking strip |
+| `src/components/chat/structured-accordion-section-icon.tsx` | Circular muted icon badge for structured accordion triggers |
+| `src/components/chat/structured-checkpoint-summary-card.tsx` | Inline always-visible checkpoint summary preview |
+| `src/components/chat/checkpoint-summary-fields.tsx` | Label/value helpers for checkpoint summary sections |
+| `src/components/chat/checkpoint-summary-content.tsx` | Shared checkpoint summary body (inline card + full report) |
+| `src/lib/checkpoint-summary-display.ts` | Overall-condition first-letter formatting (local copy; sync with `@homeapp/common` for mapp) |
 | `src/components/chat/structured-report-sheet.tsx` | Full-report side sheet for structured messages |
 | `src/components/chat/diy-video-tutorials-section.tsx` | DIY video preview list + side sheet with embedded players |
 | `src/components/chat/chat-list.tsx` | Scroll + `isLoading` for streaming placeholder |
