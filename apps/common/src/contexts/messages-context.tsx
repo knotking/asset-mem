@@ -41,7 +41,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messagesLimit, setMessagesLimit] = useState(50); // Start with 50 messages
   const prevMessagesRef = useRef<Message[]>([]);
@@ -59,7 +59,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
 
   // Function to load earlier messages (pagination)
   const loadEarlierMessages = useCallback(async () => {
-    if (!user || !sessionId || isLoadingEarlier || !hasMoreMessages) {
+    if (!user || !sessionId || isLoading || isLoadingEarlier || !hasMoreMessages) {
       return;
     }
 
@@ -77,7 +77,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
     } finally {
       setIsLoadingEarlier(false);
     }
-  }, [user, sessionId, isLoadingEarlier, hasMoreMessages, messagesLimit, onError]);
+  }, [user, sessionId, isLoading, isLoadingEarlier, hasMoreMessages, messagesLimit, onError]);
 
   useEffect(() => {
     if (!user || !sessionId) {
@@ -85,7 +85,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
       setMessages([]);
       setIsLoading(false);
       setError(null);
-      setHasMoreMessages(true);
+      setHasMoreMessages(false);
       return;
     }
 
@@ -93,6 +93,7 @@ export const MessagesProvider = ({ children, sessionId, onError }: MessagesProvi
     setMessages([]);
     setIsLoading(true);
     setError(null);
+    setHasMoreMessages(false);
 
     const messagesCollection = collection(db, 'users', user.uid, 'chats', sessionId, 'messages');
     const q = query(messagesCollection, orderBy('createdAt', 'desc'), limit(messagesLimit));

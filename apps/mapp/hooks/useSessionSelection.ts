@@ -5,19 +5,17 @@ export function useSessionSelection(propertyId: string, sessionIdParam?: string)
   const { draftsByProperty, sessionsByProperty } = useSession();
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
 
-  // Handle incoming session selection from sessions screen
+  // Reset stale selection when switching properties (same screen instance).
   React.useEffect(() => {
-    if (sessionIdParam) {
-      setSelectedSessionId(sessionIdParam);
-    }
-  }, [sessionIdParam]);
+    setSelectedSessionId(sessionIdParam ?? null);
+  }, [propertyId, sessionIdParam]);
 
-  // Auto-select draft session when property loads
+  // Auto-select draft session when property loads and nothing is selected yet.
   React.useEffect(() => {
-    if (propertyId && draftsByProperty[propertyId] && !selectedSessionId) {
+    if (propertyId && draftsByProperty[propertyId] && !selectedSessionId && !sessionIdParam) {
       setSelectedSessionId(draftsByProperty[propertyId].id);
     }
-  }, [propertyId, draftsByProperty, selectedSessionId]);
+  }, [propertyId, draftsByProperty, selectedSessionId, sessionIdParam]);
 
   // Handle case when selected session is deleted - fall back to draft
   React.useEffect(() => {
@@ -38,5 +36,9 @@ export function useSessionSelection(propertyId: string, sessionIdParam?: string)
     }
   }, [propertyId, selectedSessionId, sessionsByProperty, draftsByProperty]);
 
-  return { selectedSessionId, setSelectedSessionId };
+  const draftSessionId = propertyId ? draftsByProperty[propertyId]?.id : undefined;
+  const effectiveSessionId =
+    selectedSessionId ?? sessionIdParam ?? draftSessionId ?? null;
+
+  return { selectedSessionId: effectiveSessionId, setSelectedSessionId };
 }
