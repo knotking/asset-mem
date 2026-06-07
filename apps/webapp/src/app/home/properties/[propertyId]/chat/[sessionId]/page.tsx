@@ -151,8 +151,10 @@ export default function PropertyChatSessionPage() {
   };
 
   const branchProgress = useMemo(() => {
-    return getInFlightCheckpointProgressFromMessages(messages);
-  }, [messages]);
+    return getInFlightCheckpointProgressFromMessages(messages, {
+      isStreamActive: isLoading,
+    });
+  }, [messages, isLoading]);
 
   const handleSuggestedPrompt = (prompt: string) => {
     trackSuggestedPromptClick(prompt);

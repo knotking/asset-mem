@@ -55,7 +55,7 @@ export function isAssistantTurnObservedInFlight(message: Message): boolean {
   if (message.role !== 'assistant') return false;
 
   const analysis = resolveStructuredAnalysis(message.contentJson);
-  if (hasPostContentPipelineWork(analysis, message.agentSteps)) {
+  if (hasPostContentPipelineWork(analysis, message.agentSteps, { isTurnInFlight: true })) {
     return true;
   }
 

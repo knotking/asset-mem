@@ -6,7 +6,7 @@
 import type { AgentStep } from "@/lib/types";
 import {
   getCheckpointBranchProgress,
-  isSynthesisAnalysisInProgress,
+  isSynthesisWorkInFlight,
   resolveStructuredAnalysis,
   SYNTHESIS_WRITING_LABEL,
 } from "@/lib/checkpoint-branch-progress";
@@ -213,6 +213,8 @@ export type ThinkingStatus = {
 export type ThinkingStatusOptions = {
   messageContentJson?: Record<string, unknown> | null;
   accordionAnalysis?: Record<string, unknown> | null;
+  /** Local stream / Firestore in-flight turn for synthesis gap UX. */
+  isTurnInFlight?: boolean;
 };
 
 export function getThinkingStatusFromSteps(
@@ -228,7 +230,11 @@ export function getThinkingStatusFromSteps(
     };
   }
 
-  if (isSynthesisAnalysisInProgress(analysis)) {
+  if (
+    isSynthesisWorkInFlight(analysis, steps, {
+      isTurnInFlight: options?.isTurnInFlight,
+    })
+  ) {
     return { header: SYNTHESIS_WRITING_LABEL, preview: null };
   }
 
