@@ -279,9 +279,11 @@ const docTypeIcons: { [key: string]: React.ElementType } = {
 const ServiceProviderCard = ({
   provider,
   saveMeta,
+  allowSave = true,
 }: {
   provider: ServiceProvider;
   saveMeta?: SaveServiceProviderMeta;
+  allowSave?: boolean;
 }) => {
     const { toast } = useToast();
     const { isSaved, saveProvider, removeProvider, savedProviders } = useSavedServiceProviders();
@@ -382,6 +384,7 @@ const ServiceProviderCard = ({
             <CardTitle className="text-base flex justify-between items-start gap-2">
             <span className="line-clamp-2 flex-1 min-w-0">{provider.name}</span>
                 <motion.div className="flex items-center gap-1 shrink-0">
+                {allowSave ? (
                 <Button
                     type="button"
                     variant="ghost"
@@ -398,6 +401,7 @@ const ServiceProviderCard = ({
                         )}
                     />
                 </Button>
+                ) : null}
                 {provider.authorized === "True" && (
                     <Badge variant="outline" className="flex items-center gap-1 bg-blue-100 text-blue-800 border-blue-200 shrink-0">
                         <CheckCircle className="h-3 w-3" />
@@ -625,6 +629,7 @@ const StructuredResponse = ({
   accordionPipelineInProgress = false,
   summarySynthesisInProgress = false,
   saveMeta,
+  allowSave = true,
   layoutMode = "inline",
   showTitleCard = true,
 }: {
@@ -636,6 +641,7 @@ const StructuredResponse = ({
   accordionPipelineInProgress?: boolean;
   summarySynthesisInProgress?: boolean;
   saveMeta?: SaveServiceProviderMeta;
+  allowSave?: boolean;
   layoutMode?: "inline" | "sheet";
   showTitleCard?: boolean;
 }) => {
@@ -1033,6 +1039,7 @@ const StructuredResponse = ({
         accordionPipelineInProgress={accordionPipelineInProgress}
         summarySynthesisInProgress={summarySynthesisInProgress}
         saveMeta={saveMeta}
+        allowSave={allowSave}
       />
     );
 
@@ -1384,7 +1391,7 @@ const StructuredResponse = ({
                             {allProviders.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {allProviders.map((provider, index) => (
-                                        <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} />
+                                        <ServiceProviderCard key={index} provider={provider} saveMeta={saveMeta} allowSave={allowSave} />
                                     ))}
                                 </div>
                             ) : serviceSearchFailedFlag ? (
@@ -1692,6 +1699,8 @@ type Props = {
   /** True while this assistant turn is still streaming on the client. */
   isTurnInFlight?: boolean;
   context?: 'property' | null;
+  /** Hide save-provider and other write actions (e.g. public shared chat). */
+  readOnly?: boolean;
   priorAssistantTurnCount?: number;
   hideRepeatedContextRefs?: boolean;
   onSuggestedAction?: (action: SuggestedAction) => void;
@@ -1751,6 +1760,7 @@ const ChatMessageComponent = ({
   message,
   isTurnInFlight = false,
   context,
+  readOnly = false,
   priorAssistantTurnCount = 0,
   hideRepeatedContextRefs = false,
   onSuggestedAction,
@@ -2193,6 +2203,7 @@ const ChatMessageComponent = ({
                       source: 'chat',
                       messageId: message.id,
                     }}
+                    allowSave={!readOnly}
                   />
                 </motion.div>
             ) : isUserSplitContent ? (

@@ -9,6 +9,7 @@ import type { Message, Session } from '@/lib/types';
 import { isSharedChatExpired } from '@/lib/shared-chat';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatPageSkeleton } from '@/components/chat/chat-page-skeleton';
+import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
 import { AssetMemBrandIcon } from '@/components/brand/asset-mem-brand-icon';
@@ -137,14 +138,16 @@ export default function SharedChatPage() {
     }
 
     return (
-        <div className="h-screen w-full flex flex-col bg-muted/20">
-            <SharedChatHeader sessionName={session?.name || 'Shared Chat'} />
-            <main className="flex-1 overflow-hidden">
-                <ChatList messages={messages} isMessagesLoading={false} />
-            </main>
-            <footer className="p-3 text-center text-sm text-muted-foreground border-t bg-background">
-                Read-only shared chat. Do not share this link publicly if it contains sensitive property details.
-            </footer>
-        </div>
+        <SavedServiceProvidersProvider propertyId={session?.propertyId ?? null}>
+            <div className="h-screen w-full flex flex-col bg-muted/20">
+                <SharedChatHeader sessionName={session?.name || 'Shared Chat'} />
+                <main className="flex-1 overflow-hidden">
+                    <ChatList messages={messages} isMessagesLoading={false} readOnly />
+                </main>
+                <footer className="p-3 text-center text-sm text-muted-foreground border-t bg-background">
+                    Read-only shared chat. Do not share this link publicly if it contains sensitive property details.
+                </footer>
+            </div>
+        </SavedServiceProvidersProvider>
     );
 }

@@ -66,7 +66,10 @@ service cloud.firestore {
 
     // Rules for publicly shared chat sessions
     match /sharedChats/{shareId} {
-      allow read: if isSharedChatActive(shareId);
+      // Owners can list/read their shares (including expired) to create or update links.
+      // Public readers only see non-expired shares.
+      allow read: if isSharedChatActive(shareId)
+        || (request.auth != null && resource.data.originalUserId == request.auth.uid);
       allow create: if request.auth != null && request.resource.data.originalUserId == request.auth.uid;
       allow update: if request.auth != null && resource.data.originalUserId == request.auth.uid;
       allow delete: if false;

@@ -31,10 +31,12 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, MessageSquare, Trash2, ChevronLeft, X, Share2, Copy, Loader2, MoreHorizontal, Pencil, CheckSquare2, Square } from 'lucide-react';
-import type { Session, Message } from '@/lib/types';
+import type { Session } from '@/lib/types';
 import {
   SHARED_CHAT_TTL_DAYS,
   sharedChatExpiresAtFromNow,
+  deleteAllInCollection,
+  writeSharedChatMessages,
 } from '@/lib/shared-chat';
 import { deleteCollection, cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
@@ -47,7 +49,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useSession } from '@/contexts/session-context';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, writeBatch, Timestamp, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, limit } from 'firebase/firestore';
 import { deleteAgentSession } from '@/lib/api-agent';
 import { createLogger } from '@/lib/logger';
 import {
@@ -413,13 +415,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
           const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
           const messagesSnap = await getDocs(messagesQuery);
           
-          const messages = messagesSnap.docs.map(doc => {
-              const data = doc.data();
-              return {
-                  ...data,
-                  createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-              } as unknown as Message;
-          });
+          const messages = messagesSnap.docs.map((messageDoc) => messageDoc.data() as Record<string, unknown>);
 
           let shareId: string;
           
@@ -428,18 +424,9 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
               const sharedChatRef = doc(db, 'sharedChats', shareId);
               const sharedMessagesRef = collection(sharedChatRef, 'messages');
               
-              // Delete old messages
-              await deleteCollection(sharedMessagesRef);
+              await deleteAllInCollection(db, sharedMessagesRef);
+              await writeSharedChatMessages(db, sharedMessagesRef, messages);
 
-              // Add new messages
-              const batch = writeBatch(db);
-              messages.forEach(message => {
-                  const messageRef = doc(sharedMessagesRef);
-                  batch.set(messageRef, message);
-              });
-              await batch.commit();
-
-              // Update the updatedAt timestamp on the parent doc
               await updateDoc(sharedChatRef, {
                 updatedAt: serverTimestamp(),
                 expiresAt: sharedChatExpiresAtFromNow(),
@@ -459,13 +446,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
               });
               shareId = newSharedChatRef.id;
               
-              const batch = writeBatch(db);
               const sharedMessagesRef = collection(newSharedChatRef, 'messages');
-              messages.forEach(message => {
-                  const messageRef = doc(sharedMessagesRef);
-                  batch.set(messageRef, message);
-              });
-              await batch.commit();
+              await writeSharedChatMessages(db, sharedMessagesRef, messages);
           }
 
           setSharedLink(`${window.location.origin}/share/${shareId}`);

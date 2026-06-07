@@ -24,6 +24,8 @@ type Props = {
   /** True while the composer stream/session is still open for the current turn. */
   isStreamActive?: boolean;
   context?: 'property' | null;
+  /** Hide save-provider and other write actions (e.g. public shared chat). */
+  readOnly?: boolean;
   onSelectSuggestedPrompt?: (prompt: string) => void;
   onSuggestedAction?: (action: SuggestedAction) => void;
   isSendDisabled?: boolean;
@@ -39,6 +41,7 @@ export function ChatList({
   isMessagesLoading,
   isStreamActive = false,
   context,
+  readOnly = false,
   onSelectSuggestedPrompt,
   onSuggestedAction,
   isSendDisabled,
@@ -85,6 +88,7 @@ export function ChatList({
                     isStreamActive)
                 }
                 context={context}
+                readOnly={readOnly}
                 priorAssistantTurnCount={countPriorAssistantTurnsInSession(messages, message.id)}
                 hideRepeatedContextRefs={suppressRepeatedContextRefsById.get(message.id) ?? false}
                 onSuggestedAction={onSuggestedAction}
@@ -95,6 +99,7 @@ export function ChatList({
   }, [
     messages,
     context,
+    readOnly,
     suppressRepeatedContextRefsById,
     onSuggestedAction,
     isSendDisabled,

@@ -122,6 +122,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "sharedChats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "originalUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "originalSessionId",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
