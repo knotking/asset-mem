@@ -154,14 +154,13 @@ Orchestrator V2 uses persisted `contentJson` as the single source for structured
 
 **Current behavior:**
 - Proxy persists `contentJson` + `contentMarkdown`
-- When `contentJson` has visible accordion sections, UI renders **hybrid** display:
-  - `analysis.title` title card
-  - Structured accordions from `contentJson` (**Checkpoint Summary** opens as soon as checkpoint summary JSON is visible, including while optional branches or synthesis are still running; other sections stay collapsed until the pipeline finishes)
-  - **Summary & Next Steps** last accordion from filtered `contentMarkdown` (collapsed by default; inline preview in trigger; placeholder **Preparing summary…** while synthesis is in flight — including the client-inferred gap after optional branches finish and before `analysisStatus.synthesis` is patched; never auto-opens)
-  - Native accordion `value` uses `STRUCTURED_ACCORDION_COLLAPSED` (`__collapsed__`) instead of `undefined` so `@rn-primitives/accordion` stays controlled on collapse (avoids preview + content showing together on first tap)
-  - Structured **title card** includes a full-report icon that opens a page sheet with all accordion sections expanded for read-through
-  - In-flight branch/synthesis progress uses **CheckpointAnalysisProgressFooter** above the composer context chips (not a strip below accordions)
-  - **Suggested-action** quick-reply chips below accordions are hidden while `isTurnInFlight`; they appear when the turn completes
+- When `contentJson` has visible structured sections, **inline chat** renders a **rows + sheets** layout (no inline accordion — avoids scroll jump during streaming):
+  - `analysis.title` title card with **Open full report** icon → page sheet with all sections in accordion (expanded)
+  - **Checkpoint summary card** — always visible compact preview (issues, condition, locations) as JSON arrives
+  - **Report sections** — tappable rows (`StructuredSectionNav`) for triage, checkpoint details/insights, optional branches (coverage, DIY, service, cost), and **Summary & Next Steps** (subtitle preview or **Preparing summary…** while synthesis runs)
+  - Each row opens a **section sheet** with full content (DIY videos use preview + sheet pattern)
+  - In-flight branch/synthesis progress uses **CheckpointAnalysisProgressFooter** above the composer context chips
+  - **Suggested-action** quick-reply chips are hidden while `isTurnInFlight`; they appear when the turn completes
   - `suggestedActions` quick-reply chips below the bubble
 - Plain markdown-only messages still use full `contentMarkdown` prose
 - Message text is not parsed for fenced JSON in hot paths
@@ -180,9 +179,20 @@ const { structuredData, summaryMarkdown } = getMessageDisplayParts(message);
 
 **Cost accordion:** renders `costEstimates.recommendation.notes` and `next_steps` when present in JSON.
 
-#### B. StructuredResponse Component
+#### B. StructuredResponse Component (inline chat layout)
 
-Displays parsed JSON data in accordion sections with intelligent content detection:
+**Rows + sheets** on mobile inline messages:
+
+1. **Title card** with **Open full report**
+2. **Checkpoint summary card** (`StructuredCheckpointSummaryCard`) — stable during streaming
+3. **Report sections** (`StructuredSectionNav`) — tappable rows → per-section sheets
+4. **Full report sheet** — all sections in accordion, expanded (`layoutMode="sheet"`)
+
+Accordion is used **only** in the full-report sheet (and webapp), not in the live chat bubble.
+
+Sheet layout (`layoutMode="sheet"`) and webapp still use the full accordion.
+
+Displays parsed JSON data in section content with intelligent content detection:
 
 **Sections (in order):**
 
@@ -233,7 +243,7 @@ Displays parsed JSON data in accordion sections with intelligent content detecti
 - Extracted from `analysis.title` or `data.title`
 - Falls back to preview text from diagnosis or clarification message
 - Displayed in rounded border box above accordion
-- Shimmers via `DisplayTitleGradientText` while `shouldShowDisplayTitleGradient` is true (`isTurnInFlight`, in-flight `analysisStatus`, or executing branch/synthesis `agentSteps`)
+- Shimmers via `DisplayTitleGradientText` while `shouldShowDisplayTitleGradient` is true (during the client SSE stream, or before a title arrives). After the stream closes and `analysis.title` is present, the title stays static while optional branches / synthesis finish (progress footer handles that).
 
 #### C. ServiceProviderCard Component ([ChatMessage.tsx:320-447](apps/mapp/components/ChatMessage.tsx#L320-L447))
 

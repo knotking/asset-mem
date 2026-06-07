@@ -23,7 +23,7 @@ npm run test:watch
 | [`__mocks__/`](../__mocks__/) | GiftedChat, YouTube, expo-image/video, markdown, clipboard, haptics |
 | [`__tests__/fixtures/messages.ts`](../__tests__/fixtures/messages.ts) | Shared Firestore `Message` fixtures (markdown + structured variants) |
 | [`lib/gifted-chat-bubble-equal.ts`](../lib/gifted-chat-bubble-equal.ts) | Bubble memo comparator (`areGiftedChatBubblePropsEqual`) |
-| [`lib/chat-list-scroll-anchor-context.tsx`](../lib/chat-list-scroll-anchor-context.tsx) | GiftedChat scroll offset + accordion expand/collapse compensation |
+| [`lib/chat-list-scroll-anchor-context.tsx`](../lib/chat-list-scroll-anchor-context.tsx) | GiftedChat scroll offset compensation (legacy accordion anchor) |
 | [`lib/property-chat-list-props.ts`](../lib/property-chat-list-props.ts) | Android GiftedChat `listViewProps` tuning |
 | [`lib/gifted-chat-utils.ts`](../lib/gifted-chat-utils.ts) | GiftedChat transform + `transformMessagesToGiftedChatCached` |
 | [`apps/common/src/lib/merge-messages-snapshot.ts`](../../common/src/lib/merge-messages-snapshot.ts) | Incremental Firestore snapshot merge |
@@ -33,12 +33,13 @@ npm run test:watch
 | [`lib/chat-message-native-styles.ts`](../lib/chat-message-native-styles.ts) | StyleSheet bypass for NativeWind opacity/shadow interop issues |
 | [`lib/lazy-youtube-player.tsx`](../lib/lazy-youtube-player.tsx) | Defers Youtube WebView until accordion expanded + layout |
 | [`__tests__/ChatMessage.youtube.test.tsx`](../__tests__/ChatMessage.youtube.test.tsx) | Lazy YouTube mount gated by `AccordionMountContext` |
-| [`lib/structured-accordion-defaults.ts`](../lib/structured-accordion-defaults.ts) | Checkpoint Summary opens when JSON visible; Android keeps optional sections collapsed |
+| [`__tests__/structured-section-nav.test.ts`](../__tests__/structured-section-nav.test.ts) | `buildStructuredSectionNavItems` row list + summary preview |
+| [`lib/structured-accordion-defaults.ts`](../lib/structured-accordion-defaults.ts) | Full-report sheet accordion defaults (webapp / shared helper) |
 | [`__tests__/structured-accordion-defaults.test.ts`](../__tests__/structured-accordion-defaults.test.ts) | Accordion `defaultValue` by platform and visible sections |
 | [`lib/chat-message-equal.ts`](../lib/chat-message-equal.ts) | `ChatMessage` memo comparator (content, steps, file, createdAt) |
 | [`__tests__/chat-message.equal.test.ts`](../__tests__/chat-message.equal.test.ts) | `areChatMessagePropsEqual` mirrors bubble comparator |
 | [`__tests__/css-theme-tokens.test.ts`](../__tests__/css-theme-tokens.test.ts) | Light/dark token mapping regression |
-| [`__tests__/ChatMessage.structured.navigation.test.tsx`](../__tests__/ChatMessage.structured.navigation.test.tsx) | Real accordion + `NavigationContainer` (no nav-context crash) |
+| [`__tests__/ChatMessage.structured.navigation.test.tsx`](../__tests__/ChatMessage.structured.navigation.test.tsx) | Inline structured rows + `NavigationContainer` (no nav-context crash) |
 | [`__tests__/test-utils.tsx`](../__tests__/test-utils.tsx) | `renderWithProviders()` helper |
 
 ## Adding tests

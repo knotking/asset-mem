@@ -378,23 +378,10 @@ export type InFlightCheckpointProgressOptions = {
 export function hasCheckpointAnalysisStatusInProgress(
   analysis: unknown
 ): boolean {
-  if (!analysis || typeof analysis !== "object") {
-    return false;
-  }
-  const statusMap = (analysis as { analysisStatus?: unknown }).analysisStatus;
-  if (!statusMap || typeof statusMap !== "object") {
-    return false;
-  }
-  if (isSynthesisAnalysisInProgress(analysis)) {
+  if (getCheckpointBranchProgress(analysis)?.isInProgress) {
     return true;
   }
-  for (const key of CHECKPOINT_OPTIONAL_AGENTS) {
-    const st = normalizeStatus((statusMap as Record<string, unknown>)[key]);
-    if (st === "pending" || st === "running") {
-      return true;
-    }
-  }
-  return false;
+  return isSynthesisAnalysisInProgress(analysis);
 }
 
 export function hasCheckpointDisplayTitleInProgress(structured: unknown): boolean {
@@ -423,13 +410,22 @@ export type DisplayTitleGradientInput = {
 export function shouldShowDisplayTitleGradient(
   input: DisplayTitleGradientInput
 ): boolean {
+  const analysis = resolveStructuredAnalysis(input.structured ?? null);
+  const hasTitle =
+    typeof analysis?.title === "string" && analysis.title.trim().length > 0;
+
   if (input.isTurnInFlight) {
     return true;
   }
+
+  // Title is written during the stream; after SSE closes keep it static while branches finish.
+  if (hasTitle) {
+    return false;
+  }
+
   if (hasCheckpointDisplayTitleInProgress(input.structured)) {
     return true;
   }
-  const analysis = resolveStructuredAnalysis(input.structured ?? null);
   return hasPostContentPipelineWork(analysis, input.steps, {
     isTurnInFlight: input.isTurnInFlight,
   });
