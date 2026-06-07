@@ -404,7 +404,11 @@ function PropertyDetailsScreenContent({
 }: any) {
   const { checkpoints } = useCheckpoint();
   const { savedProviders } = useSavedServiceProviders();
-  const settingsReturnContext = propertySettingsReturnContext(id, activeTab);
+  const settingsReturnContext = propertySettingsReturnContext(
+    id,
+    activeTab,
+    activeTab === 'chat' ? selectedSessionId : undefined,
+  );
 
   return (
     <PushDrawer

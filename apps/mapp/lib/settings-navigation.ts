@@ -7,7 +7,7 @@ export type SettingsReturnTarget = 'home' | 'settings' | 'property';
 export type SettingsReturnContext =
   | { target: 'home' }
   | { target: 'settings' }
-  | { target: 'property'; propertyId: string; tab: PropertyScreenTab };
+  | { target: 'property'; propertyId: string; tab: PropertyScreenTab; sessionId?: string };
 
 export type SettingsSubScreenId = 'account' | 'faq' | 'usage';
 
@@ -39,9 +39,18 @@ export function resolveAppHeaderReturnContext(segments: readonly string[]): Sett
 
 export function propertySettingsReturnContext(
   propertyId: string,
-  tab: PropertyScreenTab
+  tab: PropertyScreenTab,
+  sessionId?: string | null
 ): SettingsReturnContext {
-  return { target: 'property', propertyId, tab };
+  const context: Extract<SettingsReturnContext, { target: 'property' }> = {
+    target: 'property',
+    propertyId,
+    tab,
+  };
+  if (tab === 'chat' && sessionId) {
+    context.sessionId = sessionId;
+  }
+  return context;
 }
 
 export function isPeekSettingsReturnContext(
@@ -68,11 +77,15 @@ export function consumePendingSettingsHubReset() {
 
 export function settingsReturnParams(context: SettingsReturnContext): Record<string, string> {
   if (context.target === 'property') {
-    return {
+    const params: Record<string, string> = {
       returnTo: 'property',
       returnPropertyId: context.propertyId,
       returnPropertyTab: context.tab,
     };
+    if (context.sessionId) {
+      params.returnSessionId = context.sessionId;
+    }
+    return params;
   }
   return { returnTo: context.target };
 }
@@ -81,6 +94,7 @@ export function resolveSettingsReturnContext(params: {
   returnTo?: string | string[];
   returnPropertyId?: string | string[];
   returnPropertyTab?: string | string[];
+  returnSessionId?: string | string[];
 }): SettingsReturnContext | undefined {
   const target = normalizeRouteParam(params.returnTo);
   if (target === 'home') {
@@ -94,10 +108,13 @@ export function resolveSettingsReturnContext(params: {
     if (!propertyId) {
       return undefined;
     }
+    const tab = parsePropertyReturnTab(normalizeRouteParam(params.returnPropertyTab));
+    const sessionId = normalizeRouteParam(params.returnSessionId);
     return {
       target: 'property',
       propertyId,
-      tab: parsePropertyReturnTab(normalizeRouteParam(params.returnPropertyTab)),
+      tab,
+      ...(tab === 'chat' && sessionId ? { sessionId } : {}),
     };
   }
   return undefined;
@@ -140,7 +157,11 @@ export function navigateBackFromSettingsSubScreen(
   if (resolved.target === 'property') {
     router.replace({
       pathname: '/home/property-details',
-      params: { id: resolved.propertyId, tab: resolved.tab },
+      params: {
+        id: resolved.propertyId,
+        tab: resolved.tab,
+        ...(resolved.sessionId ? { sessionId: resolved.sessionId } : {}),
+      },
     });
     return;
   }
