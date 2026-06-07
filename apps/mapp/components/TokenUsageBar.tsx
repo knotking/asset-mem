@@ -8,6 +8,11 @@ import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  type SettingsReturnContext,
+  clearPendingSettingsHubReset,
+  settingsReturnParams,
+} from '@/lib/settings-navigation';
 
 const DEFAULT_RING = 24;
 const STROKE = 2;
@@ -76,12 +81,17 @@ export type TokenUsageBarProps = {
    * Default is slightly larger (24) for the main app header.
    */
   matchActionIconSize?: boolean;
+  /** When set, back from AI usage returns to the originating screen. */
+  settingsReturnContext?: SettingsReturnContext;
 };
 
 /**
  * Header quota: AI icon + ring. Percent is spoken via accessibilityLabel only.
  */
-export function TokenUsageBar({ matchActionIconSize = false }: TokenUsageBarProps) {
+export function TokenUsageBar({
+  matchActionIconSize = false,
+  settingsReturnContext,
+}: TokenUsageBarProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { loading, error, periodTotalTokens, effectiveMonthlyLimit } = useLlmTokenUsage();
@@ -106,7 +116,17 @@ export function TokenUsageBar({ matchActionIconSize = false }: TokenUsageBarProp
     return null;
   }
 
-  const goSettings = () => router.navigate('/(tabs)/settings/usage');
+  const goSettings = () => {
+    if (settingsReturnContext) {
+      clearPendingSettingsHubReset();
+      router.navigate({
+        pathname: '/(tabs)/settings/usage',
+        params: settingsReturnParams(settingsReturnContext),
+      });
+      return;
+    }
+    router.navigate('/(tabs)/settings/usage');
+  };
 
   if (effectiveMonthlyLimit == null) {
     return (

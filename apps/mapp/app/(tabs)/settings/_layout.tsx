@@ -1,9 +1,12 @@
 import { Stack } from 'expo-router';
 import AppHeader from '@/components/AppHeader';
+import { SettingsTabFocusReset } from '@/components/settings/SettingsTabFocusReset';
 
 export default function SettingsLayout() {
   return (
-    <Stack
+    <>
+      <SettingsTabFocusReset />
+      <Stack
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
@@ -24,5 +27,6 @@ export default function SettingsLayout() {
       <Stack.Screen name="usage" />
       <Stack.Screen name="checkpoints" />
     </Stack>
+    </>
   );
 }

@@ -51,6 +51,10 @@ import { CheckpointProvider, useCheckpoint } from '@homeapp/common/contexts/chec
 import { PropertyCheckpointsTab } from '@/components/property-details/PropertyCheckpointsTab';
 import { CheckpointsDrawerContent } from '@/components/property-details/CheckpointsDrawerContent';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
+import {
+  navigateToSettingsSubScreen,
+  propertySettingsReturnContext,
+} from '@/lib/settings-navigation';
 import PropertyListSkeleton from '@/components/PropertyListSkeleton';
 import { peekPendingPropertyUpload } from '@/lib/pending-property-upload';
 import { PENDING_PROPERTY_ADDRESS } from '@/lib/property-address-placeholder';
@@ -400,6 +404,7 @@ function PropertyDetailsScreenContent({
 }: any) {
   const { checkpoints } = useCheckpoint();
   const { savedProviders } = useSavedServiceProviders();
+  const settingsReturnContext = propertySettingsReturnContext(id, activeTab);
 
   return (
     <PushDrawer
@@ -446,13 +451,18 @@ function PropertyDetailsScreenContent({
                       </View>
                       <View className="shrink-0 flex-row items-center gap-1.5">
                         <Button
-                          onPress={() => router.navigate('/(tabs)/settings/faq')}
+                          onPress={() =>
+                            navigateToSettingsSubScreen(router, 'faq', settingsReturnContext)
+                          }
                           variant="ghost"
                           size="icon"
                           accessibilityLabel="FAQ & guides">
                           <Icon as={BookOpen} size={20} className="text-foreground" />
                         </Button>
-                        <TokenUsageBar matchActionIconSize />
+                        <TokenUsageBar
+                          matchActionIconSize
+                          settingsReturnContext={settingsReturnContext}
+                        />
                         {activeTab === 'chat' && (
                           <View className="flex-row items-center gap-1 rounded-lg border border-border/50 px-1">
                             <View className="relative">
