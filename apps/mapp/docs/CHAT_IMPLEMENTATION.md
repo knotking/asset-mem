@@ -203,7 +203,7 @@ When the assistant returns structured data (JSON format), the component renders 
 
 3. **DIY Recommendations** (Wrench icon, yellow)
    - Step-by-step instructions
-   - Embedded YouTube video tutorials with `react-native-youtube-iframe`
+   - Video tutorial previews: tappable rows with thumbnails; sheet players via `DiyVideoTutorialsSection`
    - Recommended products with:
      - Product images with loading states and error handling
      - Pricing and ratings
@@ -375,7 +375,7 @@ users/
 ✅ **File Attachments**: Camera, video, and library picker integration
 ✅ **Image Previews**: Aspect ratio preservation, lazy loading with skeletons
 ✅ **Video Playback**: Expo-video player with controls and PiP support
-✅ **YouTube Embeds**: Inline video players for tutorial content
+✅ **YouTube Embeds**: DIY tutorial players in a side sheet (accordion shows preview only)
 ✅ **Document Icons**: Visual indicators for file attachments
 
 ### Structured Responses
@@ -488,7 +488,7 @@ The component includes several utility functions moved outside components for pe
 - **`getPreviewText(value, max)`**: Generates truncated preview text from markdown (max 240 chars)
 
 ### Performance Optimizations
-- **React.memo**: All sub-components wrapped for render optimization (MessageAvatar, ProductCard, YouTubeEmbed, ServiceProviderCard, StructuredResponse, MessageContent, FilePreview)
+- **React.memo**: All sub-components wrapped for render optimization (MessageAvatar, ProductCard, DiyVideoTutorialsSection, ServiceProviderCard, StructuredResponse, MessageContent, FilePreview)
 - **useMemo**: Expensive computations cached (provider arrays, dimensions, `getMessageDisplayParts`, section visibility flags)
 - **useCallback**: Event handlers memoized to prevent re-renders (copy, share, long-press, link opening)
 - **Lazy Loading**: Images load with skeleton placeholders using expo-image transitions
@@ -599,7 +599,7 @@ The component reads `contentJson` directly and renders the structured UI when vi
 - All messages are persisted in Firestore for history
 - The UI is designed to be similar to the webapp implementation but optimized for mobile
 - Image dimensions are stored in Firestore for instant aspect ratio calculations
-- YouTube videos are embedded inline using the video ID extracted from URLs
+- Row tap opens sheet with that video first (autoplay); remaining tutorials listed below in original order
 - Service provider data supports multiple API sources (SerpAPI/Google Search, SERP, custom providers)
 - The component gracefully handles missing or incomplete structured data sections
 - Both nested (`analysis.*`) and flat (top-level) structured data formats are supported

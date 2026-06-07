@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Modal, View, ScrollView, Pressable, Platform, useColorScheme } from 'react-native';
+import type { ScrollView as ScrollViewType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -12,6 +13,7 @@ type Props = {
   onDismissed?: () => void;
   title: string;
   children: React.ReactNode;
+  scrollRef?: React.RefObject<ScrollViewType | null>;
 };
 
 export function StructuredReportSheet({
@@ -20,6 +22,7 @@ export function StructuredReportSheet({
   onDismissed,
   title,
   children,
+  scrollRef,
 }: Props) {
   const colorScheme = useColorScheme();
   const backgroundColor = getAppThemeColors(colorScheme === 'dark').background;
@@ -51,6 +54,7 @@ export function StructuredReportSheet({
           </View>
         </View>
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1, backgroundColor }}
           className="px-2 py-3"
           keyboardShouldPersistTaps="handled"
