@@ -24,7 +24,15 @@ import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
-import { deleteCheckpointsBatch, checkpointBulkDeleteFailed, isResourceDeletionFailed } from '@homeapp/common/lib/deletion';
+import {
+  deleteCheckpointsBatch,
+  checkpointBulkDeleteFailed,
+  deletionRetryLabel,
+  isResourceDeletionFailed,
+  markResourcesDeletionFailed,
+} from '@homeapp/common/lib/deletion';
+import { db } from '@/lib/firebase';
+import { doc } from 'firebase/firestore';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger } from '@/lib/logger';
@@ -54,6 +62,7 @@ export function CheckpointList({
     loadMoreCheckpoints,
     hasMoreCheckpoints,
     isLoadingEarlier,
+    deleteCheckpoint,
     markCheckpointsDeleting,
     clearCheckpointsDeleting,
     isCheckpointDeletingOverlay,
@@ -150,6 +159,12 @@ export function CheckpointList({
       });
     } catch (error) {
       checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
+      if (user && property) {
+        const refs = checkpointIds.map((id) =>
+          doc(db, 'users', user.uid, 'properties', property.id, 'checkpoints', id)
+        );
+        await markResourcesDeletionFailed(db, refs, error);
+      }
       toast({
         title: 'Deletion Failed',
         description: checkpointBulkDeleteFailed,
@@ -158,6 +173,17 @@ export function CheckpointList({
     } finally {
       clearCheckpointsDeleting(checkpointIds);
     }
+  };
+
+  const handleRetryDeleteCheckpoint = (checkpoint: Checkpoint) => {
+    void deleteCheckpoint(checkpoint.id).catch((error) => {
+      checkpointLog.error('checkpoint.retryDelete.failed', undefined, error);
+      toast({
+        title: 'Deletion Failed',
+        description: checkpointBulkDeleteFailed,
+        variant: 'destructive',
+      });
+    });
   };
 
   const handleConfirmDelete = (event: React.MouseEvent) => {
@@ -346,6 +372,7 @@ export function CheckpointList({
               selectionMode={selectionMode}
               isDeleting={isCheckpointDeletingOverlay(checkpoint)}
               isDeleteFailed={isResourceDeletionFailed(checkpoint)}
+              onRetryDelete={() => handleRetryDeleteCheckpoint(checkpoint)}
               onClick={() => !selectionMode && onCheckpointClick(checkpoint)}
               onSelect={(selected) => handleSelect(checkpoint.id, selected)}
             />

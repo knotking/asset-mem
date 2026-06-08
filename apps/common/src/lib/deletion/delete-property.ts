@@ -1,7 +1,11 @@
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { GetFirebaseIdToken } from '../correlation-id';
-import { getDeletionJobStatus, startPropertyDeletionJob } from './api-client';
+import {
+  getDeletionJobStatus,
+  retryDeletionJob,
+  startPropertyDeletionJob,
+} from './api-client';
 import { emptyDeletionResult, type DeletionJobResponse, type DeletionResult } from './types';
 
 export type StartPropertyDeletionParams = {
@@ -78,7 +82,69 @@ export async function startPropertyDeletion(
   return { jobId: jobStart.jobId, result };
 }
 
-/** Poll deletion job until completed, failed, or timeout. */
+/** Retry a failed or stale property deletion job when jobId is known. */
+export async function retryPropertyDeletionJob(params: {
+  jobRetryUrl: string;
+  getIdToken: GetFirebaseIdToken;
+  jobId: string;
+  db: Firestore;
+  userId: string;
+  propertyId: string;
+}): Promise<{ jobId?: string; result: DeletionResult }> {
+  const result = emptyDeletionResult();
+  const propertyRef = doc(
+    params.db,
+    'users',
+    params.userId,
+    'properties',
+    params.propertyId
+  );
+
+  const retry = await retryDeletionJob({
+    url: params.jobRetryUrl,
+    getIdToken: params.getIdToken,
+    jobId: params.jobId,
+  });
+
+  if (!retry.job?.jobId) {
+    result.ok = false;
+    result.failed.push({
+      resource: `deletion-job:${params.jobId}`,
+      message: retry.error ?? 'Failed to retry deletion job',
+    });
+    try {
+      await updateDoc(propertyRef, {
+        deletionStatus: 'failed',
+        deletionError: retry.error ?? 'Failed to retry deletion job',
+      });
+    } catch {
+      // ignore
+    }
+    return { result };
+  }
+
+  try {
+    await updateDoc(propertyRef, {
+      deletionStatus: 'deleting',
+      deletionJobId: retry.job.jobId,
+      deletionRequestedAt: serverTimestamp(),
+      deletionError: null,
+    });
+    result.deleted.push(`property-tombstone:${params.propertyId}`);
+    result.deleted.push(`deletion-job-retry:${retry.job.jobId}`);
+  } catch (err) {
+    result.ok = false;
+    result.failed.push({
+      resource: `property-tombstone:${params.propertyId}`,
+      message: err instanceof Error ? err.message : 'tombstone write failed',
+    });
+    return { jobId: retry.job.jobId, result };
+  }
+
+  return { jobId: retry.job.jobId, result };
+}
+
+/** Poll deletion job until completed, failed, stale, or timeout. */
 export async function pollPropertyDeletionJob(
   params: PollPropertyDeletionParams
 ): Promise<DeletionJobResponse | null> {
@@ -96,7 +162,11 @@ export async function pollPropertyDeletionJob(
       await sleep(intervalMs);
       continue;
     }
-    if (status.status === 'completed' || status.status === 'failed') {
+    if (
+      status.status === 'completed' ||
+      status.status === 'failed' ||
+      status.status === 'stale'
+    ) {
       return status;
     }
     await sleep(intervalMs);

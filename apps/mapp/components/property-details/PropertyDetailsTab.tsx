@@ -31,9 +31,11 @@ import {
 import {
   deleteDocumentAsset,
   documentDeleteConfirm,
+  deletionRetryLabel,
   isResourceDeletionFailed,
+  markDocumentDeletionFailed,
   resourceDeletingLabel,
-  resourceDeletionFailedLabel,
+  deletionErrorLabel,
 } from '@homeapp/common/lib/deletion';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
@@ -389,6 +391,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
         setSuccessAlertOpen(true);
       } catch (error) {
         uploadLog.error('document.delete.failed', undefined, error);
+        await markDocumentDeletionFailed(db, user.uid, document.id, error);
         setErrorMessage('Failed to delete document. Please try again.');
         setErrorAlertOpen(true);
       } finally {
@@ -684,11 +687,22 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
                             })()}
 
                           {!isUploading && isDeleteFailed ? (
-                            <View className="mt-2 flex-row items-start gap-1">
-                              <Icon as={AlertCircle} size={16} className="text-destructive" />
-                              <Text className="flex-1 text-xs text-destructive">
-                                {persistedDoc.deletionError || resourceDeletionFailedLabel}
-                              </Text>
+                            <View className="mt-2 gap-2">
+                              <View className="flex-row items-start gap-1">
+                                <Icon as={AlertCircle} size={16} className="text-destructive" />
+                                <Text className="flex-1 text-xs text-destructive">
+                                  {deletionErrorLabel(persistedDoc.deletionError)}
+                                </Text>
+                              </View>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onPress={() => {
+                                  markDocumentsDeleting([persistedDoc.id]);
+                                  void runDeleteDocument(persistedDoc);
+                                }}>
+                                <Text className="text-xs">{deletionRetryLabel}</Text>
+                              </Button>
                             </View>
                           ) : null}
                         </View>

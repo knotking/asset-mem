@@ -9,7 +9,7 @@ import { useProperty } from '@homeapp/common/contexts/property-context';
 import {
   isResourceDeletionFailed,
   resourceDeletingLabel,
-  resourceDeletionFailedLabel,
+  deletionErrorLabel,
 } from '@homeapp/common/lib/deletion';
 
 interface DocumentsDrawerContentProps {
@@ -142,7 +142,7 @@ export function DocumentsDrawerContent({
                   {isDeleteFailed ? (
                     <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/95 px-4">
                       <Text className="text-center text-sm font-medium text-destructive">
-                        {document.deletionError ?? resourceDeletionFailedLabel}
+                        {deletionErrorLabel(document.deletionError)}
                       </Text>
                     </View>
                   ) : null}

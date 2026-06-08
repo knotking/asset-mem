@@ -98,6 +98,22 @@ async def lifespan(app: FastAPI):
     )
     _pubsub_thread.start()
 
+    def _run_deletion_stale_sweep() -> None:
+        try:
+            from services import deletion_service
+
+            marked = deletion_service.sweep_stale_deletion_jobs()
+            if marked:
+                logger.info("deletion stale sweep marked %d job(s) stale", marked)
+        except Exception:
+            logger.exception("deletion stale sweep failed")
+
+    threading.Thread(
+        target=_run_deletion_stale_sweep,
+        name="deletion-stale-sweep",
+        daemon=True,
+    ).start()
+
     yield
 
     _shutdown_pubsub_listener()

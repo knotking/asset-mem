@@ -45,9 +45,12 @@ import {
   sessionDeleteFailed,
   sessionDeleteSuccess,
   sessionsBulkDeleteSuccess,
+  deletionRetryLabel,
   resourceDeletingLabel,
-  resourceDeletionFailedLabel,
+  deletionErrorLabel,
   isResourceDeletionFailed,
+  markResourcesDeletionFailed,
+  markSessionDeletionFailed,
 } from '@homeapp/common/lib/deletion';
 import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
 import { cn } from '@/lib/utils';
@@ -272,6 +275,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         });
       } catch (error) {
         sessionLog.error('sessions.bulkDelete.failed', undefined, error);
+        const refs = sessionIds.map((id) => doc(db, 'users', user.uid, 'chats', id));
+        await markResourcesDeletionFailed(db, refs, error);
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -371,6 +376,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
         toast({ title: 'Session deleted', description: sessionDeleteSuccess });
       } catch (error) {
         sessionLog.error('session.delete.failed', undefined, error);
+        await markSessionDeletionFailed(db, user.uid, session.id, error);
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -381,6 +387,14 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
       }
     },
     [user, sessionId, router, propertyId, toast, clearDeleting]
+  );
+
+  const handleRetryDeleteSession = useCallback(
+    (session: Session) => {
+      markDeleting([session.id]);
+      void runDeleteSession(session);
+    },
+    [markDeleting, runDeleteSession]
   );
 
   const handleConfirmSingleDelete = useCallback(
@@ -811,7 +825,21 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                   <p className="text-xs text-muted-foreground truncate">{messageCountLabel}</p>
                                 )}
                                 {isDeleteFailed ? (
-                                  <p className="text-xs text-destructive truncate">{session.deletionError || resourceDeletionFailedLabel}</p>
+                                  <div className="flex flex-col gap-1">
+                                    <p className="text-xs text-destructive truncate">{deletionErrorLabel(session.deletionError)}</p>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 w-fit px-2 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRetryDeleteSession(session);
+                                      }}
+                                    >
+                                      {deletionRetryLabel}
+                                    </Button>
+                                  </div>
                                 ) : null}
                             </div>
                         </div>

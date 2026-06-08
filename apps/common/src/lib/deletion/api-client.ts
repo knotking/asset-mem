@@ -3,6 +3,10 @@ import {
   proxyFetchWithAuth,
   type GetFirebaseIdToken,
 } from '../correlation-id';
+import {
+  deletionHttpErrorMessage,
+  formatDeletionErrorMessage,
+} from './deletion-error-message';
 import type { DeletionJobResponse, DeletionResult } from './types';
 import { emptyDeletionResult } from './types';
 
@@ -18,6 +22,7 @@ export type DeletionApiUrls = {
   property: string;
   sessionSharedChats: string;
   job: (jobId: string) => string;
+  jobRetry: (jobId: string) => string;
 };
 
 type ProxyJson = {
@@ -74,7 +79,7 @@ async function postDeletionProxy(
       result.ok = false;
       result.failed.push({
         resource: 'proxy',
-        message: text || `status ${response.status}`,
+        message: deletionHttpErrorMessage(response.status, text),
       });
       return result;
     }
@@ -85,7 +90,7 @@ async function postDeletionProxy(
     result.ok = false;
     result.failed.push({
       resource: 'proxy',
-      message: err instanceof Error ? err.message : 'Deletion request failed',
+      message: formatDeletionErrorMessage(err),
     });
     return result;
   }
@@ -232,15 +237,13 @@ export async function startPropertyDeletionJob(params: {
     });
     if (!response.ok) {
       const body = await response.text();
-      return { error: body || `status ${response.status}` };
+      return { error: deletionHttpErrorMessage(response.status, body) };
     }
     const data = await parseJson<{ jobId: string }>(response);
     if (!data.jobId) return { error: 'No jobId in response' };
     return { jobId: data.jobId };
   } catch (err) {
-    return {
-      error: err instanceof Error ? err.message : 'Property deletion job failed',
-    };
+    return { error: formatDeletionErrorMessage(err) };
   }
 }
 
@@ -262,6 +265,30 @@ export async function getDeletionJobStatus(params: {
   }
 }
 
+export async function retryDeletionJob(params: {
+  url: string;
+  getIdToken: GetFirebaseIdToken;
+  jobId: string;
+}): Promise<{ job?: DeletionJobResponse; error?: string }> {
+  if (!params.url) {
+    return { error: 'Deletion job retry URL not configured' };
+  }
+  try {
+    const response = await proxyFetchWithAuth(params.url, params.getIdToken, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      return { error: deletionHttpErrorMessage(response.status, body) };
+    }
+    const job = await parseJson<DeletionJobResponse>(response);
+    return { job };
+  } catch (err) {
+    return { error: formatDeletionErrorMessage(err) };
+  }
+}
+
 export function buildDeletionApiUrls(baseUrl: string): DeletionApiUrls {
   const base = baseUrl.replace(/\/$/, '');
   return {
@@ -276,5 +303,7 @@ export function buildDeletionApiUrls(baseUrl: string): DeletionApiUrls {
     property: `${base}/deletion/property`,
     sessionSharedChats: `${base}/deletion/session-shared-chats`,
     job: (jobId: string) => `${base}/deletion/jobs/${encodeURIComponent(jobId)}`,
+    jobRetry: (jobId: string) =>
+      `${base}/deletion/jobs/${encodeURIComponent(jobId)}/retry`,
   };
 }

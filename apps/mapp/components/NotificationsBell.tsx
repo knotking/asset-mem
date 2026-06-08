@@ -9,6 +9,7 @@ import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
 import { useNotifications } from '@homeapp/common/hooks/use-notifications';
 import {
+  formatDeletionErrorMessage,
   propertyDeleteFailedBody,
   propertyDeleteFailedTitle,
   propertyRemovedToast,
@@ -28,7 +29,10 @@ function notificationBody(
   deletionError?: string
 ): string {
   if (type === 'property_deletion_failed') {
-    return propertyDeleteFailedBody(propertyName ?? 'Property', deletionError);
+    return propertyDeleteFailedBody(
+      propertyName ?? 'Property',
+      deletionError ? formatDeletionErrorMessage(deletionError) : undefined
+    );
   }
   if (type === 'property_deletion_completed') {
     return propertyName ? `"${propertyName}" and its data were removed.` : 'Property removed.';

@@ -49,6 +49,8 @@ class DeletionJobResponse(BaseModel):
     phase: str | None = None
     warnings: list[str] = Field(default_factory=list)
     error: str | None = None
+    attempt: int = 0
+    canRetry: bool = False
 
 
 class DocumentBatchItem(BaseModel):

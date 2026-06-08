@@ -26,7 +26,10 @@ import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as File
 import {
   documentDeleteConfirm,
   documentDeleteFailed,
-  resourceDeletingLabel, resourceDeletionFailedLabel,
+  deletionRetryLabel,
+  markDocumentDeletionFailed,
+  resourceDeletingLabel,
+  deletionErrorLabel,
 } from '@homeapp/common/lib/deletion';
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
 import { Badge } from "@/components/ui/badge";
@@ -58,11 +61,13 @@ function DocumentListItem({
   isDeleting,
   isDeleteFailed,
   onDeleteClick,
+  onRetryClick,
 }: {
   doc: DocumentType;
   isDeleting?: boolean;
   isDeleteFailed?: boolean;
   onDeleteClick: (doc: DocumentType) => void;
+  onRetryClick?: (doc: DocumentType) => void;
 }) {
     const getFileExtension = (contentType: string | undefined) => {
         if (!contentType) return 'DOC';
@@ -96,7 +101,19 @@ function DocumentListItem({
                                     <span>Analyzing...</span>
                                 </div>
                             ) : isDeleteFailed ? (
-                                <p className="mt-2 text-sm text-destructive">{doc.deletionError || resourceDeletionFailedLabel}</p>
+                                <div className="mt-2 space-y-2">
+                                  <p className="text-sm text-destructive">{deletionErrorLabel(doc.deletionError)}</p>
+                                  {onRetryClick ? (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => onRetryClick(doc)}
+                                    >
+                                      {deletionRetryLabel}
+                                    </Button>
+                                  ) : null}
+                                </div>
                             ) : failureSummary ? (
                                 <p className="mt-2 text-sm text-destructive">{failureSummary}</p>
                             ) : (
@@ -234,13 +251,14 @@ function PropertyDetailsContent() {
                 toast({ title: "Document Deleted", description: `"${doc.name}" has been removed.` });
             } catch (error) {
                 propertyLog.error('document.delete.failed', { docId: doc.id }, error);
+                await markDocumentDeletionFailed(db, user.uid, doc.id, error);
                 const errorMessage = error instanceof Error ? error.message : documentDeleteFailed;
                 toast({ variant: "destructive", title: "Deletion Failed", description: errorMessage });
             } finally {
                 clearDeleting([doc.id]);
             }
         },
-        [user, toast, clearDeleting]
+        [user, db, toast, clearDeleting]
     );
 
     const handleConfirmDeleteDocument = useCallback(
@@ -429,6 +447,10 @@ function PropertyDetailsContent() {
                                   isDeleting={isDeletingOverlay(doc)}
                                   isDeleteFailed={isResourceDeletionFailed(doc)}
                                   onDeleteClick={handleOpenDeleteDocumentDialog}
+                                  onRetryClick={(d) => {
+                                    markDeleting([d.id]);
+                                    void runDeleteDocument(d);
+                                  }}
                                 />
                             ))}
                         </div>
