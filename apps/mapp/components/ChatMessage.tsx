@@ -54,7 +54,7 @@ import type {
 } from '@homeapp/common/types';
 import { useAssistantLoadingUi } from '@homeapp/common/hooks/use-assistant-loading-ui';
 import {
-  flattenServiceProviderRawList,
+  collectServiceProviderCandidates,
   isDisplayableServiceProvider,
   isVertexGroundingRedirectUrl,
   stripVertexGroundingUrls,
@@ -236,9 +236,6 @@ const normalizeProvider = (p: any): ServiceProvider | null => {
 };
 
 const providerHasValidData = (provider: unknown): boolean => isDisplayableServiceProvider(provider);
-
-const getProvidersArray = (providers: any): ServiceProvider[] =>
-  flattenServiceProviderRawList(providers) as ServiceProvider[];
 
 const normalizeUrl = (u?: string): string | undefined => {
   if (!u || typeof u !== 'string') return undefined;
@@ -750,17 +747,9 @@ const StructuredResponse = React.memo(
 
   // Memoize allProviders array processing
   const allProviders = useMemo(() => {
-    const allProvidersRaw = [
-      // Keep legacy Yelp fallback for older stored responses.
-      ...getProvidersArray(service?.localPros?.yelpAPIResults),
-      ...getProvidersArray(service?.localPros?.serpAPIResults),
-      ...getProvidersArray(service?.localPros?.googleSearchResults),
-      ...getProvidersArray(service?.providers),
-      ...getProvidersArray(service?.localProviders),
-      ...getProvidersArray(service?.local_pros),
-      ...getProvidersArray(service?.results),
-      ...getProvidersArray(service?.nearbyProviders),
-    ];
+    const allProvidersRaw = collectServiceProviderCandidates(
+      service as Record<string, unknown> | undefined
+    ) as ServiceProvider[];
 
     return allProvidersRaw
       .filter(providerHasValidData)

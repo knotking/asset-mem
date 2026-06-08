@@ -274,3 +274,62 @@ export function flattenServiceProviderRawList(providers: unknown): unknown[] {
 
   return [];
 }
+
+function providerDisplayName(item: Record<string, unknown>): string | undefined {
+  return pickString(
+    item.name,
+    item.business_name,
+    item.businessName,
+    item.title,
+    item.company,
+    item.provider,
+    item.store
+  );
+}
+
+/** Dedupe flattened provider objects by normalized business name (matches agent normalize). */
+export function dedupeServiceProvidersByName(providers: unknown[]): unknown[] {
+  const seen = new Set<string>();
+  const out: unknown[] = [];
+  for (const item of providers) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const name = providerDisplayName(item as Record<string, unknown>);
+    if (!name) continue;
+    const key = name.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+/**
+ * Flatten serviceResults / localPros into one provider list without duplicates.
+ * After agent normalization, `serpAPIResults` is the merged display list (Google + Maps);
+ * `googleSearchResults` repeats the Google rows — do not concatenate both.
+ */
+export function collectServiceProviderCandidates(
+  service: Record<string, unknown> | undefined | null
+): unknown[] {
+  if (!service || typeof service !== 'object') return [];
+
+  const localPros =
+    service.localPros && typeof service.localPros === 'object' && !Array.isArray(service.localPros)
+      ? (service.localPros as Record<string, unknown>)
+      : undefined;
+
+  const yelp = flattenServiceProviderRawList(localPros?.yelpAPIResults);
+  const serp = flattenServiceProviderRawList(localPros?.serpAPIResults);
+  const google = flattenServiceProviderRawList(localPros?.googleSearchResults);
+  const localProsMerged = serp.length > 0 ? serp : google;
+
+  const legacy = [
+    ...flattenServiceProviderRawList(service.providers),
+    ...flattenServiceProviderRawList(service.localProviders),
+    ...flattenServiceProviderRawList(service.local_pros),
+    ...flattenServiceProviderRawList(service.results),
+    ...flattenServiceProviderRawList(service.nearbyProviders),
+  ];
+
+  return dedupeServiceProvidersByName([...yelp, ...localProsMerged, ...legacy]);
+}

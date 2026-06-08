@@ -14,7 +14,7 @@ import { structuredDataHasVisibleSections } from "@/lib/message-display-parts";
 import { extractExecutiveSummaryNarrative } from "@/lib/executive-summary-display";
 import { resolveMessageContentParts } from "@/lib/message-content-parts";
 import {
-  flattenServiceProviderRawList,
+  collectServiceProviderCandidates,
   isDisplayableServiceProvider,
 } from "@/lib/service-providers";
 
@@ -195,18 +195,9 @@ function serializeProvider(
 
 function collectProviders(service: Record<string, unknown> | undefined): ServiceProvider[] {
   if (!service) return [];
-  const localPros = service.localPros as Record<string, unknown> | undefined;
-  const raw = [
-    ...flattenServiceProviderRawList(localPros?.yelpAPIResults),
-    ...flattenServiceProviderRawList(localPros?.serpAPIResults),
-    ...flattenServiceProviderRawList(localPros?.googleSearchResults),
-    ...flattenServiceProviderRawList(service.providers),
-    ...flattenServiceProviderRawList(service.localProviders),
-    ...flattenServiceProviderRawList(service.local_pros),
-    ...flattenServiceProviderRawList(service.results),
-    ...flattenServiceProviderRawList(service.nearbyProviders),
-  ];
-  return raw.filter(isDisplayableServiceProvider).slice(0, 10) as ServiceProvider[];
+  return collectServiceProviderCandidates(service)
+    .filter(isDisplayableServiceProvider)
+    .slice(0, 10) as ServiceProvider[];
 }
 
 function serializeCostEstimates(
