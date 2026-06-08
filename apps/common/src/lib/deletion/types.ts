@@ -25,7 +25,7 @@ export function mergeDeletionResults(...results: DeletionResult[]): DeletionResu
   return merged;
 }
 
-export type DeletionJobStatus = 'running' | 'completed' | 'failed';
+export type DeletionJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'stale';
 
 export type DeletionJobResponse = {
   jobId: string;
@@ -33,6 +33,8 @@ export type DeletionJobResponse = {
   phase?: string;
   warnings?: string[];
   error?: string;
+  attempt?: number;
+  canRetry?: boolean;
 };
 
 export type PropertyDeletionTombstone = {

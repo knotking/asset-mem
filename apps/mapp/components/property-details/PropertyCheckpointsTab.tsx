@@ -47,10 +47,14 @@ import {
 import {
   deleteCheckpointsBatch,
   checkpointBulkDeleteFailed,
+  deletionRetryLabel,
   isResourceDeletionFailed,
+  markResourcesDeletionFailed,
   resourceDeletingLabel,
-  resourceDeletionFailedLabel,
+  deletionErrorLabel,
 } from '@homeapp/common/lib/deletion';
+import { useFirebase } from '@homeapp/common/contexts/firebase-context';
+import { doc } from 'firebase/firestore';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import {
@@ -548,6 +552,7 @@ function CheckpointCard({
   isSelected,
   isDeleting,
   isDeleteFailed,
+  onRetryDelete,
 }: {
   checkpoint: Checkpoint;
   onPress: (checkpoint: Checkpoint) => void;
@@ -556,6 +561,7 @@ function CheckpointCard({
   isSelected?: boolean;
   isDeleting?: boolean;
   isDeleteFailed?: boolean;
+  onRetryDelete?: (checkpoint: Checkpoint) => void;
 }) {
   const media0 = checkpoint.media?.[0];
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
@@ -641,11 +647,18 @@ function CheckpointCard({
             )}
 
             {isDeleteFailed ? (
-              <View className="mt-1 flex-row items-center gap-1">
-                <Icon as={AlertCircle} size={12} className="text-destructive" />
-                <Text className="text-xs text-destructive">
-                  {checkpoint.deletionError || resourceDeletionFailedLabel}
-                </Text>
+              <View className="mt-1 gap-1">
+                <View className="flex-row items-center gap-1">
+                  <Icon as={AlertCircle} size={12} className="text-destructive" />
+                  <Text className="flex-1 text-xs text-destructive">
+                    {deletionErrorLabel(checkpoint.deletionError)}
+                  </Text>
+                </View>
+                {onRetryDelete ? (
+                  <Button variant="outline" size="sm" onPress={() => onRetryDelete(checkpoint)}>
+                    <Text className="text-xs">{deletionRetryLabel}</Text>
+                  </Button>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -699,6 +712,7 @@ export function PropertyCheckpointsTab({
     isCheckpointDeletingOverlay,
   } = useCheckpoint();
   const { user } = useAuth();
+  const { db } = useFirebase();
   const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
   const checkpointLimitMessage = planLimitBlockMessage('checkpoint', checkpointsLimit);
   const { property } = useProperty();
@@ -915,12 +929,28 @@ export function PropertyCheckpointsTab({
         }
       } catch (error) {
         checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
+        if (user && property) {
+          const refs = checkpointIds.map((id) =>
+            doc(db, 'users', user.uid, 'properties', property.id, 'checkpoints', id)
+          );
+          await markResourcesDeletionFailed(db, refs, error);
+        }
         Alert.alert('Error', checkpointBulkDeleteFailed);
       } finally {
         clearCheckpointsDeleting(checkpointIds);
       }
     },
-    [user, property, clearCheckpointsDeleting]
+    [user, property, db, clearCheckpointsDeleting]
+  );
+
+  const handleRetryDeleteCheckpoint = React.useCallback(
+    (checkpoint: Checkpoint) => {
+      void deleteCheckpoint(checkpoint.id).catch((error) => {
+        checkpointLog.error('checkpoint.retryDelete.failed', undefined, error);
+        Alert.alert('Error', checkpointBulkDeleteFailed);
+      });
+    },
+    [deleteCheckpoint]
   );
 
   const confirmDelete = React.useCallback(() => {
@@ -1130,6 +1160,7 @@ export function PropertyCheckpointsTab({
                 isSelected={selectedForActions.includes(item.id)}
                 isDeleting={isCheckpointDeletingOverlay(item)}
                 isDeleteFailed={isResourceDeletionFailed(item)}
+                onRetryDelete={handleRetryDeleteCheckpoint}
               />
             )}
             contentContainerStyle={{ gap: 12, paddingBottom: 16 }}

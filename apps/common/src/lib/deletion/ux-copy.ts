@@ -38,3 +38,9 @@ export const sessionsBulkDeleteSuccess = (count: number) =>
 export const documentDeleteFailed = 'Failed to delete document. Please try again.';
 
 export const resourceDeletionFailedLabel = 'Delete failed';
+
+/** Shown when the proxy is down or the device is offline during a delete. */
+export const deletionServiceUnavailable =
+  'Could not reach the deletion service. Delete did not complete — please try again.';
+
+export const deletionRetryLabel = 'Retry';

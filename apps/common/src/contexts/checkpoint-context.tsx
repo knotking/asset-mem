@@ -347,6 +347,10 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       }
       setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
       setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
+    } catch (error) {
+      const { markCheckpointDeletionFailed } = await import("../lib/deletion");
+      await markCheckpointDeletionFailed(db, user.uid, property.id, id, error);
+      throw error;
     } finally {
       clearCheckpointsDeleting([id]);
     }

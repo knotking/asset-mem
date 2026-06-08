@@ -350,6 +350,8 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
       } catch (error) {
         checkpointLog.error("checkpoint.delete.failed", undefined, error);
+        const { markCheckpointDeletionFailed } = await import("@homeapp/common/lib/deletion");
+        await markCheckpointDeletionFailed(db, user.uid, property.id, id, error);
         throw error;
       } finally {
         clearCheckpointsDeleting([id]);

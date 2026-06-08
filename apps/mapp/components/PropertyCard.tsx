@@ -36,7 +36,13 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { startPropertyDeletion, propertyRemovingLabel } from '@homeapp/common/lib/deletion';
+import {
+  startPropertyDeletion,
+  retryPropertyDeletionJob,
+  propertyRemovingLabel,
+  deletionErrorLabel,
+  markPropertyDeletionFailed,
+} from '@homeapp/common/lib/deletion';
 import { createLogger } from '@/lib/logger';
 import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
@@ -54,6 +60,7 @@ interface PropertyCardProps {
   id: string;
   docGsURIs?: string[]; // Storage URIs for property documents
   deletionStatus?: 'deleting' | 'failed';
+  deletionJobId?: string;
   deletionError?: string | null;
   onPress?: () => void;
 }
@@ -68,6 +75,7 @@ export default function PropertyCard({
   id,
   docGsURIs = [],
   deletionStatus,
+  deletionJobId,
   deletionError,
   onPress,
 }: PropertyCardProps) {
@@ -81,7 +89,15 @@ export default function PropertyCard({
   const isRemoving = deletionStatus === 'deleting' || isStartingDelete;
   const isFailed = deletionStatus === 'failed';
 
+  React.useEffect(() => {
+    if (deletionStatus === 'failed') {
+      isStartingDeleteRef.current = false;
+      setIsStartingDelete(false);
+    }
+  }, [deletionStatus]);
+
   const handlePress = () => {
+    if (isRemoving) return;
     if (onPress) {
       onPress();
     } else {
@@ -116,13 +132,23 @@ export default function PropertyCard({
     setIsStartingDelete(true);
 
     try {
-      const { jobId, result } = await startPropertyDeletion({
-        db,
-        userId: user.uid,
-        propertyId: id,
-        propertyDeleteUrl: deletionUrls.property,
-        getIdToken: getFirebaseIdTokenForProxy,
-      });
+      const useJobRetry = isFailed && deletionJobId;
+      const { jobId, result } = useJobRetry
+        ? await retryPropertyDeletionJob({
+            db,
+            userId: user.uid,
+            propertyId: id,
+            jobId: deletionJobId,
+            jobRetryUrl: deletionUrls.jobRetry(deletionJobId),
+            getIdToken: getFirebaseIdTokenForProxy,
+          })
+        : await startPropertyDeletion({
+            db,
+            userId: user.uid,
+            propertyId: id,
+            propertyDeleteUrl: deletionUrls.property,
+            getIdToken: getFirebaseIdTokenForProxy,
+          });
 
       if (!result.ok || !jobId) {
         throw new Error(result.failed[0]?.message ?? 'Failed to start property deletion');
@@ -131,6 +157,7 @@ export default function PropertyCard({
       setDeleteDialogOpen(false);
     } catch (error) {
       propertyLog.error('property.delete.failed', undefined, error);
+      await markPropertyDeletionFailed(db, user.uid, id, error);
       const errMsg = error instanceof Error ? error.message : 'An unknown error occurred.';
       setDeleteDialogOpen(false);
       setErrorMessage(`Failed to delete property: ${errMsg}`);
@@ -159,7 +186,7 @@ export default function PropertyCard({
 
       <Pressable
         onPress={handlePress}
-        disabled={isRemoving || isFailed}
+        disabled={isRemoving}
         className="relative mb-4"
         android_ripple={{ color: 'rgba(0, 0, 0, 0.05)' }}
         style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
@@ -281,7 +308,9 @@ export default function PropertyCard({
                 Removal failed
               </Text>
               {deletionError ? (
-                <Text className="mb-3 text-center text-xs text-muted-foreground">{deletionError}</Text>
+                <Text className="mb-3 text-center text-xs text-muted-foreground">
+                  {deletionErrorLabel(deletionError)}
+                </Text>
               ) : null}
               <Button size="sm" onPress={handleDelete}>
                 <Text>Retry</Text>

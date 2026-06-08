@@ -7,6 +7,7 @@ import os
 import threading
 import time
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from common.observability.logging_context import get_correlation_id
@@ -26,6 +27,9 @@ FIRESTORE_COMMIT_MAX_ATTEMPTS = 5
 FIRESTORE_COMMIT_RETRY_BASE_SECONDS = 1.0
 # Client uploads (documents/, uploads/) live in the Firebase Storage bucket — not GCS_BUCKET.
 GCS_USER_DATA_BUCKET_ENV_KEYS = ("GCS_BUCKET",)
+JOB_LEASE_SECONDS = int(os.environ.get("DELETION_JOB_LEASE_SECONDS", "600"))
+_STALE_JOB_ERROR = "Deletion job became stale (server restarted or timed out)"
+
 _TRANSIENT_FIRESTORE_MARKERS = (
     "stream removed",
     "connection reset",
@@ -76,6 +80,37 @@ def _property_job_id(property_id: str) -> str:
     return f"property_{property_id}"
 
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _firestore_timestamp_to_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if hasattr(value, "timestamp"):
+        return datetime.fromtimestamp(value.timestamp(), tz=timezone.utc)
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _is_job_lease_expired(data: dict[str, Any], *, now: datetime | None = None) -> bool:
+    lease = _firestore_timestamp_to_datetime(data.get("leaseExpiresAt"))
+    if lease is None:
+        return True
+    now = now or _utcnow()
+    return lease < now
+
+
+def can_retry_deletion_job(data: dict[str, Any], *, now: datetime | None = None) -> bool:
+    status = data.get("status")
+    if status in ("failed", "stale"):
+        return True
+    if status == "running":
+        return _is_job_lease_expired(data, now=now)
+    return False
+
+
 def _update_job(
     db: firestore.Client,
     user_id: str,
@@ -98,6 +133,10 @@ def _update_job(
         payload["error"] = error
     if status == "completed":
         payload["completedAt"] = firestore.SERVER_TIMESTAMP
+    if status == "running":
+        now = _utcnow()
+        payload["lastHeartbeatAt"] = now
+        payload["leaseExpiresAt"] = now + timedelta(seconds=JOB_LEASE_SECONDS)
     _commit_with_retry(lambda: _job_ref(db, user_id, job_id).set(payload, merge=True))
 
 
@@ -695,25 +734,34 @@ def start_property_deletion_job(user_id: str, property_id: str) -> str:
     db = firestore.Client()
     job_id = _property_job_id(property_id)
     job_doc = _job_ref(db, user_id, job_id).get()
+    prior_attempt = 0
     if job_doc.exists:
         data = job_doc.to_dict() or {}
-        if data.get("status") == "running":
+        status = data.get("status")
+        if status == "running" and not _is_job_lease_expired(data):
             return job_id
+        if status == "completed":
+            return job_id
+        prior_attempt = int(data.get("attempt") or 0)
 
-    _job_ref(db, user_id, job_id).set(
-        {
-            "jobId": job_id,
-            "type": "property",
-            "propertyId": property_id,
-            "userId": user_id,
-            "status": "running",
-            "phase": "queued",
-            "warnings": [],
-            "startedAt": firestore.SERVER_TIMESTAMP,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-        },
-        merge=True,
-    )
+    now = _utcnow()
+    payload: dict[str, Any] = {
+        "jobId": job_id,
+        "type": "property",
+        "propertyId": property_id,
+        "userId": user_id,
+        "status": "running",
+        "phase": "queued",
+        "warnings": [],
+        "startedAt": firestore.SERVER_TIMESTAMP,
+        "attempt": prior_attempt + 1,
+        "lastHeartbeatAt": now,
+        "leaseExpiresAt": now + timedelta(seconds=JOB_LEASE_SECONDS),
+        "error": firestore.DELETE_FIELD,
+    }
+    if not job_doc.exists:
+        payload["createdAt"] = firestore.SERVER_TIMESTAMP
+    _commit_with_retry(lambda: _job_ref(db, user_id, job_id).set(payload, merge=True))
 
     prop_ref = (
         db.collection("users")
@@ -754,6 +802,8 @@ def get_deletion_job(user_id: str, job_id: str) -> dict[str, Any] | None:
         "phase": data.get("phase"),
         "warnings": data.get("warnings") or [],
         "error": data.get("error"),
+        "attempt": int(data.get("attempt") or 0),
+        "canRetry": can_retry_deletion_job(data),
     }
 
 
@@ -870,24 +920,33 @@ def start_user_erasure_job(user_id: str) -> str:
     db = firestore.Client()
     job_id = f"user_{user_id}"
     job_doc = _job_ref(db, user_id, job_id).get()
+    prior_attempt = 0
     if job_doc.exists:
         data = job_doc.to_dict() or {}
-        if data.get("status") == "running":
+        status = data.get("status")
+        if status == "running" and not _is_job_lease_expired(data):
             return job_id
+        if status == "completed":
+            return job_id
+        prior_attempt = int(data.get("attempt") or 0)
 
-    _job_ref(db, user_id, job_id).set(
-        {
-            "jobId": job_id,
-            "type": "user",
-            "userId": user_id,
-            "status": "running",
-            "phase": "queued",
-            "warnings": [],
-            "startedAt": firestore.SERVER_TIMESTAMP,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-        },
-        merge=True,
-    )
+    now = _utcnow()
+    payload: dict[str, Any] = {
+        "jobId": job_id,
+        "type": "user",
+        "userId": user_id,
+        "status": "running",
+        "phase": "queued",
+        "warnings": [],
+        "startedAt": firestore.SERVER_TIMESTAMP,
+        "attempt": prior_attempt + 1,
+        "lastHeartbeatAt": now,
+        "leaseExpiresAt": now + timedelta(seconds=JOB_LEASE_SECONDS),
+        "error": firestore.DELETE_FIELD,
+    }
+    if not job_doc.exists:
+        payload["createdAt"] = firestore.SERVER_TIMESTAMP
+    _commit_with_retry(lambda: _job_ref(db, user_id, job_id).set(payload, merge=True))
 
     thread = threading.Thread(
         target=_run_user_erasure_job,
@@ -895,6 +954,163 @@ def start_user_erasure_job(user_id: str) -> str:
         daemon=True,
     )
     thread.start()
+    return job_id
+
+
+def _mark_deletion_job_stale(
+    db: firestore.Client,
+    user_id: str,
+    job_id: str,
+    data: dict[str, Any],
+) -> None:
+    _update_job(
+        db,
+        user_id,
+        job_id,
+        status="stale",
+        phase=data.get("phase"),
+        error=_STALE_JOB_ERROR,
+    )
+    if data.get("type") != "property":
+        return
+
+    property_id = str(data.get("propertyId") or job_id.removeprefix("property_"))
+    prop_ref = (
+        db.collection("users")
+        .document(user_id)
+        .collection("properties")
+        .document(property_id)
+    )
+    property_name = _property_display_name(prop_ref)
+    try:
+        _commit_with_retry(
+            lambda: prop_ref.set(
+                {
+                    "deletionStatus": "failed",
+                    "deletionError": _STALE_JOB_ERROR,
+                    "deletionJobId": job_id,
+                },
+                merge=True,
+            )
+        )
+    except Exception:
+        logger.warning(
+            "could not mark stale property tombstone user=%s property=%s",
+            user_id,
+            property_id,
+        )
+    _write_deletion_notification(
+        db,
+        user_id,
+        notification_type="property_deletion_failed",
+        property_id=property_id,
+        property_name=property_name,
+        job_id=job_id,
+        deletion_error=_STALE_JOB_ERROR,
+        action_required=True,
+    )
+
+
+def sweep_stale_deletion_jobs() -> int:
+    """Mark running jobs with expired leases as stale (proxy startup / ops)."""
+    db = firestore.Client()
+    now = _utcnow()
+    marked = 0
+    query = db.collection_group("deletionJobs").where(
+        filter=FieldFilter("status", "==", "running")
+    )
+    try:
+        for snap in query.stream():
+            data = snap.to_dict() or {}
+            if not _is_job_lease_expired(data, now=now):
+                continue
+            parts = snap.reference.path.split("/")
+            if len(parts) < 4 or parts[0] != "users" or parts[2] != "deletionJobs":
+                continue
+            user_id = parts[1]
+            job_id = parts[3]
+            _mark_deletion_job_stale(db, user_id, job_id, data)
+            marked += 1
+    except api_exceptions.FailedPrecondition as exc:
+        logger.warning(
+            "deletion stale sweep skipped: deploy Firestore COLLECTION_GROUP index on "
+            "deletionJobs.status (firebase deploy --only firestore:indexes). error=%s",
+            exc,
+        )
+        return 0
+    return marked
+
+
+def _start_deletion_job_thread(user_id: str, job_id: str, data: dict[str, Any]) -> None:
+    job_type = data.get("type")
+    if job_type == "property":
+        property_id = str(data.get("propertyId") or job_id.removeprefix("property_"))
+        target = _run_property_deletion_job
+        args = (user_id, property_id, job_id)
+    elif job_type == "user":
+        target = _run_user_erasure_job
+        args = (user_id, job_id)
+    else:
+        raise ValueError(f"Unknown deletion job type: {job_type!r}")
+
+    thread = threading.Thread(target=target, args=args, daemon=True)
+    thread.start()
+
+
+def retry_deletion_job(user_id: str, job_id: str) -> str:
+    db = firestore.Client()
+    snap = _job_ref(db, user_id, job_id).get()
+    if not snap.exists:
+        raise ValueError("Job not found")
+    data = snap.to_dict() or {}
+    if not can_retry_deletion_job(data):
+        raise ValueError("Job cannot be retried")
+
+    prior_attempt = int(data.get("attempt") or 0)
+    now = _utcnow()
+    _commit_with_retry(
+        lambda: _job_ref(db, user_id, job_id).set(
+            {
+                "status": "running",
+                "phase": "queued",
+                "error": firestore.DELETE_FIELD,
+                "attempt": prior_attempt + 1,
+                "lastHeartbeatAt": now,
+                "leaseExpiresAt": now + timedelta(seconds=JOB_LEASE_SECONDS),
+                "updatedAt": firestore.SERVER_TIMESTAMP,
+            },
+            merge=True,
+        )
+    )
+
+    if data.get("type") == "property":
+        property_id = str(data.get("propertyId") or job_id.removeprefix("property_"))
+        prop_ref = (
+            db.collection("users")
+            .document(user_id)
+            .collection("properties")
+            .document(property_id)
+        )
+        try:
+            _commit_with_retry(
+                lambda: prop_ref.set(
+                    {
+                        "deletionStatus": "deleting",
+                        "deletionJobId": job_id,
+                        "deletionError": firestore.DELETE_FIELD,
+                    },
+                    merge=True,
+                )
+            )
+        except Exception:
+            logger.warning(
+                "could not reset property tombstone on retry user=%s property=%s",
+                user_id,
+                property_id,
+            )
+
+    refreshed = _job_ref(db, user_id, job_id).get().to_dict() or data
+    _start_deletion_job_thread(user_id, job_id, refreshed)
     return job_id
 
 

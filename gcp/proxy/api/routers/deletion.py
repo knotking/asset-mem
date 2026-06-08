@@ -243,6 +243,25 @@ async def deletion_job_status(
     return DeletionJobResponse(**job)
 
 
+@router.post(
+    "/deletion/jobs/{job_id}/retry",
+    summary="Retry a failed, stale, or expired deletion job",
+    response_model=DeletionJobResponse,
+)
+async def deletion_job_retry(
+    job_id: str,
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_DOCUMENTS))],
+):
+    try:
+        deletion_service.retry_deletion_job(uid, job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    job = deletion_service.get_deletion_job(uid, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return DeletionJobResponse(**job)
+
+
 @router.get("/deletion/audit", summary="List deletion audit events (admin or self)")
 async def deletion_audit_list(
     uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_DOCUMENTS))],

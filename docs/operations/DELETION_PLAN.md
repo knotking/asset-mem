@@ -37,7 +37,7 @@ Supersedes the Cursor plan `complete_delete_flows` and the former standalone ops
 | **8** | Bulk delete APIs (checkpoints, documents, sessions) | Done |
 | **9** | Delete audit trail (Firestore + Cloud Logging) | Done |
 | **10** | UX polish (confirm, progress, failures, bell inbox) | Done |
-| **11** | Deletion resilience (durable jobs, stale recovery, proxy-only cleanup) | Planned |
+| **11** | Deletion resilience (durable jobs, stale recovery, proxy-only cleanup) | In progress (11.1–11.2 done) |
 
 ---
 
@@ -306,6 +306,7 @@ Extend `users/{uid}/deletionJobs/{jobId}`:
 
 - Refresh `lastHeartbeatAt` / `leaseExpiresAt` at each phase boundary in `_run_property_deletion_job` / `_run_user_erasure_job`.
 - **Startup sweep** (proxy lifespan in `core/events.py`): `status === 'running'` and `leaseExpiresAt < now` → `stale`; property tombstone → `failed`; write `property_deletion_failed` notification.
+- **Firestore index:** single-field `fieldOverrides` for `deletionJobs.status` (`COLLECTION_GROUP`) in `apps/webapp/firestore.indexes.json` — deploy with `firebase deploy --only firestore:indexes` before relying on sweep in staging/prod.
 
 **New endpoint:** `POST /deletion/jobs/{jobId}/retry` when `failed | stale`, or `running` with expired lease.
 
@@ -361,12 +362,12 @@ Align production paths with proxy-only policy:
 
 ### Phase 11 checklist
 
-- [ ] No stuck `deletionStatus: 'deleting'` on proxy/client errors (sync resources)
-- [ ] Property/user jobs survive Cloud Run recycle (Pub/Sub worker)
-- [ ] Stale jobs → `failed` + notification + user retry
+- [x] **11.1** No stuck `deletionStatus: 'deleting'` on proxy/client errors (sync resources); retry UI on failed rows; property card navigable when `failed`
+- [x] **11.2** Stale jobs → heartbeat, sweep, `POST /deletion/jobs/{id}/retry`
+- [ ] **11.3** Property/user jobs survive Cloud Run recycle (Pub/Sub worker)
 - [ ] Saved provider remove still client `deleteDoc` only
-- [ ] Document/checkpoint/session have no production client delete fallback
-- [ ] `verify-deletion.py` detects and retries stale jobs
+- [ ] **11.6** Document/checkpoint/session have no production client delete fallback
+- [ ] **11.4** `verify-deletion.py` detects and retries stale jobs
 - [ ] `DELETION_PLAN.md` remains single source of truth
 
 ---
@@ -482,8 +483,7 @@ See [Phase 11 checklist](#phase-11-checklist).
 
 **Next (Phase 11):**
 
-1. **11.1 + 11.2** — tombstone failures, retry UI/API, job heartbeat, stale sweep
-2. **11.3** — Pub/Sub `deletion_job` worker
+1. **11.3** — Pub/Sub `deletion_job` worker
 3. **11.4** — reconciler + verify scripts + deploy env
 4. **11.6** — proxy-only cleanup (document/checkpoint/session; **not** saved providers)
 5. **11.5** — prod min instances + alerts

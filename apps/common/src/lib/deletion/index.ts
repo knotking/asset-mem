@@ -8,3 +8,5 @@ export * from './delete-session';
 export * from './delete-property';
 export * from './ux-copy';
 export * from './resource-deletion-status';
+export * from './mark-resource-deletion-failed';
+export * from './deletion-error-message';

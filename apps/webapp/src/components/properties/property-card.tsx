@@ -19,7 +19,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
-import { startPropertyDeletion, propertyRemovingLabel } from '@homeapp/common/lib/deletion';
+import {
+  startPropertyDeletion,
+  retryPropertyDeletionJob,
+  propertyRemovingLabel,
+  deletionErrorLabel,
+  markPropertyDeletionFailed,
+} from '@homeapp/common/lib/deletion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
@@ -67,6 +73,12 @@ export function PropertyCard({ property }: { property: Property }) {
     const isRemoving = property.deletionStatus === 'deleting' || isStartingDelete;
     const isFailed = property.deletionStatus === 'failed';
 
+    React.useEffect(() => {
+      if (property.deletionStatus === 'failed') {
+        setIsStartingDelete(false);
+      }
+    }, [property.deletionStatus]);
+
     const docCount = property.documents?.length || 0;
     const servicesCount = property.servicesCount || 0;
     const checksCount = property.checksCount || 0;
@@ -75,7 +87,7 @@ export function PropertyCard({ property }: { property: Property }) {
     const Icon = propertyType === 'House' ? Home : Building;
 
     const handleCardClick = () => {
-        if (isRemoving || isFailed) return;
+        if (isRemoving) return;
         router.push(`/home/properties/${property.id}/chat`);
     };
 
@@ -92,13 +104,23 @@ export function PropertyCard({ property }: { property: Property }) {
 
         try {
             const deletionUrls = getWebDeletionApiUrls();
-            const { jobId, result } = await startPropertyDeletion({
-                db,
-                userId: user.uid,
-                propertyId: property.id,
-                propertyDeleteUrl: deletionUrls.property,
-                getIdToken: getFirebaseIdTokenForProxy,
-            });
+            const useJobRetry = isFailed && property.deletionJobId;
+            const { jobId, result } = useJobRetry
+                ? await retryPropertyDeletionJob({
+                    db,
+                    userId: user.uid,
+                    propertyId: property.id,
+                    jobId: property.deletionJobId!,
+                    jobRetryUrl: deletionUrls.jobRetry(property.deletionJobId!),
+                    getIdToken: getFirebaseIdTokenForProxy,
+                  })
+                : await startPropertyDeletion({
+                    db,
+                    userId: user.uid,
+                    propertyId: property.id,
+                    propertyDeleteUrl: deletionUrls.property,
+                    getIdToken: getFirebaseIdTokenForProxy,
+                  });
 
             if (!result.ok || !jobId) {
                 throw new Error(result.failed[0]?.message ?? 'Failed to start property deletion');
@@ -111,6 +133,7 @@ export function PropertyCard({ property }: { property: Property }) {
             });
         } catch (error) {
             propertyLog.error('property.delete.failed', undefined, error);
+            await markPropertyDeletionFailed(db, user.uid, property.id, error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
             setIsDeleteDialogOpen(false);
             setIsStartingDelete(false);
@@ -125,7 +148,7 @@ export function PropertyCard({ property }: { property: Property }) {
               onClick={handleCardClick}
               className={cn(
                 'relative flex flex-col transition-shadow group',
-                isRemoving || isFailed ? 'cursor-default opacity-90' : 'cursor-pointer hover:shadow-lg'
+                isRemoving ? 'cursor-default opacity-90' : 'cursor-pointer hover:shadow-lg'
               )}
             >
                 <CardContent className="p-4 flex-1 flex flex-col gap-4">
@@ -169,7 +192,9 @@ export function PropertyCard({ property }: { property: Property }) {
                   <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-background/95 px-4 text-center">
                     <p className="mb-2 text-sm font-medium text-destructive">Removal failed</p>
                     {property.deletionError ? (
-                      <p className="mb-3 text-xs text-muted-foreground">{property.deletionError}</p>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        {deletionErrorLabel(property.deletionError)}
+                      </p>
                     ) : null}
                     <Button
                         size="sm"

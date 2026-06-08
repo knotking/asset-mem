@@ -3,7 +3,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Camera, Video, Loader2 } from 'lucide-react';
-import { resourceDeletingLabel, resourceDeletionFailedLabel } from '@homeapp/common/lib/deletion';
+import {
+  deletionRetryLabel,
+  resourceDeletingLabel,
+  deletionErrorLabel,
+} from '@homeapp/common/lib/deletion';
+import { Button } from '@/components/ui/button';
 import {
   checkpointFailureBadgeLabel,
   getCheckpointAnalysisFailureMessage,
@@ -21,6 +26,7 @@ interface CheckpointCardProps {
   selectionMode?: boolean;
   isDeleting?: boolean;
   isDeleteFailed?: boolean;
+  onRetryDelete?: () => void;
 }
 
 export function CheckpointCard({
@@ -31,6 +37,7 @@ export function CheckpointCard({
   selectionMode = false,
   isDeleting = false,
   isDeleteFailed = false,
+  onRetryDelete,
 }: CheckpointCardProps) {
   const createdAt = checkpoint.createdAt?.toDate
     ? checkpoint.createdAt.toDate()
@@ -149,7 +156,23 @@ export function CheckpointCard({
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>
               )}
               {isDeleteFailed ? (
-                <p className="mt-1 text-xs text-destructive">{checkpoint.deletionError || resourceDeletionFailedLabel}</p>
+                <div className="mt-1 space-y-1">
+                  <p className="text-xs text-destructive">{deletionErrorLabel(checkpoint.deletionError)}</p>
+                  {onRetryDelete ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRetryDelete();
+                      }}
+                    >
+                      {deletionRetryLabel}
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
 

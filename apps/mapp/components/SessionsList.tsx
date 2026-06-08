@@ -46,9 +46,12 @@ import {
   sessionDeleteFailed,
   sessionDeleteSuccess,
   sessionsBulkDeleteSuccess,
+  deletionRetryLabel,
   isResourceDeletionFailed,
+  markResourcesDeletionFailed,
+  markSessionDeletionFailed,
   resourceDeletingLabel,
-  resourceDeletionFailedLabel,
+  deletionErrorLabel,
 } from '@homeapp/common/lib/deletion';
 import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
 import { cn } from '@/lib/utils';
@@ -93,6 +96,7 @@ const SessionItem = React.memo(({
   handleOpenShareDialog,
   handleOpenRenameDialog,
   setSessionToDelete,
+  onRetryDelete,
 }: {
   session: Session;
   isSelected: boolean;
@@ -104,6 +108,7 @@ const SessionItem = React.memo(({
   handleOpenShareDialog: (session: Session) => void;
   handleOpenRenameDialog: (session: Session) => void;
   setSessionToDelete: (session: Session) => void;
+  onRetryDelete?: (session: Session) => void;
 }) => {
   const handlePress = () => onPress(session);
   const handleLongPress = () => onLongPress(session);
@@ -139,9 +144,16 @@ const SessionItem = React.memo(({
               <Text className="text-xs text-muted-foreground">{messageCountLabel}</Text>
             )}
             {isDeleteFailed ? (
-              <Text className="text-xs text-destructive">
-                {session.deletionError || resourceDeletionFailedLabel}
-              </Text>
+              <View className="gap-1">
+                <Text className="text-xs text-destructive">
+                  {deletionErrorLabel(session.deletionError)}
+                </Text>
+                {onRetryDelete ? (
+                  <Button variant="outline" size="sm" onPress={() => onRetryDelete(session)}>
+                    <Text className="text-xs">{deletionRetryLabel}</Text>
+                  </Button>
+                ) : null}
+              </View>
             ) : null}
           </View>
         </View>
@@ -372,12 +384,14 @@ export default function SessionsList({
         showAlert('Success', sessionsBulkDeleteSuccess(sessionIds.length));
       } catch (error) {
         sessionLog.error('sessions.bulkDelete.failed', undefined, error);
+        const refs = sessionIds.map((id) => doc(db, 'users', user.uid, 'chats', id));
+        await markResourcesDeletionFailed(db, refs, error);
         showAlert('Error', 'Could not delete the selected chat sessions. Please try again.');
       } finally {
         clearDeleting(sessionIds);
       }
     },
-    [user, showAlert, clearDeleting]
+    [user, db, showAlert, clearDeleting]
   );
 
   const handleConfirmBulkDelete = useCallback(() => {
@@ -443,12 +457,21 @@ export default function SessionsList({
         showAlert('Success', sessionDeleteSuccess);
       } catch (error) {
         sessionLog.error('session.delete.failed', undefined, error);
+        await markSessionDeletionFailed(db, user.uid, session.id, error);
         showAlert('Error', sessionDeleteFailed);
       } finally {
         clearDeleting([session.id]);
       }
     },
-    [user, showAlert, clearDeleting]
+    [user, db, showAlert, clearDeleting]
+  );
+
+  const handleRetryDeleteSession = useCallback(
+    (session: Session) => {
+      markDeleting([session.id]);
+      void runDeleteSession(session);
+    },
+    [markDeleting, runDeleteSession]
   );
 
   const handleConfirmSingleDelete = useCallback(() => {
@@ -650,6 +673,7 @@ export default function SessionsList({
               handleOpenShareDialog={handleOpenShareDialog}
               handleOpenRenameDialog={handleOpenRenameDialog}
               setSessionToDelete={handleOpenDeleteSessionDialog}
+              onRetryDelete={handleRetryDeleteSession}
             />
           )}
           contentContainerStyle={{ gap: 16, paddingBottom: 16 }}

@@ -164,6 +164,7 @@ export default function Screen() {
                 checksCount={property.checks || 0}
                 docGsURIs={property.docGsURIs || []}
                 deletionStatus={property.deletionStatus}
+                deletionJobId={property.deletionJobId}
                 deletionError={property.deletionError}
               />
             ))
