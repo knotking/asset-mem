@@ -10,13 +10,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
-import { useNotifications } from '@homeapp/common/hooks/use-notifications';
+import { useNotifications } from '@/hooks/use-notifications';
 import {
   formatDeletionErrorMessage,
   propertyDeleteFailedBody,
   propertyDeleteFailedTitle,
   propertyRemovedToast,
-} from '@homeapp/common/lib/deletion';
+} from '@/lib/deletion';
 
 function notificationTitle(type: string, propertyName?: string): string {
   if (type === 'property_deletion_failed') return propertyDeleteFailedTitle;

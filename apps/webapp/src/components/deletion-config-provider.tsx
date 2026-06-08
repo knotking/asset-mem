@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { DeletionConfigProvider } from '@homeapp/common/contexts/deletion-config-context';
+import { DeletionConfigProvider } from '@/contexts/deletion-config-context';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 

@@ -34,6 +34,23 @@ jest.mock('@/lib/api', () => ({
   WEB_APP_URL: 'https://example.com',
 }));
 
+jest.mock('@/lib/proxy-auth', () => ({
+  getFirebaseIdTokenForProxy: jest.fn(async () => 'test-token'),
+}));
+
+jest.mock('@/lib/deletion-api', () => ({
+  getMappDeletionApiUrls: jest.fn(() => null),
+}));
+
+jest.mock('@homeapp/common/hooks/use-optimistic-deletion-overlay', () => ({
+  useOptimisticDeletionOverlay: () => ({
+    markDeleting: jest.fn(),
+    clearDeleting: jest.fn(),
+    isDeletingOverlay: () => false,
+    optimisticIds: new Set(),
+  }),
+}));
+
 const mockUseSession = jest.mocked(
   require('@homeapp/common/contexts/session-context').useSession
 );

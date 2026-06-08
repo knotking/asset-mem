@@ -7,7 +7,7 @@ import {
   deletionRetryLabel,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
+} from '@/lib/deletion';
 import { Button } from '@/components/ui/button';
 import {
   checkpointFailureBadgeLabel,

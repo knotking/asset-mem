@@ -28,8 +28,8 @@ import {
   getDoc,
   deleteDoc,
 } from 'firebase/firestore';
+import { deleteDocumentAsset } from '@homeapp/common/lib/deletion/delete-document';
 import {
-  deleteDocumentAsset,
   documentDeleteConfirm,
   deletionRetryLabel,
   isResourceDeletionFailed,
