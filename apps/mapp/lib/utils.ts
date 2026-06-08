@@ -1,30 +1,15 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { query, getDocs, writeBatch, type CollectionReference, type Firestore } from 'firebase/firestore';
+import type { CollectionReference, Firestore } from 'firebase/firestore';
+import { deleteAllInCollection } from '@homeapp/common/lib/deletion';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/**
- * Deletes all documents in a Firestore collection using batched writes
- * @param db Firestore instance
- * @param collectionRef The collection reference to delete documents from
- */
+/** @deprecated Prefer deleteAllInCollection from @homeapp/common/lib/deletion */
 export async function deleteCollection(db: Firestore, collectionRef: CollectionReference) {
-  const q = query(collectionRef);
-  const querySnapshot = await getDocs(q);
-
-  if (querySnapshot.size === 0) {
-    return; // No documents to delete
-  }
-
-  const batch = writeBatch(db);
-  querySnapshot.docs.forEach(doc => {
-    batch.delete(doc.ref);
-  });
-
-  await batch.commit();
+  await deleteAllInCollection(db, collectionRef);
 }
 
 /**

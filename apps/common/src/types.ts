@@ -98,6 +98,11 @@ export type Message = {
 };
 
 export type Session = {
+  /** Set by proxy while a sync delete is in flight or after failure. */
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   name: string;
   createdAt: Timestamp;
@@ -342,6 +347,11 @@ export type StructuredResponseData = {
 };
 
 export type Document = {
+  /** Set by proxy while a sync delete is in flight or after failure. */
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   userId: string;
   propertyId: string;
@@ -412,9 +422,19 @@ export type Property = {
   checksCount?: number;
   checkpoints?: number;
   checkpointsCount?: number;
+  /** Set while server-side property deletion job is running. */
+  deletionStatus?: 'deleting' | 'failed';
+  deletionJobId?: string;
+  deletionRequestedAt?: Timestamp;
+  deletionError?: string;
 };
 
 export type Checkpoint = {
+  /** Set by proxy while a sync delete is in flight or after failure. */
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   userId: string;
   propertyId: string;

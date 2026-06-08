@@ -33,6 +33,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useProperty } from "@/contexts/property-context";
 import { useFirebase } from "@/contexts/firebase-context";
 import { createLogger, truncateId } from "@/lib/logger";
+import { useDeletionConfig } from "@homeapp/common/contexts/deletion-config-context";
+import { useOptimisticDeletionOverlay } from "@homeapp/common/hooks/use-optimistic-deletion-overlay";
 
 const checkpointLog = createLogger("checkpoint");
 
@@ -82,6 +84,11 @@ interface CheckpointContextType {
   updateCheckpoint: (id: string, data: Partial<Checkpoint>) => Promise<void>;
   deleteCheckpoint: (id: string) => Promise<void>;
   compareCheckpoints: (id1: string, id2: string) => Promise<void>;
+  markCheckpointsDeleting: (ids: string[]) => void;
+  clearCheckpointsDeleting: (ids: string[]) => void;
+  isCheckpointDeletingOverlay: (
+    checkpoint: Pick<Checkpoint, "id" | "deletionStatus"> | null | undefined
+  ) => boolean;
 }
 
 const CheckpointContext = createContext<CheckpointContextType | undefined>(
@@ -99,7 +106,6 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
   const [hasMoreCheckpoints, setHasMoreCheckpoints] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] =
     useState<Checkpoint | null>(null);
-
   const liveTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
   const olderTailRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
   const olderPageFullRef = useRef(false);
@@ -307,27 +313,59 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     [user, property, db]
   );
 
+  const deletionConfig = useDeletionConfig();
+  const {
+    markDeleting: markCheckpointsDeleting,
+    clearDeleting: clearCheckpointsDeleting,
+    isDeletingOverlay: isCheckpointDeletingOverlay,
+  } = useOptimisticDeletionOverlay();
+
   const deleteCheckpoint = useCallback(
     async (id: string) => {
       if (!user || !property) {
         throw new Error("User or property not found");
       }
 
+      markCheckpointsDeleting([id]);
       try {
-        const docRef = doc(
+        const checkpoint =
+          liveCheckpoints.find((c) => c.id === id) ??
+          olderCheckpoints.find((c) => c.id === id) ??
+          null;
+        const { deleteCheckpointWithMedia } = await import("@homeapp/common/lib/deletion");
+        const result = await deleteCheckpointWithMedia({
           db,
-          `users/${user.uid}/properties/${property.id}/checkpoints`,
-          id
-        );
-        await deleteDoc(docRef);
+          storage,
+          userId: user.uid,
+          propertyId: property.id,
+          checkpointId: id,
+          checkpoint,
+          checkpointDeleteUrl: deletionConfig?.urls?.checkpoint,
+          getIdToken: deletionConfig?.getIdToken,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? "Checkpoint delete failed");
+        }
         setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
         setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
       } catch (error) {
         checkpointLog.error("checkpoint.delete.failed", undefined, error);
         throw error;
+      } finally {
+        clearCheckpointsDeleting([id]);
       }
     },
-    [user, property, db]
+    [
+      user,
+      property,
+      db,
+      storage,
+      liveCheckpoints,
+      olderCheckpoints,
+      deletionConfig,
+      markCheckpointsDeleting,
+      clearCheckpointsDeleting,
+    ]
   );
 
   const compareCheckpoints = useCallback(async (id1: string, id2: string) => {
@@ -351,6 +389,9 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         updateCheckpoint,
         deleteCheckpoint,
         compareCheckpoints,
+        markCheckpointsDeleting,
+        clearCheckpointsDeleting,
+        isCheckpointDeletingOverlay,
       }}
     >
       {children}

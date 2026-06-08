@@ -10,10 +10,17 @@ When you delete a user, the script will remove:
    - All subcollections (e.g., `users/{userId}/chats/`)
    - All nested subcollections (e.g., `users/{userId}/chats/{chatId}/messages/`)
    - The entire document tree is traversed and deleted from bottom-up
-2. **Storage Files**: All files under:
+2. **Global collections** (per user):
+   - `llm_token_usage/{userId}` (+ `periods`)
+   - `support_requests/{userId}` (+ `messages`)
+   - `sharedChats` where `originalUserId == userId`
+3. **Vertex RAG** files for user doc `gsURI`s (when `RAG_CORPUS` / `USER_UPLOAD_RAG_CORPUS` is set in the environment)
+4. **Storage Files**: All files under:
    - `uploads/{userId}/`
    - `documents/{userId}/`
-3. **Firebase Auth**: The user's authentication account
+5. **Firebase Auth**: The user's authentication account
+
+For support-driven erasure without Auth delete, see [docs/operations/DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md) (ops runbook + `POST /deletion/user`). After any delete, confirm cleanup with [VERIFY-DELETION-README.md](VERIFY-DELETION-README.md).
 
 **Note:** The script uses recursive deletion to ensure all nested subcollections are properly removed. This is important for collections like `chats` that may contain nested `messages` subcollections.
 
@@ -120,6 +127,16 @@ If the dry run looks correct, run without `--dry-run`:
 ```
 
 You will be prompted to type `DELETE` (in capitals) to confirm.
+
+### 3. Verify erasure (optional)
+
+For each deleted user, confirm Firestore, Storage, and global collections are gone:
+
+```bash
+./verify-deletion.sh --project homegeek-staging verify user --user-id TARGET_UID
+```
+
+See [VERIFY-DELETION-README.md](VERIFY-DELETION-README.md) for other scenarios (property, session, document, etc.).
 
 ## Example Output
 
@@ -280,6 +297,7 @@ python apps/webapp/scripts/migration/delete-users-by-pattern.py \
 
 ## Related Scripts
 
+- [VERIFY-DELETION-README.md](VERIFY-DELETION-README.md) — post-delete checks (Firestore, Storage, deletion jobs)
 - `1-export-auth-firebase-cli.sh` - Export users before deletion (for backup)
 - `4-export-firestore.sh` - Export Firestore data before deletion (for backup)
 - `10-delete-draft-chats.sh` - Delete specific data without deleting users

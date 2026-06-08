@@ -44,6 +44,7 @@ interface CheckpointDetailModalProps {
   visible: boolean;
   checkpoint: Checkpoint | null;
   onClose: () => void;
+
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -96,10 +97,10 @@ export function CheckpointDetailModal({
   visible,
   checkpoint,
   onClose,
+
 }: CheckpointDetailModalProps) {
   const insets = useSafeAreaInsets();
   const { deleteCheckpoint } = useCheckpoint();
-  const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = React.useState(0);
 
@@ -127,18 +128,18 @@ export function CheckpointDetailModal({
   const hasIssues = (checkpoint.aiAnalysis?.issues?.length || 0) > 0;
   const mediaList = checkpoint.media || [];
 
-  const handleConfirmDelete = async () => {
-    try {
-      setIsDeleting(true);
-      await deleteCheckpoint(checkpoint.id);
-      setIsDeleteConfirmOpen(false);
-      onClose();
-    } catch (error) {
-      checkpointLog.error('checkpoint.delete.failed', undefined, error);
-      Alert.alert('Error', 'Failed to delete checkpoint');
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleConfirmDelete = () => {
+    const checkpointId = checkpoint.id;
+    setIsDeleteConfirmOpen(false);
+    onClose();
+    void (async () => {
+      try {
+        await deleteCheckpoint(checkpointId);
+      } catch (error) {
+        checkpointLog.error('checkpoint.delete.failed', undefined, error);
+        Alert.alert('Error', 'Failed to delete checkpoint');
+      }
+    })();
   };
 
   return (
@@ -375,8 +376,7 @@ export function CheckpointDetailModal({
               <Button
                 variant="destructive"
                 className="flex-1"
-                onPress={() => setIsDeleteConfirmOpen(true)}
-                disabled={isDeleting}>
+                onPress={() => setIsDeleteConfirmOpen(true)}>
                 <View className="flex-row items-center gap-2">
                   <Icon as={Trash2} size={16} className="text-destructive-foreground" />
                   <Text className="text-destructive-foreground">Delete Checkpoint</Text>
@@ -396,14 +396,11 @@ export function CheckpointDetailModal({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
+            <AlertDialogCancel>
               <Text>Cancel</Text>
             </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting}
-              onPress={handleConfirmDelete}>
-              <Text>{isDeleting ? 'Deleting…' : 'Delete'}</Text>
+            <AlertDialogAction variant="destructive" onPress={handleConfirmDelete}>
+              <Text>Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

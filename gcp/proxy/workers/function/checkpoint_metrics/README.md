@@ -41,4 +41,9 @@ python3 -m pytest
 - Tests are **offline** (no Firebase / PubSub / GCP calls).
 - `aggregate_property_metrics()` itself is intentionally thin (Firestore read + write) and can be covered with mocks later if needed.
 
+## Deletion behavior
+
+- **Single checkpoint delete** (client): removes `metrics/summary` so the next completed analysis can rebuild aggregates.
+- **Property delete** (server job via `POST /deletion/property`): deletes the entire `metrics` subcollection as part of the property cascade.
+
 

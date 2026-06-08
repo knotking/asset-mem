@@ -583,6 +583,18 @@ chmod +x 10-delete-draft-chats.sh
 
 ## Verification
 
+### Verify deletes (UI / API / ops)
+
+After deleting a document, checkpoint, session, property, or user from the app (or via `POST /deletion/*`), confirm Firestore, Storage, and deletion jobs are clean:
+
+```bash
+./verify-deletion.sh --project homegeek-staging verify property --user-id UID --property-id PID
+```
+
+See [VERIFY-DELETION-README.md](VERIFY-DELETION-README.md). Unified delete plan: [docs/operations/DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md).
+
+### Verify migration (goggle-gab → homegeek-staging)
+
 After running all scripts, verify the migration:
 
 ### Check Authentication

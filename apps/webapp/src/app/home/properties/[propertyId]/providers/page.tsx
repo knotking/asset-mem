@@ -15,6 +15,17 @@ import type { SavedServiceProvider } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { savedProviderDeleteConfirm } from '@homeapp/common/lib/deletion';
 
 function hasValue(val: unknown): boolean {
   if (!val) return false;
@@ -35,6 +46,7 @@ function SavedProviderCard({ provider }: { provider: SavedServiceProvider }) {
   const { removeProvider } = useSavedServiceProviders();
   const { toast } = useToast();
   const [pending, setPending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const savedDate = savedProviderSavedAtDate(provider.savedAt);
   const ratingValue =
@@ -50,6 +62,7 @@ function SavedProviderCard({ provider }: { provider: SavedServiceProvider }) {
     setPending(true);
     try {
       await removeProvider(provider.id);
+      setConfirmOpen(false);
       toast({ title: 'Removed from saved providers' });
     } catch {
       toast({ variant: 'destructive', title: 'Could not remove provider' });
@@ -114,12 +127,32 @@ function SavedProviderCard({ provider }: { provider: SavedServiceProvider }) {
               </a>
             </Button>
           )}
-          <Button variant="outline" size="sm" disabled={pending} onClick={handleRemove}>
+          <Button variant="outline" size="sm" disabled={pending} onClick={() => setConfirmOpen(true)}>
             <Heart className="h-4 w-4 mr-1 fill-red-500 text-red-500" />
             Remove
           </Button>
         </div>
       </CardFooter>
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => !pending && setConfirmOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove saved provider?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {savedProviderDeleteConfirm(provider.name)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending}
+              onClick={handleRemove}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {pending ? 'Removing…' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

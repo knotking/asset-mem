@@ -18,12 +18,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/auth-context';
-import { db, storage } from '@/lib/firebase';
-import { collection, deleteDoc, doc, getDocs, query, where, writeBatch } from 'firebase/firestore';
-import { deleteObject, ref } from 'firebase/storage';
-import { deleteCollection } from '@/lib/utils';
+import { db } from '@/lib/firebase';
+import { startPropertyDeletion, propertyRemovingLabel } from '@homeapp/common/lib/deletion';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
+import { getWebDeletionApiUrls } from '@/lib/api-deletion';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { PROPERTY_STAT_LABELS } from '@/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
@@ -62,7 +63,10 @@ export function PropertyCard({ property }: { property: Property }) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-    
+    const [isStartingDelete, setIsStartingDelete] = React.useState(false);
+    const isRemoving = property.deletionStatus === 'deleting' || isStartingDelete;
+    const isFailed = property.deletionStatus === 'failed';
+
     const docCount = property.documents?.length || 0;
     const servicesCount = property.servicesCount || 0;
     const checksCount = property.checksCount || 0;
@@ -71,67 +75,45 @@ export function PropertyCard({ property }: { property: Property }) {
     const Icon = propertyType === 'House' ? Home : Building;
 
     const handleCardClick = () => {
+        if (isRemoving || isFailed) return;
         router.push(`/home/properties/${property.id}/chat`);
     };
 
-    const handleDelete = async () => {
-    if (!user) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to delete a property.' });
+    const handleDelete = async (event: React.MouseEvent) => {
+        event.preventDefault();
+        if (!user || isStartingDelete) {
+            if (!user) {
+                toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to delete a property.' });
+            }
             return;
         }
 
-        setIsDeleteDialogOpen(false);
-        toast({ title: 'Deleting property...', description: `"${property.name}" is being deleted.` });
-        
+        setIsStartingDelete(true);
+
         try {
-            const batch = writeBatch(db);
-
-            // 1. Delete the property document itself
-            const propertyRef = doc(db, 'users', user.uid, 'properties', property.id);
-            batch.delete(propertyRef);
-
-            // 2. Query and delete all documents associated with the property
-            const docsRef = collection(db, 'users', user.uid, 'docs');
-            const docsQuery = query(docsRef, where('propertyId', '==', property.id));
-            const docsSnapshot = await getDocs(docsQuery);
-            docsSnapshot.forEach(doc => {
-                batch.delete(doc.ref);
+            const deletionUrls = getWebDeletionApiUrls();
+            const { jobId, result } = await startPropertyDeletion({
+                db,
+                userId: user.uid,
+                propertyId: property.id,
+                propertyDeleteUrl: deletionUrls.property,
+                getIdToken: getFirebaseIdTokenForProxy,
             });
 
-            // 3. Delete all files from Storage
-            const deleteStoragePromises = (property.docGsURIs || []).map(gsUri => {
-                if (gsUri) {
-                    const storageRef = ref(storage, gsUri);
-                    return deleteObject(storageRef).catch(err => {
-                        if (err.code !== 'storage/object-not-found') {
-                            propertyLog.error('storage.fileDelete.failed', undefined, err);
-                        }
-                    });
-                }
-                return Promise.resolve();
+            if (!result.ok || !jobId) {
+                throw new Error(result.failed[0]?.message ?? 'Failed to start property deletion');
+            }
+
+            setIsDeleteDialogOpen(false);
+            toast({
+                title: 'Removing property',
+                description: propertyRemovingLabel(property.name),
             });
-            await Promise.all(deleteStoragePromises);
-
-            // 4. Delete all associated chat sessions
-            const chatsRef = collection(db, 'users', user.uid, 'chats');
-            const chatsQuery = query(chatsRef, where('propertyId', '==', property.id));
-            const chatsSnapshot = await getDocs(chatsQuery);
-
-            const deleteSessionPromises = chatsSnapshot.docs.map(async (docSnap) => {
-                const messagesRef = collection(docSnap.ref, 'messages');
-                await deleteCollection(messagesRef);
-                batch.delete(docSnap.ref);
-            });
-            await Promise.all(deleteSessionPromises);
-
-            // Commit all batched Firestore deletes
-            await batch.commit();
-
-            toast({ title: 'Success', description: 'Property and all associated data have been deleted.' });
-
         } catch (error) {
             propertyLog.error('property.delete.failed', undefined, error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+            setIsDeleteDialogOpen(false);
+            setIsStartingDelete(false);
             toast({ variant: 'destructive', title: 'Error', description: `Failed to delete property: ${errorMessage}` });
         }
     };
@@ -139,7 +121,13 @@ export function PropertyCard({ property }: { property: Property }) {
 
     return (
         <>
-            <Card onClick={handleCardClick} className="flex flex-col transition-shadow hover:shadow-lg group cursor-pointer">
+            <Card
+              onClick={handleCardClick}
+              className={cn(
+                'relative flex flex-col transition-shadow group',
+                isRemoving || isFailed ? 'cursor-default opacity-90' : 'cursor-pointer hover:shadow-lg'
+              )}
+            >
                 <CardContent className="p-4 flex-1 flex flex-col gap-4">
                      <div className="flex flex-col">
                         <div className="flex items-start justify-between ">
@@ -151,9 +139,11 @@ export function PropertyCard({ property }: { property: Property }) {
                                     {property.name}
                                 </h3>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => { e.stopPropagation(); setIsDeleteDialogOpen(true);}}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!isRemoving && !isFailed ? (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={(e) => { e.stopPropagation(); setIsDeleteDialogOpen(true);}}>
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                            ) : null}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-6">
                             <MapPin className="h-4 w-4 shrink-0" />
@@ -169,9 +159,37 @@ export function PropertyCard({ property }: { property: Property }) {
                     </div>
 
                 </CardContent>
+                {isRemoving ? (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 px-4 text-center text-sm font-medium">
+                    {isStartingDelete ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {propertyRemovingLabel(property.name)}
+                  </div>
+                ) : null}
+                {isFailed ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-background/95 px-4 text-center">
+                    <p className="mb-2 text-sm font-medium text-destructive">Removal failed</p>
+                    {property.deletionError ? (
+                      <p className="mb-3 text-xs text-muted-foreground">{property.deletionError}</p>
+                    ) : null}
+                    <Button
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDelete(e as unknown as React.MouseEvent);
+                        }}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
             </Card>
 
-             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+             <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    if (!open && !isStartingDelete) setIsDeleteDialogOpen(false);
+                }}
+             >
                 <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -180,8 +198,15 @@ export function PropertyCard({ property }: { property: Property }) {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex justify-end gap-2">
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    <AlertDialogCancel disabled={isStartingDelete}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        disabled={isStartingDelete}
+                        onClick={(event) => void handleDelete(event)}
+                        className="bg-destructive hover:bg-destructive/90"
+                    >
+                        {isStartingDelete && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isStartingDelete ? 'Deleting…' : 'Delete'}
+                    </AlertDialogAction>
                 </div>
                 </AlertDialogContent>
             </AlertDialog>

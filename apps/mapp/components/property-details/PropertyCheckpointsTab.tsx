@@ -45,12 +45,31 @@ import {
   getPlanLimitFailureMessage,
 } from '@homeapp/common/lib/document-analysis-errors';
 import {
+  deleteCheckpointsBatch,
+  checkpointBulkDeleteFailed,
+  isResourceDeletionFailed,
+  resourceDeletingLabel,
+  resourceDeletionFailedLabel,
+} from '@homeapp/common/lib/deletion';
+import { getMappDeletionApiUrls } from '@/lib/deletion-api';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
+import {
   isAtPlanLimit,
   planLimitBlockMessage,
 } from '@homeapp/common/lib/plan-limit-slice';
 import { getCheckpointListConditionBadge } from '@homeapp/common/lib/checkpoint-list-badge';
 import { checkpointListBadgeStyles } from '@/lib/checkpoint-list-badge-styles';
 import { useLlmTokenUsage } from '@homeapp/common/contexts/llm-token-usage-context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
 
@@ -527,12 +546,16 @@ function CheckpointCard({
   onLongPress,
   selectionMode,
   isSelected,
+  isDeleting,
+  isDeleteFailed,
 }: {
   checkpoint: Checkpoint;
   onPress: (checkpoint: Checkpoint) => void;
   onLongPress?: (checkpoint: Checkpoint) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
+  isDeleting?: boolean;
+  isDeleteFailed?: boolean;
 }) {
   const media0 = checkpoint.media?.[0];
   const thumbnail = checkpoint.media?.[0]?.thumbnailUrl || checkpoint.media?.[0]?.url;
@@ -544,10 +567,11 @@ function CheckpointCard({
     : null;
 
   return (
-    <Card className={`p-2 ${isSelected ? 'border-primary bg-primary/5' : ''}`}>
+    <Card className={`relative p-2 ${isSelected ? 'border-primary bg-primary/5' : ''} ${isDeleting ? 'opacity-90' : ''}`}>
       <Pressable
-        onPress={() => onPress(checkpoint)}
-        onLongPress={() => onLongPress?.(checkpoint)}
+        onPress={isDeleting ? undefined : () => onPress(checkpoint)}
+        onLongPress={isDeleting ? undefined : () => onLongPress?.(checkpoint)}
+        disabled={isDeleting}
         className="flex-row overflow-hidden rounded-lg">
         {/* Thumbnail Image */}
         <View className="h-24 w-24 bg-muted">
@@ -615,6 +639,15 @@ function CheckpointCard({
                 <Text className="text-xs text-muted-foreground">{checkpoint.location}</Text>
               </View>
             )}
+
+            {isDeleteFailed ? (
+              <View className="mt-1 flex-row items-center gap-1">
+                <Icon as={AlertCircle} size={12} className="text-destructive" />
+                <Text className="text-xs text-destructive">
+                  {checkpoint.deletionError || resourceDeletionFailedLabel}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View className="flex-row items-center justify-between">
@@ -629,6 +662,14 @@ function CheckpointCard({
           </View>
         </View>
       </Pressable>
+      {isDeleting ? (
+        <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90">
+          <View className="flex-row items-center gap-2">
+            <Icon as={Loader2} size={16} className="animate-spin text-muted-foreground" />
+            <Text className="text-sm font-medium text-foreground">{resourceDeletingLabel}</Text>
+          </View>
+        </View>
+      ) : null}
     </Card>
   );
 }
@@ -653,6 +694,9 @@ export function PropertyCheckpointsTab({
     createCheckpoint,
     updateCheckpoint,
     deleteCheckpoint,
+    markCheckpointsDeleting,
+    clearCheckpointsDeleting,
+    isCheckpointDeletingOverlay,
   } = useCheckpoint();
   const { user } = useAuth();
   const { checkpointsLimit, limitsLoading } = useLlmTokenUsage();
@@ -674,7 +718,6 @@ export function PropertyCheckpointsTab({
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
   const [isComparisonModalVisible, setIsComparisonModalVisible] = React.useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
-  
   // Processing feedback state
   const [isProcessingModalVisible, setIsProcessingModalVisible] = React.useState(false);
   const [newCheckpointId, setNewCheckpointId] = React.useState<string>('');
@@ -850,17 +893,45 @@ export function PropertyCheckpointsTab({
     }
   };
   
-  const confirmDelete = async () => {
-    try {
-      // Delete all selected checkpoints
-      await Promise.all(selectedForActions.map(id => deleteCheckpoint(id)));
-      setSelectedForActions([]);
-      setIsSelectionMode(false);
-      setIsDeleteConfirmOpen(false);
-    } catch (error) {
-      checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
-    }
-  };
+  const runBulkDelete = React.useCallback(
+    async (checkpointIds: string[]) => {
+      if (!user || !property || checkpointIds.length === 0) return;
+      const deletionUrls = getMappDeletionApiUrls();
+      if (!deletionUrls?.checkpointsBatch) {
+        Alert.alert('Error', 'Deletion API is not configured.');
+        clearCheckpointsDeleting(checkpointIds);
+        return;
+      }
+      try {
+        const result = await deleteCheckpointsBatch({
+          userId: user.uid,
+          propertyId: property.id,
+          checkpointIds,
+          checkpointsBatchUrl: deletionUrls.checkpointsBatch,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? checkpointBulkDeleteFailed);
+        }
+      } catch (error) {
+        checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
+        Alert.alert('Error', checkpointBulkDeleteFailed);
+      } finally {
+        clearCheckpointsDeleting(checkpointIds);
+      }
+    },
+    [user, property, clearCheckpointsDeleting]
+  );
+
+  const confirmDelete = React.useCallback(() => {
+    const checkpointIds = [...selectedForActions];
+    if (checkpointIds.length === 0) return;
+    setIsDeleteConfirmOpen(false);
+    setSelectedForActions([]);
+    setIsSelectionMode(false);
+    markCheckpointsDeleting(checkpointIds);
+    void runBulkDelete(checkpointIds);
+  }, [selectedForActions, markCheckpointsDeleting, runBulkDelete]);
 
   // Render content based on state
   let content;
@@ -1057,6 +1128,8 @@ export function PropertyCheckpointsTab({
                 onLongPress={handleCheckpointLongPress}
                 selectionMode={isSelectionMode}
                 isSelected={selectedForActions.includes(item.id)}
+                isDeleting={isCheckpointDeletingOverlay(item)}
+                isDeleteFailed={isResourceDeletionFailed(item)}
               />
             )}
             contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
@@ -1107,6 +1180,7 @@ export function PropertyCheckpointsTab({
         visible={isDetailModalVisible}
         checkpoint={selectedCheckpoint ? checkpoints.find(cp => cp.id === selectedCheckpoint.id) || selectedCheckpoint : null}
         onClose={() => setIsDetailModalVisible(false)}
+
       />
 
       {/* Issues breakdown modal */}
@@ -1200,32 +1274,25 @@ export function PropertyCheckpointsTab({
         </View>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal visible={isDeleteConfirmOpen} transparent animationType="fade">
-        <View className="flex-1 items-center justify-center bg-black/50">
-          <View className="mx-4 w-full max-w-sm rounded-lg bg-background p-6">
-            <Text className="mb-2 text-lg font-semibold text-foreground">Delete Checkpoints</Text>
-            <Text className="mb-6 text-sm text-muted-foreground">
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Checkpoints</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete {selectedForActions.length} checkpoint
               {selectedForActions.length !== 1 ? 's' : ''}? This action cannot be undone.
-            </Text>
-            <View className="flex-row gap-3">
-              <Button
-                variant="outline"
-                onPress={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1">
-                <Text className="text-foreground">Cancel</Text>
-              </Button>
-              <Button
-                variant="destructive"
-                onPress={confirmDelete}
-                className="flex-1">
-                <Text className="text-destructive-foreground">Delete</Text>
-              </Button>
-            </View>
-          </View>
-        </View>
-      </Modal>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Text>Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onPress={confirmDelete}>
+              <Text>Delete</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       </View>
     );

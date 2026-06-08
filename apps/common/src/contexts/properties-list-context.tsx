@@ -51,6 +51,7 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
           currentPropertyIds.add(propertyId);
 
           const propertyData = propertyDoc.data();
+
           const baseProperty: Omit<Property, 'docs'> = {
             id: propertyId,
             address: propertyData.address,
@@ -62,6 +63,10 @@ export function PropertiesListProvider({ children }: { children: ReactNode }) {
             propertySubType: propertyData.propertySubType,
             createdAt: propertyData.createdAt,
             userId: propertyData.userId,
+            deletionStatus: propertyData.deletionStatus,
+            deletionJobId: propertyData.deletionJobId,
+            deletionRequestedAt: propertyData.deletionRequestedAt,
+            deletionError: propertyData.deletionError,
           };
 
           // Initialize docs to 0, will be updated by its own listener

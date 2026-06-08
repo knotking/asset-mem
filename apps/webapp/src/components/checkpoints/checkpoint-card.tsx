@@ -2,7 +2,8 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Camera, Video } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Camera, Video, Loader2 } from 'lucide-react';
+import { resourceDeletingLabel, resourceDeletionFailedLabel } from '@homeapp/common/lib/deletion';
 import {
   checkpointFailureBadgeLabel,
   getCheckpointAnalysisFailureMessage,
@@ -18,6 +19,8 @@ interface CheckpointCardProps {
   onClick?: () => void;
   onSelect?: (selected: boolean) => void;
   selectionMode?: boolean;
+  isDeleting?: boolean;
+  isDeleteFailed?: boolean;
 }
 
 export function CheckpointCard({
@@ -26,6 +29,8 @@ export function CheckpointCard({
   onClick,
   onSelect,
   selectionMode = false,
+  isDeleting = false,
+  isDeleteFailed = false,
 }: CheckpointCardProps) {
   const createdAt = checkpoint.createdAt?.toDate
     ? checkpoint.createdAt.toDate()
@@ -73,6 +78,7 @@ export function CheckpointCard({
   };
 
   const handleClick = () => {
+    if (isDeleting) return;
     if (selectionMode && onSelect) {
       onSelect(!selected);
     } else if (onClick) {
@@ -83,9 +89,10 @@ export function CheckpointCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all hover:shadow-md',
+        'relative cursor-pointer transition-all hover:shadow-md',
         selected && 'ring-2 ring-primary',
-        selectionMode && 'hover:ring-2 hover:ring-muted-foreground'
+        selectionMode && 'hover:ring-2 hover:ring-muted-foreground',
+        isDeleting && 'opacity-90'
       )}
       onClick={handleClick}
     >
@@ -141,6 +148,9 @@ export function CheckpointCard({
               {checkpoint.description && (
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{checkpoint.description}</p>
               )}
+              {isDeleteFailed ? (
+                <p className="mt-1 text-xs text-destructive">{checkpoint.deletionError || resourceDeletionFailedLabel}</p>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-between">
@@ -167,6 +177,14 @@ export function CheckpointCard({
           </div>
         </div>
       </CardContent>
+      {isDeleting ? (
+        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {resourceDeletingLabel}
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }

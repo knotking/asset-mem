@@ -21,7 +21,12 @@ import { CHECKPOINT_PAGE_SIZE } from '@/contexts/checkpoint-context';
 import { Checkpoint } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { useCheckpoint } from '@/contexts/checkpoint-context';
+import { useAuth } from '@/contexts/auth-context';
+import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
+import { deleteCheckpointsBatch, checkpointBulkDeleteFailed, isResourceDeletionFailed } from '@homeapp/common/lib/deletion';
+import { getWebDeletionApiUrls } from '@/lib/api-deletion';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger } from '@/lib/logger';
 import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-banner';
 import { usePreferences } from '@/contexts/preferences-context';
@@ -43,11 +48,15 @@ export function CheckpointList({
   onCheckpointClick,
   onCompare,
 }: CheckpointListProps) {
+  const { user } = useAuth();
+  const { property } = useProperty();
   const {
-    deleteCheckpoint,
     loadMoreCheckpoints,
     hasMoreCheckpoints,
     isLoadingEarlier,
+    markCheckpointsDeleting,
+    clearCheckpointsDeleting,
+    isCheckpointDeletingOverlay,
   } = useCheckpoint();
   const { toast } = useToast();
   const { preferences } = usePreferences();
@@ -58,7 +67,6 @@ export function CheckpointList({
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedCheckpoints, setSelectedCheckpoints] = useState<Set<string>>(new Set());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Extract unique locations
   const locations = Array.from(
@@ -118,35 +126,50 @@ export function CheckpointList({
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (selectedCheckpoints.size === 0) return;
-
-    const count = selectedCheckpoints.size;
-    const checkpointIds = Array.from(selectedCheckpoints);
-    
-    setIsDeleting(true);
+  const runBulkDelete = async (checkpointIds: string[]) => {
+    const count = checkpointIds.length;
     try {
-      const deletePromises = checkpointIds.map((id) => deleteCheckpoint(id));
-      await Promise.all(deletePromises);
+      if (!user || !property) {
+        throw new Error('User or property not found');
+      }
+      const deletionUrls = getWebDeletionApiUrls();
+      const result = await deleteCheckpointsBatch({
+        userId: user.uid,
+        propertyId: property.id,
+        checkpointIds,
+        checkpointsBatchUrl: deletionUrls.checkpointsBatch,
+        getIdToken: getFirebaseIdTokenForProxy,
+      });
+      if (!result.ok) {
+        throw new Error(result.failed[0]?.message ?? checkpointBulkDeleteFailed);
+      }
 
       toast({
         title: 'Checkpoints Deleted',
         description: `${count} checkpoint${count === 1 ? '' : 's'} deleted successfully.`,
       });
-
-      setSelectedCheckpoints(new Set());
-      setSelectionMode(false);
-      setIsDeleteDialogOpen(false);
     } catch (error) {
       checkpointLog.error('checkpoints.bulkDelete.failed', undefined, error);
       toast({
         title: 'Deletion Failed',
-        description: 'Failed to delete checkpoints. Please try again.',
+        description: checkpointBulkDeleteFailed,
         variant: 'destructive',
       });
     } finally {
-      setIsDeleting(false);
+      clearCheckpointsDeleting(checkpointIds);
     }
+  };
+
+  const handleConfirmDelete = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (selectedCheckpoints.size === 0) return;
+
+    const checkpointIds = Array.from(selectedCheckpoints);
+    setIsDeleteDialogOpen(false);
+    setSelectedCheckpoints(new Set());
+    setSelectionMode(false);
+    markCheckpointsDeleting(checkpointIds);
+    void runBulkDelete(checkpointIds);
   };
 
   if (loading) {
@@ -275,11 +298,7 @@ export function CheckpointList({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-        if (!open && !isDeleting) {
-          setIsDeleteDialogOpen(false);
-        }
-      }}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -290,13 +309,12 @@ export function CheckpointList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              disabled={isDeleting || selectedCheckpoints.size === 0}
+              disabled={selectedCheckpoints.size === 0}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -326,6 +344,8 @@ export function CheckpointList({
               checkpoint={checkpoint}
               selected={selectedCheckpoints.has(checkpoint.id)}
               selectionMode={selectionMode}
+              isDeleting={isCheckpointDeletingOverlay(checkpoint)}
+              isDeleteFailed={isResourceDeletionFailed(checkpoint)}
               onClick={() => !selectionMode && onCheckpointClick(checkpoint)}
               onSelect={(selected) => handleSelect(checkpoint.id, selected)}
             />

@@ -1,10 +1,16 @@
 import * as React from 'react';
-import { View, ScrollView, Pressable } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { FileText, X } from 'lucide-react-native';
 import type { Document } from '@homeapp/common/types';
+import { useProperty } from '@homeapp/common/contexts/property-context';
+import {
+  isResourceDeletionFailed,
+  resourceDeletingLabel,
+  resourceDeletionFailedLabel,
+} from '@homeapp/common/lib/deletion';
 
 interface DocumentsDrawerContentProps {
   documents: Document[];
@@ -21,6 +27,8 @@ export function DocumentsDrawerContent({
   onClose,
   onToggleDocument,
 }: DocumentsDrawerContentProps) {
+  const { isDocumentDeletingOverlay } = useProperty();
+
   return (
     <>
       <View className="border-b border-border bg-light-background-alt px-4 py-3">
@@ -70,18 +78,22 @@ export function DocumentsDrawerContent({
             )}
             {documents.map((document) => {
               const isSelected = selectedDocuments.some((doc) => doc.id === document.id);
+              const isDeleting = isDocumentDeletingOverlay(document);
+              const isDeleteFailed = isResourceDeletionFailed(document);
               return (
                 <Pressable
                   key={document.id}
                   onPress={() => {
+                    if (isDeleting || isDeleteFailed) return;
                     if (activeTab === 'chat') {
                       onToggleDocument(document);
                     }
                   }}
-                  className={`rounded-lg border p-4 ${activeTab === 'chat' && isSelected
+                  disabled={isDeleting}
+                  className={`relative rounded-lg border p-4 ${activeTab === 'chat' && isSelected
                       ? 'border-primary bg-secondary'
                       : 'border-border bg-card'
-                    }`}>
+                    } ${isDeleting ? 'opacity-90' : ''}`}>
                   <View className="flex-row items-start gap-3">
                     <View
                       className={`h-10 w-10 items-center justify-center rounded-full ${activeTab === 'chat' && isSelected ? 'bg-primary' : 'bg-secondary'
@@ -113,12 +125,27 @@ export function DocumentsDrawerContent({
                         </Text>
                       )}
                     </View>
-                    {activeTab === 'chat' && isSelected && (
+                    {activeTab === 'chat' && isSelected && !isDeleting && (
                       <View className="rounded-full bg-primary p-1">
                         <Icon as={X} size={16} className="text-primary-foreground" />
                       </View>
                     )}
                   </View>
+                  {isDeleting ? (
+                    <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90 px-4">
+                      <ActivityIndicator size="small" />
+                      <Text className="mt-2 text-sm font-medium text-foreground">
+                        {resourceDeletingLabel}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {isDeleteFailed ? (
+                    <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/95 px-4">
+                      <Text className="text-center text-sm font-medium text-destructive">
+                        {document.deletionError ?? resourceDeletionFailedLabel}
+                      </Text>
+                    </View>
+                  ) : null}
                 </Pressable>
               );
             })}

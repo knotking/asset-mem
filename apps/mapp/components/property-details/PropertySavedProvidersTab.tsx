@@ -11,6 +11,17 @@ import {
 } from '@homeapp/common/contexts/saved-service-providers-context';
 import type { SavedServiceProvider } from '@homeapp/common/types';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { savedProviderDeleteConfirm } from '@homeapp/common/lib/deletion';
 
 function hasValue(val: unknown): boolean {
   if (!val) return false;
@@ -93,6 +104,10 @@ function SavedProviderRow({
 export function PropertySavedProvidersTab() {
   const { savedProviders, loading, removeProvider } = useSavedServiceProviders();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [providerToRemove, setProviderToRemove] = React.useState<SavedServiceProvider | null>(null);
+  const [providerRemoveDialogName, setProviderRemoveDialogName] = React.useState('');
+  const [isRemoving, setIsRemoving] = React.useState(false);
+  const isRemovingRef = React.useRef(false);
 
   const filtered = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -106,16 +121,36 @@ export function PropertySavedProvidersTab() {
     );
   }, [savedProviders, searchTerm]);
 
-  const handleRemove = React.useCallback(
-    async (providerId: string) => {
-      try {
-        await removeProvider(providerId);
-      } catch {
-        // context logs errors
-      }
-    },
-    [removeProvider]
-  );
+  const handleRemove = React.useCallback((provider: SavedServiceProvider) => {
+    setProviderToRemove(provider);
+    setProviderRemoveDialogName(provider.name || 'this provider');
+  }, []);
+
+  const confirmRemove = React.useCallback(async () => {
+    const provider = providerToRemove;
+    if (!provider) {
+      isRemovingRef.current = false;
+      setIsRemoving(false);
+      return;
+    }
+    try {
+      await removeProvider(provider.id);
+      setProviderToRemove(null);
+      setProviderRemoveDialogName('');
+    } catch {
+      // context logs errors
+    } finally {
+      isRemovingRef.current = false;
+      setIsRemoving(false);
+    }
+  }, [providerToRemove, removeProvider]);
+
+  const beginRemove = React.useCallback(() => {
+    if (!providerToRemove || isRemoving || isRemovingRef.current) return;
+    isRemovingRef.current = true;
+    setIsRemoving(true);
+    void confirmRemove();
+  }, [providerToRemove, isRemoving, confirmRemove]);
 
   return (
     <ScrollView
@@ -138,7 +173,11 @@ export function PropertySavedProvidersTab() {
         <Text className="text-center text-muted-foreground">Loading...</Text>
       ) : filtered.length > 0 ? (
         filtered.map((provider) => (
-          <SavedProviderRow key={provider.id} provider={provider} onRemove={handleRemove} />
+          <SavedProviderRow
+            key={provider.id}
+            provider={provider}
+            onRemove={() => handleRemove(provider)}
+          />
         ))
       ) : (
         <View className="items-center rounded-lg border border-dashed border-border px-6 py-16">
@@ -150,6 +189,31 @@ export function PropertySavedProvidersTab() {
           </Text>
         </View>
       )}
+      <AlertDialog
+        open={!!providerToRemove || isRemoving}
+        onOpenChange={(open) => {
+          if (!open && !isRemovingRef.current && !isRemoving) {
+            setProviderToRemove(null);
+            setProviderRemoveDialogName('');
+          }
+        }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove saved provider?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {savedProviderDeleteConfirm(providerRemoveDialogName)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRemoving}>
+              <Text>Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction disabled={isRemoving} onPress={beginRemove} variant="destructive">
+              <Text className="text-sm">{isRemoving ? 'Removing…' : 'Remove'}</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ScrollView>
   );
 }

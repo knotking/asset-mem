@@ -1,5 +1,8 @@
 import * as React from 'react';
+import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { Icon } from '@/components/ui/icon';
+import { Loader2 } from 'lucide-react-native';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +23,9 @@ interface AlertDialogWrapperProps {
   cancelText?: string;
   onConfirm?: () => void;
   showCancel?: boolean;
+  confirmLoading?: boolean;
+  /** Use `destructive` for delete/remove confirms; defaults to `default` (primary). */
+  confirmVariant?: 'default' | 'destructive';
 }
 
 export function AlertDialogWrapper({
@@ -31,9 +37,24 @@ export function AlertDialogWrapper({
   cancelText = 'Cancel',
   onConfirm,
   showCancel = false,
+  confirmLoading = false,
+  confirmVariant = 'default',
 }: AlertDialogWrapperProps) {
+  const confirmLoadingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!confirmLoading) {
+      confirmLoadingRef.current = false;
+    }
+  }, [confirmLoading]);
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog
+      open={open || confirmLoading}
+      onOpenChange={(next) => {
+        if (confirmLoadingRef.current || confirmLoading) return;
+        onOpenChange(next);
+      }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -43,19 +64,38 @@ export function AlertDialogWrapper({
         </AlertDialogHeader>
         <AlertDialogFooter>
           {showCancel && (
-            <AlertDialogCancel>
+            <AlertDialogCancel disabled={confirmLoading}>
               <Text>{cancelText}</Text>
             </AlertDialogCancel>
           )}
           <AlertDialogAction
+            variant={confirmVariant}
+            disabled={confirmLoading}
             onPress={() => {
+              if (confirmLoading || confirmLoadingRef.current) return;
+              confirmLoadingRef.current = true;
               if (onConfirm) {
                 onConfirm();
               } else {
                 onOpenChange(false);
               }
             }}>
-            <Text>{confirmText}</Text>
+            {confirmLoading ? (
+              <View className="flex-row items-center gap-2">
+                <Icon
+                  as={Loader2}
+                  size={16}
+                  className={
+                    confirmVariant === 'destructive'
+                      ? 'animate-spin text-white'
+                      : 'animate-spin text-primary-foreground'
+                  }
+                />
+                <Text>Deleting…</Text>
+              </View>
+            ) : (
+              <Text>{confirmText}</Text>
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

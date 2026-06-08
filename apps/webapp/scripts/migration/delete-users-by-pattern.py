@@ -3,14 +3,19 @@
 """
 Script to delete Firebase users matching a specific pattern
 Deletes:
-1. All Firestore documents under users/{userId}/
-2. All Storage files under uploads/{userId}/ and documents/{userId}/
-3. The Firebase Auth user account
+1. All Firestore documents under users/{userId}/ (recursive)
+2. llm_token_usage/{userId} (+ periods)
+3. support_requests/{userId} (+ messages)
+4. sharedChats where originalUserId == userId
+5. All Storage files under uploads/{userId}/ and documents/{userId}/
+6. Vertex RAG files for user doc gsURIs (when RAG_CORPUS env is set)
+7. The Firebase Auth user account
 
 Usage:
     python delete-users-by-pattern.py --project PROJECT --pattern PATTERN [--dry-run]
 """
 
+import os
 import sys
 import argparse
 import re
@@ -147,6 +152,118 @@ def delete_document_recursively(doc_ref, dry_run=False, indent=2):
     except Exception as e:
         print(f"{indent_str}❌ Error processing subcollections: {e}")
         return documents_deleted, errors
+
+
+def collect_user_doc_gs_uris(db, user_id):
+    """Collect gsURI values from users/{userId}/docs before Firestore wipe."""
+    uris = []
+    user_ref = db.collection("users").document(user_id)
+    for snap in user_ref.collection("docs").stream():
+        data = snap.to_dict() or {}
+        if data.get("gsURI"):
+            uris.append(str(data["gsURI"]))
+    return list(dict.fromkeys(uris))
+
+
+def delete_rag_files_for_user(gs_uris, dry_run=False):
+    """Best-effort RAG cleanup when RAG_CORPUS / USER_UPLOAD_RAG_CORPUS is configured."""
+    if not gs_uris:
+        return 0, 0
+    if dry_run:
+        print(f"      [DRY-RUN] Would delete up to {len(gs_uris)} RAG file(s)")
+        return 0, 0
+    try:
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from common.rag.delete import delete_rag_files_by_gcs_uris
+
+        deleted, warnings = delete_rag_files_by_gcs_uris(gs_uris)
+        for w in warnings:
+            print(f"      ⚠️  RAG: {w}")
+        if deleted:
+            print(f"      ✓ Deleted {deleted} RAG file(s)")
+        return deleted, len(warnings)
+    except Exception as e:
+        print(f"      ⚠️  RAG cleanup skipped: {e}")
+        return 0, 1
+
+
+def delete_llm_token_usage(db, user_id, dry_run=False):
+    """Delete llm_token_usage/{userId} and periods subcollection."""
+    deleted = 0
+    errors = 0
+    root = db.collection("llm_token_usage").document(user_id)
+    for period in root.collection("periods").stream():
+        if dry_run:
+            print(f"      [DRY-RUN] Would delete llm_token_usage period {period.id}")
+        else:
+            try:
+                period.reference.delete()
+                deleted += 1
+            except Exception as e:
+                errors += 1
+                print(f"      ❌ llm_token_usage period {period.id}: {e}")
+    if root.get().exists:
+        if dry_run:
+            print("      [DRY-RUN] Would delete llm_token_usage root doc")
+        else:
+            try:
+                root.delete()
+                deleted += 1
+            except Exception as e:
+                errors += 1
+                print(f"      ❌ llm_token_usage root: {e}")
+    return deleted, errors
+
+
+def delete_support_requests(db, user_id, dry_run=False):
+    deleted = 0
+    errors = 0
+    ref = db.collection("support_requests").document(user_id)
+    for msg in ref.collection("messages").stream():
+        if dry_run:
+            print(f"      [DRY-RUN] Would delete support message {msg.id}")
+        else:
+            try:
+                msg.reference.delete()
+                deleted += 1
+            except Exception as e:
+                errors += 1
+                print(f"      ❌ support message {msg.id}: {e}")
+    if ref.get().exists:
+        if dry_run:
+            print("      [DRY-RUN] Would delete support_requests parent")
+        else:
+            try:
+                ref.delete()
+                deleted += 1
+            except Exception as e:
+                errors += 1
+                print(f"      ❌ support_requests parent: {e}")
+    return deleted, errors
+
+
+def delete_shared_chats_for_user(db, user_id, dry_run=False):
+    deleted = 0
+    errors = 0
+    query = db.collection("sharedChats").where(
+        filter=FieldFilter("originalUserId", "==", user_id)
+    )
+    for snap in query.stream():
+        if dry_run:
+            print(f"      [DRY-RUN] Would delete sharedChat {snap.id}")
+            deleted += 1
+            continue
+        try:
+            for msg in snap.reference.collection("messages").stream():
+                msg.reference.delete()
+            snap.reference.delete()
+            deleted += 1
+        except Exception as e:
+            errors += 1
+            print(f"      ❌ sharedChat {snap.id}: {e}")
+    return deleted, errors
 
 
 def delete_firestore_user_data(db, user_id, dry_run=False):
@@ -370,10 +487,26 @@ def delete_users_by_pattern(project_id, pattern, dry_run=False):
 
         total_stats['users_processed'] += 1
 
-        # Delete Firestore data
+        gs_uris = collect_user_doc_gs_uris(db, user_id)
+        _, rag_errors = delete_rag_files_for_user(gs_uris, dry_run=dry_run)
+        total_stats['errors'] += rag_errors
+
+        # Delete Firestore user tree
         docs_deleted, firestore_errors = delete_firestore_user_data(db, user_id, dry_run)
         total_stats['firestore_docs_deleted'] += docs_deleted
         total_stats['errors'] += firestore_errors
+
+        llm_deleted, llm_errors = delete_llm_token_usage(db, user_id, dry_run)
+        total_stats['firestore_docs_deleted'] += llm_deleted
+        total_stats['errors'] += llm_errors
+
+        support_deleted, support_errors = delete_support_requests(db, user_id, dry_run)
+        total_stats['firestore_docs_deleted'] += support_deleted
+        total_stats['errors'] += support_errors
+
+        shared_deleted, shared_errors = delete_shared_chats_for_user(db, user_id, dry_run)
+        total_stats['firestore_docs_deleted'] += shared_deleted
+        total_stats['errors'] += shared_errors
 
         # Delete Storage data
         files_deleted, storage_errors = delete_storage_user_data(bucket, user_id, dry_run)

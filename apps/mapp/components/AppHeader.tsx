@@ -5,7 +5,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { Icon } from '@//components/ui/icon';
 import { Text } from '@//components/ui/text';
 import { Button } from '@//components/ui/button';
-import { Bell, BookOpen, SunIcon, MoonStarIcon } from 'lucide-react-native';
+import { BookOpen, SunIcon, MoonStarIcon } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useColorScheme } from 'nativewind';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -17,6 +17,7 @@ import {
   navigateToSettingsSubScreen,
   resolveAppHeaderReturnContext,
 } from '@/lib/settings-navigation';
+import { NotificationsBell } from '@/components/NotificationsBell';
 
 function ThemeToggle() {
   const { user } = useAuth();
@@ -80,13 +81,7 @@ export default function AppHeader() {
           <Icon as={BookOpen} size={20} className="text-muted-foreground" />
         </Button>
         <TokenUsageBar settingsReturnContext={returnContext} />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 min-w-8 p-0"
-          accessibilityLabel="Notifications">
-          <Icon as={Bell} size={20} className="text-muted-foreground" />
-        </Button>
+        <NotificationsBell />
         {user ? (
           <Button
             variant="ghost"

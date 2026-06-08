@@ -31,6 +31,8 @@ import { useAuth } from "./auth-context";
 import { useProperty } from "./property-context";
 import { useFirebase } from "./firebase-context";
 import { createLogger, truncateId } from "../lib/logger";
+import { useDeletionConfig } from "./deletion-config-context";
+import { useOptimisticDeletionOverlay } from "../hooks/use-optimistic-deletion-overlay";
 
 const checkpointLog = createLogger("checkpoint");
 
@@ -86,6 +88,11 @@ interface CheckpointContextType {
   updateCheckpoint: (id: string, data: Partial<Checkpoint>) => Promise<void>;
   deleteCheckpoint: (id: string) => Promise<void>;
   compareCheckpoints: (id1: string, id2: string) => Promise<void>;
+  markCheckpointsDeleting: (ids: string[]) => void;
+  clearCheckpointsDeleting: (ids: string[]) => void;
+  isCheckpointDeletingOverlay: (
+    checkpoint: Pick<Checkpoint, "id" | "deletionStatus"> | null | undefined
+  ) => boolean;
 }
 
 const CheckpointContext = createContext<CheckpointContextType | undefined>(
@@ -309,16 +316,40 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(docRef, data);
   };
 
+  const deletionConfig = useDeletionConfig();
+  const {
+    markDeleting: markCheckpointsDeleting,
+    clearDeleting: clearCheckpointsDeleting,
+    isDeletingOverlay: isCheckpointDeletingOverlay,
+  } = useOptimisticDeletionOverlay();
+
   const deleteCheckpoint = async (id: string) => {
     if (!property || !user) return;
-    const docRef = doc(
-      db,
-      `users/${user.uid}/properties/${property.id}/checkpoints`,
-      id
-    );
-    await deleteDoc(docRef);
-    setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
-    setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
+    markCheckpointsDeleting([id]);
+    const checkpoint =
+      liveCheckpoints.find((c) => c.id === id) ??
+      olderCheckpoints.find((c) => c.id === id) ??
+      null;
+    try {
+      const { deleteCheckpointWithMedia } = await import("../lib/deletion");
+      const result = await deleteCheckpointWithMedia({
+        db,
+        storage,
+        userId: user.uid,
+        propertyId: property.id,
+        checkpointId: id,
+        checkpoint,
+        checkpointDeleteUrl: deletionConfig?.urls?.checkpoint,
+        getIdToken: deletionConfig?.getIdToken,
+      });
+      if (!result.ok) {
+        throw new Error(result.failed[0]?.message ?? "Checkpoint delete failed");
+      }
+      setOlderCheckpoints((prev) => prev.filter((c) => c.id !== id));
+      setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
+    } finally {
+      clearCheckpointsDeleting([id]);
+    }
   };
 
   const compareCheckpoints = async (id1: string, id2: string) => {
@@ -342,6 +373,9 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         updateCheckpoint,
         deleteCheckpoint,
         compareCheckpoints,
+        markCheckpointsDeleting,
+        clearCheckpointsDeleting,
+        isCheckpointDeletingOverlay,
       }}
     >
       {children}

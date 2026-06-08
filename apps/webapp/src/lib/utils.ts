@@ -1,12 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import {
-  collection,
-  query,
-  getDocs,
-  writeBatch,
-  type CollectionReference,
-} from "firebase/firestore";
+import type { CollectionReference } from "firebase/firestore";
+import { deleteAllInCollection } from "@homeapp/common/lib/deletion";
 import { db } from "./firebase";
 
 export function cn(...inputs: ClassValue[]) {
@@ -14,23 +9,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Deletes a collection and all its documents.
+ * Deletes a collection and all its documents (paginated batches).
  * Note: This does not handle sub-collections within the documents.
  */
 export async function deleteCollection(collectionRef: CollectionReference) {
-  const q = query(collectionRef);
-  const querySnapshot = await getDocs(q);
-
-  if (querySnapshot.size === 0) {
-    return; // No documents to delete
-  }
-
-  const batch = writeBatch(db);
-  querySnapshot.docs.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
-
-  await batch.commit();
+  await deleteAllInCollection(db, collectionRef);
 }
 
 /**

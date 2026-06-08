@@ -25,6 +25,16 @@ const sessionLog = createLogger('session');
 
 type DraftSource = 'eager' | 'caller';
 
+function isFirestorePermissionDenied(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'code' in error) {
+    return String((error as { code?: string }).code) === 'permission-denied';
+  }
+  if (error instanceof Error) {
+    return /insufficient permissions/i.test(error.message);
+  }
+  return false;
+}
+
 function draftInflightKey(propertyId?: string | null): string {
   return propertyId ? `property:${propertyId}` : 'global';
 }
@@ -52,7 +62,7 @@ interface SessionProviderProps {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export const SessionProvider = ({ children, createAgentSession: createAgentSessionFn, onError }: SessionProviderProps) => {
-  const { user } = useAuth();
+  const { user, auth } = useAuth();
   const { db } = useFirebase();
   const [sessionsByProperty, setSessionsByProperty] = useState<Record<string, Session[]>>({});
   const [draftsByProperty, setDraftsByProperty] = useState<Record<string, Session>>({});
@@ -84,9 +94,19 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       sessionLog.debug('draft.create.start', { key, source });
 
       const work = (async (): Promise<string | null> => {
+        const signedOut = () => auth.currentUser?.uid !== userId;
         try {
+          if (signedOut()) {
+            sessionLog.debug('draft.create.aborted', { key, source, reason: 'signed_out' });
+            return null;
+          }
+
           const agentSessionId = await createAgentSession(userId);
           if (!agentSessionId) return null;
+          if (signedOut()) {
+            sessionLog.debug('draft.create.aborted', { key, source, reason: 'signed_out' });
+            return null;
+          }
 
           const docRef = await addDoc(collection(db, 'users', userId, 'chats'), {
             name: 'draft',
@@ -102,6 +122,13 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
           });
           return docRef.id;
         } catch (err) {
+          if (signedOut() || isFirestorePermissionDenied(err)) {
+            sessionLog.debug(
+              propertyId ? 'draft.property.skipped' : 'draft.global.skipped',
+              { propertyId: propertyId ?? undefined, source, reason: 'signed_out' }
+            );
+            return null;
+          }
           sessionLog.error(
             propertyId ? 'draft.property.failed' : 'draft.global.failed',
             { propertyId: propertyId ?? undefined, source },
@@ -116,7 +143,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       draftCreationByKeyRef.current.set(key, work);
       return work;
     },
-    [createAgentSession, db]
+    [createAgentSession, auth, db]
   );
 
   const createGlobalDraftSession = useCallback(
@@ -287,6 +314,14 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
       setDraftsByProperty(newDraftsByProperty);
       setIsLoading(false);
     }, (error) => {
+        if (isFirestorePermissionDenied(error)) {
+          sessionLog.debug('sessions.subscribe.permission_denied');
+          setSessionsByProperty({});
+          setDraftsByProperty({});
+          setGlobalDraft(null);
+          setIsLoading(false);
+          return;
+        }
         sessionLog.error("sessions.subscribe.failed", undefined, error);
         if (onError) {
           onError(new Error('Could not load chat sessions.'));
@@ -299,6 +334,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
 
   useEffect(() => {
     if (!user || isLoading) return;
+    if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
 
     if (!globalDraft) {
       sessionLog.debug('draft.eager.global', { userId: truncateId(user.uid) });
@@ -311,7 +347,7 @@ export const SessionProvider = ({ children, createAgentSession: createAgentSessi
         void createDraftSessionInternal(user.uid, propId, 'eager');
       }
     });
-  }, [user, isLoading, globalDraft, draftsByProperty, sessionsByProperty, createDraftSessionInternal]);
+  }, [user, auth, isLoading, globalDraft, draftsByProperty, sessionsByProperty, createDraftSessionInternal]);
 
   return (
     <SessionContext.Provider value={{ sessionsByProperty, draftsByProperty, globalDraft, isLoading, createGlobalDraftSession, createPropertyDraftSession, beginNewPropertyChatSession }}>

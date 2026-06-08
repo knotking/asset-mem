@@ -21,6 +21,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Deletion audit (proxy-written; client read-only)
+    match /users/{userId}/deletionAudit/{eventId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Deletion notifications (proxy creates; client may mark read/dismissed)
+    match /users/{userId}/notifications/{notificationId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'dismissed']);
+    }
+
     // 2. Catch-all rule for other user data: Users can only read/write their own data
     match /users/{userId}/{document=**} {
        allow read: if request.auth != null && request.auth.uid == userId;

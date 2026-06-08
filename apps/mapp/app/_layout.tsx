@@ -12,6 +12,7 @@ import { Platform } from 'react-native';
 import { FirebaseProvider } from '@homeapp/common/contexts/firebase-context';
 import { AuthProvider, useAuth } from '@homeapp/common/contexts/auth-context';
 import { PropertiesListProvider } from '@homeapp/common/contexts/properties-list-context';
+import { MappDeletionConfigProvider } from '@/components/MappDeletionConfigProvider';
 import { SessionProvider } from '@homeapp/common/contexts/session-context';
 import { DocumentUploadProvider } from '@homeapp/common/contexts/document-upload-context';
 import { PreferencesProvider } from '@homeapp/common/contexts/preferences-context';
@@ -47,11 +48,13 @@ export default function RootLayout() {
             <ThemePreferenceSync />
             <MappLlmTokenUsageProvider>
               <SessionProvider createAgentSession={createAgentSession}>
-                <PropertiesListProvider>
-                  <DocumentUploadProvider>
-                    <Routes />
-                  </DocumentUploadProvider>
-                </PropertiesListProvider>
+                <MappDeletionConfigProvider>
+                  <PropertiesListProvider>
+                    <DocumentUploadProvider>
+                      <Routes />
+                    </DocumentUploadProvider>
+                  </PropertiesListProvider>
+                </MappDeletionConfigProvider>
               </SessionProvider>
             </MappLlmTokenUsageProvider>
           </PreferencesProvider>

@@ -14,7 +14,7 @@ import {
   SelectValue,
   NativeSelectScrollView,
 } from '@/components/ui/select';
-import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle } from 'lucide-react-native';
+import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react-native';
 import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -28,7 +28,15 @@ import {
   getDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import {
+  deleteDocumentAsset,
+  documentDeleteConfirm,
+  isResourceDeletionFailed,
+  resourceDeletingLabel,
+  resourceDeletionFailedLabel,
+} from '@homeapp/common/lib/deletion';
+import { getMappDeletionApiUrls } from '@/lib/deletion-api';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import * as DocumentPicker from 'expo-document-picker';
 import type { Document } from '@homeapp/common/types';
 import { PROPERTY_TYPES, getSubTypesForType, type PropertyType, type PropertySubType } from '@homeapp/common/constants/property-types';
@@ -65,7 +73,13 @@ interface PropertyDetailsTabProps {
 
 export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
   const router = useRouter();
-  const { documents, isLoading: documentsLoading } = useProperty();
+  const {
+    documents,
+    isLoading: documentsLoading,
+    markDocumentsDeleting,
+    clearDocumentsDeleting,
+    isDocumentDeletingOverlay,
+  } = useProperty();
   const { preferences } = usePreferences();
   const { dismissTip } = useDismissFeatureTip();
   const { user } = useAuth();
@@ -75,6 +89,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
   const documentLimitMessage = planLimitBlockMessage('document', documentsLimit);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
+  const [deleteDialogDocumentName, setDeleteDialogDocumentName] = React.useState('');
   const [successAlertOpen, setSuccessAlertOpen] = React.useState(false);
   const [successMessage, setSuccessMessage] = React.useState('');
   const [errorAlertOpen, setErrorAlertOpen] = React.useState(false);
@@ -316,6 +331,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
 
   const handleDeleteDocument = (document: Document) => {
     setDocumentToDelete(document);
+    setDeleteDialogDocumentName(document.name || '');
     setDeleteDialogOpen(true);
   };
 
@@ -336,38 +352,60 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
     setAddressDialogData(null);
   };
 
-  const confirmDeleteDocument = async () => {
-    if (!user || !documentToDelete) return;
+  const runDeleteDocument = React.useCallback(
+    async (document: Document) => {
+      if (!user) return;
+      const deletionUrls = getMappDeletionApiUrls();
 
-    try {
-      // Delete from Firebase Storage
-      if (documentToDelete.storagePath) {
-        const fileRef = ref(storage, documentToDelete.storagePath);
-        try {
-          await deleteObject(fileRef);
-          uploadLog.debug('document.storage.deleted');
-        } catch (error: any) {
-          if (error.code !== 'storage/object-not-found') {
-            uploadLog.error('document.storageDelete.failed', undefined, error);
-            throw error;
+      try {
+        if (deletionUrls?.document) {
+          try {
+            await updateDoc(doc(db, 'users', user.uid, 'docs', document.id), {
+              deletionStatus: 'deleting',
+              deletionStartedAt: serverTimestamp(),
+            });
+          } catch (tombstoneError) {
+            uploadLog.error('document.delete.tombstone.failed', undefined, tombstoneError);
           }
         }
+
+        const result = await deleteDocumentAsset({
+          db,
+          storage,
+          userId: user.uid,
+          docId: document.id,
+          storagePath: document.storagePath,
+          gsURI: document.gsURI,
+          documentDeleteUrl: deletionUrls?.document,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? 'Delete failed');
+        }
+
+        uploadLog.debug('document.deleted');
+        setSuccessMessage('Document deleted successfully.');
+        setSuccessAlertOpen(true);
+      } catch (error) {
+        uploadLog.error('document.delete.failed', undefined, error);
+        setErrorMessage('Failed to delete document. Please try again.');
+        setErrorAlertOpen(true);
+      } finally {
+        clearDocumentsDeleting([document.id]);
       }
+    },
+    [user, db, storage, clearDocumentsDeleting]
+  );
 
-      // Delete from Firestore
-      const docRef = doc(db, 'users', user.uid, 'docs', documentToDelete.id);
-      await deleteDoc(docRef);
-      uploadLog.debug('document.firestore.deleted');
-
-      setDeleteDialogOpen(false);
-      setDocumentToDelete(null);
-      setSuccessMessage('Document deleted successfully.');
-      setSuccessAlertOpen(true);
-    } catch (error) {
-      uploadLog.error('document.delete.failed', undefined, error);
-      setErrorMessage('Failed to delete document. Please try again.');
-      setErrorAlertOpen(true);
-    }
+  const confirmDeleteDocument = () => {
+    const doc = documentToDelete;
+    if (!doc) return;
+    setDeleteDialogOpen(false);
+    setDocumentToDelete(null);
+    setDeleteDialogDocumentName('');
+    markDocumentsDeleting([doc.id]);
+    void runDeleteDocument(doc);
   };
 
   return (
@@ -562,9 +600,12 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
               return mergedDocs.map((doc) => {
                 const isUploading = doc.source === 'uploading';
                 const uploadDoc = isUploading ? doc : null;
+                const persistedDoc = doc as Document;
+                const isDeleting = !isUploading && isDocumentDeletingOverlay(persistedDoc);
+                const isDeleteFailed = !isUploading && isResourceDeletionFailed(persistedDoc);
 
                 return (
-                  <Card key={doc.id} className="mb-2">
+                  <Card key={doc.id} className="relative mb-2">
                     <CardContent>
                       <View className="flex-row items-start justify-between">
                         <View className="flex-1">
@@ -641,19 +682,30 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
                                 </View>
                               );
                             })()}
+
+                          {!isUploading && isDeleteFailed ? (
+                            <View className="mt-2 flex-row items-start gap-1">
+                              <Icon as={AlertCircle} size={16} className="text-destructive" />
+                              <Text className="flex-1 text-xs text-destructive">
+                                {persistedDoc.deletionError || resourceDeletionFailedLabel}
+                              </Text>
+                            </View>
+                          ) : null}
                         </View>
 
-                        <Pressable
-                          onPress={() => {
-                            if (isUploading) {
-                              removeUploadingDoc(doc.id);
-                            } else {
-                              handleDeleteDocument(doc as Document);
-                            }
-                          }}
-                          className="ml-2 p-2">
-                          <Icon as={Trash2} size={20} color="#ef4444" />
-                        </Pressable>
+                        {!isDeleting ? (
+                          <Pressable
+                            onPress={() => {
+                              if (isUploading) {
+                                removeUploadingDoc(doc.id);
+                              } else {
+                                handleDeleteDocument(persistedDoc);
+                              }
+                            }}
+                            className="ml-2 p-2">
+                            <Icon as={Trash2} size={20} color="#ef4444" />
+                          </Pressable>
+                        ) : null}
                       </View>
 
                       {/* Show key entities */}
@@ -674,6 +726,16 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
                         </View>
                       )}
                     </CardContent>
+                    {isDeleting ? (
+                      <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90">
+                        <View className="flex-row items-center gap-2">
+                          <Icon as={Loader2} size={16} className="animate-spin text-muted-foreground" />
+                          <Text className="text-sm font-medium text-foreground">
+                            {resourceDeletingLabel}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
                   </Card>
                 );
               });
@@ -685,13 +747,20 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
       {/* Delete Confirmation Dialog */}
       <AlertDialogWrapper
         open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogOpen(false);
+            setDocumentToDelete(null);
+            setDeleteDialogDocumentName('');
+          }
+        }}
         title="Delete Document"
-        description={`Are you sure you want to delete "${documentToDelete?.name}"? This action cannot be undone.`}
+        description={documentDeleteConfirm(deleteDialogDocumentName)}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDeleteDocument}
         showCancel={true}
+        confirmVariant="destructive"
       />
 
       {/* Success Alert Dialog */}
