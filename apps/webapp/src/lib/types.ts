@@ -269,6 +269,10 @@ export type FileAttachment = {
 };
 
 export type Session = {
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   name: string;
   createdAt: Timestamp;
@@ -281,6 +285,10 @@ export type Session = {
 };
 
 export type Document = {
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   userId: string;
   propertyId: string;
@@ -319,6 +327,9 @@ export type Property = {
   services?: number;
   servicesCount?: number;
   checksCount?: number;
+  deletionStatus?: 'deleting' | 'failed';
+  deletionJobId?: string;
+  deletionError?: string | null;
 };
 
 /** @deprecated Use SearchLocationSource */
@@ -366,6 +377,10 @@ export type Service = {
 
 // Checkpoint types - copied from @homeapp/common/types for Firebase App Hosting compatibility
 export type Checkpoint = {
+  deletionStatus?: 'deleting' | 'failed';
+  deletionBatchId?: string;
+  deletionError?: string;
+
   id: string;
   userId: string;
   propertyId: string;

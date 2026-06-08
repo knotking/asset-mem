@@ -422,6 +422,14 @@ useEffect(() => {
 | `draft.begin.select` | Switched to existing empty draft |
 | `draft.begin.create_after_claim` | Promoted in-use draft, creating fresh draft |
 | `draft.claim` | Renamed `draft` using first user message (or date fallback) in Firestore |
+| `draft.create.aborted` / `draft.global.skipped` | Sign-out or account delete in progress; eager draft create skipped (not an error) |
+| `sessions.subscribe.permission_denied` | Chats listener closed after auth revoked (logout / account delete) |
+
+### Problem: `draft.global.failed` after account delete
+
+**Cause**: Race between `deleteUser` and eager draft creation — React `user` may lag behind revoked Firestore rules.
+
+**Behavior**: Draft create aborts when `auth.currentUser` is gone; permission-denied is logged at debug, not error.
 
 ### Problem: Multiple drafts for same property
 
@@ -525,6 +533,19 @@ async function createAgentSession(
 
 ---
 
-**Last Updated**: January 2025
+## Session deletion cascade
+
+Deleting a chat session uses `@homeapp/common/lib/deletion` (`deleteChatSession`) today:
+
+1. Scans `messages` for attachment `file.gsURI` and deletes Storage objects (client)
+2. `POST /deletion/agent-sessions` — Vertex Reasoning Engine session (awaited for bulk delete; best-effort for single delete)
+3. `POST /deletion/session-shared-chats` — removes `sharedChats` copies (Firestore rules block client delete)
+4. Paginated delete of all `messages` docs, then the `chats/{sessionId}` doc (client)
+
+Bulk delete in the session list uses `POST /deletion/sessions` via `deleteChatSessionsBatch` in `@homeapp/common/lib/deletion`. See [DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md).
+
+---
+
+**Last Updated**: June 2026
 **Maintainer**: HomeApp Team
 **Version**: 1.0

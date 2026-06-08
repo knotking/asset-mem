@@ -3,7 +3,6 @@ import { View, Pressable } from 'react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
@@ -37,9 +36,10 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
-import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { startPropertyDeletion, propertyRemovingLabel } from '@homeapp/common/lib/deletion';
 import { createLogger } from '@/lib/logger';
+import { getMappDeletionApiUrls } from '@/lib/deletion-api';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { PROPERTY_STAT_LABELS } from '@homeapp/common/lib/feature-discovery';
 
 const propertyLog = createLogger('property');
@@ -53,6 +53,8 @@ interface PropertyCardProps {
   checksCount: number;
   id: string;
   docGsURIs?: string[]; // Storage URIs for property documents
+  deletionStatus?: 'deleting' | 'failed';
+  deletionError?: string | null;
   onPress?: () => void;
 }
 
@@ -65,16 +67,19 @@ export default function PropertyCard({
   checksCount,
   id,
   docGsURIs = [],
+  deletionStatus,
+  deletionError,
   onPress,
 }: PropertyCardProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { db, storage } = useFirebase();
+  const { db } = useFirebase();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const [deleteProgress, setDeleteProgress] = React.useState(0);
-  const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
+  const [isStartingDelete, setIsStartingDelete] = React.useState(false);
+  const isStartingDeleteRef = React.useRef(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const isRemoving = deletionStatus === 'deleting' || isStartingDelete;
+  const isFailed = deletionStatus === 'failed';
 
   const handlePress = () => {
     if (onPress) {
@@ -94,88 +99,43 @@ export default function PropertyCard({
     setDeleteDialogOpen(true);
   };
 
-  const deleteCollection = async (collectionRef: any) => {
-    const querySnapshot = await getDocs(collectionRef);
-
-    if (querySnapshot.size === 0) {
-      return; // No documents to delete
-    }
-
-    const batch = writeBatch(db);
-    querySnapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-  };
-
   const handleDelete = async () => {
-    if (!user) {
-      setErrorMessage('You must be logged in to delete a property.');
+    if (!user || isStartingDelete) {
+      if (!user) setErrorMessage('You must be logged in to delete a property.');
       return;
     }
 
-    setDeleteDialogOpen(false);
-    setIsDeleting(true);
-    setDeleteProgress(0);
+    const deletionUrls = getMappDeletionApiUrls();
+    if (!deletionUrls) {
+      setErrorMessage('Deletion API is not configured.');
+      return;
+    }
+
+    setErrorMessage(null);
+    isStartingDeleteRef.current = true;
+    setIsStartingDelete(true);
 
     try {
-      const batch = writeBatch(db);
-
-      // 1. Delete the property document itself (20%)
-      setDeleteProgress(20);
-      const propertyRef = doc(db, 'users', user.uid, 'properties', id);
-      batch.delete(propertyRef);
-
-      // 2. Query and delete all documents associated with the property (40%)
-      setDeleteProgress(40);
-      const docsRef = collection(db, 'users', user.uid, 'docs');
-      const docsQuery = query(docsRef, where('propertyId', '==', id));
-      const docsSnapshot = await getDocs(docsQuery);
-      docsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
+      const { jobId, result } = await startPropertyDeletion({
+        db,
+        userId: user.uid,
+        propertyId: id,
+        propertyDeleteUrl: deletionUrls.property,
+        getIdToken: getFirebaseIdTokenForProxy,
       });
 
-      // 3. Delete all files from Storage (60%)
-      setDeleteProgress(60);
-      const deleteStoragePromises = docGsURIs.map((gsUri) => {
-        if (gsUri) {
-          const storageRef = ref(storage, gsUri);
-          return deleteObject(storageRef).catch((err: any) => {
-            if (err.code !== 'storage/object-not-found') {
-              propertyLog.error('storage.fileDelete.failed', undefined, err);
-            }
-          });
-        }
-        return Promise.resolve();
-      });
-      await Promise.all(deleteStoragePromises);
+      if (!result.ok || !jobId) {
+        throw new Error(result.failed[0]?.message ?? 'Failed to start property deletion');
+      }
 
-      // 4. Delete all associated chat sessions and their messages (80%)
-      setDeleteProgress(80);
-      const chatsRef = collection(db, 'users', user.uid, 'chats');
-      const chatsQuery = query(chatsRef, where('propertyId', '==', id));
-      const chatsSnapshot = await getDocs(chatsQuery);
-
-      const deleteSessionPromises = chatsSnapshot.docs.map(async (docSnap) => {
-        const messagesRef = collection(docSnap.ref, 'messages');
-        await deleteCollection(messagesRef);
-        batch.delete(docSnap.ref);
-      });
-      await Promise.all(deleteSessionPromises);
-
-      // Commit all batched Firestore deletes (100%)
-      setDeleteProgress(100);
-      await batch.commit();
-
-      // Show success dialog after deletion completes
-      setSuccessDialogOpen(true);
+      setDeleteDialogOpen(false);
     } catch (error) {
       propertyLog.error('property.delete.failed', undefined, error);
       const errMsg = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setDeleteDialogOpen(false);
       setErrorMessage(`Failed to delete property: ${errMsg}`);
-      setIsDeleting(false);
-      setDeleteProgress(0);
+      isStartingDeleteRef.current = false;
+      setIsStartingDelete(false);
     }
   };
 
@@ -199,7 +159,7 @@ export default function PropertyCard({
 
       <Pressable
         onPress={handlePress}
-        disabled={isDeleting}
+        disabled={isRemoving || isFailed}
         className="relative mb-4"
         android_ripple={{ color: 'rgba(0, 0, 0, 0.05)' }}
         style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
@@ -232,7 +192,7 @@ export default function PropertyCard({
               </View>
 
               {/* Menu Button */}
-              {!isDeleting && (
+              {!isRemoving && !isFailed && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8">
@@ -308,19 +268,35 @@ export default function PropertyCard({
             </View>
           </CardContent>
 
-          {/* Deletion Overlay */}
-          {isDeleting && (
-            <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90 px-8">
-              <Text className="mb-4 text-sm font-medium text-foreground">Deleting property...</Text>
-              <Progress value={deleteProgress} className="w-full" />
-              <Text className="mt-2 text-xs text-muted-foreground">{deleteProgress}%</Text>
+          {isRemoving ? (
+            <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90 px-6">
+              <Text className="text-center text-sm font-medium text-foreground">
+                {propertyRemovingLabel(name)}
+              </Text>
             </View>
-          )}
+          ) : null}
+          {isFailed ? (
+            <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/95 px-4">
+              <Text className="mb-2 text-center text-sm font-medium text-destructive">
+                Removal failed
+              </Text>
+              {deletionError ? (
+                <Text className="mb-3 text-center text-xs text-muted-foreground">{deletionError}</Text>
+              ) : null}
+              <Button size="sm" onPress={handleDelete}>
+                <Text>Retry</Text>
+              </Button>
+            </View>
+          ) : null}
         </Card>
       </Pressable>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isStartingDeleteRef.current) setDeleteDialogOpen(false);
+        }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -330,32 +306,23 @@ export default function PropertyCard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onPress={() => setDeleteDialogOpen(false)}>
+            <AlertDialogCancel disabled={isStartingDelete} onPress={() => setDeleteDialogOpen(false)}>
               <Text>Cancel</Text>
             </AlertDialogCancel>
-            <AlertDialogAction onPress={handleDelete}>
-              <Text className="text-red-500">Delete</Text>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isStartingDelete}
+              onPress={() => {
+                isStartingDeleteRef.current = true;
+                setIsStartingDelete(true);
+                void handleDelete();
+              }}>
+              <Text>{isStartingDelete ? 'Deleting…' : 'Delete'}</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Success Dialog */}
-      <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Success</AlertDialogTitle>
-            <AlertDialogDescription>
-              Property and all associated data have been deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onPress={() => setSuccessDialogOpen(false)}>
-              <Text>OK</Text>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

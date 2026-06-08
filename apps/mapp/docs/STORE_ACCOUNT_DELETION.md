@@ -9,7 +9,7 @@ Tier-1 compliance: in-app deletion, accurate copy, public help URL, privacy poli
 | **iOS / Android (mapp)** | Settings → **Delete account** |
 | **Web** | Settings → **Account** → **Delete account** |
 
-Implementation: Firebase Auth `deleteUser()` (removes sign-in immediately). Property data may remain; users can email support for full erasure.
+Implementation: Firebase Auth `deleteUser()` (removes sign-in immediately). Property data may remain; users can email support for full erasure. Full delete architecture: [docs/operations/DELETION_PLAN.md](../../../docs/operations/DELETION_PLAN.md).
 
 ## Public URL (Play Console Data safety)
 

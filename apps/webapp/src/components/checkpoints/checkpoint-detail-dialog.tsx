@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
+import { checkpointDeleteConfirm } from '@homeapp/common/lib/deletion';
 import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
@@ -36,14 +37,18 @@ import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
 const checkpointLog = createLogger('checkpoint');
 
 export function CheckpointDetailDialog() {
-  const { selectedCheckpoint, setSelectedCheckpoint, deleteCheckpoint, updateCheckpoint, checkpoints } =
-    useCheckpoint();
+  const {
+    selectedCheckpoint,
+    setSelectedCheckpoint,
+    deleteCheckpoint,
+    updateCheckpoint,
+    checkpoints,
+  } = useCheckpoint();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Reset edit mode when dialog closes
@@ -52,7 +57,6 @@ export function CheckpointDetailDialog() {
       setIsEditing(false);
       setEditedName('');
       setIsDeleteDialogOpen(false);
-      setIsDeleting(false);
     }
   }, [selectedCheckpoint]);
 
@@ -124,26 +128,28 @@ export function CheckpointDetailDialog() {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await deleteCheckpoint(checkpoint.id);
-      toast({
-        title: 'Checkpoint Deleted',
-        description: 'The checkpoint has been successfully deleted.',
-      });
-      setIsDeleteDialogOpen(false);
-      setSelectedCheckpoint(null);
-    } catch (error) {
-      checkpointLog.error('checkpoint.delete.failed', undefined, error);
-      toast({
-        title: 'Deletion Failed',
-        description: 'Failed to delete checkpoint. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleConfirmDelete = (event: React.MouseEvent) => {
+    event.preventDefault();
+    const checkpointId = checkpoint.id;
+    setIsDeleteDialogOpen(false);
+    setSelectedCheckpoint(null);
+    void (async () => {
+      try {
+        await deleteCheckpoint(checkpointId);
+        toast({
+          title: 'Checkpoint Deleted',
+          description: 'The checkpoint has been successfully deleted.',
+        });
+      } catch (error) {
+        checkpointLog.error('checkpoint.delete.failed', undefined, error);
+        toast({
+          title: 'Deletion Failed',
+          description: 'Failed to delete checkpoint. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+      }
+    })();
   };
 
   const handleClose = () => {
@@ -394,29 +400,20 @@ export function CheckpointDetailDialog() {
       </DialogContent>
     </Dialog>
 
-    <AlertDialog
-      open={isDeleteDialogOpen}
-      onOpenChange={(open) => {
-        if (!open && !isDeleting) {
-          setIsDeleteDialogOpen(false);
-        }
-      }}
-    >
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete checkpoint?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete &quot;{checkpoint.name}&quot;. This action cannot be undone.
+            {checkpointDeleteConfirm(checkpoint.name)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirmDelete}
-            disabled={isDeleting}
             className="bg-destructive hover:bg-destructive/90"
           >
-            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

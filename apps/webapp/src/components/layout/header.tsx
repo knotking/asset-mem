@@ -5,7 +5,8 @@ import React, { useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Settings, LogOut, LifeBuoy, Loader2, BookOpen } from 'lucide-react';
+import { Settings, LogOut, LifeBuoy, Loader2, BookOpen } from 'lucide-react';
+import { NotificationsBell } from '@/components/layout/notifications-bell';
 import { Button } from '@/components/ui/button';
 import { UserProfileAvatar } from '@/components/user-profile-avatar';
 import {
@@ -61,9 +62,7 @@ export function Header() {
             <TooltipProvider delayDuration={300}>
                 <ThemeToggle />
                 <HeaderIconTooltip label="Notifications">
-                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Notifications">
-                    <Bell className="h-4 w-4" />
-                  </Button>
+                  <NotificationsBell />
                 </HeaderIconTooltip>
                 <TokenUsageToolbar settingsReturnContext={returnContext} />
                 <HeaderIconTooltip label="FAQ & guides">

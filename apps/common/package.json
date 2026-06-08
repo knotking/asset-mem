@@ -60,7 +60,13 @@
     "./lib/structured-accordion-defaults": "./src/lib/structured-accordion-defaults.ts",
     "./lib/chat-context-limits": "./src/lib/chat-context-limits.ts",
     "./lib/chat-context-picker": "./src/lib/chat-context-picker.ts",
-    "./contexts/chat-context-context": "./src/contexts/chat-context-context.tsx"
+    "./contexts/chat-context-context": "./src/contexts/chat-context-context.tsx",
+    "./lib/deletion": "./src/lib/deletion/index.ts",
+    "./lib/deletion/api-client": "./src/lib/deletion/api-client.ts",
+    "./contexts/deletion-config-context": "./src/contexts/deletion-config-context.tsx",
+    "./hooks/use-notifications": "./src/hooks/use-notifications.ts",
+    "./hooks/use-property-deletion-listener": "./src/hooks/use-property-deletion-listener.ts",
+    "./hooks/use-optimistic-deletion-overlay": "./src/hooks/use-optimistic-deletion-overlay.ts"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

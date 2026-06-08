@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/auth-context';
 import { AppContextProvider } from '@/contexts/firebase-context';
+import { WebDeletionConfigProvider } from '@/components/deletion-config-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
@@ -34,9 +35,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AppContextProvider>
-              <SidebarProvider>
-                {children}
-              </SidebarProvider>
+              <WebDeletionConfigProvider>
+                <SidebarProvider>
+                  {children}
+                </SidebarProvider>
+              </WebDeletionConfigProvider>
             </AppContextProvider>
           </AuthProvider>
           <Toaster />

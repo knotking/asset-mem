@@ -38,7 +38,19 @@ import {
   deleteAllInCollection,
   writeSharedChatMessages,
 } from '@/lib/shared-chat';
-import { deleteCollection, cn } from '@/lib/utils';
+import {
+  deleteChatSession,
+  deleteChatSessionsBatch,
+  sessionDeleteConfirm,
+  sessionDeleteFailed,
+  sessionDeleteSuccess,
+  sessionsBulkDeleteSuccess,
+  resourceDeletingLabel,
+  resourceDeletionFailedLabel,
+  isResourceDeletionFailed,
+} from '@homeapp/common/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Skeleton } from '../ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -48,9 +60,10 @@ import { Checkbox } from '../ui/checkbox';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useSession } from '@/contexts/session-context';
-import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, limit } from 'firebase/firestore';
-import { deleteAgentSession } from '@/lib/api-agent';
+import { db, storage } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot, doc, where, updateDoc, getDocs, addDoc, serverTimestamp, getDoc, limit } from 'firebase/firestore';
+import { getWebDeletionApiUrls } from '@/lib/api-deletion';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger } from '@/lib/logger';
 import {
   getSessionActivitySortTime,
@@ -79,6 +92,8 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [sessionDeleteDialogName, setSessionDeleteDialogName] = useState('');
+  const { markDeleting, clearDeleting, isDeletingOverlay } = useOptimisticDeletionOverlay();
   const [searchTerm, setSearchTerm] = useState('');
   
   const [sessionToShare, setSessionToShare] = useState<Session | null>(null);
@@ -88,7 +103,6 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [sessionBeingRenamed, setSessionBeingRenamed] = useState<Session | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -232,48 +246,56 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
     }
   }, [exitSelectionMode, isSelectionMode]);
 
-  const handleBulkDelete = useCallback(async () => {
-    if (!user || selectedSessions.length === 0) return;
+  const handleBulkDelete = useCallback(
+    async (sessionIds: string[]) => {
+      if (!user || sessionIds.length === 0) return;
 
-    setIsBulkDeleting(true);
-    try {
-      for (const sessionItem of selectedSessions) {
-        const sessionRef = doc(db, 'users', user.uid, 'chats', sessionItem.id);
-        const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionItem.id, 'messages');
-
-        if (sessionItem.agentSessionId) {
-          try {
-            await deleteAgentSession(user.uid, sessionItem.agentSessionId);
-          } catch (error) {
-            sessionLog.error('session.agentDelete.failed', undefined, error);
-          }
+      const deletionUrls = getWebDeletionApiUrls();
+      try {
+        const result = await deleteChatSessionsBatch({
+          userId: user.uid,
+          sessionIds,
+          sessionsBatchUrl: deletionUrls.sessionsBatch,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? 'Bulk delete failed');
         }
 
-        await deleteCollection(messagesColRef);
-        await deleteDoc(sessionRef);
-
-        if (sessionId === sessionItem.id) {
+        if (sessionIds.includes(sessionId)) {
           router.replace(`/home/properties/${propertyId}/chat`);
         }
-      }
 
-      toast({
-        title: 'Sessions deleted',
-        description: `${selectedSessions.length} chat session${selectedSessions.length === 1 ? '' : 's'} deleted.`,
-      });
-      exitSelectionMode();
-    } catch (error) {
-      sessionLog.error('sessions.bulkDelete.failed', undefined, error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not delete the selected chat sessions.',
-      });
-    } finally {
-      setIsBulkDeleting(false);
+        toast({
+          title: 'Sessions deleted',
+          description: sessionsBulkDeleteSuccess(sessionIds.length),
+        });
+      } catch (error) {
+        sessionLog.error('sessions.bulkDelete.failed', undefined, error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not delete the selected chat sessions.',
+        });
+      } finally {
+        clearDeleting(sessionIds);
+      }
+    },
+    [user, sessionId, router, propertyId, toast, clearDeleting]
+  );
+
+  const handleConfirmBulkDelete = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const sessionIds = selectedSessions.map((s) => s.id);
+      if (sessionIds.length === 0) return;
       setIsBulkDeleteDialogOpen(false);
-    }
-  }, [user, selectedSessions, sessionId, router, propertyId, toast, exitSelectionMode]);
+      exitSelectionMode();
+      markDeleting(sessionIds);
+      void handleBulkDelete(sessionIds);
+    },
+    [selectedSessions, exitSelectionMode, markDeleting, handleBulkDelete]
+  );
 
   const handleRenameSession = useCallback((session: Session) => {
     if (isSelectionMode) {
@@ -322,38 +344,57 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
   }, [isRenaming]);
 
 
-  const handleDeleteSession = async () => {
-    if (!sessionToDelete || !user) return;
-    
-    const sessionToDeleteCache = sessionToDelete;
-    setSessionToDelete(null);
+  const handleOpenDeleteSessionDialog = useCallback((session: Session) => {
+    setSessionToDelete(session);
+    setSessionDeleteDialogName(session.name || '');
+  }, []);
 
-    try {
-        const sessionRef = doc(db, 'users', user.uid, 'chats', sessionToDeleteCache.id);
-        const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionToDeleteCache.id, 'messages');
+  const runDeleteSession = useCallback(
+    async (session: Session) => {
+      if (!user) return;
+      const deletionUrls = getWebDeletionApiUrls();
 
-        if (sessionToDeleteCache.agentSessionId) {
-            deleteAgentSession(user.uid, sessionToDeleteCache.agentSessionId).catch(error => {
-                sessionLog.error('session.agentDelete.failed', undefined, error);
-            });
+      try {
+        const result = await deleteChatSession({
+          userId: user.uid,
+          session,
+          sessionDeleteUrl: deletionUrls.session,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? 'Delete failed');
         }
 
-        await deleteCollection(messagesColRef);
-        await deleteDoc(sessionRef);
-
-        if (sessionId === sessionToDeleteCache.id) {
-            router.replace(`/home/properties/${propertyId}/chat`);
+        if (sessionId === session.id) {
+          router.replace(`/home/properties/${propertyId}/chat`);
         }
-
-    } catch (error) {
+        toast({ title: 'Session deleted', description: sessionDeleteSuccess });
+      } catch (error) {
         sessionLog.error('session.delete.failed', undefined, error);
         toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not delete the chat session.',
+          variant: 'destructive',
+          title: 'Error',
+          description: sessionDeleteFailed,
         });
-    }
-  };
+      } finally {
+        clearDeleting([session.id]);
+      }
+    },
+    [user, sessionId, router, propertyId, toast, clearDeleting]
+  );
+
+  const handleConfirmSingleDelete = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const session = sessionToDelete;
+      if (!session) return;
+      setSessionToDelete(null);
+      setSessionDeleteDialogName('');
+      markDeleting([session.id]);
+      void runDeleteSession(session);
+    },
+    [sessionToDelete, markDeleting, runDeleteSession]
+  );
 
   const handleOpenShareDialog = (session: Session) => {
     setSessionToShare(session);
@@ -615,7 +656,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
 
                     if (isCollapsed) {
                         const isSelected = selectedSessionIds.includes(session.id);
+                        const isDeleting = isDeletingOverlay(session);
+                        const isDeleteFailed = isResourceDeletionFailed(session);
                         const handleItemInteraction = () => {
+                            if (isDeleting) return;
                             if (isSelectionMode) {
                                 toggleSessionSelection(session.id);
                                 return;
@@ -642,9 +686,15 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                             "group relative flex items-center justify-center w-full p-3 rounded-lg cursor-pointer transition-colors h-10",
                                             isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
                                             isSelectionMode && "pl-8",
-                                            isSelected && "ring-2 ring-primary"
+                                            isSelected && "ring-2 ring-primary",
+                                            isDeleting && "opacity-90"
                                         )}
                                     >
+                                        {isDeleting && (
+                                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90">
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            </div>
+                                        )}
                                         {isSelectionMode && (
                                             <div
                                                 className="absolute left-2 top-1/2 -translate-y-1/2"
@@ -659,7 +709,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                             </div>
                                         )}
                                         <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
-                                        {!isSelectionMode && (
+                                        {!isSelectionMode && !isDeleting && (
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -674,7 +724,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                                         <DropdownMenuItem onClick={() => handleRenameSession(session)}>
                                                             <Pencil className="mr-2 h-4 w-4" /> Rename
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
+                                                        <DropdownMenuItem onClick={() => handleOpenDeleteSessionDialog(session)} className="text-destructive">
                                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -697,7 +747,10 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                     }
 
                     const isSelected = selectedSessionIds.includes(session.id);
+                    const isDeleting = isDeletingOverlay(session);
+                    const isDeleteFailed = isResourceDeletionFailed(session);
                     const handleItemInteraction = () => {
+                        if (isDeleting) return;
                         if (isSelectionMode) {
                             toggleSessionSelection(session.id);
                             return;
@@ -720,12 +773,20 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                         onClick={handleItemInteraction}
                         onKeyDown={handleItemKeyDown}
                         className={cn(
-                            "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors w-full",
-                            // isSelectionMode ? "w-[85%]" : "w-[90%]",
+                            "group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors w-full",
                             isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50",
-                            isSelected && "ring-2 ring-primary"
+                            isSelected && "ring-2 ring-primary",
+                            isDeleting && "opacity-90"
                         )}
                         >
+                        {isDeleting && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/90">
+                                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    {resourceDeletingLabel}
+                                </div>
+                            </div>
+                        )}
                         <div className='flex-1 flex items-start gap-3 min-w-0'>
                             {isSelectionMode && (
                                 <div
@@ -749,9 +810,12 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                 {messageCountLabel && (
                                   <p className="text-xs text-muted-foreground truncate">{messageCountLabel}</p>
                                 )}
+                                {isDeleteFailed ? (
+                                  <p className="text-xs text-destructive truncate">{session.deletionError || resourceDeletionFailedLabel}</p>
+                                ) : null}
                             </div>
                         </div>
-                        {!isSelectionMode && (
+                        {!isSelectionMode && !isDeleting && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={e => e.stopPropagation()}>
@@ -765,7 +829,7 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
                                     <DropdownMenuItem onClick={() => handleRenameSession(session)}>
                                         <Pencil className="mr-2 h-4 w-4" /> Rename
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setSessionToDelete(session)} className="text-destructive">
+                                    <DropdownMenuItem onClick={() => handleOpenDeleteSessionDialog(session)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -785,29 +849,35 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
             </Button>
         </footer>
 
-      <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
+      <AlertDialog
+        open={!!sessionToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSessionToDelete(null);
+            setSessionDeleteDialogName('');
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the chat session &quot;{sessionToDelete?.name}&quot; and all of its messages. This action cannot be undone.
+              {sessionDeleteConfirm(sessionDeleteDialogName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSession} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleConfirmSingleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog
-        open={isBulkDeleteDialogOpen}
-        onOpenChange={(open) => {
-          if (!open && !isBulkDeleting) {
-            setIsBulkDeleteDialogOpen(false);
-          }
-        }}
-      >
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedCount} session{selectedCount === 1 ? '' : 's'}?</AlertDialogTitle>
@@ -817,13 +887,12 @@ export function SessionNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onM
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleBulkDelete}
-              disabled={isBulkDeleting || selectedCount === 0}
+              onClick={handleConfirmBulkDelete}
+              disabled={selectedCount === 0}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {isBulkDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

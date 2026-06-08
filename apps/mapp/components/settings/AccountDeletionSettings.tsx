@@ -3,7 +3,9 @@ import { Linking } from 'react-native';
 import { deleteUser } from 'firebase/auth';
 import { Trash2 } from 'lucide-react-native';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import {
+  ACCOUNT_DELETION_BILLING_NOTE,
   ACCOUNT_DELETION_CARD_DESCRIPTION,
   ACCOUNT_DELETION_DIALOG_BODY,
   ACCOUNT_DELETION_REAUTH_MESSAGE,
@@ -16,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -37,10 +40,12 @@ function getSupportEmail(): string {
 
 export function AccountDeletionSettings() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const supportEmail = getSupportEmail();
   const [open, setOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [dialogError, setDialogError] = React.useState<string | null>(null);
 
   if (!user) {
     return null;
@@ -48,24 +53,26 @@ export function AccountDeletionSettings() {
 
   const handleDelete = async () => {
     setError(null);
-    setDeleting(true);
+    setDialogError(null);
     try {
       await deleteUser(user);
       setOpen(false);
       await logout();
+      router.replace('/');
     } catch (err: unknown) {
       const code =
         err && typeof err === 'object' && 'code' in err
           ? String((err as { code?: string }).code)
           : undefined;
       accountLog.warn('account.delete.failed', { code });
-      if (code === 'auth/requires-recent-login') {
-        setError(ACCOUNT_DELETION_REAUTH_MESSAGE);
-      } else {
-        setError(
-          err instanceof Error ? err.message : 'Could not delete your account. Please try again.'
-        );
-      }
+      const message =
+        code === 'auth/requires-recent-login'
+          ? ACCOUNT_DELETION_REAUTH_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Could not delete your account. Please try again.';
+      setError(message);
+      setDialogError(message);
     } finally {
       setDeleting(false);
     }
@@ -92,17 +99,26 @@ export function AccountDeletionSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-3">
+        <Text className="text-sm text-muted-foreground">{ACCOUNT_DELETION_BILLING_NOTE}</Text>
         <Text className="text-sm text-muted-foreground">
-          {fullDataErasureSupportLine(supportEmail)}{' '}
+          {fullDataErasureSupportLine()}{' '}
           <Text className="text-sm text-blue-600" onPress={openSupportEmail}>
             {supportEmail}
           </Text>
+          .
         </Text>
         <Button variant="link" className="h-auto self-start p-0" onPress={openDeletionHelp}>
           <Text className="text-sm text-blue-600">How account deletion works</Text>
         </Button>
         {error ? <Text className="text-sm text-destructive">{error}</Text> : null}
-        <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialog
+          open={open}
+          onOpenChange={(next) => {
+            if (!deleting) {
+              setOpen(next);
+              if (!next) setDialogError(null);
+            }
+          }}>
           <AlertDialogTrigger asChild>
             <Button variant="outline" className="border-destructive">
               <Icon as={Trash2} size={18} className="mr-2 text-destructive" />
@@ -116,18 +132,22 @@ export function AccountDeletionSettings() {
                 <Text className="text-sm text-muted-foreground">{ACCOUNT_DELETION_DIALOG_BODY}</Text>
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {dialogError ? (
+              <Text className="text-sm text-destructive">{dialogError}</Text>
+            ) : null}
             <AlertDialogFooter>
               <AlertDialogCancel disabled={deleting}>
                 <Text>Cancel</Text>
               </AlertDialogCancel>
-              <Button
+              <AlertDialogAction
                 disabled={deleting}
-                className="bg-destructive"
-                onPress={() => void handleDelete()}>
-                <Text className="text-destructive-foreground">
-                  {deleting ? 'Deleting…' : 'Delete account'}
-                </Text>
-              </Button>
+                variant="destructive"
+                onPress={() => {
+                  setDeleting(true);
+                  void handleDelete();
+                }}>
+                <Text>{deleting ? 'Deleting…' : 'Delete account'}</Text>
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

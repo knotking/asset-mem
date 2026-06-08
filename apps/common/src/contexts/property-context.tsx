@@ -4,6 +4,7 @@ import type { Document as DocumentType, Property } from '../types';
 import { useAuth } from './auth-context';
 import { useFirebase } from './firebase-context';
 import { createLogger } from '../lib/logger';
+import { useOptimisticDeletionOverlay } from '../hooks/use-optimistic-deletion-overlay';
 
 const propertyLog = createLogger('property');
 
@@ -11,6 +12,11 @@ interface PropertyContextType {
   documents: DocumentType[];
   isLoading: boolean;
   property: Property | null;
+  markDocumentsDeleting: (ids: string[]) => void;
+  clearDocumentsDeleting: (ids: string[]) => void;
+  isDocumentDeletingOverlay: (
+    document: Pick<DocumentType, 'id' | 'deletionStatus'> | null | undefined
+  ) => boolean;
 }
 
 interface PropertyProviderProps {
@@ -27,6 +33,11 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
   const { user } = useAuth();
   const { db } = useFirebase();
   const isNewPropertyFlow = propertyId === 'new-property';
+  const {
+    markDeleting: markDocumentsDeleting,
+    clearDeleting: clearDocumentsDeleting,
+    isDeletingOverlay: isDocumentDeletingOverlay,
+  } = useOptimisticDeletionOverlay();
 
   useEffect(() => {
     if (!user || isNewPropertyFlow || !propertyId) {
@@ -78,7 +89,15 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
 
 
   return (
-    <PropertyContext.Provider value={{ documents, isLoading, property }}>
+    <PropertyContext.Provider
+      value={{
+        documents,
+        isLoading,
+        property,
+        markDocumentsDeleting,
+        clearDocumentsDeleting,
+        isDocumentDeletingOverlay,
+      }}>
       {children}
     </PropertyContext.Provider>
   );

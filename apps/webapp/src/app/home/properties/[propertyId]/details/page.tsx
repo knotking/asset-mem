@@ -9,14 +9,25 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useToast } from "@/hooks/use-toast";
 import type { Document as DocumentType } from '@/lib/types';
 import { db, storage } from '@/lib/firebase';
-import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { doc, updateDoc } from 'firebase/firestore';
+import {
+  deleteDocumentAsset,
+  isResourceDeletionFailed,
+} from '@homeapp/common/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+import { getWebDeletionApiUrls } from '@/lib/api-deletion';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles } from "lucide-react";
+import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles, Loader2 } from "lucide-react";
+import {
+  documentDeleteConfirm,
+  documentDeleteFailed,
+  resourceDeletingLabel, resourceDeletionFailedLabel,
+} from '@homeapp/common/lib/deletion';
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,6 +39,7 @@ import { FeatureTipBanner } from '@/components/feature-discovery/feature-tip-ban
 import { usePreferences } from '@/contexts/preferences-context';
 import { useDismissFeatureTip } from '@/hooks/use-dismiss-feature-tip';
 import { shouldShowFeatureTip } from '@/lib/feature-discovery';
+import { cn } from '@/lib/utils';
 
 const propertyLog = createLogger('property');
 
@@ -41,7 +53,17 @@ const docTypeIcons: { [key: string]: React.ElementType } = {
 };
 
 
-function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteClick: (docId: string, docName: string) => void }) {
+function DocumentListItem({
+  doc,
+  isDeleting,
+  isDeleteFailed,
+  onDeleteClick,
+}: {
+  doc: DocumentType;
+  isDeleting?: boolean;
+  isDeleteFailed?: boolean;
+  onDeleteClick: (doc: DocumentType) => void;
+}) {
     const getFileExtension = (contentType: string | undefined) => {
         if (!contentType) return 'DOC';
         const parts = contentType.split('/');
@@ -52,7 +74,7 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
     const failureSummary = getFailedDocumentSummary(doc);
 
     return (
-        <Card className="group transition-shadow hover:shadow-lg">
+        <Card className={cn('group relative transition-shadow hover:shadow-lg', isDeleting && 'opacity-90')}>
             <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
@@ -73,6 +95,8 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
                                     <Sparkles className="h-4 w-4 animate-spin text-primary" />
                                     <span>Analyzing...</span>
                                 </div>
+                            ) : isDeleteFailed ? (
+                                <p className="mt-2 text-sm text-destructive">{doc.deletionError || resourceDeletionFailedLabel}</p>
                             ) : failureSummary ? (
                                 <p className="mt-2 text-sm text-destructive">{failureSummary}</p>
                             ) : (
@@ -91,18 +115,28 @@ function DocumentListItem({ doc, onDeleteClick }: { doc: DocumentType, onDeleteC
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" asChild>
-                            <a href={doc.url} target="_blank" rel="noopener noreferrer" download={doc.name}>
-                                <Download className="h-4 w-4" />
-                            </a>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDeleteClick(doc.id, doc.name)}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    {!isDeleting ? (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" asChild>
+                              <a href={doc.url} target="_blank" rel="noopener noreferrer" download={doc.name}>
+                                  <Download className="h-4 w-4" />
+                              </a>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDeleteClick(doc)}>
+                              <Trash2 className="h-4 w-4" />
+                          </Button>
+                      </div>
+                    ) : null}
                 </div>
             </CardContent>
+            {isDeleting ? (
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {resourceDeletingLabel}
+                </div>
+              </div>
+            ) : null}
         </Card>
     );
 }
@@ -115,7 +149,13 @@ function PropertyDetailsContent() {
     const { onOpen: openUploadDialog } = useUploadDialog();
     const { preferences } = usePreferences();
     const { dismissTip } = useDismissFeatureTip();
-    const [docToDelete, setDocToDelete] = useState<{id: string, name: string} | null>(null);
+    const [docToDelete, setDocToDelete] = useState<DocumentType | null>(null);
+    const [deleteDialogDocumentName, setDeleteDialogDocumentName] = useState('');
+    const { markDeleting, clearDeleting, isDeletingOverlay } = useOptimisticDeletionOverlay();
+    const handleOpenDeleteDocumentDialog = useCallback((doc: DocumentType) => {
+        setDocToDelete(doc);
+        setDeleteDialogDocumentName(doc.name || '');
+    }, []);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(property?.name || '');
@@ -170,40 +210,51 @@ function PropertyDetailsContent() {
         }
     };
 
-    const handleDelete = async () => {
-        if (!docToDelete || !user) return;
-        
-        const docToDeleteCache = docToDelete;
-        setDocToDelete(null);
+    const runDeleteDocument = useCallback(
+        async (doc: DocumentType) => {
+            if (!user) return;
 
-        try {
-            const docRef = doc(db, 'users', user.uid, 'docs', docToDeleteCache.id);
-            const docSnap = await getDoc(docRef);
-
-            if (!docSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Document not found.' });
-                return;
-            }
-
-            const docData = docSnap.data();
-            const storagePath = docData.storagePath;
-
-            await deleteDoc(docRef);
-
-            if (storagePath) {
-                const fileRef = ref(storage, storagePath);
-                await deleteObject(fileRef).catch((storageError: any) => {
-                     if (storageError.code !== 'storage/object-not-found') throw storageError;
+            try {
+                const deletionUrls = getWebDeletionApiUrls();
+                const result = await deleteDocumentAsset({
+                    db,
+                    storage,
+                    userId: user.uid,
+                    docId: doc.id,
+                    storagePath: doc.storagePath,
+                    gsURI: doc.gsURI,
+                    documentDeleteUrl: deletionUrls.document,
+                    getIdToken: getFirebaseIdTokenForProxy,
                 });
+
+                if (!result.ok) {
+                    throw new Error(result.failed[0]?.message ?? 'Delete failed');
+                }
+
+                toast({ title: "Document Deleted", description: `"${doc.name}" has been removed.` });
+            } catch (error) {
+                propertyLog.error('document.delete.failed', { docId: doc.id }, error);
+                const errorMessage = error instanceof Error ? error.message : documentDeleteFailed;
+                toast({ variant: "destructive", title: "Deletion Failed", description: errorMessage });
+            } finally {
+                clearDeleting([doc.id]);
             }
-            
-            toast({ title: "Document Deleted", description: `"${docToDeleteCache.name}" has been removed.` });
-        } catch (error) {
-            propertyLog.error('document.delete.failed', { docId: docToDeleteCache.id }, error);
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-            toast({ variant: "destructive", title: "Deletion Failed", description: errorMessage });
-        }
-    };
+        },
+        [user, toast, clearDeleting]
+    );
+
+    const handleConfirmDeleteDocument = useCallback(
+        (event: React.MouseEvent) => {
+            event.preventDefault();
+            const doc = docToDelete;
+            if (!doc) return;
+            setDocToDelete(null);
+            setDeleteDialogDocumentName('');
+            markDeleting([doc.id]);
+            void runDeleteDocument(doc);
+        },
+        [docToDelete, markDeleting, runDeleteDocument]
+    );
 
 
     if (authPending || !user || isPropertyLoading) {
@@ -372,7 +423,13 @@ function PropertyDetailsContent() {
                      {documents.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t">
                             {documents.map(doc => (
-                                <DocumentListItem key={doc.id} doc={doc} onDeleteClick={(id, name) => setDocToDelete({id, name})} />
+                                <DocumentListItem
+                                  key={doc.id}
+                                  doc={doc}
+                                  isDeleting={isDeletingOverlay(doc)}
+                                  isDeleteFailed={isResourceDeletionFailed(doc)}
+                                  onDeleteClick={handleOpenDeleteDocumentDialog}
+                                />
                             ))}
                         </div>
                     ) : (
@@ -383,17 +440,30 @@ function PropertyDetailsContent() {
                 </CardContent>
             </Card>
             
-            <AlertDialog open={!!docToDelete} onOpenChange={(open) => !open && setDocToDelete(null)}>
+            <AlertDialog
+                open={!!docToDelete}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDocToDelete(null);
+                        setDeleteDialogDocumentName('');
+                    }
+                }}
+            >
                 <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
                     <AlertDialogDescription>
-                    This will permanently delete the document &quot;{docToDelete?.name}&quot;. This action cannot be undone.
+                    {documentDeleteConfirm(deleteDialogDocumentName)}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex justify-end gap-2">
-                    <AlertDialogCancel onClick={() => setDocToDelete(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleConfirmDeleteDocument}
+                        className="bg-destructive hover:bg-destructive/90"
+                    >
+                        Delete
+                    </AlertDialogAction>
                 </div>
                 </AlertDialogContent>
             </AlertDialog>

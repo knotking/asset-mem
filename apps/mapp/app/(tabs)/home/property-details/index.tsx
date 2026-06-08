@@ -84,7 +84,12 @@ export default function PropertyDetailsScreen() {
 
   const { properties } = usePropertiesList();
   const { draftsByProperty, beginNewPropertyChatSession, sessionsByProperty } = useSession();
-  const { documents, property: firestoreProperty, isLoading: isPropertyLoading } = useProperty();
+  const {
+    documents,
+    property: firestoreProperty,
+    isLoading: isPropertyLoading,
+    isDocumentDeletingOverlay,
+  } = useProperty();
   const { user } = useAuth();
   const { updatePreferences } = usePreferences();
   const { db, storage } = useFirebase();
@@ -185,6 +190,16 @@ export default function PropertyDetailsScreen() {
       setSelectedDocuments(documents);
     }
   }, [documents, selectedDocuments.length, hasManuallyInteracted]);
+
+  React.useEffect(() => {
+    setSelectedDocuments((prev) =>
+      prev.filter((selected) => {
+        const live = documents.find((d) => d.id === selected.id);
+        if (!live) return false;
+        return !isDocumentDeletingOverlay(live);
+      })
+    );
+  }, [documents, isDocumentDeletingOverlay]);
 
   React.useEffect(() => {
     if (selectedSessionId && !searchLocation) {

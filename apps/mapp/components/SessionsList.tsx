@@ -39,8 +39,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { deleteCollection, cn } from '@/lib/utils';
-import { deleteAgentSession, WEB_APP_URL } from '@/lib/api';
+import {
+  deleteChatSession,
+  deleteChatSessionsBatch,
+  sessionDeleteConfirm,
+  sessionDeleteFailed,
+  sessionDeleteSuccess,
+  sessionsBulkDeleteSuccess,
+  isResourceDeletionFailed,
+  resourceDeletingLabel,
+  resourceDeletionFailedLabel,
+} from '@homeapp/common/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+import { cn } from '@/lib/utils';
+import { WEB_APP_URL } from '@/lib/api';
+import { getMappDeletionApiUrls } from '@/lib/deletion-api';
+import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { createLogger } from '@/lib/logger';
 import {
   filterAndSortSessions,
@@ -72,6 +86,8 @@ const SessionItem = React.memo(({
   session,
   isSelected,
   isSelectionMode,
+  isDeleting,
+  isDeleteFailed,
   onPress,
   onLongPress,
   handleOpenShareDialog,
@@ -81,6 +97,8 @@ const SessionItem = React.memo(({
   session: Session;
   isSelected: boolean;
   isSelectionMode: boolean;
+  isDeleting?: boolean;
+  isDeleteFailed?: boolean;
   onPress: (session: Session) => void;
   onLongPress: (session: Session) => void;
   handleOpenShareDialog: (session: Session) => void;
@@ -94,11 +112,13 @@ const SessionItem = React.memo(({
 
   return (
     <Pressable
-      onPress={handlePress}
-      onLongPress={handleLongPress}
+      onPress={isDeleting ? undefined : handlePress}
+      onLongPress={isDeleting ? undefined : handleLongPress}
+      disabled={isDeleting}
       className={cn(
-        'rounded-lg border bg-card p-4',
-        isSelected ? 'border-primary' : 'border-border'
+        'relative rounded-lg border bg-card p-4',
+        isSelected ? 'border-primary' : 'border-border',
+        isDeleting && 'opacity-90'
       )}>
       <View className="flex-row items-start gap-3">
         {isSelectionMode && (
@@ -118,10 +138,15 @@ const SessionItem = React.memo(({
             {messageCountLabel && (
               <Text className="text-xs text-muted-foreground">{messageCountLabel}</Text>
             )}
+            {isDeleteFailed ? (
+              <Text className="text-xs text-destructive">
+                {session.deletionError || resourceDeletionFailedLabel}
+              </Text>
+            ) : null}
           </View>
         </View>
 
-        {!isSelectionMode && (
+        {!isSelectionMode && !isDeleting && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -147,6 +172,14 @@ const SessionItem = React.memo(({
           </DropdownMenu>
         )}
       </View>
+      {isDeleting ? (
+        <View className="absolute inset-0 items-center justify-center rounded-lg bg-background/90">
+          <View className="flex-row items-center gap-2">
+            <Icon as={Loader2} size={16} className="animate-spin text-muted-foreground" />
+            <Text className="text-sm font-medium text-foreground">{resourceDeletingLabel}</Text>
+          </View>
+        </View>
+      ) : null}
     </Pressable>
   );
 });
@@ -169,10 +202,12 @@ export default function SessionsList({
 }: SessionsListProps) {
   const { sessionsByProperty, draftsByProperty, isLoading, beginNewPropertyChatSession } = useSession();
   const { user } = useAuth();
-  const { db } = useFirebase();
+  const { db, storage } = useFirebase();
 
   // Delete dialog state
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [sessionDeleteDialogName, setSessionDeleteDialogName] = useState('');
+  const { markDeleting, clearDeleting, isDeletingOverlay } = useOptimisticDeletionOverlay();
 
   // Share dialog state
   const [sessionToShare, setSessionToShare] = useState<Session | null>(null);
@@ -191,7 +226,6 @@ export default function SessionsList({
   const sessions = sessionsByProperty[propertyId] || [];
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [sessionBeingRenamed, setSessionBeingRenamed] = useState<Session | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -315,41 +349,45 @@ export default function SessionsList({
       setIsRenaming(false);
     }
   }, [db, renameValue, sessionBeingRenamed, showAlert, user]);
+  const handleBulkDeleteSessions = useCallback(
+    async (sessionIds: string[]) => {
+      if (!user || sessionIds.length === 0) return;
 
-  const handleBulkDeleteSessions = useCallback(async () => {
-    if (!user || selectedSessions.length === 0) return;
-
-    setIsBulkDeleting(true);
-    try {
-      for (const sessionItem of selectedSessions) {
-        const sessionRef = doc(db, 'users', user.uid, 'chats', sessionItem.id);
-        const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionItem.id, 'messages');
-
-        if (sessionItem.agentSessionId) {
-          try {
-            await deleteAgentSession(user.uid, sessionItem.agentSessionId);
-          } catch (error) {
-            sessionLog.error('session.agentDelete.failed', undefined, error);
-          }
-        }
-
-        await deleteCollection(db, messagesColRef);
-        await deleteDoc(sessionRef);
+      const deletionUrls = getMappDeletionApiUrls();
+      if (!deletionUrls?.sessionsBatch) {
+        showAlert('Error', 'Deletion API is not configured.');
+        clearDeleting(sessionIds);
+        return;
       }
+      try {
+        const result = await deleteChatSessionsBatch({
+          userId: user.uid,
+          sessionIds,
+          sessionsBatchUrl: deletionUrls.sessionsBatch,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? 'Bulk delete failed');
+        }
+        showAlert('Success', sessionsBulkDeleteSuccess(sessionIds.length));
+      } catch (error) {
+        sessionLog.error('sessions.bulkDelete.failed', undefined, error);
+        showAlert('Error', 'Could not delete the selected chat sessions. Please try again.');
+      } finally {
+        clearDeleting(sessionIds);
+      }
+    },
+    [user, showAlert, clearDeleting]
+  );
 
-      showAlert(
-        'Success',
-        `${selectedSessions.length} chat session${selectedSessions.length === 1 ? '' : 's'} deleted successfully.`
-      );
-      exitSelectionMode();
-    } catch (error) {
-      sessionLog.error('sessions.bulkDelete.failed', undefined, error);
-      showAlert('Error', 'Could not delete the selected chat sessions. Please try again.');
-    } finally {
-      setIsBulkDeleting(false);
-      setBulkDeleteOpen(false);
-    }
-  }, [user, selectedSessions, db, deleteAgentSession, exitSelectionMode, showAlert]);
+  const handleConfirmBulkDelete = useCallback(() => {
+    const sessionIds = selectedSessions.map((s) => s.id);
+    if (sessionIds.length === 0) return;
+    setBulkDeleteOpen(false);
+    exitSelectionMode();
+    markDeleting(sessionIds);
+    void handleBulkDeleteSessions(sessionIds);
+  }, [selectedSessions, exitSelectionMode, markDeleting, handleBulkDeleteSessions]);
   const draftSession = draftsByProperty[propertyId];
   // Draft sessions are hidden from the list (similar to webapp)
   // They are auto-selected on property load and transition to regular sessions on first message
@@ -379,34 +417,48 @@ export default function SessionsList({
     onCreateSession?.(targetSessionId);
   };
 
-  const handleDeleteSession = async () => {
-    if (!sessionToDelete || !user) return;
+  const handleOpenDeleteSessionDialog = useCallback((session: Session) => {
+    setSessionToDelete(session);
+    setSessionDeleteDialogName(session.name || '');
+  }, []);
 
-    const sessionToDeleteCache = sessionToDelete;
-    setSessionToDelete(null);
-
-    try {
-      const sessionRef = doc(db, 'users', user.uid, 'chats', sessionToDeleteCache.id);
-      const messagesColRef = collection(db, 'users', user.uid, 'chats', sessionToDeleteCache.id, 'messages');
-
-      // Delete agent session from backend if it exists
-      if (sessionToDeleteCache.agentSessionId) {
-        deleteAgentSession(user.uid, sessionToDeleteCache.agentSessionId).catch((error) => {
-          sessionLog.error('session.agentDelete.failed', undefined, error);
-        });
+  const runDeleteSession = useCallback(
+    async (session: Session) => {
+      if (!user) return;
+      const deletionUrls = getMappDeletionApiUrls();
+      if (!deletionUrls?.session) {
+        showAlert('Error', 'Deletion API is not configured.');
+        return;
       }
+      try {
+        const result = await deleteChatSession({
+          userId: user.uid,
+          session,
+          sessionDeleteUrl: deletionUrls.session,
+          getIdToken: getFirebaseIdTokenForProxy,
+        });
+        if (!result.ok) {
+          throw new Error(result.failed[0]?.message ?? 'Delete failed');
+        }
+        showAlert('Success', sessionDeleteSuccess);
+      } catch (error) {
+        sessionLog.error('session.delete.failed', undefined, error);
+        showAlert('Error', sessionDeleteFailed);
+      } finally {
+        clearDeleting([session.id]);
+      }
+    },
+    [user, showAlert, clearDeleting]
+  );
 
-      // Delete all messages in the session
-      await deleteCollection(db, messagesColRef);
-      // Delete the session document
-      await deleteDoc(sessionRef);
-
-      showAlert('Success', 'Chat session deleted successfully');
-    } catch (error) {
-      sessionLog.error('session.delete.failed', undefined, error);
-      showAlert('Error', 'Could not delete the chat session. Please try again.');
-    }
-  };
+  const handleConfirmSingleDelete = useCallback(() => {
+    const session = sessionToDelete;
+    if (!session) return;
+    setSessionToDelete(null);
+    setSessionDeleteDialogName('');
+    markDeleting([session.id]);
+    void runDeleteSession(session);
+  }, [sessionToDelete, markDeleting, runDeleteSession]);
 
   const handleOpenShareDialog = useCallback((session: Session) => {
     setSessionToShare(session);
@@ -571,7 +623,7 @@ export default function SessionsList({
                 variant="destructive"
                 className="flex-row items-center gap-2"
                 onPress={() => setBulkDeleteOpen(true)}
-                disabled={selectedCount === 0 || isBulkDeleting}>
+                disabled={selectedCount === 0}>
                 <Icon as={Trash2} size={16} className="text-destructive-foreground" />
                 <Text className="text-sm text-destructive-foreground">
                   Delete ({selectedCount})
@@ -591,11 +643,13 @@ export default function SessionsList({
               session={item}
               isSelected={selectedSessionIds.includes(item.id)}
               isSelectionMode={isSelectionMode}
+              isDeleting={isDeletingOverlay(item)}
+              isDeleteFailed={isResourceDeletionFailed(item)}
               onPress={handleSessionPress}
               onLongPress={handleSessionLongPress}
               handleOpenShareDialog={handleOpenShareDialog}
               handleOpenRenameDialog={handleOpenRenameDialog}
-              setSessionToDelete={setSessionToDelete}
+              setSessionToDelete={handleOpenDeleteSessionDialog}
             />
           )}
           contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
@@ -616,34 +670,34 @@ export default function SessionsList({
         />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
+      <AlertDialog
+        open={!!sessionToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSessionToDelete(null);
+            setSessionDeleteDialogName('');
+          }
+        }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the chat session "{sessionToDelete?.name}" and all of its
-              messages. This action cannot be undone.
+              {sessionDeleteConfirm(sessionDeleteDialogName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>
               <Text className="text-sm">Cancel</Text>
             </AlertDialogCancel>
-            <AlertDialogAction onPress={handleDeleteSession} variant="destructive">
-              <Text className="text-sm text-white">Delete</Text>
+            <AlertDialogAction onPress={handleConfirmSingleDelete} variant="destructive">
+              <Text className="text-sm">Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Bulk Delete Dialog */}
-      <AlertDialog
-        open={bulkDeleteOpen}
-        onOpenChange={(open) => {
-          if (!open && !isBulkDeleting) {
-            setBulkDeleteOpen(false);
-          }
-        }}>
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -655,17 +709,14 @@ export default function SessionsList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>
+            <AlertDialogCancel>
               <Text className="text-sm">Cancel</Text>
             </AlertDialogCancel>
             <AlertDialogAction
-              onPress={handleBulkDeleteSessions}
-              disabled={selectedCount === 0 || isBulkDeleting}
+              onPress={handleConfirmBulkDelete}
+              disabled={selectedCount === 0}
               variant="destructive">
-              {isBulkDeleting && (
-                <Icon as={Loader2} size={16} className="mr-2 text-white" />
-              )}
-              <Text className="text-sm text-white">Delete</Text>
+              <Text className="text-sm">Delete</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
