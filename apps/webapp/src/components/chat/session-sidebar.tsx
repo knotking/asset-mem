@@ -51,8 +51,8 @@ import {
   isResourceDeletionFailed,
   markResourcesDeletionFailed,
   markSessionDeletionFailed,
-} from '@homeapp/common/lib/deletion';
-import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+} from '@/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@/hooks/use-optimistic-deletion-overlay';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Skeleton } from '../ui/skeleton';

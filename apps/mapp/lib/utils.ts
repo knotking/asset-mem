@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { CollectionReference, Firestore } from 'firebase/firestore';
-import { deleteAllInCollection } from '@homeapp/common/lib/deletion';
+import { deleteAllInCollection } from '@homeapp/common/lib/deletion/delete-collection';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

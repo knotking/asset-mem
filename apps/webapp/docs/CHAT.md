@@ -41,6 +41,10 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/lib/executive-summary-display.ts` | `apps/common/src/lib/executive-summary-display.ts` |
 | `src/lib/structured-accordion-defaults.ts` | `apps/common/src/lib/structured-accordion-defaults.ts` |
 | `src/lib/suggested-actions.ts` | `apps/common/src/lib/suggested-actions.ts` |
+| `src/lib/deletion/` | `apps/common/src/lib/deletion/` |
+| `src/hooks/use-optimistic-deletion-overlay.ts` | `apps/common/src/hooks/use-optimistic-deletion-overlay.ts` |
+| `src/hooks/use-notifications.ts` | `apps/common/src/hooks/use-notifications.ts` |
+| `src/contexts/deletion-config-context.tsx` | `apps/common/src/contexts/deletion-config-context.tsx` |
 
 ## Display resolution flow
 

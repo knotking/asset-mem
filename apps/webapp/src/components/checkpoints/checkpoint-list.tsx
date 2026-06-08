@@ -24,13 +24,13 @@ import { useCheckpoint } from '@/contexts/checkpoint-context';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/contexts/property-context';
 import { useToast } from '@/hooks/use-toast';
+import { deleteCheckpointsBatch } from '@/lib/deletion/delete-checkpoint';
 import {
-  deleteCheckpointsBatch,
   checkpointBulkDeleteFailed,
   deletionRetryLabel,
   isResourceDeletionFailed,
   markResourcesDeletionFailed,
-} from '@homeapp/common/lib/deletion';
+} from '@/lib/deletion';
 import { db } from '@/lib/firebase';
 import { doc } from 'firebase/firestore';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';

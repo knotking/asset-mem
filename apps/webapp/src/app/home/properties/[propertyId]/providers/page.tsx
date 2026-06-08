@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { savedProviderDeleteConfirm } from '@homeapp/common/lib/deletion';
+import { savedProviderDeleteConfirm } from '@/lib/deletion';
 
 function hasValue(val: unknown): boolean {
   if (!val) return false;

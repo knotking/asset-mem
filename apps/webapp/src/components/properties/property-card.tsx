@@ -25,7 +25,7 @@ import {
   propertyRemovingLabel,
   deletionErrorLabel,
   markPropertyDeletionFailed,
-} from '@homeapp/common/lib/deletion';
+} from '@/lib/deletion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';

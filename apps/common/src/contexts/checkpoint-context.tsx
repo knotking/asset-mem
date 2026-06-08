@@ -331,7 +331,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
       olderCheckpoints.find((c) => c.id === id) ??
       null;
     try {
-      const { deleteCheckpointWithMedia } = await import("../lib/deletion");
+        const { deleteCheckpointWithMedia } = await import("../lib/deletion/delete-checkpoint");
       const result = await deleteCheckpointWithMedia({
         db,
         storage,

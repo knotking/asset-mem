@@ -44,8 +44,8 @@ import {
   checkpointFailureBadgeLabel,
   getPlanLimitFailureMessage,
 } from '@homeapp/common/lib/document-analysis-errors';
+import { deleteCheckpointsBatch } from '@homeapp/common/lib/deletion/delete-checkpoint';
 import {
-  deleteCheckpointsBatch,
   checkpointBulkDeleteFailed,
   deletionRetryLabel,
   isResourceDeletionFailed,

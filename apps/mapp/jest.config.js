@@ -6,6 +6,8 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/.expo/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^@homeapp/common/firebase$': '<rootDir>/../common/src/firebase/firebase-native.ts',
+    '^@homeapp/common/firebase-config$': '<rootDir>/../common/src/firebase/firebase-config.ts',
     '^@homeapp/common/(.*)$': '<rootDir>/../common/src/$1',
   },
   transformIgnorePatterns: [

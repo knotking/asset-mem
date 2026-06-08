@@ -33,8 +33,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useProperty } from "@/contexts/property-context";
 import { useFirebase } from "@/contexts/firebase-context";
 import { createLogger, truncateId } from "@/lib/logger";
-import { useDeletionConfig } from "@homeapp/common/contexts/deletion-config-context";
-import { useOptimisticDeletionOverlay } from "@homeapp/common/hooks/use-optimistic-deletion-overlay";
+import { useDeletionConfig } from "@/contexts/deletion-config-context";
+import { useOptimisticDeletionOverlay } from "@/hooks/use-optimistic-deletion-overlay";
 
 const checkpointLog = createLogger("checkpoint");
 
@@ -332,7 +332,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
           liveCheckpoints.find((c) => c.id === id) ??
           olderCheckpoints.find((c) => c.id === id) ??
           null;
-        const { deleteCheckpointWithMedia } = await import("@homeapp/common/lib/deletion");
+        const { deleteCheckpointWithMedia } = await import("@/lib/deletion/delete-checkpoint");
         const result = await deleteCheckpointWithMedia({
           db,
           storage,
@@ -350,7 +350,7 @@ export const CheckpointProvider = ({ children }: { children: ReactNode }) => {
         setLiveCheckpoints((prev) => prev.filter((c) => c.id !== id));
       } catch (error) {
         checkpointLog.error("checkpoint.delete.failed", undefined, error);
-        const { markCheckpointDeletionFailed } = await import("@homeapp/common/lib/deletion");
+        const { markCheckpointDeletionFailed } = await import("@/lib/deletion");
         await markCheckpointDeletionFailed(db, user.uid, property.id, id, error);
         throw error;
       } finally {

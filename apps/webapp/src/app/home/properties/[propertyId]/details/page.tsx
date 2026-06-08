@@ -10,11 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import type { Document as DocumentType } from '@/lib/types';
 import { db, storage } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import {
-  deleteDocumentAsset,
-  isResourceDeletionFailed,
-} from '@homeapp/common/lib/deletion';
-import { useOptimisticDeletionOverlay } from '@homeapp/common/hooks/use-optimistic-deletion-overlay';
+import { deleteDocumentAsset } from '@/lib/deletion/delete-document';
+import { isResourceDeletionFailed } from '@/lib/deletion';
+import { useOptimisticDeletionOverlay } from '@/hooks/use-optimistic-deletion-overlay';
 import { getWebDeletionApiUrls } from '@/lib/api-deletion';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { format } from 'date-fns';
@@ -30,7 +28,7 @@ import {
   markDocumentDeletionFailed,
   resourceDeletingLabel,
   deletionErrorLabel,
-} from '@homeapp/common/lib/deletion';
+} from '@/lib/deletion';
 import { useUploadDialog } from "@/contexts/upload-dialog-context";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

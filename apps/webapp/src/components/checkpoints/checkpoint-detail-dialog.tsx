@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
-import { checkpointDeleteConfirm } from '@homeapp/common/lib/deletion';
+import { checkpointDeleteConfirm } from '@/lib/deletion';
 import { getCheckpointAnalysisFailureMessage } from '@/lib/plan-limit-errors';
 import { createLogger } from '@/lib/logger';
 import { CheckpointComparisonDialog } from './checkpoint-comparison-dialog';
