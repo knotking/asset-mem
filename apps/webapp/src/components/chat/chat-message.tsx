@@ -15,7 +15,7 @@ import { getSuggestedActionsFromContentJson } from "@/lib/suggested-actions";
 import { useSavedServiceProviders } from "@/contexts/saved-service-providers-context";
 import { buildServiceProviderDedupeKey } from "@/lib/saved-service-provider-dedupe";
 import {
-    flattenServiceProviderRawList,
+    collectServiceProviderCandidates,
     isDisplayableServiceProvider,
     isVertexGroundingRedirectUrl,
     stripVertexGroundingUrls,
@@ -716,20 +716,9 @@ const StructuredResponse = ({
 
     // Get all providers (before filtering) to check if service section should show
     // Handle both array format and potential string/object formats
-    const getProvidersArray = (providers: any): ServiceProvider[] =>
-        flattenServiceProviderRawList(providers) as ServiceProvider[];
-
-    const allProvidersRaw = [
-        // Keep legacy Yelp fallback for older stored responses.
-        ...getProvidersArray(service?.localPros?.yelpAPIResults),
-        ...getProvidersArray(service?.localPros?.serpAPIResults),
-        ...getProvidersArray(service?.localPros?.googleSearchResults),
-        ...getProvidersArray(service?.providers),
-        ...getProvidersArray(service?.localProviders),
-        ...getProvidersArray(service?.local_pros),
-        ...getProvidersArray(service?.results),
-        ...getProvidersArray(service?.nearbyProviders),
-    ];
+    const allProvidersRaw = collectServiceProviderCandidates(
+        service as Record<string, unknown> | undefined
+    ) as ServiceProvider[];
     
     // Filter providers to show only those with meaningful data
     const allProviders = (allProvidersRaw
