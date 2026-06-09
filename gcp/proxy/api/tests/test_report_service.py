@@ -19,6 +19,8 @@ from services.report_service import (
     prepare_report_preview_html,
     publish_report_generation,
     resolve_comparison_checkpoints,
+    resolve_comparison_from_checkpoint_ids,
+    resolve_rental_comparison_checkpoints,
     set_report_rag_index,
     update_report_metadata,
     validate_checkpoints_for_report,
@@ -172,6 +174,49 @@ def test_resolve_comparison_checkpoints_pairs_by_location(mock_collect):
     assert resolution.pairs[0]["comparisonCheckpointId"] == "c1"
     assert resolution.baseline_only_ids == ["b2"]
     assert resolution.comparison_only_ids == ["c3"]
+
+
+@patch("services.report_service._load_checkpoints_by_ids")
+def test_resolve_comparison_from_checkpoint_ids_skips_collection_scan(mock_load):
+    mock_load.return_value = [
+        {"id": "b1", "location": "Garage", "createdAt": "2026-01-01T00:00:00+00:00"},
+        {"id": "b2", "location": "Kitchen", "createdAt": "2026-01-02T00:00:00+00:00"},
+        {"id": "c1", "location": "Garage", "createdAt": "2026-06-01T00:00:00+00:00"},
+        {"id": "c3", "location": "Bedroom", "createdAt": "2026-06-02T00:00:00+00:00"},
+    ]
+    db = MagicMock()
+    resolution = resolve_comparison_from_checkpoint_ids(
+        db,
+        "user-1",
+        "prop-1",
+        checkpoint_ids=["b1", "b2", "c1", "c3"],
+        baseline_range={"start": "2026-01-01", "end": "2026-01-31"},
+        comparison_range={"start": "2026-06-01", "end": "2026-06-30"},
+    )
+    assert len(resolution.pairs) == 1
+    assert resolution.pairs[0]["baselineCheckpointId"] == "b1"
+    assert resolution.pairs[0]["comparisonCheckpointId"] == "c1"
+    mock_load.assert_called_once()
+
+
+@patch("services.report_service._collect_checkpoints_in_range")
+def test_resolve_rental_comparison_pairs_earliest_and_latest(mock_collect):
+    mock_collect.return_value = [
+        {"id": "g1", "location": "Garage", "createdAt": "2026-06-05T10:00:00+00:00"},
+        {"id": "g2", "location": "Garage", "createdAt": "2026-06-20T10:00:00+00:00"},
+        {"id": "k1", "location": "Kitchen", "createdAt": "2026-06-08T10:00:00+00:00"},
+    ]
+    db = MagicMock()
+    resolution = resolve_rental_comparison_checkpoints(
+        db,
+        "user-1",
+        "prop-1",
+        tenancy_range={"start": "2026-06-01", "end": "2026-06-30"},
+    )
+    assert len(resolution.pairs) == 1
+    assert resolution.pairs[0]["baselineCheckpointId"] == "g1"
+    assert resolution.pairs[0]["comparisonCheckpointId"] == "g2"
+    assert resolution.baseline_only_ids == ["k1"]
 
 
 def test_archive_report_revision_writes_subcollection():

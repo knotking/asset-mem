@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Checkpoint, ReportPreviewResponse } from "../types";
+import type { Checkpoint, PropertyReportPurpose, ReportPreviewResponse } from "../types";
 import {
   ReportPreviewCache,
   collectPreviewCheckpointIds,
@@ -25,6 +25,7 @@ export type ReportPreviewFetchPayload =
       userId: string;
       propertyId: string;
       mode: "comparison";
+      purpose?: PropertyReportPurpose;
       baselineRange: ReportSnapshotDateRange;
       comparisonRange: ReportSnapshotDateRange;
     };
@@ -32,6 +33,7 @@ export type ReportPreviewFetchPayload =
 export type UseReportWizardCheckpointPreviewArgs = {
   enabled: boolean;
   mode: "snapshot" | "comparison";
+  purpose?: PropertyReportPurpose;
   userId: string | undefined;
   propertyId: string | undefined;
   draftSnapshotRange: ReportSnapshotDateRange;
@@ -46,6 +48,7 @@ export type UseReportWizardCheckpointPreviewArgs = {
 export function useReportWizardCheckpointPreview({
   enabled,
   mode,
+  purpose,
   userId,
   propertyId,
   draftSnapshotRange,
@@ -78,13 +81,24 @@ export function useReportWizardCheckpointPreview({
     appliedComparisonRanges
   );
 
-  const applyDates = useCallback(() => {
-    if (mode === "snapshot") {
-      setAppliedSnapshotRange(draftSnapshotRange);
-    } else {
-      setAppliedComparisonRanges(draftComparisonRanges);
-    }
-  }, [mode, draftSnapshotRange, draftComparisonRanges]);
+  const applyDates = useCallback(
+    (overrideComparison?: ReportComparisonDateRanges) => {
+      if (mode === "snapshot") {
+        setAppliedSnapshotRange(draftSnapshotRange);
+      } else {
+        setAppliedComparisonRanges(overrideComparison ?? draftComparisonRanges);
+      }
+    },
+    [
+      mode,
+      draftSnapshotRange.start,
+      draftSnapshotRange.end,
+      draftComparisonRanges.baselineStart,
+      draftComparisonRanges.baselineEnd,
+      draftComparisonRanges.comparisonStart,
+      draftComparisonRanges.comparisonEnd,
+    ]
+  );
 
   /** Call when entering step 2 — seeds applied ranges only on first visit. */
   const prepareStep2 = useCallback(() => {
@@ -93,7 +107,15 @@ export function useReportWizardCheckpointPreview({
     } else {
       setAppliedComparisonRanges((prev) => prev ?? draftComparisonRanges);
     }
-  }, [mode, draftSnapshotRange, draftComparisonRanges]);
+  }, [
+    mode,
+    draftSnapshotRange.start,
+    draftSnapshotRange.end,
+    draftComparisonRanges.baselineStart,
+    draftComparisonRanges.baselineEnd,
+    draftComparisonRanges.comparisonStart,
+    draftComparisonRanges.comparisonEnd,
+  ]);
 
   const resetPreviewState = useCallback(() => {
     requestIdRef.current += 1;
@@ -170,6 +192,7 @@ export function useReportWizardCheckpointPreview({
               userId,
               propertyId,
               mode: "comparison",
+              purpose,
               baselineRange: {
                 start: appliedComparisonRanges.baselineStart,
                 end: appliedComparisonRanges.baselineEnd,
@@ -215,6 +238,7 @@ export function useReportWizardCheckpointPreview({
           mode: "comparison",
           baselineRange: fetchPayload.baselineRange,
           comparisonRange: fetchPayload.comparisonRange,
+          purpose,
         });
       } catch {
         return null;
@@ -275,6 +299,7 @@ export function useReportWizardCheckpointPreview({
     localCheckpoints,
     localCheckpointsLoading,
     hasMoreLocalCheckpoints,
+    purpose,
   ]);
 
   const isCheckpointPreviewPending =

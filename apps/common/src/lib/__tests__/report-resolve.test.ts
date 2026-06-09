@@ -3,6 +3,8 @@ import {
   canResolveReportPreviewLocally,
   pickLatestCheckpointPerLocation,
   resolveComparisonFromCheckpoints,
+  resolveComparisonPreviewFromCheckpoints,
+  resolveRentalComparisonFromCheckpoints,
   resolveSnapshotPreviewFromCheckpoints,
 } from "../report-resolve";
 
@@ -70,6 +72,40 @@ describe("report-resolve", () => {
     expect(resolution.pairs[0]?.comparisonCheckpointId).toBe("c1");
     expect(resolution.baselineOnly.map((row) => row.checkpointId)).toEqual(["b2"]);
     expect(resolution.comparisonOnly.map((row) => row.checkpointId)).toEqual(["c3"]);
+  });
+
+  it("pairs rental tenancy by earliest vs latest per location", () => {
+    const resolution = resolveRentalComparisonFromCheckpoints(
+      [
+        cp("g1", "Garage", "2026-06-05T10:00:00.000Z"),
+        cp("g2", "Garage", "2026-06-20T10:00:00.000Z"),
+        cp("k1", "Kitchen", "2026-06-08T10:00:00.000Z"),
+      ],
+      { start: "2026-06-01", end: "2026-06-30" }
+    );
+    expect(resolution.pairs).toHaveLength(1);
+    expect(resolution.pairs[0]?.baselineCheckpointId).toBe("g1");
+    expect(resolution.pairs[0]?.comparisonCheckpointId).toBe("g2");
+    expect(resolution.baselineOnly.map((row) => row.checkpointId)).toEqual(["k1"]);
+  });
+
+  it("uses rental pairing in comparison preview when purpose is rental_security", () => {
+    const preview = resolveComparisonPreviewFromCheckpoints(
+      [
+        cp("g1", "Garage", "2026-06-05T10:00:00.000Z"),
+        cp("g2", "Garage", "2026-06-20T10:00:00.000Z"),
+      ],
+      { start: "2026-06-01", end: "2026-06-30" },
+      { start: "2026-06-01", end: "2026-06-30" },
+      "rental_security"
+    );
+    expect(preview.mode).toBe("comparison");
+    if (preview.mode !== "comparison") {
+      throw new Error("expected comparison preview");
+    }
+    expect(preview.pairs).toHaveLength(1);
+    expect(preview.pairs[0]?.baselineCheckpointId).toBe("g1");
+    expect(preview.pairs[0]?.comparisonCheckpointId).toBe("g2");
   });
 
   it("allows local resolve when all checkpoints are loaded", () => {

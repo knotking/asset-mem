@@ -23,6 +23,9 @@ class ReportPreviewRequest(BaseModel):
     userId: str
     propertyId: str
     mode: Literal["snapshot", "comparison"] = "snapshot"
+    purpose: Literal["rental_security", "realtor_visit", "insurance", "custom"] = (
+        "realtor_visit"
+    )
     snapshotRange: Optional[ReportDateRangeInput] = None
     baselineRange: Optional[ReportDateRangeInput] = None
     comparisonRange: Optional[ReportDateRangeInput] = None

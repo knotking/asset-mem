@@ -27,8 +27,23 @@ export const REPORT_QUICK_PRESETS: ReportQuickPreset[] = [
   },
 ];
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+export type QuickPresetFormState = {
+  mode: "snapshot" | "comparison";
+  purpose: PropertyReportPurpose;
+  title: string;
+  startDate: string;
+  endDate: string;
+  baselineStart: string;
+  baselineEnd: string;
+  comparisonStart: string;
+  comparisonEnd: string;
+};
+
+function localIsoDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function monthYearLabel(d: Date): string {
@@ -43,21 +58,36 @@ function endOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 }
 
-function addMonths(d: Date, months: number): Date {
-  return new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
+/** Default wizard range: first through last day of the reference month (local calendar). */
+export function defaultReportMonthRange(reference = new Date()): {
+  start: string;
+  end: string;
+} {
+  return {
+    start: localIsoDate(startOfMonth(reference)),
+    end: localIsoDate(endOfMonth(reference)),
+  };
 }
 
-export type QuickPresetFormState = {
-  mode: "snapshot" | "comparison";
-  purpose: PropertyReportPurpose;
-  title: string;
-  startDate: string;
-  endDate: string;
-  baselineStart: string;
-  baselineEnd: string;
-  comparisonStart: string;
-  comparisonEnd: string;
-};
+function monthRangeFormDates(reference = new Date()): Pick<
+  QuickPresetFormState,
+  | "startDate"
+  | "endDate"
+  | "baselineStart"
+  | "baselineEnd"
+  | "comparisonStart"
+  | "comparisonEnd"
+> {
+  const { start, end } = defaultReportMonthRange(reference);
+  return {
+    startDate: start,
+    endDate: end,
+    baselineStart: start,
+    baselineEnd: end,
+    comparisonStart: start,
+    comparisonEnd: end,
+  };
+}
 
 export function applyReportQuickPreset(presetId: ReportQuickPresetId): QuickPresetFormState {
   const today = new Date();
@@ -67,36 +97,18 @@ export function applyReportQuickPreset(presetId: ReportQuickPresetId): QuickPres
   }
 
   if (preset.mode === "snapshot") {
-    const day = isoDate(today);
     return {
       mode: "snapshot",
       purpose: preset.purpose,
       title: `Showing snapshot — ${monthYearLabel(today)}`,
-      startDate: day,
-      endDate: day,
-      baselineStart: day,
-      baselineEnd: day,
-      comparisonStart: day,
-      comparisonEnd: day,
+      ...monthRangeFormDates(today),
     };
   }
-
-  const priorMonth = addMonths(today, -1);
-  const twoMonthsAgo = addMonths(today, -2);
-  const baselineStart = isoDate(startOfMonth(twoMonthsAgo));
-  const baselineEnd = isoDate(endOfMonth(twoMonthsAgo));
-  const comparisonStart = isoDate(startOfMonth(priorMonth));
-  const comparisonEnd = isoDate(endOfMonth(priorMonth));
 
   return {
     mode: "comparison",
     purpose: preset.purpose,
-    title: `Move-out comparison — ${monthYearLabel(priorMonth)}`,
-    startDate: isoDate(today),
-    endDate: isoDate(today),
-    baselineStart,
-    baselineEnd,
-    comparisonStart,
-    comparisonEnd,
+    title: `Move-out comparison — ${monthYearLabel(today)}`,
+    ...monthRangeFormDates(today),
   };
 }
