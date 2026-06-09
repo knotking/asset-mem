@@ -109,6 +109,7 @@ module.exports = {
         },
       ],
       'expo-router',
+      '@react-native-community/datetimepicker',
       'expo-apple-authentication',
       'expo-web-browser',
       'expo-video',
