@@ -781,7 +781,7 @@ export function GenerateReportDialog({
                     variant="outline"
                     size="sm"
                     className="h-7 shrink-0 px-2.5 text-xs"
-                    onClick={applyDates}
+                    onClick={() => applyDates()}
                     disabled={previewLoading}
                   >
                     Update checkpoints
