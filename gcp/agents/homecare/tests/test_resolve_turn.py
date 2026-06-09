@@ -307,4 +307,5 @@ def test_format_resolved_turn_block_injects_report_mode_note() -> None:
     assert "[REPORT_MODE]" in block
     assert "do not invent roofing" in block.lower()
     assert "do not invent report sections" in block.lower()
+    assert "never offer to run cost" in block.lower()
     assert "[SESSION_WORKING_MEMORY]" not in block

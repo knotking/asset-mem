@@ -131,6 +131,7 @@ Critical NLU rules:
 - accept_offer: "yes", "ok", "sure" + pending_user_action or assistant question in recent_dialogue.
 - closure vs accept_offer: thanks/that's helpful = closure; bare yes after offer = accept_offer.
 - primary_agent tab hint: docs → user_docs for policy/lease; checkpoint → checkpoint for inspections; report → report for saved PDF snapshots (requires report_ids).
+- report route: frozen snapshot only — run_optional_agents=[], retrieval_only=true, user_goal=answer_from_context; cost/DIY/service/coverage questions stay on report route, never checkpoint branches.
 - Never copy ui_optional_agents into run_optional_agents.
 - checkpoint_selection_changed=true → prefer new_work / new_analysis, not explain_prior.
 - analysis_digest shows branches_completed — do not re-run completed branches for explain_prior.

@@ -209,6 +209,31 @@ def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
     assert "SESSION_WORKING_MEMORY" in result.get("result", "")
 
 
+def test_before_tool_blocks_run_checkpoint_pipeline_on_report_route() -> None:
+    tool = SimpleNamespace(name="run_checkpoint_pipeline")
+    tool_context = MagicMock()
+    tool_context.state = {
+        "user_query": "yes do cost analysis",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "report",
+            "expanded_user_query": "Yes, please run a cost analysis.",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "answer_from_context",
+            "query_mode": "interpret_session",
+            "discourse_act": "accept_offer",
+            "focus_branch": "cost",
+        },
+    }
+
+    result = conversational_before_tool(tool, {}, tool_context)
+
+    assert result is not None
+    assert "report mode" in result.get("result", "").lower()
+    assert "run_checkpoint_pipeline" in result.get("result", "")
+
+
 def test_before_tool_allows_report_retrieval_on_report_route_with_session_cache() -> None:
     from property_agent.reports.retrieval import (
         REPORT_RETRIEVAL_CACHE_FP_KEY,

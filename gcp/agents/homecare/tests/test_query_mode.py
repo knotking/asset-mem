@@ -533,6 +533,17 @@ def test_should_not_block_user_docs_on_user_docs_route() -> None:
     )
 
 
+def test_should_block_run_checkpoint_pipeline_on_report_route() -> None:
+    assert should_block_checkpoint_pipeline_for_context_turn(
+        user_query="cost analysis for vehicle exterior damage",
+        state={"report_ids": ["report-1"]},
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        resolved_route="report",
+        tool_name="run_checkpoint_pipeline",
+    )
+
+
 def test_should_not_block_report_retrieval_on_report_route_with_session_cache() -> None:
     from property_agent.reports.retrieval import (
         REPORT_RETRIEVAL_CACHE_FP_KEY,

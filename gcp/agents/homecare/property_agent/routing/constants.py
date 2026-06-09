@@ -17,6 +17,18 @@ REPORT_MODE_EXECUTOR_NOTE = (
     "do not present a whole-home inspection. "
     "If report_retrieval returns no usable content, say so briefly — do not invent "
     "report sections or systems. "
-    "Do not offer DIY/service/cost branches unless the user explicitly asks.\n"
+    "Saved report snapshots are frozen condition summaries only — they do NOT include "
+    "cost estimates, DIY steps, service providers, or coverage analysis. "
+    "Never call run_checkpoint_pipeline and never offer to run cost/DIY/service/coverage "
+    "analysis from report chat, even when the user asks for those details. "
+    "Instead, state what the snapshot contains and that repair costs or branch analysis "
+    "are not part of this saved report.\n"
     "[/REPORT_MODE]"
+)
+
+REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED = (
+    "Skipped: report mode — saved report snapshots contain condition findings only, "
+    "not cost/DIY/service/coverage analysis. Do not call run_checkpoint_pipeline. "
+    "Answer in markdown from the report snapshot or prior report summary; explain that "
+    "branch analysis is outside report chat."
 )
