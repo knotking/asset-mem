@@ -81,6 +81,9 @@ export function planLimitBullets(
     `${formatMonthlyLimit(limits.documentsPerMonth)} document analyses / month`,
   );
   bullets.push(
+    `${formatMonthlyLimit(limits.reportsPerMonth)} property report generations / month`,
+  );
+  bullets.push(
     `${formatMonthlyLimit(limits.checkpointsPerMonth)} checkpoint AI runs / month`,
   );
   return bullets.filter(Boolean);

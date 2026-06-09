@@ -7,6 +7,7 @@ import { formatTokensCompact } from '@homeapp/common/lib/format-tokens';
 import {
   FREE_PLAN_CHECKPOINTS_PER_MONTH,
   FREE_PLAN_DOCUMENTS_PER_MONTH,
+  FREE_PLAN_REPORTS_PER_MONTH,
   FREE_PLAN_TOKENS_PER_MONTH,
 } from '@homeapp/common/lib/plan-defaults';
 
@@ -21,6 +22,7 @@ export type PlanMarketing = {
   pricePerMonthUsd: number;
   tokensPerMonth: number;
   documentsPerMonth: number;
+  reportsPerMonth: number;
   checkpointsPerMonth: number;
 };
 
@@ -30,6 +32,7 @@ export const PLAN_MARKETING: Record<PlanTierKey, PlanMarketing> = {
     pricePerMonthUsd: 0,
     tokensPerMonth: FREE_PLAN_TOKENS_PER_MONTH,
     documentsPerMonth: FREE_PLAN_DOCUMENTS_PER_MONTH,
+    reportsPerMonth: FREE_PLAN_REPORTS_PER_MONTH,
     checkpointsPerMonth: FREE_PLAN_CHECKPOINTS_PER_MONTH,
   },
   plus: {
@@ -37,6 +40,7 @@ export const PLAN_MARKETING: Record<PlanTierKey, PlanMarketing> = {
     pricePerMonthUsd: 19,
     tokensPerMonth: PLUS_TOKENS_PER_MONTH,
     documentsPerMonth: 10,
+    reportsPerMonth: 10,
     checkpointsPerMonth: 30,
   },
   pro: {
@@ -44,6 +48,7 @@ export const PLAN_MARKETING: Record<PlanTierKey, PlanMarketing> = {
     pricePerMonthUsd: 39,
     tokensPerMonth: PRO_TOKENS_PER_MONTH,
     documentsPerMonth: 30,
+    reportsPerMonth: 30,
     checkpointsPerMonth: 100,
   },
 };
@@ -73,7 +78,7 @@ export function planPriceLabel(tier: PlanTierKey): string {
 /** One-line limit summary for plan picker list. */
 export function planLimitsOneLiner(tier: PlanTierKey): string {
   const p = PLAN_MARKETING[tier];
-  return `${formatTokensCompact(p.tokensPerMonth)} AI tokens · ${p.documentsPerMonth} docs · ${p.checkpointsPerMonth} checkpoints / mo`;
+  return `${formatTokensCompact(p.tokensPerMonth)} AI tokens · ${p.documentsPerMonth} docs · ${p.reportsPerMonth} reports · ${p.checkpointsPerMonth} checkpoints / mo`;
 }
 
 /** Best-effort tier from Firestore billing caps (marketing defaults). */
