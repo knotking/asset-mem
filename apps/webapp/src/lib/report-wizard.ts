@@ -159,3 +159,15 @@ export function summarizeCheckpointPreview(
 export function reportWizardStepLabel(step: ReportWizardStep): string {
   return `Step ${step} of 3`;
 }
+
+export function reportWizardStep2Hint(
+  mode: 'snapshot' | 'comparison',
+  purpose: PropertyReportPurpose
+): string {
+  if (mode === 'comparison') {
+    return purpose === 'rental_security'
+      ? 'Compares move-in and move-out checkpoints for each location.'
+      : 'We pair checkpoints from the same location in each period.';
+  }
+  return 'Includes the latest checkpoint per location in this range.';
+}

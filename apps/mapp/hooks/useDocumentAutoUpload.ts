@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert } from 'react-native';
+import { showThemedAlert } from '@/contexts/themed-alert-context';
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
@@ -38,7 +38,7 @@ function alertDocumentLimitOnce(propertyId: string): void {
   }
   lastDocumentLimitAlertKey = key;
   lastDocumentLimitAlertAt = now;
-  Alert.alert('Monthly document limit reached', DOCUMENT_QUOTA_USER_MESSAGE);
+  showThemedAlert('Monthly document limit reached', DOCUMENT_QUOTA_USER_MESSAGE);
 }
 
 interface UseDocumentAutoUploadParams {
@@ -193,7 +193,7 @@ export function useDocumentAutoUpload({
                   completedDoc.summary ||
                   'Document analysis could not be completed.';
                 if (!isDocumentQuotaMessage(failureMessage)) {
-                  Alert.alert('Document upload', failureMessage);
+                  showThemedAlert('Document upload', failureMessage);
                 }
                 removeUploadingDoc(completedDoc.id);
                 return;

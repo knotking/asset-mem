@@ -51,6 +51,7 @@ import {
   type ReportAction,
 } from '@/components/property-details/ReportActionsSheet';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
+import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 const WEB_APP_URL = (Constants.expoConfig?.extra?.webAppUrl as string) || '';
 const REPORT_DOCS_CHAT_RAG_ENABLED = parseFeatureFlagEnv(
@@ -79,6 +80,7 @@ export function PropertyReportsSegment({
   generateModalVisible: controlledVisible,
   onGenerateModalVisibleChange,
 }: PropertyReportsSegmentProps = {}) {
+  const { showAlert } = useThemedAlert();
   const { reports, loading } = usePropertyReports();
   const { user } = useAuth();
   const { property } = useProperty();
@@ -98,15 +100,6 @@ export function PropertyReportsSegment({
   const [statusFilter, setStatusFilter] = React.useState<PropertyReportStatus | 'all'>('all');
   const [filterSheetVisible, setFilterSheetVisible] = React.useState(false);
   const [actionsReport, setActionsReport] = React.useState<PropertyReport | null>(null);
-  const [noticeOpen, setNoticeOpen] = React.useState(false);
-  const [noticeTitle, setNoticeTitle] = React.useState('');
-  const [noticeMessage, setNoticeMessage] = React.useState('');
-
-  const showNotice = React.useCallback((title: string, message: string) => {
-    setNoticeTitle(title);
-    setNoticeMessage(message);
-    setNoticeOpen(true);
-  }, []);
 
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) + (purposeFilter !== 'all' ? 1 : 0);
@@ -156,12 +149,12 @@ export function PropertyReportsSegment({
       });
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        showNotice('Cannot open PDF', 'No app available to view this link.');
+        showAlert('Cannot open PDF', 'No app available to view this link.');
         return;
       }
       await Linking.openURL(url);
     } catch (err) {
-      showNotice('Could not open PDF', err instanceof Error ? err.message : 'Unknown error');
+      showAlert('Could not open PDF', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setOpeningId(null);
     }
@@ -172,7 +165,7 @@ export function PropertyReportsSegment({
       if (!user || !property) return;
       const urls = getMappDeletionApiUrls();
       if (!urls?.report) {
-        showNotice('Delete unavailable', 'Deletion API is not configured.');
+        showAlert('Delete unavailable', 'Deletion API is not configured.');
         clearDeleting([report.id]);
         return;
       }
@@ -185,13 +178,13 @@ export function PropertyReportsSegment({
           reportId: report.id,
         });
         if (!result.ok) {
-          showNotice('Delete failed', result.failed[0]?.message ?? 'Unknown error');
+          showAlert('Delete failed', result.failed[0]?.message ?? 'Unknown error');
         }
       } finally {
         clearDeleting([report.id]);
       }
     },
-    [user, property, clearDeleting, showNotice]
+    [user, property, clearDeleting, showAlert]
   );
 
   const handleShare = async (report: PropertyReport) => {
@@ -205,12 +198,12 @@ export function PropertyReportsSegment({
       });
       const base = WEB_APP_URL.replace(/\/$/, '');
       await Clipboard.setStringAsync(`${base}/share/report/${shareId}`);
-      showNotice(
+      showAlert(
         'Share link copied',
         'Anyone with the link can view this PDF until it expires.'
       );
     } catch (err) {
-      showNotice('Could not share report', err instanceof Error ? err.message : 'Unknown error');
+      showAlert('Could not share report', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSharingId(null);
     }
@@ -227,7 +220,7 @@ export function PropertyReportsSegment({
         includeInDocsChat: enabled,
       });
     } catch (err) {
-      showNotice(
+      showAlert(
         'Could not update Docs chat indexing',
         err instanceof Error ? err.message : 'Unknown error'
       );
@@ -464,13 +457,6 @@ export function PropertyReportsSegment({
         visible={!!editReport}
         report={editReport}
         onClose={() => setEditReport(null)}
-      />
-      <AlertDialogWrapper
-        open={noticeOpen}
-        onOpenChange={setNoticeOpen}
-        title={noticeTitle}
-        description={noticeMessage}
-        confirmText="OK"
       />
       <AlertDialogWrapper
         open={deleteDialogOpen}

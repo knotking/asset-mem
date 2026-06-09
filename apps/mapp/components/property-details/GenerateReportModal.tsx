@@ -66,6 +66,7 @@ import {
   suggestReportTitle,
   summarizeCheckpointPreview,
   reportWizardStepLabel,
+  reportWizardStep2Hint,
   type ReportIntentId,
   type ReportWizardStep,
 } from '@homeapp/common/lib/report-wizard';
@@ -75,6 +76,33 @@ import { WebView } from 'react-native-webview';
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function DateRangeFields({
+  startValue,
+  endValue,
+  onStartChange,
+  onEndChange,
+  className,
+}: {
+  startValue: string;
+  endValue: string;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <View className={cn('flex-row gap-3', className)}>
+      <View className="flex-1">
+        <Text className="mb-1 text-sm font-medium text-foreground">From</Text>
+        <DateInput value={startValue} onChange={onStartChange} />
+      </View>
+      <View className="flex-1">
+        <Text className="mb-1 text-sm font-medium text-foreground">To</Text>
+        <DateInput value={endValue} onChange={onEndChange} />
+      </View>
+    </View>
+  );
 }
 
 type ReportMode = 'snapshot' | 'comparison';
@@ -472,9 +500,7 @@ export function GenerateReportModal({
       contentContainerStyle={{ paddingBottom: 24 }}>
       <Text className="mb-1 text-lg font-semibold text-foreground">Time period & checkpoints</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
-        {mode === 'comparison'
-          ? 'We match rooms by location between the two periods.'
-          : 'Includes the latest checkpoint per location in this range.'}
+        {reportWizardStep2Hint(mode, purpose)}
       </Text>
       <Text className="mb-1 text-sm font-medium text-foreground">Report title</Text>
       <Input
@@ -485,21 +511,37 @@ export function GenerateReportModal({
       />
       {mode === 'snapshot' ? (
         <>
-          <Text className="mb-1 text-sm font-medium text-foreground">From</Text>
-          <DateInput value={startDate} onChange={setStartDate} className="mb-3" />
-          <Text className="mb-1 text-sm font-medium text-foreground">To</Text>
-          <DateInput value={endDate} onChange={setEndDate} className="mb-4" />
+          <Text className="mb-2 text-sm font-medium text-foreground">Date range</Text>
+          <DateRangeFields
+            startValue={startDate}
+            endValue={endDate}
+            onStartChange={setStartDate}
+            onEndChange={setEndDate}
+            className="mb-4"
+          />
         </>
       ) : (
         <>
-          <Text className="mb-1 text-sm font-medium text-foreground">Before (baseline) — from</Text>
-          <DateInput value={baselineStart} onChange={setBaselineStart} className="mb-2" />
-          <Text className="mb-1 text-sm font-medium text-foreground">Before — to</Text>
-          <DateInput value={baselineEnd} onChange={setBaselineEnd} className="mb-3" />
-          <Text className="mb-1 text-sm font-medium text-foreground">After (comparison) — from</Text>
-          <DateInput value={comparisonStart} onChange={setComparisonStart} className="mb-2" />
-          <Text className="mb-1 text-sm font-medium text-foreground">After — to</Text>
-          <DateInput value={comparisonEnd} onChange={setComparisonEnd} className="mb-4" />
+          <Text className="mb-2 text-sm font-medium text-foreground">
+            {purpose === 'rental_security' ? 'Before (move-in)' : 'Before (baseline)'}
+          </Text>
+          <DateRangeFields
+            startValue={baselineStart}
+            endValue={baselineEnd}
+            onStartChange={setBaselineStart}
+            onEndChange={setBaselineEnd}
+            className="mb-4"
+          />
+          <Text className="mb-2 text-sm font-medium text-foreground">
+            {purpose === 'rental_security' ? 'After (move-out)' : 'After (comparison)'}
+          </Text>
+          <DateRangeFields
+            startValue={comparisonStart}
+            endValue={comparisonEnd}
+            onStartChange={setComparisonStart}
+            onEndChange={setComparisonEnd}
+            className="mb-4"
+          />
         </>
       )}
       {datesDirty ? (
