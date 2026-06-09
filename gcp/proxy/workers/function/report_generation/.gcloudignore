@@ -1,0 +1,7 @@
+# Deploy-time artifacts only — keep ms-playwright (Playwright Chromium bundle).
+.git
+.gitignore
+__pycache__/
+*.pyc
+.pytest_cache/
+test_*.py

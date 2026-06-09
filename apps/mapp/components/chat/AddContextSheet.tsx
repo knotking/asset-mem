@@ -24,7 +24,13 @@ import {
   Upload,
   Search,
 } from 'lucide-react-native';
-import type { Checkpoint, Document, PendingContextItem, PrimaryAgent } from '@homeapp/common/types';
+import type {
+  Checkpoint,
+  Document,
+  PendingContextItem,
+  PrimaryAgent,
+  PropertyReport,
+} from '@homeapp/common/types';
 import type { ToggleSelectionResult } from '@homeapp/common/contexts/chat-context-context';
 import {
   getCheckpointThumbnail,
@@ -42,7 +48,8 @@ import {
   ADD_CONTEXT_TAB_TIMELINE,
   ADD_CONTEXT_MODE_HINT_CHECKPOINT,
   ADD_CONTEXT_MODE_HINT_DOCS,
-  ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE,
+  ADD_CONTEXT_MODE_HINT_REPORT,
+  CONTEXT_SELECTION_REPORT_LIMIT,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_TIMELINE,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS,
   CONTEXT_SELECTION_CHECKPOINT_LIMIT,
@@ -57,9 +64,16 @@ import {
 import {
   filterCheckpointsBySearch,
   filterDocumentsBySearch,
+  filterReportsBySearch,
   getRecentReadyCheckpoints,
   getRecentReadyDocuments,
 } from '@homeapp/common/lib/chat-context-picker';
+import { MAX_SELECTED_REPORTS } from '@homeapp/common/lib/chat-context-reports';
+import {
+  reportSelectionKey,
+  toRevisionSelectionReport,
+} from '@homeapp/common/lib/report-revisions';
+import { buildCurrentRevisionReportPickerRows } from '@homeapp/common/lib/report-picker-rows';
 
 type ContextTab = 'timeline' | 'documents';
 
@@ -84,6 +98,10 @@ type Props = {
   hasMoreCheckpoints: boolean;
   isLoadingMoreCheckpoints: boolean;
   onLoadMoreCheckpoints: () => void;
+  reports?: PropertyReport[];
+  selectedReportIds?: Set<string>;
+  selectedReportCount?: number;
+  onToggleReport?: (report: PropertyReport) => ToggleSelectionResult;
 };
 
 type RowItem =
@@ -198,7 +216,13 @@ export function AddContextSheet({
   hasMoreCheckpoints,
   isLoadingMoreCheckpoints,
   onLoadMoreCheckpoints,
+  reports = [],
+  selectedReportIds = new Set<string>(),
+  selectedReportCount = 0,
+  onToggleReport,
 }: Props) {
+  const isReportMode = primaryAgent === 'report';
+  const isDocsMode = primaryAgent === 'docs';
   const defaultTab: ContextTab = primaryAgent === 'checkpoint' ? 'timeline' : 'documents';
   const [activeTab, setActiveTab] = React.useState<ContextTab>(defaultTab);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -264,6 +288,14 @@ export function AddContextSheet({
   const trimmedSearch = searchQuery.trim();
   const hasSearch = trimmedSearch.length > 0;
 
+  const reportPickerRows = React.useMemo(
+    () =>
+      isReportMode
+        ? buildCurrentRevisionReportPickerRows(filterReportsBySearch(reports, trimmedSearch))
+        : [],
+    [isReportMode, reports, trimmedSearch]
+  );
+
   const recentCheckpoints = React.useMemo(
     () => (hasSearch ? [] : getRecentReadyCheckpoints(checkpoints)),
     [checkpoints, hasSearch]
@@ -294,14 +326,60 @@ export function AddContextSheet({
   const visibleBrowseDocuments = browseDocuments.slice(0, docVisibleCount);
   const hasMoreDocs = browseDocuments.length > docVisibleCount;
 
+  const documentListItems = React.useMemo((): RowItem[] => {
+    const items: RowItem[] = [];
+    const showRecentDocuments = recentDocuments.length > 0 && !hasSearch;
+    if (pendingDocuments.length > 0) {
+      items.push({ key: 'sec-pending-doc', kind: 'section', title: 'Pending' });
+      for (const pending of pendingDocuments) {
+        items.push({ key: `pending-doc-${pending.id}`, kind: 'pending', item: pending });
+      }
+    }
+    if (showRecentDocuments) {
+      items.push({ key: 'sec-recent-doc', kind: 'section', title: ADD_CONTEXT_RECENT_LABEL });
+      for (const doc of recentDocuments) {
+        items.push({ key: `recent-doc-${doc.id}`, kind: 'document', document: doc });
+      }
+    }
+    if (shouldShowAddContextLibrarySectionHeader(hasSearch, showRecentDocuments)) {
+      items.push({
+        key: 'sec-library-doc',
+        kind: 'section',
+        title: getAddContextLibrarySectionLabel('documents', hasSearch),
+      });
+    }
+    if (visibleBrowseDocuments.length === 0) {
+      const noDocumentMessage = hasSearch
+        ? 'No matching documents.'
+        : showRecentDocuments
+          ? 'No documents beyond Recent.'
+          : 'No documents available yet. Upload one above.';
+      items.push({
+        key: 'empty-doc',
+        kind: 'empty',
+        message: noDocumentMessage,
+      });
+    } else {
+      for (const doc of visibleBrowseDocuments) {
+        items.push({ key: `doc-${doc.id}`, kind: 'document', document: doc });
+      }
+    }
+    if (hasMoreDocs) {
+      items.push({ key: 'load-doc', kind: 'load-documents' });
+    }
+    return items;
+  }, [
+    pendingDocuments,
+    recentDocuments,
+    visibleBrowseDocuments,
+    hasMoreDocs,
+    hasSearch,
+  ]);
+
   const listItems = React.useMemo((): RowItem[] => {
     const items: RowItem[] = [];
 
     if (activeTab === 'timeline') {
-      if (!isCheckpointMode) {
-        items.push({ key: 'note-docs-mode', kind: 'note', message: ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE });
-        return items;
-      }
       if (pendingCheckpoints.length > 0) {
         items.push({ key: 'sec-pending-cp', kind: 'section', title: 'Pending' });
         for (const pending of pendingCheckpoints) {
@@ -344,59 +422,15 @@ export function AddContextSheet({
       return items;
     }
 
-    const showRecentDocuments = recentDocuments.length > 0 && !hasSearch;
-    if (pendingDocuments.length > 0) {
-      items.push({ key: 'sec-pending-doc', kind: 'section', title: 'Pending' });
-      for (const pending of pendingDocuments) {
-        items.push({ key: `pending-doc-${pending.id}`, kind: 'pending', item: pending });
-      }
-    }
-    if (showRecentDocuments) {
-      items.push({ key: 'sec-recent-doc', kind: 'section', title: ADD_CONTEXT_RECENT_LABEL });
-      for (const doc of recentDocuments) {
-        items.push({ key: `recent-doc-${doc.id}`, kind: 'document', document: doc });
-      }
-    }
-    if (shouldShowAddContextLibrarySectionHeader(hasSearch, showRecentDocuments)) {
-      items.push({
-        key: 'sec-library-doc',
-        kind: 'section',
-        title: getAddContextLibrarySectionLabel('documents', hasSearch),
-      });
-    }
-    if (visibleBrowseDocuments.length === 0) {
-      const noDocumentMessage = hasSearch
-        ? 'No matching documents.'
-        : showRecentDocuments
-          ? 'No documents beyond Recent.'
-          : 'No documents available yet. Upload one above.';
-      items.push({
-        key: 'empty-doc',
-        kind: 'empty',
-        message: noDocumentMessage,
-      });
-    } else {
-      for (const doc of visibleBrowseDocuments) {
-        items.push({ key: `doc-${doc.id}`, kind: 'document', document: doc });
-      }
-    }
-    if (hasMoreDocs) {
-      items.push({ key: 'load-doc', kind: 'load-documents' });
-    }
-
-    return items;
+    return documentListItems;
   }, [
     activeTab,
-    isCheckpointMode,
     recentCheckpoints,
     pendingCheckpoints,
     browseCheckpoints,
     hasMoreCheckpoints,
-    pendingDocuments,
-    recentDocuments,
-    visibleBrowseDocuments,
-    hasMoreDocs,
     hasSearch,
+    documentListItems,
   ]);
 
   const handleToggleCheckpoint = React.useCallback(
@@ -680,6 +714,175 @@ export function AddContextSheet({
       <Text className="text-xs leading-4 text-muted-foreground">{modeHint}</Text>
     </View>
   );
+
+  if (isDocsMode) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        statusBarTranslucent
+        onRequestClose={onClose}>
+        <View
+          className="flex-1 bg-background"
+          style={{ paddingTop: Platform.OS === 'ios' ? 12 : Math.max(insets.top, 12) }}>
+          <View className="px-4 pb-2">
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-lg font-semibold text-foreground">{ADD_CONTEXT_TITLE}</Text>
+              <Button variant="ghost" size="icon" onPress={onClose}>
+                <Icon as={X} size={20} className="text-foreground" />
+              </Button>
+            </View>
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-xs text-muted-foreground">
+                {selectedDocumentCount} selected ·{' '}
+                {CONTEXT_SELECTION_DOCUMENT_LIMIT(MAX_SELECTED_DOCUMENTS)}
+              </Text>
+              {selectedDocumentCount > 0 && (
+                <Pressable onPress={onClearSelection}>
+                  <Text className="text-xs text-primary">Clear</Text>
+                </Pressable>
+              )}
+            </View>
+            <Text className="mb-3 text-xs leading-4 text-muted-foreground">
+              {ADD_CONTEXT_MODE_HINT_DOCS}
+            </Text>
+            <Pressable
+              onPress={() => closeAfterAction('upload', onUploadDocument)}
+              disabled={captureBusy}
+              className={`mb-3 flex-row items-center justify-center gap-2 rounded-xl border border-border p-3 ${
+                captureBusy ? 'opacity-60' : 'bg-secondary/40'
+              } ${launchingAction === 'upload' ? 'border-primary bg-primary/10' : ''}`}>
+              <View className="h-[22px] w-[22px] items-center justify-center">
+                {launchingAction === 'upload' ? (
+                  <ActivityIndicator size="small" />
+                ) : (
+                  <Icon as={Upload} size={22} className="text-primary" />
+                )}
+              </View>
+              <Text className="text-sm font-medium text-foreground">Upload document</Text>
+            </Pressable>
+            <View className="mb-2 flex-row items-center rounded-xl border border-border bg-muted/40 px-3">
+              <Icon as={Search} size={18} className="text-muted-foreground" />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS}
+                placeholderTextColor="#9ca3af"
+                className="ml-2 flex-1 py-2.5 text-sm text-foreground"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+            </View>
+            {limitHint ? (
+              <Text className="mb-2 text-xs text-destructive">{limitHint}</Text>
+            ) : null}
+          </View>
+          <FlatList
+            data={documentListItems}
+            keyExtractor={(item) => item.key}
+            renderItem={renderItem}
+            ListHeaderComponent={
+              hasPendingContext ? (
+                <View className="mb-2 rounded-lg border border-dashed border-border bg-muted/50 px-3 py-2">
+                  <Text className="text-xs text-muted-foreground">
+                    Processing {pendingContext.length} item
+                    {pendingContext.length === 1 ? '' : 's'}
+                    {pendingSummaryParts.length > 0
+                      ? ` (${pendingSummaryParts.join(', ')})`
+                      : ''}
+                    . They will auto-select when ready.
+                  </Text>
+                </View>
+              ) : null
+            }
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </Modal>
+    );
+  }
+
+  if (isReportMode) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        statusBarTranslucent
+        onRequestClose={onClose}>
+        <View
+          className="flex-1 bg-background"
+          style={{ paddingTop: Platform.OS === 'ios' ? 12 : Math.max(insets.top, 12) }}>
+          <View className="px-4 pb-2">
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-lg font-semibold text-foreground">{ADD_CONTEXT_TITLE}</Text>
+              <Button variant="ghost" size="icon" onPress={onClose}>
+                <Icon as={X} size={20} className="text-foreground" />
+              </Button>
+            </View>
+            <Text className="mb-2 text-xs text-muted-foreground">
+              {selectedReportCount} selected · {CONTEXT_SELECTION_REPORT_LIMIT(MAX_SELECTED_REPORTS)}
+            </Text>
+            <Text className="mb-3 text-xs leading-4 text-muted-foreground">
+              {ADD_CONTEXT_MODE_HINT_REPORT}
+            </Text>
+            <View className="mb-2 flex-row items-center rounded-xl border border-border bg-muted/40 px-3">
+              <Icon as={Search} size={18} className="text-muted-foreground" />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search reports by title…"
+                placeholderTextColor="#9ca3af"
+                className="ml-2 flex-1 py-2.5 text-sm text-foreground"
+              />
+            </View>
+            {limitHint ? (
+              <Text className="mb-2 text-xs text-destructive">{limitHint}</Text>
+            ) : null}
+          </View>
+          <FlatList
+            data={reportPickerRows}
+            keyExtractor={(item) => reportSelectionKey(item.reportId, item.revision)}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+            ListEmptyComponent={
+              <Text className="py-8 text-center text-sm text-muted-foreground">
+                No ready reports yet. Generate one from the Reports tab.
+              </Text>
+            }
+            renderItem={({ item }) => {
+              const selected = selectedReportIds.has(
+                reportSelectionKey(item.reportId, item.revision)
+              );
+              const report = toRevisionSelectionReport(
+                item.parent,
+                item.revision,
+                item.isArchived
+              );
+              return (
+                <ContextListRow
+                  fallbackIcon={FileText}
+                  title={report.title || 'Report'}
+                  subtitle={`v${item.revision}${item.isArchived ? ' · archived' : ''} · ${item.mode}`}
+                  selected={selected}
+                  onPress={() => {
+                    if (!onToggleReport) return;
+                    const result = onToggleReport(report);
+                    if (result === 'limit_reached') {
+                      setLimitHint(CONTEXT_SELECTION_REPORT_LIMIT(MAX_SELECTED_REPORTS));
+                    } else {
+                      setLimitHint(null);
+                    }
+                  }}
+                />
+              );
+            }}
+          />
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

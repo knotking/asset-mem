@@ -246,6 +246,7 @@ jobs:
       checkpoint_analysis_topic: ${{ steps.pubsub.outputs.checkpoint_analysis_topic }}
       checkpoint_metrics_topic: ${{ steps.pubsub.outputs.checkpoint_metrics_topic }}
       document_analysis_topic: ${{ steps.pubsub.outputs.document_analysis_topic }}
+      report_generation_topic: ${{ steps.pubsub.outputs.report_generation_topic }}
       user_upload_rag_corpus: ${{ steps.rag.outputs.user_upload_rag_corpus }}
       apphosting_backend_id: ${{ steps.apphosting.outputs.backend_id }}
       apphosting_backend_url: ${{ steps.apphosting.outputs.backend_url }}
@@ -912,6 +913,20 @@ jobs:
             echo "✓ Topic created: $DOCUMENT_ANALYSIS_TOPIC"
           fi
 
+          # Create report generation topic (property snapshot PDFs)
+          REPORT_GENERATION_TOPIC="report-generation-topic-${ENV}"
+          echo "Checking topic: $REPORT_GENERATION_TOPIC"
+
+          if gcloud pubsub topics describe $REPORT_GENERATION_TOPIC --project=$PROJECT_ID &>/dev/null; then
+            echo "✓ Topic already exists: $REPORT_GENERATION_TOPIC"
+          else
+            echo "Creating topic: $REPORT_GENERATION_TOPIC"
+            gcloud pubsub topics create $REPORT_GENERATION_TOPIC \
+              --project=$PROJECT_ID \
+              --message-retention-duration=7d
+            echo "✓ Topic created: $REPORT_GENERATION_TOPIC"
+          fi
+
           # Output values
           echo "upload_topic=$UPLOAD_TOPIC" >> $GITHUB_OUTPUT
           echo "result_topic=$RESULT_TOPIC" >> $GITHUB_OUTPUT
@@ -919,6 +934,7 @@ jobs:
           echo "checkpoint_analysis_topic=$CHECKPOINT_TOPIC" >> $GITHUB_OUTPUT
           echo "checkpoint_metrics_topic=$CHECKPOINT_METRICS_TOPIC" >> $GITHUB_OUTPUT
           echo "document_analysis_topic=$DOCUMENT_ANALYSIS_TOPIC" >> $GITHUB_OUTPUT
+          echo "report_generation_topic=$REPORT_GENERATION_TOPIC" >> $GITHUB_OUTPUT
 
       - name: Configure Pub/Sub dead letter queues
         run: |
@@ -1594,6 +1610,7 @@ jobs:
           set_or_update_var "CHECKPOINT_ANALYSIS_TOPIC" "${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}"
           set_or_update_var "CHECKPOINT_METRICS_TOPIC" "${{ needs.create-infrastructure.outputs.checkpoint_metrics_topic }}"
           set_or_update_var "DOCUMENT_ANALYSIS_TOPIC" "${{ needs.create-infrastructure.outputs.document_analysis_topic }}"
+          set_or_update_var "REPORT_GENERATION_TOPIC" "${{ needs.create-infrastructure.outputs.report_generation_topic }}"
           set_or_update_var "USER_UPLOAD_FOLDER" "uploads-${{ inputs.environment_name }}"
 
           # RAG and Agent configuration
@@ -1607,7 +1624,7 @@ jobs:
           set_or_update_var "FIREBASE_SERVICE_ACCOUNT_EMAIL" "${{ needs.create-infrastructure.outputs.firebase_service_account_email }}"
 
           # Plan limits JSON (free tier + Stripe Price ids). Only set if missing.
-          set_var_if_not_exists "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON" '{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5},"plus":{"stripePriceId":"price_REPLACE_PLUS","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30},"pro":{"stripePriceId":"price_REPLACE_PRO","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100}}'
+          set_var_if_not_exists "STRIPE_B2C_PRICE_TOKEN_CAPS_JSON" '{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2},"plus":{"stripePriceId":"price_REPLACE_PLUS","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30,"monthlyReportGenerationsLimit":10},"pro":{"stripePriceId":"price_REPLACE_PRO","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100,"monthlyReportGenerationsLimit":30}}'
 
           echo ""
           echo "✅ GitHub environment '${{ inputs.environment_name }}' configured"
@@ -1660,7 +1677,7 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_EMAIL=${{ needs.create-infrastructure.outputs.firebase_service_account_email }}
 
           # Plan limits (if not set earlier — see create-github-environment step)
-          STRIPE_B2C_PRICE_TOKEN_CAPS_JSON={"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5}}
+          STRIPE_B2C_PRICE_TOKEN_CAPS_JSON={"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2}}
           \`\`\`
 
           ## GitHub Repository Secrets (Manual Configuration Required)
@@ -1747,6 +1764,7 @@ jobs:
           | \`CHECKPOINT_ANALYSIS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.checkpoint_analysis_topic }}\` |
           | \`CHECKPOINT_METRICS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.checkpoint_metrics_topic }}\` |
           | \`DOCUMENT_ANALYSIS_TOPIC\` | \`${{ needs.create-infrastructure.outputs.document_analysis_topic }}\` |
+          | \`REPORT_GENERATION_TOPIC\` | \`${{ needs.create-infrastructure.outputs.report_generation_topic }}\` |
           | \`USER_UPLOAD_FOLDER\` | \`uploads-${{ inputs.environment_name }}\` |
           | \`REASONING_ENGINE_ID\` | \`new\` |
           | \`USER_UPLOAD_RAG_CORPUS\` | \`${{ needs.create-infrastructure.outputs.user_upload_rag_corpus }}\` |

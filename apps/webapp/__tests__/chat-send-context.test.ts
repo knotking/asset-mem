@@ -32,6 +32,7 @@ describe('chat-send-context', () => {
       primaryAgent: 'checkpoint',
       readySelectedCheckpoints: [readyCheckpoint],
       readySelectedDocuments: [readyDoc],
+      readySelectedReports: [],
     });
     expect(cp.checkpointIds).toEqual(['cp1']);
     expect(cp.contextDocURIs).toEqual(['gs://b/doc.pdf']);
@@ -42,6 +43,7 @@ describe('chat-send-context', () => {
       primaryAgent: 'docs',
       readySelectedCheckpoints: [readyCheckpoint],
       readySelectedDocuments: [readyDoc],
+      readySelectedReports: [],
     });
     expect(cp.checkpointIds).toEqual([]);
   });
@@ -53,6 +55,7 @@ describe('chat-send-context', () => {
         text: '',
         readySelectedCheckpoints: [readyCheckpoint],
         readySelectedDocuments: [],
+        readySelectedReports: [],
         pendingContext: [],
       }),
     ).toBe('Enter a message.');
@@ -65,6 +68,7 @@ describe('chat-send-context', () => {
         text: 'hello',
         readySelectedCheckpoints: [],
         readySelectedDocuments: [],
+        readySelectedReports: [],
         pendingContext: [],
       }),
     ).toBe(true);
@@ -77,6 +81,7 @@ describe('chat-send-context', () => {
         text: 'hello',
         readySelectedCheckpoints: [pendingCheckpoint],
         readySelectedDocuments: [],
+        readySelectedReports: [],
         pendingContext: [],
       }),
     ).toBe(false);
@@ -89,6 +94,7 @@ describe('chat-send-context', () => {
         text: 'hello',
         readySelectedCheckpoints: [],
         readySelectedDocuments: [],
+        readySelectedReports: [],
         pendingContext: [
           {
             kind: 'checkpoint',
@@ -106,6 +112,7 @@ describe('chat-send-context', () => {
     const refs = buildMessageContextRefs({
       readySelectedCheckpoints: [readyCheckpoint],
       readySelectedDocuments: [readyDoc],
+      readySelectedReports: [],
     });
     expect(refs.checkpoints?.[0]).toEqual({ id: 'cp1', name: 'Kitchen' });
     expect(refs.documents?.[0]).toEqual({ id: 'doc1', name: 'warranty.pdf' });

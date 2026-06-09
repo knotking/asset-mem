@@ -47,7 +47,18 @@ class AgentRequest(BaseModel):
         description="Unified search/market location (resolved server-side for agents)",
     )
     property_id: Optional[str] = Field(default=None, description="Property ID for property-specific queries (e.g., checkpoint retrieval)")
-    primary_agent: Optional[Literal["checkpoint", "docs"]] = Field(default=None, description="Primary agent selection for explicit routing: 'checkpoint' for checkpoint queries, 'docs' for document queries")
+    report_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Property report IDs for report-mode chat (frozen snapshot retrieval)",
+    )
+    report_revisions: Optional[dict[str, int]] = Field(
+        default=None,
+        description="Optional report_id -> revision map when chat references an archived revision",
+    )
+    primary_agent: Optional[Literal["checkpoint", "docs", "report"]] = Field(
+        default=None,
+        description="Primary agent selection: checkpoint, docs, or report (saved PDF snapshots)",
+    )
     checkpoint_optional_agents: List[str] = Field(default_factory=list, description="List of optional agents to include in checkpoint analysis")
     assistant_message_id: Optional[str] = Field(
         default=None,

@@ -6,6 +6,7 @@ import {
   Stethoscope,
   Clock,
   FileText,
+  ClipboardList,
   MapPin,
   Navigation,
   Settings,
@@ -60,14 +61,36 @@ export function CompactSettingsBar({
         onPress={onAgentPress || onOpenSettings}
         className="shrink-0 flex-row items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5"
         accessibilityRole="button"
-        accessibilityLabel={`Current agent: ${primaryAgent === 'analysis' ? 'Analysis' : primaryAgent === 'checkpoint' ? 'Checkpoint' : 'Docs'}`}>
+        accessibilityLabel={`Current agent: ${
+          primaryAgent === 'analysis'
+            ? 'Analysis'
+            : primaryAgent === 'checkpoint'
+              ? 'Checkpoint'
+              : primaryAgent === 'report'
+                ? 'Reports'
+                : 'Docs'
+        }`}>
         <Icon
-          as={primaryAgent === 'analysis' ? Stethoscope : primaryAgent === 'checkpoint' ? Clock : FileText}
+          as={
+            primaryAgent === 'analysis'
+              ? Stethoscope
+              : primaryAgent === 'checkpoint'
+                ? Clock
+                : primaryAgent === 'report'
+                  ? ClipboardList
+                  : FileText
+          }
           size={14}
           className="text-foreground"
         />
         <Text className="text-xs font-medium text-foreground">
-          {primaryAgent === 'analysis' ? 'Analysis' : primaryAgent === 'checkpoint' ? 'Checkpoint' : 'Docs'}
+          {primaryAgent === 'analysis'
+            ? 'Analysis'
+            : primaryAgent === 'checkpoint'
+              ? 'Checkpoint'
+              : primaryAgent === 'report'
+                ? 'Reports'
+                : 'Docs'}
         </Text>
         {primaryAgent === 'analysis' && selectedOptionalAgents.length > 0 && (
           <View className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5">

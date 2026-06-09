@@ -1,10 +1,11 @@
-import { Settings, Stethoscope, Clock, FileText, MapPin, Navigation } from "lucide-react";
+import { Settings, MapPin, Navigation } from "lucide-react";
 import type {
   PrimaryAgent,
   SearchLocationInput,
   AnalysisOptionalAgent,
   CheckpointOptionalAgent,
 } from "@/lib/types";
+import { getPrimaryAgentIcon, getPrimaryAgentLabel } from "@/lib/primary-agent-display";
 import { searchLocationLabel } from "@/lib/search-location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -45,9 +46,7 @@ export function CompactSettingsBar({
     return searchLocationLabel(searchLocation, propertyAddress);
   };
 
-  const AgentIcon = primaryAgent === 'analysis' ? Stethoscope : 
-                     primaryAgent === 'checkpoint' ? Clock : 
-                     FileText;
+  const AgentIcon = getPrimaryAgentIcon(primaryAgent);
   const LocationIcon = searchLocation?.source === 'device_gps' ? Navigation : MapPin;
 
   return (
@@ -58,13 +57,13 @@ export function CompactSettingsBar({
         variant="outline"
         size="sm"
         className={cn(
-          "h-8 shrink-0 gap-1.5 px-2.5 text-xs font-medium",
+          "h-8 min-w-0 max-w-[9.5rem] shrink gap-1.5 px-2.5 text-xs font-medium",
           onAgentPress && "cursor-pointer"
         )}
         onClick={onAgentPress || onOpenSettings}
       >
         <AgentIcon className="h-3.5 w-3.5 shrink-0" />
-        <span className="capitalize">{primaryAgent}</span>
+        <span className="min-w-0 truncate">{getPrimaryAgentLabel(primaryAgent)}</span>
         {primaryAgent === "analysis" && selectedOptionalAgents.length > 0 && (
           <span className="ml-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
             +{selectedOptionalAgents.length}

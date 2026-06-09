@@ -8,8 +8,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  Clock,
-  FileText,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -17,6 +15,7 @@ import {
   MapPin,
   Navigation,
 } from "lucide-react";
+import { getPrimaryAgentIcon } from "@/lib/primary-agent-display";
 import type {
   PrimaryAgent,
   AnalysisOptionalAgent,
@@ -47,6 +46,15 @@ interface ChatSettingsPopoverProps {
   propertyAddress?: string;
   initialTab?: 'agent' | 'location';
 }
+
+const PRIMARY_AGENT_OPTIONS: ReadonlyArray<{
+  id: PrimaryAgent;
+  label: string;
+}> = [
+  { id: "checkpoint", label: "Checkpoint" },
+  { id: "docs", label: "Docs" },
+  { id: "report", label: "Reports" },
+];
 
 const OPTIONAL_AGENT_OPTIONS: ReadonlyArray<{
   id: CheckpointOptionalAgent;
@@ -176,7 +184,7 @@ export function ChatSettingsPopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       {anchor ? <PopoverAnchor asChild>{anchor}</PopoverAnchor> : null}
       {children ? <PopoverTrigger asChild>{children}</PopoverTrigger> : null}
-      <PopoverContent className="w-96 p-0" align="start">
+      <PopoverContent className="w-[28rem] p-0" align="start">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'agent' | 'location')}>
           <div className="border-b px-4 pt-4">
             <h3 className="text-base font-semibold mb-3">Chat Settings</h3>
@@ -196,23 +204,23 @@ export function ChatSettingsPopover({
             {/* Primary Agent Selection */}
             <div>
               <label className="text-sm font-semibold mb-3 block">Primary Agent</label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={primaryAgent === 'checkpoint' ? 'default' : 'outline'}
-                  className="flex-1 gap-2"
-                  onClick={() => onPrimaryAgentChange('checkpoint')}>
-                  <Clock className="h-4 w-4" />
-                  <span>Checkpoint</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={primaryAgent === 'docs' ? 'default' : 'outline'}
-                  className="flex-1 gap-2"
-                  onClick={() => onPrimaryAgentChange('docs')}>
-                  <FileText className="h-4 w-4" />
-                  <span>Docs</span>
-                </Button>
+              <div className="grid grid-cols-3 gap-2">
+                {PRIMARY_AGENT_OPTIONS.map((option) => {
+                  const Icon = getPrimaryAgentIcon(option.id);
+                  return (
+                    <Button
+                      key={option.id}
+                      type="button"
+                      size="sm"
+                      variant={primaryAgent === option.id ? "default" : "outline"}
+                      className="min-w-0 gap-1.5 px-2"
+                      onClick={() => onPrimaryAgentChange(option.id)}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{option.label}</span>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 
@@ -226,6 +234,16 @@ export function ChatSettingsPopover({
                       Not available for Docs. The Docs agent answers from your uploaded property
                       documents. Switch to Checkpoint to add coverage, DIY, service, or cost
                       recommendations.
+                    </p>
+                  </div>
+                  <div className="mt-2 min-h-[2.5rem]" aria-hidden />
+                </>
+              ) : primaryAgent === 'report' ? (
+                <>
+                  <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Reports mode answers from saved PDF snapshots you attach in chat — not live
+                      checkpoints.
                     </p>
                   </div>
                   <div className="mt-2 min-h-[2.5rem]" aria-hidden />

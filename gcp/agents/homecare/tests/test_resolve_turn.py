@@ -8,11 +8,14 @@ from types import SimpleNamespace
 from google.genai import types
 
 from property_agent.routing.conversational_intent import CONVERSATIONAL_TURN_STATE_KEY
+from property_agent.routing.query_mode import SESSION_WORKING_MEMORY_SNAPSHOT_KEY
 from property_agent.routing.resolve_turn import (
     RESOLVED_TURN_STATE_KEY,
     ResolvedTurn,
+    _should_inject_session_working_memory,
     apply_resolved_turn_to_state,
     format_resolved_turn_block,
+    format_resolved_turn_block_with_memory,
     inject_resolved_turn_into_llm_request,
     is_executor_conversational_turn,
 )
@@ -112,6 +115,22 @@ def test_explain_prior_route_none_stays_conversational() -> None:
     apply_resolved_turn_to_state(state, resolved)
     assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is True
     assert state["checkpoint_optional_agents"] == []
+
+
+def test_report_route_substantive_allows_tools() -> None:
+    resolved = ResolvedTurn(
+        intent="substantive",
+        route="report",
+        expanded_user_query="Summarize the saved property report.",
+        retrieval_only=True,
+        run_optional_agents=[],
+        user_goal="answer_from_context",
+        discourse_act="replay_report",
+    )
+    assert is_executor_conversational_turn(resolved) is False
+    state: dict = {}
+    apply_resolved_turn_to_state(state, resolved)
+    assert state.get(CONVERSATIONAL_TURN_STATE_KEY) is False
 
 
 def test_greeting_route_none_stays_conversational() -> None:
@@ -251,3 +270,41 @@ def test_format_resolved_turn_block_injects_working_memory_when_snapshot() -> No
     )
     assert "[SESSION_WORKING_MEMORY]" in block
     assert "Hetcho" in block
+
+
+def test_report_route_skips_session_working_memory() -> None:
+    resolved = ResolvedTurn(
+        intent="substantive",
+        route="report",
+        expanded_user_query="summarize the report",
+        retrieval_only=True,
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+    )
+    state = {
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Roof"], "checkpointsAnalyzed": 3},
+        }
+    }
+    assert _should_inject_session_working_memory(resolved, state) is False
+
+
+def test_format_resolved_turn_block_injects_report_mode_note() -> None:
+    block = format_resolved_turn_block_with_memory(
+        ResolvedTurn(
+            intent="substantive",
+            route="report",
+            expanded_user_query="summarize the report",
+            retrieval_only=True,
+            user_goal="answer_from_context",
+        ),
+        state={
+            SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+                "checkpoint_summary": {"locations": ["Roof"], "checkpointsAnalyzed": 3},
+            }
+        },
+    )
+    assert "[REPORT_MODE]" in block
+    assert "do not invent roofing" in block.lower()
+    assert "do not invent report sections" in block.lower()
+    assert "[SESSION_WORKING_MEMORY]" not in block

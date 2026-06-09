@@ -10,6 +10,7 @@ import { createLogger } from "../lib/logger";
 import {
   FREE_PLAN_CHECKPOINTS_PER_MONTH,
   FREE_PLAN_DOCUMENTS_PER_MONTH,
+  FREE_PLAN_REPORTS_PER_MONTH,
   FREE_PLAN_TOKENS_PER_MONTH,
 } from "../lib/plan-defaults";
 import {
@@ -49,14 +50,17 @@ export type LlmTokenUsageSnapshot = {
   periodOutputTokens: number;
   periodDocumentCreations: number;
   periodCheckpointCreations: number;
+  periodReportGenerations: number;
   documentCreations: number;
   checkpointCreations: number;
+  reportGenerations: number;
   monthlyLimit: number | null;
   effectiveMonthlyLimit: number | null;
   proxyDefaultLimit: "pending" | number | null;
   limitsLoading: boolean;
   documentsLimit: PlanLimitSlice | null;
   checkpointsLimit: PlanLimitSlice | null;
+  reportsLimit: PlanLimitSlice | null;
 };
 
 const empty: Omit<
@@ -69,6 +73,7 @@ const empty: Omit<
   | "limitsLoading"
   | "documentsLimit"
   | "checkpointsLimit"
+  | "reportsLimit"
 > = {
   inputTokens: 0,
   outputTokens: 0,
@@ -82,8 +87,10 @@ const empty: Omit<
   periodOutputTokens: 0,
   periodDocumentCreations: 0,
   periodCheckpointCreations: 0,
+  periodReportGenerations: 0,
   documentCreations: 0,
   checkpointCreations: 0,
+  reportGenerations: 0,
 };
 
 export type LlmTokenUsageProviderProps = {
@@ -116,6 +123,7 @@ function useLlmTokenUsageSubscription(
   const [checkpointsLimit, setCheckpointsLimit] = useState<PlanLimitSlice | null>(
     null,
   );
+  const [reportsLimit, setReportsLimit] = useState<PlanLimitSlice | null>(null);
 
   useEffect(() => {
     if (!userId || !db) {
@@ -127,6 +135,7 @@ function useLlmTokenUsageSubscription(
       setProxyDefaultLimit("pending");
       setDocumentsLimit(null);
       setCheckpointsLimit(null);
+      setReportsLimit(null);
       return;
     }
 
@@ -175,12 +184,18 @@ function useLlmTokenUsageSubscription(
             typeof d.periodCheckpointCreations === "number"
               ? d.periodCheckpointCreations
               : 0,
+          periodReportGenerations:
+            typeof d.periodReportGenerations === "number"
+              ? d.periodReportGenerations
+              : 0,
           documentCreations:
             typeof d.documentCreations === "number" ? d.documentCreations : 0,
           checkpointCreations:
             typeof d.checkpointCreations === "number"
               ? d.checkpointCreations
               : 0,
+          reportGenerations:
+            typeof d.reportGenerations === "number" ? d.reportGenerations : 0,
         });
       },
       (err) => {
@@ -248,6 +263,7 @@ function useLlmTokenUsageSubscription(
           max_tokens?: unknown;
           documents?: { used?: number; limit?: number; unlimited?: boolean };
           checkpoints?: { used?: number; limit?: number; unlimited?: boolean };
+          reports?: { used?: number; limit?: number; unlimited?: boolean };
         };
         if (cancelled) return;
 
@@ -264,6 +280,9 @@ function useLlmTokenUsageSubscription(
         setCheckpointsLimit(
           toDisplayPlanLimit(data.checkpoints, FREE_PLAN_CHECKPOINTS_PER_MONTH),
         );
+        setReportsLimit(
+          toDisplayPlanLimit(data.reports, FREE_PLAN_REPORTS_PER_MONTH),
+        );
       } catch (err) {
         if (!cancelled) {
           quotaLog.warn("tokenQuotaStatus.fetch.failed", {
@@ -274,6 +293,7 @@ function useLlmTokenUsageSubscription(
           }
           setDocumentsLimit(null);
           setCheckpointsLimit(null);
+          setReportsLimit(null);
         }
       }
     })();
@@ -310,6 +330,7 @@ function useLlmTokenUsageSubscription(
     limitsLoading,
     documentsLimit,
     checkpointsLimit,
+    reportsLimit,
   };
 }
 

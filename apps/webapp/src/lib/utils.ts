@@ -136,6 +136,15 @@ export const apiUrls = {
   extractDocInfo: () => getApiUrl("/extract-doc-info"),
   analyzeCheckpoint: () => getApiUrl("/analyze-checkpoint"),
   compareCheckpoints: () => getApiUrl("/compare-checkpoints"),
+  reportsPreview: () => getApiUrl("/reports/preview"),
+  reportsPreviewHtml: () => getApiUrl("/reports/preview-html"),
+  reportsStatus: () => getApiUrl("/reports/status"),
+  reportsGenerate: () => getApiUrl("/reports/generate"),
+  reportsSignedUrl: () => getApiUrl("/reports/signed-url"),
+  reportsMetadata: () => getApiUrl("/reports/metadata"),
+  reportsShare: () => getApiUrl("/reports/share"),
+  reportsRagIndex: () => getApiUrl("/reports/rag-index"),
+  reportsPublicSignedUrl: () => getApiUrl("/reports/public-signed-url"),
   /** Same monthly limit resolution as proxy enforcement; optional fallback in UI if request fails */
   tokenQuotaStatus: () => getApiUrl("/token-quota-status"),
   /** B2C Stripe Checkout (Bearer Firebase ID token) */

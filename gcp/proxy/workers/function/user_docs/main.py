@@ -69,7 +69,7 @@ def pubsub_to_user_docs(request, context):
                 # /rag-file-upload already checks and records document creations before publishing
                 # this worker event. Re-checking with the same count here can double-charge a batch
                 # and incorrectly block first-time free users.
-                if source != "rag-file-upload":
+                if source not in ("rag-file-upload", "report-rag-index"):
                     check_monthly_document_creations_allowed(db, user_id, len(gcs_urls))
             rag_service = RagService()
             import_result = rag_service.import_files(gcs_urls, user_id)

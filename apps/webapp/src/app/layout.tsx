@@ -36,7 +36,9 @@ export default function RootLayout({
           <AuthProvider>
             <AppContextProvider>
               <WebDeletionConfigProvider>
-                <SidebarProvider>
+                {/* flex-col: SidebarProvider defaults to flex-row; without a Sidebar sibling,
+                    standalone routes (share, legal, login) collapsed to content width on the left. */}
+                <SidebarProvider className="flex-col">
                   {children}
                 </SidebarProvider>
               </WebDeletionConfigProvider>

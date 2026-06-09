@@ -796,28 +796,10 @@ const StructuredResponse = ({
       ]
     );
 
-    const accordionDefaultValue = useMemo(() => {
-      const value = getStructuredAccordionDefaultValue(accordionVisibility, "web");
-      if (!isSheetLayout && value === "checkpoint-summary") {
-        if (hasCheckpointDetails) return "checkpoint-details";
-        if (hasCheckpointInsights) return "checkpoint-insights";
-        if (hasCoverage) return "coverage";
-        if (hasDIY) return "diy";
-        if (hasService) return "service";
-        if (hasCostEstimates) return "cost-estimates";
-        return undefined;
-      }
-      return value;
-    }, [
-      accordionVisibility,
-      isSheetLayout,
-      hasCheckpointDetails,
-      hasCheckpointInsights,
-      hasCoverage,
-      hasDIY,
-      hasService,
-      hasCostEstimates,
-    ]);
+    const accordionDefaultValue = useMemo(
+      () => getStructuredAccordionDefaultValue(accordionVisibility, "web"),
+      [accordionVisibility]
+    );
 
     const [openSection, setOpenSection] = useState<string | undefined>(
       accordionDefaultValue

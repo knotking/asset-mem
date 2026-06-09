@@ -4,6 +4,7 @@ import * as React from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useCheckpoint } from "@/contexts/checkpoint-context";
 import { useProperty } from "@/contexts/property-context";
+import { useReports } from "@/contexts/reports-context";
 import { ChatContextProvider, useChatContext } from "@/contexts/chat-context-context";
 import { AddContextSheet } from "@/components/chat/add-context-sheet";
 import { ChatContextChipStrip } from "@/components/chat/chat-context-chip-strip";
@@ -89,10 +90,12 @@ function PropertyChatComposerInner(
   const {
     readySelectedCheckpoints,
     readySelectedDocuments,
+    readySelectedReports,
     pendingContext,
     queuedSend,
     toggleCheckpoint,
     toggleDocument,
+    toggleReport,
     clearReadySelection,
     addPendingContext,
     removePendingContext,
@@ -119,6 +122,14 @@ function PropertyChatComposerInner(
     () => new Set(readySelectedDocuments.map((d) => d.id)),
     [readySelectedDocuments]
   );
+  const { reports } = useReports();
+  const selectedReportIds = React.useMemo(
+    () =>
+      new Set(
+        readySelectedReports.map((r) => `${r.id}:v${r.revision ?? 1}`)
+      ),
+    [readySelectedReports]
+  );
 
   const sendBlockHint = React.useMemo(() => {
     const reason = getSendBlockReason({
@@ -126,11 +137,18 @@ function PropertyChatComposerInner(
       text: "placeholder",
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
     });
     if (!reason || reason === "Enter a message.") return null;
     return reason;
-  }, [props.primaryAgent, readySelectedCheckpoints, readySelectedDocuments, pendingContext]);
+  }, [
+    props.primaryAgent,
+    readySelectedCheckpoints,
+    readySelectedDocuments,
+    readySelectedReports,
+    pendingContext,
+  ]);
 
   const runSend = React.useCallback(
     async (
@@ -144,6 +162,7 @@ function PropertyChatComposerInner(
         text: content,
         readySelectedCheckpoints,
         readySelectedDocuments,
+        readySelectedReports,
         pendingContext,
       };
 
@@ -188,11 +207,14 @@ function PropertyChatComposerInner(
         const contextRefs = buildMessageContextRefs({
           readySelectedCheckpoints,
           readySelectedDocuments,
+          readySelectedReports,
         });
-        const { contextDocURIs, checkpointIds } = buildAgentRequestContext({
+        const { contextDocURIs, checkpointIds, reportIds, reportRevisions } =
+          buildAgentRequestContext({
           primaryAgent: props.primaryAgent,
           readySelectedCheckpoints,
           readySelectedDocuments,
+          readySelectedReports,
         });
 
         const userCreatedAt = clientStartedAtTimestamp();
@@ -232,10 +254,15 @@ function PropertyChatComposerInner(
           chatIntent: options?.chatIntent,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
+          reportIds: reportIds.length > 0 ? reportIds : undefined,
+          reportRevisions:
+            Object.keys(reportRevisions).length > 0 ? reportRevisions : undefined,
           propertyAddress: props.propertyAddress,
           propertyId: props.propertyId,
           primaryAgent:
-            props.primaryAgent === "docs" || props.primaryAgent === "checkpoint"
+            props.primaryAgent === "docs" ||
+            props.primaryAgent === "checkpoint" ||
+            props.primaryAgent === "report"
               ? props.primaryAgent
               : undefined,
           checkpointOptionalAgents:
@@ -553,9 +580,11 @@ function PropertyChatComposerInner(
               pendingContext={pendingContext}
               readySelectedCheckpoints={readySelectedCheckpoints}
               readySelectedDocuments={readySelectedDocuments}
+              readySelectedReports={readySelectedReports}
               queuedSend={queuedSend}
               onToggleCheckpoint={toggleCheckpoint}
               onToggleDocument={toggleDocument}
+              onToggleReport={toggleReport}
               onRemovePending={removePendingContext}
               onClearReady={clearReadySelection}
               onCancelQueuedSend={() => setQueuedSend(null)}
@@ -563,7 +592,9 @@ function PropertyChatComposerInner(
           }
           sendBlockHint={sendBlockHint}
           readyContextCount={
-            readySelectedCheckpoints.length + readySelectedDocuments.length
+            readySelectedCheckpoints.length +
+            readySelectedDocuments.length +
+            readySelectedReports.length
           }
           pendingContextCount={pendingContext.length}
           hasQueuedSend={queuedSend != null}
@@ -591,6 +622,10 @@ function PropertyChatComposerInner(
         hasMoreCheckpoints={hasMoreCheckpoints}
         isLoadingMoreCheckpoints={isLoadingEarlier}
         onLoadMoreCheckpoints={() => void loadMoreCheckpoints()}
+        reports={reports}
+        selectedReportIds={selectedReportIds}
+        selectedReportCount={readySelectedReports.length}
+        onToggleReport={toggleReport}
       />
 
       <CameraCaptureDialog
@@ -627,12 +662,15 @@ export const PropertyChatComposer = React.forwardRef<
 >(function PropertyChatComposer(props, ref) {
   const { checkpoints } = useCheckpoint();
   const { documents } = useProperty();
+  const { reports } = useReports();
+  const { user } = useAuth();
 
   return (
     <ChatContextProvider
       primaryAgent={props.primaryAgent}
       allCheckpoints={checkpoints ?? []}
       allDocuments={documents}
+      allReports={reports}
     >
       <PropertyChatComposerInner {...props} composerRef={ref} />
     </ChatContextProvider>

@@ -85,6 +85,10 @@ jobs:
             missing_vars+=("DOCUMENT_ANALYSIS_TOPIC")
           fi
 
+          if [ -z "${{ vars.REPORT_GENERATION_TOPIC }}" ]; then
+            missing_vars+=("REPORT_GENERATION_TOPIC")
+          fi
+
           if [ ${#missing_vars[@]} -ne 0 ]; then
             echo "::error::Missing required GitHub variables: ${missing_vars[*]}"
             echo "Please set the following variables in your GitHub repository settings:"
@@ -180,6 +184,7 @@ jobs:
             CHECKPOINT_ANALYSIS_TOPIC=${{ vars.CHECKPOINT_ANALYSIS_TOPIC }}
             CHECKPOINT_METRICS_TOPIC=${{ vars.CHECKPOINT_METRICS_TOPIC }}
             DOCUMENT_ANALYSIS_TOPIC=${{ vars.DOCUMENT_ANALYSIS_TOPIC }}
+            REPORT_GENERATION_TOPIC=${{ vars.REPORT_GENERATION_TOPIC }}
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
             STRIPE_WEBHOOK_SIGNING_SECRET=${{ secrets.STRIPE_WEBHOOK_SIGNING_SECRET }}
             STRIPE_B2C_PRICE_TOKEN_CAPS_JSON=${{ env.STRIPE_B2C_PRICE_TOKEN_CAPS_JSON }}

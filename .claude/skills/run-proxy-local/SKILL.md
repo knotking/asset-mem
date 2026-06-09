@@ -50,7 +50,9 @@ From `gcp/proxy/api/core/config.py`:
 - `FIREBASE_WEBHOOK_SECRET` — optional legacy path prefix (not a substitute for auth)
 - `DISABLE_FIREBASE_AUTH=true` — local/tests only; trust body `user_id`
 - `TELEGRAM_WEBHOOK_SECRET` — only if you're testing the bot
-- `USER_UPLOAD_TOPIC`, `USER_UPLOAD_RESULT_SUBSCRIPTION`, `GCS_BUCKET` — for upload + RAG flow
+- `USER_UPLOAD_TOPIC`, `USER_UPLOAD_RESULT_SUBSCRIPTION`, `GCS_BUCKET` — for upload + RAG flow and report PDF signed URLs (`/reports/signed-url`)
+- `REPORT_GENERATION_TOPIC` — for async report generation (local proxy publishes to staging topic by default)
+- `GCP_SERVICE_ACCOUNT_EMAIL` — runtime SA for GCS signed URLs (`/reports/signed-url`) via IAM signBlob when using user ADC; grant yourself `iam.serviceAccounts.signBlob` on that SA (`bash gcp/proxy/scripts/grant-auth-handoff-iam.sh YOUR_PROJECT_ID`)
 - `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` (required for limits) — include `"free"` key + Stripe Price ids
 - `PROXY_CORS_ORIGINS` (optional) — comma-separated browser origins; unset uses defaults in `core/cors.py` (`https://asset-mem.com`, `https://www.asset-mem.com`, App Hosting URLs, `http://localhost:9002`)
 - `PROXY_RATE_LIMIT_ENABLED` (default `true`) — per-UID limits; set `false` for unconstrained local testing

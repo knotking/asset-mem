@@ -35,6 +35,7 @@ import {
   getSendBlockReason,
 } from '@homeapp/common/lib/chat-send-context';
 import { analyzeCheckpoint, queueExtractDocInfo, postFileToAgent, streamAgentResponse } from '@/lib/api';
+import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { getDocumentAnalysisFailureMessage } from '@homeapp/common/lib/document-analysis-errors';
 import { waitForUserDocAnalysis } from '@/lib/wait-user-doc-analysis';
 import { createLogger } from '@/lib/logger';
@@ -95,14 +96,17 @@ function PropertyChatInner(props: Props) {
     isLoadingEarlier,
   } = useCheckpoint();
   const { documents, property } = useProperty();
+  const { reports } = usePropertyReports();
   const { uploadDocuments } = useDocumentUpload();
   const {
     readySelectedCheckpoints,
     readySelectedDocuments,
+    readySelectedReports,
     pendingContext,
     queuedSend,
     toggleCheckpoint,
     toggleDocument,
+    toggleReport,
     clearReadySelection,
     addPendingContext,
     removePendingContext,
@@ -125,6 +129,13 @@ function PropertyChatInner(props: Props) {
     () => new Set(readySelectedDocuments.map((d) => d.id)),
     [readySelectedDocuments]
   );
+  const selectedReportIds = React.useMemo(
+    () =>
+      new Set(
+        readySelectedReports.map((r) => `${r.id}:v${r.revision ?? 1}`)
+      ),
+    [readySelectedReports]
+  );
 
   const sendBlockHint = React.useMemo(() => {
     const reason = getSendBlockReason({
@@ -132,11 +143,12 @@ function PropertyChatInner(props: Props) {
       text: 'placeholder',
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
     });
     if (!reason || reason === 'Enter a message.') return null;
     return reason;
-  }, [primaryAgent, readySelectedCheckpoints, readySelectedDocuments, pendingContext]);
+  }, [primaryAgent, readySelectedCheckpoints, readySelectedDocuments, readySelectedReports, pendingContext]);
 
   const runSend = React.useCallback(
     async (
@@ -150,6 +162,7 @@ function PropertyChatInner(props: Props) {
         text,
         readySelectedCheckpoints,
         readySelectedDocuments,
+        readySelectedReports,
         pendingContext,
       };
 
@@ -179,11 +192,14 @@ function PropertyChatInner(props: Props) {
         const contextRefs = buildMessageContextRefs({
           readySelectedCheckpoints,
           readySelectedDocuments,
+          readySelectedReports,
         });
-        const { contextDocURIs, checkpointIds } = buildAgentRequestContext({
+        const { contextDocURIs, checkpointIds, reportIds, reportRevisions } =
+          buildAgentRequestContext({
           primaryAgent,
           readySelectedCheckpoints,
           readySelectedDocuments,
+          readySelectedReports,
         });
 
         const isDraftSession = sessionDoc.data()?.name === 'draft';
@@ -226,6 +242,9 @@ function PropertyChatInner(props: Props) {
           chatIntent: options?.chatIntent,
           contextDocURIs,
           checkpointIds: checkpointIds.length > 0 ? checkpointIds : undefined,
+          reportIds: reportIds.length > 0 ? reportIds : undefined,
+          reportRevisions:
+            Object.keys(reportRevisions).length > 0 ? reportRevisions : undefined,
           propertyAddress,
           propertyId,
           primaryAgent,
@@ -258,6 +277,7 @@ function PropertyChatInner(props: Props) {
       primaryAgent,
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
       db,
       propertyAddress,
@@ -515,17 +535,23 @@ function PropertyChatInner(props: Props) {
             pendingContext={pendingContext}
             readySelectedCheckpoints={readySelectedCheckpoints}
             readySelectedDocuments={readySelectedDocuments}
+            readySelectedReports={readySelectedReports}
             queuedSend={queuedSend}
             onOpenAddContext={() => setAddContextVisible(true)}
             onToggleCheckpoint={toggleCheckpoint}
             onToggleDocument={toggleDocument}
+            onToggleReport={toggleReport}
             onRemovePending={removePendingContext}
             onClearReady={clearReadySelection}
             onCancelQueuedSend={() => setQueuedSend(null)}
           />
         }
         sendBlockHint={sendBlockHint}
-        readyContextCount={readySelectedCheckpoints.length + readySelectedDocuments.length}
+        readyContextCount={
+          readySelectedCheckpoints.length +
+          readySelectedDocuments.length +
+          readySelectedReports.length
+        }
         pendingContextCount={pendingContext.length}
         hasQueuedSend={queuedSend != null}
       />
@@ -550,6 +576,10 @@ function PropertyChatInner(props: Props) {
         hasMoreCheckpoints={hasMoreCheckpoints}
         isLoadingMoreCheckpoints={isLoadingEarlier}
         onLoadMoreCheckpoints={() => void loadMoreCheckpoints()}
+        reports={reports}
+        selectedReportIds={selectedReportIds}
+        selectedReportCount={readySelectedReports.length}
+        onToggleReport={toggleReport}
       />
     </>
   );
@@ -558,12 +588,14 @@ function PropertyChatInner(props: Props) {
 export function PropertyChatWithContext(props: Props) {
   const { checkpoints } = useCheckpoint();
   const { documents } = useProperty();
+  const { reports } = usePropertyReports();
 
   return (
     <ChatContextProvider
       primaryAgent={props.primaryAgent}
       allCheckpoints={checkpoints}
-      allDocuments={documents}>
+      allDocuments={documents}
+      allReports={reports}>
       <PropertyChatInner {...props} />
     </ChatContextProvider>
   );

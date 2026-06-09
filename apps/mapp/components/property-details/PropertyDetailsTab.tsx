@@ -14,7 +14,8 @@ import {
   SelectValue,
   NativeSelectScrollView,
 } from '@/components/ui/select';
-import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle, Loader2 } from 'lucide-react-native';
+import { FileText, MapPin, Pencil, Upload, Trash2, AlertCircle, Loader2, Heart, ChevronRight } from 'lucide-react-native';
+import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useFirebase } from '@homeapp/common/contexts/firebase-context';
@@ -71,9 +72,10 @@ import { useRouter } from 'expo-router';
 
 interface PropertyDetailsTabProps {
   property: any;
+  onOpenMyPros?: () => void;
 }
 
-export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
+export function PropertyDetailsTab({ property, onOpenMyPros }: PropertyDetailsTabProps) {
   const router = useRouter();
   const {
     documents,
@@ -87,6 +89,7 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
   const { user } = useAuth();
   const { db, storage } = useFirebase();
   const { uploadingDocs, uploadDocuments, removeUploadingDoc } = useDocumentUpload();
+  const { savedProviders } = useSavedServiceProviders();
   const { documentsLimit, limitsLoading } = useLlmTokenUsage();
   const documentLimitMessage = planLimitBlockMessage('document', documentsLimit);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -569,6 +572,27 @@ export function PropertyDetailsTab({ property }: PropertyDetailsTabProps) {
           </View>
         </CardContent>
       </Card>
+
+      {onOpenMyPros ? (
+        <Pressable onPress={onOpenMyPros} className="mb-4">
+          <Card>
+            <CardContent className="flex-row items-center gap-3 py-4">
+              <View className="rounded-full bg-muted p-2">
+                <Icon as={Heart} size={18} className="text-foreground" />
+              </View>
+              <View className="min-w-0 flex-1">
+                <Text className="text-base font-semibold text-foreground">My pros</Text>
+                <Text className="text-sm text-muted-foreground">
+                  {savedProviders.length > 0
+                    ? `${savedProviders.length} saved service pro${savedProviders.length === 1 ? '' : 's'}`
+                    : 'Save local pros from AI chat recommendations'}
+                </Text>
+              </View>
+              <Icon as={ChevronRight} size={20} className="text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Pressable>
+      ) : null}
 
       {/* Property Documents Card */}
       <Card>

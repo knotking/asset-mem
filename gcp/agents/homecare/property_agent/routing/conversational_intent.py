@@ -188,6 +188,7 @@ _TURN_PAYLOAD_STATE_KEYS = (
     "property_id",
     "primary_agent",
     "checkpoint_ids",
+    "report_ids",
     "context_doc_uris",
     "checkpoint_optional_agents",
     "search_location",
@@ -541,25 +542,77 @@ _CAPABILITY_BULLETS = (
     "- **Cost:** Estimate repair costs and compare DIY vs professional options.\n"
 )
 
+_REPORT_CAPABILITY_BULLETS = (
+    "- **Summarize:** Key findings from your saved report snapshot.\n"
+    "- **Details:** Ask about specific areas, systems, or issues cited in the report.\n"
+    "- **Clarify:** Walk through what the snapshot captured on a given topic.\n"
+)
+
+
+def _report_ids_from_state(state: SessionStateLike | None) -> list[str]:
+    if not state:
+        return []
+    return [
+        str(rid).strip()
+        for rid in (state.get("report_ids") or [])
+        if str(rid).strip()
+    ]
+
+
+def _is_report_focused_chat(state: SessionStateLike | None) -> bool:
+    report_ids = _report_ids_from_state(state)
+    if not report_ids:
+        return False
+    primary = str((state or {}).get("primary_agent") or "").strip().lower()
+    if primary == "report":
+        return True
+    checkpoint_ids = (state or {}).get("checkpoint_ids") or []
+    doc_uris = (state or {}).get("context_doc_uris") or []
+    return not checkpoint_ids and not doc_uris
+
+
+def _capability_bullets_for_state(state: SessionStateLike | None) -> str:
+    return (
+        _REPORT_CAPABILITY_BULLETS
+        if _is_report_focused_chat(state)
+        else _CAPABILITY_BULLETS
+    )
+
+
+def _explore_cta_for_state(state: SessionStateLike | None) -> str:
+    if _is_report_focused_chat(state):
+        return "What would you like to know about the report?"
+    return "What would you like to explore first?"
+
 
 def _context_attachment_hint(state: SessionStateLike | None) -> str:
     if not state:
         return ""
     checkpoint_ids = state.get("checkpoint_ids") or []
     doc_uris = state.get("context_doc_uris") or []
-    if not checkpoint_ids and not doc_uris:
+    report_ids = _report_ids_from_state(state)
+    if not checkpoint_ids and not doc_uris and not report_ids:
         return ""
     parts: list[str] = []
+    if report_ids:
+        n = len(report_ids)
+        parts.append(f"{n} saved report{'s' if n != 1 else ''} attached")
     if checkpoint_ids:
         parts.append("checkpoints selected")
     if doc_uris:
         parts.append("documents attached")
     joined = " and ".join(parts)
-    return (
-        f"You already have {joined} for this chat. For example, you could ask: "
-        "Is this issue covered? What DIY steps apply? Who are local providers? "
-        "Or what might repairs cost?\n\n"
-    )
+    if report_ids and not checkpoint_ids and not doc_uris:
+        examples = (
+            "For example: Summarize this report. What were the main findings? "
+            "What did it say about a specific room or system?"
+        )
+    else:
+        examples = (
+            "For example, you could ask: Is this issue covered? What DIY steps apply? "
+            "Who are local providers? Or what might repairs cost?"
+        )
+    return f"You already have {joined} for this chat. {examples}\n\n"
 
 
 def build_capabilities_summary(
@@ -570,12 +623,21 @@ def build_capabilities_summary(
     record_last_offered_options(state)
     addr = (property_address or "").strip()
     hint = _context_attachment_hint(state)
-    intro = (
-        f"I can help with your property at {addr}. Here is what I can do:\n\n"
-        if addr
-        else "I can help with your property. Here is what I can do:\n\n"
-    )
-    return hint + intro + _CAPABILITY_BULLETS + "\nWhat would you like to explore first?"
+    bullets = _capability_bullets_for_state(state)
+    cta = _explore_cta_for_state(state)
+    if _is_report_focused_chat(state):
+        intro = (
+            f"I can help you explore your saved property report at {addr}. Here is what I can do:\n\n"
+            if addr
+            else "I can help you explore your saved property report. Here is what I can do:\n\n"
+        )
+    else:
+        intro = (
+            f"I can help with your property at {addr}. Here is what I can do:\n\n"
+            if addr
+            else "I can help with your property. Here is what I can do:\n\n"
+        )
+    return hint + intro + bullets + f"\n{cta}"
 
 
 def build_conversational_reply(
@@ -591,19 +653,22 @@ def build_conversational_reply(
         )
     addr = (property_address or "").strip()
     hint = _context_attachment_hint(state)
+    bullets = _capability_bullets_for_state(state)
+    cta = _explore_cta_for_state(state)
     if label == "greeting":
         record_last_offered_options(state)
-        if addr:
-            return (
-                f"Hello! I'm here to help with your property at {addr}.\n\n"
-                f"{hint}Here is what I can do:\n\n{_CAPABILITY_BULLETS}\n"
-                "What would you like to explore first?"
-            )
-        return (
-            "Hello! I'm here to help with your home and property care.\n\n"
-            f"{hint}Here is what I can do:\n\n{_CAPABILITY_BULLETS}\n"
-            "What would you like to explore first?"
-        )
+        if _is_report_focused_chat(state):
+            if addr:
+                opener = (
+                    f"Hello! I'm here to help with your saved property report at {addr}.\n\n"
+                )
+            else:
+                opener = "Hello! I'm here to help with your saved property report.\n\n"
+        elif addr:
+            opener = f"Hello! I'm here to help with your property at {addr}.\n\n"
+        else:
+            opener = "Hello! I'm here to help with your home and property care.\n\n"
+        return f"{opener}{hint}Here is what I can do:\n\n{bullets}\n{cta}"
     if prior_analysis or label == "acknowledgment":
         return (
             "You're welcome! I'm glad that was helpful. "

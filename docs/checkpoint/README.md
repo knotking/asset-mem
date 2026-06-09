@@ -10,6 +10,7 @@ The Checkpoint feature allows users to capture and track property condition over
 
 ### Core Features
 
+- **[Property Reports Plan](../property/PROPERTY_REPORTS_PLAN.md)** - Snapshot/comparison PDF reports from checkpoints; optional Reports chat mode and Docs RAG
 - **[Orchestrator V2 Plan](../../gcp/agents/homecare/docs/ORCHESTRATOR_V2_PLAN.md)** - Canonical checkpoint chat analysis contract (`contentJson` / `contentMarkdown`)
 - **[Checkpoint Feature Plan](./CHECKPOINT_FEATURE_PLAN.md)** - Complete implementation plan and roadmap
 - **[Checkpoint Chat Integration](./CHECKPOINT_CHAT_INTEGRATION.md)** - Integration with AI chat interface

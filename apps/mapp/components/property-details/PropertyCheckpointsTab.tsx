@@ -687,16 +687,27 @@ function CheckpointCard({
   );
 }
 
+import { PropertyReportsSegment } from '@/components/property-details/PropertyReportsSegment';
+import type { TimelineSubTab } from '@/components/property-details/property-screen-tab';
+
 interface PropertyCheckpointsTabProps {
   isCreateModalVisible: boolean;
   setIsCreateModalVisible: (visible: boolean) => void;
-  setActiveTab: (tab: 'chat' | 'details' | 'timeline' | 'providers') => void;
+  setActiveTab: (tab: 'chat' | 'details' | 'timeline') => void;
+  initialSubTab?: TimelineSubTab;
+  onSubTabChange?: (subTab: TimelineSubTab) => void;
+  isGenerateReportModalVisible?: boolean;
+  setIsGenerateReportModalVisible?: (visible: boolean) => void;
 }
 
-export function PropertyCheckpointsTab({ 
-  isCreateModalVisible, 
+export function PropertyCheckpointsTab({
+  isCreateModalVisible,
   setIsCreateModalVisible,
-  setActiveTab 
+  setActiveTab,
+  initialSubTab = 'checkpoints',
+  onSubTabChange,
+  isGenerateReportModalVisible,
+  setIsGenerateReportModalVisible,
 }: PropertyCheckpointsTabProps) {
   const {
     checkpoints,
@@ -720,7 +731,15 @@ export function PropertyCheckpointsTab({
   const { metrics: propertyMetrics } = usePropertyCheckpointMetrics();
 
   // Sub-tab state
-  const [activeSubTab, setActiveSubTab] = React.useState<'checkpoints' | 'insights'>('checkpoints');
+  const [activeSubTab, setActiveSubTab] = React.useState<TimelineSubTab>(initialSubTab);
+
+  React.useEffect(() => {
+    setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
+
+  React.useEffect(() => {
+    onSubTabChange?.(activeSubTab);
+  }, [activeSubTab, onSubTabChange]);
   
   const [selectedCheckpoint, setSelectedCheckpoint] = React.useState<Checkpoint | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = React.useState(false);
@@ -969,8 +988,46 @@ export function PropertyCheckpointsTab({
   if (loading) {
     content = <CheckpointsTabSkeleton />;
   } else if (checkpoints.length === 0) {
-    // Empty state (no checkpoints)
     content = (
+      <View className="flex-1">
+        <View className="flex-row border-b border-border px-4">
+          <Pressable
+            onPress={() => setActiveSubTab('checkpoints')}
+            className={`flex-1 py-3 ${activeSubTab === 'checkpoints' ? 'border-b-2 border-primary' : ''}`}>
+            <Text
+              className={`text-center font-medium ${
+                activeSubTab === 'checkpoints' ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+              Checkpoints
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveSubTab('insights')}
+            className={`flex-1 py-3 ${activeSubTab === 'insights' ? 'border-b-2 border-primary' : ''}`}>
+            <Text
+              className={`text-center font-medium ${
+                activeSubTab === 'insights' ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+              Insights
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveSubTab('reports')}
+            className={`flex-1 py-3 ${activeSubTab === 'reports' ? 'border-b-2 border-primary' : ''}`}>
+            <Text
+              className={`text-center font-medium ${
+                activeSubTab === 'reports' ? 'text-primary' : 'text-muted-foreground'
+              }`}>
+              Reports
+            </Text>
+          </Pressable>
+        </View>
+        {activeSubTab === 'reports' ? (
+          <PropertyReportsSegment
+            generateModalVisible={isGenerateReportModalVisible}
+            onGenerateModalVisibleChange={setIsGenerateReportModalVisible}
+          />
+        ) : (
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 }}>
@@ -1042,6 +1099,8 @@ export function PropertyCheckpointsTab({
           </Button>
         </Card>
       </ScrollView>
+        )}
+      </View>
     );
   } else {
     // Main view with checkpoints
@@ -1072,6 +1131,16 @@ export function PropertyCheckpointsTab({
               activeSubTab === 'insights' ? 'text-primary' : 'text-muted-foreground'
             }`}>
             Insights
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setActiveSubTab('reports')}
+          className={`flex-1 py-3 ${activeSubTab === 'reports' ? 'border-b-2 border-primary' : ''}`}>
+          <Text
+            className={`text-center font-medium ${
+              activeSubTab === 'reports' ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+            Reports
           </Text>
         </Pressable>
       </View>
@@ -1199,6 +1268,13 @@ export function PropertyCheckpointsTab({
             onOpenIssues={() => setIsIssuesModalVisible(true)}
           />
         </ScrollView>
+      )}
+
+      {activeSubTab === 'reports' && (
+        <PropertyReportsSegment
+          generateModalVisible={isGenerateReportModalVisible}
+          onGenerateModalVisibleChange={setIsGenerateReportModalVisible}
+        />
       )}
 
       <CreateCheckpointModal

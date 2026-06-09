@@ -134,7 +134,7 @@ export default function SignupPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex min-h-svh w-full items-center justify-center bg-background">
           <Card className="w-full max-w-sm">
             <CardHeader>
               <CardTitle className="text-2xl">Sign Up</CardTitle>

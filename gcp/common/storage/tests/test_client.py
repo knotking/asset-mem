@@ -361,7 +361,11 @@ async def test_copy_blob(client):
 @pytest.mark.asyncio
 async def test_generate_signed_url(client):
     """Test generating a signed URL."""
-    with patch.object(client, '_get_client') as mock_get_client:
+    mock_creds = Mock()
+    mock_creds.signer = Mock()
+    with patch("google.auth.default", return_value=(mock_creds, "test-project")), patch.object(
+        client, "_get_client"
+    ) as mock_get_client:
         mock_storage_client = Mock()
         mock_bucket = Mock()
         mock_blob = Mock()

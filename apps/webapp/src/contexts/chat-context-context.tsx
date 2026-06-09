@@ -17,6 +17,7 @@ import type {
   Document,
   PendingContextItem,
   PrimaryAgent,
+  PropertyReport,
   QueuedChatSend,
 } from "@/lib/types";
 import { isCheckpointReady, isDocumentReady } from "@/lib/chat-context-readiness";
@@ -25,23 +26,31 @@ import {
   canSelectMoreDocuments,
   pickDefaultReadyCheckpoint,
   pickDefaultReadyDocument,
+  pickDefaultReadyReportForAgent,
 } from "@/lib/chat-context-picker";
 import {
   MAX_SELECTED_CHECKPOINTS,
   MAX_SELECTED_DOCUMENTS,
 } from "@/lib/chat-context-limits";
+import {
+  canSelectMoreReports,
+  isReportReady,
+  MAX_SELECTED_REPORTS,
+} from "@/lib/chat-context-reports";
 
 export type ToggleSelectionResult = "added" | "removed" | "limit_reached";
 
 type ChatContextValue = {
   readySelectedCheckpoints: Checkpoint[];
   readySelectedDocuments: Document[];
+  readySelectedReports: PropertyReport[];
   pendingContext: PendingContextItem[];
   queuedSend: QueuedChatSend | null;
   contextTouched: boolean;
   setContextTouched: (value: boolean) => void;
   toggleCheckpoint: (checkpoint: Checkpoint) => ToggleSelectionResult;
   toggleDocument: (document: Document) => ToggleSelectionResult;
+  toggleReport: (report: PropertyReport) => ToggleSelectionResult;
   clearReadySelection: () => void;
   addPendingContext: (item: PendingContextItem) => void;
   removePendingContext: (id: string) => void;
@@ -49,6 +58,7 @@ type ChatContextValue = {
   setQueuedSend: (value: QueuedChatSend | null) => void;
   maxSelectedCheckpoints: number;
   maxSelectedDocuments: number;
+  maxSelectedReports: number;
 };
 
 const ChatContextContext = createContext<ChatContextValue | undefined>(undefined);
@@ -58,9 +68,14 @@ type ProviderProps = {
   primaryAgent: PrimaryAgent;
   allCheckpoints: Checkpoint[];
   allDocuments: Document[];
+  allReports?: PropertyReport[];
   onQueuedSendReady?: (
     queued: QueuedChatSend,
-    selection: { checkpoints: Checkpoint[]; documents: Document[] }
+    selection: {
+      checkpoints: Checkpoint[];
+      documents: Document[];
+      reports: PropertyReport[];
+    }
   ) => void;
 };
 
@@ -79,15 +94,23 @@ function appendDocumentIfRoom(prev: Document[], document: Document): Document[] 
   return [...prev, document];
 }
 
+function appendReportIfRoom(prev: PropertyReport[], report: PropertyReport): PropertyReport[] {
+  if (prev.some((s) => s.id === report.id)) return prev;
+  if (!canSelectMoreReports(prev.length)) return prev;
+  return [...prev, report];
+}
+
 export function ChatContextProvider({
   children,
   primaryAgent,
   allCheckpoints,
   allDocuments,
+  allReports = [],
   onQueuedSendReady,
 }: ProviderProps) {
   const [readySelectedCheckpoints, setReadySelectedCheckpoints] = useState<Checkpoint[]>([]);
   const [readySelectedDocuments, setReadySelectedDocuments] = useState<Document[]>([]);
+  const [readySelectedReports, setReadySelectedReports] = useState<PropertyReport[]>([]);
   const [pendingContext, setPendingContext] = useState<PendingContextItem[]>([]);
   const [queuedSend, setQueuedSend] = useState<QueuedChatSend | null>(null);
   const [contextTouched, setContextTouched] = useState(false);
@@ -95,8 +118,14 @@ export function ChatContextProvider({
   onQueuedSendReadyRef.current = onQueuedSendReady;
 
   useEffect(() => {
-    if (primaryAgent === "docs") {
+    if (primaryAgent === "docs" || primaryAgent === "report") {
       setReadySelectedCheckpoints([]);
+    }
+    if (primaryAgent === "report") {
+      setReadySelectedDocuments([]);
+    }
+    if (primaryAgent === "docs" || primaryAgent === "checkpoint") {
+      setReadySelectedReports([]);
     }
   }, [primaryAgent]);
 
@@ -110,13 +139,20 @@ export function ChatContextProvider({
       );
     }
 
-    const defaultDocument = pickDefaultReadyDocument(allDocuments);
+    const defaultDocument = pickDefaultReadyDocument(allDocuments, primaryAgent);
     if (defaultDocument) {
       setReadySelectedDocuments((prev) =>
         prev.length > 0 ? prev : [defaultDocument]
       );
     }
-  }, [allCheckpoints, allDocuments, primaryAgent, contextTouched]);
+
+    const defaultReport = pickDefaultReadyReportForAgent(allReports, primaryAgent);
+    if (defaultReport && isReportReady(defaultReport)) {
+      setReadySelectedReports((prev) =>
+        prev.length > 0 ? prev : [defaultReport]
+      );
+    }
+  }, [allCheckpoints, allDocuments, allReports, primaryAgent, contextTouched]);
 
   useEffect(() => {
     setPendingContext((prev) => {
@@ -171,10 +207,17 @@ export function ChatContextProvider({
 
     const checkpoints = readySelectedCheckpoints;
     const documents = readySelectedDocuments;
+    const reports = readySelectedReports;
     const queued = queuedSend;
     setQueuedSend(null);
-    onQueuedSendReadyRef.current?.(queued, { checkpoints, documents });
-  }, [queuedSend, pendingContext, readySelectedCheckpoints, readySelectedDocuments]);
+    onQueuedSendReadyRef.current?.(queued, { checkpoints, documents, reports });
+  }, [
+    queuedSend,
+    pendingContext,
+    readySelectedCheckpoints,
+    readySelectedDocuments,
+    readySelectedReports,
+  ]);
 
   const toggleCheckpoint = useCallback((checkpoint: Checkpoint): ToggleSelectionResult => {
     setContextTouched(true);
@@ -214,10 +257,37 @@ export function ChatContextProvider({
     return result;
   }, []);
 
+  const toggleReport = useCallback((report: PropertyReport): ToggleSelectionResult => {
+    setContextTouched(true);
+    let result: ToggleSelectionResult = "removed";
+    const selectionKey = (item: PropertyReport) =>
+      `${item.id}:v${item.revision ?? 1}`;
+    setReadySelectedReports((prev) => {
+      const sameSlot = prev.findIndex((r) => r.id === report.id);
+      const exists = sameSlot >= 0 && selectionKey(prev[sameSlot]) === selectionKey(report);
+      if (exists) {
+        result = "removed";
+        return prev.filter((_, index) => index !== sameSlot);
+      }
+      if (sameSlot >= 0) {
+        result = "added";
+        return prev.map((item, index) => (index === sameSlot ? report : item));
+      }
+      if (!canSelectMoreReports(prev.length)) {
+        result = "limit_reached";
+        return prev;
+      }
+      result = "added";
+      return [...prev, report];
+    });
+    return result;
+  }, []);
+
   const clearReadySelection = useCallback(() => {
     setContextTouched(true);
     setReadySelectedCheckpoints([]);
     setReadySelectedDocuments([]);
+    setReadySelectedReports([]);
   }, []);
 
   const addPendingContext = useCallback((item: PendingContextItem) => {
@@ -239,12 +309,14 @@ export function ChatContextProvider({
     () => ({
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
       queuedSend,
       contextTouched,
       setContextTouched,
       toggleCheckpoint,
       toggleDocument,
+      toggleReport,
       clearReadySelection,
       addPendingContext,
       removePendingContext,
@@ -252,15 +324,18 @@ export function ChatContextProvider({
       setQueuedSend,
       maxSelectedCheckpoints: MAX_SELECTED_CHECKPOINTS,
       maxSelectedDocuments: MAX_SELECTED_DOCUMENTS,
+      maxSelectedReports: MAX_SELECTED_REPORTS,
     }),
     [
       readySelectedCheckpoints,
       readySelectedDocuments,
+      readySelectedReports,
       pendingContext,
       queuedSend,
       contextTouched,
       toggleCheckpoint,
       toggleDocument,
+      toggleReport,
       clearReadySelection,
       addPendingContext,
       removePendingContext,

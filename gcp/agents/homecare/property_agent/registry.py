@@ -26,11 +26,21 @@ def _user_docs_tool():
     return AgentTool(user_docs_agent)
 
 
+def _report_retrieval_tool():
+    from property_agent.reports.retrieval import report_retrieval
+
+    return FunctionTool(report_retrieval)
+
+
 def _base_tool_specs() -> tuple[ToolSpec, ...]:
     return (
         ToolSpec(
             id="user_docs_retrieval",
             factory=_user_docs_tool,
+        ),
+        ToolSpec(
+            id="report_retrieval",
+            factory=_report_retrieval_tool,
         ),
         ToolSpec(
             id="run_checkpoint_pipeline",

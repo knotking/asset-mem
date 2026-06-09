@@ -13,6 +13,7 @@ import { emptyDeletionResult } from './types';
 export type DeletionApiUrls = {
   document: string;
   checkpoint: string;
+  report: string;
   session: string;
   checkpointsBatch: string;
   documentsBatch: string;
@@ -123,6 +124,20 @@ export async function deleteCheckpointViaProxy(params: {
     userId: params.userId,
     propertyId: params.propertyId,
     checkpointId: params.checkpointId,
+  });
+}
+
+export async function deleteReportViaProxy(params: {
+  url: string;
+  getIdToken: GetFirebaseIdToken;
+  userId: string;
+  propertyId: string;
+  reportId: string;
+}): Promise<DeletionResult> {
+  return postDeletionProxy(params.url, params.getIdToken, {
+    userId: params.userId,
+    propertyId: params.propertyId,
+    reportId: params.reportId,
   });
 }
 
@@ -294,6 +309,7 @@ export function buildDeletionApiUrls(baseUrl: string): DeletionApiUrls {
   return {
     document: `${base}/deletion/document`,
     checkpoint: `${base}/deletion/checkpoint`,
+    report: `${base}/deletion/report`,
     session: `${base}/deletion/session`,
     checkpointsBatch: `${base}/deletion/checkpoints`,
     documentsBatch: `${base}/deletion/documents`,

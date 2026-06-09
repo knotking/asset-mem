@@ -36,6 +36,7 @@ Webapp does **not** import `@homeapp/common` at runtime. Keep these in sync with
 | `src/hooks/use-assistant-loading-ui.ts` | `apps/common/src/hooks/use-assistant-loading-ui.ts` |
 | `src/lib/checkpoint-branch-progress.ts` | `apps/common/src/lib/checkpoint-branch-progress.ts` |
 | `src/lib/plan-limit-errors.ts` | `apps/common/src/lib/document-analysis-errors.ts` |
+| `src/lib/feature-flags.ts` | `apps/common/src/lib/feature-flags.ts` |
 | `src/lib/home-onboarding.ts` | `apps/common/src/lib/home-onboarding.ts` |
 | `src/lib/sort-messages.ts` | `apps/common/src/lib/sort-messages.ts` |
 | `src/lib/executive-summary-display.ts` | `apps/common/src/lib/executive-summary-display.ts` |
@@ -73,7 +74,7 @@ assistantMessageHasDisplayableContent   → hasDisplayableContent (assistant)
 | **Loading dots** | `isLoading` from parent **and** no displayable content **and** no thinking strip |
 | **Composer progress strip** | `CheckpointAnalysisProgressFooter` above context chips while branches/synthesis are in flight (`getInFlightCheckpointProgressFromMessages`); shows **Writing your summary…** during the server gap after optional branches finish and before `analysisStatus.synthesis` arrives |
 | **Suggested-action chips** | Quick-reply buttons below accordions — hidden while `isTurnInFlight`; shown when the turn completes |
-| **Structured accordion** | `displayParts.structuredData` set; inline **checkpoint summary card** (always visible) plus collapsible sections; title card **Open full report** opens a side sheet with all sections expanded |
+| **Structured accordion** | `displayParts.structuredData` set; inline **checkpoint summary card** (always visible) plus collapsible sections (collapsed by default; triage opens only for clarification); title card **Open full report** opens a side sheet with all sections expanded |
 | **Title gradient** | Structured title card shimmers via `shouldShowDisplayTitleGradient` during the client stream (stops once `analysis.title` is present and SSE closes; branch/synthesis progress uses the composer footer) |
 | **Markdown bubble** | Displayable markdown, no structured UI |
 | **Copy button** | Assistant messages — dual clipboard on web (`text/plain` WhatsApp-friendly + `text/html` with markdown links); mapp stays WhatsApp plain |

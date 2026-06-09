@@ -14,6 +14,18 @@ import { createLogger, truncateId } from '@/lib/logger';
 
 const chatLog = createLogger('chat');
 
+function buildChatRedirectQuery(
+  searchParams: URLSearchParams,
+  fromOnboardingChecklist: boolean,
+): string {
+  const params = new URLSearchParams();
+  if (fromOnboardingChecklist) {
+    params.set(ONBOARDING_CHAT_OPEN_PARAM, '1');
+  }
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
 // Entry point: resolve the property draft (or create one) and redirect to it.
 export default function NewChatRedirectPage() {
     const { user, authPending } = useRequireAuth();
@@ -69,11 +81,9 @@ export default function NewChatRedirectPage() {
                     propertyId: truncateId(propertyId),
                     sessionId: truncateId(propertyDraftId),
                 });
-                const onboardingQuery = fromOnboardingChecklist
-                  ? `?${ONBOARDING_CHAT_OPEN_PARAM}=1`
-                  : '';
+                const redirectQuery = buildChatRedirectQuery(searchParams, fromOnboardingChecklist);
                 router.replace(
-                  `/home/properties/${propertyId}/chat/${propertyDraftId}${onboardingQuery}`
+                  `/home/properties/${propertyId}/chat/${propertyDraftId}${redirectQuery}`
                 );
                 return;
             }
@@ -107,11 +117,9 @@ export default function NewChatRedirectPage() {
                 propertyId: truncateId(propertyId),
                 sessionId: truncateId(newSessionId),
             });
-            const onboardingQuery = fromOnboardingChecklist
-              ? `?${ONBOARDING_CHAT_OPEN_PARAM}=1`
-              : '';
+            const redirectQuery = buildChatRedirectQuery(searchParams, fromOnboardingChecklist);
             router.replace(
-              `/home/properties/${propertyId}/chat/${newSessionId}${onboardingQuery}`
+              `/home/properties/${propertyId}/chat/${newSessionId}${redirectQuery}`
             );
         };
 
@@ -130,6 +138,7 @@ export default function NewChatRedirectPage() {
         router,
         toast,
         beginNewPropertyChatSession,
+        searchParams,
     ]);
 
     const handleRetry = () => {

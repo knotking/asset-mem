@@ -14,6 +14,18 @@ export const CONTEXT_READY_EMPTY_CHECKPOINT =
 export const CONTEXT_READY_EMPTY_DOCS =
   "Select or upload a document that has finished indexing.";
 
+export const CONTEXT_READY_EMPTY_REPORT =
+  "Select a saved report that is ready.";
+
+export const CONTEXT_REPORT_NOT_READY =
+  "Selected report is still generating or failed.";
+
+export const ADD_CONTEXT_MODE_HINT_REPORT =
+  "Requires at least one ready saved report. Answers use the frozen snapshot, not live checkpoints.";
+
+export const CONTEXT_SELECTION_REPORT_LIMIT = (max: number) =>
+  `You can select up to ${max} reports per message.`;
+
 export const CONTEXT_SELECTION_CHECKPOINT_LIMIT = (max: number) =>
   `You can select up to ${max} checkpoints per message.`;
 
@@ -29,9 +41,6 @@ export const ADD_CONTEXT_MODE_HINT_CHECKPOINT =
 
 export const ADD_CONTEXT_MODE_HINT_DOCS =
   "Requires at least one indexed document.";
-
-export const ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE =
-  "Captures save to your property timeline. Switch to Checkpoint mode to include them in chat.";
 
 export const ADD_CONTEXT_SEARCH_PLACEHOLDER = "Search by name, location, or type…";
 

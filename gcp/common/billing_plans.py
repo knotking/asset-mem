@@ -7,7 +7,8 @@ Shape (recommended — checkout by tier):
     "free": {
       "monthlyTokenLimit": 1000000,
       "monthlyDocumentLimit": 2,
-      "monthlyCheckpointLimit": 5
+      "monthlyCheckpointLimit": 5,
+      "monthlyReportGenerationsLimit": 2
     },
     "plus": {
       "stripePriceId": "price_xxx",
@@ -43,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 FREE_PLAN_KEY = "free"
 _STRIPE_PRICE_KEY_RE = re.compile(r"^price_")
+MONTHLY_REPORT_GENERATIONS_LIMIT_KEY = "monthlyReportGenerationsLimit"
+_LEGACY_MONTHLY_REPORT_GENERATIONS_KEY = "monthlyReportGenerations"
 
 
 @dataclass(frozen=True)
@@ -52,6 +55,7 @@ class B2CPricePlan:
     monthly_token_limit: int
     monthly_document_limit: int
     monthly_checkpoint_limit: int
+    monthly_report_generations: int = 0
     stripe_price_id: Optional[str] = None
 
 
@@ -94,6 +98,35 @@ def _coerce_limit(value: Any, *, field: str, plan_key: str) -> int:
             value,
         )
         return 0
+
+
+def _report_generations_limit_from_entry(value: dict[str, Any], *, plan_key: str) -> int:
+    """Prefer ``monthlyReportGenerationsLimit``; fall back to legacy ``monthlyReportGenerations``."""
+    raw = value.get(MONTHLY_REPORT_GENERATIONS_LIMIT_KEY)
+    if raw is not None:
+        return _coerce_limit(
+            raw,
+            field=MONTHLY_REPORT_GENERATIONS_LIMIT_KEY,
+            plan_key=plan_key,
+        )
+    return _coerce_limit(
+        value.get(_LEGACY_MONTHLY_REPORT_GENERATIONS_KEY),
+        field=_LEGACY_MONTHLY_REPORT_GENERATIONS_KEY,
+        plan_key=plan_key,
+    )
+
+
+def report_generations_limit_from_mapping(data: dict[str, Any]) -> Optional[int]:
+    """Read report cap from billing summary or preferences (new key, then legacy)."""
+    raw = data.get(MONTHLY_REPORT_GENERATIONS_LIMIT_KEY)
+    if raw is None:
+        raw = data.get(_LEGACY_MONTHLY_REPORT_GENERATIONS_KEY)
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _stripe_price_id_from_entry(plan_key: str, value: dict[str, Any]) -> Optional[str]:
@@ -139,6 +172,9 @@ def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
                         field="monthlyCheckpointLimit",
                         plan_key=key,
                     ),
+                    monthly_report_generations=_report_generations_limit_from_entry(
+                        value, plan_key=key
+                    ),
                     stripe_price_id=None,
                 )
             continue
@@ -147,6 +183,7 @@ def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
                 monthly_token_limit=max(0, value),
                 monthly_document_limit=0,
                 monthly_checkpoint_limit=0,
+                monthly_report_generations=0,
                 stripe_price_id=key if _STRIPE_PRICE_KEY_RE.match(key) else None,
             )
             continue
@@ -166,6 +203,9 @@ def parse_stripe_b2c_price_plans_json(raw: str) -> dict[str, B2CPricePlan]:
                     value.get("monthlyCheckpointLimit"),
                     field="monthlyCheckpointLimit",
                     plan_key=key,
+                ),
+                monthly_report_generations=_report_generations_limit_from_entry(
+                    value, plan_key=key
                 ),
                 stripe_price_id=_stripe_price_id_from_entry(key, value),
             )

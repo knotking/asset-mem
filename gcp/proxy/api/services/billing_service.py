@@ -153,14 +153,19 @@ def sync_subscription_to_firestore(
             payload["monthlyCheckpointLimit"] = (
                 plan.monthly_checkpoint_limit if plan.monthly_checkpoint_limit > 0 else None
             )
+            payload["monthlyReportGenerationsLimit"] = (
+                plan.monthly_report_generations if plan.monthly_report_generations > 0 else None
+            )
         else:
             payload["monthlyTokenLimit"] = None
             payload["monthlyDocumentLimit"] = None
             payload["monthlyCheckpointLimit"] = None
+            payload["monthlyReportGenerationsLimit"] = None
     else:
         payload["monthlyTokenLimit"] = None
         payload["monthlyDocumentLimit"] = None
         payload["monthlyCheckpointLimit"] = None
+        payload["monthlyReportGenerationsLimit"] = None
 
     ref.set(payload, merge=True)
 

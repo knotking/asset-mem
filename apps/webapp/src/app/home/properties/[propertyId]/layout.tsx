@@ -4,7 +4,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X, MessageSquare, Clock, Users } from 'lucide-react';
+import { Lightbulb, ArrowLeft, PanelLeft, Home, FileText, ChevronRight, PanelRightClose, PanelLeftOpen, Upload, PlusCircle, Pencil, Check, X as CancelIcon, Wrench, CheckCircle2, PanelLeftClose, PanelRight, PanelRightOpen, ChevronLeft, X, MessageSquare, Clock, ClipboardList } from 'lucide-react';
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import type { Document as DocumentType, Session, Property } from '@/lib/types';
@@ -12,6 +12,7 @@ import React, { useEffect, useState, useCallback, cloneElement } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { PropertyProvider, useProperty } from '@/contexts/property-context';
 import { CheckpointProvider } from '@/contexts/checkpoint-context';
+import { ReportsProvider } from '@/contexts/reports-context';
 import { SavedServiceProvidersProvider } from '@/contexts/saved-service-providers-context';
 import { cn } from '@/lib/utils';
 import { SessionNavBar } from '@/components/chat/session-sidebar';
@@ -27,6 +28,7 @@ import Link from 'next/link';
 import { UploadDialogProvider, useUploadDialog } from '@/contexts/upload-dialog-context';
 import { PropertyDocumentsProvider } from '@/contexts/property-documents-context';
 import { AddressConfirmationProvider } from '@/contexts/address-confirmation-context';
+import { MyProsSheetProvider } from '@/contexts/my-pros-sheet-context';
 
 
 function PropertyTabs() {
@@ -38,7 +40,6 @@ function PropertyTabs() {
         { name: 'AI Chat', href: `/home/properties/${propertyId}/chat`, segment: 'chat', icon: MessageSquare },
         { name: 'Timeline', href: `/home/properties/${propertyId}/checkpoints`, segment: 'checkpoints', icon: Clock },
         { name: 'Details', href: `/home/properties/${propertyId}/details`, segment: 'details', icon: FileText},
-        { name: 'Providers', href: `/home/properties/${propertyId}/providers`, segment: 'providers', icon: Users },
     ];
 
     return (
@@ -240,15 +241,19 @@ export default function PropertyChatLayout({
     <SessionProvider>
       <PropertyProvider>
         <SavedProvidersScope>
-          <CheckpointProvider>
-            <PropertyDocumentsProvider>
-              <UploadDialogProvider>
-                <AddressConfirmationProvider>
-                    <LayoutWithDialog>{children}</LayoutWithDialog>
-                </AddressConfirmationProvider>
-              </UploadDialogProvider>
-            </PropertyDocumentsProvider>
-          </CheckpointProvider>
+          <MyProsSheetProvider>
+            <CheckpointProvider>
+              <ReportsProvider>
+                <PropertyDocumentsProvider>
+                  <UploadDialogProvider>
+                    <AddressConfirmationProvider>
+                        <LayoutWithDialog>{children}</LayoutWithDialog>
+                    </AddressConfirmationProvider>
+                  </UploadDialogProvider>
+                </PropertyDocumentsProvider>
+              </ReportsProvider>
+            </CheckpointProvider>
+          </MyProsSheetProvider>
         </SavedProvidersScope>
       </PropertyProvider>
     </SessionProvider>

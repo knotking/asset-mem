@@ -41,4 +41,5 @@ async def token_quota_status(
         "unlimited": unlimited,
         "documents": plan_limits["documents"],
         "checkpoints": plan_limits["checkpoints"],
+        "reports": plan_limits["reports"],
     }

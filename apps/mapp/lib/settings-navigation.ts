@@ -16,7 +16,7 @@ const SIMPLE_RETURN_PATH: Record<'home' | 'settings', '/(tabs)/home' | '/(tabs)/
   settings: '/(tabs)/settings',
 };
 
-const PROPERTY_TAB_VALUES: PropertyScreenTab[] = ['chat', 'timeline', 'details', 'providers'];
+const PROPERTY_TAB_VALUES: PropertyScreenTab[] = ['chat', 'timeline', 'details'];
 
 /** Set when a settings sub-screen was exited via peek-back (home/property). */
 let pendingSettingsHubReset = false;
@@ -27,6 +27,7 @@ function normalizeRouteParam(value: string | string[] | undefined): string | und
 }
 
 function parsePropertyReturnTab(value: string | undefined): PropertyScreenTab {
+  if (value === 'reports' || value === 'providers') return 'chat';
   if (value && PROPERTY_TAB_VALUES.includes(value as PropertyScreenTab)) {
     return value as PropertyScreenTab;
   }
@@ -134,8 +135,6 @@ export function settingsBackAccessibilityLabel(context: SettingsReturnContext | 
       return 'Back to timeline';
     case 'details':
       return 'Back to property details';
-    case 'providers':
-      return 'Back to providers';
     default:
       return 'Back to property';
   }

@@ -92,6 +92,7 @@ _DISPLAY_NAME_MAP = {
     "coverage_agent": "Checking warranty & insurance…",
     "diy_agent": "Building DIY steps…",
     "run_checkpoint_pipeline": "Loading your checkpoints…",
+    "report_retrieval": "Reading your saved report…",
     # Legacy stream authors (pre-V2 ADK workflow); not root tools — see property_agent/ARCHITECTURE.md
     "checkpoint_analysis_agent": "Analyzing your checkpoints…",
     "checkpoint_analysis_synthesis_agent": "Writing your summary…",
@@ -912,10 +913,14 @@ async def stream_agent_answers(
     user_query = request.user_query
     context_doc_uris = request.context_doc_uris
     checkpoint_ids = request.checkpoint_ids  # Checkpoint IDs for checkpoint context
+    report_ids = request.report_ids
+    report_revisions = request.report_revisions
     if checkpoint_ids:
         logger.info(f"Received checkpoint_ids in request: {checkpoint_ids} (count: {len(checkpoint_ids)})")
     else:
         logger.debug("No checkpoint_ids provided in request")
+    if report_ids:
+        logger.info("Received report_ids in request: %s (count: %d)", report_ids, len(report_ids))
     property_address = request.property_address
     property_id = request.property_id  # Option 1: property_id from request
     primary_agent = request.primary_agent  # Primary agent selection for explicit routing
@@ -979,6 +984,9 @@ async def stream_agent_answers(
     
     payload: Dict[str, Any] = {"user_query": user_query}
 
+    if user_id:
+        payload["user_id"] = user_id
+
     if context_doc_uris:
         payload["context_doc_uris"] = context_doc_uris
 
@@ -988,7 +996,14 @@ async def stream_agent_answers(
         logger.info(f"Including checkpoint_ids in agent payload: {checkpoint_ids} (count: {len(checkpoint_ids)})")
     else:
         logger.debug("No checkpoint_ids to include in agent payload")
-    
+
+    if report_ids:
+        payload["report_ids"] = report_ids
+        logger.info("Including report_ids in agent payload: %s", report_ids)
+    if report_revisions:
+        payload["report_revisions"] = report_revisions
+        logger.info("Including report_revisions in agent payload: %s", report_revisions)
+
     # Include property_id if available (for checkpoint queries, etc.)
     if property_id:
         logger.info(f"Including property_id in agent payload: {property_id}")

@@ -10,6 +10,7 @@ from common.billing_plans import (
     plan_for_price,
     plan_for_tier,
     plans_json_from_env,
+    report_generations_limit_from_mapping,
     stripe_price_id_for_tier,
 )
 
@@ -77,3 +78,53 @@ def test_legacy_price_key():
     assert plans["price_legacy"].monthly_token_limit == 8_000_000
     assert plans["price_legacy"].stripe_price_id == "price_legacy"
     assert is_stripe_checkout_price_id("price_legacy", raw) is True
+
+
+def test_report_generations_limit_key():
+    raw = """{
+      "free": {
+        "monthlyTokenLimit": 1000000,
+        "monthlyDocumentLimit": 2,
+        "monthlyCheckpointLimit": 5,
+        "monthlyReportGenerationsLimit": 3
+      }
+    }"""
+    free = free_tier_plan(raw)
+    assert free is not None
+    assert free.monthly_report_generations == 3
+
+
+def test_report_generations_legacy_key_fallback():
+    raw = """{
+      "free": {
+        "monthlyTokenLimit": 1000000,
+        "monthlyReportGenerations": 7
+      }
+    }"""
+    free = free_tier_plan(raw)
+    assert free is not None
+    assert free.monthly_report_generations == 7
+
+
+def test_report_generations_limit_prefers_new_key():
+    raw = """{
+      "free": {
+        "monthlyReportGenerationsLimit": 4,
+        "monthlyReportGenerations": 99
+      }
+    }"""
+    free = free_tier_plan(raw)
+    assert free is not None
+    assert free.monthly_report_generations == 4
+
+
+def test_report_generations_limit_from_mapping():
+    assert report_generations_limit_from_mapping({"monthlyReportGenerationsLimit": 5}) == 5
+    assert report_generations_limit_from_mapping({"monthlyReportGenerations": 6}) == 6
+    assert (
+        report_generations_limit_from_mapping(
+            {"monthlyReportGenerationsLimit": 2, "monthlyReportGenerations": 9}
+        )
+        == 2
+    )
+    assert report_generations_limit_from_mapping({}) is None

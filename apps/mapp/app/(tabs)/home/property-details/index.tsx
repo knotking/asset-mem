@@ -13,7 +13,7 @@ import {
   File,
   X,
   Clock,
-  Users,
+  Heart,
   BookOpen,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -38,8 +38,15 @@ import type {
 import { ANALYSIS_OPTIONAL_AGENTS, CHECKPOINT_OPTIONAL_AGENTS } from '@homeapp/common/types';
 import { defaultSearchLocationInput } from '@homeapp/common/lib/search-location';
 import { PropertyDetailsTab } from '@/components/property-details/PropertyDetailsTab';
-import { PropertySavedProvidersTab } from '@/components/property-details/PropertySavedProvidersTab';
-import { parsePropertyScreenTab, type PropertyScreenTab } from '@/components/property-details/property-screen-tab';
+import { MyProsDrawerContent } from '@/components/property-details/MyProsDrawerContent';
+import {
+  parsePropertyScreenTab,
+  parseTimelineSubTab,
+  shouldOpenMyProsFromTab,
+  type PropertyScreenTab,
+  type TimelineSubTab,
+} from '@/components/property-details/property-screen-tab';
+import { OPEN_MY_PROS_PARAM } from '@homeapp/common/lib/my-pros-navigation';
 import { PropertyChatWithContext } from '@/components/chat/PropertyChatWithContext';
 import { useSavedServiceProviders } from '@homeapp/common/contexts/saved-service-providers-context';
 import { SessionsDrawerContent } from '@/components/property-details/SessionsDrawerContent';
@@ -74,6 +81,7 @@ export default function PropertyDetailsScreen() {
     tab?: string | string[];
     sessionId?: string | string[];
     fromOnboardingChecklist?: string | string[];
+    openMyPros?: string | string[];
   }>();
   const propertyId = normalizeRouteParam(params.id);
   const isNew = normalizeRouteParam(params.new);
@@ -81,6 +89,7 @@ export default function PropertyDetailsScreen() {
   const tab = normalizeRouteParam(params.tab);
   const sessionId = normalizeRouteParam(params.sessionId);
   const fromOnboardingChecklist = normalizeRouteParam(params.fromOnboardingChecklist);
+  const openMyPros = normalizeRouteParam(params.openMyPros);
 
   const { properties } = usePropertiesList();
   const { draftsByProperty, beginNewPropertyChatSession, sessionsByProperty } = useSession();
@@ -120,7 +129,7 @@ export default function PropertyDetailsScreen() {
       return;
     }
     onboardingHandledRef.current = true;
-    // Strip the route param immediately so Timeline/Details/Providers tab taps are
+    // Strip the route param immediately so Timeline/Details tab taps are
     // not delayed by a Firestore write finishing later.
     router.setParams({
       [ONBOARDING_CHAT_OPEN_PARAM]: undefined,
@@ -131,7 +140,23 @@ export default function PropertyDetailsScreen() {
   // Drawer state
   const [documentsDrawerVisible, setDocumentsDrawerVisible] = React.useState(false);
   const [sessionsDrawerVisible, setSessionsDrawerVisible] = React.useState(false);
+  const [myProsDrawerVisible, setMyProsDrawerVisible] = React.useState(false);
   const [checkpointsDrawerVisible, setCheckpointsDrawerVisible] = React.useState(false);
+  const myProsOpenHandledRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (myProsOpenHandledRef.current) return;
+    const wantsMyPros =
+      shouldOpenMyProsFromTab(tab) || openMyPros === '1';
+    if (!wantsMyPros) return;
+    myProsOpenHandledRef.current = true;
+    setActiveTab('chat');
+    setMyProsDrawerVisible(true);
+    router.setParams({
+      tab: undefined,
+      [OPEN_MY_PROS_PARAM]: undefined,
+    } as Record<string, string | undefined>);
+  }, [tab, openMyPros, router]);
 
   // Document selection state
   const [selectedDocuments, setSelectedDocuments] = React.useState<Document[]>([]);
@@ -142,6 +167,10 @@ export default function PropertyDetailsScreen() {
 
   // Checkpoint modal state
   const [isCreateCheckpointModalVisible, setIsCreateCheckpointModalVisible] = React.useState(false);
+  const [isGenerateReportModalVisible, setIsGenerateReportModalVisible] = React.useState(false);
+  const [timelineSubTab, setTimelineSubTab] = React.useState<TimelineSubTab>(() =>
+    parseTimelineSubTab(tab)
+  );
 
   // Primary agent state
   const [primaryAgent, setPrimaryAgent] = React.useState<PrimaryAgent>('checkpoint');
@@ -329,10 +358,17 @@ export default function PropertyDetailsScreen() {
         setCheckpointsDrawerVisible={setCheckpointsDrawerVisible}
         sessionsDrawerVisible={sessionsDrawerVisible}
         setSessionsDrawerVisible={setSessionsDrawerVisible}
+        myProsDrawerVisible={myProsDrawerVisible}
+        setMyProsDrawerVisible={setMyProsDrawerVisible}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isCreateCheckpointModalVisible={isCreateCheckpointModalVisible}
         setIsCreateCheckpointModalVisible={setIsCreateCheckpointModalVisible}
+        isGenerateReportModalVisible={isGenerateReportModalVisible}
+        setIsGenerateReportModalVisible={setIsGenerateReportModalVisible}
+        timelineSubTab={timelineSubTab}
+        setTimelineSubTab={setTimelineSubTab}
+        initialTimelineSubTab={parseTimelineSubTab(tab)}
         selectedSessionId={selectedSessionId}
         setSelectedSessionId={setSelectedSessionId}
         sessionsByProperty={sessionsByProperty}
@@ -384,10 +420,17 @@ function PropertyDetailsScreenContent({
   setCheckpointsDrawerVisible,
   sessionsDrawerVisible,
   setSessionsDrawerVisible,
+  myProsDrawerVisible,
+  setMyProsDrawerVisible,
   activeTab,
   setActiveTab,
   isCreateCheckpointModalVisible,
   setIsCreateCheckpointModalVisible,
+  isGenerateReportModalVisible,
+  setIsGenerateReportModalVisible,
+  timelineSubTab,
+  setTimelineSubTab,
+  initialTimelineSubTab,
   selectedSessionId,
   setSelectedSessionId,
   sessionsByProperty,
@@ -439,6 +482,12 @@ function PropertyDetailsScreenContent({
           direction="right"
           mainContent={
             <PushDrawer
+              visible={myProsDrawerVisible}
+              onClose={() => setMyProsDrawerVisible(false)}
+              width={80}
+              direction="right"
+              mainContent={
+            <PushDrawer
               visible={sessionsDrawerVisible}
               onClose={() => setSessionsDrawerVisible(false)}
               width={80}
@@ -488,13 +537,30 @@ function PropertyDetailsScreenContent({
                               <Button
                                 onPress={() => setSessionsDrawerVisible(true)}
                                 variant="ghost"
-                                size="icon">
+                                size="icon"
+                                accessibilityLabel="Chat sessions">
                                 <Icon as={MessageSquare} size={20} className="text-foreground" />
                               </Button>
                               {sessionsByProperty[id] && sessionsByProperty[id].length > 0 && (
                                 <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
                                   <Text className="text-center text-[10px] font-semibold text-primary-foreground">
                                     {sessionsByProperty[id].length}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <View className="relative">
+                              <Button
+                                onPress={() => setMyProsDrawerVisible(true)}
+                                variant="ghost"
+                                size="icon"
+                                accessibilityLabel="My pros">
+                                <Icon as={Heart} size={20} className="text-foreground" />
+                              </Button>
+                              {savedProviders.length > 0 && (
+                                <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-primary px-1 py-0.5">
+                                  <Text className="text-center text-[10px] font-semibold text-primary-foreground">
+                                    {savedProviders.length > 99 ? '99+' : savedProviders.length}
                                   </Text>
                                 </View>
                               )}
@@ -517,12 +583,22 @@ function PropertyDetailsScreenContent({
                             </Button>
                           </View>
                         )}
-                        {activeTab === 'timeline' && (
+                        {activeTab === 'timeline' && timelineSubTab === 'checkpoints' && (
                           <Button
                             onPress={() => setIsCreateCheckpointModalVisible(true)}
                             variant="ghost"
                             size="icon"
                             className="items-center justify-center">
+                            <Icon as={Plus} size={20} className="text-foreground" />
+                          </Button>
+                        )}
+                        {activeTab === 'timeline' && timelineSubTab === 'reports' && (
+                          <Button
+                            onPress={() => setIsGenerateReportModalVisible(true)}
+                            variant="ghost"
+                            size="icon"
+                            className="items-center justify-center"
+                            accessibilityLabel="Create property report">
                             <Icon as={Plus} size={20} className="text-foreground" />
                           </Button>
                         )}
@@ -581,27 +657,6 @@ function PropertyDetailsScreenContent({
                         }
                       />
                     </Pressable>
-                    <Pressable
-                      onPress={() => setActiveTab('providers')}
-                      className={`flex-1 items-center py-3 ${activeTab === 'providers' ? 'border-b-2 border-primary' : ''}`}
-                      accessibilityLabel="Saved service providers">
-                      <View className="relative items-center justify-center">
-                        <Icon
-                          as={Users}
-                          size={20}
-                          className={
-                            activeTab === 'providers' ? 'text-primary' : 'text-muted-foreground'
-                          }
-                        />
-                        {savedProviders.length > 0 && (
-                          <View className="absolute -right-2 -top-1 min-w-[16px] rounded-full bg-primary px-1 py-0.5">
-                            <Text className="text-center text-[9px] font-semibold text-primary-foreground">
-                              {savedProviders.length > 99 ? '99+' : savedProviders.length}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </Pressable>
                   </View>
 
                   {/* Main Content Area */}
@@ -637,12 +692,17 @@ function PropertyDetailsScreenContent({
                       isCreateModalVisible={isCreateCheckpointModalVisible}
                       setIsCreateModalVisible={setIsCreateCheckpointModalVisible}
                       setActiveTab={setActiveTab}
+                      initialSubTab={initialTimelineSubTab}
+                      onSubTabChange={setTimelineSubTab}
+                      isGenerateReportModalVisible={isGenerateReportModalVisible}
+                      setIsGenerateReportModalVisible={setIsGenerateReportModalVisible}
                     />
-                  ) : activeTab === 'providers' ? (
-                    <PropertySavedProvidersTab />
                   ) : (
                     <ScrollView className="flex-1 bg-light-background-alt px-4 py-4">
-                      <PropertyDetailsTab property={property} />
+                      <PropertyDetailsTab
+                        property={property}
+                        onOpenMyPros={() => setMyProsDrawerVisible(true)}
+                      />
                     </ScrollView>
                   )}
 
@@ -672,6 +732,12 @@ function PropertyDetailsScreenContent({
                   setActiveTab('chat');
                   setSessionsDrawerVisible(false);
                 }}
+              />
+            </PushDrawer>
+              }>
+              <MyProsDrawerContent
+                propertyName={property.name}
+                onClose={() => setMyProsDrawerVisible(false)}
               />
             </PushDrawer>
           }>

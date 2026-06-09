@@ -55,6 +55,7 @@ describe("chat-context-picker", () => {
       { id: "d1", name: "old.pdf", createdAt: { toMillis: () => 1 } },
       { id: "d2", name: "new.pdf", createdAt: { toMillis: () => 2 } },
     ] as Document[];
-    expect(pickDefaultReadyDocument(documents)?.id).toBe("d2");
+    expect(pickDefaultReadyDocument(documents, "checkpoint")?.id).toBe("d2");
+    expect(pickDefaultReadyDocument(documents, "report")).toBeUndefined();
   });
 });

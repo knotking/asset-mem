@@ -118,3 +118,11 @@ jobs:
           environment_variables: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
             GCP_LOCATION=${{ vars.GCP_REGION }}
+
+      # Pub/Sub → Eventarc must invoke the underlying Cloud Run service (deploy-cloud-functions does not set this).
+      - name: Allow Pub/Sub trigger invocations
+        run: |
+          gcloud run services update "${{ env.FUNCTION_NAME }}" \
+            --project="${{ vars.GCP_PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --update-annotations=run.googleapis.com/invoker-iam-disabled=true

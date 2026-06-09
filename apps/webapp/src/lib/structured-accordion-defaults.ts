@@ -1,6 +1,7 @@
 /**
- * Structured accordion open-state defaults — mirrored from
- * apps/common/src/lib/structured-accordion-defaults.ts (keep in sync).
+ * Structured accordion open-state defaults — based on
+ * apps/common/src/lib/structured-accordion-defaults.ts; web platform keeps
+ * sections collapsed by default (checkpoint summary is a standalone card).
  */
 
 import { EXECUTIVE_SUMMARY_ACCORDION_VALUE } from "@/lib/executive-summary-display";
@@ -45,9 +46,8 @@ export function structuredAccordionsCollapsed(
 
 /**
  * Initial expanded accordion for structured checkpoint messages.
- * Checkpoint Summary opens as soon as structured checkpoint data is visible
- * (including while optional branches or synthesis are still running).
- * Summary & Next Steps stays collapsed by default (preview in trigger).
+ * Web: all sections collapsed by default (checkpoint summary is a standalone card).
+ * Native (ios/android): checkpoint summary accordion opens when structured data arrives.
  */
 export function getStructuredAccordionDefaultValue(
   visibility: StructuredAccordionVisibility,
@@ -55,6 +55,10 @@ export function getStructuredAccordionDefaultValue(
 ): StructuredAccordionSection | undefined {
   if (visibility.needsClarification) {
     return "triage";
+  }
+
+  if (platform === "web") {
+    return undefined;
   }
 
   if (visibility.hasCheckpointSummary) {
