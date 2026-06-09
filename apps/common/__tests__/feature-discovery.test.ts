@@ -1,6 +1,7 @@
 import {
   CHAT_SESSION_EMPTY_INTRO,
   CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS,
+  CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT,
   getSuggestedPrompts,
   getChatIntroCopy,
   getDefaultChatIntroCopy,
@@ -42,15 +43,20 @@ describe("feature-discovery", () => {
     expect(getDefaultChatIntroCopy()).toEqual(CHAT_SESSION_EMPTY_INTRO);
   });
 
-  it("uses static suggested prompts in all conditions", () => {
+  it("returns checkpoint prompts by default", () => {
     expect(getSuggestedPrompts()).toEqual([...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS]);
-    expect(
-      getSuggestedPrompts({
-        primaryAgent: "docs",
-        checkpointCount: 0,
-        documentCount: 0,
-      })
-    ).toEqual([...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS]);
+    expect(getSuggestedPrompts({ primaryAgent: "checkpoint" })).toEqual([
+      ...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS,
+    ]);
+  });
+
+  it("returns agent-specific suggested prompts", () => {
+    expect(getSuggestedPrompts({ primaryAgent: "docs" })).toEqual([
+      ...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT.docs,
+    ]);
+    expect(getSuggestedPrompts({ primaryAgent: "report" })).toEqual([
+      ...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT.report,
+    ]);
   });
 
   it("resolves discovery counts for contextual tips", () => {

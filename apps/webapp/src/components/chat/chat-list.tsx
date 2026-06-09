@@ -4,7 +4,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/components/chat/chat-message';
-import type { Message, SuggestedAction } from '@/lib/types';
+import type { Message, PrimaryAgent, SuggestedAction } from '@/lib/types';
 import { assistantMessageHasDisplayableContent, getMessageDisplayParts } from '@/lib/message-display-parts';
 import { countPriorAssistantTurnsInSession } from '@/lib/agent-lifecycle-ui';
 import { getActiveStreamingAssistantMessageId } from '@/lib/sort-messages';
@@ -29,6 +29,8 @@ type Props = {
   onSelectSuggestedPrompt?: (prompt: string) => void;
   onSuggestedAction?: (action: SuggestedAction) => void;
   isSendDisabled?: boolean;
+  /** Primary agent from chat settings — drives empty-state suggested prompts. */
+  primaryAgent?: PrimaryAgent;
 };
 
 function assistantHasNoDisplayableContentYet(message: Message): boolean {
@@ -45,6 +47,7 @@ export function ChatList({
   onSelectSuggestedPrompt,
   onSuggestedAction,
   isSendDisabled,
+  primaryAgent = 'checkpoint',
 }: Props) {
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -110,7 +113,7 @@ export function ChatList({
   const welcomeMessageVisible = messages.length === 1 && messages[0].id === 'intro-message';
 
   const isEmpty = messages.length === 0 && !isMessagesLoading;
-  const suggestedPrompts = getSuggestedPrompts();
+  const suggestedPrompts = getSuggestedPrompts({ primaryAgent });
 
   return (
     <ScrollArea className="h-full w-full" viewportRef={viewportRef}>

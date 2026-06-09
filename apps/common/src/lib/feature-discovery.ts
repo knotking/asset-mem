@@ -1,4 +1,4 @@
-import type { Property, UserPreferences } from "../types";
+import type { PrimaryAgent, Property, UserPreferences } from "../types";
 import {
   getOnboardingStepStates,
   resolveOnboardingPropertyId,
@@ -110,14 +110,28 @@ export const CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS = [
   "Estimate repair costs for the issues you see",
 ] as const;
 
-export type SuggestedPromptContext = {
-  primaryAgent: "checkpoint" | "docs";
-  checkpointCount: number;
-  documentCount: number;
+export const CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT: Record<
+  PrimaryAgent,
+  readonly string[]
+> = {
+  checkpoint: CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS,
+  analysis: CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS,
+  docs: [
+    "What warranties and coverage do my uploaded documents mention?",
+    "Summarize the key details from my property documents",
+  ],
+  report: ["Summarize this report", "What were the main findings?"],
 };
 
-export function getSuggestedPrompts(_ctx?: SuggestedPromptContext): string[] {
-  return [...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS];
+export type SuggestedPromptContext = {
+  primaryAgent: PrimaryAgent;
+  checkpointCount?: number;
+  documentCount?: number;
+};
+
+export function getSuggestedPrompts(ctx?: SuggestedPromptContext): string[] {
+  const agent = ctx?.primaryAgent ?? "checkpoint";
+  return [...CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT[agent]];
 }
 
 export type ChatIntroContext = {

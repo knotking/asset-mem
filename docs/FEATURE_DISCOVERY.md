@@ -12,7 +12,8 @@ Post-onboarding UX that helps users understand checkpoints, chat modes, comparis
 Keep the two files in sync when changing copy, counts, or tip IDs:
 
 - `HELP_ARTICLES` — Help hub copy
-- `CHAT_SESSION_EMPTY_INTRO` / `CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS` — static new-chat empty state (web + mapp)
+- `CHAT_SESSION_EMPTY_INTRO` — static new-chat empty state title/subtitle (web + mapp)
+- `CHAT_SESSION_EMPTY_SUGGESTED_PROMPTS_BY_AGENT` / `getSuggestedPrompts({ primaryAgent })` — empty-state tap-to-send questions per primary agent (checkpoint, docs, report)
 - `getDiscoveryStepStates()` / `shouldShowDiscoveryChecklist()` — second checklist on home
 - `shouldShowFeatureTip()` — dismissible contextual banners
 
@@ -36,7 +37,7 @@ Keep the two files in sync when changing copy, counts, or tip IDs:
 - **Settings → FAQ** — `HelpHubSettings` articles + deep links
 - **Header FAQ (BookOpen)** — web `/home/settings?tab=faq` (hover tooltips on header icons); mapp `settings/faq` + header/property nav icons use `accessibilityLabel` only (no tooltips)
 - **Settings → Help & support** — contact support and legal only
-- **Chat** — empty state in `ChatList` (web) and `PropertyChatTab.renderChatEmpty` (mapp) using `CHAT_SESSION_EMPTY_INTRO` and `getSuggestedPrompts()`; tap sends via existing `handleSend` / `onSend`
+- **Chat** — empty state in `ChatList` (web) and `PropertyChatTab.renderChatEmpty` (mapp) using `CHAT_SESSION_EMPTY_INTRO` and `getSuggestedPrompts({ primaryAgent })`; prompts update when the user switches agent in chat settings on a message-free session; tap sends via existing `handleSend` / `onSend`
 - **Timeline** — compare tip (web banner; mapp existing hint + milestone on compare)
 - **Property details** — docs → Docs chat tip
 - **Property cards** — stat labels (uploaded files, saved providers, timeline entries)
