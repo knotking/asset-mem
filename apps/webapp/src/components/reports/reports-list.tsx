@@ -391,7 +391,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
                         ) : (
                           <ExternalLink className="mr-2 h-4 w-4" />
                         )}
-                        Open PDF
+                        View report
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
