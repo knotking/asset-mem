@@ -14,8 +14,8 @@ import {
   Share2,
   RefreshCw,
   MoreHorizontal,
-  Plus,
   Search,
+  ListFilter,
 } from 'lucide-react-native';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -36,7 +36,7 @@ import { getMappDeletionApiUrls } from '@/lib/deletion-api';
 import { deleteReportViaProxy } from '@homeapp/common/lib/deletion/api-client';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { parseFeatureFlagEnv } from '@homeapp/common/lib/feature-flags';
-import { purposeLabel, REPORT_PURPOSE_OPTIONS } from '@homeapp/common/lib/report-templates';
+import { purposeLabel } from '@homeapp/common/lib/report-templates';
 import type {
   PropertyReport,
   PropertyReportPurpose,
@@ -45,6 +45,7 @@ import type {
 import { Input } from '@/components/ui/input';
 import { GenerateReportModal } from '@/components/property-details/GenerateReportModal';
 import { EditReportMetadataModal } from '@/components/property-details/EditReportMetadataModal';
+import { ReportFiltersSheet } from '@/components/property-details/ReportFiltersSheet';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
 
 const WEB_APP_URL = (Constants.expoConfig?.extra?.webAppUrl as string) || '';
@@ -91,6 +92,15 @@ export function PropertyReportsSegment({
   const [searchTerm, setSearchTerm] = React.useState('');
   const [purposeFilter, setPurposeFilter] = React.useState<PropertyReportPurpose | 'all'>('all');
   const [statusFilter, setStatusFilter] = React.useState<PropertyReportStatus | 'all'>('all');
+  const [filterSheetVisible, setFilterSheetVisible] = React.useState(false);
+
+  const activeFilterCount =
+    (statusFilter !== 'all' ? 1 : 0) + (purposeFilter !== 'all' ? 1 : 0);
+
+  const clearFilters = React.useCallback(() => {
+    setStatusFilter('all');
+    setPurposeFilter('all');
+  }, []);
 
   const filteredReports = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -261,17 +271,13 @@ export function PropertyReportsSegment({
 
   return (
     <View className="flex-1">
-      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+      <View className="border-b border-border px-4 py-3">
         <Text className="text-sm text-muted-foreground">Saved PDF exports from your timeline</Text>
-        <Button size="sm" onPress={() => setIsGenerateModalVisible(true)}>
-          <Icon as={Plus} size={14} className="mr-1 text-primary-foreground" />
-          <Text className="text-primary-foreground">Create PDF</Text>
-        </Button>
       </View>
       <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 32 }}>
         {!isTrulyEmpty ? (
-          <>
-            <View className="mb-3 flex-row items-center rounded-lg border border-border bg-background px-3">
+          <View className="mb-4 flex-row items-center gap-2">
+            <View className="flex-1 flex-row items-center rounded-lg border border-border bg-background px-3">
               <Icon as={Search} size={18} className="text-muted-foreground" />
               <Input
                 className="ml-2 flex-1 border-0 bg-transparent"
@@ -280,59 +286,23 @@ export function PropertyReportsSegment({
                 onChangeText={setSearchTerm}
               />
             </View>
-            <View className="mb-2 flex-row flex-wrap gap-2">
-              {(['all', 'ready', 'generating', 'failed', 'draft'] as const).map((status) => (
-                <Pressable
-                  key={status}
-                  onPress={() => setStatusFilter(status)}
-                  className={`rounded-full border px-2 py-0.5 ${
-                    statusFilter === status
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-card'
-                  }`}>
-                  <Text
-                    className={`text-xs ${
-                      statusFilter === status ? 'text-primary' : 'text-foreground'
-                    }`}>
-                    {status === 'all' ? 'All status' : reportStatusLabel(status)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <View className="mb-4 flex-row flex-wrap gap-2">
-              <Pressable
-                onPress={() => setPurposeFilter('all')}
-                className={`rounded-full border px-2 py-0.5 ${
-                  purposeFilter === 'all'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border bg-card'
-                }`}>
-                <Text
-                  className={`text-xs ${
-                    purposeFilter === 'all' ? 'text-primary' : 'text-foreground'
-                  }`}>
-                  All purposes
-                </Text>
-              </Pressable>
-              {REPORT_PURPOSE_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.id}
-                  onPress={() => setPurposeFilter(option.id)}
-                  className={`rounded-full border px-2 py-0.5 ${
-                    purposeFilter === option.id
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-card'
-                  }`}>
-                  <Text
-                    className={`text-xs ${
-                      purposeFilter === option.id ? 'text-primary' : 'text-foreground'
-                    }`}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => setFilterSheetVisible(true)}
+              className={
+                activeFilterCount > 0 ? 'border-primary bg-primary/5' : 'border-border bg-card'
+              }>
+              <Icon
+                as={ListFilter}
+                size={16}
+                className={activeFilterCount > 0 ? 'text-primary' : 'text-foreground'}
+              />
+              <Text className={activeFilterCount > 0 ? 'text-primary' : 'text-foreground'}>
+                {activeFilterCount > 0 ? `Filter · ${activeFilterCount}` : 'Filter'}
+              </Text>
+            </Button>
+          </View>
         ) : null}
 
         {isTrulyEmpty ? (
@@ -340,16 +310,20 @@ export function PropertyReportsSegment({
             <Icon as={FileText} size={40} className="mb-3 text-muted-foreground opacity-60" />
             <Text className="text-center font-medium text-foreground">No reports yet</Text>
             <Text className="mt-1 text-center text-sm text-muted-foreground">
-              Capture checkpoints on the Timeline tab, then create a PDF report here.
+              Capture checkpoints on the Timeline tab, then tap + above to create a PDF report.
             </Text>
-            <Button className="mt-4" onPress={() => setIsGenerateModalVisible(true)}>
-              <Text className="text-primary-foreground">Create PDF</Text>
-            </Button>
           </View>
         ) : filteredReports.length === 0 ? (
-          <Text className="py-8 text-center text-sm text-muted-foreground">
-            No reports match your filters.
-          </Text>
+          <View className="items-center py-8">
+            <Text className="text-center text-sm text-muted-foreground">
+              No reports match your filters.
+            </Text>
+            {activeFilterCount > 0 ? (
+              <Button variant="link" onPress={clearFilters} className="mt-2">
+                <Text className="text-primary">Clear filters</Text>
+              </Button>
+            ) : null}
+          </View>
         ) : (
           filteredReports.map((report) => {
             const isDeleting = isDeletingOverlay(report);
@@ -397,7 +371,7 @@ export function PropertyReportsSegment({
                       disabled={report.status !== 'ready' || openingId === report.id}
                       onPress={() => void handleOpen(report)}>
                       <Icon as={ExternalLink} size={14} className="text-foreground" />
-                      <Text>Open PDF</Text>
+                      <Text>View report</Text>
                     </Button>
                     <Pressable
                       onPress={() => openMoreActions(report)}
@@ -421,6 +395,15 @@ export function PropertyReportsSegment({
           })
         )}
       </ScrollView>
+      <ReportFiltersSheet
+        visible={filterSheetVisible}
+        onClose={() => setFilterSheetVisible(false)}
+        statusFilter={statusFilter}
+        purposeFilter={purposeFilter}
+        onStatusFilterChange={setStatusFilter}
+        onPurposeFilterChange={setPurposeFilter}
+        onClearFilters={clearFilters}
+      />
       <GenerateReportModal
         visible={isGenerateModalVisible}
         regenerateFrom={regenerateFrom}
