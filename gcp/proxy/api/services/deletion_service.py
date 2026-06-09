@@ -209,6 +209,17 @@ def _checkpoint_ref(db: firestore.Client, user_id: str, property_id: str, checkp
     )
 
 
+def _report_ref(db: firestore.Client, user_id: str, property_id: str, report_id: str):
+    return (
+        db.collection("users")
+        .document(user_id)
+        .collection("properties")
+        .document(property_id)
+        .collection("reports")
+        .document(report_id)
+    )
+
+
 def _mark_resource_deleting(doc_ref, *, batch_id: str | None = None) -> bool:
     """Mark a leaf resource as deleting. Returns False if the doc does not exist."""
     if not doc_ref.get().exists:
@@ -444,6 +455,77 @@ def delete_checkpoint_asset(
     return {"deleted": True, "warnings": warnings}
 
 
+def delete_report_asset(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    report_id: str,
+) -> dict[str, Any]:
+    warnings: list[str] = []
+    report_ref = _report_ref(db, user_id, property_id, report_id)
+    snap = report_ref.get()
+    gs_uris: list[str] = []
+    storage_paths: list[str] = []
+
+    if snap.exists:
+        data = snap.to_dict() or {}
+        share_id = data.get("shareId")
+        if share_id:
+            share_ref = db.collection("sharedReports").document(str(share_id))
+            if share_ref.get().exists:
+                try:
+                    _delete_doc_with_retry(share_ref)
+                except Exception as exc:
+                    warnings.append(f"sharedReport {share_id}: {exc}")
+        _append_storage_path(storage_paths, data.get("pdfStoragePath"))
+        if data.get("pdfGsUri"):
+            uri = str(data["pdfGsUri"])
+            gs_uris.append(uri)
+            _append_storage_path(storage_paths, _gs_uri_to_storage_path(uri))
+        if data.get("ragGsUri"):
+            gs_uris.append(str(data["ragGsUri"]))
+        companion_id = data.get("ragCompanionDocId")
+        if companion_id:
+            companion_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("docs")
+                .document(str(companion_id))
+            )
+            if companion_ref.get().exists:
+                try:
+                    _delete_doc_with_retry(companion_ref)
+                except Exception as exc:
+                    warnings.append(f"ragCompanionDoc {companion_id}: {exc}")
+
+        for rev in report_ref.collection("revisions").stream():
+            rev_data = rev.to_dict() or {}
+            _append_storage_path(storage_paths, rev_data.get("pdfStoragePath"))
+            if rev_data.get("pdfGsUri"):
+                uri = str(rev_data["pdfGsUri"])
+                gs_uris.append(uri)
+                _append_storage_path(storage_paths, _gs_uri_to_storage_path(uri))
+            _delete_doc_with_retry(rev.reference)
+
+    bucket = _firebase_storage_bucket_name()
+    if bucket:
+        prefix = f"uploads/{user_id}/properties/{property_id}/reports/{report_id}/"
+        _, prefix_warnings = _delete_gcs_prefix(bucket, prefix)
+        warnings.extend(prefix_warnings)
+        for path in list(dict.fromkeys(storage_paths)):
+            _, path_warnings = _delete_gcs_prefix(bucket, path)
+            warnings.extend(path_warnings)
+
+    if gs_uris:
+        rag_result = delete_rag_files(list(dict.fromkeys(gs_uris)))
+        warnings.extend(rag_result.get("warnings") or [])
+
+    if snap.exists:
+        _delete_doc_with_retry(report_ref)
+
+    return {"deleted": True, "warnings": warnings}
+
+
 def _message_storage_paths(message_data: dict[str, Any]) -> list[str]:
     paths: list[str] = []
     file_obj = message_data.get("file")
@@ -567,6 +649,15 @@ def _collect_property_assets(db: firestore.Client, user_id: str, property_id: st
                 if media.get("storagePath"):
                     storage_paths.append(str(media["storagePath"]))
 
+    for report in prop_ref.collection("reports").stream():
+        data = report.to_dict() or {}
+        if data.get("pdfGsUri"):
+            gs_uris.append(str(data["pdfGsUri"]))
+        if data.get("pdfStoragePath"):
+            storage_paths.append(str(data["pdfStoragePath"]))
+        if data.get("ragGsUri"):
+            gs_uris.append(str(data["ragGsUri"]))
+
     chats_query = user_ref.collection("chats").where(filter=FieldFilter("propertyId", "==", property_id))
     for chat in chats_query.stream():
         data = chat.to_dict() or {}
@@ -596,6 +687,9 @@ def _delete_property_firestore(
     prop_ref = user_ref.collection("properties").document(property_id)
 
     _delete_collection_docs(db, prop_ref.collection("checkpoints"))
+    for report in prop_ref.collection("reports").stream():
+        _delete_collection_docs(db, report.reference.collection("revisions"))
+        _delete_doc_with_retry(report.reference)
     _delete_collection_docs(db, prop_ref.collection("savedProviders"))
     metrics_ref = prop_ref.collection("metrics").document("summary")
     if metrics_ref.get().exists:

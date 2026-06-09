@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    @page { margin: 0.75in; }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10.5pt;
+      color: #1f2937;
+      line-height: 1.45;
+    }
+    .cover-brand {
+      font-size: 8pt;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    .cover-title {
+      font-size: 22pt;
+      font-weight: bold;
+      color: #111827;
+      margin: 0 0 14px 0;
+    }
+    .cover-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    .cover-meta-table td {
+      padding: 5px 0;
+      vertical-align: top;
+      border: none;
+    }
+    .cover-meta-label {
+      width: 88px;
+      color: #6b7280;
+      font-size: 9.5pt;
+    }
+    .cover-meta-value {
+      color: #111827;
+      font-size: 10.5pt;
+    }
+    .section-heading {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #111827;
+      margin: 20px 0 10px 0;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    table.issues-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    table.issues-table th,
+    table.issues-table td {
+      border: 1px solid #e5e7eb;
+      padding: 7px 8px;
+      text-align: left;
+      font-size: 9.5pt;
+    }
+    table.issues-table th {
+      background-color: #f3f4f6;
+      color: #374151;
+      font-weight: bold;
+    }
+    table.checkpoint-card {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 22px;
+      page-break-inside: avoid;
+    }
+    table.checkpoint-card td {
+      border: none;
+      vertical-align: top;
+    }
+    table.checkpoint-card td.checkpoint-card-header {
+      background-color: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-bottom: none;
+      padding: 11px 14px;
+    }
+    .checkpoint-card-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #111827;
+      margin: 0;
+    }
+    .checkpoint-card-meta {
+      font-size: 9pt;
+      color: #6b7280;
+      margin-top: 3px;
+    }
+    table.checkpoint-card td.checkpoint-card-body {
+      border: 1px solid #d1d5db;
+      border-top: none;
+      padding: 12px 14px 14px 14px;
+    }
+    .checkpoint-card-summary {
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+    table.photo-row {
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    table.photo-row td {
+      border: none;
+      padding: 0 10px 0 0;
+      vertical-align: top;
+    }
+    img.checkpoint-photo {
+      display: block;
+      border: 1px solid #e5e7eb;
+    }
+    .photo-label {
+      font-size: 8.5pt;
+      color: #6b7280;
+      margin-bottom: 4px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+  {% if template.includeCoverPage %}
+  <div class="cover-brand">{{ theme.brand }}</div>
+  <h1 class="cover-title">{{ title }}</h1>
+  <table class="cover-meta-table">
+    {% if property_name %}
+    <tr>
+      <td class="cover-meta-label">Property</td>
+      <td class="cover-meta-value">{{ property_name }}</td>
+    </tr>
+    {% endif %}
+    {% if property_address %}
+    <tr>
+      <td class="cover-meta-label">Address</td>
+      <td class="cover-meta-value">{{ property_address }}</td>
+    </tr>
+    {% endif %}
+    {% if baseline_label %}
+    <tr>
+      <td class="cover-meta-label">Baseline</td>
+      <td class="cover-meta-value">{{ baseline_label }}</td>
+    </tr>
+    {% endif %}
+    {% if comparison_label %}
+    <tr>
+      <td class="cover-meta-label">Comparison</td>
+      <td class="cover-meta-value">{{ comparison_label }}</td>
+    </tr>
+    {% endif %}
+    {% if date_label %}
+    <tr>
+      <td class="cover-meta-label">Period</td>
+      <td class="cover-meta-value">{{ date_label }}</td>
+    </tr>
+    {% endif %}
+    {% if custom_notes %}
+    <tr>
+      <td class="cover-meta-label">Notes</td>
+      <td class="cover-meta-value">{{ custom_notes }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <td class="cover-meta-label">Generated</td>
+      <td class="cover-meta-value">{{ generated_at }}</td>
+    </tr>
+    <tr>
+      <td class="cover-meta-label">{% if is_comparison %}Paired locations{% else %}Checkpoints{% endif %}</td>
+      <td class="cover-meta-value">{{ section_count }}</td>
+    </tr>
+  </table>
+  {% endif %}
+
+  {% if template.includeIssueTable and issue_rows %}
+  <div class="section-heading">Issues summary</div>
+  <table class="issues-table">
+    <tr><th>Location</th><th>Severity</th><th>Description</th></tr>
+    {% for row in issue_rows %}
+    <tr>
+      <td>{{ row.location }}</td>
+      <td>{{ row.severity }}</td>
+      <td>{{ row.description }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if is_comparison %}
+  {% for pair in comparison_sections %}
+  <table class="checkpoint-card"{% if not loop.first or template.includeCoverPage or (template.includeIssueTable and issue_rows) %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="checkpoint-card-header" colspan="2">
+        <div class="checkpoint-card-title">{{ pair.location }}</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="checkpoint-card-body" colspan="2">
+        {% if pair.summary %}
+        <p class="checkpoint-card-summary">{{ pair.summary }}</p>
+        {% endif %}
+        {% if template.includePhotos and (pair.baseline_photo or pair.comparison_photo or pair.visual_diff_url) %}
+        <table class="photo-row"><tr>
+          {% if pair.baseline_photo %}
+          <td>
+            <div class="photo-label">Baseline</div>
+            <img class="checkpoint-photo" src="{{ pair.baseline_photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+          {% if pair.comparison_photo %}
+          <td>
+            <div class="photo-label">Comparison</div>
+            <img class="checkpoint-photo" src="{{ pair.comparison_photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+          {% if pair.visual_diff_url %}
+          <td>
+            <div class="photo-label">Visual diff</div>
+            <img class="checkpoint-photo" src="{{ pair.visual_diff_url }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% if appendix_rooms %}
+  <div class="section-heading" style="page-break-before: always;">Unpaired locations</div>
+  {% endif %}
+  {% for room in appendix_rooms %}
+  <table class="checkpoint-card"{% if not loop.first %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="checkpoint-card-header" colspan="2">
+        <div class="checkpoint-card-title">{{ room.title }}</div>
+        {% if room.captured_label %}<div class="checkpoint-card-meta">{{ room.captured_label }}</div>{% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="checkpoint-card-body" colspan="2">
+        {% if room.summary %}<p class="checkpoint-card-summary">{{ room.summary }}</p>{% endif %}
+        {% if template.includePhotos and room.photos %}
+        <table class="photo-row"><tr>
+          {% for photo in room.photos %}
+          <td><img class="checkpoint-photo" src="{{ photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/></td>
+          {% endfor %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% else %}
+  {% for room in rooms %}
+  <table class="checkpoint-card"{% if not loop.first or template.includeCoverPage or (template.includeIssueTable and issue_rows) %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="checkpoint-card-header" colspan="2">
+        <div class="checkpoint-card-title">{{ room.title }}</div>
+        {% if room.captured_label %}
+        <div class="checkpoint-card-meta">{{ room.captured_label }}</div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="checkpoint-card-body" colspan="2">
+        {% if room.summary %}
+        <p class="checkpoint-card-summary">{{ room.summary }}</p>
+        {% endif %}
+        {% if template.includePhotos and room.photos %}
+        <table class="photo-row"><tr>
+          {% for photo in room.photos %}
+          <td>
+            <img
+              class="checkpoint-photo"
+              src="{{ photo }}"
+              alt=""
+              width="{{ photo_width }}"
+              height="{{ photo_height }}"
+            />
+          </td>
+          {% endfor %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% endif %}
+
+  {% if template.includeSignatureBlock %}
+  <div class="section-heading" style="page-break-before: always;">{{ theme.signature_label }}</div>
+  <table class="cover-meta-table">
+    <tr><td class="cover-meta-label">Signature</td><td class="cover-meta-value">_______________________________</td></tr>
+    <tr><td class="cover-meta-label">Date</td><td class="cover-meta-value">_______________________________</td></tr>
+  </table>
+  {% endif %}
+</body>
+</html>

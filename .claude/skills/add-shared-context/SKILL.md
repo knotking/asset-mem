@@ -5,7 +5,9 @@ description: Add a new React context (or any new module) to the @homeapp/common 
 
 # Adding a shared module to apps/common
 
-`apps/common` is published as `@homeapp/common` via npm workspaces. Both `apps/mapp` and `apps/webapp` consume it through the workspace symlink. **It is NOT a transparent shared folder** — every entry point must be declared in `apps/common/package.json` `exports`.
+`apps/common` is published as `@homeapp/common` via npm workspaces. **mapp** imports it directly. **webapp does not** — Firebase App Hosting builds only `apps/webapp` and cannot bundle `@homeapp/common` (see `.cursor/rules/webapp-no-common-imports.mdc`). For any new/changed common module used on web, **mirror it under `apps/webapp/src/lib/` or `src/hooks/`** and keep both files in sync.
+
+**It is NOT a transparent shared folder** — every mapp entry point must be declared in `apps/common/package.json` `exports`.
 
 ## Where things live
 
@@ -53,7 +55,7 @@ cd apps/common && npm run build      # tsc --build → dist/
 
 ## Step 4 — consume it
 
-In mapp or webapp:
+**mapp** (direct import):
 
 ```ts
 import { FooProvider, useFoo } from '@homeapp/common/contexts/foo-context';
@@ -61,16 +63,24 @@ import { FooProvider, useFoo } from '@homeapp/common/contexts/foo-context';
 
 Use the **subpath you declared in `exports`**, not a deep relative path into `dist/`.
 
-If a consumer can't see your new export:
+**webapp** (local mirror — never `@homeapp/common`):
+
+1. Copy/sync the module to `apps/webapp/src/lib/` or `apps/webapp/src/hooks/`.
+2. Header: `Mirrored from @homeapp/common — webapp cannot import common (App Hosting).`
+3. Import with `@/` aliases.
+4. Add a row to the sync table in `apps/webapp/docs/CHAT.md`.
+5. Run `npm run check:no-common` in `apps/webapp` before merging.
+
+If mapp can't see your new export:
 - Did you build `apps/common`? (`npm run build` in that dir)
 - Did you add the entry to the `exports` map?
-- Restart Metro (mapp) or Next dev server (webapp) — they cache module resolution.
+- Restart Metro — it caches module resolution.
 
 ## Step 5 — wire providers
 
 For a context that's meant to be available globally:
 - **mapp**: wrap inside `apps/mapp/app/_layout.tsx` alongside the other providers.
-- **webapp**: wrap inside `apps/webapp/src/app/layout.tsx` (or a per-route layout).
+- **webapp**: mirror the context under `apps/webapp/src/contexts/` (if not already), then wrap inside `apps/webapp/src/app/layout.tsx` (or a per-route layout).
 
 If the context depends on another context, mount it inside that one.
 
@@ -82,6 +92,9 @@ If the context depends on another context, mount it inside that one.
 - [ ] File added under `apps/common/src/...`
 - [ ] `exports` entry added to `apps/common/package.json`
 - [ ] `npm run build` run in `apps/common`
-- [ ] Consumer imports via `@homeapp/common/...` subpath
+- [ ] **mapp** imports via `@homeapp/common/...` subpath
+- [ ] **webapp** has a mirrored copy under `src/lib/` or `src/hooks/` (no `@homeapp/common` imports)
+- [ ] Sync table updated in `apps/webapp/docs/CHAT.md`
+- [ ] `npm run check:no-common` passes in `apps/webapp`
 - [ ] Provider wrapped in mapp `_layout.tsx` and webapp `layout.tsx` if it's global
 - [ ] Metro / Next dev server restarted after the build

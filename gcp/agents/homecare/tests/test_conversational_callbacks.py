@@ -209,6 +209,75 @@ def test_before_tool_blocks_user_docs_on_checkpoint_memory_follow_up() -> None:
     assert "SESSION_WORKING_MEMORY" in result.get("result", "")
 
 
+def test_before_tool_allows_report_retrieval_on_report_route_with_session_cache() -> None:
+    from property_agent.reports.retrieval import (
+        REPORT_RETRIEVAL_CACHE_FP_KEY,
+        REPORT_RETRIEVAL_CACHE_TEXT_KEY,
+        report_retrieval_fingerprint,
+    )
+
+    tool = SimpleNamespace(name="report_retrieval")
+    tool_context = MagicMock()
+    tool_context.state = {
+        "user_query": "summarize the report",
+        "report_ids": ["report-1"],
+        REPORT_RETRIEVAL_CACHE_FP_KEY: report_retrieval_fingerprint(["report-1"]),
+        REPORT_RETRIEVAL_CACHE_TEXT_KEY: "### Move-out report\n\nKitchen ok.\n",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "report",
+            "expanded_user_query": "summarize the report",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "answer_from_context",
+            "query_mode": "interpret_session",
+        },
+    }
+
+    result = conversational_before_tool(tool, {}, tool_context)
+
+    assert result is None
+
+
+def test_before_tool_blocks_repeat_report_retrieval_with_cached_text() -> None:
+    from property_agent.reports.retrieval import (
+        REPORT_RETRIEVAL_LAST_RESULT_KEY,
+        _INVOCATION_REPORT_RESULTS,
+        store_invocation_report_result,
+    )
+
+    _INVOCATION_REPORT_RESULTS.clear()
+    store_invocation_report_result(
+        "inv-report-loop",
+        "### Move-out report\n\nKitchen ok.\n",
+    )
+
+    tool = SimpleNamespace(name="report_retrieval")
+    tool_context = MagicMock()
+    tool_context._invocation_context.invocation_id = "inv-report-loop"
+    tool_context.state = {
+        "user_query": "summarize the report",
+        "report_ids": ["report-1"],
+        REPORT_RETRIEVAL_LAST_RESULT_KEY: "### Move-out report\n\nKitchen ok.\n",
+        RESOLVED_TURN_STATE_KEY: {
+            "intent": "substantive",
+            "route": "report",
+            "expanded_user_query": "summarize the report",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "answer_from_context",
+            "query_mode": "interpret_session",
+        },
+    }
+
+    result = conversational_before_tool(tool, {}, tool_context)
+
+    assert result is not None
+    assert "Kitchen ok." in result.get("result", "")
+    assert "SESSION_WORKING_MEMORY" not in result.get("result", "")
+    _INVOCATION_REPORT_RESULTS.clear()
+
+
 def test_before_tool_allows_user_docs_on_user_docs_route() -> None:
     tool = SimpleNamespace(name="user_docs_retrieval")
     tool_context = MagicMock()

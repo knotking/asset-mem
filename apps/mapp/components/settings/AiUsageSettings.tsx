@@ -98,10 +98,13 @@ export function AiUsageSettings() {
     proxyDefaultLimit,
     periodDocumentCreations,
     periodCheckpointCreations,
+    periodReportGenerations,
     documentCreations,
     checkpointCreations,
+    reportGenerations,
     documentsLimit,
     checkpointsLimit,
+    reportsLimit,
   } = useLlmTokenUsage();
   const { preferences, updatePreferences } = usePreferences();
 
@@ -150,6 +153,7 @@ export function AiUsageSettings() {
     monthlyCap > 0 ? Math.min(100, Math.round((100 * periodTotalTokens) / monthlyCap)) : null;
   const documentsQuota = formatCreationQuota(documentsLimit, periodDocumentCreations);
   const checkpointsQuota = formatCreationQuota(checkpointsLimit, periodCheckpointCreations);
+  const reportsQuota = formatCreationQuota(reportsLimit, periodReportGenerations);
   const monthSubtitle = quotaPeriodKey
     ? `Billing period ${quotaPeriodKey} (UTC). Counters reset at month rollover.`
     : 'Billing period not set yet.';
@@ -236,6 +240,11 @@ export function AiUsageSettings() {
               value={checkpointsQuota.value}
               hint={`Analyses queued through the proxy. ${checkpointsQuota.hint}`}
             />
+            <StatRow
+              label="Report PDFs"
+              value={reportsQuota.value}
+              hint={`Property report generations. ${reportsQuota.hint}`}
+            />
           </UsageGroup>
         </UsageSection>
 
@@ -270,6 +279,11 @@ export function AiUsageSettings() {
               label="Checkpoint AI"
               value={nf.format(checkpointCreations)}
               hint="Lifetime checkpoint analyses queued through the proxy."
+            />
+            <StatRow
+              label="Report PDFs"
+              value={nf.format(reportGenerations)}
+              hint="Lifetime property report PDF generations."
             />
           </UsageGroup>
           <UsageGroup title="Activity">

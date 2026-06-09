@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    @page { margin: 0.65in 0.75in; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 10pt;
+      color: #1e293b;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .pro-accent-bar {
+      height: 6px;
+      background: {{ theme.accent }};
+      margin: 0 0 28px 0;
+    }
+    .pro-cover {
+      margin-bottom: 28px;
+      page-break-after: avoid;
+    }
+    .pro-brand {
+      font-size: 8pt;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: {{ theme.accent }};
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .pro-title {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #0f172a;
+      margin: 0 0 18px 0;
+      line-height: 1.2;
+    }
+    table.pro-meta {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table.pro-meta td {
+      padding: 6px 0;
+      vertical-align: top;
+      border: none;
+    }
+    .pro-meta-label {
+      width: 110px;
+      color: #64748b;
+      font-size: 9pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pro-meta-value {
+      color: #0f172a;
+      font-size: 10.5pt;
+    }
+    .pro-disclaimer {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: {{ theme.accent_light }};
+      border-left: 4px solid {{ theme.accent }};
+      font-size: 8.5pt;
+      color: #475569;
+    }
+    table.pro-stats {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 10px 0;
+      margin: 22px 0 8px 0;
+    }
+    table.pro-stats td {
+      width: 25%;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .pro-stat-value {
+      font-size: 18pt;
+      font-weight: bold;
+      color: {{ theme.accent }};
+      display: block;
+    }
+    .pro-stat-label {
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-top: 4px;
+      display: block;
+    }
+    .pro-section-title {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #0f172a;
+      margin: 26px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid {{ theme.accent }};
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .pro-exec-summary {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      font-size: 10pt;
+      color: #334155;
+    }
+    table.pro-issues {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    table.pro-issues th,
+    table.pro-issues td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 9pt;
+      vertical-align: top;
+    }
+    table.pro-issues th {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 8pt;
+      letter-spacing: 0.04em;
+    }
+    .severity-critical { color: #b91c1c; font-weight: bold; }
+    .severity-major { color: #c2410c; font-weight: bold; }
+    .severity-moderate { color: #b45309; }
+    .severity-minor { color: #64748b; }
+    table.location-card {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      page-break-inside: avoid;
+    }
+    table.location-card td {
+      border: none;
+      vertical-align: top;
+    }
+    table.location-card td.location-card-header {
+      background: {{ theme.accent }};
+      color: #ffffff;
+      padding: 12px 16px;
+    }
+    .location-card-title {
+      font-size: 12pt;
+      font-weight: bold;
+      margin: 0;
+    }
+    .location-card-meta {
+      font-size: 8.5pt;
+      opacity: 0.9;
+      margin-top: 3px;
+    }
+    table.location-card td.location-card-body {
+      border: 1px solid #e2e8f0;
+      border-top: none;
+      padding: 14px 16px 16px 16px;
+      background: #ffffff;
+    }
+    .location-card-summary {
+      margin: 0 0 12px 0;
+      color: #334155;
+    }
+    table.pro-photo-row {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    table.pro-photo-row td {
+      border: none;
+      padding: 0 8px 0 0;
+      vertical-align: top;
+      width: 33%;
+    }
+    img.pro-photo {
+      display: block;
+      border: 1px solid #e2e8f0;
+      max-width: 100%;
+    }
+    .pro-photo-label {
+      font-size: 7.5pt;
+      color: #64748b;
+      margin-bottom: 5px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pro-recommendations {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .pro-recommendations li {
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    table.pro-signature {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    table.pro-signature td {
+      border: 1px solid #cbd5e1;
+      padding: 28px 12px 8px 12px;
+      width: 50%;
+      vertical-align: bottom;
+      font-size: 9pt;
+      color: #64748b;
+    }
+    .pro-signature-line {
+      border-top: 1px solid #94a3b8;
+      margin-top: 36px;
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  {% if template.includeCoverPage %}
+  <div class="pro-cover">
+    <div class="pro-accent-bar"></div>
+    <div class="pro-brand">{{ theme.brand }}</div>
+    <h1 class="pro-title">{{ title }}</h1>
+    <table class="pro-meta">
+      {% if property_name %}
+      <tr><td class="pro-meta-label">Property</td><td class="pro-meta-value">{{ property_name }}</td></tr>
+      {% endif %}
+      {% if property_address %}
+      <tr><td class="pro-meta-label">Address</td><td class="pro-meta-value">{{ property_address }}</td></tr>
+      {% endif %}
+      {% if baseline_label %}
+      <tr><td class="pro-meta-label">Baseline</td><td class="pro-meta-value">{{ baseline_label }}</td></tr>
+      {% endif %}
+      {% if comparison_label %}
+      <tr><td class="pro-meta-label">Comparison</td><td class="pro-meta-value">{{ comparison_label }}</td></tr>
+      {% endif %}
+      {% if date_label %}
+      <tr><td class="pro-meta-label">Period</td><td class="pro-meta-value">{{ date_label }}</td></tr>
+      {% endif %}
+      {% if custom_notes %}
+      <tr><td class="pro-meta-label">Notes</td><td class="pro-meta-value">{{ custom_notes }}</td></tr>
+      {% endif %}
+      <tr><td class="pro-meta-label">Generated</td><td class="pro-meta-value">{{ generated_at }}</td></tr>
+    </table>
+    <table class="pro-stats">
+      <tr>
+        <td>
+          <span class="pro-stat-value">{{ stats.section_count }}</span>
+          <span class="pro-stat-label">{% if is_comparison %}Paired{% else %}Checkpoints{% endif %}</span>
+        </td>
+        <td>
+          <span class="pro-stat-value">{{ stats.issue_count }}</span>
+          <span class="pro-stat-label">Issues</span>
+        </td>
+        <td>
+          <span class="pro-stat-value">{{ stats.major_count }}</span>
+          <span class="pro-stat-label">Major+</span>
+        </td>
+        <td>
+          <span class="pro-stat-value">{{ stats.photo_count }}</span>
+          <span class="pro-stat-label">Photos</span>
+        </td>
+      </tr>
+    </table>
+    <div class="pro-disclaimer">{{ theme.disclaimer }}</div>
+  </div>
+  {% endif %}
+
+  {% if executive_summary %}
+  <div class="pro-section-title">Executive summary</div>
+  <div class="pro-exec-summary">{{ executive_summary }}</div>
+  {% endif %}
+
+  {% if template.includeMetricsChart and metrics_chart %}
+  <div class="pro-section-title">Condition metrics</div>
+  <table class="pro-stats">
+    <tr>
+      {% if metrics_chart.headline_score is not none %}
+      <td>
+        <span class="pro-stat-value">{{ metrics_chart.headline_score }}</span>
+        <span class="pro-stat-label">Headline score</span>
+      </td>
+      {% endif %}
+      <td>
+        <span class="pro-stat-value">{{ metrics_chart.total_issues }}</span>
+        <span class="pro-stat-label">Total issues</span>
+      </td>
+      {% if metrics_chart.deterioration_trend %}
+      <td>
+        <span class="pro-stat-value" style="font-size: 11pt; text-transform: capitalize;">{{ metrics_chart.deterioration_trend }}</span>
+        <span class="pro-stat-label">Trend</span>
+      </td>
+      {% endif %}
+    </tr>
+  </table>
+  <table class="pro-issues" style="margin-top: 10px;">
+    <tr><th>Severity</th><th>Count</th><th>Distribution</th></tr>
+    {% for bar in metrics_chart.bars %}
+    <tr>
+      <td style="color: {{ bar.color }}; font-weight: bold;">{{ bar.label }}</td>
+      <td>{{ bar.count }}</td>
+      <td>
+        <div style="background: #e2e8f0; height: 10px; width: 100%;">
+          <div style="background: {{ bar.color }}; height: 10px; width: {{ bar.width_pct }}%;"></div>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if template.includeIssueTable and issue_rows %}
+  <div class="pro-section-title">Issues summary</div>
+  <table class="pro-issues">
+    <tr><th>Location</th><th>Severity</th><th>Description</th></tr>
+    {% for row in issue_rows %}
+    <tr>
+      <td>{{ row.location }}</td>
+      <td class="{{ row.severity_class }}">{{ row.severity }}</td>
+      <td>{{ row.description }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if is_comparison %}
+  <div class="pro-section-title">Location comparisons</div>
+  {% for pair in comparison_sections %}
+  <table class="location-card"{% if not loop.first %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="location-card-header" colspan="2">
+        <div class="location-card-title">{{ pair.location }}</div>
+        {% if pair.similarity_score is not none %}
+        <div class="location-card-meta">Similarity {{ (pair.similarity_score * 100) | round | int }}%</div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="location-card-body" colspan="2">
+        {% if pair.summary %}
+        <p class="location-card-summary">{{ pair.summary }}</p>
+        {% endif %}
+        {% if pair.semantic_changes %}
+        <ul class="pro-recommendations" style="margin-top: 0;">
+          {% for change in pair.semantic_changes %}
+          <li>{{ change }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% if template.includePhotos and (pair.baseline_photo or pair.comparison_photo or pair.visual_diff_url) %}
+        <table class="pro-photo-row"><tr>
+          {% if pair.baseline_photo %}
+          <td>
+            <div class="pro-photo-label">Baseline</div>
+            <img class="pro-photo" src="{{ pair.baseline_photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+          {% if pair.comparison_photo %}
+          <td>
+            <div class="pro-photo-label">Comparison</div>
+            <img class="pro-photo" src="{{ pair.comparison_photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+          {% if pair.visual_diff_url %}
+          <td>
+            <div class="pro-photo-label">Visual diff</div>
+            <img class="pro-photo" src="{{ pair.visual_diff_url }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endif %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% if appendix_rooms %}
+  <div class="pro-section-title" style="page-break-before: always;">Unpaired locations</div>
+  {% endif %}
+  {% for room in appendix_rooms %}
+  <table class="location-card"{% if not loop.first %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="location-card-header" colspan="2">
+        <div class="location-card-title">{{ room.title }}</div>
+        {% if room.captured_label %}<div class="location-card-meta">{{ room.captured_label }}</div>{% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="location-card-body" colspan="2">
+        {% if room.summary %}<p class="location-card-summary">{{ room.summary }}</p>{% endif %}
+        {% if template.includePhotos and room.photos %}
+        <table class="pro-photo-row"><tr>
+          {% for photo in room.photos %}
+          <td><img class="pro-photo" src="{{ photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/></td>
+          {% endfor %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% else %}
+  <div class="pro-section-title">Checkpoint details</div>
+  {% for room in rooms %}
+  <table class="location-card"{% if not loop.first %} style="page-break-before: always;"{% endif %}>
+    <tr>
+      <td class="location-card-header" colspan="2">
+        <div class="location-card-title">{{ room.title }}</div>
+        {% if room.captured_label %}
+        <div class="location-card-meta">{{ room.captured_label }}</div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="location-card-body" colspan="2">
+        {% if room.summary %}
+        <p class="location-card-summary">{{ room.summary }}</p>
+        {% endif %}
+        {% if template.includePhotos and room.photos %}
+        <table class="pro-photo-row"><tr>
+          {% for photo in room.photos %}
+          <td>
+            <img class="pro-photo" src="{{ photo }}" alt="" width="{{ photo_width }}" height="{{ photo_height }}"/>
+          </td>
+          {% endfor %}
+        </tr></table>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endfor %}
+  {% endif %}
+
+  {% if template.includeRecommendations and recommendations %}
+  <div class="pro-section-title" style="page-break-before: always;">Recommendations</div>
+  <ul class="pro-recommendations">
+    {% for item in recommendations %}
+    <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if template.includeSignatureBlock %}
+  <div class="pro-section-title" style="page-break-before: always;">{{ theme.signature_label }}</div>
+  <table class="pro-signature">
+    <tr>
+      <td><div class="pro-signature-line">Signature</div></td>
+      <td><div class="pro-signature-line">Date</div></td>
+    </tr>
+  </table>
+  {% endif %}
+</body>
+</html>

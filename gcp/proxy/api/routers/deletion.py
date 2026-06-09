@@ -15,6 +15,7 @@ from schemas.deletion import (
     DocumentsBatchDeleteRequest,
     PropertyDeletionRequest,
     RagFilesDeleteRequest,
+    ReportDeletionRequest,
     SessionDeletionRequest,
     SessionsBatchDeleteRequest,
     SessionSharedChatsDeleteRequest,
@@ -78,6 +79,31 @@ async def deletion_checkpoint(
         ),
         operation=lambda: deletion_service.delete_checkpoint_asset(
             db, uid, request_data.propertyId, request_data.checkpointId
+        ),
+    )
+    return {"status": "ok", **result}
+
+
+@router.post("/deletion/report", summary="Delete a property report and its PDFs")
+async def deletion_report(
+    request_data: ReportDeletionRequest,
+    uid: Annotated[str, Depends(authenticated_user(RATE_BUCKET_DOCUMENTS))],
+):
+    if request_data.userId != uid:
+        raise HTTPException(status_code=403, detail="userId mismatch")
+    db = _db()
+    result = deletion_service.run_audited_resource_deletion(
+        db,
+        user_id=uid,
+        actor_uid=uid,
+        resource_type="report",
+        resource_ids=[request_data.reportId],
+        property_id=request_data.propertyId,
+        resource_ref=deletion_service._report_ref(
+            db, uid, request_data.propertyId, request_data.reportId
+        ),
+        operation=lambda: deletion_service.delete_report_asset(
+            db, uid, request_data.propertyId, request_data.reportId
         ),
     )
     return {"status": "ok", **result}

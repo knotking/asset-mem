@@ -1,4 +1,5 @@
-import type { Checkpoint, Document, PrimaryAgent } from "../types";
+import type { Checkpoint, Document, PrimaryAgent, PropertyReport } from "../types";
+import { filterReadyReports, pickDefaultReadyReport } from "./chat-context-reports";
 import {
   ADD_CONTEXT_RECENT_READY_COUNT,
   MAX_SELECTED_CHECKPOINTS,
@@ -46,7 +47,11 @@ export function filterReadyCheckpoints(checkpoints: Checkpoint[]): Checkpoint[] 
 }
 
 export function filterReadyDocuments(documents: Document[]): Document[] {
-  return sortByCreatedDesc(documents.filter(isDocumentReady));
+  return sortByCreatedDesc(
+    documents.filter(
+      (doc) => isDocumentReady(doc) && doc.documentType !== "PROPERTY_REPORT"
+    )
+  );
 }
 
 export function filterCheckpointsBySearch(
@@ -88,14 +93,28 @@ export function pickDefaultReadyCheckpoint(
   checkpoints: Checkpoint[],
   primaryAgent: PrimaryAgent
 ): Checkpoint | undefined {
-  if (primaryAgent === "docs") return undefined;
+  if (primaryAgent === "docs" || primaryAgent === "report") return undefined;
   return getRecentReadyCheckpoints(checkpoints, 1)[0];
 }
 
 /** Most recent ready document for default composer context. */
-export function pickDefaultReadyDocument(documents: Document[]): Document | undefined {
+export function pickDefaultReadyDocument(
+  documents: Document[],
+  primaryAgent: PrimaryAgent
+): Document | undefined {
+  if (primaryAgent === "report") return undefined;
   return getRecentReadyDocuments(documents, 1)[0];
 }
+
+export function pickDefaultReadyReportForAgent(
+  reports: PropertyReport[],
+  primaryAgent: PrimaryAgent
+): PropertyReport | undefined {
+  if (primaryAgent !== "report") return undefined;
+  return pickDefaultReadyReport(reports);
+}
+
+export { filterReadyReports, filterReportsBySearch } from "./chat-context-reports";
 
 export function canSelectMoreCheckpoints(selectedCount: number): boolean {
   return selectedCount < MAX_SELECTED_CHECKPOINTS;

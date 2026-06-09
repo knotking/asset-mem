@@ -45,7 +45,7 @@ export const CHECKPOINT_OPTIONAL_AGENTS = [
 
 export type CheckpointOptionalAgent = (typeof CHECKPOINT_OPTIONAL_AGENTS)[number];
 
-export type PrimaryAgent = 'analysis' | 'checkpoint' | 'docs';
+export type PrimaryAgent = 'analysis' | 'checkpoint' | 'docs' | 'report';
 
 export type FileAttachment = {
   id: string;
@@ -90,6 +90,7 @@ export type Message = {
   contextRefs?: {
     checkpoints?: { id: string; name?: string }[];
     documents?: { id: string; name: string }[];
+    reports?: { id: string; title: string; revision?: number }[];
   };
   agentSteps?: AgentStep[];
   /** Early-turn status from proxy lifecycle persist (cleared when agentSteps arrive). */
@@ -368,6 +369,7 @@ export type Document = {
     | "UTILITY_BILL"
     | "INSPECTION_REPORT"
     | "MORTGAGE_STATEMENT"
+    | "PROPERTY_REPORT"
     | "OTHER";
   propertyAddress?: string;
   keyEntities?: { name: string; value: string }[];
@@ -661,4 +663,143 @@ export type PropertyCheckpointMetrics = {
     rate_points_per_day: number | null;
     trend: "improving" | "stable" | "deteriorating" | "unknown";
   };
+};
+
+export type PropertyReportMode = "snapshot" | "comparison";
+
+export type PropertyReportPurpose =
+  | "rental_security"
+  | "realtor_visit"
+  | "insurance"
+  | "custom";
+
+export type PropertyReportStatus =
+  | "draft"
+  | "generating"
+  | "ready"
+  | "failed";
+
+export type PropertyReportDateRange = {
+  start: Timestamp;
+  end: Timestamp;
+};
+
+export type PropertyReportLayoutId = "professional" | "classic";
+
+export type PropertyReportTemplate = {
+  layoutId?: PropertyReportLayoutId;
+  includeCoverPage: boolean;
+  includePhotos: boolean;
+  includeIssueTable: boolean;
+  includeMetricsChart: boolean;
+  includeVisualDiff: boolean;
+  includeRecommendations: boolean;
+  includeSignatureBlock: boolean;
+};
+
+export type PropertyReportCheckpointSlice = {
+  checkpointId: string;
+  name: string;
+  location?: string;
+  capturedAt?: string;
+  media: { url: string; thumbnailUrl?: string }[];
+  aiAnalysis?: CheckpointAnalysis;
+  visualDiff?: VisualDiffAnalysis;
+};
+
+export type PropertyReportContentSnapshot = {
+  schemaVersion: 1;
+  property: {
+    id: string;
+    address?: string;
+    name?: string;
+  };
+  mode: PropertyReportMode;
+  generatedFor: PropertyReportPurpose;
+  resolvedAt: string;
+  dateConfig: {
+    snapshotRange?: { start: string; end: string };
+    baselineRange?: { start: string; end: string };
+    comparisonRange?: { start: string; end: string };
+  };
+  checkpoints: PropertyReportCheckpointSlice[];
+  metrics?: Pick<
+    PropertyCheckpointMetrics,
+    "issues" | "overall" | "deterioration"
+  > & { checkpointsIncluded?: number };
+  narrative?: {
+    executiveSummary?: string;
+    comparisonSummary?: string;
+  };
+};
+
+export type ReportPreviewCheckpoint = {
+  checkpointId: string;
+  name: string;
+  location?: string;
+  analysisStatus?: string;
+  capturedAt?: string;
+};
+
+export type ReportPreviewPair = {
+  location: string;
+  baselineCheckpointId: string;
+  comparisonCheckpointId: string;
+  baseline?: ReportPreviewCheckpoint | null;
+  comparison?: ReportPreviewCheckpoint | null;
+};
+
+export type ReportPreviewResponse =
+  | {
+      mode: "snapshot";
+      checkpoints: ReportPreviewCheckpoint[];
+      warnings: string[];
+    }
+  | {
+      mode: "comparison";
+      pairs: ReportPreviewPair[];
+      baselineOnly: ReportPreviewCheckpoint[];
+      comparisonOnly: ReportPreviewCheckpoint[];
+      warnings: string[];
+    };
+
+export type PropertyReport = {
+  deletionStatus?: "deleting" | "failed";
+  deletionBatchId?: string;
+  deletionError?: string;
+
+  id: string;
+  userId: string;
+  propertyId: string;
+  title: string;
+  mode: PropertyReportMode;
+  purpose?: PropertyReportPurpose;
+
+  snapshotRange?: PropertyReportDateRange;
+  baselineRange?: PropertyReportDateRange;
+  comparisonRange?: PropertyReportDateRange;
+
+  checkpointIds: string[];
+  contentSnapshot?: PropertyReportContentSnapshot;
+  chatMarkdown?: string;
+  includeInDocsChat?: boolean;
+  ragGsUri?: string;
+  ragCompanionDocId?: string;
+  mdGsUri?: string;
+  mdStoragePath?: string;
+
+  template: PropertyReportTemplate;
+  customNotes?: string;
+
+  status: PropertyReportStatus;
+  revision: number;
+  failureReason?: string;
+
+  pdfStoragePath?: string;
+  pdfGsUri?: string;
+  shareId?: string;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  generatedAt?: Timestamp;
 };

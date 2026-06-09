@@ -38,6 +38,12 @@ class CheckpointDeletionRequest(BaseModel):
     checkpointId: str
 
 
+class ReportDeletionRequest(BaseModel):
+    userId: str
+    propertyId: str
+    reportId: str
+
+
 class SessionDeletionRequest(BaseModel):
     userId: str
     sessionId: str

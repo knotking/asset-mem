@@ -155,6 +155,35 @@ def test_build_capabilities_with_attachments_hint() -> None:
     assert "Is this issue covered" in body
 
 
+def test_build_greeting_mentions_attached_report_in_report_mode() -> None:
+    state = {
+        "primary_agent": "report",
+        "report_ids": ["report-1"],
+        "property_address": "1982 Helena Way, Brentwood, CA 94513",
+    }
+    body = build_conversational_reply(
+        "greeting",
+        property_address="1982 Helena Way, Brentwood, CA 94513",
+        state=state,
+    )
+    assert "saved property report" in body
+    assert "1 saved report attached" in body
+    assert "Summarize this report" in body
+    assert "What would you like to know about the report?" in body
+    assert "Maintenance checkpoints" not in body
+
+
+def test_build_capabilities_report_mode() -> None:
+    state = {
+        "primary_agent": "report",
+        "report_ids": ["report-1", "report-2"],
+    }
+    body = build_conversational_reply("capabilities", state=state)
+    assert "2 saved reports attached" in body
+    assert "saved property report" in body
+    assert "Key findings from your saved report snapshot" in body
+
+
 def test_show_inspection_notes_retrieval_only_not_optional_analysis() -> None:
     query = "Can you show me the latest inspection notes for the kitchen?"
     assert not requests_checkpoint_optional_analysis(query)

@@ -13,6 +13,7 @@ import {
   X,
   Clock,
   FileText,
+  ClipboardList,
   ShieldCheck,
   Hammer,
   Wrench,
@@ -240,7 +241,7 @@ export function ChatSettingsModal({
                   <View className="flex-row gap-2">
                     <Pressable
                       onPress={() => onPrimaryAgentChange('checkpoint')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
+                      className={`min-w-0 flex-1 basis-0 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
                         primaryAgent === 'checkpoint'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
@@ -265,7 +266,7 @@ export function ChatSettingsModal({
                     </Pressable>
                     <Pressable
                       onPress={() => onPrimaryAgentChange('docs')}
-                      className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
+                      className={`min-w-0 flex-1 basis-0 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
                         primaryAgent === 'docs'
                           ? 'border-primary bg-primary'
                           : 'border-border bg-secondary'
@@ -288,6 +289,31 @@ export function ChatSettingsModal({
                         Docs
                       </Text>
                     </Pressable>
+                    <Pressable
+                      onPress={() => onPrimaryAgentChange('report')}
+                      className={`min-w-0 flex-1 basis-0 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 ${
+                        primaryAgent === 'report'
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-secondary'
+                      }`}>
+                      <Icon
+                        as={ClipboardList}
+                        size={18}
+                        className={
+                          primaryAgent === 'report'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }
+                      />
+                      <Text
+                        className={`text-xs font-semibold ${
+                          primaryAgent === 'report'
+                            ? 'text-primary-foreground'
+                            : 'text-foreground'
+                        }`}>
+                        Reports
+                      </Text>
+                    </Pressable>
                   </View>
                 </View>
 
@@ -303,6 +329,16 @@ export function ChatSettingsModal({
                           Not available for Docs. The Docs agent answers from your uploaded property
                           documents. Switch to Checkpoint to add coverage, DIY, service, or cost
                           recommendations.
+                        </Text>
+                      </View>
+                      <View className="mt-2 min-h-[40px]" />
+                    </>
+                  ) : primaryAgent === 'report' ? (
+                    <>
+                      <View className="min-h-[72px] justify-center rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3">
+                        <Text className="text-xs leading-relaxed text-muted-foreground">
+                          Reports mode answers from saved PDF snapshots you attach in chat —
+                          not live checkpoints. Optional analysis branches are not available.
                         </Text>
                       </View>
                       <View className="mt-2 min-h-[40px]" />

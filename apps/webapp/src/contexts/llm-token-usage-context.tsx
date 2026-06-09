@@ -49,8 +49,10 @@ export type LlmTokenUsageSnapshot = {
   periodOutputTokens: number;
   periodDocumentCreations: number;
   periodCheckpointCreations: number;
+  periodReportGenerations: number;
   documentCreations: number;
   checkpointCreations: number;
+  reportGenerations: number;
   monthlyLimit: number | null;
   /** Resolved cap for UI: Firestore prefs, else proxy /token-quota-status */
   effectiveMonthlyLimit: number | null;
@@ -60,6 +62,7 @@ export type LlmTokenUsageSnapshot = {
   limitsLoading: boolean;
   documentsLimit: PlanLimitSlice | null;
   checkpointsLimit: PlanLimitSlice | null;
+  reportsLimit: PlanLimitSlice | null;
 };
 
 const empty: Omit<
@@ -71,6 +74,7 @@ const empty: Omit<
   | 'proxyDefaultLimit'
   | 'documentsLimit'
   | 'checkpointsLimit'
+  | 'reportsLimit'
   | 'limitsLoading'
 > = {
   inputTokens: 0,
@@ -85,8 +89,10 @@ const empty: Omit<
   periodOutputTokens: 0,
   periodDocumentCreations: 0,
   periodCheckpointCreations: 0,
+  periodReportGenerations: 0,
   documentCreations: 0,
   checkpointCreations: 0,
+  reportGenerations: 0,
 };
 
 function toDisplayPlanLimit(
@@ -113,6 +119,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
   const [proxyDefaultLimit, setProxyDefaultLimit] = useState<'pending' | number | null>('pending');
   const [documentsLimit, setDocumentsLimit] = useState<PlanLimitSlice | null>(null);
   const [checkpointsLimit, setCheckpointsLimit] = useState<PlanLimitSlice | null>(null);
+  const [reportsLimit, setReportsLimit] = useState<PlanLimitSlice | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -124,6 +131,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
       setProxyDefaultLimit('pending');
       setDocumentsLimit(null);
       setCheckpointsLimit(null);
+      setReportsLimit(null);
       return;
     }
 
@@ -157,10 +165,14 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
             typeof d.periodDocumentCreations === 'number' ? d.periodDocumentCreations : 0,
           periodCheckpointCreations:
             typeof d.periodCheckpointCreations === 'number' ? d.periodCheckpointCreations : 0,
+          periodReportGenerations:
+            typeof d.periodReportGenerations === 'number' ? d.periodReportGenerations : 0,
           documentCreations:
             typeof d.documentCreations === 'number' ? d.documentCreations : 0,
           checkpointCreations:
             typeof d.checkpointCreations === 'number' ? d.checkpointCreations : 0,
+          reportGenerations:
+            typeof d.reportGenerations === 'number' ? d.reportGenerations : 0,
         });
       },
       (err) => {
@@ -228,6 +240,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
           max_tokens?: unknown;
           documents?: { used?: number; limit?: number; unlimited?: boolean };
           checkpoints?: { used?: number; limit?: number; unlimited?: boolean };
+          reports?: { used?: number; limit?: number; unlimited?: boolean };
         };
         if (cancelled) return;
 
@@ -243,6 +256,14 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
 
         const cp = data.checkpoints;
         setCheckpointsLimit(toDisplayPlanLimit(cp, FREE_PLAN_LIMITS.checkpointsPerMonth));
+
+        const reports = data.reports;
+        setReportsLimit(
+          toDisplayPlanLimit(
+            reports,
+            FREE_PLAN_LIMITS.reportsPerMonth ?? 2,
+          ),
+        );
       } catch (err) {
         if (!cancelled) {
           quotaLog.warn('tokenQuotaStatus.fetch.failed', {
@@ -253,6 +274,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
           }
           setDocumentsLimit(null);
           setCheckpointsLimit(null);
+          setReportsLimit(null);
         }
       }
     })();
@@ -291,6 +313,7 @@ function useLlmTokenUsageSubscription(userId: string | undefined): LlmTokenUsage
     limitsLoading,
     documentsLimit,
     checkpointsLimit,
+    reportsLimit,
   };
 }
 

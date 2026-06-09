@@ -9,6 +9,7 @@
 export type PlanTierLimits = {
   documentsPerMonth: number;
   checkpointsPerMonth: number;
+  reportsPerMonth: number;
   tokensPerMonth: number | null;
   /** List price in USD per month (Stripe). */
   pricePerMonthUsd: number;
@@ -18,6 +19,7 @@ export type PlanTierLimits = {
 export const FREE_PLAN_LIMITS: PlanTierLimits = {
   documentsPerMonth: 2,
   checkpointsPerMonth: 5,
+  reportsPerMonth: 2,
   tokensPerMonth: 1_000_000,
   pricePerMonthUsd: 0,
 };
@@ -25,6 +27,7 @@ export const FREE_PLAN_LIMITS: PlanTierLimits = {
 export const PLUS_PLAN_LIMITS: PlanTierLimits = {
   documentsPerMonth: 10,
   checkpointsPerMonth: 30,
+  reportsPerMonth: 10,
   tokensPerMonth: 10_000_000,
   pricePerMonthUsd: 19,
 };
@@ -32,6 +35,7 @@ export const PLUS_PLAN_LIMITS: PlanTierLimits = {
 export const PRO_PLAN_LIMITS: PlanTierLimits = {
   documentsPerMonth: 30,
   checkpointsPerMonth: 100,
+  reportsPerMonth: 30,
   tokensPerMonth: 25_000_000,
   pricePerMonthUsd: 39,
 };

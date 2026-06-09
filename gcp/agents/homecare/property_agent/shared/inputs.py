@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 
 CheckpointOptionalAgent = Literal["coverage", "diy", "service", "cost"]
-PrimaryAgent = Literal["checkpoint", "docs"]
+PrimaryAgent = Literal["checkpoint", "docs", "report"]
 SearchLocationSource = Literal["property_address", "device_gps"]
 ChatIntentHint = Literal["discuss_report", "new_analysis", "replay_report"]
 
@@ -39,6 +39,10 @@ class SearchLocation(BaseModel):
 
 class DiagnosisInput(BaseModel):
     user_query: str = Field(description="The user query.")
+    user_id: Optional[str] = Field(
+        default=None,
+        description="Firebase auth uid for Firestore-backed tools (report/checkpoint retrieval).",
+    )
     correlation_id: Optional[str] = Field(
         default=None,
         description="Client/proxy request correlation id (X-Request-ID) for log tracing.",
@@ -49,6 +53,10 @@ class DiagnosisInput(BaseModel):
     checkpoint_ids: Optional[List[str]] = Field(
         default=None,
         description="Checkpoint IDs for checkpoint context (checkpoint retrieval when provided).",
+    )
+    report_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Property report IDs for report-mode chat (frozen snapshot retrieval).",
     )
     property_address: Optional[str] = Field(
         default=None,
@@ -61,7 +69,7 @@ class DiagnosisInput(BaseModel):
     primary_agent: Optional[PrimaryAgent] = Field(
         default=None,
         description=(
-            "Client UI tab hint: 'checkpoint' or 'docs'. Passed to resolve_turn_llm as context "
+            "Client UI tab hint: 'checkpoint', 'docs', or 'report'. Passed to resolve_turn_llm as context "
             "(with checkpoint_ids and checkpoint_optional_agents); the orchestrator still "
             "chooses tools via resolve output, not this field alone."
         ),

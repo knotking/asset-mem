@@ -140,6 +140,31 @@ class PropertyRootAgentPlugin(LoggingRootAgentPlugin):
                 == "docs"
             ):
                 tool_context.state[USER_DOCS_PASSTHROUGH_STATE_KEY] = True
+        if tool_name == "report_retrieval":
+            from property_agent.reports.retrieval import (
+                mark_report_retrieval_served,
+                store_invocation_report_result,
+                store_report_retrieval_last_result,
+            )
+
+            inv_id = getattr(
+                getattr(tool_context, "_invocation_context", None),
+                "invocation_id",
+                None,
+            )
+            inv_id_str = str(inv_id).strip() if inv_id is not None else ""
+            result_text = ""
+            if isinstance(tool_response, str):
+                result_text = tool_response
+            elif isinstance(tool_response, dict):
+                raw = tool_response.get("result")
+                if isinstance(raw, str):
+                    result_text = raw
+            if result_text.strip() and not result_text.startswith("Skipped:"):
+                store_report_retrieval_last_result(tool_context.state, result_text)
+                if inv_id_str:
+                    store_invocation_report_result(inv_id_str, result_text)
+                    mark_report_retrieval_served(tool_context.state, inv_id_str)
         if tool_name == "run_checkpoint_pipeline":
             if requests_optional_analysis_from_resolved(tool_context.state):
                 mark_executor_invocation_structured_analysis(tool_context.state)

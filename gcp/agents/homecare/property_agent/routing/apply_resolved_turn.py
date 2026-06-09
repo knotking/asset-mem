@@ -272,7 +272,7 @@ def sanitize_llm_payload_nlu_first(
     route = data.get("route")
     if route == "knowledge_base":
         route = "none"
-    elif route not in ("checkpoint", "user_docs", "none"):
+    elif route not in ("checkpoint", "user_docs", "report", "none"):
         route = "checkpoint"
     cap = data.get("capability_key")
     if cap is not None and cap not in DEFAULT_CAPABILITY_OPTIONS:
@@ -350,6 +350,13 @@ def sanitize_llm_payload_nlu_first(
             "run_optional_agents": [],
             "user_goal": "answer_from_context",
         }
+    elif payload.get("intent") == "substantive" and payload.get("route") == "report":
+        payload = {
+            **payload,
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "user_goal": "answer_from_context",
+        }
     payload = apply_thin_invariants(payload, user_query=user_query, state=session)
     payload = normalize_substantive_route(payload)
     if (
@@ -375,7 +382,7 @@ def sanitize_llm_payload(data: dict[str, Any], *, user_query: str, state: Mappin
     route = data.get("route")
     if route == "knowledge_base":
         route = "none"
-    elif route not in ("checkpoint", "user_docs", "none"):
+    elif route not in ("checkpoint", "user_docs", "report", "none"):
         route = "checkpoint"
     cap = data.get("capability_key")
     if cap is not None and cap not in DEFAULT_CAPABILITY_OPTIONS:
@@ -390,6 +397,8 @@ def sanitize_llm_payload(data: dict[str, Any], *, user_query: str, state: Mappin
     if route == "checkpoint":
         payload = apply_checkpoint_retrieval_plan(payload, user_query=user_query, state=state or {})
     elif route == "user_docs":
+        payload = {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
+    elif route == "report":
         payload = {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
     elif route == "none":
         payload = {**payload, "retrieval_only": True, "run_optional_agents": [], "user_goal": "answer_from_context"}
@@ -415,6 +424,16 @@ def apply_primary_agent_constraints(payload: dict[str, Any], *, state: Mapping[s
         if payload.get("route") == "user_docs" and query_looks_checkpoint_focused(expanded):
             return {**payload, "route": "checkpoint"}
         return payload
+    if primary == "report":
+        has_reports = bool(state.get("report_ids"))
+        return {
+            **payload,
+            "route": "report",
+            "retrieval_only": True,
+            "run_optional_agents": [],
+            "menu_index": None,
+            "capability_key": "reports" if has_reports else payload.get("capability_key"),
+        }
     return payload
 
 

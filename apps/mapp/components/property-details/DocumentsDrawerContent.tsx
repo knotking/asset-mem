@@ -15,7 +15,7 @@ import {
 interface DocumentsDrawerContentProps {
   documents: Document[];
   selectedDocuments: Document[];
-  activeTab: 'chat' | 'details' | 'timeline' | 'providers';
+  activeTab: 'chat' | 'details' | 'timeline';
   onClose: () => void;
   onToggleDocument: (document: Document) => void;
 }

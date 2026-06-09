@@ -197,7 +197,10 @@ def should_block_checkpoint_pipeline_for_context_turn(
         return False
     route = (resolved_route or "").strip().lower()
     tool = (tool_name or "").strip().lower()
-    if tool == "user_docs_retrieval" and route == "user_docs":
+    if tool in ("user_docs_retrieval", "report_retrieval") and route in (
+        "user_docs",
+        "report",
+    ):
         return False
     if should_answer_provider_from_context(user_query, state=state):
         return True

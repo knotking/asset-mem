@@ -23,9 +23,10 @@ User (webapp) ──Firebase ID token──► Proxy API
                                               └── Firestore users/{uid}/billing/summary
 
 Enforcement (proxy + workers):
-  • monthlyTokenLimit      → Reasoning Engine / Gemini (llm_token_usage)
-  • monthlyDocumentLimit   → extract-doc-info, rag-file-upload (per file)
-  • monthlyCheckpointLimit → analyze-checkpoint
+  • monthlyTokenLimit              → Reasoning Engine / Gemini (llm_token_usage)
+  • monthlyDocumentLimit           → extract-doc-info, rag-file-upload (per file)
+  • monthlyCheckpointLimit         → analyze-checkpoint
+  • monthlyReportGenerationsLimit  → POST /reports/generate (per report)
 ```
 
 List prices on the landing page are **marketing copy** (`apps/webapp/src/lib/plan-limits-public.ts`). **Stripe Prices** must be configured to $19 and $39 in Dashboard. **Usage caps** come from `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` on the proxy.
@@ -107,19 +108,22 @@ Required reserved key **`free`** (non-subscribers). Paid tiers use keys **`plus`
   "free": {
     "monthlyTokenLimit": 1000000,
     "monthlyDocumentLimit": 2,
-    "monthlyCheckpointLimit": 5
+    "monthlyCheckpointLimit": 5,
+    "monthlyReportGenerationsLimit": 2
   },
   "plus": {
     "stripePriceId": "price_xxxxxxxxxxxx",
     "monthlyTokenLimit": 10000000,
     "monthlyDocumentLimit": 10,
-    "monthlyCheckpointLimit": 30
+    "monthlyCheckpointLimit": 30,
+    "monthlyReportGenerationsLimit": 10
   },
   "pro": {
     "stripePriceId": "price_yyyyyyyyyyyy",
     "monthlyTokenLimit": 25000000,
     "monthlyDocumentLimit": 30,
-    "monthlyCheckpointLimit": 100
+    "monthlyCheckpointLimit": 100,
+    "monthlyReportGenerationsLimit": 30
   }
 }
 ```
@@ -137,7 +141,7 @@ Use `0` for a field to mean **unlimited** for that dimension.
 
 On active subscription webhooks, the proxy writes to Firestore:
 
-`users/{firebaseUid}/billing/summary` → `subscriptionStatus`, `priceId`, `monthlyTokenLimit`, `monthlyDocumentLimit`, `monthlyCheckpointLimit`, `stripeCustomerId`, …
+`users/{firebaseUid}/billing/summary` → `subscriptionStatus`, `priceId`, `monthlyTokenLimit`, `monthlyDocumentLimit`, `monthlyCheckpointLimit`, `monthlyReportGenerationsLimit`, `stripeCustomerId`, …
 
 ### 2.3 Local development
 
@@ -146,7 +150,7 @@ Create `gcp/proxy/api/.env` (not committed):
 ```bash
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SIGNING_SECRET=whsec_...   # from: stripe listen --forward-to localhost:8080/stripe/webhook
-STRIPE_B2C_PRICE_TOKEN_CAPS_JSON='{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5},"plus":{"stripePriceId":"price_...","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30},"pro":{"stripePriceId":"price_...","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100}}'
+STRIPE_B2C_PRICE_TOKEN_CAPS_JSON='{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2},"plus":{"stripePriceId":"price_...","monthlyTokenLimit":10000000,"monthlyDocumentLimit":10,"monthlyCheckpointLimit":30,"monthlyReportGenerationsLimit":10},"pro":{"stripePriceId":"price_...","monthlyTokenLimit":25000000,"monthlyDocumentLimit":30,"monthlyCheckpointLimit":100,"monthlyReportGenerationsLimit":30}}'
 BILLING_PUBLIC_APP_BASE_URL=http://localhost:9002
 GCP_PROJECT_ID=your-project-id
 ```
@@ -211,7 +215,7 @@ Expect (among others):
 
 - `subscriptionStatus`: `active` or `trialing`
 - `priceId`: your Stripe Price id
-- `monthlyTokenLimit`, `monthlyDocumentLimit`, `monthlyCheckpointLimit`: from JSON
+- `monthlyTokenLimit`, `monthlyDocumentLimit`, `monthlyCheckpointLimit`, `monthlyReportGenerationsLimit`: from JSON
 - `stripeCustomerId`, `stripeSubscriptionId`
 
 (Client read-only; writes are webhook-only per `apps/webapp/firestore.rules`.)

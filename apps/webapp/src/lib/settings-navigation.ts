@@ -1,7 +1,7 @@
 /** Where settings should return when the user taps back. */
 export type SettingsReturnTarget = 'home' | 'settings' | 'property';
 
-export type PropertyScreenTab = 'chat' | 'timeline' | 'details' | 'providers';
+export type PropertyScreenTab = 'chat' | 'timeline' | 'details';
 
 export type SettingsReturnContext =
   | { target: 'home' }
@@ -10,20 +10,19 @@ export type SettingsReturnContext =
 
 export type SettingsTabId = 'account' | 'billing' | 'usage' | 'checkpoints' | 'faq' | 'help';
 
-const PROPERTY_TAB_VALUES: PropertyScreenTab[] = ['chat', 'timeline', 'details', 'providers'];
+const PROPERTY_TAB_VALUES: PropertyScreenTab[] = ['chat', 'timeline', 'details'];
 
 const PROPERTY_TAB_TO_SEGMENT: Record<PropertyScreenTab, string> = {
   chat: 'chat',
   timeline: 'checkpoints',
   details: 'details',
-  providers: 'providers',
 };
 
 const PROPERTY_SEGMENT_TO_TAB: Record<string, PropertyScreenTab> = {
   chat: 'chat',
   checkpoints: 'timeline',
   details: 'details',
-  providers: 'providers',
+  providers: 'chat',
 };
 
 function parsePropertyReturnTab(value: string | null | undefined): PropertyScreenTab {
@@ -173,8 +172,6 @@ export function settingsBackAccessibilityLabel(context: SettingsReturnContext | 
       return 'Back to timeline';
     case 'details':
       return 'Back to property details';
-    case 'providers':
-      return 'Back to providers';
     default:
       return 'Back to property';
   }

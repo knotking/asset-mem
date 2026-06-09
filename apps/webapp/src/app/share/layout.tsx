@@ -13,5 +13,6 @@ export default function ShareLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  // Belt-and-suspenders full-width shell (root SidebarProvider is flex-col; see app/layout.tsx).
+  return <div className="flex min-h-svh w-full min-w-0 flex-col">{children}</div>;
 }

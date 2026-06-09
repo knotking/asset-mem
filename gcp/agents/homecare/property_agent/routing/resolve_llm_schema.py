@@ -47,7 +47,7 @@ RESOLVE_SCHEMA: dict[str, Any] = {
         },
         "route": {
             "type": "string",
-            "enum": ["none", "checkpoint", "user_docs"],
+            "enum": ["none", "checkpoint", "user_docs", "report"],
         },
         "expanded_user_query": {
             "type": "string",
@@ -130,7 +130,7 @@ Critical NLU rules:
 - "professional" in advisory/compare questions ≠ service branch unless user asks for new providers.
 - accept_offer: "yes", "ok", "sure" + pending_user_action or assistant question in recent_dialogue.
 - closure vs accept_offer: thanks/that's helpful = closure; bare yes after offer = accept_offer.
-- primary_agent tab hint: docs → user_docs for policy/lease; checkpoint → checkpoint for inspections.
+- primary_agent tab hint: docs → user_docs for policy/lease; checkpoint → checkpoint for inspections; report → report for saved PDF snapshots (requires report_ids).
 - Never copy ui_optional_agents into run_optional_agents.
 - checkpoint_selection_changed=true → prefer new_work / new_analysis, not explain_prior.
 - analysis_digest shows branches_completed — do not re-run completed branches for explain_prior.

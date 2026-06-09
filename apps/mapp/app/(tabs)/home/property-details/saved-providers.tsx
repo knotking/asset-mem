@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { OPEN_MY_PROS_PARAM } from '@homeapp/common/lib/my-pros-navigation';
 
-/** Legacy route — redirects to property details Providers tab. */
+/** Legacy route — opens property chat with the My pros drawer. */
 export default function SavedProvidersRedirect() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -10,7 +11,7 @@ export default function SavedProvidersRedirect() {
     if (!id) return;
     router.replace({
       pathname: '/(tabs)/home/property-details',
-      params: { id, tab: 'providers' },
+      params: { id, tab: 'chat', [OPEN_MY_PROS_PARAM]: '1' },
     });
   }, [id, router]);
 

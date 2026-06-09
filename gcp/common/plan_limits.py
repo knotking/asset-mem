@@ -9,6 +9,8 @@ Limit resolution (per dimension, 0 = unlimited):
   1. Active Stripe ``users/{userId}/billing/summary`` fields
   2. ``users/{userId}/preferences/user`` overrides
   3. ``STRIPE_B2C_PRICE_TOKEN_CAPS_JSON`` → ``free`` plan
+
+Report caps use ``monthlyReportGenerationsLimit`` (legacy ``monthlyReportGenerations`` accepted).
 """
 
 from __future__ import annotations
@@ -20,18 +22,24 @@ from typing import Literal, Optional
 
 from google.cloud import firestore
 
-from common.billing_plans import B2CPricePlan, free_tier_plan
+from common.billing_plans import (
+    B2CPricePlan,
+    free_tier_plan,
+    report_generations_limit_from_mapping,
+)
 
 from common.token import PERIODS_SUBCOLLECTION, TOKEN_USAGE_COLLECTION, current_quota_period_key
 
 logger = logging.getLogger(__name__)
 
-CreationKind = Literal["document", "checkpoint"]
+CreationKind = Literal["document", "checkpoint", "report"]
 
 _PERIOD_DOC_FIELD = "periodDocumentCreations"
 _PERIOD_CP_FIELD = "periodCheckpointCreations"
+_PERIOD_REPORT_FIELD = "periodReportGenerations"
 _LIFETIME_DOC_FIELD = "documentCreations"
 _LIFETIME_CP_FIELD = "checkpointCreations"
+_LIFETIME_REPORT_FIELD = "reportGenerations"
 
 
 class PlanLimitExceeded(Exception):
@@ -60,13 +68,16 @@ class PlanLimitExceeded(Exception):
     def error_code(self) -> str:
         if self.kind == "document":
             return "DOCUMENT_QUOTA_EXCEEDED"
-        return "CHECKPOINT_QUOTA_EXCEEDED"
+        if self.kind == "checkpoint":
+            return "CHECKPOINT_QUOTA_EXCEEDED"
+        return "REPORT_QUOTA_EXCEEDED"
 
 
 @dataclass(frozen=True)
 class MonthlyCreationLimits:
     document_limit: int
     checkpoint_limit: int
+    report_limit: int
 
 
 def _free_tier_plan() -> Optional[B2CPricePlan]:
@@ -76,10 +87,11 @@ def _free_tier_plan() -> Optional[B2CPricePlan]:
 def _free_tier_defaults() -> MonthlyCreationLimits:
     plan = _free_tier_plan()
     if plan is None:
-        return MonthlyCreationLimits(document_limit=0, checkpoint_limit=0)
+        return MonthlyCreationLimits(document_limit=0, checkpoint_limit=0, report_limit=0)
     return MonthlyCreationLimits(
         document_limit=plan.monthly_document_limit,
         checkpoint_limit=plan.monthly_checkpoint_limit,
+        report_limit=plan.monthly_report_generations,
     )
 
 
@@ -158,6 +170,22 @@ def resolve_monthly_document_limit(db: firestore.Client, user_id: str) -> int:
     )
 
 
+def resolve_monthly_report_generations_limit(db: firestore.Client, user_id: str) -> int:
+    """0 means unlimited."""
+    free_limits = _free_tier_defaults()
+    billing = _billing_summary(db, user_id)
+    prefs = _preferences(db, user_id)
+    billing_lim = None
+    if billing is not None:
+        billing_lim = report_generations_limit_from_mapping(billing)
+    pref_lim = report_generations_limit_from_mapping(prefs)
+    return _resolve_limit(
+        billing_lim if billing_lim and billing_lim > 0 else None,
+        pref_lim if pref_lim and pref_lim > 0 else None,
+        free_limits.report_limit,
+    )
+
+
 def resolve_monthly_checkpoint_limit(db: firestore.Client, user_id: str) -> int:
     """0 means unlimited."""
     free_limits = _free_tier_defaults()
@@ -203,10 +231,12 @@ def get_plan_limits_status(
     period_key = current_quota_period_key()
     doc_limit = resolve_monthly_document_limit(db, user_id)
     cp_limit = resolve_monthly_checkpoint_limit(db, user_id)
+    report_limit = resolve_monthly_report_generations_limit(db, user_id)
     snap = db.collection(TOKEN_USAGE_COLLECTION).document(user_id).get()
     data = snap.to_dict() if snap.exists else None
     docs_used = _effective_period_count(data, period_key, _PERIOD_DOC_FIELD)
     cp_used = _effective_period_count(data, period_key, _PERIOD_CP_FIELD)
+    reports_used = _effective_period_count(data, period_key, _PERIOD_REPORT_FIELD)
     return {
         "period": period_key,
         "documents": {
@@ -218,6 +248,11 @@ def get_plan_limits_status(
             "used": cp_used,
             "limit": cp_limit,
             "unlimited": cp_limit <= 0,
+        },
+        "reports": {
+            "used": reports_used,
+            "limit": report_limit,
+            "unlimited": report_limit <= 0,
         },
     }
 
@@ -280,6 +315,26 @@ def check_and_record_monthly_checkpoint_creations(
     _check_and_record_creations(db, user_id, kind="checkpoint", count=count)
 
 
+def check_monthly_report_generations_allowed(
+    db: firestore.Client,
+    user_id: str,
+    count: int = 1,
+) -> None:
+    if not user_id or count <= 0:
+        return
+    _assert_creations_allowed(db, user_id, kind="report", count=count)
+
+
+def check_and_record_monthly_report_generations(
+    db: firestore.Client,
+    user_id: str,
+    count: int = 1,
+) -> None:
+    if not user_id or count <= 0:
+        return
+    _check_and_record_creations(db, user_id, kind="report", count=count)
+
+
 def _assert_creations_allowed(
     db: firestore.Client,
     user_id: str,
@@ -291,9 +346,12 @@ def _assert_creations_allowed(
     if kind == "document":
         limit = resolve_monthly_document_limit(db, user_id)
         period_field = _PERIOD_DOC_FIELD
-    else:
+    elif kind == "checkpoint":
         limit = resolve_monthly_checkpoint_limit(db, user_id)
         period_field = _PERIOD_CP_FIELD
+    else:
+        limit = resolve_monthly_report_generations_limit(db, user_id)
+        period_field = _PERIOD_REPORT_FIELD
 
     if limit <= 0:
         return
@@ -323,10 +381,14 @@ def _check_and_record_creations(
         limit = resolve_monthly_document_limit(db, user_id)
         period_field = _PERIOD_DOC_FIELD
         lifetime_field = _LIFETIME_DOC_FIELD
-    else:
+    elif kind == "checkpoint":
         limit = resolve_monthly_checkpoint_limit(db, user_id)
         period_field = _PERIOD_CP_FIELD
         lifetime_field = _LIFETIME_CP_FIELD
+    else:
+        limit = resolve_monthly_report_generations_limit(db, user_id)
+        period_field = _PERIOD_REPORT_FIELD
+        lifetime_field = _LIFETIME_REPORT_FIELD
 
     if limit <= 0:
         _increment_creation_counters(db, user_id, period_key, period_field, lifetime_field, count)
@@ -386,6 +448,9 @@ def _check_and_record_creations(
                         ),
                         "periodCheckpointCreations": _coerce_int_field(
                             data.get(_PERIOD_CP_FIELD)
+                        ),
+                        "periodReportGenerations": _coerce_int_field(
+                            data.get(_PERIOD_REPORT_FIELD)
                         ),
                         "archivedAt": firestore.SERVER_TIMESTAMP,
                     },

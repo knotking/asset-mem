@@ -12,7 +12,7 @@ from agent_framework.routing.resolved_turn import (
     inject_resolved_turn_into_llm_request as _platform_inject_resolved_turn,
 )
 
-from .constants import RESOLVED_TURN_UI_CONTEXT_NOTE
+from .constants import REPORT_MODE_EXECUTOR_NOTE, RESOLVED_TURN_UI_CONTEXT_NOTE
 from .homecare_resolve_hooks import HOMECARE_RESOLVE_HOOKS
 from .schema import CASUAL_INTENTS, ResolvedTurn, SessionStateLike, resolved_turn_from_state
 
@@ -68,6 +68,10 @@ def is_executor_conversational_turn(resolved: ResolvedTurn) -> bool:
     """
     if resolved.is_casual:
         return True
+    # Report/docs routes need their retrieval tools on substantive turns; follow-up
+    # blocking is handled in conversational_before_tool (context-only guards).
+    if resolved.route in ("report", "user_docs"):
+        return False
     if resolved.run_optional_agents:
         return False
     if resolved.user_goal in ("new_analysis", "replay_deliverable") and not resolved.retrieval_only:
@@ -96,6 +100,11 @@ def apply_resolved_turn_to_state(state: Any, resolved: ResolvedTurn) -> None:
         return
 
     if resolved.route == "user_docs":
+        _clear_checkpoint_passthrough_stash(state)
+        state["checkpoint_optional_agents"] = []
+        return
+
+    if resolved.route == "report":
         _clear_checkpoint_passthrough_stash(state)
         state["checkpoint_optional_agents"] = []
         return
@@ -170,6 +179,8 @@ def _should_inject_session_working_memory(
     resolved: ResolvedTurn,
     state: Mapping[str, Any],
 ) -> bool:
+    if resolved.route == "report":
+        return False
     if resolved.user_goal == "answer_from_context":
         return True
     if resolved.retrieval_only and state.get(SESSION_WORKING_MEMORY_SNAPSHOT_KEY):
@@ -213,6 +224,8 @@ def format_resolved_turn_block_with_memory(
         summary = conversation_summary_from_state(state)
         if summary:
             extra.append(f"[CONVERSATION_SUMMARY]\n{summary}\n[/CONVERSATION_SUMMARY]")
+    if resolved.route == "report":
+        extra.append(REPORT_MODE_EXECUTOR_NOTE)
     return _platform_format_resolved_turn_block(
         resolved,
         extra_blocks=extra or None,

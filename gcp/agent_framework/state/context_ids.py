@@ -9,20 +9,34 @@ from agent_framework.observability.logging_context import (
 )
 
 
+def _normalize_uid(uid: Any) -> Optional[str]:
+    if uid is None:
+        return None
+    text = str(uid).strip()
+    return text or None
+
+
 def resolve_user_id_from_context(ctx: Any) -> Optional[str]:
     state = getattr(ctx, "state", None)
     if state is not None and hasattr(state, "get"):
-        uid = state.get("user_id")
-        if uid is not None and str(uid).strip():
-            return str(uid).strip()
+        uid = _normalize_uid(state.get("user_id"))
+        if uid:
+            return uid
     session = getattr(ctx, "session", None)
     if session is not None:
-        uid = getattr(session, "user_id", None)
-        if uid is not None and str(uid).strip():
-            return str(uid).strip()
-    uid = getattr(ctx, "user_id", None)
-    if uid is not None and str(uid).strip():
-        return str(uid).strip()
+        uid = _normalize_uid(getattr(session, "user_id", None))
+        if uid:
+            return uid
+    inv = getattr(ctx, "_invocation_context", None)
+    if inv is not None:
+        inv_session = getattr(inv, "session", None)
+        if inv_session is not None:
+            uid = _normalize_uid(getattr(inv_session, "user_id", None))
+            if uid:
+                return uid
+    uid = _normalize_uid(getattr(ctx, "user_id", None))
+    if uid:
+        return uid
     return None
 
 

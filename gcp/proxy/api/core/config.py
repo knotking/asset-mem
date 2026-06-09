@@ -48,6 +48,8 @@ class Settings:
     STRIPE_B2C_PRICE_TOKEN_CAPS_JSON = plans_json_from_env()
     # Public web origin for Checkout / Portal return URLs, e.g. https://app.example.com (no trailing slash).
     BILLING_PUBLIC_APP_BASE_URL = os.environ.get("BILLING_PUBLIC_APP_BASE_URL", "").strip().rstrip("/")
+    # Opt-in RAG indexing for report markdown companions in Docs chat (default off).
+    REPORT_DOCS_CHAT_RAG_ENABLED = _env_bool("REPORT_DOCS_CHAT_RAG_ENABLED", default=False)
 
     def rate_limit_rule(self, bucket: str):
         from core.rate_limit import RateLimitRule

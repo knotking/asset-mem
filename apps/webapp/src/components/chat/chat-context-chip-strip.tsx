@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { X, FileText, Clock, Loader2 } from "lucide-react";
-import type { Checkpoint, Document, PendingContextItem } from "@/lib/types";
+import type { Checkpoint, Document, PendingContextItem, PropertyReport } from "@/lib/types";
+import { reportContextChipLabel } from "@/lib/chat-context-reports";
 import {
   getCheckpointThumbnail,
   isDocumentImage,
@@ -21,9 +22,11 @@ type Props = {
   pendingContext: PendingContextItem[];
   readySelectedCheckpoints: Checkpoint[];
   readySelectedDocuments: Document[];
+  readySelectedReports?: PropertyReport[];
   queuedSend: { text: string } | null;
   onToggleCheckpoint: (cp: Checkpoint) => void;
   onToggleDocument: (doc: Document) => void;
+  onToggleReport?: (report: PropertyReport) => void;
   onRemovePending: (id: string) => void;
   onClearReady: () => void;
   onCancelQueuedSend?: () => void;
@@ -38,15 +41,18 @@ function pendingLabel(item: PendingContextItem): string {
 
 type PreviewChip =
   | { kind: "checkpoint"; item: Checkpoint }
-  | { kind: "document"; item: Document };
+  | { kind: "document"; item: Document }
+  | { kind: "report"; item: PropertyReport };
 
 export function ChatContextChipStrip({
   pendingContext,
   readySelectedCheckpoints,
   readySelectedDocuments,
+  readySelectedReports = [],
   queuedSend,
   onToggleCheckpoint,
   onToggleDocument,
+  onToggleReport,
   onRemovePending,
   onClearReady,
   onCancelQueuedSend,
@@ -57,6 +63,9 @@ export function ChatContextChipStrip({
   }
   for (const doc of readySelectedDocuments) {
     readyPreview.push({ kind: "document", item: doc });
+  }
+  for (const report of readySelectedReports) {
+    readyPreview.push({ kind: "report", item: report });
   }
 
   const visibleReady = readyPreview.slice(0, ADD_CONTEXT_VISIBLE_CHIP_COUNT);
@@ -150,29 +159,48 @@ export function ChatContextChipStrip({
               </button>
             );
           }
-          const doc = chip.item;
+          if (chip.kind === "document") {
+            const doc = chip.item;
+            return (
+              <button
+                key={`doc-${doc.id}`}
+                type="button"
+                onClick={() => onToggleDocument(doc)}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2"
+              >
+                {isDocumentImage(doc) && doc.url ? (
+                  <Image
+                    src={doc.url}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-md object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                    <FileText className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                )}
+                <span className="max-w-24 truncate text-xs text-foreground">{doc.name}</span>
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+            );
+          }
+          const report = chip.item;
           return (
             <button
-              key={`doc-${doc.id}`}
+              key={`report-${report.id}`}
               type="button"
-              onClick={() => onToggleDocument(doc)}
+              onClick={() => onToggleReport?.(report)}
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2"
             >
-              {isDocumentImage(doc) && doc.url ? (
-                <Image
-                  src={doc.url}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 rounded-md object-cover"
-                  unoptimized
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                  <FileText className="h-3.5 w-3.5 text-primary" />
-                </div>
-              )}
-              <span className="max-w-24 truncate text-xs text-foreground">{doc.name}</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="max-w-28 truncate text-xs text-foreground">
+                {reportContextChipLabel(report)}
+              </span>
               <X className="h-3 w-3 text-muted-foreground" />
             </button>
           );

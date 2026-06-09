@@ -1,4 +1,5 @@
 import { PropertyProvider } from '@homeapp/common/contexts/property-context';
+import { ReportsProvider } from '@homeapp/common/contexts/reports-context';
 import { SavedServiceProvidersProvider } from '@homeapp/common/contexts/saved-service-providers-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
@@ -12,9 +13,11 @@ export default function PropertyDetailsLayout() {
   const propertyId = normalizeRouteParam(id);
   return (
     <PropertyProvider propertyId={propertyId}>
-      <SavedServiceProvidersProvider propertyId={propertyId}>
-        <Stack />
-      </SavedServiceProvidersProvider>
+      <ReportsProvider>
+        <SavedServiceProvidersProvider propertyId={propertyId}>
+          <Stack />
+        </SavedServiceProvidersProvider>
+      </ReportsProvider>
     </PropertyProvider>
   );
 }

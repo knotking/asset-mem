@@ -128,6 +128,8 @@ export interface StreamAgentResponseParams {
   propertyAddress?: string;
   propertyId?: string;
   primaryAgent?: PrimaryAgent;
+  reportIds?: string[];
+  reportRevisions?: Record<string, number>;
   checkpointOptionalAgents?: string[];
   searchLocation?: SearchLocationInput;
   /** @deprecated Use searchLocation */
@@ -153,6 +155,8 @@ export async function streamAgentResponse({
   propertyAddress,
   propertyId,
   primaryAgent,
+  reportIds = [],
+  reportRevisions,
   checkpointOptionalAgents = [],
   searchLocation,
   locationData,
@@ -195,7 +199,13 @@ export async function streamAgentResponse({
       }
     }
 
-    if (primaryAgent === 'docs' || primaryAgent === 'checkpoint') {
+    if (primaryAgent === 'report') {
+      if (reportIds.length > 0) requestBody.report_ids = reportIds;
+      if (reportRevisions && Object.keys(reportRevisions).length > 0) {
+        requestBody.report_revisions = reportRevisions;
+      }
+      requestBody.primary_agent = 'report';
+    } else if (primaryAgent === 'docs' || primaryAgent === 'checkpoint') {
       requestBody.primary_agent = primaryAgent;
     }
 

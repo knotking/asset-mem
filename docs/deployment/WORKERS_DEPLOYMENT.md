@@ -8,6 +8,7 @@ Worker functions handle background processing tasks triggered by Pub/Sub events:
 - **User Document Upload**: Processes uploaded documents and adds to RAG corpus
 - **Checkpoint Analysis**: Analyzes property checkpoints using AI
 - **Checkpoint Metrics**: Processes and stores checkpoint metrics
+- **Report Generation**: Builds snapshot property reports and renders PDFs
 
 **Deployment Platform**: Google Cloud Functions (2nd Gen)  
 **Technology**: Python 3.13, Pub/Sub triggers  
@@ -87,6 +88,22 @@ Worker functions handle background processing tasks triggered by Pub/Sub events:
 3. Store in Firestore
 4. Update property metrics
 
+### 4. Report Generation Function
+
+**Purpose**: Generate snapshot property reports (HTML → PDF) asynchronously
+
+**Trigger**: `report-generation-topic` Pub/Sub topic (env-suffixed, e.g. `report-generation-topic-staging`)  
+**Location**: `gcp/proxy/workers/function/report_generation/`  
+**Entry Point**: `pubsub_to_report_generation`
+
+**Workflow**:
+1. Receive report job via Pub/Sub (from proxy `POST /reports/generate`)
+2. Load checkpoints and analysis for the snapshot date range
+3. Render HTML template and convert to PDF (xhtml2pdf in Phase 1)
+4. Upload PDF to GCS and update Firestore `properties/{id}/reports/{reportId}` to `ready`
+
+**GitHub variable**: `REPORT_GENERATION_TOPIC` — must match on both the worker deploy and the proxy (`deploy-homecare-agent-proxy.yaml`).
+
 ## Prerequisites
 
 ### Required Tools
@@ -134,7 +151,12 @@ gcloud pubsub subscriptions create checkpoint-analysis-subscription \
   --topic=checkpoint-analysis-topic
 gcloud pubsub subscriptions create checkpoint-metrics-subscription \
   --topic=checkpoint-metrics-topic
+
+# Report generation topic
+gcloud pubsub topics create report-generation-topic-staging
 ```
+
+Set `REPORT_GENERATION_TOPIC=report-generation-topic-staging` on the GitHub environment before deploying the proxy and worker.
 
 #### Service Account Configuration
 ```bash
@@ -231,12 +253,27 @@ GCP_LOCATION=us-central1
 4. Select environment: `staging` or `prod`
 5. Click "Run workflow"
 
-**Workflow Features**:
+#### Report Generation Function
+
+**Workflow File**: `.github/workflows/deploy-report-generation.yaml`
+
+**Trigger**:
+- Push to `main` in `gcp/proxy/workers/function/report_generation/`
+- Manual workflow_dispatch
+
+**Deploy**:
+1. Ensure `REPORT_GENERATION_TOPIC` is set on the target GitHub environment (see `.github/workflows/README-report-generation.md`)
+2. Go to GitHub → Actions → "Deploy Report Generation Function"
+3. Run workflow for `staging` or `prod`
+4. Redeploy the proxy so it publishes to the same topic
+
+**Workflow Features** (all Pub/Sub worker deploy workflows):
 - Validates environment variables
-- Syncs shared modules (observability)
-- Deploys Cloud Function
+- Syncs shared modules (`gcp/common` where needed)
+- Deploys Cloud Function via `deploy-cloud-functions@v3`
 - Configures Pub/Sub trigger
 - Sets resource limits
+- Post-deploy: `run.googleapis.com/invoker-iam-disabled=true` on the underlying Cloud Run service so Eventarc deliveries are not rejected with HTTP 403 (see `.github/workflows/README-report-generation.md` troubleshooting)
 
 ### Method 2: Manual gcloud Commands
 

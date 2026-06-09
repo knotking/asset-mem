@@ -9,6 +9,7 @@ Provides async methods for:
 
 import asyncio
 import logging
+import os
 from typing import Optional, Dict, Any, Union, BinaryIO, List
 from pathlib import Path
 from io import BytesIO
@@ -26,6 +27,60 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_gcs_signing_service_account() -> Optional[str]:
+    for key in (
+        "GCS_SIGNING_SERVICE_ACCOUNT",
+        "GCP_SERVICE_ACCOUNT_EMAIL",
+    ):
+        value = (os.environ.get(key) or "").strip()
+        if value:
+            return value
+    return None
+
+
+def _blob_signed_url_kwargs(config: SignedUrlConfig) -> Dict[str, Any]:
+    """
+    Build kwargs for ``Blob.generate_signed_url``.
+
+    User ADC (``gcloud auth application-default login``) has no private key;
+    use IAM signBlob via ``service_account_email`` + ``access_token`` instead.
+    """
+    import google.auth
+    from google.auth.transport import requests as auth_requests
+
+    credentials, _ = google.auth.default()
+    kwargs: Dict[str, Any] = {
+        "expiration": config.expiration,
+        "method": config.method,
+        "content_type": config.content_type,
+        "response_type": config.response_type,
+        "response_disposition": config.response_disposition,
+        "version": config.version,
+    }
+
+    if getattr(credentials, "signer", None) is not None:
+        return kwargs
+
+    service_account_email = (
+        _resolve_gcs_signing_service_account()
+        or getattr(credentials, "service_account_email", None)
+    )
+    if not service_account_email:
+        raise StorageError(
+            "Signed URLs require a service account with signBlob. "
+            "Set GCS_SIGNING_SERVICE_ACCOUNT or GCP_SERVICE_ACCOUNT_EMAIL, "
+            "or use ADC impersonation for the runtime service account."
+        )
+
+    auth_request = auth_requests.Request()
+    if not credentials.valid:
+        credentials.refresh(auth_request)
+
+    kwargs["service_account_email"] = service_account_email
+    kwargs["access_token"] = credentials.token
+    return kwargs
 
 
 class StorageError(Exception):
@@ -850,18 +905,11 @@ class StorageClient:
             )
             
             config = signed_url_config or SignedUrlConfig()
-            
-            # Generate signed URL
+            sign_kwargs = _blob_signed_url_kwargs(config)
+
             url = await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: blob.generate_signed_url(
-                    expiration=config.expiration,
-                    method=config.method,
-                    content_type=config.content_type,
-                    response_type=config.response_type,
-                    response_disposition=config.response_disposition,
-                    version=config.version,
-                )
+                lambda: blob.generate_signed_url(**sign_kwargs),
             )
             
             logger.info(f"Generated signed URL for: {bucket_name}/{blob_name}")

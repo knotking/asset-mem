@@ -2,7 +2,7 @@ import type { MessageContextRefs } from "../types";
 import { ADD_CONTEXT_VISIBLE_CHIP_COUNT } from "./chat-context-limits";
 
 export type MessageContextRefItem = {
-  kind: "checkpoint" | "document";
+  kind: "checkpoint" | "document" | "report";
   id: string;
   name: string;
 };
@@ -23,6 +23,16 @@ export function listMessageContextRefItems(refs: MessageContextRefs): MessageCon
       name: doc.name?.trim() || "Document",
     });
   }
+  for (const report of refs.reports ?? []) {
+    const revision = report.revision ?? 1;
+    items.push({
+      kind: "report",
+      id: report.id,
+      name: report.title?.trim()
+        ? `${report.title.trim()} · v${revision}`
+        : `Report · v${revision}`,
+    });
+  }
   return items;
 }
 
@@ -41,8 +51,11 @@ export function splitMessageContextRefItems(
 export function contextRefsFingerprint(refs: MessageContextRefs): string | null {
   const checkpointIds = (refs.checkpoints ?? []).map((cp) => cp.id).sort();
   const documentIds = (refs.documents ?? []).map((doc) => doc.id).sort();
-  if (checkpointIds.length === 0 && documentIds.length === 0) return null;
-  return `c:${checkpointIds.join(",")}|d:${documentIds.join(",")}`;
+  const reportIds = (refs.reports ?? []).map((r) => r.id).sort();
+  if (checkpointIds.length === 0 && documentIds.length === 0 && reportIds.length === 0) {
+    return null;
+  }
+  return `c:${checkpointIds.join(",")}|d:${documentIds.join(",")}|r:${reportIds.join(",")}`;
 }
 
 /** One-line label for collapsed context on a sent message. */

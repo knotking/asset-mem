@@ -160,6 +160,19 @@ module.exports = {
       documentAnalysisUrl: buildProxyUrl(proxyBaseUrl, 'extract-doc-info'),
       checkpointAnalysisUrl: buildProxyUrl(proxyBaseUrl, 'analyze-checkpoint'),
       checkpointComparisonUrl: buildProxyUrl(proxyBaseUrl, 'compare-checkpoints'),
+      reportsPreviewUrl: buildProxyUrl(proxyBaseUrl, 'reports/preview'),
+      reportsPreviewHtmlUrl: buildProxyUrl(proxyBaseUrl, 'reports/preview-html'),
+      reportsStatusUrl: buildProxyUrl(proxyBaseUrl, 'reports/status'),
+      reportsGenerateUrl: buildProxyUrl(proxyBaseUrl, 'reports/generate'),
+      reportsSignedUrl: buildProxyUrl(proxyBaseUrl, 'reports/signed-url'),
+      reportsMetadataUrl: buildProxyUrl(proxyBaseUrl, 'reports/metadata'),
+      reportsShareUrl: buildProxyUrl(proxyBaseUrl, 'reports/share'),
+      reportsRagIndexUrl: buildProxyUrl(proxyBaseUrl, 'reports/rag-index'),
+      /** Feature flag: show “Include in Docs chat” on reports (EXPO_PUBLIC_REPORT_DOCS_CHAT_RAG). */
+      reportDocsChatRagEnabled:
+        process.env.EXPO_PUBLIC_REPORT_DOCS_CHAT_RAG === 'true' ||
+        process.env.EXPO_PUBLIC_REPORT_DOCS_CHAT_RAG === '1',
+      reportsPublicSignedUrl: buildProxyUrl(proxyBaseUrl, 'reports/public-signed-url'),
       tokenQuotaStatusUrl: buildProxyUrl(proxyBaseUrl, 'token-quota-status'),
       billingB2cCheckoutUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/checkout-session'),
       billingB2cPortalUrl: buildProxyUrl(proxyBaseUrl, 'billing/b2c/portal-session'),

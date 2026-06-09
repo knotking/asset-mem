@@ -3,12 +3,7 @@ import type {
   CheckpointOptionalAgent,
   PrimaryAgent,
 } from "@/lib/types";
-
-function primaryAgentLabel(agent: PrimaryAgent): string {
-  if (agent === "analysis") return "Analysis";
-  if (agent === "checkpoint") return "Checkpoint";
-  return "Docs";
-}
+import { getPrimaryAgentLabel } from "@/lib/primary-agent-display";
 
 export function buildCollapsedComposerSummary({
   primaryAgent,
@@ -25,7 +20,7 @@ export function buildCollapsedComposerSummary({
   pendingContextCount: number;
   hasQueuedSend: boolean;
 }): string {
-  const parts = [primaryAgentLabel(primaryAgent)];
+  const parts = [getPrimaryAgentLabel(primaryAgent)];
 
   const optionalCount =
     primaryAgent === "analysis"

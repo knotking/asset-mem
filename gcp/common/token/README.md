@@ -24,7 +24,7 @@ All paths are under the default database. **Writes** use the Admin / server SDK 
 ```text
 users/{userId}/billing/summary              # B2C Stripe mirror (proxy webhooks only; client read)
   └── subscriptionStatus, priceId, monthlyTokenLimit, monthlyDocumentLimit,
-      monthlyCheckpointLimit, stripeCustomerId, …
+      monthlyCheckpointLimit, monthlyReportGenerationsLimit, stripeCustomerId, …
 
 llm_token_usage/{userId}                    # one document per user
   ├── (fields: lifetime totals, current month, metadata)

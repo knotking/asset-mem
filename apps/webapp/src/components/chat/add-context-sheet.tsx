@@ -13,8 +13,19 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import type { Checkpoint, Document, PendingContextItem, PrimaryAgent } from "@/lib/types";
+import type {
+  Checkpoint,
+  Document,
+  PendingContextItem,
+  PrimaryAgent,
+  PropertyReport,
+} from "@/lib/types";
 import type { ToggleSelectionResult } from "@/contexts/chat-context-context";
+import {
+  reportSelectionKey,
+  toRevisionSelectionReport,
+} from "@/lib/report-revisions";
+import { buildCurrentRevisionReportPickerRows } from "@/lib/report-picker-rows";
 import {
   getCheckpointThumbnail,
   isCheckpointReady,
@@ -31,7 +42,8 @@ import {
   ADD_CONTEXT_TAB_TIMELINE,
   ADD_CONTEXT_MODE_HINT_CHECKPOINT,
   ADD_CONTEXT_MODE_HINT_DOCS,
-  ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE,
+  ADD_CONTEXT_MODE_HINT_REPORT,
+  CONTEXT_SELECTION_REPORT_LIMIT,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_TIMELINE,
   ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS,
   PENDING_CHECKPOINT_LABEL,
@@ -50,9 +62,11 @@ import {
 import {
   filterCheckpointsBySearch,
   filterDocumentsBySearch,
+  filterReportsBySearch,
   getRecentReadyCheckpoints,
   getRecentReadyDocuments,
 } from "@/lib/chat-context-picker";
+import { MAX_SELECTED_REPORTS } from "@/lib/chat-context-reports";
 import {
   Sheet,
   SheetContent,
@@ -86,6 +100,10 @@ type Props = {
   hasMoreCheckpoints: boolean;
   isLoadingMoreCheckpoints: boolean;
   onLoadMoreCheckpoints: () => void;
+  reports?: PropertyReport[];
+  selectedReportIds?: Set<string>;
+  selectedReportCount?: number;
+  onToggleReport?: (report: PropertyReport) => ToggleSelectionResult;
 };
 
 function ContextListRow({
@@ -228,7 +246,13 @@ export function AddContextSheet({
   hasMoreCheckpoints,
   isLoadingMoreCheckpoints,
   onLoadMoreCheckpoints,
+  reports = [],
+  selectedReportIds = new Set<string>(),
+  selectedReportCount = 0,
+  onToggleReport,
 }: Props) {
+  const isReportMode = primaryAgent === "report";
+  const isDocsMode = primaryAgent === "docs";
   const defaultTab: ContextTab = primaryAgent === "checkpoint" ? "timeline" : "documents";
   const [activeTab, setActiveTab] = React.useState<ContextTab>(defaultTab);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -292,6 +316,14 @@ export function AddContextSheet({
   const isCheckpointMode = primaryAgent === "checkpoint";
   const trimmedSearch = searchQuery.trim();
   const hasSearch = trimmedSearch.length > 0;
+
+  const reportPickerRows = React.useMemo(
+    () =>
+      isReportMode
+        ? buildCurrentRevisionReportPickerRows(filterReportsBySearch(reports, trimmedSearch))
+        : [],
+    [isReportMode, reports, trimmedSearch]
+  );
 
   const recentCheckpoints = React.useMemo(
     () => (hasSearch ? [] : getRecentReadyCheckpoints(checkpoints)),
@@ -360,9 +392,21 @@ export function AddContextSheet({
     if (nearBottom) onLoadMoreCheckpoints();
   };
 
-  const modeHint = isCheckpointMode
-    ? ADD_CONTEXT_MODE_HINT_CHECKPOINT
-    : ADD_CONTEXT_MODE_HINT_DOCS;
+  const handleToggleReport = (report: PropertyReport) => {
+    if (!onToggleReport) return;
+    const result = onToggleReport(report);
+    setLimitHint(
+      result === "limit_reached"
+        ? CONTEXT_SELECTION_REPORT_LIMIT(MAX_SELECTED_REPORTS)
+        : null
+    );
+  };
+
+  const modeHint = isReportMode
+    ? ADD_CONTEXT_MODE_HINT_REPORT
+    : isCheckpointMode
+      ? ADD_CONTEXT_MODE_HINT_CHECKPOINT
+      : ADD_CONTEXT_MODE_HINT_DOCS;
 
   const searchPlaceholder =
     activeTab === "timeline"
@@ -370,13 +414,6 @@ export function AddContextSheet({
       : ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS;
 
   const renderTimelineList = () => {
-    if (!isCheckpointMode) {
-      return (
-        <p className="mt-4 text-sm leading-5 text-muted-foreground">
-          {ADD_CONTEXT_TIMELINE_DOCS_MODE_NOTE}
-        </p>
-      );
-    }
     return (
       <>
         {pendingCheckpoints.length > 0 ? (
@@ -523,6 +560,148 @@ export function AddContextSheet({
       ) : null}
     </>
   );
+
+  if (isDocsMode) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className={cn(
+            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
+            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
+            "sm:max-w-xl md:max-w-2xl",
+            "border-x shadow-2xl"
+          )}
+        >
+          <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
+          </SheetHeader>
+          <div className="shrink-0 space-y-2 border-b px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {selectedDocumentCount} selected ·{" "}
+                {CONTEXT_SELECTION_DOCUMENT_LIMIT(MAX_SELECTED_DOCUMENTS)}
+              </p>
+              {selectedDocumentCount > 0 && (
+                <button
+                  type="button"
+                  className="text-xs text-primary"
+                  onClick={onClearSelection}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <p className="text-xs leading-4 text-muted-foreground">{modeHint}</p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={captureBusy}
+              className={cn(
+                "h-auto w-full gap-2 py-3",
+                launchingAction === "upload" && "border-primary bg-primary/10"
+              )}
+              onClick={() => closeAfterAction("upload", onUploadDocument)}
+            >
+              {launchingAction === "upload" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Upload className="h-5 w-5" />
+              )}
+              Upload document
+            </Button>
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={ADD_CONTEXT_SEARCH_PLACEHOLDER_DOCUMENTS}
+              className="h-9"
+            />
+            {limitHint ? (
+              <p className="text-xs text-destructive">{limitHint}</p>
+            ) : null}
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+            {hasPendingContext ? (
+              <div className="mb-2 mt-4 rounded-lg border border-dashed border-border bg-muted/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Processing {pendingContext.length} item
+                  {pendingContext.length === 1 ? "" : "s"}
+                  {pendingSummaryParts.length > 0
+                    ? ` (${pendingSummaryParts.join(", ")})`
+                    : ""}
+                  . They will auto-select when ready.
+                </p>
+              </div>
+            ) : null}
+            {renderDocumentsList()}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  if (isReportMode) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className={cn(
+            "flex h-[85vh] max-h-[85vh] flex-col rounded-t-2xl p-0",
+            "left-1/2 right-auto w-full max-w-lg -translate-x-1/2",
+            "sm:max-w-xl md:max-w-2xl",
+            "border-x shadow-2xl"
+          )}
+        >
+          <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <SheetTitle>{ADD_CONTEXT_TITLE}</SheetTitle>
+          </SheetHeader>
+          <div className="shrink-0 space-y-2 border-b px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              {selectedReportCount} selected ·{" "}
+              {CONTEXT_SELECTION_REPORT_LIMIT(MAX_SELECTED_REPORTS)}
+            </p>
+            <p className="text-xs leading-4 text-muted-foreground">{modeHint}</p>
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search reports by title…"
+              className="h-9"
+            />
+            {limitHint ? (
+              <p className="text-xs text-destructive">{limitHint}</p>
+            ) : null}
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+            {reportPickerRows.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No ready reports yet. Generate one from the Reports tab.
+              </p>
+            ) : (
+              reportPickerRows.map((item) => {
+                const report = toRevisionSelectionReport(
+                  item.parent,
+                  item.revision,
+                  item.isArchived
+                );
+                return (
+                  <ContextListRow
+                    key={reportSelectionKey(item.reportId, item.revision)}
+                    fallbackIcon={FileText}
+                    title={report.title}
+                    subtitle={`v${item.revision}${item.isArchived ? " · archived" : ""} · ${item.mode}`}
+                    selected={selectedReportIds.has(
+                      reportSelectionKey(item.reportId, item.revision)
+                    )}
+                    onPress={() => handleToggleReport(report)}
+                  />
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

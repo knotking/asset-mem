@@ -20,7 +20,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles, Loader2 } from "lucide-react";
+import { Home, ShieldCheck, ReceiptText, Search, FileKey, FileText, File as FileIcon, Pencil, MapPin, Upload, Download, Trash2, Building, Calendar, Check, X as CancelIcon, Sparkles, Loader2, Heart, ChevronRight } from "lucide-react";
+import { useMyProsSheet } from '@/contexts/my-pros-sheet-context';
+import { useSavedServiceProviders } from '@/contexts/saved-service-providers-context';
 import {
   documentDeleteConfirm,
   documentDeleteFailed,
@@ -158,6 +160,8 @@ function DocumentListItem({
 
 function PropertyDetailsContent() {
     const { property, documents, isLoading: isPropertyLoading } = useProperty();
+    const { savedProviders } = useSavedServiceProviders();
+    const { openMyPros } = useMyProsSheet();
     const { user, authPending } = useRequireAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -421,6 +425,34 @@ function PropertyDetailsContent() {
                          )}
                     </div>
                 </CardContent>
+            </Card>
+
+            <Card
+              className="transition-shadow hover:shadow-lg cursor-pointer"
+              onClick={openMyPros}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  openMyPros();
+                }
+              }}
+            >
+              <CardContent className="flex items-center gap-4 p-6">
+                <div className="rounded-full bg-muted p-3">
+                  <Heart className="h-5 w-5 text-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-foreground">My pros</p>
+                  <p className="text-sm text-muted-foreground">
+                    {savedProviders.length > 0
+                      ? `${savedProviders.length} saved service pro${savedProviders.length === 1 ? '' : 's'}`
+                      : 'Save local pros from AI chat recommendations'}
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+              </CardContent>
             </Card>
 
             <Card className="transition-shadow hover:shadow-lg">

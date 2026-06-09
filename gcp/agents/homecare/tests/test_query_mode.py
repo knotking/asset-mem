@@ -533,6 +533,31 @@ def test_should_not_block_user_docs_on_user_docs_route() -> None:
     )
 
 
+def test_should_not_block_report_retrieval_on_report_route_with_session_cache() -> None:
+    from property_agent.reports.retrieval import (
+        REPORT_RETRIEVAL_CACHE_FP_KEY,
+        REPORT_RETRIEVAL_CACHE_TEXT_KEY,
+        report_retrieval_fingerprint,
+    )
+
+    state = {
+        "report_ids": ["report-1"],
+        REPORT_RETRIEVAL_CACHE_FP_KEY: report_retrieval_fingerprint(["report-1"]),
+        REPORT_RETRIEVAL_CACHE_TEXT_KEY: "cached report body",
+        SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {
+            "checkpoint_summary": {"locations": ["Garage"], "checkpointsAnalyzed": 1},
+        },
+    }
+    assert not should_block_checkpoint_pipeline_for_context_turn(
+        user_query="summarize the report",
+        state=state,
+        user_goal="answer_from_context",
+        query_mode="interpret_session",
+        resolved_route="report",
+        tool_name="report_retrieval",
+    )
+
+
 def test_format_session_memory_includes_provider_lines() -> None:
     state = {
         SESSION_WORKING_MEMORY_SNAPSHOT_KEY: {

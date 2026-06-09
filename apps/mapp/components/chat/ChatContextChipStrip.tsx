@@ -2,8 +2,9 @@ import * as React from 'react';
 import { View, Pressable, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
-import { X, FileText, Clock, Plus } from 'lucide-react-native';
-import type { Checkpoint, Document, PendingContextItem } from '@homeapp/common/types';
+import { X, FileText, Clock, Plus, ClipboardList } from 'lucide-react-native';
+import type { Checkpoint, Document, PendingContextItem, PropertyReport } from '@homeapp/common/types';
+import { reportContextChipLabel } from '@homeapp/common/lib/chat-context-reports';
 import {
   getCheckpointThumbnail,
   isDocumentImage,
@@ -25,10 +26,12 @@ type Props = {
   pendingContext: PendingContextItem[];
   readySelectedCheckpoints: Checkpoint[];
   readySelectedDocuments: Document[];
+  readySelectedReports?: PropertyReport[];
   queuedSend: { text: string } | null;
   onOpenAddContext: () => void;
   onToggleCheckpoint: (cp: Checkpoint) => void;
   onToggleDocument: (doc: Document) => void;
+  onToggleReport?: (report: PropertyReport) => void;
   onRemovePending: (id: string) => void;
   onClearReady: () => void;
   onCancelQueuedSend?: () => void;
@@ -43,16 +46,19 @@ function pendingLabel(item: PendingContextItem): string {
 
 type PreviewChip =
   | { kind: 'checkpoint'; item: Checkpoint }
-  | { kind: 'document'; item: Document };
+  | { kind: 'document'; item: Document }
+  | { kind: 'report'; item: PropertyReport };
 
 export function ChatContextChipStrip({
   pendingContext,
   readySelectedCheckpoints,
   readySelectedDocuments,
+  readySelectedReports = [],
   queuedSend,
   onOpenAddContext,
   onToggleCheckpoint,
   onToggleDocument,
+  onToggleReport,
   onRemovePending,
   onClearReady,
   onCancelQueuedSend,
@@ -65,8 +71,11 @@ export function ChatContextChipStrip({
     for (const doc of readySelectedDocuments) {
       chips.push({ kind: 'document', item: doc });
     }
+    for (const report of readySelectedReports) {
+      chips.push({ kind: 'report', item: report });
+    }
     return chips;
-  }, [readySelectedCheckpoints, readySelectedDocuments]);
+  }, [readySelectedCheckpoints, readySelectedDocuments, readySelectedReports]);
 
   const visibleReady = readyPreview.slice(0, ADD_CONTEXT_VISIBLE_CHIP_COUNT);
   const hiddenReadyCount = Math.max(0, readyPreview.length - visibleReady.length);
@@ -144,21 +153,38 @@ export function ChatContextChipStrip({
                     </Pressable>
                   );
                 }
-                const doc = chip.item;
+                if (chip.kind === 'document') {
+                  const doc = chip.item;
+                  return (
+                    <Pressable
+                      key={`doc-${doc.id}`}
+                      onPress={() => onToggleDocument(doc)}
+                      className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
+                      {isDocumentImage(doc) && doc.url ? (
+                        <Image source={{ uri: doc.url }} className="h-8 w-8 rounded-md" />
+                      ) : (
+                        <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                          <Icon as={FileText} size={14} className="text-primary" />
+                        </View>
+                      )}
+                      <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
+                        {doc.name}
+                      </Text>
+                      <Icon as={X} size={12} className="text-muted-foreground" />
+                    </Pressable>
+                  );
+                }
+                const report = chip.item;
                 return (
                   <Pressable
-                    key={`doc-${doc.id}`}
-                    onPress={() => onToggleDocument(doc)}
+                    key={`report-${report.id}`}
+                    onPress={() => onToggleReport?.(report)}
                     className="flex-row items-center gap-1.5 rounded-lg border border-primary bg-primary/10 py-1 pl-1 pr-2">
-                    {isDocumentImage(doc) && doc.url ? (
-                      <Image source={{ uri: doc.url }} className="h-8 w-8 rounded-md" />
-                    ) : (
-                      <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
-                        <Icon as={FileText} size={14} className="text-primary" />
-                      </View>
-                    )}
-                    <Text className="max-w-24 text-xs text-foreground" numberOfLines={1}>
-                      {doc.name}
+                    <View className="h-8 w-8 items-center justify-center rounded-md bg-secondary">
+                      <Icon as={ClipboardList} size={14} className="text-primary" />
+                    </View>
+                    <Text className="max-w-28 text-xs text-foreground" numberOfLines={1}>
+                      {reportContextChipLabel(report)}
                     </Text>
                     <Icon as={X} size={12} className="text-muted-foreground" />
                   </Pressable>
@@ -185,7 +211,7 @@ export function ChatContextChipStrip({
             accessibilityLabel="Add checkpoint or document context"
             className="h-full flex-row items-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-3">
             <Icon as={Plus} size={16} className="text-muted-foreground" />
-            <Text className="text-xs text-muted-foreground">Add checkpoint or document</Text>
+            <Text className="text-xs text-muted-foreground">Add context</Text>
           </Pressable>
         )}
       </View>

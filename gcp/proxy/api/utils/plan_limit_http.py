@@ -8,7 +8,11 @@ from common.plan_limits import PlanLimitExceeded
 
 
 def plan_limit_exceeded_response(exc: PlanLimitExceeded) -> JSONResponse:
-    kind_label = "document" if exc.kind == "document" else "checkpoint"
+    kind_label = {
+        "document": "document",
+        "checkpoint": "checkpoint",
+        "report": "report",
+    }.get(exc.kind, exc.kind)
     return JSONResponse(
         status_code=429,
         content={

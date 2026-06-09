@@ -38,6 +38,7 @@ _BLOCKED_ROUTING_TOOLS_ON_CASUAL = frozenset(
     {
         "run_checkpoint_pipeline",
         "user_docs_retrieval",
+        "report_retrieval",
     }
 )
 
@@ -86,6 +87,29 @@ def fail_closed_before_model_on_resolve_error(
     )
 
 
+def _invocation_id_from_tool_context(tool_context: ToolContext) -> str:
+    inv = getattr(
+        getattr(tool_context, "_invocation_context", None),
+        "invocation_id",
+        None,
+    )
+    return str(inv).strip() if inv is not None else ""
+
+
+def _block_repeat_report_retrieval(tool_context: ToolContext) -> Optional[dict]:
+    from property_agent.reports.retrieval import get_report_retrieval_last_result
+
+    inv_id = _invocation_id_from_tool_context(tool_context)
+    prior = get_report_retrieval_last_result(tool_context.state, invocation_id=inv_id)
+    if not prior:
+        return None
+    logger.info(
+        "before_tool: blocked repeat report_retrieval invocation_id=%s",
+        inv_id or "-",
+    )
+    return {"result": prior}
+
+
 def _conversational_before_tool_impl(
     tool: BaseTool,
     args: Dict[str, Any],
@@ -94,6 +118,11 @@ def _conversational_before_tool_impl(
 ) -> Optional[dict]:
     _ = kwargs
     tool_name = getattr(tool, "name", None) or type(tool).__name__
+
+    if tool_name == "report_retrieval":
+        repeat = _block_repeat_report_retrieval(tool_context)
+        if repeat is not None:
+            return repeat
 
     resolved = resolved_turn_from_state(tool_context.state)
     user_query = resolve_user_query_from_state(tool_context.state) or str(

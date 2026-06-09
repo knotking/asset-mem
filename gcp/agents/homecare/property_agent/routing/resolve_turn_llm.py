@@ -62,6 +62,7 @@ def _ui_context_blob(
         "checkpoint_ids_count": len(cp_ids),
         "checkpoint_selection_changed": checkpoint_selection_changed(state),
         "context_doc_uris_count": len(state.get("context_doc_uris") or []),
+        "report_ids_count": len(state.get("report_ids") or []),
         "ui_optional_agents": state.get("checkpoint_optional_agents")
         or state.get("_checkpoint_optional_agents_ui"),
         "prior_full_checkpoint_analysis": prior_checkpoint_analysis_in_session(state),

@@ -1,0 +1,3 @@
+# Synced/bundled at deploy time (see deploy-report-generation.yaml).
+common/
+ms-playwright/

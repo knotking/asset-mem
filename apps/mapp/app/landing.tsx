@@ -76,8 +76,8 @@ const features = [
     icon: ImageIcon,
   },
   {
-    title: 'Saved Service Providers',
-    desc: 'Save local pros the AI recommends and find them again on your Providers tab.',
+    title: 'My pros',
+    desc: 'Save local pros the AI recommends and find them again in My pros from chat.',
     icon: Users,
   },
   {

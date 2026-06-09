@@ -634,7 +634,7 @@ Set these in the shell or put a **`.env` file in `gcp/proxy/api`** (same directo
 | -------- | -------------------- | ----------- |
 | `STRIPE_SECRET_KEY` | Yes | Stripe **secret** key (`sk_test_…` or `sk_live_…`). |
 | `STRIPE_WEBHOOK_SIGNING_SECRET` | Yes | Webhook **signing secret** (`whsec_…`) from the Stripe Dashboard or from `stripe listen` (see below). |
-| `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` | Yes | JSON map: reserved **`free`** key + Stripe **Price ids**. Extended: `{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5},"price_abc":{...}}`. Legacy integer values = token cap only. `0` = unlimited for that field. Unknown Price ids are rejected at Checkout. |
+| `STRIPE_B2C_PRICE_TOKEN_CAPS_JSON` | Yes | JSON map: reserved **`free`** key + Stripe **Price ids**. Extended: `{"free":{"monthlyTokenLimit":1000000,"monthlyDocumentLimit":2,"monthlyCheckpointLimit":5,"monthlyReportGenerationsLimit":2},"price_abc":{...}}`. Legacy integer values = token cap only. `0` = unlimited for that field. Unknown Price ids are rejected at Checkout. |
 | `BILLING_PUBLIC_APP_BASE_URL` | Yes | Public web origin **without** trailing slash used for Checkout success/cancel and Portal `return_url` (e.g. `http://localhost:9002` for the Next.js webapp). |
 | `GCP_PROJECT_ID` | Yes (Firestore) | Same as other proxy features using Firestore. |
 

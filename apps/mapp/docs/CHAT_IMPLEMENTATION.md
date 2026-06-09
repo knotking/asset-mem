@@ -44,12 +44,15 @@ Designed for **1,000+ checkpoints** and **100+ documents**:
 
 Constants: `apps/common/src/lib/chat-context-limits.ts`. Filter/sort: `chat-context-picker.ts`.
 
-### Tabbed picker (Timeline | Documents)
+### Add context by agent mode
 
-- **Pinned:** selection summary, segment control, mode hint, tab-scoped search.
-- **Timeline tab:** capture CTAs + checkpoint pick (Checkpoint mode). Docs mode: capture only + note to switch agent for chat context.
-- **Documents tab:** upload CTA + doc pick. In Checkpoint mode, selected docs are **optional** but sent as `contextDocURIs` with checkpoint IDs.
-- Default tab follows `primaryAgent` (`checkpoint` → Timeline, `docs` → Documents).
+| Mode | Picker UI |
+| ---- | --------- |
+| **Checkpoint** | Tabbed Timeline \| Documents — capture + checkpoint pick on Timeline; upload + doc pick on Documents (docs optional, sent as `contextDocURIs`) |
+| **Docs** | Single list (like Report): selection summary, upload CTA, search, document pick — no Timeline tab |
+| **Report** | Single list: selection summary, search, ready report revisions |
+
+Checkpoint default tab is Timeline; Docs and Report use dedicated sheets without segment control.
 
 ### Capture / upload responsiveness
 

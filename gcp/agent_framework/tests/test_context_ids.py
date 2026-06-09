@@ -22,3 +22,13 @@ def test_resolve_correlation_id_from_session_state() -> None:
         session=SimpleNamespace(state={"correlation_id": "req-abc"}),
     )
     assert resolve_correlation_id_from_context(ctx) == "req-abc"
+
+
+def test_resolve_user_id_from_invocation_session() -> None:
+    ctx = SimpleNamespace(
+        state={},
+        _invocation_context=SimpleNamespace(
+            session=SimpleNamespace(user_id="uid-from-session")
+        ),
+    )
+    assert resolve_user_id_from_context(ctx) == "uid-from-session"

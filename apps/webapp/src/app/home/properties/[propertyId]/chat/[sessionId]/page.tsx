@@ -83,7 +83,7 @@ export default function PropertyChatSessionPage() {
       return;
     }
     onboardingHandledRef.current = true;
-    // Strip the query param immediately so Timeline/Details/Providers clicks are
+    // Strip the query param immediately so Timeline/Details clicks are
     // not overridden by a delayed router.replace after the Firestore write.
     router.replace(`/home/properties/${propertyId}/chat/${sessionId}`);
     void updatePreferences({ onboardingChatOpened: true });

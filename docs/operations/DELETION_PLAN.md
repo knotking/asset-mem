@@ -49,6 +49,7 @@ Supersedes the Cursor plan `complete_delete_flows` and the former standalone ops
 |--------|-----|---------|--------|----------------|
 | Delete document | Details tab | Proxy (`POST /deletion/document` or batch) | Sync | Yes |
 | Delete checkpoint | Checkpoint UI / bulk | Proxy (`POST /deletion/checkpoint` or batch) | Sync | Yes |
+| Delete property report | Reports tab (webapp) | Proxy (`POST /deletion/report`) | Sync | Yes |
 | Delete chat session | Session list / sidebar | Proxy (`POST /deletion/session` or batch) | Sync | Yes |
 | Delete saved provider | Providers tab | **Client** `deleteDoc` only (not proxy UI) | Sync | No |
 | Delete property | Property card | Tombstone + `POST /deletion/property` job | **Async** | Job doc + logs |
