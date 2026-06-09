@@ -74,6 +74,7 @@ export default function LandingPageClient() {
       const sections = [
         { id: "use-cases", el: document.querySelector("#use-cases") },
         { id: "features", el: document.querySelector("#features") },
+        { id: "reports", el: document.querySelector("#reports") },
         { id: "ai-agents", el: document.querySelector("#ai-agents") },
         {
           id: "timeline-feature",
@@ -306,8 +307,9 @@ export default function LandingPageClient() {
                 style={{ color: LANDING_COLORS.foreground60 }}
               >
                 AI agents analyze your property photos and documents, rate
-                condition over time, flag issues, and guide you on repairs and
-                costs while connecting you with local pros.
+                condition over time, flag issues, generate formal PDF reports,
+                and guide you on repairs and costs while connecting you with
+                local pros.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -510,6 +512,21 @@ export default function LandingPageClient() {
                 result: "Caught water issue early, prevented $5,000+ damage",
               },
               {
+                title: "Rental Move-In / Move-Out",
+                scenario:
+                  "Document condition at lease start and end for security deposits",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                color: LANDING_COLORS.accent,
+                steps: [
+                  "Capture move-in checkpoints room by room",
+                  "At move-out, generate a comparison report with before/after photos",
+                  "Review issue tables and visual-diff callouts automatically",
+                  "Share the PDF with your landlord or tenant",
+                ],
+                result:
+                  "Resolved deposit dispute with dated, AI-verified evidence",
+              },
+              {
                 title: "Insurance Claim Documentation",
                 scenario: "Storm damage to roof requires insurance claim proof",
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
@@ -517,8 +534,8 @@ export default function LandingPageClient() {
                 steps: [
                   "Platform auto-compares before/after checkpoint photos",
                   "AI detects: missing shingles, damaged flashing, water damage",
-                  "Build a dated before-and-after story with photos",
-                  "Share comparisons and notes with your insurance adjuster",
+                  "Generate a formal PDF report with photos, issue tables, and change highlights",
+                  "Share the report and comparisons with your insurance adjuster",
                 ],
                 result:
                   "Claim approved in 3 days with AI-verified documentation",
@@ -550,19 +567,6 @@ export default function LandingPageClient() {
                   "Share a read-only chat link with your contractor or family",
                 ],
                 result: "Kept everyone aligned with one source of truth",
-              },
-              {
-                title: "Preventive Maintenance Planning",
-                scenario: "Proactive property care to avoid costly repairs",
-                icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
-                color: LANDING_COLORS.primary,
-                steps: [
-                  "Monthly photos show kitchen cabinets slowly wearing down",
-                  "Condition trends highlight what may need work soon",
-                  "AI suggests refinishing before a full replacement",
-                  "Share a chat link with your contractor and plan the budget",
-                ],
-                result: "Refinished cabinets for $1,200 vs $8,000 replacement",
               },
             ].map((useCase, i) => (
               <div
@@ -782,6 +786,11 @@ export default function LandingPageClient() {
                 icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
               },
               {
+                title: "Property Reports",
+                desc: "Turn checkpoint photos into branded PDFs—snapshot for showings, comparison for move-in/out, or insurance documentation. Share or download.",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+              },
+              {
                 title: "Repair Guidance",
                 desc: "Get clear next steps, cost ranges, and product ideas without reading long reports.",
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
@@ -828,6 +837,118 @@ export default function LandingPageClient() {
                 </div>
                 <h3
                   className="text-xl font-bold mb-2"
+                  style={{ color: LANDING_COLORS.foreground }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  className="text-sm leading-relaxed font-light"
+                  style={{ color: LANDING_COLORS.mutedForeground }}
+                >
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Property Reports Section */}
+      <section
+        id="reports"
+        className="py-32 relative overflow-hidden w-full scroll-mt-24"
+        style={{ backgroundColor: LANDING_COLORS.background }}
+      >
+        <div
+          className="absolute inset-0 w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div
+          className="container relative mx-auto px-4"
+          style={{ maxWidth: "1400px" }}
+        >
+          <div className="text-center mb-20 space-y-6">
+            <div
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderColor: LANDING_COLORS.primaryBorder,
+              }}
+            >
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: LANDING_COLORS.primary }}
+              >
+                FORMAL PDF REPORTS
+              </span>
+            </div>
+            <h2
+              className="text-5xl lg:text-6xl font-light tracking-tight"
+              style={{ color: LANDING_COLORS.foreground }}
+            >
+              Turn Checkpoints Into
+              <br />
+              <span
+                className="font-bold"
+                style={{
+                  background: `linear-gradient(to right, ${LANDING_COLORS.primary}, ${LANDING_COLORS.foreground70})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Shareable Reports
+              </span>
+            </h2>
+            <p
+              className="text-xl max-w-3xl mx-auto font-light leading-relaxed"
+              style={{ color: LANDING_COLORS.mutedForeground }}
+            >
+              Generate branded PDFs from your timeline—frozen at generation time
+              so what you share stays accurate. Pick a purpose, preview sections,
+              then download or send a link.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                title: "Showing / listing",
+                desc: "Single-date condition snapshot with executive summary, room status, and headline metrics—ideal before or after a showing.",
+              },
+              {
+                title: "Move-in / move-out",
+                desc: "Compare two periods with before/after photos, issue tables, and visual-diff callouts—built for security deposits and lease records.",
+              },
+              {
+                title: "Insurance / claim",
+                desc: "Document damage with photos, metrics, and change highlights in a formal PDF you can attach to a claim or share with an adjuster.",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="border rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 animate-stagger-in"
+                style={{
+                  backgroundColor: "rgba(20,20,28,0.6)",
+                  backdropFilter: "blur(4px)",
+                  borderColor: LANDING_COLORS.border,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
+                  e.currentTarget.style.boxShadow = `0 25px 50px -12px ${LANDING_COLORS.primary20}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = LANDING_COLORS.border;
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <h3
+                  className="text-xl font-bold mb-3"
                   style={{ color: LANDING_COLORS.foreground }}
                 >
                   {item.title}
@@ -915,8 +1036,8 @@ export default function LandingPageClient() {
               style={{ color: LANDING_COLORS.mutedForeground }}
             >
               Specialized agents work together—starting with your timeline
-              photos, then pulling in warranty checks, repair steps, local
-              pros, and cost estimates when you need them.
+              photos or saved reports, then pulling in warranty checks, repair
+              steps, local pros, and cost estimates when you need them.
             </p>
           </div>
 
@@ -948,8 +1069,13 @@ export default function LandingPageClient() {
                 icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
               },
               {
+                title: "Report Agent",
+                desc: "Answers questions about saved property reports you attach in chat—using the frozen snapshot captured when each PDF was generated.",
+                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+              },
+              {
                 title: "Working Together",
-                desc: "Everything stays connected—your photos, documents, saved providers, and past chats feed into one clear answer.",
+                desc: "Everything stays connected—your photos, documents, saved reports, saved providers, and past chats feed into one clear answer.",
                 icon: "M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z",
               },
             ].map((item, i) => (
@@ -1087,6 +1213,11 @@ export default function LandingPageClient() {
                   title: "Always Up to Date",
                   desc: "New photos and results show up right away—no need to refresh or wait around.",
                   icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
+                },
+                {
+                  title: "Property Reports",
+                  desc: "Generate branded PDF snapshots or before/after comparison reports from your checkpoints—ready to share with insurers, tenants, or buyers.",
+                  icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
                 },
               ].map((block, i) => (
                 <div
@@ -1480,7 +1611,7 @@ export default function LandingPageClient() {
               {
                 step: 4,
                 title: "Stay Organized",
-                desc: "Save providers, share a chat link, and check your timeline whenever you need to follow up.",
+                desc: "Save providers, generate PDF reports, share chat or report links, and check your timeline whenever you need to follow up.",
               },
             ].map((item, i) => (
               <div
@@ -1759,6 +1890,21 @@ export default function LandingPageClient() {
                     }
                   >
                     Features
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#reports"
+                    className="transition-colors hover:text-foreground"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = LANDING_COLORS.foreground)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color =
+                        LANDING_COLORS.mutedForeground)
+                    }
+                  >
+                    Reports
                   </Link>
                 </li>
                 <li>

@@ -139,8 +139,8 @@ export function LandingPricingSection({
             style={{ color: c.mutedForeground }}
           >
             Simple monthly billing. Each plan includes a fair amount of AI chat,
-            document uploads, and photo analysis—you can always see what you have
-            left in Settings.
+            document uploads, photo analysis, and property report
+            generations—you can always see what you have left in Settings.
           </p>
         </div>
 

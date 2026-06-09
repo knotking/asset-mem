@@ -19,8 +19,12 @@ import {
   Users,
   Share2,
   Home,
+  ClipboardList,
 } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
+import { LandingDemoVideoModal } from '@/components/landing/LandingDemoVideoModal';
+import { openExternalWebUrl } from '@/lib/open-external-url';
+import { getYouTubeVideoId } from '@/lib/youtube-utils';
 
 // Dark theme - landing page only (matching webapp)
 const LANDING_COLORS = {
@@ -77,7 +81,7 @@ const features = [
   },
   {
     title: 'My pros',
-    desc: 'Save local pros the AI recommends and find them again in My pros from chat.',
+    desc: 'Save local pros the AI recommends and find them again on the property Details tab.',
     icon: Users,
   },
   {
@@ -91,9 +95,29 @@ const features = [
     icon: Home,
   },
   {
+    title: 'Property Reports',
+    desc: 'Turn checkpoint photos into branded PDFs—snapshot for showings, comparison for move-in/out, or insurance documentation. Share or download.',
+    icon: FileText,
+  },
+  {
     title: 'Repair Guidance',
     desc: 'Get clear next steps, cost ranges, and product ideas without reading long reports.',
     icon: DollarSign,
+  },
+];
+
+const reportPurposes = [
+  {
+    title: 'Showing / listing',
+    desc: 'Single-date condition snapshot with executive summary, room status, and headline metrics—ideal before or after a showing.',
+  },
+  {
+    title: 'Move-in / move-out',
+    desc: 'Compare two periods with before/after photos, issue tables, and visual-diff callouts—built for security deposits and lease records.',
+  },
+  {
+    title: 'Insurance / claim',
+    desc: 'Document damage with photos, metrics, and change highlights in a formal PDF you can attach to a claim or share with an adjuster.',
   },
 ];
 
@@ -116,14 +140,18 @@ const steps = [
   {
     step: 4,
     title: 'Stay Organized',
-    desc: 'Save providers, share a chat link, and check your timeline whenever you need to follow up.',
+    desc: 'Save providers, generate PDF reports, share chat or report links, and check your timeline whenever you need to follow up.',
   },
 ];
+
+const WEB_APP_BASE = 'https://asset-mem.com';
+const DEMO_VIDEO_URL = 'https://youtu.be/vn03juDFkss';
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [demoVisible, setDemoVisible] = useState(false);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -155,8 +183,21 @@ export default function LandingPage() {
     }
   };
 
+  const handleWatchDemo = () => {
+    if (getYouTubeVideoId(DEMO_VIDEO_URL)) {
+      setDemoVisible(true);
+      return;
+    }
+    void openExternalWebUrl(DEMO_VIDEO_URL);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
+    <LandingDemoVideoModal
+      visible={demoVisible}
+      onClose={() => setDemoVisible(false)}
+      videoUrl={DEMO_VIDEO_URL}
+    />
     <ScrollView
       style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
       contentContainerStyle={{ flexGrow: 1 }}
@@ -261,13 +302,14 @@ export default function LandingPage() {
                 lineHeight: 28,
               }}>
               AI agents analyze your property photos and documents, rate condition over time, flag
-              issues, and guide you on repairs and costs while connecting you with local pros.
+              issues, generate formal PDF reports, and guide you on repairs and costs while
+              connecting you with local pros.
             </Text>
 
             {/* CTA Buttons */}
             <View
               style={{
-                flexDirection: 'row',
+                flexDirection: 'column',
                 gap: 12,
                 marginBottom: 48,
                 paddingHorizontal: 20,
@@ -276,7 +318,7 @@ export default function LandingPage() {
               <TouchableOpacity
                 onPress={handleGetStarted}
                 style={{
-                  flex: 1,
+                  width: '100%',
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -295,6 +337,24 @@ export default function LandingPage() {
                   {user ? 'Dashboard' : 'Get Started'}
                 </Text>
                 <Icon as={ArrowRight} size={20} style={{ color: LANDING_COLORS.background }} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleWatchDemo}
+                style={{
+                  width: '100%',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 20,
+                  paddingHorizontal: 24,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: LANDING_COLORS.border,
+                  gap: 8,
+                }}>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: LANDING_COLORS.foreground }}>
+                  Watch Demo
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -372,42 +432,55 @@ export default function LandingPage() {
               },
               {
                 title: 'Property Condition Tracking',
-                scenario: 'Monitor basement moisture over 6-month winter',
+                scenario: 'Monitor basement moisture over 6-month winter period',
                 icon: TrendingUp,
                 color: LANDING_COLORS.primary,
                 steps: [
                   'Create monthly checkpoints with photos',
-                  'AI detects score drop: 78 → 65',
-                  'Platform identifies moisture increase',
-                  'Get preventive recommendations',
+                  'AI detects condition score drop: 78 → 65 (attention needed)',
+                  'Platform identifies increased moisture + wall staining',
+                  'Get preventive maintenance recommendations before major damage',
                 ],
-                result: 'Caught early, prevented $5K+ damage',
+                result: 'Caught water issue early, prevented $5,000+ damage',
+              },
+              {
+                title: 'Rental Move-In / Move-Out',
+                scenario: 'Document condition at lease start and end for security deposits',
+                icon: FileText,
+                color: LANDING_COLORS.accent,
+                steps: [
+                  'Capture move-in checkpoints room by room',
+                  'At move-out, generate a comparison report with before/after photos',
+                  'Review issue tables and visual-diff callouts automatically',
+                  'Share the PDF with your landlord or tenant',
+                ],
+                result: 'Resolved deposit dispute with dated, AI-verified evidence',
               },
               {
                 title: 'Insurance Claim Documentation',
-                scenario: 'Storm damage to roof requires proof',
+                scenario: 'Storm damage to roof requires insurance claim proof',
                 icon: FileText,
                 color: LANDING_COLORS.primary,
                 steps: [
-                  'Auto-compare before/after photos',
-                  'AI detects missing shingles, damage',
-                  'Build a dated before-and-after story with photos',
-                  'Share comparisons and notes with your adjuster',
+                  'Platform auto-compares before/after checkpoint photos',
+                  'AI detects: missing shingles, damaged flashing, water damage',
+                  'Generate a formal PDF report with photos, issue tables, and change highlights',
+                  'Share the report and comparisons with your insurance adjuster',
                 ],
-                result: 'Claim approved in 3 days',
+                result: 'Claim approved in 3 days with AI-verified documentation',
               },
               {
                 title: 'Home Inspection Follow-up',
-                scenario: '50-page report with 15 issues',
+                scenario: '50-page inspection report with 15 issues to address',
                 icon: FileText,
                 color: LANDING_COLORS.primary,
                 steps: [
-                  'Upload PDF → AI indexes issues',
-                  'Ask: "Critical issues?" → Get list',
-                  'Chat: "Cost to fix roof?" → Estimate',
-                  'Find roofers, compare quotes',
+                  'Upload inspection PDF → AI indexes all issues',
+                  'Ask: "What are the critical issues?" → Get prioritized list',
+                  'Chat: "Cost to fix the roof?" → $4,500-$7,200 estimate',
+                  'Find local roofers, compare quotes, check warranty coverage',
                 ],
-                result: 'Negotiated 20% discount',
+                result: 'Prioritized repairs, negotiated 20% discount with quotes',
               },
               {
                 title: 'Renovation Progress Tracking',
@@ -421,19 +494,6 @@ export default function LandingPage() {
                   'Share a read-only chat link with your contractor or family',
                 ],
                 result: 'Kept everyone aligned with one source of truth',
-              },
-              {
-                title: 'Preventive Maintenance',
-                scenario: 'Proactive care to avoid repairs',
-                icon: CheckCircle,
-                color: LANDING_COLORS.primary,
-                steps: [
-                  'Monthly photos show cabinets slowly wearing down',
-                  'Trends highlight what may need work soon',
-                  'AI suggests refinishing before a full replacement',
-                  'Share a chat link with your contractor and plan the budget',
-                ],
-                result: '$1.2K refinish vs $8K replacement',
               },
             ].map((useCase) => (
               <View
@@ -656,6 +716,94 @@ export default function LandingPage() {
           </View>
         </View>
 
+        {/* Property Reports Section */}
+        <View
+          style={{
+            backgroundColor: LANDING_COLORS.background,
+            paddingTop: 80,
+            paddingBottom: 60,
+            paddingHorizontal: 20,
+          }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+                backgroundColor: LANDING_COLORS.primaryLight,
+                borderWidth: 1,
+                borderColor: LANDING_COLORS.primaryBorder,
+                marginBottom: 36,
+              }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: LANDING_COLORS.primary }}>
+                FORMAL PDF REPORTS
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 36,
+                fontWeight: '300',
+                textAlign: 'center',
+                color: LANDING_COLORS.foreground,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                lineHeight: 44,
+              }}>
+              Turn Checkpoints Into{'\n'}
+              <Text style={{ fontWeight: 'bold', color: LANDING_COLORS.primary }}>
+                Shareable Reports
+              </Text>
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                color: LANDING_COLORS.mutedForeground,
+                paddingHorizontal: 20,
+                lineHeight: 24,
+              }}>
+              Generate branded PDFs from your timeline—frozen at generation time so what you share
+              stays accurate. Pick a purpose, preview sections, then download or send a link.
+            </Text>
+          </View>
+
+          <View style={{ gap: 20 }}>
+            {reportPurposes.map((item) => (
+              <View
+                key={item.title}
+                style={{
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: 'rgba(20,20,28,0.6)',
+                  padding: 20,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: LANDING_COLORS.foreground,
+                    marginBottom: 8,
+                    lineHeight: 24,
+                  }}>
+                  {item.title}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 22,
+                    color: LANDING_COLORS.mutedForeground,
+                  }}>
+                  {item.desc}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* AI Agents Section */}
         <View
           style={{
@@ -703,9 +851,9 @@ export default function LandingPage() {
                 paddingHorizontal: 20,
                 lineHeight: 24,
               }}>
-              Specialized agents work together—starting with your timeline photos, then
-              pulling in warranty checks, repair steps, local pros, and cost estimates when you
-              need them
+              Specialized agents work together—starting with your timeline photos or saved
+              reports, then pulling in warranty checks, repair steps, local pros, and cost
+              estimates when you need them
             </Text>
           </View>
 
@@ -737,8 +885,13 @@ export default function LandingPage() {
                 icon: DollarSign,
               },
               {
+                title: 'Report Agent',
+                desc: 'Answers questions about saved property reports you attach in chat—using the frozen snapshot captured when each PDF was generated.',
+                icon: ClipboardList,
+              },
+              {
                 title: 'Working Together',
-                desc: 'Everything stays connected—your photos, documents, saved providers, and past chats feed into one clear answer.',
+                desc: 'Everything stays connected—your photos, documents, saved reports, saved providers, and past chats feed into one clear answer.',
                 icon: ImageIcon,
               },
             ].map((agent, i) => (
@@ -856,6 +1009,11 @@ export default function LandingPage() {
                   desc: 'New photos and results show up right away—no need to refresh or wait around.',
                   icon: Zap,
                 },
+                {
+                  title: 'Property Reports',
+                  desc: 'Generate branded PDF snapshots or before/after comparison reports from your checkpoints—ready to share with insurers, tenants, or buyers.',
+                  icon: FileText,
+                },
               ].map((block, i) => (
                 <View
                   key={block.title}
@@ -955,9 +1113,14 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 32,
               }}>
-              Docs mode answers from your inspection reports, warranties, manuals, and policies.
-              Timeline mode uses your photos plus optional repair, coverage, cost, and provider help.
-              Pick the mode that fits your question.
+              <Text style={{ fontWeight: '600', color: LANDING_COLORS.foreground90 }}>Docs mode</Text>{' '}
+              answers from your inspection reports, warranties, manuals, and policies—with sources
+              cited.{' '}
+              <Text style={{ fontWeight: '600', color: LANDING_COLORS.foreground90 }}>
+                Timeline mode
+              </Text>{' '}
+              uses your photos and optional repair, coverage, cost, and provider help. Pick the mode
+              that fits your question.
             </Text>
           </View>
 
@@ -1059,6 +1222,22 @@ export default function LandingPage() {
                       📄 Citations: Home_Inspection_Report.pdf, Pages 3-7
                     </Text>
                   </View>
+                </View>
+              </View>
+
+              {/* Follow-up question */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+                <View
+                  style={{
+                    maxWidth: '85%',
+                    backgroundColor: LANDING_COLORS.primary,
+                    borderRadius: 16,
+                    padding: 12,
+                  }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: '500', color: LANDING_COLORS.background }}>
+                    What's the estimated cost to fix the roof?
+                  </Text>
                 </View>
               </View>
             </View>
@@ -1278,8 +1457,8 @@ export default function LandingPage() {
                 lineHeight: 24,
                 marginBottom: 28,
               }}>
-              Simple monthly plans with a fair amount of AI chat, document uploads, and photo
-              analysis. See what you have left anytime in Settings.
+              Simple monthly plans with a fair amount of AI chat, document uploads, photo analysis,
+              and property report generations. See what you have left anytime in Settings.
             </Text>
             <TouchableOpacity
               onPress={() => Linking.openURL('https://asset-mem.com#pricing')}
@@ -1402,12 +1581,38 @@ export default function LandingPage() {
                 style={{
                   fontSize: 14,
                   color: LANDING_COLORS.primary,
-                  marginBottom: 16,
+                  marginBottom: 20,
                   textDecorationLine: 'underline',
                 }}>
                 support@asset-mem.com
               </Text>
             </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 16,
+                marginBottom: 20,
+              }}>
+              {[
+                { label: 'About', href: `${WEB_APP_BASE}/about` },
+                { label: 'Privacy', href: `${WEB_APP_BASE}/privacy` },
+                { label: 'Terms', href: `${WEB_APP_BASE}/terms` },
+                { label: 'Delete account', href: `${WEB_APP_BASE}/account-deletion` },
+              ].map((link) => (
+                <TouchableOpacity key={link.label} onPress={() => Linking.openURL(link.href)}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: LANDING_COLORS.mutedForeground,
+                      textDecorationLine: 'underline',
+                    }}>
+                    {link.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <Text
               style={{
                 fontSize: 12,
