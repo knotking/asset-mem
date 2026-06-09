@@ -206,7 +206,7 @@ function PropertyChatTab({
     if (isLoading) {
       return null;
     }
-    const suggestedPrompts = getSuggestedPrompts();
+    const suggestedPrompts = getSuggestedPrompts({ primaryAgent });
     return (
       <View
         style={{
@@ -250,7 +250,7 @@ function PropertyChatTab({
         </View>
       </View>
     );
-  }, [giftedChatUser, isSending, isLoading, onSend]);
+  }, [giftedChatUser, isSending, isLoading, onSend, primaryAgent]);
 
   const renderFooter = React.useCallback(
     () => (branchProgress ? <CheckpointAnalysisProgressFooter progress={branchProgress} /> : null),

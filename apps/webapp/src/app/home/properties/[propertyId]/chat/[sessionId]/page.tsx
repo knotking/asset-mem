@@ -181,6 +181,7 @@ export default function PropertyChatSessionPage() {
           isMessagesLoading={isMessagesLoading && messages.length === 0}
           isStreamActive={isLoading}
           context="property"
+          primaryAgent={primaryAgent}
           onSelectSuggestedPrompt={handleSuggestedPrompt}
           onSuggestedAction={handleSuggestedAction}
           isSendDisabled={isLoading}
