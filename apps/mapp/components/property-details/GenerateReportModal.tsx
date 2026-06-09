@@ -1,23 +1,29 @@
 import * as React from 'react';
-import { Modal, View, ScrollView, Platform, Pressable } from 'react-native';
+import {
+  Modal,
+  View,
+  ScrollView,
+  Platform,
+  Pressable,
+  Keyboard,
+  KeyboardAvoidingView,
+  useColorScheme,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { X, Loader2, ChevronLeft, ChevronDown } from 'lucide-react-native';
-import Animated, {
-  SlideInLeft,
-  SlideInRight,
-  SlideOutLeft,
-  SlideOutRight,
-} from 'react-native-reanimated';
+import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getAppThemeColors } from '@/lib/css-theme-tokens';
+import { DateInput } from '@/components/ui/date-input';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
 import { useProperty } from '@homeapp/common/contexts/property-context';
@@ -86,7 +92,8 @@ export function GenerateReportModal({
   onQueued,
   regenerateFrom,
 }: GenerateReportModalProps) {
-  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const backgroundColor = getAppThemeColors(colorScheme === 'dark').background;
   const { user } = useAuth();
   const { property } = useProperty();
   const {
@@ -200,6 +207,13 @@ export function GenerateReportModal({
       includeSignatureBlock: defaults.includeSignatureBlock,
     });
   }, [invalidatePreviewForIntentChange]);
+
+  const handleClose = React.useCallback(() => {
+    Keyboard.dismiss();
+    setLayoutPreviewVisible(false);
+    setLayoutPreviewLoading(false);
+    onClose();
+  }, [onClose]);
 
   const resetWizard = React.useCallback(() => {
     setStep(1);
@@ -391,8 +405,8 @@ export function GenerateReportModal({
               regenerateReportId,
             });
       onQueued?.(result.warnings);
-      onClose();
       resetWizard();
+      handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to queue report');
     } finally {
@@ -401,7 +415,10 @@ export function GenerateReportModal({
   };
 
   const renderRegenerateConfirm = () => (
-    <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 px-4 py-4"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 24 }}>
       <Text className="mb-2 text-base font-semibold text-foreground">Regenerate this report?</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
         Creates a new PDF revision and archives v{regenerateFrom?.revision ?? 1}. Checkpoints and
@@ -422,7 +439,7 @@ export function GenerateReportModal({
   );
 
   const renderStep1 = () => (
-    <ScrollView className="flex-1 px-4 py-4">
+    <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
       <Text className="mb-1 text-lg font-semibold text-foreground">Create property report</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
         Pick the reason — we&apos;ll set dates and PDF sections for you.
@@ -449,7 +466,10 @@ export function GenerateReportModal({
   );
 
   const renderStep2 = () => (
-    <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 px-4 py-4"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 24 }}>
       <Text className="mb-1 text-lg font-semibold text-foreground">Time period & checkpoints</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
         {mode === 'comparison'
@@ -466,20 +486,20 @@ export function GenerateReportModal({
       {mode === 'snapshot' ? (
         <>
           <Text className="mb-1 text-sm font-medium text-foreground">From</Text>
-          <Input value={startDate} onChangeText={setStartDate} className="mb-3" />
+          <DateInput value={startDate} onChange={setStartDate} className="mb-3" />
           <Text className="mb-1 text-sm font-medium text-foreground">To</Text>
-          <Input value={endDate} onChangeText={setEndDate} className="mb-4" />
+          <DateInput value={endDate} onChange={setEndDate} className="mb-4" />
         </>
       ) : (
         <>
           <Text className="mb-1 text-sm font-medium text-foreground">Before (baseline) — from</Text>
-          <Input value={baselineStart} onChangeText={setBaselineStart} className="mb-2" />
+          <DateInput value={baselineStart} onChange={setBaselineStart} className="mb-2" />
           <Text className="mb-1 text-sm font-medium text-foreground">Before — to</Text>
-          <Input value={baselineEnd} onChangeText={setBaselineEnd} className="mb-3" />
+          <DateInput value={baselineEnd} onChange={setBaselineEnd} className="mb-3" />
           <Text className="mb-1 text-sm font-medium text-foreground">After (comparison) — from</Text>
-          <Input value={comparisonStart} onChangeText={setComparisonStart} className="mb-2" />
+          <DateInput value={comparisonStart} onChange={setComparisonStart} className="mb-2" />
           <Text className="mb-1 text-sm font-medium text-foreground">After — to</Text>
-          <Input value={comparisonEnd} onChangeText={setComparisonEnd} className="mb-4" />
+          <DateInput value={comparisonEnd} onChange={setComparisonEnd} className="mb-4" />
         </>
       )}
       {datesDirty ? (
@@ -596,7 +616,10 @@ export function GenerateReportModal({
   );
 
   const renderStep3 = () => (
-    <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 px-4 py-4"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 24 }}>
       <Text className="mb-1 text-lg font-semibold text-foreground">PDF sections</Text>
       <Text className="mb-4 text-sm text-muted-foreground">Optional — defaults work for most reports.</Text>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
@@ -668,45 +691,53 @@ export function GenerateReportModal({
     : `step-${step}`;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      statusBarTranslucent
+      backdropColor={backgroundColor}
+      onRequestClose={handleClose}>
+      <SafeAreaView
         className="flex-1 bg-background"
-        style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 16 }}>
-        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-          <View>
-            <Text className="text-lg font-semibold text-foreground">{headerTitle}</Text>
-            {showWizardSteps ? (
-              <Text className="text-xs text-muted-foreground">{reportWizardStepLabel(step)}</Text>
-            ) : null}
+        style={{ backgroundColor }}
+        edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : undefined}>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+            <View>
+              <Text className="text-lg font-semibold text-foreground">{headerTitle}</Text>
+              {showWizardSteps ? (
+                <Text className="text-xs text-muted-foreground">{reportWizardStepLabel(step)}</Text>
+              ) : null}
+            </View>
+            <Button variant="ghost" size="icon" onPress={handleClose}>
+              <Icon as={X} size={22} className="text-foreground" />
+            </Button>
           </View>
-          <Button variant="ghost" size="icon" onPress={onClose}>
-            <Icon as={X} size={22} className="text-foreground" />
-          </Button>
-        </View>
 
-        <View className="flex-1 overflow-hidden">
-          <Animated.View
-            key={wizardPanelKey}
-            entering={
-              slideDirection > 0 ? SlideInRight.duration(350) : SlideInLeft.duration(350)
-            }
-            exiting={
-              slideDirection > 0 ? SlideOutLeft.duration(350) : SlideOutRight.duration(350)
-            }
-            className="flex-1">
-          {isRegenerate && !regenerateAdvanced
-            ? renderRegenerateConfirm()
-            : isRegenerate && regenerateAdvanced
-              ? renderRegenerateAdvanced()
-              : step === 1
-                ? renderStep1()
-                : step === 2
-                  ? renderStep2()
-                  : renderStep3()}
-        </Animated.View>
-        </View>
+          <View className="flex-1 overflow-hidden">
+            <Animated.View
+              key={wizardPanelKey}
+              entering={
+                slideDirection > 0 ? SlideInRight.duration(350) : SlideInLeft.duration(350)
+              }
+              className="flex-1">
+              {isRegenerate && !regenerateAdvanced
+                ? renderRegenerateConfirm()
+                : isRegenerate && regenerateAdvanced
+                  ? renderRegenerateAdvanced()
+                  : step === 1
+                    ? renderStep1()
+                    : step === 2
+                      ? renderStep2()
+                      : renderStep3()}
+            </Animated.View>
+          </View>
 
-        <View className="border-t border-border px-4 py-3">
+          <View className="border-t border-border px-4 py-3">
           {isRegenerate && !regenerateAdvanced ? (
             <View className="gap-2">
               <Button
@@ -816,19 +847,23 @@ export function GenerateReportModal({
               </View>
             </View>
           )}
-        </View>
-      </View>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
       <Modal
         visible={layoutPreviewVisible}
         animationType="slide"
         presentationStyle="pageSheet"
+        statusBarTranslucent
+        backdropColor={backgroundColor}
         onRequestClose={() => {
           setLayoutPreviewVisible(false);
           setLayoutPreviewLoading(false);
         }}>
-        <View
+        <SafeAreaView
           className="flex-1 bg-background"
-          style={{ paddingTop: Platform.OS === 'ios' ? insets.top : 16 }}>
+          style={{ backgroundColor }}
+          edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : undefined}>
           <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
             <Text className="text-lg font-semibold text-foreground">Layout preview</Text>
             <Button
@@ -842,7 +877,7 @@ export function GenerateReportModal({
             </Button>
           </View>
           {layoutPreviewLoading ? (
-            <View className="flex-1 items-center justify-center gap-3">
+            <View className="flex-1 items-center justify-center gap-3 bg-white">
               <Icon as={Loader2} size={32} className="animate-spin text-muted-foreground" />
               <Text className="text-sm text-muted-foreground">Building preview…</Text>
             </View>
@@ -850,10 +885,10 @@ export function GenerateReportModal({
             <WebView
               originWhitelist={['*']}
               source={{ html: layoutPreviewHtml }}
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: '#ffffff' }}
             />
           )}
-        </View>
+        </SafeAreaView>
       </Modal>
     </Modal>
   );
