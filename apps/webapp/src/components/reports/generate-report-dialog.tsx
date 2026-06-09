@@ -466,13 +466,13 @@ export function GenerateReportDialog({
 
   const headerTitle = isRegenerate
     ? regenerateAdvanced
-      ? 'PDF sections'
+      ? 'Report sections'
       : 'Regenerate report'
     : step === 1
       ? 'Create property report'
       : step === 2
         ? 'Time period'
-        : 'PDF sections';
+        : 'Report sections';
 
   const handleSubmit = async () => {
     if (!user || !property) return;
@@ -536,7 +536,7 @@ export function GenerateReportDialog({
         description:
           result.warnings?.length
             ? result.warnings.join(' ')
-            : 'Your PDF will appear when generation finishes.',
+            : 'Your report will appear when generation finishes.',
       });
       onOpenChange(false);
       setTitle('');
@@ -561,10 +561,10 @@ export function GenerateReportDialog({
           {!isRegenerate ? (
             <DialogDescription>{reportWizardStepLabel(step)}</DialogDescription>
           ) : regenerateAdvanced ? (
-            <DialogDescription>Optional — update layout and PDF sections.</DialogDescription>
+            <DialogDescription>Optional — update layout and report sections.</DialogDescription>
           ) : (
             <DialogDescription>
-              Creates a new PDF revision and archives v{regenerateFrom?.revision ?? 1}. Checkpoints
+              Creates a new report revision and archives v{regenerateFrom?.revision ?? 1}. Checkpoints
               and date ranges stay the same.
             </DialogDescription>
           )}
@@ -606,7 +606,7 @@ export function GenerateReportDialog({
               <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                 <CollapsibleTrigger asChild>
                   <Button type="button" variant="outline" className="h-8 w-full justify-between px-3 text-sm">
-                    Advanced PDF sections
+                    Advanced report sections
                     <ChevronDown
                       className={cn(
                         'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
@@ -641,7 +641,7 @@ export function GenerateReportDialog({
           ) : step === 1 ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Pick the reason — we&apos;ll set dates and PDF sections for you.
+                Pick the reason — we&apos;ll set dates and report sections for you.
               </p>
               <div className="grid gap-2">
                 {REPORT_INTENT_OPTIONS.map((option) => (
@@ -919,7 +919,7 @@ export function GenerateReportDialog({
               <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                 <CollapsibleTrigger asChild>
                   <Button type="button" variant="outline" className="h-8 w-full justify-between px-3 text-sm">
-                    Advanced PDF sections
+                    Advanced report sections
                     <ChevronDown
                       className={cn(
                         'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
@@ -968,7 +968,7 @@ export function GenerateReportDialog({
 
         {submitting ? (
           <p className="text-sm text-muted-foreground">
-            Submitting your report request. PDF generation runs in the background.
+            Submitting your report request. Report generation runs in the background.
           </p>
         ) : null}
 
@@ -986,7 +986,7 @@ export function GenerateReportDialog({
                 }}
                 disabled={submitting}
               >
-                Change PDF sections
+                Change report sections
               </Button>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting}>
                 {submitting ? (
@@ -995,7 +995,7 @@ export function GenerateReportDialog({
                     Submitting…
                   </>
                 ) : (
-                  'Create PDF'
+                  'Create Report'
                 )}
               </Button>
             </>
@@ -1013,7 +1013,7 @@ export function GenerateReportDialog({
                 Back
               </Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Submitting…' : 'Create PDF'}
+                {submitting ? 'Submitting…' : 'Create Report'}
               </Button>
             </div>
           ) : step === 1 ? (
@@ -1095,7 +1095,7 @@ export function GenerateReportDialog({
                   Back
                 </Button>
                 <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? 'Submitting…' : 'Create PDF'}
+                  {submitting ? 'Submitting…' : 'Create Report'}
                 </Button>
               </div>
             </div>

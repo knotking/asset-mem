@@ -157,7 +157,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
     } catch (err) {
       toast({
         variant: 'destructive',
-        title: 'Could not open PDF',
+        title: 'Could not open report',
         description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
@@ -231,7 +231,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
       await navigator.clipboard.writeText(url);
       toast({
         title: 'Share link copied',
-        description: 'Anyone with the link can view this PDF until it expires.',
+        description: 'Anyone with the link can view this report until it expires.',
       });
     } catch (err) {
       toast({
@@ -268,7 +268,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
           <FileText className="mx-auto mb-3 h-10 w-10 opacity-50" />
           <p className="font-medium text-foreground">No reports yet</p>
           <p className="mt-1 text-sm">
-            Capture checkpoints on the Checkpoints tab, then create a PDF report here.
+            Capture checkpoints on the Checkpoints tab, then create a report here.
           </p>
         </CardContent>
       </Card>
@@ -418,7 +418,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
                           {onRegenerate && report.status !== 'generating' ? (
                             <DropdownMenuItem onClick={() => onRegenerate(report)}>
                               <RefreshCw className="mr-2 h-4 w-4" />
-                              Regenerate PDF
+                              Regenerate report
                             </DropdownMenuItem>
                           ) : null}
                           <DropdownMenuItem
@@ -457,7 +457,7 @@ export function ReportsList({ onRegenerate }: ReportsListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete report?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes &quot;{deleteTarget?.title}&quot; and its PDF. This cannot be undone.
+              This removes &quot;{deleteTarget?.title}&quot; and its file. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

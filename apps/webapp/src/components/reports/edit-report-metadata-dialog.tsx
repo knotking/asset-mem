@@ -139,7 +139,7 @@ export function EditReportMetadataDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>PDF sections</Label>
+            <Label>Report sections</Label>
             <p className="text-xs text-muted-foreground">
               Section changes apply when you regenerate this report.
             </p>

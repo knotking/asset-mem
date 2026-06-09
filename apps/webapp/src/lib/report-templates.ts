@@ -82,7 +82,7 @@ export type ReportSectionToggle = {
 };
 
 export const REPORT_SECTION_TOGGLES: ReportSectionToggle[] = [
-  { key: 'includePhotos', label: 'Photos', description: 'Include checkpoint images in the PDF.' },
+  { key: 'includePhotos', label: 'Photos', description: 'Include checkpoint images in the report.' },
   {
     key: 'includeMetricsChart',
     label: 'Metrics chart',

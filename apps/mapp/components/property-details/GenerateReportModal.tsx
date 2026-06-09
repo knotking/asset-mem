@@ -592,7 +592,7 @@ export function GenerateReportModal({
       contentContainerStyle={{ paddingBottom: 24 }}>
       <Text className="mb-2 text-base font-semibold text-foreground">Regenerate this report?</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
-        Creates a new PDF revision and archives v{regenerateFrom?.revision ?? 1}. Checkpoints and
+        Creates a new report revision and archives v{regenerateFrom?.revision ?? 1}. Checkpoints and
         date ranges stay the same.
       </Text>
       <Text className="mb-1 text-sm font-medium text-foreground">Title</Text>
@@ -613,7 +613,7 @@ export function GenerateReportModal({
     <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
       <Text className="mb-1 text-lg font-semibold text-foreground">Create property report</Text>
       <Text className="mb-4 text-sm text-muted-foreground">
-        Pick the reason — we&apos;ll set dates and PDF sections for you.
+        Pick the reason — we&apos;ll set dates and report sections for you.
       </Text>
       <View className="gap-3">
         {REPORT_INTENT_OPTIONS.map((option) => (
@@ -837,12 +837,12 @@ export function GenerateReportModal({
       className="flex-1 px-4 py-4"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ paddingBottom: 24 }}>
-      <Text className="mb-1 text-lg font-semibold text-foreground">PDF sections</Text>
+      <Text className="mb-1 text-lg font-semibold text-foreground">Report sections</Text>
       <Text className="mb-4 text-sm text-muted-foreground">Optional — defaults work for most reports.</Text>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <CollapsibleTrigger asChild>
           <Pressable className="mb-2 h-8 flex-row items-center justify-between rounded-lg border border-border px-3 py-1.5">
-            <Text className="text-sm font-medium text-foreground">Advanced PDF sections</Text>
+            <Text className="text-sm font-medium text-foreground">Advanced report sections</Text>
             <ChevronExpandIcon expanded={advancedOpen} />
           </Pressable>
         </CollapsibleTrigger>
@@ -884,13 +884,13 @@ export function GenerateReportModal({
 
   const headerTitle = isRegenerate
     ? regenerateAdvanced
-      ? 'PDF sections'
+      ? 'Report sections'
       : 'Regenerate report'
     : step === 1
       ? 'Create property report'
       : step === 2
         ? 'Time period'
-        : 'PDF sections';
+        : 'Report sections';
 
   const showWizardSteps = !isRegenerate;
 
@@ -958,7 +958,7 @@ export function GenerateReportModal({
                   setRegenerateAdvanced(true);
                 }}
                 disabled={submitting}>
-                <Text>Change PDF sections</Text>
+                <Text>Change report sections</Text>
               </Button>
               <Button onPress={handleSubmit} disabled={submitting}>
                 {submitting ? (
@@ -967,7 +967,7 @@ export function GenerateReportModal({
                     <Text className="text-primary-foreground">Submitting…</Text>
                   </View>
                 ) : (
-                  <Text className="text-primary-foreground">Create PDF</Text>
+                  <Text className="text-primary-foreground">Create Report</Text>
                 )}
               </Button>
             </View>
@@ -990,7 +990,7 @@ export function GenerateReportModal({
                     <Text className="text-primary-foreground">Submitting…</Text>
                   </View>
                 ) : (
-                  <Text className="text-primary-foreground">Create PDF</Text>
+                  <Text className="text-primary-foreground">Create Report</Text>
                 )}
               </Button>
             </View>
@@ -1063,7 +1063,7 @@ export function GenerateReportModal({
                       <Text className="text-primary-foreground">Submitting…</Text>
                     </View>
                   ) : (
-                    <Text className="text-primary-foreground">Create PDF</Text>
+                    <Text className="text-primary-foreground">Create Report</Text>
                   )}
                 </Button>
               </View>

@@ -100,7 +100,7 @@ export function buildReportLayoutPreviewHtml(input: ReportLayoutPreviewInput): s
   <div class="card">
     <div class="bar"></div>
     <div class="body">
-      <p class="notice">Layout preview is unavailable. This summary shows your report settings and selected checkpoints only — not the formatted PDF.</p>
+      <p class="notice">Layout preview is unavailable. This summary shows your report settings and selected checkpoints only — not the formatted report.</p>
       <div class="brand">${escapeHtml(brand)}</div>
       <h1>${escapeHtml(input.title || 'Property report')}</h1>
       ${input.propertyName ? `<div class="meta"><strong>Property</strong> ${escapeHtml(input.propertyName)}</div>` : ''}
@@ -111,7 +111,7 @@ export function buildReportLayoutPreviewHtml(input: ReportLayoutPreviewInput): s
       <div class="meta"><strong>Included</strong> ${input.selectedCount} checkpoint(s)</div>
       <ul>${rows.join('')}</ul>
       ${warnings}
-      <div class="footer">Create PDF to generate the full report with photos, metrics, and layout.</div>
+      <div class="footer">Create a report to include photos, metrics, and layout.</div>
     </div>
   </div>
 </body>

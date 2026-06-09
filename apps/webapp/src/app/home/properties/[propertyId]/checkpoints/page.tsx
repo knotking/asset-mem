@@ -82,7 +82,7 @@ export default function PropertyCheckpointsPage() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Property Timeline</h1>
                 <p className="text-muted-foreground">
-                  Checkpoint history, insights, and PDF reports
+                  Checkpoint history, insights, and reports
                 </p>
               </div>
               {activeTab === 'checkpoints' ? (
@@ -98,7 +98,7 @@ export default function PropertyCheckpointsPage() {
                   }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Create PDF
+                  Create Report
                 </Button>
               ) : null}
             </div>

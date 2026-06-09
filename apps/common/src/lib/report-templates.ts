@@ -85,7 +85,7 @@ export const REPORT_SECTION_TOGGLES: ReportSectionToggle[] = [
   {
     key: "includePhotos",
     label: "Photos",
-    description: "Include checkpoint images in the PDF.",
+    description: "Include checkpoint images in the report.",
   },
   {
     key: "includeMetricsChart",
