@@ -30,6 +30,7 @@ from .query_mode import (
     should_answer_provider_from_context,
     should_block_checkpoint_pipeline_for_context_turn,
 )
+from .constants import REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED
 from .resolve_turn import resolved_turn_from_state
 
 logger = logging.getLogger(__name__)
@@ -125,6 +126,16 @@ def _conversational_before_tool_impl(
             return repeat
 
     resolved = resolved_turn_from_state(tool_context.state)
+    if (
+        tool_name == "run_checkpoint_pipeline"
+        and resolved is not None
+        and resolved.route == "report"
+    ):
+        logger.info(
+            "before_tool: blocked run_checkpoint_pipeline (report mode) query=%r",
+            (resolve_user_query_from_state(tool_context.state) or "")[:80],
+        )
+        return {"result": REPORT_MODE_CHECKPOINT_PIPELINE_BLOCKED}
     user_query = resolve_user_query_from_state(tool_context.state) or str(
         (args or {}).get("user_query") or ""
     )
