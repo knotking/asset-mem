@@ -56,6 +56,7 @@
     "./lib/chat-send-context": "./src/lib/chat-send-context.ts",
     "./lib/session-timestamps": "./src/lib/session-timestamps.ts",
     "./lib/sort-messages": "./src/lib/sort-messages.ts",
+    "./lib/merge-messages-snapshot": "./src/lib/merge-messages-snapshot.ts",
     "./lib/session-name": "./src/lib/session-name.ts",
     "./lib/chat-message-context-refs": "./src/lib/chat-message-context-refs.ts",
     "./lib/suggested-actions": "./src/lib/suggested-actions.ts",

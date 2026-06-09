@@ -13,6 +13,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { AssetMemBrandIcon } from '@/components/AssetMemBrandIcon';
 import { useMessages } from '@homeapp/common/contexts/messages-context';
 import {
+  shouldUpdateGiftedChatMessage,
   transformMessagesToGiftedChatCached,
   type GiftedChatMessageCache,
 } from '@/lib/gifted-chat-utils';
@@ -134,6 +135,11 @@ function PropertyChatTab({
     return next;
   }, [messages, userId]);
 
+  const [giftedChatExtraData, setGiftedChatExtraData] = React.useState(0);
+  React.useEffect(() => {
+    setGiftedChatExtraData((n) => n + 1);
+  }, [messages, isSending]);
+
   const branchProgress = React.useMemo(() => {
     return getInFlightCheckpointProgressFromMessages(messages, {
       isStreamActive: isSending,
@@ -167,7 +173,13 @@ function PropertyChatTab({
 
   const messageContainerRef = React.useRef<AnimatedList<IMessage>>(null);
 
-  const listViewProps = React.useMemo(() => giftedChatListViewPropsForPlatform(), []);
+  const listViewProps = React.useMemo(
+    () => ({
+      ...giftedChatListViewPropsForPlatform(),
+      extraData: giftedChatExtraData,
+    }),
+    [giftedChatExtraData]
+  );
 
   const onSuggestedActionRef = React.useRef(onSuggestedAction);
   onSuggestedActionRef.current = onSuggestedAction;
@@ -325,6 +337,8 @@ function PropertyChatTab({
         <GiftedChatWithScrollAnchor
           messageContainerRef={messageContainerRef}
           messages={giftedMessages}
+          extraData={giftedChatExtraData}
+          shouldUpdateMessage={shouldUpdateGiftedChatMessage}
           onSend={onSend}
           user={giftedChatUser}
           renderBubble={renderBubble}
