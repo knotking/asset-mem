@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, ScrollView, Linking, ActivityIndicator, Alert, Pressable } from 'react-native';
+import { View, ScrollView, Linking, ActivityIndicator, Pressable } from 'react-native';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import { Text } from '@/components/ui/text';
@@ -46,6 +46,10 @@ import { Input } from '@/components/ui/input';
 import { GenerateReportModal } from '@/components/property-details/GenerateReportModal';
 import { EditReportMetadataModal } from '@/components/property-details/EditReportMetadataModal';
 import { ReportFiltersSheet } from '@/components/property-details/ReportFiltersSheet';
+import {
+  ReportActionsSheet,
+  type ReportAction,
+} from '@/components/property-details/ReportActionsSheet';
 import { AlertDialogWrapper } from '@/components/property-details/AlertDialogWrapper';
 
 const WEB_APP_URL = (Constants.expoConfig?.extra?.webAppUrl as string) || '';
@@ -93,6 +97,16 @@ export function PropertyReportsSegment({
   const [purposeFilter, setPurposeFilter] = React.useState<PropertyReportPurpose | 'all'>('all');
   const [statusFilter, setStatusFilter] = React.useState<PropertyReportStatus | 'all'>('all');
   const [filterSheetVisible, setFilterSheetVisible] = React.useState(false);
+  const [actionsReport, setActionsReport] = React.useState<PropertyReport | null>(null);
+  const [noticeOpen, setNoticeOpen] = React.useState(false);
+  const [noticeTitle, setNoticeTitle] = React.useState('');
+  const [noticeMessage, setNoticeMessage] = React.useState('');
+
+  const showNotice = React.useCallback((title: string, message: string) => {
+    setNoticeTitle(title);
+    setNoticeMessage(message);
+    setNoticeOpen(true);
+  }, []);
 
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) + (purposeFilter !== 'all' ? 1 : 0);
@@ -142,12 +156,12 @@ export function PropertyReportsSegment({
       });
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        Alert.alert('Cannot open PDF', 'No app available to view this link.');
+        showNotice('Cannot open PDF', 'No app available to view this link.');
         return;
       }
       await Linking.openURL(url);
     } catch (err) {
-      Alert.alert('Could not open PDF', err instanceof Error ? err.message : 'Unknown error');
+      showNotice('Could not open PDF', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setOpeningId(null);
     }
@@ -158,7 +172,7 @@ export function PropertyReportsSegment({
       if (!user || !property) return;
       const urls = getMappDeletionApiUrls();
       if (!urls?.report) {
-        Alert.alert('Delete unavailable', 'Deletion API is not configured.');
+        showNotice('Delete unavailable', 'Deletion API is not configured.');
         clearDeleting([report.id]);
         return;
       }
@@ -171,13 +185,13 @@ export function PropertyReportsSegment({
           reportId: report.id,
         });
         if (!result.ok) {
-          Alert.alert('Delete failed', result.failed[0]?.message ?? 'Unknown error');
+          showNotice('Delete failed', result.failed[0]?.message ?? 'Unknown error');
         }
       } finally {
         clearDeleting([report.id]);
       }
     },
-    [user, property, clearDeleting]
+    [user, property, clearDeleting, showNotice]
   );
 
   const handleShare = async (report: PropertyReport) => {
@@ -191,9 +205,12 @@ export function PropertyReportsSegment({
       });
       const base = WEB_APP_URL.replace(/\/$/, '');
       await Clipboard.setStringAsync(`${base}/share/report/${shareId}`);
-      Alert.alert('Share link copied', 'Anyone with the link can view this PDF until it expires.');
+      showNotice(
+        'Share link copied',
+        'Anyone with the link can view this PDF until it expires.'
+      );
     } catch (err) {
-      Alert.alert('Could not share report', err instanceof Error ? err.message : 'Unknown error');
+      showNotice('Could not share report', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSharingId(null);
     }
@@ -210,7 +227,7 @@ export function PropertyReportsSegment({
         includeInDocsChat: enabled,
       });
     } catch (err) {
-      Alert.alert(
+      showNotice(
         'Could not update Docs chat indexing',
         err instanceof Error ? err.message : 'Unknown error'
       );
@@ -219,36 +236,61 @@ export function PropertyReportsSegment({
     }
   };
 
-  const openMoreActions = (report: PropertyReport) => {
-    const isDeleting = isDeletingOverlay(report);
-    if (isDeleting) return;
-    const buttons: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [];
-    if (report.status === 'ready') {
-      buttons.push({ text: 'Edit title & notes', onPress: () => setEditReport(report) });
-      buttons.push({
-        text: sharingId === report.id ? 'Sharing…' : 'Share link',
-        onPress: () => void handleShare(report),
-      });
-    }
-    if (report.status !== 'generating') {
-      buttons.push({
-        text: 'Regenerate PDF',
+  const closeActionsSheet = React.useCallback(() => {
+    setActionsReport(null);
+  }, []);
+
+  const actionsForReport = React.useCallback(
+    (report: PropertyReport): ReportAction[] => {
+      const actions: ReportAction[] = [];
+      if (report.status === 'ready') {
+        actions.push({
+          id: 'edit',
+          label: 'Edit title & notes',
+          onPress: () => {
+            closeActionsSheet();
+            setEditReport(report);
+          },
+        });
+        actions.push({
+          id: 'share',
+          label: sharingId === report.id ? 'Sharing…' : 'Share link',
+          disabled: sharingId === report.id,
+          onPress: () => {
+            closeActionsSheet();
+            void handleShare(report);
+          },
+        });
+      }
+      if (report.status !== 'generating') {
+        actions.push({
+          id: 'regenerate',
+          label: 'Regenerate PDF',
+          onPress: () => {
+            closeActionsSheet();
+            setRegenerateFrom(report);
+            setIsGenerateModalVisible(true);
+          },
+        });
+      }
+      actions.push({
+        id: 'delete',
+        label: 'Delete',
+        destructive: true,
         onPress: () => {
-          setRegenerateFrom(report);
-          setIsGenerateModalVisible(true);
+          closeActionsSheet();
+          setReportToDelete(report);
+          setDeleteDialogOpen(true);
         },
       });
-    }
-    buttons.push({
-      text: 'Delete',
-      style: 'destructive',
-      onPress: () => {
-        setReportToDelete(report);
-        setDeleteDialogOpen(true);
-      },
-    });
-    buttons.push({ text: 'Cancel', style: 'cancel' });
-    Alert.alert(report.title || 'Report', 'Choose an action', buttons);
+      return actions;
+    },
+    [closeActionsSheet, handleShare, setIsGenerateModalVisible, sharingId]
+  );
+
+  const openMoreActions = (report: PropertyReport) => {
+    if (isDeletingOverlay(report)) return;
+    setActionsReport(report);
   };
 
   const confirmDeleteReport = () => {
@@ -395,6 +437,12 @@ export function PropertyReportsSegment({
           })
         )}
       </ScrollView>
+      <ReportActionsSheet
+        visible={!!actionsReport}
+        title={actionsReport?.title || 'Report'}
+        actions={actionsReport ? actionsForReport(actionsReport) : []}
+        onClose={closeActionsSheet}
+      />
       <ReportFiltersSheet
         visible={filterSheetVisible}
         onClose={() => setFilterSheetVisible(false)}
@@ -416,6 +464,13 @@ export function PropertyReportsSegment({
         visible={!!editReport}
         report={editReport}
         onClose={() => setEditReport(null)}
+      />
+      <AlertDialogWrapper
+        open={noticeOpen}
+        onOpenChange={setNoticeOpen}
+        title={noticeTitle}
+        description={noticeMessage}
+        confirmText="OK"
       />
       <AlertDialogWrapper
         open={deleteDialogOpen}
