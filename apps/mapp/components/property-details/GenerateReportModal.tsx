@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { getAppThemeColors } from '@/lib/css-theme-tokens';
+import { usePropertyReports } from '@/hooks/usePropertyReports';
 import { DateInput } from '@/components/ui/date-input';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
 import { useCheckpoint } from '@homeapp/common/contexts/checkpoint-context';
@@ -67,16 +68,19 @@ import {
   summarizeCheckpointPreview,
   reportWizardStepLabel,
   reportWizardStep2Hint,
+  comparisonBeforePeriodLabel,
+  comparisonAfterPeriodLabel,
+  comparisonWizardRangeHint,
+  comparisonUnpairedRowHint,
+  rangeEndAfterStartChange,
+  defaultReportMonthRange,
+  rentalComparisonRangesFromAnchors,
   type ReportIntentId,
   type ReportWizardStep,
 } from '@homeapp/common/lib/report-wizard';
 import { buildReportLayoutPreviewHtml } from '@homeapp/common/lib/report-preview-html';
 import { Switch } from '@/components/ui/switch';
 import { WebView } from 'react-native-webview';
-
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function DateRangeFields({
   startValue,
@@ -101,6 +105,33 @@ function DateRangeFields({
         <Text className="mb-1 text-sm font-medium text-foreground">To</Text>
         <DateInput value={endValue} onChange={onEndChange} />
       </View>
+    </View>
+  );
+}
+
+function SingleDateField({
+  label,
+  value,
+  onChange,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <View className={className}>
+      <Text className="mb-1 text-sm font-medium text-foreground">{label}</Text>
+      <DateInput value={value} onChange={onChange} />
+    </View>
+  );
+}
+
+function ChevronExpandIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
+      <Icon as={ChevronDown} size={16} className="text-muted-foreground" />
     </View>
   );
 }
@@ -137,12 +168,14 @@ export function GenerateReportModal({
 
   const [mode, setMode] = React.useState<ReportMode>('snapshot');
   const [title, setTitle] = React.useState('');
-  const [startDate, setStartDate] = React.useState(todayIsoDate());
-  const [endDate, setEndDate] = React.useState(todayIsoDate());
-  const [baselineStart, setBaselineStart] = React.useState(todayIsoDate());
-  const [baselineEnd, setBaselineEnd] = React.useState(todayIsoDate());
-  const [comparisonStart, setComparisonStart] = React.useState(todayIsoDate());
-  const [comparisonEnd, setComparisonEnd] = React.useState(todayIsoDate());
+  const [startDate, setStartDate] = React.useState(() => defaultReportMonthRange().start);
+  const [endDate, setEndDate] = React.useState(() => defaultReportMonthRange().end);
+  const [baselineStart, setBaselineStart] = React.useState(() => defaultReportMonthRange().start);
+  const [baselineEnd, setBaselineEnd] = React.useState(() => defaultReportMonthRange().end);
+  const [comparisonStart, setComparisonStart] = React.useState(() => defaultReportMonthRange().start);
+  const [comparisonEnd, setComparisonEnd] = React.useState(() => defaultReportMonthRange().end);
+  const [moveInAnchor, setMoveInAnchor] = React.useState(() => defaultReportMonthRange().start);
+  const [moveOutAnchor, setMoveOutAnchor] = React.useState(() => defaultReportMonthRange().end);
   const [notes, setNotes] = React.useState('');
   const [purpose, setPurpose] = React.useState<PropertyReportPurpose>('realtor_visit');
   const [layoutId, setLayoutId] = React.useState<PropertyReportLayoutId>('professional');
@@ -170,16 +203,68 @@ export function GenerateReportModal({
   const [layoutPreviewLoading, setLayoutPreviewLoading] = React.useState(false);
   const [layoutPreviewHtml, setLayoutPreviewHtml] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const { reports } = usePropertyReports();
+  const reportsRef = React.useRef(reports);
+  reportsRef.current = reports;
   const [error, setError] = React.useState<string | null>(null);
   const [slideDirection, setSlideDirection] = React.useState(1);
+  const baselineEndEditedRef = React.useRef(false);
+  const comparisonEndEditedRef = React.useRef(false);
 
-  const draftSnapshotRange = { start: startDate, end: endDate };
-  const draftComparisonRanges: ReportComparisonDateRanges = {
-    baselineStart,
-    baselineEnd,
-    comparisonStart,
-    comparisonEnd,
-  };
+  const resetComparisonDateEditFlags = React.useCallback(() => {
+    baselineEndEditedRef.current = false;
+    comparisonEndEditedRef.current = false;
+  }, []);
+
+  const handleBaselineStartChange = React.useCallback((next: string) => {
+    setBaselineStart(next);
+    setBaselineEnd((end) =>
+      rangeEndAfterStartChange(next, baselineStart, end, baselineEndEditedRef.current)
+    );
+  }, [baselineStart]);
+
+  const handleBaselineEndChange = React.useCallback((next: string) => {
+    baselineEndEditedRef.current = true;
+    setBaselineEnd(next);
+  }, []);
+
+  const handleComparisonStartChange = React.useCallback((next: string) => {
+    setComparisonStart(next);
+    setComparisonEnd((end) =>
+      rangeEndAfterStartChange(next, comparisonStart, end, comparisonEndEditedRef.current)
+    );
+  }, [comparisonStart]);
+
+  const handleComparisonEndChange = React.useCallback((next: string) => {
+    comparisonEndEditedRef.current = true;
+    setComparisonEnd(next);
+  }, []);
+
+  const draftSnapshotRange = React.useMemo(
+    () => ({ start: startDate, end: endDate }),
+    [startDate, endDate]
+  );
+  const draftComparisonRanges: ReportComparisonDateRanges = React.useMemo(
+    () =>
+      mode === 'comparison' && purpose === 'rental_security'
+        ? rentalComparisonRangesFromAnchors(moveInAnchor, moveOutAnchor)
+        : {
+            baselineStart,
+            baselineEnd,
+            comparisonStart,
+            comparisonEnd,
+          },
+    [
+      mode,
+      purpose,
+      moveInAnchor,
+      moveOutAnchor,
+      baselineStart,
+      baselineEnd,
+      comparisonStart,
+      comparisonEnd,
+    ]
+  );
 
   const fetchReportPreview = React.useCallback(
     (payload: ReportPreviewFetchPayload) => previewPropertyReport(payload),
@@ -201,6 +286,7 @@ export function GenerateReportModal({
   } = useReportWizardCheckpointPreview({
     enabled: visible && !isRegenerate && step === 2 && Boolean(user && property),
     mode,
+    purpose,
     userId: user?.uid,
     propertyId: property?.id,
     draftSnapshotRange,
@@ -211,9 +297,30 @@ export function GenerateReportModal({
     hasMoreLocalCheckpoints,
   });
 
+  const handleRentalMoveInChange = React.useCallback(
+    (next: string) => {
+      setMoveInAnchor(next);
+      if (mode === 'comparison' && purpose === 'rental_security') {
+        applyDates(rentalComparisonRangesFromAnchors(next, moveOutAnchor));
+      }
+    },
+    [applyDates, mode, moveOutAnchor, purpose]
+  );
+
+  const handleRentalMoveOutChange = React.useCallback(
+    (next: string) => {
+      setMoveOutAnchor(next);
+      if (mode === 'comparison' && purpose === 'rental_security') {
+        applyDates(rentalComparisonRangesFromAnchors(moveInAnchor, next));
+      }
+    },
+    [applyDates, moveInAnchor, mode, purpose]
+  );
+
   const selectIntent = React.useCallback((id: ReportIntentId) => {
     setIntentId(id);
     invalidatePreviewForIntentChange();
+    resetComparisonDateEditFlags();
     const next = applyReportIntent(id);
     setMode(next.mode);
     setPurpose(next.purpose);
@@ -224,6 +331,8 @@ export function GenerateReportModal({
     setBaselineEnd(next.baselineEnd);
     setComparisonStart(next.comparisonStart);
     setComparisonEnd(next.comparisonEnd);
+    setMoveInAnchor(next.baselineStart);
+    setMoveOutAnchor(next.baselineEnd);
     setLayoutId('professional');
     const defaults = buildReportTemplate(next.purpose, 'professional');
     setSectionToggles({
@@ -234,7 +343,7 @@ export function GenerateReportModal({
       includeRecommendations: defaults.includeRecommendations,
       includeSignatureBlock: defaults.includeSignatureBlock,
     });
-  }, [invalidatePreviewForIntentChange]);
+  }, [invalidatePreviewForIntentChange, resetComparisonDateEditFlags]);
 
   const handleClose = React.useCallback(() => {
     Keyboard.dismiss();
@@ -281,6 +390,8 @@ export function GenerateReportModal({
         setBaselineEnd(ranges.baselineRange.end);
         setComparisonStart(ranges.comparisonRange.start);
         setComparisonEnd(ranges.comparisonRange.end);
+        setMoveInAnchor(ranges.baselineRange.start);
+        setMoveOutAnchor(ranges.baselineRange.end);
       }
     } else {
       const snap = snapshotRangeFromReport(regenerateFrom);
@@ -294,6 +405,9 @@ export function GenerateReportModal({
   const goToStep2 = () => {
     if (!intentId) return;
     prepareStep2();
+    if (mode === 'comparison' && purpose === 'rental_security') {
+      applyDates(rentalComparisonRangesFromAnchors(moveInAnchor, moveOutAnchor));
+    }
     setSlideDirection(1);
     setStep(2);
   };
@@ -370,8 +484,14 @@ export function GenerateReportModal({
                 title: title.trim() || 'Property report',
                 mode: 'comparison',
                 purpose,
-                baselineRange: { start: baselineStart, end: baselineEnd },
-                comparisonRange: { start: comparisonStart, end: comparisonEnd },
+                baselineRange: {
+                  start: draftComparisonRanges.baselineStart,
+                  end: draftComparisonRanges.baselineEnd,
+                },
+                comparisonRange: {
+                  start: draftComparisonRanges.comparisonStart,
+                  end: draftComparisonRanges.comparisonEnd,
+                },
                 checkpointIds,
                 template,
                 customNotes: notes.trim() || undefined,
@@ -385,8 +505,24 @@ export function GenerateReportModal({
     })();
   };
 
+  const waitForReportInList = React.useCallback((reportId: string, maxMs = 4000) => {
+    return new Promise<void>((resolve) => {
+      if (reportsRef.current.some((report) => report.id === reportId)) {
+        resolve();
+        return;
+      }
+      const deadline = Date.now() + maxMs;
+      const timer = setInterval(() => {
+        if (reportsRef.current.some((report) => report.id === reportId) || Date.now() >= deadline) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 50);
+    });
+  }, []);
+
   const handleSubmit = async () => {
-    if (!user || !property) return;
+    if (!user || !property || submitting) return;
     const finalTitle = title.trim() || suggestReportTitle(purpose, mode, startDate, endDate);
     if (!isRegenerate) {
       const checkpointIds = Array.from(selectedCheckpointIds);
@@ -425,13 +561,20 @@ export function GenerateReportModal({
               title: finalTitle,
               mode: 'comparison',
               purpose,
-              baselineRange: { start: baselineStart, end: baselineEnd },
-              comparisonRange: { start: comparisonStart, end: comparisonEnd },
+              baselineRange: {
+                start: draftComparisonRanges.baselineStart,
+                end: draftComparisonRanges.baselineEnd,
+              },
+              comparisonRange: {
+                start: draftComparisonRanges.comparisonStart,
+                end: draftComparisonRanges.comparisonEnd,
+              },
               checkpointIds,
               customNotes: notes.trim() || undefined,
               template,
               regenerateReportId,
             });
+      await waitForReportInList(result.reportId);
       onQueued?.(result.warnings);
       resetWizard();
       handleClose();
@@ -520,31 +663,49 @@ export function GenerateReportModal({
             className="mb-4"
           />
         </>
+      ) : purpose === 'rental_security' ? (
+        <>
+          <SingleDateField
+            label="Move-in date"
+            value={moveInAnchor}
+            onChange={handleRentalMoveInChange}
+            className="mb-4"
+          />
+          <SingleDateField
+            label="Move-out date"
+            value={moveOutAnchor}
+            onChange={handleRentalMoveOutChange}
+            className="mb-4"
+          />
+          <Text className="mb-4 text-xs text-muted-foreground">
+            {comparisonWizardRangeHint(purpose)}
+          </Text>
+        </>
       ) : (
         <>
           <Text className="mb-2 text-sm font-medium text-foreground">
-            {purpose === 'rental_security' ? 'Before (move-in)' : 'Before (baseline)'}
+            {comparisonBeforePeriodLabel(purpose)}
           </Text>
           <DateRangeFields
             startValue={baselineStart}
             endValue={baselineEnd}
-            onStartChange={setBaselineStart}
-            onEndChange={setBaselineEnd}
+            onStartChange={handleBaselineStartChange}
+            onEndChange={handleBaselineEndChange}
             className="mb-4"
           />
           <Text className="mb-2 text-sm font-medium text-foreground">
-            {purpose === 'rental_security' ? 'After (move-out)' : 'After (comparison)'}
+            {comparisonAfterPeriodLabel(purpose)}
           </Text>
           <DateRangeFields
             startValue={comparisonStart}
             endValue={comparisonEnd}
-            onStartChange={setComparisonStart}
-            onEndChange={setComparisonEnd}
+            onStartChange={handleComparisonStartChange}
+            onEndChange={handleComparisonEndChange}
             className="mb-4"
           />
         </>
       )}
-      {datesDirty ? (
+      {datesDirty && purpose !== 'rental_security' ? (
         <View className="mb-4 flex-row items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
           <Text className="flex-1 text-xs text-muted-foreground">
             Dates changed — update to refresh checkpoints
@@ -590,14 +751,7 @@ export function GenerateReportModal({
                 <CollapsibleTrigger asChild>
                   <Pressable className="mb-2 h-8 flex-row items-center justify-between rounded-lg border border-border px-3 py-1.5">
                     <Text className="text-sm font-medium text-foreground">Included checkpoints</Text>
-                    <Icon
-                      as={ChevronDown}
-                      size={16}
-                      className={cn(
-                        'text-muted-foreground transition-transform duration-200',
-                        checkpointsExpanded && 'rotate-180'
-                      )}
-                    />
+                    <ChevronExpandIcon expanded={checkpointsExpanded} />
                   </Pressable>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -645,6 +799,27 @@ export function GenerateReportModal({
                           </View>
                         </View>
                       ))}
+                      {[...preview.baselineOnly, ...preview.comparisonOnly].map((row) => (
+                        <View
+                          key={row.checkpointId}
+                          className="flex-row items-center justify-between rounded-lg border border-border px-2.5 py-1.5">
+                          <View className="flex-1 pr-2">
+                            <Text className="text-sm font-medium text-foreground">
+                              {row.location || row.name}
+                            </Text>
+                            <Text className="text-xs text-muted-foreground">
+                              {comparisonUnpairedRowHint(purpose)}
+                            </Text>
+                          </View>
+                          <Switch
+                            size="sm"
+                            checked={selectedCheckpointIds.has(row.checkpointId)}
+                            onCheckedChange={(checked) =>
+                              toggleCheckpoint(row.checkpointId, checked)
+                            }
+                          />
+                        </View>
+                      ))}
                     </View>
                   )}
                 </CollapsibleContent>
@@ -668,14 +843,7 @@ export function GenerateReportModal({
         <CollapsibleTrigger asChild>
           <Pressable className="mb-2 h-8 flex-row items-center justify-between rounded-lg border border-border px-3 py-1.5">
             <Text className="text-sm font-medium text-foreground">Advanced PDF sections</Text>
-            <Icon
-              as={ChevronDown}
-              size={16}
-              className={cn(
-                'text-muted-foreground transition-transform duration-200',
-                advancedOpen && 'rotate-180'
-              )}
-            />
+            <ChevronExpandIcon expanded={advancedOpen} />
           </Pressable>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -796,7 +964,7 @@ export function GenerateReportModal({
                 {submitting ? (
                   <View className="flex-row items-center gap-2">
                     <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />
-                    <Text className="text-primary-foreground">Creating…</Text>
+                    <Text className="text-primary-foreground">Submitting…</Text>
                   </View>
                 ) : (
                   <Text className="text-primary-foreground">Create PDF</Text>
@@ -811,11 +979,19 @@ export function GenerateReportModal({
                 onPress={() => {
                   setSlideDirection(-1);
                   setRegenerateAdvanced(false);
-                }}>
+                }}
+                disabled={submitting}>
                 <Text>Back</Text>
               </Button>
               <Button className="flex-1" onPress={handleSubmit} disabled={submitting}>
-                <Text className="text-primary-foreground">Create PDF</Text>
+                {submitting ? (
+                  <View className="flex-row items-center gap-2">
+                    <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />
+                    <Text className="text-primary-foreground">Submitting…</Text>
+                  </View>
+                ) : (
+                  <Text className="text-primary-foreground">Create PDF</Text>
+                )}
               </Button>
             </View>
           ) : step === 1 ? (
@@ -837,7 +1013,7 @@ export function GenerateReportModal({
               <Button
                 className="flex-1"
                 onPress={() => {
-                  if (datesDirty) {
+                  if (datesDirty && purpose !== 'rental_security') {
                     setError('Update checkpoints after changing dates');
                     return;
                   }
@@ -848,7 +1024,7 @@ export function GenerateReportModal({
                   setError(null);
                   goToStep3();
                 }}
-                disabled={previewLoading || datesDirty}>
+                disabled={previewLoading || (datesDirty && purpose !== 'rental_security')}>
                 <Text className="text-primary-foreground">Continue</Text>
               </Button>
             </View>
@@ -858,7 +1034,7 @@ export function GenerateReportModal({
                 <Button
                   variant="outline"
                   onPress={openLayoutPreview}
-                  disabled={layoutPreviewLoading}>
+                  disabled={layoutPreviewLoading || submitting}>
                   {layoutPreviewLoading ? (
                     <>
                       <Icon as={Loader2} size={16} className="animate-spin text-foreground" />
@@ -876,12 +1052,16 @@ export function GenerateReportModal({
                   onPress={() => {
                     setSlideDirection(-1);
                     setStep(2);
-                  }}>
+                  }}
+                  disabled={submitting}>
                   <Text>Back</Text>
                 </Button>
                 <Button className="flex-1" onPress={handleSubmit} disabled={submitting}>
                   {submitting ? (
-                    <Text className="text-primary-foreground">Creating…</Text>
+                    <View className="flex-row items-center gap-2">
+                      <Icon as={Loader2} size={18} className="animate-spin text-primary-foreground" />
+                      <Text className="text-primary-foreground">Submitting…</Text>
+                    </View>
                   ) : (
                     <Text className="text-primary-foreground">Create PDF</Text>
                   )}

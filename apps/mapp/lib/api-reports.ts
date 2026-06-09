@@ -68,6 +68,7 @@ export type ReportPreviewPayload =
       userId: string;
       propertyId: string;
       mode: 'comparison';
+      purpose?: 'rental_security' | 'realtor_visit' | 'insurance' | 'custom';
       baselineRange: ReportDateRange;
       comparisonRange: ReportDateRange;
     };

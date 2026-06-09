@@ -1,6 +1,7 @@
 import * as React from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import type { PropertyReport } from "../types";
+import { reportComparisonDateRangeLabel } from "../lib/report-wizard";
 import { useAuth } from "./auth-context";
 import { useFirebase } from "./firebase-context";
 import { useProperty } from "./property-context";
@@ -107,6 +108,16 @@ function formatRangeBound(value: unknown): string | undefined {
 }
 
 export function reportDateRangeLabel(report: PropertyReport): string {
+  if (report.mode === "comparison") {
+    const label = reportComparisonDateRangeLabel(
+      report.purpose ?? "custom",
+      formatRangeBound(report.baselineRange?.start),
+      formatRangeBound(report.baselineRange?.end),
+      formatRangeBound(report.comparisonRange?.start),
+      formatRangeBound(report.comparisonRange?.end)
+    );
+    if (label) return label;
+  }
   const range = report.snapshotRange;
   if (!range) return "—";
   return formatReportDateRange(

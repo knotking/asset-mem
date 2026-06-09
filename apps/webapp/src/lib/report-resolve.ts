@@ -4,8 +4,13 @@ import type {
   Checkpoint,
   ReportPreviewCheckpoint,
   ReportPreviewResponse,
+  PropertyReportPurpose,
 } from '@/lib/types';
 import type { ReportComparisonDateRanges, ReportSnapshotDateRange } from '@/lib/report-preview';
+import {
+  comparisonLowPairRateWarning,
+  rentalSinglePhotoWarning,
+} from '@/lib/report-wizard';
 
 const COMPARISON_PAIR_RATE_WARN_THRESHOLD = 0.5;
 
@@ -103,6 +108,15 @@ export function pickLatestCheckpointPerLocation(
   return byLocation;
 }
 
+function sortCheckpointsByDate(checkpoints: Checkpoint[]): Checkpoint[] {
+  return [...checkpoints].sort((a, b) => {
+    const aDt = checkpointEffectiveDate(a)?.getTime() ?? 0;
+    const bDt = checkpointEffectiveDate(b)?.getTime() ?? 0;
+    if (aDt !== bDt) return aDt - bDt;
+    return (b.assetConfidence ?? 0) - (a.assetConfidence ?? 0);
+  });
+}
+
 export type ComparisonResolution = {
   pairs: Array<{
     location: string;
@@ -122,11 +136,8 @@ export function resolveComparisonFromCheckpoints(
 ): ComparisonResolution {
   const baselineInRange = collectCheckpointsInRange(checkpoints, baselineRange);
   const comparisonInRange = collectCheckpointsInRange(checkpoints, comparisonRange);
-  if (baselineInRange.length === 0) {
-    throw new Error('No checkpoints in baseline date range');
-  }
-  if (comparisonInRange.length === 0) {
-    throw new Error('No checkpoints in comparison date range');
+  if (baselineInRange.length === 0 && comparisonInRange.length === 0) {
+    throw new Error('No checkpoints in the selected date ranges');
   }
 
   const baselineLatest = pickLatestCheckpointPerLocation(baselineInRange);
@@ -158,7 +169,60 @@ export function resolveComparisonFromCheckpoints(
   return { pairs, baselineOnly, comparisonOnly };
 }
 
-export function comparisonResolutionWarnings(resolution: ComparisonResolution): string[] {
+/** Rental move-in/out: one tenancy window; earliest vs latest checkpoint per location. */
+export function resolveRentalComparisonFromCheckpoints(
+  checkpoints: Checkpoint[],
+  tenancyRange: ReportSnapshotDateRange
+): ComparisonResolution {
+  const inRange = collectCheckpointsInRange(checkpoints, tenancyRange);
+  if (inRange.length === 0) {
+    throw new Error('No checkpoints in the selected date ranges');
+  }
+
+  const byLocation = new Map<string, Checkpoint[]>();
+  for (const cp of inRange) {
+    const loc = normalizeReportLocation(cp.location);
+    const list = byLocation.get(loc) ?? [];
+    list.push(cp);
+    byLocation.set(loc, list);
+  }
+
+  const pairs: ComparisonResolution['pairs'] = [];
+  const baselineOnly: ReportPreviewCheckpoint[] = [];
+  const comparisonOnly: ReportPreviewCheckpoint[] = [];
+
+  for (const loc of [...byLocation.keys()].sort()) {
+    const sorted = sortCheckpointsByDate(byLocation.get(loc) ?? []);
+    if (sorted.length >= 2) {
+      const earliest = sorted[0];
+      const latest = sorted[sorted.length - 1];
+      if (earliest.id === latest.id) {
+        baselineOnly.push(toPreviewCheckpoint(earliest));
+        continue;
+      }
+      pairs.push({
+        location: displayLocation(earliest, loc),
+        baselineCheckpointId: earliest.id,
+        comparisonCheckpointId: latest.id,
+        baseline: toPreviewCheckpoint(earliest),
+        comparison: toPreviewCheckpoint(latest),
+      });
+    } else if (sorted[0]) {
+      baselineOnly.push(toPreviewCheckpoint(sorted[0]));
+    }
+  }
+
+  return { pairs, baselineOnly, comparisonOnly };
+}
+
+export function comparisonResolutionWarnings(
+  resolution: ComparisonResolution,
+  purpose: PropertyReportPurpose = 'custom'
+): string[] {
+  const beforeLabel =
+    purpose === 'rental_security' ? 'move-in period' : 'earlier period';
+  const afterLabel =
+    purpose === 'rental_security' ? 'move-out period' : 'later period';
   const warnings: string[] = [];
   const paired = resolution.pairs.length;
   const unpaired = resolution.baselineOnly.length + resolution.comparisonOnly.length;
@@ -166,19 +230,18 @@ export function comparisonResolutionWarnings(resolution: ComparisonResolution): 
   const rate = total === 0 ? 0 : paired / total;
 
   if (rate < COMPARISON_PAIR_RATE_WARN_THRESHOLD) {
-    warnings.push(
-      `Only ${Math.round(rate * 100)}% of locations paired between baseline and comparison ` +
-        'ranges. Unpaired rooms appear in the report appendix.'
-    );
+    warnings.push(comparisonLowPairRateWarning(rate, purpose));
   }
   if (resolution.baselineOnly.length > 0) {
     warnings.push(
-      `${resolution.baselineOnly.length} location(s) only in the baseline range.`
+      purpose === 'rental_security'
+        ? rentalSinglePhotoWarning(resolution.baselineOnly.length)
+        : `${resolution.baselineOnly.length} location(s) only in the ${beforeLabel}.`
     );
   }
   if (resolution.comparisonOnly.length > 0) {
     warnings.push(
-      `${resolution.comparisonOnly.length} location(s) only in the comparison range.`
+      `${resolution.comparisonOnly.length} location(s) only in the ${afterLabel}.`
     );
   }
   return warnings;
@@ -200,19 +263,23 @@ export function resolveSnapshotPreviewFromCheckpoints(
 export function resolveComparisonPreviewFromCheckpoints(
   checkpoints: Checkpoint[],
   baselineRange: ReportSnapshotDateRange,
-  comparisonRange: ReportSnapshotDateRange
+  comparisonRange: ReportSnapshotDateRange,
+  purpose: PropertyReportPurpose = 'custom'
 ): ReportPreviewResponse {
-  const resolution = resolveComparisonFromCheckpoints(
-    checkpoints,
-    baselineRange,
-    comparisonRange
-  );
+  const resolution =
+    purpose === 'rental_security'
+      ? resolveRentalComparisonFromCheckpoints(checkpoints, baselineRange)
+      : resolveComparisonFromCheckpoints(
+          checkpoints,
+          baselineRange,
+          comparisonRange
+        );
   return {
     mode: 'comparison',
     pairs: resolution.pairs,
     baselineOnly: resolution.baselineOnly,
     comparisonOnly: resolution.comparisonOnly,
-    warnings: comparisonResolutionWarnings(resolution),
+    warnings: comparisonResolutionWarnings(resolution, purpose),
   };
 }
 
@@ -269,6 +336,15 @@ export function canResolveReportPreviewLocally(
   if (!options.comparisonRanges) return false;
   const { baselineStart, baselineEnd, comparisonStart, comparisonEnd } =
     options.comparisonRanges;
+  const sameSpan =
+    baselineStart === comparisonStart && baselineEnd === comparisonEnd;
+  if (sameSpan) {
+    return snapshotRangeCoveredByLoadedCheckpoints(
+      checkpoints,
+      { start: baselineStart, end: baselineEnd },
+      options.hasMoreCheckpoints
+    );
+  }
   return (
     snapshotRangeCoveredByLoadedCheckpoints(
       checkpoints,
@@ -291,6 +367,7 @@ export function prepareReportPreviewFromCheckpoints(
         mode: 'comparison';
         baselineRange: ReportSnapshotDateRange;
         comparisonRange: ReportSnapshotDateRange;
+        purpose?: PropertyReportPurpose;
       }
 ): ReportPreviewResponse {
   if (payload.mode === 'snapshot') {
@@ -299,6 +376,7 @@ export function prepareReportPreviewFromCheckpoints(
   return resolveComparisonPreviewFromCheckpoints(
     checkpoints,
     payload.baselineRange,
-    payload.comparisonRange
+    payload.comparisonRange,
+    payload.purpose
   );
 }

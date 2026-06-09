@@ -265,39 +265,64 @@ def _pick_latest_per_location(
     return by_location
 
 
+def _sort_checkpoints_by_date(
+    checkpoints: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    def sort_key(cp: dict[str, Any]) -> tuple[Any, float]:
+        effective = _checkpoint_effective_datetime(cp) or datetime.min.replace(
+            tzinfo=timezone.utc
+        )
+        return (effective, -float(cp.get("assetConfidence") or 0))
+
+    return sorted(checkpoints, key=sort_key)
+
+
+def _resolve_rental_comparison_from_in_range(
+    in_range: list[dict[str, Any]],
+) -> ComparisonResolution:
+    by_location: dict[str, list[dict[str, Any]]] = {}
+    for cp in in_range:
+        loc = _normalize_location(cp.get("location"))
+        by_location.setdefault(loc, []).append(cp)
+
+    pairs: list[dict[str, str]] = []
+    baseline_only_ids: list[str] = []
+    comparison_only_ids: list[str] = []
+
+    for loc in sorted(by_location):
+        sorted_cps = _sort_checkpoints_by_date(by_location[loc])
+        if len(sorted_cps) >= 2:
+            earliest = sorted_cps[0]
+            latest = sorted_cps[-1]
+            if str(earliest["id"]) == str(latest["id"]):
+                baseline_only_ids.append(str(earliest["id"]))
+                continue
+            pairs.append(
+                {
+                    "location": _display_location(earliest, loc),
+                    "baselineCheckpointId": str(earliest["id"]),
+                    "comparisonCheckpointId": str(latest["id"]),
+                }
+            )
+        elif sorted_cps:
+            baseline_only_ids.append(str(sorted_cps[0]["id"]))
+
+    return ComparisonResolution(
+        pairs=pairs,
+        baseline_only_ids=baseline_only_ids,
+        comparison_only_ids=comparison_only_ids,
+    )
+
+
 def _display_location(checkpoint: dict[str, Any], normalized_loc: str) -> str:
     raw = (checkpoint.get("location") or "").strip()
     return raw or normalized_loc
 
 
-def resolve_comparison_checkpoints(
-    db: firestore.Client,
-    user_id: str,
-    property_id: str,
-    *,
-    baseline_range: dict[str, str],
-    comparison_range: dict[str, str],
+def _comparison_resolution_from_location_maps(
+    baseline_latest: dict[str, dict[str, Any]],
+    comparison_latest: dict[str, dict[str, Any]],
 ) -> ComparisonResolution:
-    baseline_in_range = _collect_checkpoints_in_range(
-        db,
-        user_id,
-        property_id,
-        date_range=baseline_range,
-    )
-    comparison_in_range = _collect_checkpoints_in_range(
-        db,
-        user_id,
-        property_id,
-        date_range=comparison_range,
-    )
-    if not baseline_in_range:
-        raise ValueError("No checkpoints in baseline date range")
-    if not comparison_in_range:
-        raise ValueError("No checkpoints in comparison date range")
-
-    baseline_latest = _pick_latest_per_location(baseline_in_range)
-    comparison_latest = _pick_latest_per_location(comparison_in_range)
-
     pairs: list[dict[str, str]] = []
     baseline_only_ids: list[str] = []
     comparison_only_ids: list[str] = []
@@ -322,6 +347,152 @@ def resolve_comparison_checkpoints(
         pairs=pairs,
         baseline_only_ids=baseline_only_ids,
         comparison_only_ids=comparison_only_ids,
+    )
+
+
+def _checkpoints_in_date_range(
+    checkpoints: list[dict[str, Any]],
+    date_range: dict[str, str],
+) -> list[dict[str, Any]]:
+    start = _parse_iso_date(date_range["start"])
+    end = _parse_iso_date(date_range["end"], end_of_day=True)
+    in_range: list[dict[str, Any]] = []
+    for cp in checkpoints:
+        effective = _checkpoint_effective_datetime(cp)
+        if effective is None or effective < start or effective > end:
+            continue
+        in_range.append(cp)
+    return in_range
+
+
+def resolve_comparison_checkpoints(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    *,
+    baseline_range: dict[str, str],
+    comparison_range: dict[str, str],
+) -> ComparisonResolution:
+    baseline_in_range = _collect_checkpoints_in_range(
+        db,
+        user_id,
+        property_id,
+        date_range=baseline_range,
+    )
+    comparison_in_range = _collect_checkpoints_in_range(
+        db,
+        user_id,
+        property_id,
+        date_range=comparison_range,
+    )
+    if not baseline_in_range and not comparison_in_range:
+        raise ValueError("No checkpoints in the selected date ranges")
+
+    baseline_latest = _pick_latest_per_location(baseline_in_range)
+    comparison_latest = _pick_latest_per_location(comparison_in_range)
+    return _comparison_resolution_from_location_maps(baseline_latest, comparison_latest)
+
+
+def resolve_comparison_from_checkpoint_ids(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    *,
+    checkpoint_ids: list[str],
+    baseline_range: dict[str, str],
+    comparison_range: dict[str, str],
+) -> ComparisonResolution:
+    checkpoints = _load_checkpoints_by_ids(db, user_id, property_id, checkpoint_ids)
+    if len(checkpoints) != len(checkpoint_ids):
+        raise ValueError("One or more comparison checkpoints were not found")
+
+    baseline_in_range = _checkpoints_in_date_range(checkpoints, baseline_range)
+    comparison_in_range = _checkpoints_in_date_range(checkpoints, comparison_range)
+    if not baseline_in_range and not comparison_in_range:
+        raise ValueError("No checkpoints resolved for comparison report")
+
+    baseline_latest = _pick_latest_per_location(baseline_in_range)
+    comparison_latest = _pick_latest_per_location(comparison_in_range)
+    return _comparison_resolution_from_location_maps(baseline_latest, comparison_latest)
+
+
+def resolve_rental_comparison_checkpoints(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    *,
+    tenancy_range: dict[str, str],
+) -> ComparisonResolution:
+    in_range = _collect_checkpoints_in_range(
+        db,
+        user_id,
+        property_id,
+        date_range=tenancy_range,
+    )
+    if not in_range:
+        raise ValueError("No checkpoints in the selected date ranges")
+    return _resolve_rental_comparison_from_in_range(in_range)
+
+
+def resolve_rental_comparison_from_checkpoint_ids(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    *,
+    checkpoint_ids: list[str],
+    tenancy_range: dict[str, str],
+) -> ComparisonResolution:
+    checkpoints = _load_checkpoints_by_ids(db, user_id, property_id, checkpoint_ids)
+    if len(checkpoints) != len(checkpoint_ids):
+        raise ValueError("One or more comparison checkpoints were not found")
+
+    in_range = _checkpoints_in_date_range(checkpoints, tenancy_range)
+    if not in_range:
+        raise ValueError("No checkpoints resolved for comparison report")
+    return _resolve_rental_comparison_from_in_range(in_range)
+
+
+def resolve_comparison_for_purpose(
+    db: firestore.Client,
+    user_id: str,
+    property_id: str,
+    *,
+    purpose: str | None,
+    baseline_range: dict[str, str],
+    comparison_range: dict[str, str],
+    checkpoint_ids: Optional[list[str]] = None,
+) -> ComparisonResolution:
+    if purpose == "rental_security":
+        tenancy_range = baseline_range
+        if checkpoint_ids:
+            return resolve_rental_comparison_from_checkpoint_ids(
+                db,
+                user_id,
+                property_id,
+                checkpoint_ids=checkpoint_ids,
+                tenancy_range=tenancy_range,
+            )
+        return resolve_rental_comparison_checkpoints(
+            db,
+            user_id,
+            property_id,
+            tenancy_range=tenancy_range,
+        )
+    if checkpoint_ids:
+        return resolve_comparison_from_checkpoint_ids(
+            db,
+            user_id,
+            property_id,
+            checkpoint_ids=checkpoint_ids,
+            baseline_range=baseline_range,
+            comparison_range=comparison_range,
+        )
+    return resolve_comparison_checkpoints(
+        db,
+        user_id,
+        property_id,
+        baseline_range=baseline_range,
+        comparison_range=comparison_range,
     )
 
 
@@ -391,14 +562,15 @@ def prepare_report_preview(
         raise ValueError(
             "baselineRange and comparisonRange are required for comparison preview"
         )
-    resolution = resolve_comparison_checkpoints(
+    resolution = resolve_comparison_for_purpose(
         db,
         request.userId,
         request.propertyId,
+        purpose=request.purpose,
         baseline_range=request.baselineRange.model_dump(),
         comparison_range=request.comparisonRange.model_dump(),
     )
-    warnings = comparison_resolution_warnings(resolution)
+    warnings = comparison_resolution_warnings(resolution, request.purpose)
     checkpoint_ids = resolution.all_checkpoint_ids()
     by_id = {
         str(cp["id"]): cp
@@ -438,21 +610,49 @@ def prepare_report_preview(
     }
 
 
-def comparison_resolution_warnings(resolution: ComparisonResolution) -> list[str]:
+def comparison_resolution_warnings(
+    resolution: ComparisonResolution,
+    purpose: str | None = None,
+) -> list[str]:
+    if purpose == "rental_security":
+        before_label, after_label = "move-in", "move-out"
+    else:
+        before_label, after_label = "earlier period", "later period"
     warnings: list[str] = []
     rate = resolution.pair_rate()
     if rate < COMPARISON_PAIR_RATE_WARN_THRESHOLD:
-        warnings.append(
-            f"Only {int(rate * 100)}% of locations paired between baseline and comparison "
-            "ranges. Unpaired rooms appear in the report appendix."
-        )
+        if purpose == "rental_security":
+            warnings.append(
+                f"Only {int(rate * 100)}% of locations have photos at both move-in and "
+                "move-out. The rest appear in the report appendix."
+            )
+        else:
+            warnings.append(
+                f"Only {int(rate * 100)}% of locations paired across {before_label} and "
+                f"{after_label}. Unpaired locations appear in the report appendix."
+            )
     if resolution.baseline_only_ids:
-        warnings.append(
-            f"{len(resolution.baseline_only_ids)} location(s) only in the baseline range."
-        )
+        count = len(resolution.baseline_only_ids)
+        if purpose == "rental_security":
+            if count == 1:
+                warnings.append(
+                    "1 location has only one photo between move-in and move-out, so we "
+                    "can't compare before vs after. It will still appear in the report "
+                    "appendix."
+                )
+            else:
+                warnings.append(
+                    f"{count} locations have only one photo between move-in and move-out, "
+                    "so we can't compare before vs after. They will still appear in the "
+                    "report appendix."
+                )
+        else:
+            warnings.append(
+                f"{count} location(s) only in the {before_label}."
+            )
     if resolution.comparison_only_ids:
         warnings.append(
-            f"{len(resolution.comparison_only_ids)} location(s) only in the comparison range."
+            f"{len(resolution.comparison_only_ids)} location(s) only in the {after_label}."
         )
     return warnings
 
@@ -979,16 +1179,16 @@ def prepare_report_generation(
             raise ValueError(
                 "baselineRange and comparisonRange are required for comparison reports"
             )
-        comparison_resolution = resolve_comparison_checkpoints(
+        baseline_range = request.baselineRange.model_dump()
+        comparison_range = request.comparisonRange.model_dump()
+        comparison_resolution = resolve_comparison_for_purpose(
             db,
             request.userId,
             request.propertyId,
-            baseline_range=request.baselineRange.model_dump(),
-            comparison_range=request.comparisonRange.model_dump(),
-        )
-        comparison_resolution = filter_comparison_resolution(
-            comparison_resolution,
-            request.checkpointIds,
+            purpose=request.purpose,
+            baseline_range=baseline_range,
+            comparison_range=comparison_range,
+            checkpoint_ids=request.checkpointIds,
         )
         if not comparison_resolution.pairs and not (
             comparison_resolution.baseline_only_ids
@@ -1002,7 +1202,7 @@ def prepare_report_generation(
         if len(checkpoints) != len(checkpoint_ids):
             raise ValueError("One or more comparison checkpoints were not found")
         validate_checkpoints_for_report(checkpoints)
-        warnings = comparison_resolution_warnings(comparison_resolution)
+        warnings = comparison_resolution_warnings(comparison_resolution, request.purpose)
     else:
         raise ValueError(f"Unsupported report mode: {request.mode}")
 
@@ -1087,12 +1287,14 @@ def prepare_report_preview_html(
             raise ValueError(
                 "baselineRange and comparisonRange are required for comparison preview"
             )
-        comparison_resolution = resolve_comparison_checkpoints(
+        comparison_resolution = resolve_comparison_for_purpose(
             db,
             request.userId,
             request.propertyId,
+            purpose=request.purpose,
             baseline_range=request.baselineRange.model_dump(),
             comparison_range=request.comparisonRange.model_dump(),
+            checkpoint_ids=request.checkpointIds,
         )
         comparison_resolution = filter_comparison_resolution(
             comparison_resolution,
@@ -1109,7 +1311,7 @@ def prepare_report_preview_html(
         )
         if len(checkpoints) != len(checkpoint_ids):
             raise ValueError("One or more comparison checkpoints were not found")
-        warnings = comparison_resolution_warnings(comparison_resolution)
+        warnings = comparison_resolution_warnings(comparison_resolution, request.purpose)
     else:
         raise ValueError(f"Unsupported report mode: {request.mode}")
 

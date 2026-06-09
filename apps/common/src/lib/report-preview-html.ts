@@ -29,7 +29,7 @@ export type ReportLayoutPreviewInput = {
   selectedCount: number;
 };
 
-function checkpointRows(preview: ReportPreviewResponse): string[] {
+function checkpointRows(preview: ReportPreviewResponse, purpose: PropertyReportPurpose): string[] {
   if (preview.mode === "snapshot") {
     return preview.checkpoints.map(
       (row) =>
@@ -38,18 +38,24 @@ function checkpointRows(preview: ReportPreviewResponse): string[] {
         )}</li>`
     );
   }
+  const pairLabel =
+    purpose === "rental_security" ? "move-in + move-out pair" : "paired across both periods";
+  const beforeOnlyLabel =
+    purpose === "rental_security" ? "one photo only — appendix" : "earlier period only";
+  const afterOnlyLabel =
+    purpose === "rental_security" ? "move-out only" : "later period only";
   const rows: string[] = [];
   for (const pair of preview.pairs) {
-    rows.push(`<li><strong>${escapeHtml(pair.location)}</strong> — baseline + comparison pair</li>`);
+    rows.push(`<li><strong>${escapeHtml(pair.location)}</strong> — ${pairLabel}</li>`);
   }
   for (const row of preview.baselineOnly) {
     rows.push(
-      `<li><strong>${escapeHtml(row.location || row.name)}</strong> — baseline only</li>`
+      `<li><strong>${escapeHtml(row.location || row.name)}</strong> — ${beforeOnlyLabel}</li>`
     );
   }
   for (const row of preview.comparisonOnly) {
     rows.push(
-      `<li><strong>${escapeHtml(row.location || row.name)}</strong> — comparison only</li>`
+      `<li><strong>${escapeHtml(row.location || row.name)}</strong> — ${afterOnlyLabel}</li>`
     );
   }
   return rows;
@@ -67,7 +73,7 @@ function escapeHtml(value: string): string {
 export function buildReportLayoutPreviewHtml(input: ReportLayoutPreviewInput): string {
   const accent = PURPOSE_ACCENT[input.purpose];
   const brand = PURPOSE_BRAND[input.purpose];
-  const rows = checkpointRows(input.preview);
+  const rows = checkpointRows(input.preview, input.purpose);
   const modeLabel = input.preview.mode === "comparison" ? "Comparison" : "Snapshot";
   const warnings =
     input.preview.warnings?.length > 0

@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { purposeLabel, REPORT_PURPOSE_OPTIONS } from '@/lib/report-templates';
 import { reportRangeBound } from '@/lib/report-range';
+import { reportComparisonDateRangeLabel } from '@/lib/report-wizard';
 import { getFirebaseIdTokenForProxy } from '@/lib/proxy-auth';
 import { deleteReportViaProxy } from '@/lib/deletion/api-client';
 import { resourceDeletingLabel } from '@/lib/deletion/ux-copy';
@@ -71,13 +72,14 @@ const REPORT_DOCS_CHAT_RAG_ENABLED = parseFeatureFlagEnv(
 
 function dateRangeForReport(report: PropertyReport): string {
   if (report.mode === 'comparison') {
-    const bStart = reportRangeBound(report.baselineRange?.start);
-    const bEnd = reportRangeBound(report.baselineRange?.end);
-    const cStart = reportRangeBound(report.comparisonRange?.start);
-    const cEnd = reportRangeBound(report.comparisonRange?.end);
-    if (bStart && cStart) {
-      return `Baseline ${bStart}${bEnd && bEnd !== bStart ? ` — ${bEnd}` : ''} · Comparison ${cStart}${cEnd && cEnd !== cStart ? ` — ${cEnd}` : ''}`;
-    }
+    const label = reportComparisonDateRangeLabel(
+      report.purpose ?? 'custom',
+      reportRangeBound(report.baselineRange?.start),
+      reportRangeBound(report.baselineRange?.end),
+      reportRangeBound(report.comparisonRange?.start),
+      reportRangeBound(report.comparisonRange?.end)
+    );
+    if (label) return label;
   }
   const range = report.snapshotRange;
   if (!range) return '—';

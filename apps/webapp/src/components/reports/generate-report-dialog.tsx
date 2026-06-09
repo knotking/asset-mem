@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,13 @@ import {
   summarizeCheckpointPreview,
   reportWizardStepLabel,
   reportWizardStep2Hint,
+  comparisonBeforePeriodLabel,
+  comparisonAfterPeriodLabel,
+  comparisonWizardRangeHint,
+  comparisonUnpairedRowHint,
+  rangeEndAfterStartChange,
+  defaultReportMonthRange,
+  rentalComparisonRangesFromAnchors,
   type ReportIntentId,
   type ReportWizardStep,
 } from '@/lib/report-wizard';
@@ -72,10 +79,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { WizardStepPresence } from '@/components/reports/report-wizard-motion';
-
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 type ReportMode = 'snapshot' | 'comparison';
 
@@ -100,12 +103,14 @@ export function GenerateReportDialog({
   const { toast } = useToast();
   const [mode, setMode] = useState<ReportMode>('snapshot');
   const [title, setTitle] = useState('');
-  const [startDate, setStartDate] = useState(todayIsoDate());
-  const [endDate, setEndDate] = useState(todayIsoDate());
-  const [baselineStart, setBaselineStart] = useState(todayIsoDate());
-  const [baselineEnd, setBaselineEnd] = useState(todayIsoDate());
-  const [comparisonStart, setComparisonStart] = useState(todayIsoDate());
-  const [comparisonEnd, setComparisonEnd] = useState(todayIsoDate());
+  const [startDate, setStartDate] = useState(() => defaultReportMonthRange().start);
+  const [endDate, setEndDate] = useState(() => defaultReportMonthRange().end);
+  const [baselineStart, setBaselineStart] = useState(() => defaultReportMonthRange().start);
+  const [baselineEnd, setBaselineEnd] = useState(() => defaultReportMonthRange().end);
+  const [comparisonStart, setComparisonStart] = useState(() => defaultReportMonthRange().start);
+  const [comparisonEnd, setComparisonEnd] = useState(() => defaultReportMonthRange().end);
+  const [moveInAnchor, setMoveInAnchor] = useState(() => defaultReportMonthRange().start);
+  const [moveOutAnchor, setMoveOutAnchor] = useState(() => defaultReportMonthRange().end);
   const [notes, setNotes] = useState('');
   const [purpose, setPurpose] = useState<PropertyReportPurpose>('realtor_visit');
   const [layoutId, setLayoutId] = useState<PropertyReportLayoutId>('professional');
@@ -139,14 +144,69 @@ export function GenerateReportDialog({
   const [error, setError] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState(1);
   const isRegenerate = Boolean(regenerateFrom?.id);
+  const baselineEndEditedRef = useRef(false);
+  const comparisonEndEditedRef = useRef(false);
 
-  const draftSnapshotRange = { start: startDate, end: endDate };
-  const draftComparisonRanges: ReportComparisonDateRanges = {
-    baselineStart,
-    baselineEnd,
-    comparisonStart,
-    comparisonEnd,
-  };
+  const resetComparisonDateEditFlags = useCallback(() => {
+    baselineEndEditedRef.current = false;
+    comparisonEndEditedRef.current = false;
+  }, []);
+
+  const handleBaselineStartChange = useCallback(
+    (next: string) => {
+      setBaselineStart(next);
+      setBaselineEnd((end) =>
+        rangeEndAfterStartChange(next, baselineStart, end, baselineEndEditedRef.current)
+      );
+    },
+    [baselineStart]
+  );
+
+  const handleBaselineEndChange = useCallback((next: string) => {
+    baselineEndEditedRef.current = true;
+    setBaselineEnd(next);
+  }, []);
+
+  const handleComparisonStartChange = useCallback(
+    (next: string) => {
+      setComparisonStart(next);
+      setComparisonEnd((end) =>
+        rangeEndAfterStartChange(next, comparisonStart, end, comparisonEndEditedRef.current)
+      );
+    },
+    [comparisonStart]
+  );
+
+  const handleComparisonEndChange = useCallback((next: string) => {
+    comparisonEndEditedRef.current = true;
+    setComparisonEnd(next);
+  }, []);
+
+  const draftSnapshotRange = useMemo(
+    () => ({ start: startDate, end: endDate }),
+    [startDate, endDate]
+  );
+  const draftComparisonRanges: ReportComparisonDateRanges = useMemo(
+    () =>
+      mode === 'comparison' && purpose === 'rental_security'
+        ? rentalComparisonRangesFromAnchors(moveInAnchor, moveOutAnchor)
+        : {
+            baselineStart,
+            baselineEnd,
+            comparisonStart,
+            comparisonEnd,
+          },
+    [
+      mode,
+      purpose,
+      moveInAnchor,
+      moveOutAnchor,
+      baselineStart,
+      baselineEnd,
+      comparisonStart,
+      comparisonEnd,
+    ]
+  );
 
   const fetchReportPreview = useCallback(
     (payload: ReportPreviewFetchPayload) =>
@@ -169,6 +229,7 @@ export function GenerateReportDialog({
   } = useReportWizardCheckpointPreview({
     enabled: open && !isRegenerate && step === 2 && Boolean(user && property),
     mode,
+    purpose,
     userId: user?.uid,
     propertyId: property?.id,
     draftSnapshotRange,
@@ -179,9 +240,30 @@ export function GenerateReportDialog({
     hasMoreLocalCheckpoints,
   });
 
+  const handleRentalMoveInChange = useCallback(
+    (next: string) => {
+      setMoveInAnchor(next);
+      if (mode === 'comparison' && purpose === 'rental_security') {
+        applyDates(rentalComparisonRangesFromAnchors(next, moveOutAnchor));
+      }
+    },
+    [applyDates, mode, moveOutAnchor, purpose]
+  );
+
+  const handleRentalMoveOutChange = useCallback(
+    (next: string) => {
+      setMoveOutAnchor(next);
+      if (mode === 'comparison' && purpose === 'rental_security') {
+        applyDates(rentalComparisonRangesFromAnchors(moveInAnchor, next));
+      }
+    },
+    [applyDates, mode, moveInAnchor, purpose]
+  );
+
   const selectIntent = (id: ReportIntentId) => {
     setIntentId(id);
     invalidatePreviewForIntentChange();
+    resetComparisonDateEditFlags();
     const next = applyReportIntent(id);
     setMode(next.mode);
     setPurpose(next.purpose);
@@ -192,6 +274,8 @@ export function GenerateReportDialog({
     setBaselineEnd(next.baselineEnd);
     setComparisonStart(next.comparisonStart);
     setComparisonEnd(next.comparisonEnd);
+    setMoveInAnchor(next.baselineStart);
+    setMoveOutAnchor(next.baselineEnd);
     setLayoutId('professional');
     const defaults = buildReportTemplate(next.purpose, 'professional');
     setSectionToggles({
@@ -251,8 +335,14 @@ export function GenerateReportDialog({
                 title: title.trim() || 'Property report',
                 mode: 'comparison',
                 purpose,
-                baselineRange: { start: baselineStart, end: baselineEnd },
-                comparisonRange: { start: comparisonStart, end: comparisonEnd },
+                baselineRange: {
+                  start: draftComparisonRanges.baselineStart,
+                  end: draftComparisonRanges.baselineEnd,
+                },
+                comparisonRange: {
+                  start: draftComparisonRanges.comparisonStart,
+                  end: draftComparisonRanges.comparisonEnd,
+                },
                 checkpointIds,
                 template,
                 customNotes: notes.trim() || undefined,
@@ -330,6 +420,8 @@ export function GenerateReportDialog({
         setBaselineEnd(ranges.baselineRange.end);
         setComparisonStart(ranges.comparisonRange.start);
         setComparisonEnd(ranges.comparisonRange.end);
+        setMoveInAnchor(ranges.baselineRange.start);
+        setMoveOutAnchor(ranges.baselineRange.end);
       }
     } else {
       setMode('snapshot');
@@ -347,6 +439,9 @@ export function GenerateReportDialog({
   const goToStep2 = () => {
     if (!intentId) return;
     prepareStep2();
+    if (mode === 'comparison' && purpose === 'rental_security') {
+      applyDates(rentalComparisonRangesFromAnchors(moveInAnchor, moveOutAnchor));
+    }
     setSlideDirection(1);
     setStep(2);
   };
@@ -422,8 +517,14 @@ export function GenerateReportDialog({
               title: finalTitle,
               mode: 'comparison',
               purpose,
-              baselineRange: { start: baselineStart, end: baselineEnd },
-              comparisonRange: { start: comparisonStart, end: comparisonEnd },
+              baselineRange: {
+                start: draftComparisonRanges.baselineStart,
+                end: draftComparisonRanges.baselineEnd,
+              },
+              comparisonRange: {
+                start: draftComparisonRanges.comparisonStart,
+                end: draftComparisonRanges.comparisonEnd,
+              },
               checkpointIds,
               customNotes: notes.trim() || undefined,
               template,
@@ -602,16 +703,40 @@ export function GenerateReportDialog({
                     />
                   </div>
                 </div>
+              ) : purpose === 'rental_security' ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="move-in-date">Move-in date</Label>
+                    <DateInput
+                      id="move-in-date"
+                      value={moveInAnchor}
+                      onChange={(e) => handleRentalMoveInChange(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="move-out-date">Move-out date</Label>
+                    <DateInput
+                      id="move-out-date"
+                      value={moveOutAnchor}
+                      onChange={(e) => handleRentalMoveOutChange(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {comparisonWizardRangeHint(purpose)}
+                  </p>
+                </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-foreground">Before (baseline)</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {comparisonBeforePeriodLabel(purpose)}
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label htmlFor="baseline-start">From</Label>
                       <DateInput
                         id="baseline-start"
                         value={baselineStart}
-                        onChange={(e) => setBaselineStart(e.target.value)}
+                        onChange={(e) => handleBaselineStartChange(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -619,18 +744,20 @@ export function GenerateReportDialog({
                       <DateInput
                         id="baseline-end"
                         value={baselineEnd}
-                        onChange={(e) => setBaselineEnd(e.target.value)}
+                        onChange={(e) => handleBaselineEndChange(e.target.value)}
                       />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-foreground">After (comparison)</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {comparisonAfterPeriodLabel(purpose)}
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label htmlFor="comparison-start">From</Label>
                       <DateInput
                         id="comparison-start"
                         value={comparisonStart}
-                        onChange={(e) => setComparisonStart(e.target.value)}
+                        onChange={(e) => handleComparisonStartChange(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -638,13 +765,13 @@ export function GenerateReportDialog({
                       <DateInput
                         id="comparison-end"
                         value={comparisonEnd}
-                        onChange={(e) => setComparisonEnd(e.target.value)}
+                        onChange={(e) => handleComparisonEndChange(e.target.value)}
                       />
                     </div>
                   </div>
                 </>
               )}
-              {datesDirty ? (
+              {datesDirty && purpose !== 'rental_security' ? (
                 <div className="flex items-center justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
                   <p className="text-xs text-muted-foreground">
                     Dates changed — update to refresh checkpoints
@@ -761,7 +888,9 @@ export function GenerateReportDialog({
                                 >
                                   <div>
                                     <p className="font-medium">{row.location || row.name}</p>
-                                    <p className="text-xs text-muted-foreground">Unpaired location</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {comparisonUnpairedRowHint(purpose)}
+                                    </p>
                                   </div>
                                   <Switch
                                     size="sm"
@@ -863,7 +992,7 @@ export function GenerateReportDialog({
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating…
+                    Submitting…
                   </>
                 ) : (
                   'Create PDF'
@@ -884,7 +1013,7 @@ export function GenerateReportDialog({
                 Back
               </Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create PDF'}
+                {submitting ? 'Submitting…' : 'Create PDF'}
               </Button>
             </div>
           ) : step === 1 ? (
@@ -917,9 +1046,9 @@ export function GenerateReportDialog({
               </Button>
               <Button
                 className="flex-1"
-                disabled={previewLoading || datesDirty}
+                disabled={previewLoading || (datesDirty && purpose !== 'rental_security')}
                 onClick={() => {
-                  if (datesDirty) {
+                  if (datesDirty && purpose !== 'rental_security') {
                     setError('Update checkpoints after changing dates');
                     return;
                   }
@@ -941,7 +1070,7 @@ export function GenerateReportDialog({
                   type="button"
                   variant="outline"
                   onClick={openLayoutPreview}
-                  disabled={layoutPreviewLoading}
+                  disabled={layoutPreviewLoading || submitting}
                 >
                   {layoutPreviewLoading ? (
                     <>
@@ -966,7 +1095,7 @@ export function GenerateReportDialog({
                   Back
                 </Button>
                 <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? 'Creating…' : 'Create PDF'}
+                  {submitting ? 'Submitting…' : 'Create PDF'}
                 </Button>
               </div>
             </div>
