@@ -29,15 +29,52 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
+def _is_valid_service_account_email(email: Optional[str]) -> bool:
+    """Reject metadata placeholder / unset values (e.g. compute_engine default)."""
+    if not email:
+        return False
+    normalized = email.strip()
+    return normalized != "default" and "@" in normalized
+
+
 def _resolve_gcs_signing_service_account() -> Optional[str]:
     for key in (
         "GCS_SIGNING_SERVICE_ACCOUNT",
         "GCP_SERVICE_ACCOUNT_EMAIL",
     ):
         value = (os.environ.get(key) or "").strip()
-        if value:
+        if _is_valid_service_account_email(value):
             return value
     return None
+
+
+def _metadata_service_account_email() -> Optional[str]:
+    """Attached service account on GCE / Cloud Run / Cloud Functions."""
+    import urllib.error
+    import urllib.request
+
+    request = urllib.request.Request(
+        "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email",
+        headers={"Metadata-Flavor": "Google"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=2) as response:
+            email = response.read().decode("utf-8").strip()
+    except (OSError, urllib.error.URLError, TimeoutError):
+        return None
+    return email if _is_valid_service_account_email(email) else None
+
+
+def _resolve_runtime_service_account_email(credentials: Any) -> Optional[str]:
+    from_env = _resolve_gcs_signing_service_account()
+    if from_env:
+        return from_env
+
+    from_credentials = getattr(credentials, "service_account_email", None)
+    if _is_valid_service_account_email(from_credentials):
+        return from_credentials.strip()
+
+    return _metadata_service_account_email()
 
 
 def _blob_signed_url_kwargs(config: SignedUrlConfig) -> Dict[str, Any]:
@@ -63,10 +100,7 @@ def _blob_signed_url_kwargs(config: SignedUrlConfig) -> Dict[str, Any]:
     if getattr(credentials, "signer", None) is not None:
         return kwargs
 
-    service_account_email = (
-        _resolve_gcs_signing_service_account()
-        or getattr(credentials, "service_account_email", None)
-    )
+    service_account_email = _resolve_runtime_service_account_email(credentials)
     if not service_account_email:
         raise StorageError(
             "Signed URLs require a service account with signBlob. "

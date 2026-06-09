@@ -8,7 +8,12 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from datetime import datetime
 
-from ..client import StorageClient, StorageError
+from ..client import (
+    StorageClient,
+    StorageError,
+    _is_valid_service_account_email,
+    _resolve_runtime_service_account_email,
+)
 from ..config import StorageConfig
 from ..models import (
     Bucket,
@@ -356,6 +361,43 @@ async def test_copy_blob(client):
         
         assert blob.name == "copied.txt"
         assert blob.bucket == "dest-bucket"
+
+
+def test_is_valid_service_account_email():
+    assert _is_valid_service_account_email(
+        "githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com"
+    )
+    assert not _is_valid_service_account_email("default")
+    assert not _is_valid_service_account_email("")
+    assert not _is_valid_service_account_email(None)
+
+
+def test_resolve_runtime_service_account_email_prefers_env(monkeypatch):
+    monkeypatch.setenv(
+        "GCP_SERVICE_ACCOUNT_EMAIL",
+        "githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com",
+    )
+    creds = Mock()
+    creds.service_account_email = "default"
+    assert (
+        _resolve_runtime_service_account_email(creds)
+        == "githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com"
+    )
+
+
+def test_resolve_runtime_service_account_email_rejects_default_credentials(monkeypatch):
+    monkeypatch.delenv("GCP_SERVICE_ACCOUNT_EMAIL", raising=False)
+    monkeypatch.delenv("GCS_SIGNING_SERVICE_ACCOUNT", raising=False)
+    creds = Mock()
+    creds.service_account_email = "default"
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        mock_urlopen.return_value.__enter__.return_value.read.return_value = (
+            b"githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com"
+        )
+        assert (
+            _resolve_runtime_service_account_email(creds)
+            == "githubworkflowdeployment@homegeek-staging.iam.gserviceaccount.com"
+        )
 
 
 @pytest.mark.asyncio
