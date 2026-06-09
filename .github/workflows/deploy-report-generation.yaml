@@ -3,7 +3,7 @@ name: Deploy Report Generation Function
 on:
   push:
     branches:
-      - apps/report
+      - main
     paths:
       - "gcp/proxy/workers/function/report_generation/**"
       - "gcp/common/token/**"
