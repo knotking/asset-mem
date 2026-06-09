@@ -86,7 +86,7 @@ Short-lived GCS signed URL for a ready report PDF.
 
 ### Local dev: opening PDFs
 
-Staging/prod Cloud Run uses the runtime service account and IAM **signBlob** automatically. Local `uvicorn` uses **user ADC** (`gcloud auth application-default login`), which has no private key — signing goes through `common.storage.client.StorageClient` with `service_account_email` + `access_token`.
+Staging/prod Cloud Run signs via IAM **signBlob** using the runtime service account. The proxy deploy sets `GCP_SERVICE_ACCOUNT_EMAIL` on the Cloud Run service (same SA as `--service-account`). Without it, compute ADC can expose the placeholder email `default` and signBlob fails.
 
 **Required in `gcp/proxy/.env`:**
 

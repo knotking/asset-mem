@@ -173,6 +173,7 @@ jobs:
           gcloud_version: latest
           env_vars: |
             GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
+            GCP_SERVICE_ACCOUNT_EMAIL=${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
             GCP_REGION=${{ env.REGION }}
             REASONING_ENGINE_ID=${{ vars.REASONING_ENGINE_ID }}
             TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
