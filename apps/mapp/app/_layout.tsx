@@ -21,6 +21,7 @@ import { createAgentSession } from '@/lib/api';
 import { MappLlmTokenUsageProvider } from '@/components/MappLlmTokenUsageProvider';
 import { ThemePreferenceSync } from '@/components/ThemePreferenceSync';
 import { AppUpdateGate } from '@/components/AppUpdateGate';
+import { ThemedAlertProvider } from '@/contexts/themed-alert-context';
 import { createLogger } from '@/lib/logger';
 import {
   ANDROID_IMMERSIVE_ENABLED,
@@ -51,7 +52,9 @@ export default function RootLayout() {
                 <MappDeletionConfigProvider>
                   <PropertiesListProvider>
                     <DocumentUploadProvider>
-                      <Routes />
+                      <ThemedAlertProvider>
+                        <Routes />
+                      </ThemedAlertProvider>
                     </DocumentUploadProvider>
                   </PropertiesListProvider>
                 </MappDeletionConfigProvider>

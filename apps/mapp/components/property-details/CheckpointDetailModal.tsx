@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Modal, View, ScrollView, Alert, Dimensions, FlatList, ViewToken, ViewStyle } from 'react-native';
+import { Modal, View, ScrollView, Dimensions, FlatList, ViewToken, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { Checkpoint, CheckpointMedia } from '@homeapp/common/types';
 import { createLogger } from '@/lib/logger';
+import { showThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');
 import { format } from 'date-fns';
@@ -137,7 +138,7 @@ export function CheckpointDetailModal({
         await deleteCheckpoint(checkpointId);
       } catch (error) {
         checkpointLog.error('checkpoint.delete.failed', undefined, error);
-        Alert.alert('Error', 'Failed to delete checkpoint');
+        showThemedAlert('Error', 'Failed to delete checkpoint');
       }
     })();
   };

@@ -61,6 +61,7 @@ import {
   suggestReportTitle,
   summarizeCheckpointPreview,
   reportWizardStepLabel,
+  reportWizardStep2Hint,
   type ReportIntentId,
   type ReportWizardStep,
 } from '@/lib/report-wizard';
@@ -571,9 +572,7 @@ export function GenerateReportDialog({
           ) : step === 2 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {mode === 'comparison'
-                  ? 'We match rooms by location between the two periods.'
-                  : 'Includes the latest checkpoint per location in this range.'}
+                {reportWizardStep2Hint(mode, purpose)}
               </p>
               <div className="space-y-2">
                 <Label htmlFor="report-title">Report title</Label>

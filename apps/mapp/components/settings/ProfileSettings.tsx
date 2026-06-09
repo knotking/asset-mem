@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { updateProfile } from 'firebase/auth';
 import { ChevronRight, Loader2 } from 'lucide-react-native';
 import { useAuth } from '@homeapp/common/contexts/auth-context';
@@ -24,10 +24,12 @@ import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { createLogger } from '@/lib/logger';
+import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 const profileLog = createLogger('profile');
 
 export function ProfileSettings() {
+  const { showAlert } = useThemedAlert();
   const { user } = useAuth();
   const [editOpen, setEditOpen] = React.useState(false);
   const [editedName, setEditedName] = React.useState('');
@@ -56,7 +58,7 @@ export function ProfileSettings() {
   const handleSave = async () => {
     const trimmed = editedName.trim();
     if (trimmed.length > DISPLAY_NAME_MAX_LENGTH) {
-      Alert.alert(
+      showAlert(
         'Name too long',
         `Display name must be ${DISPLAY_NAME_MAX_LENGTH} characters or fewer.`
       );
@@ -76,7 +78,7 @@ export function ProfileSettings() {
       setEditedName('');
     } catch (error: unknown) {
       profileLog.error('displayName.update.failed', undefined, error);
-      Alert.alert(
+      showAlert(
         'Could not update profile',
         error instanceof Error ? error.message : 'Something went wrong. Please try again.'
       );

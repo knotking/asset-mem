@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
@@ -13,8 +13,10 @@ import {
 } from '@homeapp/common/lib/feature-discovery';
 import { usePreferences } from '@homeapp/common/contexts/preferences-context';
 import { usePropertiesList } from '@homeapp/common/contexts/properties-list-context';
+import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 export function HelpHubSettings() {
+  const { showAlert } = useThemedAlert();
   const router = useRouter();
   const { properties } = usePropertiesList();
   const { preferences, resetFeatureTipsDismissed } = usePreferences();
@@ -86,12 +88,12 @@ export function HelpHubSettings() {
               setResettingTips(true);
               try {
                 await resetFeatureTipsDismissed();
-                Alert.alert(
+                showAlert(
                   'Tips restored',
                   'Contextual tips will show again when relevant.'
                 );
               } catch {
-                Alert.alert('Could not reset tips', 'Try again in a moment.');
+                showAlert('Could not reset tips', 'Try again in a moment.');
               } finally {
                 setResettingTips(false);
               }

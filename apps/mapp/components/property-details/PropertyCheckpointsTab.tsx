@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated, Alert } from 'react-native';
+import { View, FlatList, Image, Pressable, Modal, ScrollView, Animated } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -76,6 +76,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { analyzeCheckpoint } from '../../lib/api';
 import { createLogger } from '@/lib/logger';
+import { useThemedAlert } from '@/contexts/themed-alert-context';
 
 const checkpointLog = createLogger('checkpoint');
 import { usePropertyCheckpointMetrics } from '@/hooks/usePropertyCheckpointMetrics';
@@ -709,6 +710,7 @@ export function PropertyCheckpointsTab({
   isGenerateReportModalVisible,
   setIsGenerateReportModalVisible,
 }: PropertyCheckpointsTabProps) {
+  const { showAlert } = useThemedAlert();
   const {
     checkpoints,
     loading,
@@ -764,7 +766,7 @@ export function PropertyCheckpointsTab({
     mediaType: 'image' | 'video';
   }) => {
     if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
-      Alert.alert('Monthly checkpoint limit reached', CHECKPOINT_QUOTA_USER_MESSAGE);
+      showAlert('Monthly checkpoint limit reached', CHECKPOINT_QUOTA_USER_MESSAGE);
       return;
     }
 
@@ -830,7 +832,7 @@ export function PropertyCheckpointsTab({
           }).catch((updateErr) => {
             checkpointLog.error('checkpoint.statusFailedUpdate.failed', undefined, updateErr);
           });
-          Alert.alert('Checkpoint analysis unavailable', message);
+          showAlert('Checkpoint analysis unavailable', message);
         });
       } else {
         // No image to analyze, mark as completed
@@ -931,7 +933,7 @@ export function PropertyCheckpointsTab({
       if (!user || !property || checkpointIds.length === 0) return;
       const deletionUrls = getMappDeletionApiUrls();
       if (!deletionUrls?.checkpointsBatch) {
-        Alert.alert('Error', 'Deletion API is not configured.');
+        showAlert('Error', 'Deletion API is not configured.');
         clearCheckpointsDeleting(checkpointIds);
         return;
       }
@@ -954,7 +956,7 @@ export function PropertyCheckpointsTab({
           );
           await markResourcesDeletionFailed(db, refs, error);
         }
-        Alert.alert('Error', checkpointBulkDeleteFailed);
+        showAlert('Error', checkpointBulkDeleteFailed);
       } finally {
         clearCheckpointsDeleting(checkpointIds);
       }
@@ -966,7 +968,7 @@ export function PropertyCheckpointsTab({
     (checkpoint: Checkpoint) => {
       void deleteCheckpoint(checkpoint.id).catch((error) => {
         checkpointLog.error('checkpoint.retryDelete.failed', undefined, error);
-        Alert.alert('Error', checkpointBulkDeleteFailed);
+        showAlert('Error', checkpointBulkDeleteFailed);
       });
     },
     [deleteCheckpoint]
@@ -1082,7 +1084,7 @@ export function PropertyCheckpointsTab({
           <Button
             onPress={() => {
               if (!limitsLoading && isAtPlanLimit(checkpointsLimit, 1)) {
-                Alert.alert(
+                showAlert(
                   'Monthly checkpoint limit reached',
                   CHECKPOINT_QUOTA_USER_MESSAGE,
                 );
