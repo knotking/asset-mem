@@ -7,13 +7,32 @@ import { messageFixtures } from './fixtures/messages';
 describe('transformMessagesToGiftedChatCached', () => {
   const userId = 'user-123';
 
-  it('reuses IMessage instances when Firestore message references are unchanged', () => {
+  it('reuses IMessage instances when Firestore message payload is unchanged', () => {
     const messages = [messageFixtures.userTextMessage, messageFixtures.partialAssistantMessage];
     const first = transformMessagesToGiftedChatCached(new Map(), messages, userId);
     const second = transformMessagesToGiftedChatCached(first.cache, messages, userId);
 
     expect(second.giftedMessages[0]).toBe(first.giftedMessages[0]);
     expect(second.giftedMessages[1]).toBe(first.giftedMessages[1]);
+  });
+
+  it('rebuilds assistant IMessage when contentJson gains suggestedActions', () => {
+    const messages = [messageFixtures.userTextMessage, messageFixtures.partialAssistantMessage];
+    const first = transformMessagesToGiftedChatCached(new Map(), messages, userId);
+
+    const withActions = {
+      ...messageFixtures.partialAssistantMessage,
+      contentJson: {
+        suggestedActions: [{ label: 'Get a quote', userQuery: 'Find local painters' }],
+      },
+    };
+    const nextMessages = [messageFixtures.userTextMessage, withActions];
+    const second = transformMessagesToGiftedChatCached(first.cache, nextMessages, userId);
+
+    expect(second.giftedMessages[0]).not.toBe(first.giftedMessages[0]);
+    expect(second.giftedMessages[0].customData?.firestoreMessage?.contentJson).toEqual(
+      withActions.contentJson
+    );
   });
 
   it('rebuilds only the changed message when one id updates', () => {

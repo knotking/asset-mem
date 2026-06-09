@@ -68,4 +68,19 @@ describe('areChatMessagePropsEqual', () => {
       areChatMessagePropsEqual(chatMessageProps(withFile), chatMessageProps(otherFile))
     ).toBe(false);
   });
+
+  it('returns false when contentJson gains suggestedActions', () => {
+    const base = messageFixtures.partialAssistantMessage;
+    const withActions = {
+      ...base,
+      contentJson: {
+        suggestedActions: [
+          { label: 'Get a quote', userQuery: 'Find local painters for a quote' },
+        ],
+      },
+    };
+    expect(
+      areChatMessagePropsEqual(chatMessageProps(base), chatMessageProps(withActions))
+    ).toBe(false);
+  });
 });

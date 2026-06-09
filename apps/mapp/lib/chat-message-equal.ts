@@ -7,6 +7,7 @@ export interface ChatMessageCompareProps {
   priorAssistantTurnCount?: number;
   isActiveLoading?: boolean;
   hideRepeatedContextRefs?: boolean;
+  isSendDisabled?: boolean;
 }
 
 function agentStepsEqual(a?: AgentStep[], b?: AgentStep[]): boolean {
@@ -36,6 +37,16 @@ function agentLifecycleEqual(
   return a.phase === b.phase && a.message === b.message && (a.ts ?? '') === (b.ts ?? '');
 }
 
+function contentJsonEqual(
+  a: Message['contentJson'],
+  b: Message['contentJson'],
+): boolean {
+  if (a === b) return true;
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /** Compare ChatMessage props to skip re-renders when the Firestore message is unchanged. */
 export function areChatMessagePropsEqual(
   prev: ChatMessageCompareProps,
@@ -45,6 +56,7 @@ export function areChatMessagePropsEqual(
   if (prev.priorAssistantTurnCount !== next.priorAssistantTurnCount) return false;
   if (prev.isActiveLoading !== next.isActiveLoading) return false;
   if (prev.hideRepeatedContextRefs !== next.hideRepeatedContextRefs) return false;
+  if (prev.isSendDisabled !== next.isSendDisabled) return false;
 
   const prevMsg = prev.message;
   const nextMsg = next.message;
@@ -56,6 +68,8 @@ export function areChatMessagePropsEqual(
   if (prevMsg.primaryAgent !== nextMsg.primaryAgent) return false;
   if (!agentStepsEqual(prevMsg.agentSteps, nextMsg.agentSteps)) return false;
   if (!agentLifecycleEqual(prevMsg.agentLifecycle, nextMsg.agentLifecycle)) return false;
+  if ((prevMsg.contentMarkdown ?? '') !== (nextMsg.contentMarkdown ?? '')) return false;
+  if (!contentJsonEqual(prevMsg.contentJson, nextMsg.contentJson)) return false;
 
   const prevFile = prevMsg.file;
   const nextFile = nextMsg.file;

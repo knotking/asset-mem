@@ -1,5 +1,6 @@
-import type { IMessage } from 'react-native-gifted-chat';
+import type { IMessage, MessageProps } from 'react-native-gifted-chat';
 import type { Message } from '@homeapp/common/types';
+import { areMessagesEqual } from '@homeapp/common/lib/merge-messages-snapshot';
 
 /** Milliseconds for Message.createdAt (Firestore Timestamp or Date). */
 export function messageCreatedAtMillis(
@@ -91,9 +92,27 @@ export type GiftedChatMessageCacheEntry = {
 
 export type GiftedChatMessageCache = Map<string, GiftedChatMessageCacheEntry>;
 
+function patchGiftedChatFromMessage(imessage: IMessage, msg: Message): IMessage {
+  return {
+    ...imessage,
+    _id: msg.id,
+    text: msg.content || '',
+    pending: !msg.content && msg.role === 'assistant',
+    customData: {
+      ...imessage.customData,
+      role: msg.role,
+      file: msg.file,
+      agentSteps: msg.agentSteps,
+      originalContent: msg.content,
+      primaryAgent: msg.primaryAgent,
+      firestoreMessage: msg,
+    },
+  };
+}
+
 /**
  * Incremental GiftedChat transform. Reuses IMessage instances when the Firestore
- * message object reference is unchanged (see mergeMessagesFromSnapshot).
+ * payload is unchanged (see mergeMessagesFromSnapshot / areMessagesEqual).
  */
 export function transformMessagesToGiftedChatCached(
   cache: GiftedChatMessageCache,
@@ -106,9 +125,12 @@ export function transformMessagesToGiftedChatCached(
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[messages.length - 1 - i];
     const cached = cache.get(msg.id);
-    if (cached && cached.source === msg) {
-      nextCache.set(msg.id, cached);
-      giftedMessages[i] = cached.imessage;
+    if (cached && areMessagesEqual(cached.source, msg)) {
+      const imessage =
+        cached.source === msg ? cached.imessage : patchGiftedChatFromMessage(cached.imessage, msg);
+      const entry: GiftedChatMessageCacheEntry = { source: msg, imessage };
+      nextCache.set(msg.id, entry);
+      giftedMessages[i] = imessage;
     } else {
       const imessage = transformToGiftedChat(msg, currentUserId);
       const entry: GiftedChatMessageCacheEntry = { source: msg, imessage };
@@ -118,4 +140,23 @@ export function transformMessagesToGiftedChatCached(
   }
 
   return { giftedMessages, cache: nextCache };
+}
+
+/**
+ * GiftedChat memoizes Message rows by currentMessage only. Force updates when
+ * renderBubble changes (isActiveLoading / chips) or Firestore payload changes.
+ */
+export function shouldUpdateGiftedChatMessage(
+  prev: MessageProps<IMessage>,
+  next: MessageProps<IMessage>
+): boolean {
+  if (prev.renderBubble !== next.renderBubble) return true;
+  if (prev.currentMessage === next.currentMessage) return false;
+
+  const prevStored = prev.currentMessage?.customData?.firestoreMessage;
+  const nextStored = next.currentMessage?.customData?.firestoreMessage;
+  if (prevStored && nextStored) {
+    return !areMessagesEqual(prevStored, nextStored);
+  }
+  return true;
 }
