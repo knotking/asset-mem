@@ -241,7 +241,7 @@ export function AiUsageSettings() {
               hint={`Analyses queued through the proxy. ${checkpointsQuota.hint}`}
             />
             <StatRow
-              label="Report PDFs"
+              label="Reports"
               value={reportsQuota.value}
               hint={`Property report generations. ${reportsQuota.hint}`}
             />
@@ -281,9 +281,9 @@ export function AiUsageSettings() {
               hint="Lifetime checkpoint analyses queued through the proxy."
             />
             <StatRow
-              label="Report PDFs"
+              label="Reports"
               value={nf.format(reportGenerations)}
-              hint="Lifetime property report PDF generations."
+              hint="Lifetime property report generations."
             />
           </UsageGroup>
           <UsageGroup title="Activity">

@@ -125,7 +125,7 @@ export function EditReportMetadataModal({
             multiline
             className="mb-4 min-h-[80px]"
           />
-          <Text className="mb-2 text-sm font-medium text-foreground">PDF sections</Text>
+          <Text className="mb-2 text-sm font-medium text-foreground">Report sections</Text>
           <Text className="mb-3 text-xs text-muted-foreground">
             Section changes apply when you regenerate this report.
           </Text>

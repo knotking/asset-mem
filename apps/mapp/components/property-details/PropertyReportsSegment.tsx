@@ -149,12 +149,12 @@ export function PropertyReportsSegment({
       });
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        showAlert('Cannot open PDF', 'No app available to view this link.');
+        showAlert('Cannot open report', 'No app available to view this link.');
         return;
       }
       await Linking.openURL(url);
     } catch (err) {
-      showAlert('Could not open PDF', err instanceof Error ? err.message : 'Unknown error');
+      showAlert('Could not open report', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setOpeningId(null);
     }
@@ -200,7 +200,7 @@ export function PropertyReportsSegment({
       await Clipboard.setStringAsync(`${base}/share/report/${shareId}`);
       showAlert(
         'Share link copied',
-        'Anyone with the link can view this PDF until it expires.'
+        'Anyone with the link can view this report until it expires.'
       );
     } catch (err) {
       showAlert('Could not share report', err instanceof Error ? err.message : 'Unknown error');
@@ -258,7 +258,7 @@ export function PropertyReportsSegment({
       if (report.status !== 'generating') {
         actions.push({
           id: 'regenerate',
-          label: 'Regenerate PDF',
+          label: 'Regenerate report',
           onPress: () => {
             closeActionsSheet();
             setRegenerateFrom(report);
@@ -307,7 +307,7 @@ export function PropertyReportsSegment({
   return (
     <View className="flex-1">
       <View className="border-b border-border px-4 py-3">
-        <Text className="text-sm text-muted-foreground">Saved PDF exports from your timeline</Text>
+        <Text className="text-sm text-muted-foreground">Saved reports from your timeline</Text>
       </View>
       <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 32 }}>
         {!isTrulyEmpty ? (
@@ -345,7 +345,7 @@ export function PropertyReportsSegment({
             <Icon as={FileText} size={40} className="mb-3 text-muted-foreground opacity-60" />
             <Text className="text-center font-medium text-foreground">No reports yet</Text>
             <Text className="mt-1 text-center text-sm text-muted-foreground">
-              Capture checkpoints on the Timeline tab, then tap + above to create a PDF report.
+              Capture checkpoints on the Timeline tab, then tap + above to create a report.
             </Text>
           </View>
         ) : filteredReports.length === 0 ? (
@@ -469,7 +469,7 @@ export function PropertyReportsSegment({
         title="Delete report?"
         description={
           reportToDelete
-            ? `"${reportToDelete.title}" and its PDF will be removed permanently.`
+            ? `"${reportToDelete.title}" and its file will be removed permanently.`
             : ''
         }
         confirmText="Delete"

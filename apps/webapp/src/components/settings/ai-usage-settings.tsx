@@ -279,7 +279,7 @@ export function AiUsageSettings() {
               value={checkpointsQuota.value}
             />
             <StatRow
-              label="Report PDFs"
+              label="Reports"
               hint={`Property report generations. ${reportsQuota.hint}`}
               value={reportsQuota.value}
             />
@@ -317,8 +317,8 @@ export function AiUsageSettings() {
               value={nf.format(checkpointCreations)}
             />
             <StatRow
-              label="Report PDFs"
-              hint="Lifetime property report PDF generations."
+              label="Reports"
+              hint="Lifetime property report generations."
               value={nf.format(reportGenerations)}
             />
             <GroupHeading title="Activity" />
